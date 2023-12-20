@@ -128,3 +128,18 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# yarn Integrity file
+.yarn/install-state.gz
+
+# dotenv environment variable file
+.env
+
+# node_modules
+node_modules/
+
+# yarn.lock
+yarn.lock
+
+# dist
+dist/
