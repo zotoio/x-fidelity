@@ -1,0 +1,9 @@
+{
+  "name": "x-fidelity",
+  "version": "0.0.1",
+  "description": "cli for opinionated framework adherence checks",
+  "main": "index.js",
+  "repository": "https://github.com/zotoio/x-fidelity",
+  "author": "zotoio",
+  "license": "MIT"
+}
