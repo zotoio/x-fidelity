@@ -1,7 +1,7 @@
 {
   "name": "x-fidelity",
   "version": "0.0.1",
-  "description": "opionated framework cli checker",
+  "description": "cli to analyse opionated framework compliance rule adherence",
   "main": "index.js",
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
