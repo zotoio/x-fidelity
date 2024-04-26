@@ -1,14 +1,14 @@
 import { RuleProperties } from 'json-rules-engine';
 
-const noDatabases: RuleProperties = {
-    name: 'noDatabases',
+const noOldCriticalDeps: RuleProperties = {
+    name: 'noOldCriticalDeps',
     conditions: {
         not: {
             any: [
                 {
                     fact: 'fileContent',
                     operator: 'includesString',
-                    value: 'oracle'
+                    value: 'todo new manifest operator'
                 }
             ]
         }
@@ -16,9 +16,9 @@ const noDatabases: RuleProperties = {
     event: {
         type: 'violation',
         params: {
-            message: 'noDatabases: code must not directly call databases'
+            message: 'noOldCriticalDeps: some important dependencies have expired'
         }
     }  
 }
 
-export { noDatabases };
+export { noOldCriticalDeps };
