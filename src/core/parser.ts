@@ -39,7 +39,10 @@ function parseRepo(repoPath: string): FileData[] {
 
 function ignored(file: string){
     return file.startsWith('.') 
-        || file.startsWith('node_modules')
+        || file.includes('node_modules')
+        || file.includes('/.')
+        || file.includes('/dist/')
+        || file.includes('/lcov')
         || file.startsWith('dist')
         || file.endsWith('md')
         || file.endsWith('lock')

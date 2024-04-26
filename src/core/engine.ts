@@ -33,6 +33,8 @@ async function analyzeCodebase(repoPath: string): Promise<any[]> {
             }).catch(e => console.log(e));
     }
 
+    console.log(`${filesData.length} files analyzed..`)
+
     return failures;
     
 }
