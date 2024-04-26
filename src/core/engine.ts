@@ -1,37 +1,40 @@
-import { Engine } from 'json-rules-engine';
+import { Engine,RuleProperties } from 'json-rules-engine';
 import { FileData, parseRepo } from './parser'; 
-import { rule } from '../rules/default';
+import { rules } from '../rules';
+import { operators } from '../operators';
 
-async function analyzeCodebase(repoPath: string): Promise<void> {
+async function analyzeCodebase(repoPath: string): Promise<any[]> {
     const filesData: FileData[] = parseRepo(repoPath); // Your function to parse the repo into JSON
     const engine = new Engine();
 
-    // Add rules to the engine
-    engine.addRule(rule);
+    // Add operators to engine
+    operators.map((operator) => engine.addOperator(operator.name, operator.fn));
 
-    let failureEvents = [];
+    // Add rules to engine
+    rules.map((rule) => engine.addRule(rule));
+
+    engine.on('failure', function(event, almanac, ruleResult) {
+        console.log(event) 
+    });
 
     // Run the engine for each file's data
+    let failures: any[] = [];
     for (const fileData of filesData) {
-        console.log(`Running engine for ${fileData.filePath}...`);
+        console.log(`running engine for ${fileData.filePath}...`);
         let fileContent = fileData.content;
-        let results = await engine.run({ fileContent });
-        console.log(results);
-        // Process results...
-        if (results.failureEvents.length === 0) {
-            console.log('No violations found.');      
-        } else{
-            console.log(results.failureEvents)
-            failureEvents.push(results.failureEvents);
-        }
+        await engine.run({ fileContent })
+            .then(({failureResults}) => {
+                failureResults.map((result) => {
+                    failures.push({
+                        'filePath': fileData.filePath,
+                        'message': result?.event?.params?.message
+                    })
+                })
+            }).catch(e => console.log(e));
     }
-    if (failureEvents.length > 0) {
-        console.log(`violations found in ${failureEvents.length} files.`);
-        console.log(`${failureEvents.map(f => (f as any).filePath).join('\n')}`);
-    }
-    console.log(`processed ${filesData.length} files..`);
-    console.log(`${filesData.map(f => f.filePath).join('\n')}`);
-    console.log('done!');
+
+    return failures;
+    
 }
 
 export { analyzeCodebase };
