@@ -1,7 +1,10 @@
 import { RuleDefn } from '../typeDefs';
-import { includesString } from './includesString';
+import { currentDependencies } from './currentDependencies';
+import { fileContains } from './fileContains';
 
 let operators: RuleDefn[] = [];
-operators.push(includesString);
+operators.push(currentDependencies);
+operators.push(fileContains);
+//oracle
 
 export { operators };

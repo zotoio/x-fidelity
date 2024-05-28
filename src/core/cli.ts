@@ -6,7 +6,7 @@ program
 program.parse();
 
 const options = program.opts();
-console.log(`starting with ${JSON.stringify(options)}...`);
+//console.log(`starting with ${JSON.stringify(options)}...`);
 
 if (!options.dir) {
     console.error("Repo directory is required. Please specify the directory using the -d or --dir option.");

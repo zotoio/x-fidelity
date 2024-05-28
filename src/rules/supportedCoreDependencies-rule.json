@@ -1,0 +1,29 @@
+{
+    "name": "supportedCoreDependencies",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.filePath",
+                "operator": "currentDependencies",
+                "value": {
+                    "fact": "dependencyData"
+                }
+            }    
+        ]
+    },
+    "event": {
+        "type": "violation",
+        "params": {
+            "message": "some important dependencies have expired!",
+            "filePath": {
+                "fact": "fileData",
+                "path": "$.filePath"
+            },
+            "minimumDependencyVersions": {
+                "fact": "dependencyData",
+                "path": "$.minimumDependencyVersions"
+            }
+        }
+    }
+}

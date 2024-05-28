@@ -1,33 +1,34 @@
+import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
 
-// Define the structure the file data here using ast-parser package
 interface FileData {
-    // Add properties to the FileData interface
     fileName: string;
     filePath: string;
-    content: string;
+    fileContent: string;
 }
 
 function parseFile(filePath: string): FileData {
-    // Implement the logic to parse the file and return the FileData object
     return {
         fileName: path.basename(filePath),
         filePath,
-        content: fs.readFileSync(filePath, 'utf8')
+        fileContent: fs.readFileSync(filePath, 'utf8')
     };
 }
 
-// use fs and path to traverse the repo
-function parseRepo(repoPath: string): FileData[] {
+async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
     const filesData: FileData[] = [];
-    const files = fs.readdirSync(repoPath);
+
+    logger.debug(`collectingRepoFileData from: ${repoPath}`);
+    const files = await fs.promises.readdir(repoPath);
 
     for (const file of files) {
         const filePath = path.join(repoPath, file);
         if (!ignored(filePath)) {
-            if (fs.lstatSync(filePath).isDirectory()) {
-                filesData.push(...parseRepo(filePath));
+            const stats = await fs.promises.lstat(filePath);
+            if (stats.isDirectory()) {
+                const dirFilesData = await collectRepoFileData(filePath);
+                filesData.push(...dirFilesData);
             } else {
                 const fileData = parseFile(filePath);
                 filesData.push(fileData);
@@ -41,12 +42,13 @@ function ignored(file: string){
     return file.startsWith('.') 
         || file.includes('node_modules')
         || file.includes('/.')
+        || file.endsWith('-rule.json')
         || file.includes('/dist/')
         || file.includes('/lcov')
         || file.startsWith('dist')
         || file.endsWith('md')
-        || file.endsWith('lock')
+        || file.endsWith('.log')
         || file.includes('LICENSE');
 }
 
-export { parseRepo, FileData }
+export { collectRepoFileData, FileData }
