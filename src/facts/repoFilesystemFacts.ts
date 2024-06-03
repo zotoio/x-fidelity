@@ -8,19 +8,19 @@ interface FileData {
     fileContent: string;
 }
 
-function parseFile(filePath: string): FileData {
-    return {
+async function parseFile(filePath: string): Promise<FileData> {
+    return Promise.resolve({
         fileName: path.basename(filePath),
         filePath,
         fileContent: fs.readFileSync(filePath, 'utf8')
-    };
+    });
 }
 
 async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
     const filesData: FileData[] = [];
 
     logger.debug(`collectingRepoFileData from: ${repoPath}`);
-    const files = await fs.promises.readdir(repoPath);
+    const files = fs.readdirSync(repoPath);
 
     for (const file of files) {
         const filePath = path.join(repoPath, file);
@@ -30,7 +30,7 @@ async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
                 const dirFilesData = await collectRepoFileData(filePath);
                 filesData.push(...dirFilesData);
             } else {
-                const fileData = parseFile(filePath);
+                const fileData = await parseFile(filePath);
                 filesData.push(fileData);
             }
         }

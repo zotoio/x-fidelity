@@ -50,7 +50,7 @@ export async function getDependencyVersionFacts() {
  * @param minVersions - The minimum dependency versions to search for.
  * @returns An array of results.
  */
-function findPropertiesInTree(depGraph: LocalDependencies, minVersions: MinimumDepVersions): VersionData[] {
+export function findPropertiesInTree(depGraph: LocalDependencies, minVersions: MinimumDepVersions): VersionData[] {
     let results: VersionData[] = [];
 
     logger.debug(`depGraph: ${depGraph}`);

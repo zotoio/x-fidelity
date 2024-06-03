@@ -6,8 +6,6 @@ const fileContains: RuleDefn = {
     'fn': (fileContent: any, checkString: any) => {
         let result = false;
 
-        logger.debug(`fileContains '${checkString}': working..`);
-        
         const regex = new RegExp(checkString, 'g');
         if (regex.test(fileContent)) {
             result = true;

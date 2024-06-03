@@ -14,7 +14,7 @@ const currentDependencies: RuleDefn = {
         logger.debug(`currentDependencies: working..`);
         
         try {
-            logger.debug(`currentDependencies: processing $${dependencyData.installedDependencyVersions}`);
+            logger.debug(`currentDependencies: processing ${dependencyData.installedDependencyVersions}`);
             
             dependencyData.installedDependencyVersions.map((versionData: VersionData) => { 
                 logger.debug(`currentDependencies: checking ${versionData.dep}`);
