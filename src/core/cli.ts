@@ -20,14 +20,14 @@ logger.info([banner]);
 
 program
     .option("-d, --dir <directory>", "The repo checkout directory")
-    .option("-c, --configUrl <url>", "The URL to fetch config (dependency versions and standard structure) from")
-    .option("-c, --configUrl <url>", "The URL to fetch config (dependency versions and standard structure) from")
-    .option("-d, --dir <directory>", "The repo checkout directory");
+    .option("-c, --configUrl <url>", "The URL used to fetch config");
 
 program.parse();
 
 const options = program.opts();
-//console.log(`starting with ${JSON.stringify(options)}...`);
+
+// print help if no arguments are passed
+if (program.options.length === 0) program.help();
 
 if (!options.dir) {
     console.error("Repo directory is required. Please specify the directory using the -d or --dir option.");

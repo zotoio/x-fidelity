@@ -4,18 +4,25 @@ import axios from 'axios';
 import { execSync } from 'child_process';
 import { LocalDependencies, MinimumDepVersions, VersionData } from '../typeDefs';
 
-/**
- * Collects the minimum dependency versions.
- * @returns The minimum dependency versions.
- */
-export async function collectMinimumDependencyVersions() {
-    try {
-        const response = await axios.get('https://example.com/dependency-versions');
-        return response.data;
-    } catch (error) {
-        logger.error(`Error fetching minimum dependency versions: ${error}`);
-        return {};
-    }
+/**                                                                                                                    
+  * Collects the minimum dependency versions.                                                                           
+  * @returns The minimum dependency versions.                                                                           
+  */                                                                                                                    
+export async function collectMinimumDependencyVersions(configUrl?: string) {                                           
+    if (configUrl) {                                                                                                   
+        try {                                                                                                          
+            const response = await axios.get(configUrl);                                                               
+            return response.data.minimumDependencyVersions;                                                            
+        } catch (error) {                                                                                              
+            logger.error(`Error fetching minimum dependency versions from configUrl: ${error}`);                       
+            return {};                                                                                                 
+        }                                                                                                              
+    } else {                                                                                                           
+        return {
+            commander: '^2.0.0',
+            nodemon: '^3.9.0'
+        };                                                                                                              
+    }                                                                                                                  
 }
 
 /**

@@ -1,4 +1,5 @@
 import { logger } from '../utils/logger';
+import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 
@@ -51,14 +52,29 @@ function ignored(file: string){
         || file.includes('LICENSE');
 }
 
-const standardStructure = {
-    "src": {
-        "core": null,
-        "utils": null,
-        "operators": null,
-        "rules": null,
-        "facts": null
-    }
-};
+const standardStructure = {                                                                                            
+    "src": {                                                                                                           
+        "core": null,                                                                                                  
+        "utils": null,                                                                                                 
+        "operators": null,                                                                                             
+        "rules": null,                                                                                                 
+        "facts": null,
+        "FAIL": null                                                                                                  
+    }                                                                                                                  
+};                                                                                                                     
+                                                                                                                       
+async function collectStandardDirectoryStructure(configUrl?: string) {                                                     
+    if (configUrl) {                                                                                                   
+        try {                                                                                                          
+            const response = await axios.get(configUrl);                                                               
+            return response.data.standardStructure;                                                                    
+        } catch (error) {                                                                                              
+            logger.error(`Error fetching standard structure from configUrl: ${error}`);                                
+            return standardStructure;                                                                                  
+        }                                                                                                              
+    } else {                                                                                                           
+        return standardStructure;                                                                                      
+    }                                                                                                                  
+}
 
-export { collectRepoFileData, FileData, standardStructure }
+export { collectRepoFileData, FileData, collectStandardDirectoryStructure }
