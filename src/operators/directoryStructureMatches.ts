@@ -3,24 +3,6 @@ import { logger } from '../utils/logger';
 import * as path from 'path';
 import * as fs from 'fs';
 
-const standardStructure = {
-    "level1": ["src", "tests", "docs"],
-    "level2": {
-        "src": ["core", "utils", "operators", "rules", "facts"],
-        "tests": ["unit", "integration"],
-        "docs": []
-    },
-    "level3": {
-        "core": ["cli.ts", "engine.ts"],
-        "utils": ["logger.ts"],
-        "operators": ["index.ts", "fileContains.ts", "currentDependencies.ts"],
-        "rules": ["index.ts"],
-        "facts": ["repoDependencyFacts.ts", "repoFilesystemFacts.ts"],
-        "unit": [],
-        "integration": []
-    }
-};
-
 let hasChecked = false;
 
 const directoryStructureMatches: RuleDefn = {
