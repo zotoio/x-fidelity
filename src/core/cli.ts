@@ -20,7 +20,7 @@ logger.info([banner]);
 
 program
     .option("-d, --dir <directory>", "The repo checkout directory")
-    .option("-u, --url <url>", "The URL to fetch dependency versions from");
+    .option("-c, --configUrl <url>", "The URL to fetch config (dependency versions and standard structure) from");
 
 program.parse();
 
