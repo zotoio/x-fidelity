@@ -20,11 +20,11 @@ const directoryStructureMatches: RuleDefn = {
                 const newPath = path.join(currentPath, key);
                 if (structure[key] === null) {
                     if (!fs.existsSync(newPath)) {
-                        return false;
+                        return `Missing or invalid directory: ${newPath}`;
                     }
                 } else {
                     if (!fs.existsSync(newPath) || !fs.lstatSync(newPath).isDirectory()) {
-                        return false;
+                        return `Missing or invalid directory: ${newPath}`;
                     }
                     if (!checkStructure(newPath, structure[key])) {
                         return false;
@@ -34,9 +34,13 @@ const directoryStructureMatches: RuleDefn = {
             return true;
         }
 
-        result = checkStructure(repoPath, standardStructure);
-
-        logger.debug(`directoryStructureMatches for '${repoPath}': ${result}`);
+        const checkResult = checkStructure(repoPath, standardStructure);
+        if (checkResult !== true) {
+            result = false;
+            logger.debug(`directoryStructureMatches for '${repoPath}': ${checkResult}`);
+        } else {
+            logger.debug(`directoryStructureMatches for '${repoPath}': ${result}`);
+        }
         hasChecked = true;
         return result;
     }

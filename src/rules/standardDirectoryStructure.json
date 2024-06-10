@@ -16,7 +16,11 @@
         "type": "violation",
         "params": {
             "message": "The directory structure does not match the standard.",
-            "filePath": {
+            "details": {
+                "fact": "fileData",
+                "path": "$.filePath"
+            },
+            "message": {
                 "fact": "fileData",
                 "path": "$.filePath"
             }
