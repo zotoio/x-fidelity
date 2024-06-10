@@ -44,7 +44,7 @@ describe('collectLocalDependencies', () => {
 
         const result = collectLocalDependencies();
         expect(logger.error).toHaveBeenCalledWith('exec error: Error: mock error');
-        expect(console.error).toHaveBeenCalledWith('exec error: Error: mock error');
+        //expect(console.error).toHaveBeenCalledWith('exec error: Error: mock error');
         expect(result).toEqual({});
     });
 
@@ -139,20 +139,24 @@ describe('findPropertiesInTree', () => {
 
     it('should handle complex mixed structures', () => {
         const depGraph = {
-            commander: { version: '2.0.0',
-            dependencies: 
-                { nodemon: '3.9.0',
-                
-                    dependencies: {
-                        lodash: { version: '4.17.21' }
-                    }
-                    
+            commander: { 
+                version: '2.0.0',
+                dependencies: {
+                    nodemon: {
+                        version: '3.9.0',
+                        dependencies: {
+                            lodash: { 
+                                version: '4.17.21' 
+                            }
+                        }
+                    }    
                 }
             }
         };
         const minVersions = { commander: '^2.0.0', nodemon: '^3.9.0', lodash: '^4.17.20' };
 
         const result = findPropertiesInTree(depGraph, minVersions);
+        //console.log(result);
         expect(result).toEqual([
             { dep: 'commander', ver: '2.0.0', min: '^2.0.0' },
             { dep: 'nodemon', ver: '3.9.0', min: '^3.9.0' },

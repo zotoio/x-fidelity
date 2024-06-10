@@ -23,9 +23,9 @@ export function collectLocalDependencies(): LocalDependencies {
     try {
         let stdout = execSync('npm ls -a --json');
         result = JSON.parse(stdout.toString());
-    } catch (error) {
-        logger.error(`exec error: ${error}`);
-        console.error(`exec error: ${error}`);
+    } catch (e) {
+        logger.error(`exec error: ${e}`);
+        console.error(`exec error: ${e}`);
     }
     return result;
 }
