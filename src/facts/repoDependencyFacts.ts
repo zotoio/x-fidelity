@@ -25,7 +25,7 @@ export function collectLocalDependencies(): LocalDependencies {
         result = JSON.parse(stdout.toString());
     } catch (e) {
         logger.error(`exec error: ${e}`);
-        console.error(`exec error: ${e}`);
+        //console.error(`exec error: ${e}`);
     }
     return result;
 }
