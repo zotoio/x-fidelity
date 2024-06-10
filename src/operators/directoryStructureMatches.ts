@@ -21,21 +21,28 @@ const standardStructure = {
     }
 };
 
+let hasChecked = false;
+
 const directoryStructureMatches: RuleDefn = {
     'name': 'directoryStructureMatches',
     'fn': (filePath: any, standardStructure: any) => {
-        const levels = filePath.split(path.sep);
-        let result = true;
-
-        if (levels.length > 1 && !standardStructure.level1.includes(levels[1])) {
-            result = false;
-        } else if (levels.length > 2 && !standardStructure.level2[levels[1]].includes(levels[2])) {
-            result = false;
-        } else if (levels.length > 3 && !standardStructure.level3[levels[2]].includes(levels[3])) {
-            result = false;
+        if (filePath !== 'yarn.lock' || hasChecked) {
+            return true;
         }
 
-        logger.debug(`directoryStructureMatches for '${filePath}': ${result}`);
+        const repoPath = path.dirname(filePath);
+        let result = true;
+
+        for (const level1Dir of standardStructure.level1) {
+            const level1Path = path.join(repoPath, level1Dir);
+            if (!fs.existsSync(level1Path) || !fs.lstatSync(level1Path).isDirectory()) {
+                result = false;
+                break;
+            }
+        }
+
+        logger.debug(`directoryStructureMatches for '${repoPath}': ${result}`);
+        hasChecked = true;
         return result;
     }
 };
