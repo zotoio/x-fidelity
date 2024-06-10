@@ -53,11 +53,11 @@ function ignored(file: string){
 
 const standardStructure = {
     "src": {
-        "core": true,
-        "utils": true,
-        "operators": true,
-        "rules": true,
-        "facts": true
+        "core": null,
+        "utils": null,
+        "operators": null,
+        "rules": null,
+        "facts": null
     }
 };
 
