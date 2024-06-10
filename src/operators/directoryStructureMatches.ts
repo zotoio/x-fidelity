@@ -15,13 +15,26 @@ const directoryStructureMatches: RuleDefn = {
         const repoPath = path.dirname(filePath);
         let result = true;
 
-        for (const level1Dir of standardStructure.level1) {
-            const level1Path = path.join(repoPath, level1Dir);
-            if (!fs.existsSync(level1Path) || !fs.lstatSync(level1Path).isDirectory()) {
-                result = false;
-                break;
+        function checkStructure(currentPath: string, structure: any): boolean {
+            for (const key in structure) {
+                const newPath = path.join(currentPath, key);
+                if (structure[key] === null) {
+                    if (!fs.existsSync(newPath)) {
+                        return false;
+                    }
+                } else {
+                    if (!fs.existsSync(newPath) || !fs.lstatSync(newPath).isDirectory()) {
+                        return false;
+                    }
+                    if (!checkStructure(newPath, structure[key])) {
+                        return false;
+                    }
+                }
             }
+            return true;
         }
+
+        result = checkStructure(repoPath, standardStructure);
 
         logger.debug(`directoryStructureMatches for '${repoPath}': ${result}`);
         hasChecked = true;

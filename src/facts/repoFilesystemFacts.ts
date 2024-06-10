@@ -52,21 +52,32 @@ function ignored(file: string){
 }
 
 const standardStructure = {
-    "level1": ["src", "tests", "docs"],
-    "level2": {
-        "src": ["core", "utils", "operators", "rules", "facts"],
-        "tests": ["unit", "integration"],
-        "docs": []
+    "src": {
+        "core": {
+            "cli.ts": null,
+            "engine.ts": null
+        },
+        "utils": {
+            "logger.ts": null
+        },
+        "operators": {
+            "index.ts": null,
+            "fileContains.ts": null,
+            "currentDependencies.ts": null
+        },
+        "rules": {
+            "index.ts": null
+        },
+        "facts": {
+            "repoDependencyFacts.ts": null,
+            "repoFilesystemFacts.ts": null
+        }
     },
-    "level3": {
-        "core": ["cli.ts", "engine.ts"],
-        "utils": ["logger.ts"],
-        "operators": ["index.ts", "fileContains.ts", "currentDependencies.ts"],
-        "rules": ["index.ts"],
-        "facts": ["repoDependencyFacts.ts", "repoFilesystemFacts.ts"],
-        "unit": [],
-        "integration": []
-    }
+    "tests": {
+        "unit": null,
+        "integration": null
+    },
+    "docs": null
 };
 
 export { collectRepoFileData, FileData, standardStructure }
