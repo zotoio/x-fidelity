@@ -1,0 +1,25 @@
+{
+    "name": "standardDirectoryStructure",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.filePath",
+                "operator": "directoryStructureMatches",
+                "value": {
+                    "fact": "standardStructure"
+                }
+            }
+        ]
+    },
+    "event": {
+        "type": "violation",
+        "params": {
+            "message": "The directory structure does not match the standard.",
+            "filePath": {
+                "fact": "fileData",
+                "path": "$.filePath"
+            }
+        }
+    }
+}
