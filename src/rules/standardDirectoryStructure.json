@@ -19,10 +19,6 @@
             "details": {
                 "fact": "fileData",
                 "path": "$.filePath"
-            },
-            "message": {
-                "fact": "fileData",
-                "path": "$.filePath"
             }
         }
     }

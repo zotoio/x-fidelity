@@ -15,32 +15,26 @@ const directoryStructureMatches: RuleDefn = {
         const repoPath = path.dirname(filePath);
         let result = true;
 
+        // check the directory structure of the repo against the standard structure
         function checkStructure(currentPath: string, structure: any): boolean {
             for (const key in structure) {
                 const newPath = path.join(currentPath, key);
-                if (structure[key] === null) {
-                    if (!fs.existsSync(newPath)) {
-                        return `Missing or invalid directory: ${newPath}`;
-                    }
+                logger.debug(`checking ${newPath}`);
+                if (!fs.existsSync(newPath) || !fs.lstatSync(newPath).isDirectory()) {
+                    logger.debug(`Missing or invalid directory: ${newPath}`);
+                    return false;
                 } else {
-                    if (!fs.existsSync(newPath) || !fs.lstatSync(newPath).isDirectory()) {
-                        return `Missing or invalid directory: ${newPath}`;
-                    }
-                    if (!checkStructure(newPath, structure[key])) {
-                        return false;
-                    }
+                    result = checkStructure(newPath, structure[key]);
                 }
             }
-            return true;
+            return result;
         }
 
         const checkResult = checkStructure(repoPath, standardStructure);
-        if (checkResult !== true) {
+        //console.log(checkResult)
+        if (!checkResult) {
             result = false;
-            logger.debug(`directoryStructureMatches for '${repoPath}': ${checkResult}`);
-        } else {
-            logger.debug(`directoryStructureMatches for '${repoPath}': ${result}`);
-        }
+        } 
         hasChecked = true;
         return result;
     }
