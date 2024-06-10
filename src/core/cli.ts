@@ -19,7 +19,8 @@ console.log(banner);
 logger.info([banner]);
 
 program
-    .option("-d, --dir <directory>", "The repo checkout directory");
+    .option("-d, --dir <directory>", "The repo checkout directory")
+    .option("-u, --url <url>", "The URL to fetch dependency versions from");
 
 program.parse();
 
