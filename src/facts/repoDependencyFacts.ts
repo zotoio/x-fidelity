@@ -1,5 +1,6 @@
 import { logger } from '../utils/logger';
 import _ from 'lodash';
+import axios from 'axios';
 import { execSync } from 'child_process';
 import { LocalDependencies, MinimumDepVersions, VersionData } from '../typeDefs';
 
@@ -8,10 +9,13 @@ import { LocalDependencies, MinimumDepVersions, VersionData } from '../typeDefs'
  * @returns The minimum dependency versions.
  */
 export async function collectMinimumDependencyVersions() {
-    return {
-        commander: '^2.0.0',
-        nodemon: '^3.9.0'
-    };
+    try {
+        const response = await axios.get('https://example.com/dependency-versions');
+        return response.data;
+    } catch (error) {
+        logger.error(`Error fetching minimum dependency versions: ${error}`);
+        return {};
+    }
 }
 
 /**
