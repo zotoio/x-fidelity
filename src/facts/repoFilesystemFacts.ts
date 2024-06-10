@@ -51,4 +51,22 @@ function ignored(file: string){
         || file.includes('LICENSE');
 }
 
-export { collectRepoFileData, FileData }
+const standardStructure = {
+    "level1": ["src", "tests", "docs"],
+    "level2": {
+        "src": ["core", "utils", "operators", "rules", "facts"],
+        "tests": ["unit", "integration"],
+        "docs": []
+    },
+    "level3": {
+        "core": ["cli.ts", "engine.ts"],
+        "utils": ["logger.ts"],
+        "operators": ["index.ts", "fileContains.ts", "currentDependencies.ts"],
+        "rules": ["index.ts"],
+        "facts": ["repoDependencyFacts.ts", "repoFilesystemFacts.ts"],
+        "unit": [],
+        "integration": []
+    }
+};
+
+export { collectRepoFileData, FileData, standardStructure }

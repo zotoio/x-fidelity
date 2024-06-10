@@ -1,6 +1,6 @@
 import { logger } from '../utils/logger';
 import { Engine,RuleProperties } from 'json-rules-engine';
-import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts'; 
+import { FileData, collectRepoFileData, standardStructure } from '../facts/repoFilesystemFacts'; 
 import { loadRules } from '../rules';
 import { operators } from '../operators';
 import { getDependencyVersionFacts, collectMinimumDependencyVersions } from '../facts/repoDependencyFacts';
@@ -38,7 +38,7 @@ async function analyzeCodebase(repoPath: string): Promise<any[]> {
     for (const file of fileData) {
         logger.info(`running engine for ${file.filePath}`);
 
-        const facts = {fileData: file, dependencyData: {installedDependencyVersions, minimumDependencyVersions}};
+        const facts = {fileData: file, dependencyData: {installedDependencyVersions, minimumDependencyVersions}, standardStructure};
         let fileFailures: RuleFailure[] = [];
 
         await engine.run(facts)
