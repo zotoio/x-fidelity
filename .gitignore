@@ -144,3 +144,4 @@ dist/
 # npm lock
 package-lock.json
 .aider*
+.aider.*
