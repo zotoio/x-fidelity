@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rimraf dist/ && tsc && yarn copy-files",
     "copy-files": "cp src/rules/*.json dist/rules/ && cp dist/index.js dist/x-fi",
-    "start": "nodemon --watch 'src/**/*.ts",
+    "start": "nodemon --watch 'src/**/*.ts'",
     "test": "jest"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
