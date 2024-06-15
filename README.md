@@ -74,7 +74,7 @@ The configuration file should be a JSON file containing the following structure:
 }
 ```
 
-TODO REMOTE CONF
+TODO REMOTE CONF + LLM
 
 ## License
 
