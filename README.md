@@ -29,11 +29,15 @@ x-fidelity is a CLI tool designed to enforce adherence to a set of opinionated f
 
 ## Installation
 
-To install x-fidelity, clone the repository and install the dependencies using yarn:
+Install x-fidelity with node 20+ and yarn:
 
 ```sh
+corepack enable
 yarn global add x-fidelity
+export PATH="$PATH:$(yarn global bin)"
 ```
+
+You may want to add that path line to ~/.bashrc
 
 ## Usage
 
@@ -49,7 +53,7 @@ xfidelity --dir <directory> [--configUrl <url>]
 Example:
 
 ```sh
-xfidelity --dir my-repo --configUrl https://example.com/config.json
+xfidelity --dir ./my-repo --configUrl https://example.com/config.json
 ```
 
 ## Configuration
