@@ -40,7 +40,7 @@
   "dependencies": {
     "@yarnpkg/lockfile": "^1.1.0",
     "axios": "^1.7.2",
-    "commander": "^11.1.0",
+    "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "format-json": "^1.0.3",
     "json-rules-engine": "^6.5.0",
