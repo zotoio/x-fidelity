@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rimraf dist/ && tsc && yarn copy-files",
     "copy-files": "cp src/rules/*.json dist/rules/ && cp dist/index.js dist/x-fi",
-    "start": "nodemon --watch 'src/**/*.ts'",
+    "start": "jest --watch",
     "test": "jest",
     "commit": "git-cz",
     "release": "semantic-release"
@@ -26,6 +26,7 @@
     "@types/node": "^20.14.2",
     "@types/parse-json": "^4.0.2",
     "@types/semver": "^7.5.8",
+    "@types/winston": "^2.4.4",
     "commitizen": "^4.3.0",
     "conventional-changelog-cli": "^5.0.0",
     "conventional-recommended-bump": "^10.0.0",
