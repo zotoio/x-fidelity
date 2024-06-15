@@ -52,7 +52,7 @@ import { getDependencyVersionFacts, collectMinimumDependencyVersions } from
                          details: result?.event?.params                                                                 
                      })                                                                                                 
                  })                                                                                                     
-             }).catch(e => console.log(e));                                                                             
+             }).catch(e => logger.error(e));                                                                             
                                                                                                                         
          if (fileFailures.length > 0) {                                                                                 
              results.push({ filePath: file.filePath, errors: fileFailures});                                            

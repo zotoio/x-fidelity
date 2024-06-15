@@ -21,8 +21,14 @@ jobs:
     - name: Install dependencies
       run: yarn install
 
+    - name: Run Build
+      run: yarn build  
+
+    - name: Run tests
+      run: yarn test  
+
     - name: Run semantic-release
       run: npx semantic-release
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
