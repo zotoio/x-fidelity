@@ -24,33 +24,5 @@ jobs:
     - name: Install dependencies
       run: yarn install
 
-    - name: Build
-      run: yarn build
-
     - name: Run tests
       run: yarn test
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '18'
-
-    - name: Install dependencies
-      run: yarn install
-
-    - name: Build
-      run: yarn build
-
-    - name: Publish to npm
-      run: yarn publish --new-version ${{ env.VERSION }}
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

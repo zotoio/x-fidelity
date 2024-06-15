@@ -7,7 +7,8 @@
     "build": "rimraf dist/ && tsc && yarn copy-files",
     "copy-files": "cp src/rules/*.json dist/rules/ && cp dist/index.js dist/x-fi",
     "start": "nodemon --watch 'src/**/*.ts'",
-    "test": "jest"
+    "test": "jest",
+    "release": "semantic-release"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
@@ -29,7 +30,10 @@
     "typescript": "^4.5.2",
     "conventional-changelog-cli": "^2.2.2",
     "conventional-recommended-bump": "^6.1.0",
-    "semver": "^7.3.5"
+    "semver": "^7.3.5",
+    "semantic-release": "^19.0.5",
+    "commitizen": "^4.2.5",
+    "cz-conventional-changelog": "^3.3.0"
   },
   "dependencies": {
     "@yarnpkg/lockfile": "^1.1.0",
@@ -43,6 +47,11 @@
     "semver": "^7.6.2",
     "winston": "^3.13.0",
     "yarn": "^1.22.21"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
