@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "cli for opinionated framework adherence checks",
   "main": "dist/x-fi",
+  "bin": {
+    "x-fi": "./dist/x-fi"
+  },
   "scripts": {
     "build": "rimraf dist/ && tsc && yarn copy-files",
     "copy-files": "cp src/rules/*.json dist/rules/ && cp dist/index.js dist/x-fi",
