@@ -74,6 +74,8 @@ The configuration file should be a JSON file containing the following structure:
 }
 ```
 
+TODO REMOTE CONF
+
 ## License
 
 This project is licensed under the MIT License.
