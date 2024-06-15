@@ -24,6 +24,7 @@
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.17.4",
     "@types/node": "^16.18.97",
+    "@types/parse-json": "^4.0.2",
     "@types/semver": "^7.5.8",
     "commitizen": "^4.3.0",
     "conventional-changelog-cli": "^2.2.2",

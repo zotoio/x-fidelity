@@ -32,9 +32,7 @@ x-fidelity is a CLI tool designed to enforce adherence to a set of opinionated f
 To install x-fidelity, clone the repository and install the dependencies using yarn:
 
 ```sh
-git clone git@github.com:zotoio/x-fidelity.git
-cd x-fidelity
-yarn install
+yarn global add x-fidelity
 ```
 
 ## Usage
@@ -42,7 +40,7 @@ yarn install
 To run x-fidelity, use the following command:
 
 ```sh
-yarn start --dir <directory> [--configUrl <url>]
+x-fi --dir <directory> [--configUrl <url>]
 ```
 
 - `--dir <directory>`: The directory of the repository to analyze.
@@ -51,7 +49,7 @@ yarn start --dir <directory> [--configUrl <url>]
 Example:
 
 ```sh
-yarn start --dir my-repo --configUrl https://example.com/config.json
+x-fi --dir my-repo --configUrl https://example.com/config.json
 ```
 
 ## Configuration
