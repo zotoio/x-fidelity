@@ -2,17 +2,18 @@
   "name": "x-fidelity",
   "version": "0.0.1",
   "description": "cli for opinionated framework adherence checks",
-  "main": "dist/x-fi",
+  "main": "dist/xfidelity",
   "bin": {
-    "x-fi": "./dist/x-fi"
+    "xfidelity": "./dist/xfidelity"
   },
   "scripts": {
     "build": "rimraf dist/ && tsc && yarn copy-files",
-    "copy-files": "cp src/rules/*.json dist/rules/ && cp dist/index.js dist/x-fi",
+    "copy-files": "cp src/rules/*.json dist/rules/ && cp dist/index.js dist/xfidelity",
     "start": "jest --watch",
     "test": "jest",
     "commit": "git-cz",
-    "release": "semantic-release"
+    "release": "semantic-release",
+    "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",

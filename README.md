@@ -40,7 +40,7 @@ yarn global add x-fidelity
 To run x-fidelity, use the following command:
 
 ```sh
-x-fi --dir <directory> [--configUrl <url>]
+xfidelity --dir <directory> [--configUrl <url>]
 ```
 
 - `--dir <directory>`: The directory of the repository to analyze.
@@ -49,7 +49,7 @@ x-fi --dir <directory> [--configUrl <url>]
 Example:
 
 ```sh
-x-fi --dir my-repo --configUrl https://example.com/config.json
+xfidelity --dir my-repo --configUrl https://example.com/config.json
 ```
 
 ## Configuration
