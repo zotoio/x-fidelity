@@ -1,0 +1,23 @@
+{
+    "name": "openaiAnalysisRule",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileContent",
+                "operator": "openaiAnalysis",
+                "value": "Analyze the following facts and determine if they pass the criteria: "
+            }
+        ]
+    },
+    "event": {
+        "type": "violation",
+        "params": {
+            "message": "OpenAI analysis failed for the provided facts.",
+            "details": {
+                "fact": "fileData",
+                "path": "$.filePath"
+            }
+        }
+    }
+}
