@@ -6,6 +6,8 @@ jobs:
   code_review_job:
     runs-on: ubuntu-latest
     name: ChatGPT Code Review
+    env:
+      GITHUB_WORKSPACE: /app
     steps:
       - name: GenAI Code Review
         uses: cirolini/genai-code-review@v2
