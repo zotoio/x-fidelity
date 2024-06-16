@@ -13,10 +13,12 @@ const openaiAnalysis: RuleDefn = {
         let result = false;
         const model = process.env.OPENAI_MODEL || 'gpt-4-turbo';
 
+        const fullPrompt = `${prompt}\n\nFacts:\n${JSON.stringify(facts, null, 2)}`;
+
         try {
             const response = await openai.createCompletion({
                 model: model,
-                prompt: prompt,
+                prompt: fullPrompt,
                 max_tokens: 150,
                 n: 1,
                 stop: null,
