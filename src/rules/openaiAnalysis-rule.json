@@ -1,12 +1,19 @@
 {
+{
     "name": "openaiAnalysisRule",
     "conditions": {
         "all": [
             {
-                "fact": "fileData",
-                "path": "$.fileContent",
-                "operator": "openaiAnalysis",
-                "value": "Analyze the following facts and determine if they pass the criteria: "
+                "fact": "openaiAnalysis",
+                "params": {
+                    "prompt": "Analyze the following facts and determine if they pass the criteria: ",
+                    "facts": {
+                        "fact": "fileData",
+                        "path": "$.fileContent"
+                    }
+                },
+                "operator": "equal",
+                "value": "pass"
             }
         ]
     },
@@ -20,4 +27,5 @@
             }
         }
     }
+}
 }
