@@ -7,8 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     name: ChatGPT Code Review
     defaults:
-        run:
-           working-directory: /app
+      run:
+        working-directory: /app
     env:
       GITHUB_WORKSPACE: /app
     steps:
