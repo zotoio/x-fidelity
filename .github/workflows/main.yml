@@ -12,7 +12,7 @@ jobs:
         uses: cirolini/genai-code-review@v2
         with:
           args: "/usr/local/bin/python /app/src/main.py"
-          openai_api_key: ${{ secrets.OPENAI_AI_KEY }}
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           github_token: ${{ secrets.GH_TOKEN }}
           github_pr_id: ${{ github.event.number }}
           openai_model: "gpt-4-turbo" # optional
