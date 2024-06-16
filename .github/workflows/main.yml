@@ -8,7 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     name: ChatGPT Code Review
     steps:
-      - run: cp -R /app/* ${{github.workspace}}/
       - name: GenAI Code Review
         uses: cirolini/genai-code-review@v2
         with:
