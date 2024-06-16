@@ -12,6 +12,7 @@ jobs:
       - name: GenAI Code Review
         uses: cirolini/genai-code-review@v2
         with:
+          entrypoint: "python /app/src/main.py"
           openai_api_key: ${{ secrets.OPENAI_AI_KEY }}
           github_token: ${{ secrets.GH_TOKEN }}
           github_pr_id: ${{ github.event.number }}
