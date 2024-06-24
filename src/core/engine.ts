@@ -5,7 +5,8 @@ import { loadRules } from '../rules';
 import { operators } from '../operators';
 import { ScanResult, RuleFailure } from '../typeDefs';
 import { getDependencyVersionFacts, collectMinimumDependencyVersions } from                    
- '../facts/repoDependencyFacts';                                                                                        
+ '../facts/repoDependencyFacts';                                        
+import { openaiAnalysisFacts } from '../facts/openaiAnalysisFacts';                                                
                                                                                                                         
  async function analyzeCodebase(repoPath: string, configUrl?: string): Promise<any[]> {                                 
      const installedDependencyVersions = await getDependencyVersionFacts();                                             
@@ -33,7 +34,9 @@ import { getDependencyVersionFacts, collectMinimumDependencyVersions } from
                                                                                                                         
      engine.on('failure', function(event, almanac, ruleResult) {                                                        
          //console.log(event)                                                                                           
-     });                                                                                                                
+     });                           
+     
+     engine.addFact('openaiAnalysisFacts', openaiAnalysisFacts)
                                                                                                                         
      // Run the engine for each file's data                                                                             
      let results: ScanResult[] = [];                                                                                    

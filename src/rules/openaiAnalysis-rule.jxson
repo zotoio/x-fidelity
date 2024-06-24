@@ -3,9 +3,9 @@
     "conditions": {
         "all": [
             {
-                "fact": "openaiAnalysis",
+                "fact": "openaiAnalysisFacts",
                 "params": {
-                    "prompt": "Analyze the following facts and determine if they pass the criteria: ",
+                    "prompt": "Review the following code and determine if there are any critical security issues, and report each in json form in an array of objects: ",
                     "facts": {
                         "fact": "fileData",
                         "path": "$.fileContent"
