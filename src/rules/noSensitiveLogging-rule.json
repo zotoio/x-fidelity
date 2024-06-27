@@ -1,0 +1,23 @@
+{
+    "name": "noSensitiveLogging",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileContent",
+                "operator": "contains",
+                "value": "token"
+            },
+            {
+                "fact": "fileContent",
+                "operator": "contains",
+                "value": "secret"
+            }
+        ]
+    },
+    "event": {
+        "type": "noSensitiveLogging",
+        "params": {
+            "message": "Sensitive data (token or secret) should not be logged."
+        }
+    }
+}

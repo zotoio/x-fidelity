@@ -22,7 +22,7 @@ async function loadRules() {
             console.error(e);
         }       
     }));
-    return rules;
+    return rules.filter(rule => rule !== undefined);
 }
 
 
