@@ -1,13 +1,14 @@
 import { RuleDefn } from '../typeDefs';
 import { logger } from '../utils/logger';
-import { calculateComplexity } from 'complexity-calculator'; // Assuming a library for complexity calculation
+import { analyze } from 'complexity-report';
 
 const codeComplexity: RuleDefn = {
     'name': 'codeComplexity',
     'fn': (fileContent: any, maxComplexity: any) => {
         let result = false;
 
-        const complexity = calculateComplexity(fileContent);
+        const report = analyze(fileContent);
+        const complexity = report.aggregate.complexity.cyclomatic;
         if (complexity <= maxComplexity) {
             result = true;
         }
