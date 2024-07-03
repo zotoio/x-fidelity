@@ -1,11 +1,14 @@
-import { RuleDefn } from '../typeDefs';
+import { OperatorDefn } from '../typeDefs';
 import { currentDependencies } from './currentDependencies';
 import { fileContains } from './fileContains';
 import { directoryStructureMatches } from './directoryStructureMatches';
-import { codeComplexity } from './codeComplexity';
+import { openaiAnalysisPasses } from './openaiAnalysisPasses';
+
+
+let operators: OperatorDefn[] = [];
 operators.push(currentDependencies);
 operators.push(fileContains);
 operators.push(directoryStructureMatches);
-operators.push(codeComplexity);
+operators.push(openaiAnalysisPasses);
 
 export { operators };

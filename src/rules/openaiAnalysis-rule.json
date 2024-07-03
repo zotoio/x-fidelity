@@ -1,0 +1,27 @@
+{
+    "name": "openaiAnalysisRule",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "yarn.lock"
+            },
+            {
+                "fact": "openaiAnalysis",
+                "params": {
+                    "prompt": "what are the most important 5 things to fix?"
+                },
+                "operator": "equal",
+                "value": "fail"
+            }
+        ]
+    },
+    "event": {
+        "type": "violation",
+        "params": {
+            "message": "OpenAI analysis failed for the provided prompt."
+        }
+    }
+}

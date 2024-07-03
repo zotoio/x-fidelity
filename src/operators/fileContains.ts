@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger';
-import { RuleDefn } from '../typeDefs';
+import { OperatorDefn } from '../typeDefs';
 
-const fileContains: RuleDefn = {
+const fileContains: OperatorDefn = {
     'name': 'fileContains', 
     'fn': (fileContent: any, checkString: any) => {
         let result = false;

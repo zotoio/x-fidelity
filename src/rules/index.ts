@@ -3,15 +3,13 @@ import { RuleProperties } from 'json-rules-engine';
 import * as fs from 'fs';
 import * as path from 'path';
 
-let rules: RuleProperties[] = [];
-
 // import each json file in local directory and add to rules array as a RuleProperties object
 async function loadRules() {
     logger.debug(`loading json rules..`);
-    const ruleFiles = (await fs.promises.readdir(__dirname)).filter(file => file.endsWith('.json'));
+    const ruleFiles = (await fs.promises.readdir(__dirname)).filter(file => file.endsWith('-rule.json'));
     
     logger.debug(`found ${ruleFiles.length} rule files to load.`);
-    const rules = await Promise.all(ruleFiles.map(async file => {
+    const rules: RuleProperties[] = await Promise.all(ruleFiles.map(async file => {
         try {
             logger.debug(`loading ${file}...`);
             const rule = await import(path.join(__dirname, file));

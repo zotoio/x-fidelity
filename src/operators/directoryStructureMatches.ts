@@ -1,11 +1,11 @@
-import { RuleDefn } from '../typeDefs';
+import { OperatorDefn } from '../typeDefs';
 import { logger } from '../utils/logger';
 import * as path from 'path';
 import * as fs from 'fs';
 
 let hasChecked = false;
 
-const directoryStructureMatches: RuleDefn = {
+const directoryStructureMatches: OperatorDefn = {
     'name': 'directoryStructureMatches',
     'fn': (filePath: any, standardStructure: any) => {
         if (filePath !== 'yarn.lock' || hasChecked) {

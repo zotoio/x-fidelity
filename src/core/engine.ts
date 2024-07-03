@@ -6,13 +6,14 @@ import { operators } from '../operators';
 import { ScanResult, RuleFailure } from '../typeDefs';
 import { getDependencyVersionFacts, collectMinimumDependencyVersions } from                    
  '../facts/repoDependencyFacts';                                        
-import { openaiAnalysisFacts } from '../facts/openaiAnalysisFacts';                                                
+import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../facts/openaiAnalysisFacts';                                                
                                                                                                                         
  async function analyzeCodebase(repoPath: string, configUrl?: string): Promise<any[]> {                                 
      const installedDependencyVersions = await getDependencyVersionFacts();                                             
      const fileData: FileData[] = await collectRepoFileData(repoPath);                                                  
      const minimumDependencyVersions = await collectMinimumDependencyVersions(configUrl);                               
-     const standardStructure = await collectStandardDirectoryStructure(configUrl);                                                 
+     const standardStructure = await collectStandardDirectoryStructure(configUrl); 
+     const openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);                                                
                                                                                                                         
      const engine = new Engine([], { replaceFactsInEventParams: true });                                                
                                                                                                                         
@@ -27,8 +28,8 @@ import { openaiAnalysisFacts } from '../facts/openaiAnalysisFacts';
          try {                                                                                                          
              engine.addRule(rule)                                                                                       
          } catch (e: any) {                                                                                             
-             console.error(`Error loading rule: ${rule?.name}`);                                                        
-             console.error(e.message);                                                                                  
+             logger.error(`Error loading rule: ${rule?.name}`);                                                        
+             logger.error(e.message);                                                                                  
          }                                                                                                              
      });                                                                                                                
                                                                                                                         
@@ -36,15 +37,23 @@ import { openaiAnalysisFacts } from '../facts/openaiAnalysisFacts';
          //console.log(event)                                                                                           
      });                           
      
-     engine.addFact('openaiAnalysisFacts', openaiAnalysisFacts)
+     engine.addFact('openaiAnalysis', openaiAnalysis);
+     engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
                                                                                                                         
      // Run the engine for each file's data                                                                             
      let results: ScanResult[] = [];                                                                                    
      for (const file of fileData) {                                                                                     
          logger.info(`running engine for ${file.filePath}`);                                                            
                                                                                                                         
-         const facts = {fileData: file, dependencyData: {installedDependencyVersions, minimumDependencyVersions},       
- standardStructure};                                                                                                    
+         const facts = {
+            fileData: file, 
+            dependencyData: {
+                installedDependencyVersions, 
+                minimumDependencyVersions
+            },       
+            standardStructure
+            
+        };                                                                                                    
          let fileFailures: RuleFailure[] = [];                                                                          
                                                                                                                         
          await engine.run(facts)                                                                                        

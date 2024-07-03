@@ -1,6 +1,6 @@
 import { OperatorEvaluator } from 'json-rules-engine';
 
-export type RuleDefn = {
+export type OperatorDefn = {
     name: string,
     fn: OperatorEvaluator<string, any>
 }

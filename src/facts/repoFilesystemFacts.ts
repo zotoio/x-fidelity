@@ -7,6 +7,7 @@ interface FileData {
     fileName: string;
     filePath: string;
     fileContent: string;
+    fileAst?: any;
 }
 
 async function parseFile(filePath: string): Promise<FileData> {
@@ -25,7 +26,7 @@ async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
 
     for (const file of files) {
         const filePath = path.join(repoPath, file);
-        if (!ignored(filePath)) {
+        if (!ignored(filePath) && !ignored(file)) {
             const stats = await fs.promises.lstat(filePath);
             if (stats.isDirectory()) {
                 const dirFilesData = await collectRepoFileData(filePath);

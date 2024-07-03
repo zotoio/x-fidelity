@@ -1,8 +1,8 @@
 import { logger } from '../utils/logger';
-import { RuleDefn, VersionData } from '../typeDefs';
+import { OperatorDefn, VersionData } from '../typeDefs';
 import * as semver from 'semver';
 
-const currentDependencies: RuleDefn = {
+const currentDependencies: OperatorDefn = {
     'name': 'currentDependencies', 
     'fn': (filePath: any, dependencyData: any) => {
         let result = false;
