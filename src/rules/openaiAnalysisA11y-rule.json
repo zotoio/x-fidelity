@@ -1,0 +1,27 @@
+{
+    "name": "openaiAnalysisA11yRule",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "yarn.lock"
+            },
+            {
+                "fact": "openaiAnalysis",
+                "params": {
+                    "prompt": "Identify any accessibility (a11y) issues in the codebase."
+                },
+                "operator": "equal",
+                "value": "fail"
+            }
+        ]
+    },
+    "event": {
+        "type": "violation",
+        "params": {
+            "message": "OpenAI analysis detected accessibility (a11y) issues in the codebase."
+        }
+    }
+}
