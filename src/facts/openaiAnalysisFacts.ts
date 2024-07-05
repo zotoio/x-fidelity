@@ -1,17 +1,16 @@
 import { logger } from '../utils/logger';
 import { OpenAI } from 'openai';
-import { createSourceFile, ScriptTarget } from 'typescript';
 import { FileData } from './repoFilesystemFacts';
 import { ChatCompletionCreateParams } from 'openai/resources/chat/completions';
 import { Almanac } from 'json-rules-engine';
-import { ChatCompletionSystemMessageParam } from 'openai/resources';
 
-const configuration = {
-    apiKey: process.env.OPENAI_API_KEY,
-};
-const openai = new OpenAI(configuration);
-
-let hasChecked = false;
+let openai: OpenAI;
+if (process.env.OPENAI_API_KEY) {
+    const configuration = {
+        apiKey: process.env.OPENAI_API_KEY,
+    };
+    openai = new OpenAI(configuration); 
+}    
 
 const openaiAnalysis = async function (params: any, almanac: Almanac) {
     let result: object = {'result': []};
@@ -23,9 +22,11 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
     //console.log(almanac.factValue('openaiSystemPrompt'));
     //console.log(almanac.factValue('fileData'));
 
-    if (fileData.fileName !== 'yarn.lock' || hasChecked) {
+    if (fileData.fileName !== 'yarn.lock') {
         return result;
     }
+
+    console.log(`running global openaiAnalysis with prompt variant: ${params.prompt}..`);
 
     try {
         const payload: ChatCompletionCreateParams = {
@@ -42,25 +43,26 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
                         - description: Detail of the issue.
                         - filePaths: Array of file paths involved. 
                         - suggestion: The suggestion for the fix.
-                        - codeSnippets: Array of code snippets that needs to be fixed in each file with line number and before and after code.
+                        - codeSnippets: Array of code snippets that needs to be fixed in each file with lineNumber of the issue in the file and before and after code.
                     3. do not include strings or markdown around the array.` }
             ]
         };
 
-        console.dir(payload, { depth: null });
-
+        logger.debug(`openaiAnalysis: payload: ${JSON.stringify(payload)}`);
         const response: OpenAI.Chat.Completions.ChatCompletion = await openai.chat.completions.create(payload);
-        console.log(response);
+        logger.debug(`openaiAnalysis: response: ${JSON.stringify(response)}`);
 
-        const analysis = {'result': JSON.parse(response?.choices[0].message.content ?? '')};
-        console.dir(analysis, { depth: null });
+        const analysis = {
+            'result': JSON.parse(response?.choices[0].message.content ?? '')
+        };
+
+        almanac.addRuntimeFact(params.resultFact, analysis);
 
         result = analysis;
     } catch (error) {
         logger.error(`openaiAnalysis: Error analyzing facts with OpenAI: ${error}`);
     }
 
-    hasChecked = true;
     return result;
 }
 
@@ -75,7 +77,7 @@ const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
     //     return file;                                                                                                             
     // }); 
     const formattedFileData = fileData.map((file: FileData) => {     
-        console.log(`formatting ${file.filePath} of length: ${file.fileContent.length}`);                                                                                                             
+        logger.debug(`formatting ${file.filePath} of length: ${file.fileContent.length}`);                                                                                                             
         if (!['yarn.lock'].includes(file.fileName)) {
             // remove tabs and newlines
             //file.fileContent = file.fileContent.replace(/[\n\t]/g, "");
@@ -84,7 +86,7 @@ const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
 
             return file;
         } else {
-            console.log(file.filePath + ' skipped.');
+            logger.debug(file.filePath + ' skipped.');
         }                                                                                                         
     }); 
     

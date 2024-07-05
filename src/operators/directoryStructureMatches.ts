@@ -12,6 +12,8 @@ const directoryStructureMatches: OperatorDefn = {
             return true;
         }
 
+        console.log(`running global directory structure analysis..`);
+
         const repoPath = path.dirname(filePath);
         let result = true;
 

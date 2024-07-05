@@ -7,13 +7,19 @@ const fileContains: OperatorDefn = {
         let result = false;
 
         const regex = new RegExp(checkString, 'g');
-        if (regex.test(fileContent)) {
-            result = true;
+        let lines = fileContent.split('\n');
+        let lineNumber = 0;
+        for (let line of lines) {
+            lineNumber++;
+            if (regex.test(line)) {
+                logger.debug(`fileContains '${checkString}' found in line ${lineNumber}: ${line}`);
+                result = true
+            }
         }
-        logger.debug(`fileContains '${checkString}': ${result}`);
+        
         return result;
         
-    }
+    } // oracle
 }
 
 export { fileContains };

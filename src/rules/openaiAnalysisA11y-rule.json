@@ -13,8 +13,8 @@
                 "params": {
                     "prompt": "Identify any accessibility (a11y) issues in the codebase."
                 },
-                "operator": "equal",
-                "value": "fail"
+                "operator": "openaiAnalysisHighSeverity",
+                "value": 8
             }
         ]
     },

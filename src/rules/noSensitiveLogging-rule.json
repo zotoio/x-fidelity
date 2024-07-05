@@ -17,7 +17,7 @@
         ]
     },
     "event": {
-        "type": "noSensitiveLogging",
+        "type": "violation",
         "params": {
             "message": "Sensitive data (token or secret) should not be logged."
         }

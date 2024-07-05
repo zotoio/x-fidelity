@@ -1,21 +1,19 @@
 {
     "name": "noDatabases",
     "conditions": {
-        "not": {
-            "any": [
-                {
-                    "fact": "fileData",
-                    "path": "$.fileContent",
-                    "operator": "fileContains",
-                    "value": "oracle"
-                }
-            ]
-        }
+        "any": [
+            {
+                "fact": "fileData",
+                "path": "$.fileContent",
+                "operator": "fileContains",
+                "value": "oracle"
+            }
+        ]
     },
     "event": {
         "type": "violation",
         "params": {
-            "message": "noDatabases: code must not directly call databases"
+            "message": "code must not directly call databases"
         }
     }
 }

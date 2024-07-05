@@ -4,7 +4,7 @@
         "all": [
             {
                 "fact": "fileData",
-                "path": "$.filePath",
+                "path": "$.fileName",
                 "operator": "currentDependencies",
                 "value": {
                     "fact": "dependencyData"

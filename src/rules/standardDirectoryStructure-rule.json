@@ -4,6 +4,12 @@
         "all": [
             {
                 "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "yarn.lock"
+            },
+            {
+                "fact": "fileData",
                 "path": "$.filePath",
                 "operator": "directoryStructureMatches",
                 "value": {

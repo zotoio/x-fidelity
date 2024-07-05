@@ -4,14 +4,14 @@ import * as semver from 'semver';
 
 const currentDependencies: OperatorDefn = {
     'name': 'currentDependencies', 
-    'fn': (filePath: any, dependencyData: any) => {
-        let result = false;
+    'fn': (fileName: any, dependencyData: any) => {
+        let result = true;
 
         // this is a special rule we only run on the root package.json, however it checks the entire dependency tree.
-        if (filePath !== 'package.json') {
-            return true;
+        if (fileName !== 'yarn.lock') {
+            return false;
         }
-        logger.debug(`currentDependencies: working..`);
+        console.log(`running global dependency currency checks..`);
         
         try {
             logger.debug(`currentDependencies: processing ${dependencyData.installedDependencyVersions}`);
@@ -26,10 +26,10 @@ const currentDependencies: OperatorDefn = {
                     throw new Error(msg);
                 }
             });
-            result = true;
+            result = false;
         } catch (e) {
         
-            result = false;
+            result = true;
         }
         logger.debug(`currentDependencies: ${result}`);
         return result;

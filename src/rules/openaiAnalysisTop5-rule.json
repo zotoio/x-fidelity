@@ -1,5 +1,5 @@
 {
-    "name": "openaiAnalysisRule",
+    "name": "openaiAnalysisTop5Rule",
     "conditions": {
         "all": [
             {
@@ -11,17 +11,21 @@
             {
                 "fact": "openaiAnalysis",
                 "params": {
-                    "prompt": "what are the most important 5 things to fix?"
+                    "prompt": "what are the most important 5 things to fix?",
+                    "resultFact": "openaiAnalysisTop5"
                 },
-                "operator": "equal",
-                "value": "fail"
+                "operator": "openaiAnalysisHighSeverity",
+                "value": 8
             }
         ]
     },
     "event": {
         "type": "violation",
         "params": {
-            "message": "OpenAI analysis failed for the provided prompt."
+            "message": "OpenAI analysis failed for the provided prompt.",
+            "results": {
+                "fact": "openaiAnalysisTop5"
+            }
         }
     }
 }

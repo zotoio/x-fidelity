@@ -27,6 +27,7 @@ async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
     for (const file of files) {
         const filePath = path.join(repoPath, file);
         if (!ignored(filePath) && !ignored(file)) {
+            console.log(`adding file: ${filePath}`);
             const stats = await fs.promises.lstat(filePath);
             if (stats.isDirectory()) {
                 const dirFilesData = await collectRepoFileData(filePath);
