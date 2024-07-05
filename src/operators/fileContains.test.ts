@@ -24,4 +24,12 @@ describe('fileContains', () => {
         const checkString = '\\buniverse\\b';
         expect(fileContains.fn(fileContent, checkString)).toBe(false);
     });
+
+    it('logs a debug message when the checkString is found', () => {
+        const fileContent = 'Hello, world!';
+        const checkString = 'world';
+        const debugSpy = jest.spyOn(logger, 'debug');
+        fileContains.fn(fileContent, checkString);
+        expect(debugSpy).toHaveBeenCalledWith(`fileContains '${checkString}' found in line 1: Hello, world!`);
+    });
 });

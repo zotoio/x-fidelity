@@ -2,14 +2,14 @@ import { logger } from '../utils/logger';
 import { currentDependencies } from './currentDependencies';
 
 describe('currentDependencies', () => {
-    it('returns true when filePath is not package.json', () => {
-        const filePath = 'notPackage.json';
+    it('returns true when filePath is not yarn.lock', () => {
+        const filePath = 'notYarn.lock';
         const dependencyData = {};
         expect(currentDependencies.fn(filePath, JSON.stringify(dependencyData))).toBe(true);
     });
 
     it('returns true when all dependencies are up-to-date', () => {
-        const filePath = 'package.json';
+        const filePath = 'yarn.lock';
         const dependencyData = {
             installedDependencyVersions: [
                 { dep: 'dep1', ver: '2.0.0', min: '1.0.0' },
@@ -20,7 +20,7 @@ describe('currentDependencies', () => {
     });
 
     it('returns false when at least one dependency is outdated', () => {
-        const filePath = 'package.json';
+        const filePath = 'yarn.lock';
         const dependencyData = {
             installedDependencyVersions: [
                 { dep: 'dep1', ver: '.0.0', min: '1.0.0' },

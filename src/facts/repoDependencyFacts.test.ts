@@ -22,6 +22,13 @@ describe('collectMinimumDependencyVersions', () => {
             nodemon: '^3.9.0'
         });
     });
+
+    it('should handle errors when fetching minimum dependency versions', async () => {
+        (axios.get as jest.Mock).mockRejectedValue(new Error('mock error'));
+        const result = await collectMinimumDependencyVersions('mockConfigUrl');
+        expect(logger.error).toHaveBeenCalledWith('Error fetching minimum dependency versions from configUrl: Error: mock error');
+        expect(result).toEqual({});
+    });
 });
 
 describe('collectLocalDependencies', () => {
