@@ -1,3 +1,11 @@
+# [1.1.0](https://github.com/zotoio/x-fidelity/compare/v1.0.0...v1.1.0) (2024-07-05)
+
+
+### Features
+
+* **openai:** experiment and tidy ([fd38f73](https://github.com/zotoio/x-fidelity/commit/fd38f738820b4f11660150022b1b3595ea49521d))
+* **openai:** testing ([1518710](https://github.com/zotoio/x-fidelity/commit/1518710a3f11edfb1b2de0151fe16713163b8425))
+
 # 1.0.0 (2024-06-15)
 
 
