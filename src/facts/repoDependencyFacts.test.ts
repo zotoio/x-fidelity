@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import axios from 'axios';
 import { collectMinimumDependencyVersions, collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree } from './repoDependencyFacts';
 import { logger } from '../utils/logger';
 import _ from 'lodash';
@@ -7,6 +8,7 @@ jest.mock('child_process', () => ({
     execSync: jest.fn(),
 }));
 
+jest.mock('axios');
 jest.mock('../utils/logger', () => ({
     logger: {
         error: jest.fn(),
