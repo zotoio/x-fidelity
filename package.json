@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "cli for opinionated framework adherence checks",
   "main": "dist/xfidelity",
+  "type": "module",
   "bin": {
     "xfidelity": "./dist/xfidelity"
   },
@@ -13,7 +14,8 @@
     "test": "jest",
     "commit": "git-cz",
     "release": "semantic-release",
-    "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD"
+    "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
+    "build-run": "yarn build && node . --dir . | jq -R -r '. as $line | try fromjson catch $line'"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
@@ -34,6 +36,7 @@
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.17.4",
     "@types/node": "^20.14.2",
+    "@types/ora": "^3.2.0",
     "@types/parse-json": "^4.0.2",
     "@types/semver": "^7.5.8",
     "@types/winston": "^2.4.4",
@@ -59,6 +62,7 @@
     "lodash": "^4.17.21",
     "nodemon": "^3.0.2",
     "openai": "^4.19.0",
+    "ora": "^8.0.1",
     "semver": "^7.6.2",
     "winston": "^3.13.0",
     "yarn": "^1.22.21"
