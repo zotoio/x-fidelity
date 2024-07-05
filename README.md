@@ -78,6 +78,24 @@ The configuration file should be a JSON file containing the following structure:
 }
 ```
 
+## OpenAI Integration
+
+x-fidelity can integrate with OpenAI to provide advanced code analysis. To enable OpenAI features, you need to set the `OPENAI_API_KEY` environment variable with your OpenAI API key.
+
+### Getting an OpenAI API Key
+
+1. Sign up for an account at [OpenAI](https://www.openai.com/).
+2. Navigate to the API section and generate a new API key.
+3. Set the `OPENAI_API_KEY` environment variable in your terminal or CI/CD pipeline.
+
+```sh
+export OPENAI_API_KEY=your_openai_api_key
+```
+
+### Disclaimer
+
+Using OpenAI's API may incur costs. Please refer to OpenAI's pricing page for more details.
+
 ## Rules
 
 ### Sensitive Logging
