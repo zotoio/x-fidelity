@@ -15,7 +15,7 @@ async function analyzeCodebase(repoPath: string, configUrl?: string): Promise<an
     const standardStructure = await collectStandardDirectoryStructure(configUrl);
     const openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
 
-    const engine = new Engine([], { replaceFactsInEventParams: true });
+    const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
     // Add operators to engine                                                                                         
     operators.map((operator) => {

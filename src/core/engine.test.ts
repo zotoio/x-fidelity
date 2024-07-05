@@ -34,6 +34,7 @@ describe('analyzeCodebase', () => {
         (Engine as jest.Mock).mockImplementation(() => ({
             addOperator: jest.fn(),
             addRule: jest.fn(),
+            addFact: jest.fn(),
             on: jest.fn(),
             run: engineRunMock
         }));
@@ -65,6 +66,7 @@ describe('analyzeCodebase', () => {
         (Engine as jest.Mock).mockImplementation(() => ({
             addOperator: jest.fn(),
             addRule: jest.fn(),
+            addFact: jest.fn(),
             on: jest.fn(),
             run: engineRunMock
         }));
@@ -96,6 +98,7 @@ describe('analyzeCodebase', () => {
         (Engine as jest.Mock).mockImplementation(() => ({
             addOperator: jest.fn(),
             addRule: jest.fn(),
+            addFact: jest.fn(),
             on: jest.fn(),
             run: engineRunMock
         }));

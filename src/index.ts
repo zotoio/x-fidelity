@@ -3,7 +3,7 @@ import { logger } from './utils/logger';
 let json = require('format-json');
 import { options } from "./core/cli"; 
 import { analyzeCodebase } from "./core/engine";
-
+//import ora, { oraPromise } from 'ora';
 
 //console.log(`analyzing repo at path: [${options.dir}]`);
 

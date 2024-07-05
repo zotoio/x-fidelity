@@ -1,5 +1,5 @@
 {
-    "name": "noSensitiveLogging",
+    "name": "sensitiveLogging",
     "conditions": {
         "any": [
             {
@@ -13,13 +13,19 @@
                 "path": "$.fileContent",
                 "operator": "fileContains",
                 "value": "secret"
+            },
+            {
+                "fact": "fileData",
+                "path": "$.fileContent",
+                "operator": "fileContains",
+                "value": "todo: expand with regex operator for more sensitive data patterns"
             }
         ]
     },
     "event": {
         "type": "violation",
         "params": {
-            "message": "Sensitive data (token or secret) should not be logged."
+            "message": "Sensitive data must not be logged."
         }
     }
 }

@@ -1,5 +1,5 @@
 {
-    "name": "standardDirectoryStructure",
+    "name": "nonStandardDirectoryStructure",
     "conditions": {
         "all": [
             {
@@ -11,7 +11,7 @@
             {
                 "fact": "fileData",
                 "path": "$.filePath",
-                "operator": "directoryStructureMatches",
+                "operator": "nonStandardDirectoryStructure",
                 "value": {
                     "fact": "standardStructure"
                 }
@@ -21,7 +21,7 @@
     "event": {
         "type": "violation",
         "params": {
-            "message": "The directory structure does not match the standard.",
+            "message": "directory structure does not match the standard.",
             "details": {
                 "fact": "fileData",
                 "path": "$.filePath"

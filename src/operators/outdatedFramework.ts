@@ -2,8 +2,8 @@ import { logger } from '../utils/logger';
 import { OperatorDefn, VersionData } from '../typeDefs';
 import * as semver from 'semver';
 
-const currentDependencies: OperatorDefn = {
-    'name': 'currentDependencies', 
+const outdatedFramework: OperatorDefn = {
+    'name': 'outdatedFramework', 
     'fn': (fileName: any, dependencyData: any) => {
         let result = true;
 
@@ -14,15 +14,15 @@ const currentDependencies: OperatorDefn = {
         console.log(`running global dependency currency checks..`);
         
         try {
-            logger.debug(`currentDependencies: processing ${dependencyData.installedDependencyVersions}`);
+            logger.debug(`outdatedFramework: processing ${dependencyData.installedDependencyVersions}`);
             
             dependencyData.installedDependencyVersions.map((versionData: VersionData) => { 
-                logger.debug(`currentDependencies: checking ${versionData.dep}`);
+                logger.debug(`outdatedFramework: checking ${versionData.dep}`);
 
                 const requiredRange = new semver.Range(versionData.min);
                 if (!semver.gtr(versionData.ver, requiredRange)) {
                     let msg = `dependency ${versionData.dep} is outdated. Current version: ${versionData.ver}, required: ${versionData.min}`;
-                    logger.error(`currentDependencies: ${msg}`);
+                    logger.error(`outdatedFramework: ${msg}`);
                     throw new Error(msg);
                 }
             });
@@ -31,10 +31,10 @@ const currentDependencies: OperatorDefn = {
         
             result = true;
         }
-        logger.debug(`currentDependencies: ${result}`);
+        logger.debug(`outdatedFramework: ${result}`);
         return result;
         
     }
 }
 
-export { currentDependencies };
+export { outdatedFramework };

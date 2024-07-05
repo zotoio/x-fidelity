@@ -1,14 +1,14 @@
 import { logger } from '../utils/logger';
-import { currentDependencies } from './currentDependencies';
+import { outdatedFramework } from './outdatedFramework';
 
-describe('currentDependencies', () => {
-    it('returns true when filePath is not yarn.lock', () => {
+describe('outdatedFramework', () => {
+    it('returns false when filePath is not yarn.lock', () => {
         const filePath = 'notYarn.lock';
         const dependencyData = {};
-        expect(currentDependencies.fn(filePath, JSON.stringify(dependencyData))).toBe(true);
+        expect(outdatedFramework.fn(filePath, JSON.stringify(dependencyData))).toBe(false);
     });
 
-    it('returns true when all dependencies are up-to-date', () => {
+    it('returns false when all dependencies are up-to-date', () => {
         const filePath = 'yarn.lock';
         const dependencyData = {
             installedDependencyVersions: [
@@ -16,10 +16,10 @@ describe('currentDependencies', () => {
                 { dep: 'dep2', ver: '3.0.0', min: '2.0.0' }
             ]
         };
-        expect(currentDependencies.fn(filePath, dependencyData)).toBe(true);
+        expect(outdatedFramework.fn(filePath, dependencyData)).toBe(false);
     });
 
-    it('returns false when at least one dependency is outdated', () => {
+    it('returns true when at least one dependency is outdated', () => {
         const filePath = 'yarn.lock';
         const dependencyData = {
             installedDependencyVersions: [
@@ -27,11 +27,11 @@ describe('currentDependencies', () => {
                 { dep: 'dep2', ver: '1.0.0', min: '2.0.0' }
             ]
         };
-        expect(currentDependencies.fn(filePath, dependencyData)).toBe(false);
+        expect(outdatedFramework.fn(filePath, dependencyData)).toBe(true);
     });
 
     it('logs an error when at least one dependency is outdated', () => {
-        const filePath = 'package.json';
+        const filePath = 'yarn.lock';
         const dependencyData = {
             installedDependencyVersions: [
                 { dep: 'dep1', ver: '1.0.0', min: '1.0.0' },
@@ -39,7 +39,7 @@ describe('currentDependencies', () => {
             ]
         };
         const errorSpy = jest.spyOn(logger, 'error');
-        currentDependencies.fn(filePath, dependencyData);
+        outdatedFramework.fn(filePath, dependencyData);
         expect(errorSpy).toHaveBeenCalled();
     });
 });

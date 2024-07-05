@@ -3,19 +3,17 @@ import { logger } from '../utils/logger';
 import * as path from 'path';
 import * as fs from 'fs';
 
-let hasChecked = false;
-
-const directoryStructureMatches: OperatorDefn = {
-    'name': 'directoryStructureMatches',
+const nonStandardDirectoryStructure: OperatorDefn = {
+    'name': 'nonStandardDirectoryStructure',
     'fn': (filePath: any, standardStructure: any) => {
-        if (filePath !== 'yarn.lock' || hasChecked) {
-            return true;
+        if (filePath !== 'yarn.lock') {
+            return false;
         }
 
         console.log(`running global directory structure analysis..`);
 
         const repoPath = path.dirname(filePath);
-        let result = true;
+        let result = false;
 
         // check the directory structure of the repo against the standard structure
         function checkStructure(currentPath: string, structure: any): boolean {
@@ -24,7 +22,7 @@ const directoryStructureMatches: OperatorDefn = {
                 logger.debug(`checking ${newPath}`);
                 if (!fs.existsSync(newPath) || !fs.lstatSync(newPath).isDirectory()) {
                     logger.debug(`Missing or invalid directory: ${newPath}`);
-                    return false;
+                    return true;
                 } else {
                     result = checkStructure(newPath, structure[key]);
                 }
@@ -32,14 +30,10 @@ const directoryStructureMatches: OperatorDefn = {
             return result;
         }
 
-        const checkResult = checkStructure(repoPath, standardStructure);
-        //console.log(checkResult)
-        if (!checkResult) {
-            result = false;
-        } 
-        hasChecked = true;
+        result = checkStructure(repoPath, standardStructure);
+        
         return result;
     }
 };
 
-export { directoryStructureMatches };
+export { nonStandardDirectoryStructure };

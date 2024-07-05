@@ -1,14 +1,14 @@
 import { OperatorDefn } from '../typeDefs';
-import { currentDependencies } from './currentDependencies';
+import { outdatedFramework } from './outdatedFramework';
 import { fileContains } from './fileContains';
-import { directoryStructureMatches } from './directoryStructureMatches';
+import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';
 import { openaiAnalysisHighSeverity } from './openaiAnalysisHighSeverity';
 
 
 let operators: OperatorDefn[] = [];
-operators.push(currentDependencies);
+operators.push(outdatedFramework);
 operators.push(fileContains);
-operators.push(directoryStructureMatches);
+operators.push(nonStandardDirectoryStructure);
 operators.push(openaiAnalysisHighSeverity);
 
 export { operators };

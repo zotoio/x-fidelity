@@ -1,11 +1,11 @@
 {
-    "name": "supportedCoreDependencies",
+    "name": "outdatedFramework",
     "conditions": {
         "all": [
             {
                 "fact": "fileData",
                 "path": "$.fileName",
-                "operator": "currentDependencies",
+                "operator": "outdatedFramework",
                 "value": {
                     "fact": "dependencyData"
                 }
@@ -15,7 +15,7 @@
     "event": {
         "type": "violation",
         "params": {
-            "message": "some important dependencies have expired!",
+            "message": "some core framework dependencies have expired!",
             "filePath": {
                 "fact": "fileData",
                 "path": "$.filePath"

@@ -11,7 +11,8 @@
             {
                 "fact": "openaiAnalysis",
                 "params": {
-                    "prompt": "Identify any accessibility (a11y) issues in the codebase."
+                    "prompt": "Identify any accessibility (a11y) issues in the codebase.",
+                    "resultFact": "openaiAnalysisA11y"
                 },
                 "operator": "openaiAnalysisHighSeverity",
                 "value": 8
@@ -21,7 +22,10 @@
     "event": {
         "type": "violation",
         "params": {
-            "message": "OpenAI analysis detected accessibility (a11y) issues in the codebase."
+            "message": "OpenAI analysis detected accessibility (a11y) issues in the codebase.",
+            "results": {
+                "fact": "openaiAnalysisA11y"
+            }
         }
     }
 }

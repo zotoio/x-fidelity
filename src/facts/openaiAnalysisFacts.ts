@@ -26,8 +26,6 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
         return result;
     }
 
-    console.log(`running global openaiAnalysis with prompt variant: ${params.prompt}..`);
-
     try {
         const payload: ChatCompletionCreateParams = {
             model,
@@ -48,9 +46,10 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
             ]
         };
 
-        logger.debug(`openaiAnalysis: payload: ${JSON.stringify(payload)}`);
+        logger.debug(payload);
+        console.log(`running global openaiAnalysis with prompt variant: ${params.prompt}..`);
         const response: OpenAI.Chat.Completions.ChatCompletion = await openai.chat.completions.create(payload);
-        logger.debug(`openaiAnalysis: response: ${JSON.stringify(response)}`);
+        logger.debug(response);
 
         const analysis = {
             'result': JSON.parse(response?.choices[0].message.content ?? '')

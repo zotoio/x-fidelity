@@ -7,7 +7,7 @@
     "xfidelity": "./dist/xfidelity"
   },
   "scripts": {
-    "build": "rimraf dist/ && webpack --config webpack.config.js",
+    "build": "rimraf dist/ && tsc && yarn copy-files",
     "copy-files": "cp src/rules/*.json dist/rules/ && cp dist/index.js dist/xfidelity",
     "start": "jest --watch",
     "test": "jest",
@@ -47,11 +47,8 @@
     "rimraf": "^5.0.7",
     "semantic-release": "^24.0.0",
     "ts-jest": "^29.1.4",
-    "ts-loader": "^9.5.1",
     "ts-node": "^10.4.0",
-    "typescript": "^5.4.5",
-    "webpack": "^5.88.2",
-    "webpack-cli": "^5.1.4"
+    "typescript": "^5.4.5"
   },
   "dependencies": {
     "@yarnpkg/lockfile": "^1.1.0",
