@@ -8,7 +8,7 @@
     "xfidelity": "./dist/xfidelity"
   },
   "scripts": {
-    "build": "rimraf dist/ && tsc && yarn copy-files",
+    "build": "rimraf dist/ && webpack --config webpack.config.js",
     "copy-files": "cp src/rules/*.json dist/rules/ && cp dist/index.js dist/xfidelity",
     "start": "jest --watch",
     "test": "jest",
@@ -46,6 +46,8 @@
     "cz-conventional-changelog": "^3.3.0",
     "jest": "^29.7.0",
     "rimraf": "^5.0.7",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4",
     "semantic-release": "^24.0.0",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.4.0",
