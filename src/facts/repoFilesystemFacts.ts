@@ -26,7 +26,7 @@ async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
 
     for (const file of files) {
         const filePath = path.join(repoPath, file);
-        if (!ignored(filePath) && !ignored(file)) {
+        if (filterFiles(filePath) && filterFiles(file)) {
             console.log(`adding file: ${filePath}`);
             const stats = await fs.promises.lstat(filePath);
             if (stats.isDirectory()) {
@@ -41,17 +41,33 @@ async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
     return filesData;
 }
 
-function ignored(file: string){
-    return file.startsWith('.') 
-        || file.includes('node_modules')
-        || file.includes('/.')
-        || file.endsWith('-rule.json')
-        || file.includes('/dist/')
-        || file.includes('/lcov')
-        || file.startsWith('dist')
-        || file.endsWith('md')
-        || file.endsWith('.log')
-        || file.includes('LICENSE');
+const defaultBlacklistPatterns = [
+    /^\./,
+    /node_modules/,
+    /\/\./,
+    /-rule\.json$/,
+    /\/dist\//,
+    /\/lcov/,
+    /^dist/,
+    /\.md$/,
+    /\.log$/,
+    /LICENSE/
+];
+
+const defaultWhitelistPatterns: RegExp[] = [];
+
+function filterFiles(file: string, blacklistPatterns = defaultBlacklistPatterns, whitelistPatterns = defaultWhitelistPatterns): boolean {
+    for (const pattern of whitelistPatterns) {
+        if (pattern.test(file)) {
+            return true;
+        }
+    }
+    for (const pattern of blacklistPatterns) {
+        if (pattern.test(file)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 const standardStructure = {                                                                                            
