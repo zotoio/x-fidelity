@@ -2,14 +2,17 @@ import { logger } from '../utils/logger';
 import { outdatedFramework } from './outdatedFramework';
 
 describe('outdatedFramework', () => {
-    it('returns false when filePath is not yarn.lock', () => {
-        const filePath = 'notYarn.lock';
+import { REPO_GLOBAL_CHECK } from '../utils/config';
+
+describe('outdatedFramework', () => {
+    it('returns false when filePath is not REPO_GLOBAL_CHECK', () => {
+        const filePath = 'not' + REPO_GLOBAL_CHECK;
         const dependencyData = {};
         expect(outdatedFramework.fn(filePath, JSON.stringify(dependencyData))).toBe(false);
     });
 
     it('returns false when all dependencies are up-to-date', () => {
-        const filePath = 'yarn.lock';
+        const filePath = REPO_GLOBAL_CHECK;
         const dependencyData = {
             installedDependencyVersions: [
                 { dep: 'dep1', ver: '2.0.0', min: '1.0.0' },
@@ -20,7 +23,7 @@ describe('outdatedFramework', () => {
     });
 
     it('returns true when at least one dependency is outdated', () => {
-        const filePath = 'yarn.lock';
+        const filePath = REPO_GLOBAL_CHECK;
         const dependencyData = {
             installedDependencyVersions: [
                 { dep: 'dep1', ver: '.0.0', min: '1.0.0' },
