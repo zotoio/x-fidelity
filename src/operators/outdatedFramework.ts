@@ -1,6 +1,7 @@
 import { logger } from '../utils/logger';
 import { OperatorDefn, VersionData } from '../typeDefs';
 import * as semver from 'semver';
+import { REPO_GLOBAL_CHECK } from '../utils/config';
 
 const outdatedFramework: OperatorDefn = {
     'name': 'outdatedFramework', 
@@ -8,7 +9,7 @@ const outdatedFramework: OperatorDefn = {
         let result = true;
 
         // this is a special rule we only run on the root package.json, however it checks the entire dependency tree.
-        if (fileName !== 'yarn.lock') {
+        if (fileName !== REPO_GLOBAL_CHECK {
             return false;
         }
         console.log(`running global dependency currency checks..`);

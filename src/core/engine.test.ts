@@ -1,7 +1,9 @@
 import { analyzeCodebase } from './engine';
 import { Engine } from 'json-rules-engine';
-import { collectRepoFileData, collectStandardDirectoryStructure } from '../facts/repoFilesystemFacts';
-import { getDependencyVersionFacts, collectMinimumDependencyVersions } from '../facts/repoDependencyFacts';
+import { collectRepoFileData } from '../facts/repoFilesystemFacts';
+import { collectStandardDirectoryStructure } from '../utils/config';
+import { getDependencyVersionFacts } from '../facts/repoDependencyFacts';
+import { collectMinimumDependencyVersions } from '../utils/config';
 import { loadRules } from '../rules';
 import { operators } from '../operators';
 import { logger } from '../utils/logger';
