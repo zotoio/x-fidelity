@@ -42,24 +42,34 @@ async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
     return filesData;
 }
 
-function filterFiles(filePath: string, blacklistPatterns: RegExp[] = defaultBlacklistPatterns, whitelistPatterns: RegExp[] = defaultWhitelistPatterns): boolean {
-    
+function isBlacklisted(filePath: string, blacklistPatterns: RegExp[] = defaultBlacklistPatterns): boolean {
     for (const pattern of blacklistPatterns) {
         if (pattern.test(filePath)) {
             console.log(`skipping blacklisted file: ${filePath} with pattern: ${pattern}`);
-            return false;
+            return true;
         }
     }
-    
+    return false;
+}
+
+function isWhitelisted(filePath: string, whitelistPatterns: RegExp[] = defaultWhitelistPatterns): boolean {
     for (const pattern of whitelistPatterns) {
         if (pattern.test(filePath)) {
             console.log(`allowing file: ${filePath} with pattern: ${pattern}`);
             return true;
         }
     }
+    return false;
+}
 
+function filterFiles(filePath: string, blacklistPatterns: RegExp[] = defaultBlacklistPatterns, whitelistPatterns: RegExp[] = defaultWhitelistPatterns): boolean {
+    if (isBlacklisted(filePath, blacklistPatterns)) {
+        return false;
+    }
+    if (isWhitelisted(filePath, whitelistPatterns)) {
+        return true;
+    }
     console.log(`skipping unmatched file: ${filePath}`);
-    
     return false;
 }
 
