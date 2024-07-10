@@ -2,6 +2,7 @@ import { collectRepoFileData, parseFile, isBlacklisted, isWhitelisted } from './
 import fs, { existsSync } from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger';
+import { archetypes } from '../archetypes';
 
 jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
@@ -38,7 +39,7 @@ describe('File operations', () => {
             const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
             mockedFsPromises.lstat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
 
-            const result = await collectRepoFileData(repoPath);
+            const result = await collectRepoFileData(repoPath, archetypes.mockArchetypeConfig);
             expect(result.length).toBe(2);
             expect(result[0].fileName).toBe('file1.js');
             expect(result[1].fileName).toBe('file2.tsx');
