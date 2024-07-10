@@ -87,7 +87,7 @@ describe('collectRepoFileData', () => {
             if (dirPath === '/repo/dir1') return mockDirFiles;
             return [];
         });
-        mockedFs.promises.lstat.mockImplementation((filePath) => {
+        mockedFs.promises.lstat.mockImplementation((filePath: string) => {
             if (filePath === '/repo/dir1') return Promise.resolve({ isDirectory: () => true } as fs.Stats);
             return Promise.resolve({ isDirectory: () => false } as fs.Stats);
         });
