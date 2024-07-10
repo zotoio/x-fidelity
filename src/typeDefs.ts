@@ -42,6 +42,7 @@ export interface ArchetypeConfig {
     rules: string[];
     operators: string[];
     facts: string[];
+    configUrl?: string;
     config: {
         minimumDependencyVersions: Record<string, string>;
         standardStructure: Record<string, any>;

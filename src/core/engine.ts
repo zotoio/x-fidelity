@@ -9,7 +9,6 @@ import { archetypes } from '../archetypes';
 import { loadRules } from '../rules';
 import { loadOperators } from '../operators';
 import { loadFacts } from '../facts';
-import axios from 'axios';
 
 async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack'): Promise<any[]> {
     let archetypeConfig: ArchetypeConfig = archetypes[archetype] || archetypes['node-fullstack'];

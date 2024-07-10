@@ -2,6 +2,8 @@ import { execSync } from 'child_process';
 import { collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree } from './repoDependencyFacts';
 import { logger } from '../utils/logger';
 import { ConfigManager } from '../utils/config';
+import { arch } from 'os';
+import { archetypes } from '../archetypes';
 
 jest.mock('child_process', () => ({
     execSync: jest.fn(),
@@ -66,7 +68,7 @@ describe('getDependencyVersionFacts', () => {
         const mockLocalDependencies = { dependencies: { commander: { version: '2.0.0' }, nodemon: { version: '3.9.0' } } };
         (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockLocalDependencies)));
         
-        const result = await getDependencyVersionFacts();
+        const result = await getDependencyVersionFacts(archetypes['node-fullstack']);
         expect(result).toEqual([
             { dep: 'commander', ver: '2.0.0', min: '^2.0.0' },
             { dep: 'nodemon', ver: '3.9.0', min: '^3.9.0' }
@@ -77,7 +79,7 @@ describe('getDependencyVersionFacts', () => {
         const mockLocalDependencies = { dependencies: { someOtherDep: { version: '1.0.0' } } };
         (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockLocalDependencies)));
         
-        const result = await getDependencyVersionFacts();
+        const result = await getDependencyVersionFacts(archetypes['node-fullstack']);
         expect(result).toEqual([]);
     });
 });
