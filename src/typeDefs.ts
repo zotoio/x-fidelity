@@ -51,3 +51,8 @@ export interface ArchetypeConfig {
     };
 }
 
+export interface OpenAIAnalysisParams {
+    prompt: string;
+    resultFact: string;
+}
+
