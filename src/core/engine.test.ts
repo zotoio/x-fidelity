@@ -2,6 +2,7 @@ import { analyzeCodebase } from './engine';
 import { Engine } from 'json-rules-engine';
 import { collectRepoFileData } from '../facts/repoFilesystemFacts';
 import { getDependencyVersionFacts } from '../facts/repoDependencyFacts';
+import { collectOpenaiAnalysisFacts } from '../facts/openaiAnalysisFacts';
 import { loadRules } from '../rules';
 import { loadOperators } from '../operators';
 import { loadFacts } from '../facts';
@@ -22,10 +23,15 @@ jest.mock('../archetypes', () => ({
             facts: ['mockFact'],
             config: {
                 minimumDependencyVersions: {},
-                standardStructure: {}
+                standardStructure: {},
+                blacklistPatterns: [],
+                whitelistPatterns: []
             }
         }
     }
+}));
+jest.mock('../facts/openaiAnalysisFacts', () => ({
+    collectOpenaiAnalysisFacts: jest.fn().mockResolvedValue('mock openai system prompt')
 }));
 
 describe('analyzeCodebase', () => {
@@ -57,8 +63,8 @@ describe('analyzeCodebase', () => {
 
         const results = await analyzeCodebase('mockRepoPath', 'node-fullstack');
 
-        expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath');
-        expect(getDependencyVersionFacts).toHaveBeenCalled();
+        expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
+        expect(getDependencyVersionFacts).toHaveBeenCalledWith(expect.any(Object));
         expect(loadRules).toHaveBeenCalledWith(['mockRule']);
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
