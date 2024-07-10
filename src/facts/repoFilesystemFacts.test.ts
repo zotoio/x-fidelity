@@ -17,7 +17,10 @@ describe('collectRepoFileData', () => {
     const mockedFs = fs as jest.Mocked<typeof fs>;
     beforeEach(() => {
         jest.clearAllMocks();
-        mockedFsPromises.lstat = jest.fn().mockResolvedValue({
+        if (!mockedFsPromises.lstat) {
+            mockedFsPromises.lstat = jest.fn();
+        }
+        mockedFsPromises.lstat.mockResolvedValue({
             isDirectory: () => false
         } as fs.Stats);
     });
