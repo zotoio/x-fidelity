@@ -44,7 +44,27 @@ describe('nonStandardDirectoryStructure', () => {
 
         expect(result).toBe(true);
     });
-    // ...
+    it('should return false if directory structure matches the standard structure', () => {
+        mockedPath.dirname.mockReturnValue('/repo');
+        mockedPath.join.mockImplementation((...args) => args.join('/'));
+        mockedFs.existsSync.mockReturnValue(true);
+        mockedFs.lstatSync.mockReturnValue({ isDirectory: () => true } as Stats);
+
+        const result = nonStandardDirectoryStructure.fn(REPO_GLOBAL_CHECK, { dir1: null, dir2: { subdir1: null } });
+
+        expect(result).toBe(false);
+    });
+
+    it('should return true if directory structure does not match the standard structure', () => {
+        mockedPath.dirname.mockReturnValue('/repo');
+        mockedPath.join.mockImplementation((...args) => args.join('/'));
+        mockedFs.existsSync.mockReturnValue(false);
+        mockedFs.lstatSync.mockReturnValue({ isDirectory: () => false } as Stats);
+
+        const result = nonStandardDirectoryStructure.fn(REPO_GLOBAL_CHECK, { dir1: null, dir2: { subdir1: null } });
+
+        expect(result).toBe(true);
+    });
 
     it('should return false if directory structure matches the standard structure', () => {
         mockedPath.dirname.mockReturnValue('/repo');
