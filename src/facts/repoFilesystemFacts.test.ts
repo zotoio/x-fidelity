@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../utils/logger';
 
-const mockedFsPromises = jest.mocked(fs.promises, true);
+const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
 jest.mock('fs');
 jest.mock('path');
 jest.mock('../utils/logger', () => ({
