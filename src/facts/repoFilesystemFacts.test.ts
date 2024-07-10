@@ -22,6 +22,7 @@ describe('collectRepoFileData', () => {
 
     it('should collect file data from the repository', async () => {
         const mockFiles = ['file1.ts', 'file2.ts'];
+        
         const mockFileData: FileData = {
             fileName: 'file1.ts',
             filePath: '/repo/file1.ts',
