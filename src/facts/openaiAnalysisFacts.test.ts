@@ -8,7 +8,11 @@ jest.mock('json-rules-engine');
 jest.mock('openai', () => ({
     ...jest.requireActual('OpenAI'),
     OpenAI: jest.fn(() => ({
-        chat: { completions: { create: jest.fn() } }
+        chat: {
+            completions: {
+                create: jest.fn()
+            }
+        }
     }))
 }));
 jest.mock('../utils/logger', () => ({
