@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import axios from 'axios';
 import { collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree } from './repoDependencyFacts';
-import { collectMinimumDependencyVersions } from '../utils/config';
+import { ArchetypeConfig } from '../typeDefs';
 import { logger } from '../utils/logger';
 import _ from 'lodash';
 
@@ -17,22 +17,6 @@ jest.mock('../utils/logger', () => ({
     },
 }));
 
-describe('collectMinimumDependencyVersions', () => {
-    it('should return the correct minimum dependency versions', async () => {
-        const result = await collectMinimumDependencyVersions();
-        expect(result).toEqual({
-            commander: '^2.0.0',
-            nodemon: '^3.9.0'
-        });
-    });
-
-    it('should handle errors when fetching minimum dependency versions', async () => {
-        (axios.get as jest.Mock).mockRejectedValue(new Error('mock error'));
-        const result = await collectMinimumDependencyVersions('mockConfigUrl');
-        expect(logger.error).toHaveBeenCalledWith('Error fetching minimum dependency versions from configUrl: Error: mock error');
-        expect(result).toEqual({});
-    });
-});
 
 describe('collectLocalDependencies', () => {
     afterEach(() => {
@@ -73,11 +57,21 @@ describe('getDependencyVersionFacts', () => {
 
     it('should return installed dependency versions correctly', async () => {
         const mockLocalDependencies = { dependencies: { commander: { version: '2.0.0' }, nodemon: { version: '3.9.0' } } };
-        const mockMinimumVersions = { commander: '^2.0.0', nodemon: '^3.9.0' };
+        const mockArchetypeConfig: ArchetypeConfig = {
+            rules: [],
+            operators: [],
+            facts: [],
+            config: {
+                minimumDependencyVersions: { commander: '^2.0.0', nodemon: '^3.9.0' },
+                standardStructure: {},
+                blacklistPatterns: [],
+                whitelistPatterns: []
+            }
+        };
         
         (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockLocalDependencies)));
         
-        const result = await getDependencyVersionFacts();
+        const result = await getDependencyVersionFacts(mockArchetypeConfig);
         expect(result).toEqual([
             { dep: 'commander', ver: '2.0.0', min: '^2.0.0' },
             { dep: 'nodemon', ver: '3.9.0', min: '^3.9.0' }
@@ -86,11 +80,21 @@ describe('getDependencyVersionFacts', () => {
 
     it('should return an empty array if no dependencies match minimum versions', async () => {
         const mockLocalDependencies = { dependencies: { someOtherDep: { version: '1.0.0' } } };
-        const mockMinimumVersions = { commander: '^2.0.0', nodemon: '^3.9.0' };
+        const mockArchetypeConfig: ArchetypeConfig = {
+            rules: [],
+            operators: [],
+            facts: [],
+            config: {
+                minimumDependencyVersions: { commander: '^2.0.0', nodemon: '^3.9.0' },
+                standardStructure: {},
+                blacklistPatterns: [],
+                whitelistPatterns: []
+            }
+        };
 
         (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockLocalDependencies)));
         
-        const result = await getDependencyVersionFacts();
+        const result = await getDependencyVersionFacts(mockArchetypeConfig);
         expect(result).toEqual([]);
     });
 });
