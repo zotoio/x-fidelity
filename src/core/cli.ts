@@ -20,7 +20,7 @@ logger.info([banner]);
 
 program
     .option("-d, --dir <directory>", "The checkout directory to analyse")
-    .option("-c, --configUrl <url>", "The URL used to fetch config");
+    .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack");
 
 program.parse();
 

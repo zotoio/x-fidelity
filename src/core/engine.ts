@@ -1,42 +1,40 @@
 import { logger } from '../utils/logger';
 import { Engine, EngineResult, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
-import { collectStandardRepoStructure } from '../utils/config';
-import { loadRules } from '../rules';
-import { operators } from '../operators';
-import { ScanResult, RuleFailure } from '../typeDefs';
-import { getDependencyVersionFacts } from
-    '../facts/repoDependencyFacts';
-import { collectMinimumDependencyVersions } from '../utils/config';
+import { ScanResult, RuleFailure, ArchetypeConfig } from '../typeDefs';
+import { getDependencyVersionFacts } from '../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../facts/openaiAnalysisFacts';
+import { archetypes } from '../archetypes';
+import { loadRules } from '../rules';
+import { loadOperators } from '../operators';
+import { loadFacts } from '../facts';
 
-async function analyzeCodebase(repoPath: string, configUrl?: string): Promise<any[]> {
+async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack'): Promise<any[]> {
+    const archetypeConfig: ArchetypeConfig = archetypes[archetype] || archetypes['node-fullstack'];
     const installedDependencyVersions = await getDependencyVersionFacts();
     const fileData: FileData[] = await collectRepoFileData(repoPath);
-    const minimumDependencyVersions = await collectMinimumDependencyVersions(configUrl);
-    const standardStructure = await collectStandardRepoStructure(configUrl);
+    const { minimumDependencyVersions, standardStructure } = archetypeConfig.config;
     const openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
 
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
-    // Add operators to engine                                                                                         
-    operators.map((operator) => {
+    // Add operators to engine
+    const operators = await loadOperators(archetypeConfig.operators);
+    operators.forEach((operator) => {
         if (!operator?.name?.includes('openai') || (process.env.OPENAI_API_KEY && operator?.name?.includes('openai'))) {
             console.log(`adding custom operator: ${operator.name}`);
             engine.addOperator(operator.name, operator.fn);
         }
-    });        
+    });
 
-    // Add rules to engine                                                                                             
-    const rules: RuleProperties[] = await loadRules();
-
-    rules.map((rule) => {
-
+    // Add rules to engine
+    const rules: RuleProperties[] = await loadRules(archetypeConfig.rules);
+    rules.forEach((rule) => {
         try {
             if (!rule?.name?.includes('openai') || (process.env.OPENAI_API_KEY && rule?.name?.includes('openai'))) {
                 console.log(`adding rule: ${rule?.name}`);
                 engine.addRule(rule);
-            }    
+            }
         } catch (e: any) {
             console.error(`Error loading rule: ${rule?.name}`);
             logger.error(e.message);
@@ -47,9 +45,15 @@ async function analyzeCodebase(repoPath: string, configUrl?: string): Promise<an
         if (type === 'violation') {
             //console.log(params);
         }
-    })
+    });
 
-    if (process.env.OPENAI_API_KEY) {
+    // Add facts to engine
+    const facts = await loadFacts(archetypeConfig.facts);
+    facts.forEach((fact) => {
+        engine.addFact(fact.name, fact.fn);
+    });
+
+    if (process.env.OPENAI_API_KEY && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
         console.log(`adding openai facts to engine..`);
         engine.addFact('openaiAnalysis', openaiAnalysis);
         engine.addFact('openaiSystemPrompt', openaiSystemPrompt);

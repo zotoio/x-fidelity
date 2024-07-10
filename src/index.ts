@@ -9,7 +9,7 @@ import { analyzeCodebase } from "./core/engine";
 
 try {
     (async () => {
-        let results = await analyzeCodebase( `${process.env.PWD}/${options.dir}`, options.configUrl);
+        let results = await analyzeCodebase(`${process.env.PWD}/${options.dir}`, options.archetype);
         if (results.length > 0) {
             //console.log('WARNING: lo-fi attributes detected in codebase!');
             //console.log(results);

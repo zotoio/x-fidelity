@@ -38,3 +38,13 @@ export interface LocalDependencies {
     [propertyName: string]: { version: string; };
 }
 
+export interface ArchetypeConfig {
+    rules: string[];
+    operators: string[];
+    facts: string[];
+    config: {
+        minimumDependencyVersions: Record<string, string>;
+        standardStructure: Record<string, any>;
+    };
+}
+
