@@ -15,7 +15,9 @@ jest.mock('../utils/logger', () => ({
 
 describe('collectRepoFileData', () => {
     const mockedFs = fs as jest.Mocked<typeof fs>;
-    mockedFsPromises.lstat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
+    beforeEach(() => {
+        mockedFsPromises.lstat = jest.fn().mockResolvedValue({ isDirectory: () => false } as fs.Stats);
+    });
     const mockedPath = path as jest.Mocked<typeof path>;
 
     beforeEach(() => {
