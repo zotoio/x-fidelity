@@ -26,7 +26,7 @@ describe('loadRules', () => {
         (mockedFs.promises.readdir as jest.Mock).mockResolvedValue(mockFiles);
         mockedPath.join.mockImplementation((...args) => args.join('/'));
 
-        jest.spyOn(global, 'import').mockImplementation(async (filePath) => {
+        jest.mock('import', () => async (filePath) => {
             if (filePath.includes('rule1-rule.json')) {
                 return { default: { name: 'rule1' } };
             } else if (filePath.includes('rule2-rule.json')) {
