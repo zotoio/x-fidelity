@@ -16,11 +16,10 @@ jest.mock('../utils/logger', () => ({
 describe('collectRepoFileData', () => {
     const mockedFs = fs as jest.Mocked<typeof fs>;
     beforeEach(() => {
-        
-        //mockedFsPromises.lstat = jest.fn().mockResolvedValue({ isDirectory: () => false } as fs.Stats);
-        jest.spyOn(mockedFsPromises, 'lstat').mockResolvedValue({
+        jest.clearAllMocks();
+        mockedFsPromises.lstat = jest.fn().mockResolvedValue({
             isDirectory: () => false
-          } as fs.Stats);
+        } as fs.Stats);
     });
     const mockedPath = path as jest.Mocked<typeof path>;
 
