@@ -17,7 +17,16 @@ const nodeFullstack: ArchetypeConfig = {
                 rules: null,
                 facts: null
             }
-        }
+        },
+        blacklistPatterns: [
+            /.*\/\..*/, // dot files
+            /.*\.(log|lock)$/, // file extensions blacklisted
+            /.*\/(dist|coverage|build|node_modules)(\/.*|$)/ // directory names blacklisted
+        ],
+        whitelistPatterns: [
+            /.*\.(ts|tsx|js|jsx|md)$/,
+            /.*\/(package|tsconfig)\.json$/
+        ]
     }
 };
 
@@ -41,7 +50,16 @@ const javaMicroservice: ArchetypeConfig = {
                     resources: null
                 }
             }
-        }
+        },
+        blacklistPatterns: [
+            /.*\/\..*/, // dot files
+            /.*\.(log|lock)$/, // file extensions blacklisted
+            /.*\/(target|build|out)(\/.*|$)/ // directory names blacklisted
+        ],
+        whitelistPatterns: [
+            /.*\.(java|xml|properties|yml)$/,
+            /.*\/pom\.xml$/
+        ]
     }
 };
 

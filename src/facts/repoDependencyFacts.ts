@@ -1,8 +1,7 @@
 import { logger } from '../utils/logger';
 import _ from 'lodash';
 import { execSync } from 'child_process';
-import { LocalDependencies, MinimumDepVersions, VersionData } from '../typeDefs';
-import { collectMinimumDependencyVersions } from '../utils/config';
+import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } from '../typeDefs';
 
 /**
  * Collects the local dependencies.
@@ -22,11 +21,12 @@ export function collectLocalDependencies(): LocalDependencies {
 
 /**
  * Gets the installed dependency versions.
+ * @param archetypeConfig The archetype configuration.
  * @returns The installed dependency versions.
  */
-export async function getDependencyVersionFacts() {
+export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig) {
     const localDependencies = await collectLocalDependencies();
-    const minimumDependencyVersions = await collectMinimumDependencyVersions();
+    const minimumDependencyVersions = archetypeConfig.config.minimumDependencyVersions;
 
     //console.log(localDependencies);
 

@@ -45,6 +45,8 @@ export interface ArchetypeConfig {
     config: {
         minimumDependencyVersions: Record<string, string>;
         standardStructure: Record<string, any>;
+        blacklistPatterns: RegExp[];
+        whitelistPatterns: RegExp[];
     };
 }
 

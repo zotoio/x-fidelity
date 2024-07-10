@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
-import { defaultBlacklistPatterns, defaultWhitelistPatterns } from '../utils/config';
+import { ArchetypeConfig } from '../typeDefs';
 
 interface FileData {
     fileName: string;
@@ -18,7 +18,7 @@ async function parseFile(filePath: string): Promise<FileData> {
     });
 }
 
-async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
+async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeConfig): Promise<FileData[]> {
     const filesData: FileData[] = [];
 
     logger.debug(`collectingRepoFileData from: ${repoPath}`);
@@ -29,12 +29,12 @@ async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
         logger.debug(`checking file: ${filePath}`);
         const stats = await fs.promises.lstat(filePath);
         if (stats.isDirectory()) {
-            if (!isBlacklisted(filePath)) {
-                const dirFilesData = await collectRepoFileData(filePath);
+            if (!isBlacklisted(filePath, archetypeConfig.config.blacklistPatterns)) {
+                const dirFilesData = await collectRepoFileData(filePath, archetypeConfig);
                 filesData.push(...dirFilesData);
             }    
         } else {
-            if (!isBlacklisted(filePath) && isWhitelisted(filePath)) {
+            if (!isBlacklisted(filePath, archetypeConfig.config.blacklistPatterns) && isWhitelisted(filePath, archetypeConfig.config.whitelistPatterns)) {
                 logger.debug(`adding file: ${filePath}`);
                 const fileData = await parseFile(filePath);
                 filesData.push(fileData);
@@ -45,7 +45,7 @@ async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
     return filesData;
 }
 
-function isBlacklisted(filePath: string, blacklistPatterns: RegExp[] = defaultBlacklistPatterns): boolean {
+function isBlacklisted(filePath: string, blacklistPatterns: RegExp[]): boolean {
     logger.debug(`checking blacklist for file: ${filePath}`);
     for (const pattern of blacklistPatterns) {
         if (pattern.test(filePath)) {
@@ -56,7 +56,7 @@ function isBlacklisted(filePath: string, blacklistPatterns: RegExp[] = defaultBl
     return false;
 }
 
-function isWhitelisted(filePath: string, whitelistPatterns: RegExp[] = defaultWhitelistPatterns): boolean {
+function isWhitelisted(filePath: string, whitelistPatterns: RegExp[]): boolean {
     logger.debug(`checking whitelist for file: ${filePath}`);
     for (const pattern of whitelistPatterns) {
         if (pattern.test(filePath)) {

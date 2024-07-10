@@ -11,8 +11,8 @@ import { loadFacts } from '../facts';
 
 async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack'): Promise<any[]> {
     const archetypeConfig: ArchetypeConfig = archetypes[archetype] || archetypes['node-fullstack'];
-    const installedDependencyVersions = await getDependencyVersionFacts();
-    const fileData: FileData[] = await collectRepoFileData(repoPath);
+    const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
+    const fileData: FileData[] = await collectRepoFileData(repoPath, archetypeConfig);
     const { minimumDependencyVersions, standardStructure } = archetypeConfig.config;
     const openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
 
