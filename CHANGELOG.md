@@ -1,3 +1,16 @@
+# [1.2.0](https://github.com/zotoio/x-fidelity/compare/v1.1.0...v1.2.0) (2024-07-10)
+
+
+### Bug Fixes
+
+* **filedata:** update collection and filtering ([d463a2b](https://github.com/zotoio/x-fidelity/commit/d463a2bdc24f7904954f1c955403189393f1071a))
+* **tests:** add tests and fix logic issues uncovered ([e33975a](https://github.com/zotoio/x-fidelity/commit/e33975a76122b17ed86eb7152e61599b63f4da03))
+
+
+### Features
+
+* **archetypes:** initial archetype test ([7970a3e](https://github.com/zotoio/x-fidelity/commit/7970a3e07889fd4e492c02c326e91c5b3cc09bf8))
+
 # [1.1.0](https://github.com/zotoio/x-fidelity/compare/v1.0.0...v1.1.0) (2024-07-05)
 
 
