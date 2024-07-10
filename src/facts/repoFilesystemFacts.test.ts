@@ -1,8 +1,8 @@
 import { collectRepoFileData, parseFile, isBlacklisted, isWhitelisted } from './repoFilesystemFacts';
-import fs, { existsSync } from 'fs';
+import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger';
-import { archetypes } from '../archetypes';
+import { ArchetypeConfig } from '../typeDefs';
 
 jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
@@ -11,11 +11,22 @@ jest.mock('fs', () => ({
     },
     readFileSync: jest.fn(),
     readdirSync: jest.fn(),
-    existsSync: jest.fn(),
   }));
 jest.mock('../utils/logger');
 
 describe('File operations', () => {
+    const mockArchetypeConfig: ArchetypeConfig = {
+        rules: [],
+        operators: [],
+        facts: [],
+        config: {
+            minimumDependencyVersions: {},
+            standardStructure: {},
+            blacklistPatterns: [/node_modules/],
+            whitelistPatterns: [/\.js$/, /\.tsx$/]
+        }
+    };
+
     describe('parseFile', () => {
         it('should return file data including name, path, and content', async () => {
             const filePath = 'test/path/mockFile.txt';
@@ -34,12 +45,12 @@ describe('File operations', () => {
     describe('collectRepoFileData', () => {
         it('should return file data for files in the repository', async () => {
             const repoPath = 'mock/repo';
-            (fs.readdirSync as jest.Mock).mockReturnValue(['file1.js', 'file2.tsx']);
+            (fs.readdirSync as jest.Mock).mockReturnValue(['file1.js', 'file2.tsx', 'file3.txt']);
 
             const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
             mockedFsPromises.lstat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
 
-            const result = await collectRepoFileData(repoPath, archetypes.mockArchetypeConfig);
+            const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
             expect(result.length).toBe(2);
             expect(result[0].fileName).toBe('file1.js');
             expect(result[1].fileName).toBe('file2.tsx');
@@ -49,24 +60,24 @@ describe('File operations', () => {
     describe('isBlacklisted', () => {
         it('should return true if file path matches any blacklist pattern', () => {
             const filePath = '/node_modules/index.js';
-            expect(isBlacklisted(filePath)).toBe(true);
+            expect(isBlacklisted(filePath, mockArchetypeConfig.config.blacklistPatterns)).toBe(true);
         });
 
         it('should return false if file path does not match any blacklist pattern', () => {
             const filePath = 'src/index.js';
-            expect(isBlacklisted(filePath)).toBe(false);
+            expect(isBlacklisted(filePath, mockArchetypeConfig.config.blacklistPatterns)).toBe(false);
         });
     });
 
     describe('isWhitelisted', () => {
         it('should return true if file path matches any whitelist pattern', () => {
             const filePath = '/src/index.js';
-            expect(isWhitelisted(filePath)).toBe(true);
+            expect(isWhitelisted(filePath, mockArchetypeConfig.config.whitelistPatterns)).toBe(true);
         });
 
         it('should return false if file path does not match any whitelist pattern', () => {
-            const filePath = 'build/index.something';
-            expect(isWhitelisted(filePath)).toBe(false);
+            const filePath = 'build/index.txt';
+            expect(isWhitelisted(filePath, mockArchetypeConfig.config.whitelistPatterns)).toBe(false);
         });
     });
 });
