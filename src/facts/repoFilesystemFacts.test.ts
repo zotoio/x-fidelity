@@ -3,8 +3,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../utils/logger';
 
-const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
-jest.mock('fs');
+
+jest.mock('fs', () => ({
+    readFileSync: jest.fn(),
+    readdirSync: jest.fn(),
+    promises: {
+        lstat: jest.fn(),
+    }
+}));
+
 jest.mock('path');
 jest.mock('../utils/logger', () => ({
     logger: {
@@ -15,15 +22,6 @@ jest.mock('../utils/logger', () => ({
 
 describe('collectRepoFileData', () => {
     const mockedFs = fs as jest.Mocked<typeof fs>;
-    beforeEach(() => {
-        jest.clearAllMocks();
-        if (!mockedFsPromises.lstat) {
-            mockedFsPromises.lstat = jest.fn();
-        }
-        mockedFsPromises.lstat.mockResolvedValue({
-            isDirectory: () => false
-        } as fs.Stats);
-    });
     const mockedPath = path as jest.Mocked<typeof path>;
 
     beforeEach(() => {
@@ -43,9 +41,9 @@ describe('collectRepoFileData', () => {
         };
 
         mockedFs.readdirSync.mockReturnValue(mockFiles);
-        const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
-        mockedFsPromises.lstat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
-        mockedFs.readFileSync.mockReturnValue(mockFileData.fileContent);
+        // const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+        (mockedFs.promises.lstat as jest.Mock).mockResolvedValue({ isDirectory: () => false } as fs.Stats);
+        // mockedFs.readFileSync.mockReturnValue(mockFileData.fileContent);
         mockedPath.join.mockImplementation((...args) => args.join('/'));
 
         const result = await collectRepoFileData('/repo');
