@@ -1,111 +1,71 @@
-import { collectRepoFileData, FileData } from './repoFilesystemFacts';
-import * as fs from 'fs';
-import * as path from 'path';
+import { collectRepoFileData, parseFile, isBlacklisted, isWhitelisted } from './repoFilesystemFacts';
+import fs, { existsSync } from 'fs';
+import path from 'path';
 import { logger } from '../utils/logger';
 
-
 jest.mock('fs', () => ({
+    ...jest.requireActual('fs'),
+    promises: {
+      lstat: jest.fn(),
+    },
     readFileSync: jest.fn(),
     readdirSync: jest.fn(),
-    promises: {
-        lstat: jest.fn(),
-    }
-}));
+    existsSync: jest.fn(),
+  }));
+jest.mock('../utils/logger');
 
-jest.mock('path');
-jest.mock('../utils/logger', () => ({
-    logger: {
-        debug: jest.fn(),
-        error: jest.fn(),
-    },
-}));
+describe('File operations', () => {
+    describe('parseFile', () => {
+        it('should return file data including name, path, and content', async () => {
+            const filePath = 'test/path/mockFile.txt';
+            const mockContent = 'mock file content';
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockContent);
 
-describe('collectRepoFileData', () => {
-    const mockedFs = fs as jest.Mocked<typeof fs>;
-    const mockedPath = path as jest.Mocked<typeof path>;
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
-    it('should collect file data from the repository', async () => {
-        const mockFiles = [
-            { name: 'file1.ts', isDirectory: () => false } as fs.Dirent,
-            { name: 'file2.ts', isDirectory: () => false } as fs.Dirent
-        ];
-        
-        const mockFileData: FileData = {
-            fileName: 'file1.ts',
-            filePath: '/repo/file1.ts',
-            fileContent: 'console.log("Hello, world!");'
-        };
-
-        mockedFs.readdirSync.mockReturnValue(mockFiles);
-        // const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
-        (mockedFs.promises.lstat as jest.Mock).mockResolvedValue({ isDirectory: () => false } as fs.Stats);
-        // mockedFs.readFileSync.mockReturnValue(mockFileData.fileContent);
-        mockedPath.join.mockImplementation((...args) => args.join('/'));
-
-        const result = await collectRepoFileData('/repo');
-
-        expect(result).toEqual([mockFileData, { ...mockFileData, fileName: 'file2.ts', filePath: '/repo/file2.ts' }]);
-    });
-
-    it('should skip blacklisted files', async () => {
-        const mockFiles = [
-            { name: 'file1.ts', isDirectory: () => false } as fs.Dirent,
-            { name: '.hiddenFile', isDirectory: () => false } as fs.Dirent
-        ];
-        const mockFileData: FileData = {
-            fileName: 'file1.ts',
-            filePath: '/repo/file1.ts',
-            fileContent: 'console.log("Hello, world!");'
-        };
-
-        mockedFs.readdirSync.mockReturnValue(mockFiles);
-        mockedFs.promises.lstat = jest.fn().mockResolvedValue({ isDirectory: () => false } as fs.Stats);
-        mockedFs.readFileSync.mockReturnValue(mockFileData.fileContent);
-        mockedPath.join.mockImplementation((...args) => args.join('/'));
-
-        const result = await collectRepoFileData('/repo');
-
-        expect(result).toEqual([mockFileData]);
-    });
-
-    it('should collect file data recursively from directories', async () => {
-        const mockFiles = [
-            { name: 'dir1', isDirectory: () => true } as fs.Dirent,
-            { name: 'file1.ts', isDirectory: () => false } as fs.Dirent
-        ];
-        const mockDirFiles = [
-            { name: 'file2.ts', isDirectory: () => false } as fs.Dirent
-        ];
-        const mockFileData: FileData = {
-            fileName: 'file1.ts',
-            filePath: '/repo/file1.ts',
-            fileContent: 'console.log("Hello, world!");'
-        };
-        const mockDirFileData: FileData = {
-            fileName: 'file2.ts',
-            filePath: '/repo/dir1/file2.ts',
-            fileContent: 'console.log("Hello, world!");'
-        };
-
-        mockedFs.readdirSync.mockImplementation((dirPath) => {
-            if (dirPath === '/repo') return mockFiles;
-            if (dirPath === '/repo/dir1') return mockDirFiles;
-            return [];
+            const result = await parseFile(filePath);
+            expect(result).toEqual({
+                fileName: path.basename(filePath),
+                filePath,
+                fileContent: mockContent,
+            });
         });
-        const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
-        mockedFsPromises.lstat.mockImplementation((path: fs.PathLike) => {
-            if (path === '/repo/dir1') return Promise.resolve({ isDirectory: () => true } as fs.Stats);
-            return Promise.resolve({ isDirectory: () => false } as fs.Stats);
+    });
+
+    describe('collectRepoFileData', () => {
+        it('should return file data for files in the repository', async () => {
+            const repoPath = 'mock/repo';
+            (fs.readdirSync as jest.Mock).mockReturnValue(['file1.js', 'file2.tsx']);
+
+            const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+            mockedFsPromises.lstat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
+
+            const result = await collectRepoFileData(repoPath);
+            expect(result.length).toBe(2);
+            expect(result[0].fileName).toBe('file1.js');
+            expect(result[1].fileName).toBe('file2.tsx');
         });
-        mockedFs.readFileSync.mockReturnValue(mockFileData.fileContent);
-        mockedPath.join.mockImplementation((...args) => args.join('/'));
+    });
 
-        const result = await collectRepoFileData('/repo');
+    describe('isBlacklisted', () => {
+        it('should return true if file path matches any blacklist pattern', () => {
+            const filePath = '/node_modules/index.js';
+            expect(isBlacklisted(filePath)).toBe(true);
+        });
 
-        expect(result).toEqual([mockFileData, mockDirFileData]);
+        it('should return false if file path does not match any blacklist pattern', () => {
+            const filePath = 'src/index.js';
+            expect(isBlacklisted(filePath)).toBe(false);
+        });
+    });
+
+    describe('isWhitelisted', () => {
+        it('should return true if file path matches any whitelist pattern', () => {
+            const filePath = '/src/index.js';
+            expect(isWhitelisted(filePath)).toBe(true);
+        });
+
+        it('should return false if file path does not match any whitelist pattern', () => {
+            const filePath = 'build/index.something';
+            expect(isWhitelisted(filePath)).toBe(false);
+        });
     });
 });

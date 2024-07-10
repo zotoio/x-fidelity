@@ -47,7 +47,7 @@ export const defaultBlacklistPatterns: RegExp[] = [
 
 // only include these file patterns, if not in blacklistPatterns
 export const defaultWhitelistPatterns: RegExp[] = [
-    /.*\.(ts|js|md)$/,
+    /.*\.(ts|tsx|js|jsx|md)$/,
     /.*\/(package|tsconfig)\.json$/
 ];
 

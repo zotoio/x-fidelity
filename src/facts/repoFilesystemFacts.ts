@@ -67,4 +67,4 @@ function isWhitelisted(filePath: string, whitelistPatterns: RegExp[] = defaultWh
     return false;
 }
 
-export { collectRepoFileData, FileData }
+export { collectRepoFileData, parseFile, isBlacklisted, isWhitelisted, FileData }
