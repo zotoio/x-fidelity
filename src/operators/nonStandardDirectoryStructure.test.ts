@@ -2,22 +2,10 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';
 import { Stats } from 'fs';
+import { REPO_GLOBAL_CHECK } from '../utils/config';
 
 jest.mock('fs');
 jest.mock('path');
-
-describe('nonStandardDirectoryStructure', () => {
-    const mockedFs = fs as jest.Mocked<typeof fs>;
-    const mockedPath = path as jest.Mocked<typeof path>;
-
-    beforeEach(() => {
-        mockedFs.existsSync.mockReset();
-        mockedFs.lstatSync.mockReset();
-        mockedPath.dirname.mockReset();
-        mockedPath.join.mockReset();
-    });
-
-import { REPO_GLOBAL_CHECK } from '../utils/config';
 
 describe('nonStandardDirectoryStructure', () => {
     const mockedFs = fs as jest.Mocked<typeof fs>;
@@ -64,7 +52,7 @@ describe('nonStandardDirectoryStructure', () => {
         mockedFs.existsSync.mockReturnValue(true);
         mockedFs.lstatSync.mockReturnValue({ isDirectory: () => true } as Stats);
 
-        const result = nonStandardDirectoryStructure.fn('yarn.lock', { dir1: null, dir2: { subdir1: null } });
+        const result = nonStandardDirectoryStructure.fn(REPO_GLOBAL_CHECK, { dir1: null, dir2: { subdir1: null } });
 
         expect(result).toBe(false);
     });

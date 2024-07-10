@@ -19,7 +19,7 @@ console.log(banner);
 logger.info([banner]);
 
 program
-    .option("-d, --dir <directory>", "The repo checkout directory")
+    .option("-d, --dir <directory>", "The checkout directory to analyse")
     .option("-c, --configUrl <url>", "The URL used to fetch config");
 
 program.parse();
@@ -30,8 +30,7 @@ const options = program.opts();
 if (program.options.length === 0) program.help();
 
 if (!options.dir) {
-    console.error("Repo directory is required. Please specify the directory using the -d or --dir option.");
-    process.exit(1);
+    console.error("Checkout directory not provided. Defaulting to current directory.");
 }
 
 console.log(`Analysis of: ${process.env.PWD}/${options.dir}`);

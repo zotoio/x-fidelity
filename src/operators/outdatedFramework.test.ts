@@ -1,7 +1,5 @@
 import { logger } from '../utils/logger';
 import { outdatedFramework } from './outdatedFramework';
-
-describe('outdatedFramework', () => {
 import { REPO_GLOBAL_CHECK } from '../utils/config';
 
 describe('outdatedFramework', () => {
@@ -34,7 +32,7 @@ describe('outdatedFramework', () => {
     });
 
     it('logs an error when at least one dependency is outdated', () => {
-        const filePath = 'yarn.lock';
+        const filePath = REPO_GLOBAL_CHECK;
         const dependencyData = {
             installedDependencyVersions: [
                 { dep: 'dep1', ver: '1.0.0', min: '1.0.0' },

@@ -9,7 +9,7 @@ const outdatedFramework: OperatorDefn = {
         let result = true;
 
         // this is a special rule we only run on the root package.json, however it checks the entire dependency tree.
-        if (fileName !== REPO_GLOBAL_CHECK {
+        if (fileName !== REPO_GLOBAL_CHECK) {
             return false;
         }
         console.log(`running global dependency currency checks..`);

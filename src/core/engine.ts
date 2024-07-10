@@ -1,18 +1,20 @@
 import { logger } from '../utils/logger';
 import { Engine, EngineResult, RuleProperties, RuleResult } from 'json-rules-engine';
-import { FileData, collectRepoFileData, collectStandardDirectoryStructure } from '../facts/repoFilesystemFacts';
+import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
+import { collectStandardRepoStructure } from '../utils/config';
 import { loadRules } from '../rules';
 import { operators } from '../operators';
 import { ScanResult, RuleFailure } from '../typeDefs';
-import { getDependencyVersionFacts, collectMinimumDependencyVersions } from
+import { getDependencyVersionFacts } from
     '../facts/repoDependencyFacts';
+import { collectMinimumDependencyVersions } from '../utils/config';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../facts/openaiAnalysisFacts';
 
 async function analyzeCodebase(repoPath: string, configUrl?: string): Promise<any[]> {
     const installedDependencyVersions = await getDependencyVersionFacts();
     const fileData: FileData[] = await collectRepoFileData(repoPath);
     const minimumDependencyVersions = await collectMinimumDependencyVersions(configUrl);
-    const standardStructure = await collectStandardDirectoryStructure(configUrl);
+    const standardStructure = await collectStandardRepoStructure(configUrl);
     const openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
 
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });

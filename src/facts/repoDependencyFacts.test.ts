@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import axios from 'axios';
-import { collectMinimumDependencyVersions, collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree } from './repoDependencyFacts';
+import { collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree } from './repoDependencyFacts';
+import { collectMinimumDependencyVersions } from '../utils/config';
 import { logger } from '../utils/logger';
 import _ from 'lodash';
 

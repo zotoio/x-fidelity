@@ -2,11 +2,12 @@ import { OperatorDefn } from '../typeDefs';
 import { logger } from '../utils/logger';
 import * as path from 'path';
 import * as fs from 'fs';
+import { REPO_GLOBAL_CHECK } from '../utils/config';
 
 const nonStandardDirectoryStructure: OperatorDefn = {
     'name': 'nonStandardDirectoryStructure',
     'fn': (filePath: any, standardStructure: any) => {
-        if (filePath !== 'yarn.lock') {
+        if (filePath !== REPO_GLOBAL_CHECK) {
             return false;
         }
 
