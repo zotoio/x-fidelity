@@ -16,7 +16,11 @@ jest.mock('../utils/logger', () => ({
 describe('collectRepoFileData', () => {
     const mockedFs = fs as jest.Mocked<typeof fs>;
     beforeEach(() => {
-        mockedFsPromises.lstat = jest.fn().mockResolvedValue({ isDirectory: () => false } as fs.Stats);
+        
+        //mockedFsPromises.lstat = jest.fn().mockResolvedValue({ isDirectory: () => false } as fs.Stats);
+        jest.spyOn(mockedFsPromises, 'lstat').mockResolvedValue({
+            isDirectory: () => false
+          } as fs.Stats);
     });
     const mockedPath = path as jest.Mocked<typeof path>;
 
@@ -37,6 +41,7 @@ describe('collectRepoFileData', () => {
         };
 
         mockedFs.readdirSync.mockReturnValue(mockFiles);
+        const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
         mockedFsPromises.lstat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
         mockedFs.readFileSync.mockReturnValue(mockFileData.fileContent);
         mockedPath.join.mockImplementation((...args) => args.join('/'));
@@ -91,6 +96,7 @@ describe('collectRepoFileData', () => {
             if (dirPath === '/repo/dir1') return mockDirFiles;
             return [];
         });
+        const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
         mockedFsPromises.lstat.mockImplementation((path: fs.PathLike) => {
             if (path === '/repo/dir1') return Promise.resolve({ isDirectory: () => true } as fs.Stats);
             return Promise.resolve({ isDirectory: () => false } as fs.Stats);
