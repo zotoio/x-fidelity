@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger';
 import { Engine, EngineResult, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
-import { ScanResult, RuleFailure, ArchetypeConfig } from '../typeDefs';
+import { ScanResult, RuleFailure, ArchetypeConfig, OpenAIAnalysisParams } from '../typeDefs';
 import { getDependencyVersionFacts } from '../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../facts/openaiAnalysisFacts';
 import axios from 'axios';
@@ -72,7 +72,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
     if (process.env.OPENAI_API_KEY && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
         console.log(`adding openai facts to engine..`);
-        engine.addFact('openaiAnalysis', (params, almanac) => Promise.resolve(openaiAnalysis(params, almanac)));
+        engine.addFact('openaiAnalysis', (params: OpenAIAnalysisParams, almanac) => Promise.resolve(openaiAnalysis(params, almanac)));
         engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
     }
 
