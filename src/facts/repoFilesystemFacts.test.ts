@@ -21,7 +21,10 @@ describe('collectRepoFileData', () => {
     });
 
     it('should collect file data from the repository', async () => {
-        const mockFiles = ['file1.ts', 'file2.ts'];
+        const mockFiles = [
+            { name: 'file1.ts', isDirectory: () => false } as fs.Dirent,
+            { name: 'file2.ts', isDirectory: () => false } as fs.Dirent
+        ];
         
         const mockFileData: FileData = {
             fileName: 'file1.ts',
@@ -40,7 +43,10 @@ describe('collectRepoFileData', () => {
     });
 
     it('should skip blacklisted files', async () => {
-        const mockFiles = ['file1.ts', '.hiddenFile'];
+        const mockFiles = [
+            { name: 'file1.ts', isDirectory: () => false } as fs.Dirent,
+            { name: '.hiddenFile', isDirectory: () => false } as fs.Dirent
+        ];
         const mockFileData: FileData = {
             fileName: 'file1.ts',
             filePath: '/repo/file1.ts',
@@ -58,8 +64,13 @@ describe('collectRepoFileData', () => {
     });
 
     it('should collect file data recursively from directories', async () => {
-        const mockFiles = ['dir1', 'file1.ts'];
-        const mockDirFiles = ['file2.ts'];
+        const mockFiles = [
+            { name: 'dir1', isDirectory: () => true } as fs.Dirent,
+            { name: 'file1.ts', isDirectory: () => false } as fs.Dirent
+        ];
+        const mockDirFiles = [
+            { name: 'file2.ts', isDirectory: () => false } as fs.Dirent
+        ];
         const mockFileData: FileData = {
             fileName: 'file1.ts',
             filePath: '/repo/file1.ts',
