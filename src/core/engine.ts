@@ -4,13 +4,31 @@ import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
 import { ScanResult, RuleFailure, ArchetypeConfig } from '../typeDefs';
 import { getDependencyVersionFacts } from '../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../facts/openaiAnalysisFacts';
+import axios from 'axios';
 import { archetypes } from '../archetypes';
 import { loadRules } from '../rules';
 import { loadOperators } from '../operators';
 import { loadFacts } from '../facts';
+import axios from 'axios';
 
 async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack'): Promise<any[]> {
-    const archetypeConfig: ArchetypeConfig = archetypes[archetype] || archetypes['node-fullstack'];
+    let archetypeConfig: ArchetypeConfig = archetypes[archetype] || archetypes['node-fullstack'];
+    
+    if (archetypeConfig.configUrl) {
+        try {
+            const response = await axios.get(archetypeConfig.configUrl);
+            archetypeConfig = {
+                ...archetypeConfig,
+                config: {
+                    ...archetypeConfig.config,
+                    ...response.data
+                }
+            };
+        } catch (error) {
+            logger.error(`Error fetching remote config: ${error}`);
+        }
+    }
+
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
     const fileData: FileData[] = await collectRepoFileData(repoPath, archetypeConfig);
     const { minimumDependencyVersions, standardStructure } = archetypeConfig.config;
