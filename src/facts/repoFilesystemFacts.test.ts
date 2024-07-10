@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../utils/logger';
 
-let mockedFsPromises = jest.mocked(fs.promises);
+const mockedFsPromises = jest.mocked(fs.promises, true);
 jest.mock('fs');
 jest.mock('path');
 jest.mock('../utils/logger', () => ({
@@ -15,7 +15,7 @@ jest.mock('../utils/logger', () => ({
 
 describe('collectRepoFileData', () => {
     const mockedFs = fs as jest.Mocked<typeof fs>;
-    mockedFsPromises.lstat = jest.fn();
+    mockedFsPromises.lstat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
     const mockedPath = path as jest.Mocked<typeof path>;
 
     beforeEach(() => {
