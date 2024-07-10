@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../utils/logger';
 
-const mockedFsPromises = jest.mocked(fs.promises, true);
+let mockedFsPromises = jest.mocked(fs.promises);
 jest.mock('fs');
 jest.mock('path');
 jest.mock('../utils/logger', () => ({
@@ -89,8 +89,8 @@ describe('collectRepoFileData', () => {
             if (dirPath === '/repo/dir1') return mockDirFiles;
             return [];
         });
-        mockedFsPromises.lstat.mockImplementation((filePath: string) => {
-            if (filePath === '/repo/dir1') return Promise.resolve({ isDirectory: () => true } as fs.Stats);
+        mockedFsPromises.lstat.mockImplementation((path: fs.PathLike) => {
+            if (path === '/repo/dir1') return Promise.resolve({ isDirectory: () => true } as fs.Stats);
             return Promise.resolve({ isDirectory: () => false } as fs.Stats);
         });
         mockedFs.readFileSync.mockReturnValue(mockFileData.fileContent);
