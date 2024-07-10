@@ -17,13 +17,13 @@ describe('loadRules', () => {
     const mockedPath = path as jest.Mocked<typeof path>;
 
     beforeEach(() => {
-        mockedFs.promises.readdir.mockReset();
+        (mockedFs.promises.readdir as jest.Mock).mockReset();
         mockedPath.join.mockReset();
     });
 
     it('should load all rule files in the directory', async () => {
         const mockFiles = ['rule1-rule.json', 'rule2-rule.json'];
-        mockedFs.promises.readdir.mockResolvedValue(mockFiles);
+        (mockedFs.promises.readdir as jest.Mock).mockResolvedValue(mockFiles);
         mockedPath.join.mockImplementation((...args) => args.join('/'));
 
         const rules = await loadRules();
@@ -35,7 +35,7 @@ describe('loadRules', () => {
 
     it('should handle errors when loading rule files', async () => {
         const mockFiles = ['rule1-rule.json'];
-        mockedFs.promises.readdir.mockResolvedValue(mockFiles);
+        (mockedFs.promises.readdir as jest.Mock).mockResolvedValue(mockFiles);
         mockedPath.join.mockImplementation((...args) => args.join('/'));
         jest.spyOn(global, 'import').mockRejectedValue(new Error('mock error'));
 
