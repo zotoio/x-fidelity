@@ -22,7 +22,7 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
     //console.log(almanac.factValue('openaiSystemPrompt'));
     //console.log(almanac.factValue('fileData'));
 
-    if (fileData.fileName !== 'yarn.lock') {
+    if (fileData.fileName !== 'REPO_GLOBAL_CHECK') {
         return result;
     }
 
@@ -77,7 +77,7 @@ const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
     // }); 
     const formattedFileData = fileData.map((file: FileData) => {     
         logger.debug(`formatting ${file.filePath} of length: ${file.fileContent.length}`);                                                                                                             
-        if (!['yarn.lock'].includes(file.fileName)) {
+        if (!['REPO_GLOBAL_CHECK'].includes(file.fileName)) {
             // remove tabs and newlines
             //file.fileContent = file.fileContent.replace(/[\n\t]/g, "");
             // remove consecutive spaces

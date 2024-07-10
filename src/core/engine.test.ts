@@ -1,17 +1,38 @@
 import { analyzeCodebase } from './engine';
 import { Engine } from 'json-rules-engine';
-import { collectRepoFileData, collectStandardDirectoryStructure } from '../facts/repoFilesystemFacts';
-import { getDependencyVersionFacts, collectMinimumDependencyVersions } from '../facts/repoDependencyFacts';
+import { collectRepoFileData } from '../facts/repoFilesystemFacts';
+import { getDependencyVersionFacts } from '../facts/repoDependencyFacts';
+import { collectOpenaiAnalysisFacts } from '../facts/openaiAnalysisFacts';
 import { loadRules } from '../rules';
-import { operators } from '../operators';
-import { logger } from '../utils/logger';
+import { loadOperators } from '../operators';
+import { loadFacts } from '../facts';
+import { archetypes } from '../archetypes';
 
 jest.mock('json-rules-engine');
 jest.mock('../facts/repoFilesystemFacts');
 jest.mock('../facts/repoDependencyFacts');
 jest.mock('../rules');
 jest.mock('../operators');
+jest.mock('../facts');
 jest.mock('../utils/logger');
+jest.mock('../archetypes', () => ({
+    archetypes: {
+        'node-fullstack': {
+            rules: ['mockRule'],
+            operators: ['mockOperator'],
+            facts: ['mockFact'],
+            config: {
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                blacklistPatterns: [],
+                whitelistPatterns: []
+            }
+        }
+    }
+}));
+jest.mock('../facts/openaiAnalysisFacts', () => ({
+    collectOpenaiAnalysisFacts: jest.fn().mockResolvedValue('mock openai system prompt')
+}));
 
 describe('analyzeCodebase', () => {
     beforeEach(() => {
@@ -21,16 +42,17 @@ describe('analyzeCodebase', () => {
     it('should analyze the codebase and return results', async () => {
         const mockFileData = [{ filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' }];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
-        const mockStandardStructure = { src: { core: null, utils: null, operators: null, rules: null, facts: null } };
         const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
+        const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
+        const mockFacts = [{ name: 'mockFact', fn: jest.fn() }];
 
         (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
         (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
-        (collectMinimumDependencyVersions as jest.Mock).mockResolvedValue({});
-        (collectStandardDirectoryStructure as jest.Mock).mockResolvedValue(mockStandardStructure);
         (loadRules as jest.Mock).mockResolvedValue(mockRules);
+        (loadOperators as jest.Mock).mockResolvedValue(mockOperators);
+        (loadFacts as jest.Mock).mockResolvedValue(mockFacts);
 
-        const engineRunMock = jest.fn().mockResolvedValue({ failureResults: [] });
+        const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
         (Engine as jest.Mock).mockImplementation(() => ({
             addOperator: jest.fn(),
             addRule: jest.fn(),
@@ -39,13 +61,13 @@ describe('analyzeCodebase', () => {
             run: engineRunMock
         }));
 
-        const results = await analyzeCodebase('mockRepoPath');
+        const results = await analyzeCodebase('mockRepoPath', 'node-fullstack');
 
-        expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath');
-        expect(getDependencyVersionFacts).toHaveBeenCalled();
-        expect(collectMinimumDependencyVersions).toHaveBeenCalled();
-        expect(collectStandardDirectoryStructure).toHaveBeenCalled();
-        expect(loadRules).toHaveBeenCalled();
+        expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
+        expect(getDependencyVersionFacts).toHaveBeenCalledWith(expect.any(Object));
+        expect(loadRules).toHaveBeenCalledWith(['mockRule']);
+        expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
+        expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
         expect(results).toEqual([]);
     });
@@ -53,14 +75,15 @@ describe('analyzeCodebase', () => {
     it('should handle errors during analysis', async () => {
         const mockFileData = [{ filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' }];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
-        const mockStandardStructure = { src: { core: null, utils: null, operators: null, rules: null, facts: null } };
         const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
+        const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
+        const mockFacts = [{ name: 'mockFact', fn: jest.fn() }];
 
         (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
         (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
-        (collectMinimumDependencyVersions as jest.Mock).mockResolvedValue({});
-        (collectStandardDirectoryStructure as jest.Mock).mockResolvedValue(mockStandardStructure);
         (loadRules as jest.Mock).mockResolvedValue(mockRules);
+        (loadOperators as jest.Mock).mockResolvedValue(mockOperators);
+        (loadFacts as jest.Mock).mockResolvedValue(mockFacts);
 
         const engineRunMock = jest.fn().mockRejectedValue(new Error('mock error'));
         (Engine as jest.Mock).mockImplementation(() => ({
@@ -71,45 +94,13 @@ describe('analyzeCodebase', () => {
             run: engineRunMock
         }));
 
-        const results = await analyzeCodebase('mockRepoPath');
+        const results = await analyzeCodebase('mockRepoPath', 'node-fullstack');
 
-        expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath');
+        expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalled();
-        expect(collectMinimumDependencyVersions).toHaveBeenCalled();
-        expect(collectStandardDirectoryStructure).toHaveBeenCalled();
-        expect(loadRules).toHaveBeenCalled();
-        expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
-        expect(results).toEqual([]);
-    });
-
-    it('should handle errors during analysis', async () => {
-        const mockFileData = [{ filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' }];
-        const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
-        const mockStandardStructure = { src: { core: null, utils: null, operators: null, rules: null, facts: null } };
-        const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
-
-        (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
-        (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
-        (collectMinimumDependencyVersions as jest.Mock).mockResolvedValue({});
-        (collectStandardDirectoryStructure as jest.Mock).mockResolvedValue(mockStandardStructure);
-        (loadRules as jest.Mock).mockResolvedValue(mockRules);
-
-        const engineRunMock = jest.fn().mockRejectedValue(new Error('mock error'));
-        (Engine as jest.Mock).mockImplementation(() => ({
-            addOperator: jest.fn(),
-            addRule: jest.fn(),
-            addFact: jest.fn(),
-            on: jest.fn(),
-            run: engineRunMock
-        }));
-
-        const results = await analyzeCodebase('mockRepoPath');
-
-        expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath');
-        expect(getDependencyVersionFacts).toHaveBeenCalled();
-        expect(collectMinimumDependencyVersions).toHaveBeenCalled();
-        expect(collectStandardDirectoryStructure).toHaveBeenCalled();
-        expect(loadRules).toHaveBeenCalled();
+        expect(loadRules).toHaveBeenCalledWith(['mockRule']);
+        expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
+        expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
         expect(results).toEqual([]);
     });

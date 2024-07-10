@@ -4,22 +4,29 @@ import { OperatorDefn } from '../typeDefs';
 const openaiAnalysisHighSeverity: OperatorDefn = {
     'name': 'openaiAnalysisHighSeverity', 
     'fn': (openaiAnalysis: any, severityThreshold: any) => {
-        severityThreshold = severityThreshold ? severityThreshold : 8;
-        let result = false;
-        
-        // check the openai analysis response
-        //logger.debug(openaiAnalysis);
+        try {
+            severityThreshold = parseInt(severityThreshold) ? parseInt(severityThreshold) : 8;
+            let result = false;
+            
+            // check the openai analysis response
+            const analysis = JSON.parse(openaiAnalysis);
 
-        if (openaiAnalysis?.result?.length > 0) {
-            if (openaiAnalysis.result.map((issue: any) => issue?.severity)
-                .some((severity: number) => severity > severityThreshold)) {
+            if (analysis?.result?.length > 0) {
+                if (analysis.result.map((issue: any) => {
+                    return parseInt(issue?.severity)
+                }).some((severity: number) => severity > severityThreshold)) {
                     logger.error('openai: high severity issues found');
                     result = true;
                 }
-        }
-    
-        return result;
+            }
         
+            return result;
+        } catch (e) {
+            // for now we don't fail the build if openai respose parsing fails
+            console.log(e)
+            logger.error(`openaiAnalysisHighSeverity: ${e}`);
+            return false;
+        }
     }
 }
 

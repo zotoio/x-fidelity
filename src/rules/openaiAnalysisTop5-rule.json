@@ -6,7 +6,7 @@
                 "fact": "fileData",
                 "path": "$.fileName",
                 "operator": "equal",
-                "value": "yarn.lock"
+                "value": "REPO_GLOBAL_CHECK"
             },
             {
                 "fact": "openaiAnalysis",

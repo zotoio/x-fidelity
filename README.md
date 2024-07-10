@@ -211,7 +211,7 @@ This rule checks if the directory structure matches the standard structure.
         "fact": "fileData",
         "path": "$.fileName",
         "operator": "equal",
-        "value": "yarn.lock"
+        "value": "REPO_GLOBAL_CHECK"
       },
       {
         "fact": "fileData",
@@ -251,7 +251,7 @@ This rule uses OpenAI to analyze the codebase for various issues.
         "fact": "fileData",
         "path": "$.fileName",
         "operator": "equal",
-        "value": "yarn.lock"
+        "value": "REPO_GLOBAL_CHECK"
       },
       {
         "fact": "openaiAnalysis",
@@ -287,7 +287,7 @@ This rule uses OpenAI to analyze the codebase for various issues.
         "fact": "fileData",
         "path": "$.fileName",
         "operator": "equal",
-        "value": "yarn.lock"
+        "value": "REPO_GLOBAL_CHECK"
       },
       {
         "fact": "openaiAnalysis",

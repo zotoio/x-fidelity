@@ -4,11 +4,15 @@ import { fileContains } from './fileContains';
 import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';
 import { openaiAnalysisHighSeverity } from './openaiAnalysisHighSeverity';
 
+const allOperators: Record<string, OperatorDefn> = {
+    outdatedFramework,
+    fileContains,
+    nonStandardDirectoryStructure,
+    openaiAnalysisHighSeverity
+};
 
-let operators: OperatorDefn[] = [];
-operators.push(outdatedFramework);
-operators.push(fileContains);
-operators.push(nonStandardDirectoryStructure);
-operators.push(openaiAnalysisHighSeverity);
+async function loadOperators(operatorNames: string[]): Promise<OperatorDefn[]> {
+    return operatorNames.map(name => allOperators[name]).filter(Boolean);
+}
 
-export { operators };
+export { loadOperators };

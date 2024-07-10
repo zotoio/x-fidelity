@@ -1,29 +1,7 @@
 import { logger } from '../utils/logger';
 import _ from 'lodash';
-import axios from 'axios';
 import { execSync } from 'child_process';
-import { LocalDependencies, MinimumDepVersions, VersionData } from '../typeDefs';
-
-/**                                                                                                                    
-  * Collects the minimum dependency versions.                                                                           
-  * @returns The minimum dependency versions.                                                                           
-  */                                                                                                                    
-export async function collectMinimumDependencyVersions(configUrl?: string) {                                           
-    if (configUrl) {                                                                                                   
-        try {                                                                                                          
-            const response = await axios.get(configUrl);                                                               
-            return response.data.minimumDependencyVersions;                                                            
-        } catch (error) {                                                                                              
-            logger.error(`Error fetching minimum dependency versions from configUrl: ${error}`);                       
-            return {};                                                                                                 
-        }                                                                                                              
-    } else {                                                                                                           
-        return {
-            commander: '^2.0.0',
-            nodemon: '^3.9.0'
-        };                                                                                                              
-    }                                                                                                                  
-}
+import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } from '../typeDefs';
 
 /**
  * Collects the local dependencies.
@@ -43,11 +21,12 @@ export function collectLocalDependencies(): LocalDependencies {
 
 /**
  * Gets the installed dependency versions.
+ * @param archetypeConfig The archetype configuration.
  * @returns The installed dependency versions.
  */
-export async function getDependencyVersionFacts() {
+export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig) {
     const localDependencies = await collectLocalDependencies();
-    const minimumDependencyVersions = await collectMinimumDependencyVersions();
+    const minimumDependencyVersions = archetypeConfig.config.minimumDependencyVersions;
 
     //console.log(localDependencies);
 

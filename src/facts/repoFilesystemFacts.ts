@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger';
-import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import { ArchetypeConfig } from '../typeDefs';
 
 interface FileData {
     fileName: string;
@@ -18,7 +18,7 @@ async function parseFile(filePath: string): Promise<FileData> {
     });
 }
 
-async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
+async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeConfig): Promise<FileData[]> {
     const filesData: FileData[] = [];
 
     logger.debug(`collectingRepoFileData from: ${repoPath}`);
@@ -26,57 +26,45 @@ async function collectRepoFileData(repoPath: string): Promise<FileData[]> {
 
     for (const file of files) {
         const filePath = path.join(repoPath, file);
-        if (!ignored(filePath) && !ignored(file)) {
-            console.log(`adding file: ${filePath}`);
-            const stats = await fs.promises.lstat(filePath);
-            if (stats.isDirectory()) {
-                const dirFilesData = await collectRepoFileData(filePath);
+        logger.debug(`checking file: ${filePath}`);
+        const stats = await fs.promises.lstat(filePath);
+        if (stats.isDirectory()) {
+            if (!isBlacklisted(filePath, archetypeConfig.config.blacklistPatterns)) {
+                const dirFilesData = await collectRepoFileData(filePath, archetypeConfig);
                 filesData.push(...dirFilesData);
-            } else {
+            }    
+        } else {
+            if (!isBlacklisted(filePath, archetypeConfig.config.blacklistPatterns) && isWhitelisted(filePath, archetypeConfig.config.whitelistPatterns)) {
+                logger.debug(`adding file: ${filePath}`);
                 const fileData = await parseFile(filePath);
                 filesData.push(fileData);
-            }
-        }
+            }    
+        
+        }    
     }
     return filesData;
 }
 
-function ignored(file: string){
-    return file.startsWith('.') 
-        || file.includes('node_modules')
-        || file.includes('/.')
-        || file.endsWith('-rule.json')
-        || file.includes('/dist/')
-        || file.includes('/lcov')
-        || file.startsWith('dist')
-        || file.endsWith('md')
-        || file.endsWith('.log')
-        || file.includes('LICENSE');
+function isBlacklisted(filePath: string, blacklistPatterns: RegExp[]): boolean {
+    logger.debug(`checking blacklist for file: ${filePath}`);
+    for (const pattern of blacklistPatterns) {
+        if (pattern.test(filePath)) {
+            logger.debug(`skipping blacklisted file: ${filePath} with pattern: ${pattern}`);
+            return true;
+        }
+    }
+    return false;
 }
 
-const standardStructure = {                                                                                            
-    "src": {                                                                                                           
-        "core": null,                                                                                                  
-        "utils": null,                                                                                                 
-        "operators": null,                                                                                             
-        "rules": null,                                                                                                 
-        "facts": null,
-        "FAIL": null                                                                                                  
-    }                                                                                                                  
-};                                                                                                                     
-                                                                                                                       
-async function collectStandardDirectoryStructure(configUrl?: string) {                                                     
-    if (configUrl) {                                                                                                   
-        try {                                                                                                          
-            const response = await axios.get(configUrl);                                                               
-            return response.data.standardStructure;                                                                    
-        } catch (error) {                                                                                              
-            logger.error(`Error fetching standard structure from configUrl: ${error}`);                                
-            return standardStructure;                                                                                  
-        }                                                                                                              
-    } else {                                                                                                           
-        return standardStructure;                                                                                      
-    }                                                                                                                  
+function isWhitelisted(filePath: string, whitelistPatterns: RegExp[]): boolean {
+    logger.debug(`checking whitelist for file: ${filePath}`);
+    for (const pattern of whitelistPatterns) {
+        if (pattern.test(filePath)) {
+            logger.debug(`allowing file: ${filePath} with pattern: ${pattern}`);
+            return true;
+        }
+    }
+    return false;
 }
 
-export { collectRepoFileData, FileData, collectStandardDirectoryStructure }
+export { collectRepoFileData, parseFile, isBlacklisted, isWhitelisted, FileData }
