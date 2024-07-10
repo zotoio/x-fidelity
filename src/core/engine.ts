@@ -72,7 +72,11 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
     if (process.env.OPENAI_API_KEY && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
         console.log(`adding openai facts to engine..`);
-        engine.addFact('openaiAnalysis', (params: OpenAIAnalysisParams, almanac) => Promise.resolve(openaiAnalysis(params, almanac)));
+        engine.addFact('openaiAnalysis', (params, almanac) => {
+            return async () => {
+                return openaiAnalysis(params as OpenAIAnalysisParams, almanac);
+            };
+        });
         engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
     }
 
