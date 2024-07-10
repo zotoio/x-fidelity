@@ -12,24 +12,25 @@ if (process.env.OPENAI_API_KEY) {
     openai = new OpenAI(configuration); 
 }    
 
-const openaiAnalysis = async function (params: any, almanac: Almanac) {
+interface OpenAIAnalysisParams {
+    prompt: string;
+    resultFact: string;
+}
+
+const openaiAnalysis = async function (params: OpenAIAnalysisParams, almanac: Almanac) {
     let result: object = {'result': []};
     const model = process.env.OPENAI_MODEL || 'gpt-4o';
 
-    const openaiSystemPrompt: string = await almanac.factValue('openaiSystemPrompt');
-    const fileData: FileData = await almanac.factValue('fileData');
-
-    //console.log(almanac.factValue('openaiSystemPrompt'));
-    //console.log(almanac.factValue('fileData'));
-
-    if (fileData.fileName !== 'REPO_GLOBAL_CHECK') {
-        return result;
-    }
-
     try {
+        const openaiSystemPrompt: string = await almanac.factValue('openaiSystemPrompt');
+        const fileData: FileData = await almanac.factValue('fileData');
+
+        if (fileData.fileName !== 'REPO_GLOBAL_CHECK') {
+            return result;
+        }
+
         const payload: ChatCompletionCreateParams = {
             model,
-            //response_format: { type: 'json_object' },
             messages: [
                 { role: 'system', content: openaiSystemPrompt },
                 { role: 'user', content: `${params.prompt} 
@@ -51,15 +52,23 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
         const response: OpenAI.Chat.Completions.ChatCompletion = await openai.chat.completions.create(payload);
         logger.debug(response);
 
+        if (!response.choices[0].message.content) {
+            throw new Error('OpenAI response is empty');
+        }
+
         const analysis = {
-            'result': JSON.parse(response?.choices[0].message.content ?? '')
+            'result': JSON.parse(response.choices[0].message.content)
         };
 
         almanac.addRuntimeFact(params.resultFact, analysis);
 
         result = analysis;
     } catch (error) {
-        logger.error(`openaiAnalysis: Error analyzing facts with OpenAI: ${error}`);
+        if (error instanceof Error) {
+            logger.error(`openaiAnalysis: Error analyzing facts with OpenAI: ${error.message}`);
+        } else {
+            logger.error(`openaiAnalysis: Unknown error occurred`);
+        }
     }
 
     return result;

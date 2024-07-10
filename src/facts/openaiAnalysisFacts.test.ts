@@ -8,12 +8,8 @@ jest.mock('json-rules-engine');
 jest.mock('openai', () => ({
     OpenAI: jest.fn(() => ({
         chat: { completions: { create: jest.fn() } }
-        }))
-        }));
-// jest.mock('./openaiAnalysisFacts', () => ({
-//     collectOpenaiAnalysisFacts: jest.fn(),
-//     openaiAnalysis: jest.fn()
-// }));
+    }))
+}));
 jest.mock('../utils/logger', () => ({
     logger: {
         debug: jest.fn(),
@@ -23,21 +19,18 @@ jest.mock('../utils/logger', () => ({
 
 describe('openaiAnalysis', () => {
     const mockAlmanac: Almanac = {
-        factValue: jest.fn()
+        factValue: jest.fn(),
+        addRuntimeFact: jest.fn(),
     } as unknown as Almanac;
-    
-    jest.mock('openai', () => ({
-        OpenAI: jest.fn(() => ({
-            chat: { completions: { create: jest.fn() } }
-            }))
-            }));
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
     it('should return an empty result if fileName is not REPO_GLOBAL_CHECK', async () => {
-        (mockAlmanac.factValue as jest.Mock).mockResolvedValueOnce('some prompt').mockResolvedValueOnce({ fileName: 'someFile' });
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce('some prompt')
+            .mockResolvedValueOnce({ fileName: 'someFile' });
 
         const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
@@ -45,7 +38,9 @@ describe('openaiAnalysis', () => {
     });
 
     it('should return analysis result from OpenAI', async () => {
-        (mockAlmanac.factValue as jest.Mock).mockResolvedValueOnce('some prompt').mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' });
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce('some prompt')
+            .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' });
 
         const mockResponse = {
             choices: [
@@ -61,18 +56,44 @@ describe('openaiAnalysis', () => {
 
         const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
-        expect(result).toEqual({ result: [] });
+        expect(result).toEqual({ result: [{ issue: 'test issue', severity: 9 }] });
+        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', { result: [{ issue: 'test issue', severity: 9 }] });
     });
 
     it('should log an error if OpenAI request fails', async () => {
-        (mockAlmanac.factValue as jest.Mock).mockResolvedValueOnce('some prompt').mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' });
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce('some prompt')
+            .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' });
 
         ((new OpenAI()).chat.completions.create as jest.Mock).mockRejectedValue(new Error('mock error'));
 
         const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
         expect(result).toEqual({ result: [] });
-        expect(logger.error).toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalledWith('openaiAnalysis: Error analyzing facts with OpenAI: mock error');
+    });
+
+    it('should handle empty OpenAI response', async () => {
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce('some prompt')
+            .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' });
+
+        const mockResponse = {
+            choices: [
+                {
+                    message: {
+                        content: null
+                    }
+                }
+            ]
+        };
+
+        ((new OpenAI()).chat.completions.create as jest.Mock).mockResolvedValue(mockResponse);
+
+        const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
+
+        expect(result).toEqual({ result: [] });
+        expect(logger.error).toHaveBeenCalledWith('openaiAnalysis: Error analyzing facts with OpenAI: OpenAI response is empty');
     });
 });
 
