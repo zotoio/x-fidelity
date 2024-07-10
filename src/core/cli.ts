@@ -33,8 +33,8 @@ if (!options.dir) {
     console.error("Checkout directory not provided. Defaulting to current directory.");
 }
 
-console.log(`Analysis of: ${process.env.PWD}/${options.dir}`);
-logger.info(`Analysis of: ${process.env.PWD}/${options.dir}`);
+console.log(`Archetype ${options.archetype}: analysis of: ${process.env.PWD}/${options.dir}`);
+logger.info(`Archetype ${options.archetype}: analysis of: ${process.env.PWD}/${options.dir}`);
 console.log('=====================================');
 logger.info('=====================================');
 

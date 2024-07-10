@@ -10,12 +10,9 @@ const openaiAnalysisHighSeverity: OperatorDefn = {
             
             // check the openai analysis response
             const analysis = JSON.parse(openaiAnalysis);
-            console.log(analysis);
 
             if (analysis?.result?.length > 0) {
-                console.log('asd)')
                 if (analysis.result.map((issue: any) => {
-                    console.log(issue?.severity)
                     return parseInt(issue?.severity)
                 }).some((severity: number) => severity > severityThreshold)) {
                     logger.error('openai: high severity issues found');
@@ -25,6 +22,7 @@ const openaiAnalysisHighSeverity: OperatorDefn = {
         
             return result;
         } catch (e) {
+            // for now we don't fail the build if openai respose parsing fails
             console.log(e)
             logger.error(`openaiAnalysisHighSeverity: ${e}`);
             return false;

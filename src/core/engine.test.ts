@@ -96,7 +96,7 @@ describe('analyzeCodebase', () => {
 
         const results = await analyzeCodebase('mockRepoPath', 'node-fullstack');
 
-        expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath');
+        expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalled();
         expect(loadRules).toHaveBeenCalledWith(['mockRule']);
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
