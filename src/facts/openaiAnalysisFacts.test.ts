@@ -7,19 +7,7 @@ import { FileData } from './repoFilesystemFacts';
 process.env.OPENAI_API_KEY = 'mock-key';
 jest.mock('json-rules-engine');
 jest.mock('openai', () => ({
-    ...jest.requireActual('openai'),
-    OpenAI: jest.fn().mockImplementation(() => ({
-        apiKey: '',
-        organization: '',
-        project: '',
-        _options: {},
-        // Add other required properties here
-        chat: {
-            completions: {
-                create: jest.fn()
-            }
-        }
-    }))
+    OpenAI: jest.fn()
 }));
 jest.mock('../utils/logger', () => ({
     logger: {
@@ -63,7 +51,13 @@ describe('openaiAnalysis', () => {
             ]
         };
 
-        ((new OpenAI()).chat.completions as jest.Mock).create.mockResolvedValue(mockResponse);
+        (OpenAI as jest.MockedClass<typeof OpenAI>).mockImplementation(() => ({
+            chat: {
+                completions: {
+                    create: jest.fn().mockResolvedValue(mockResponse)
+                }
+            }
+        } as unknown as OpenAI));
 
         const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
