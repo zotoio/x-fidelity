@@ -12,15 +12,10 @@ if (process.env.OPENAI_API_KEY) {
     openai = new OpenAI(configuration); 
 }    
 
-interface OpenAIAnalysisParams {
-    prompt: string;
-    resultFact: string;
-}
-
-const openaiAnalysis = async function (params: OpenAIAnalysisParams, almanac: Almanac) {
+const openaiAnalysis = async function (params: any, almanac: Almanac) {
     let result: object = {'result': []};
     const model = process.env.OPENAI_MODEL || 'gpt-4o';
-
+    
     try {
         const openaiSystemPrompt: string = await almanac.factValue('openaiSystemPrompt');
         const fileData: FileData = await almanac.factValue('fileData');
@@ -64,6 +59,7 @@ const openaiAnalysis = async function (params: OpenAIAnalysisParams, almanac: Al
 
         result = analysis;
     } catch (error) {
+        console.log(error);
         if (error instanceof Error) {
             logger.error(`openaiAnalysis: Error analyzing facts with OpenAI: ${error.message}`);
         } else {
@@ -76,14 +72,6 @@ const openaiAnalysis = async function (params: OpenAIAnalysisParams, almanac: Al
 
 const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
 
-    // const formattedFileData: FileData[] = fileData.map((file: FileData) => {                                                                                                                  
-    //     try {
-    //         file.fileAst = createSourceFile(file.fileName, file.fileContent, ScriptTarget.Latest, true);
-    //     } catch (error: any) {
-    //         console.error(`skip file: ${file.filePath} due to error: ${error.message}`);
-    //     }
-    //     return file;                                                                                                             
-    // }); 
     const formattedFileData = fileData.map((file: FileData) => {     
         logger.debug(`formatting ${file.filePath} of length: ${file.fileContent.length}`);                                                                                                             
         if (!['REPO_GLOBAL_CHECK'].includes(file.fileName)) {
