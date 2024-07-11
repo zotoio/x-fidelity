@@ -12,7 +12,8 @@ jest.mock('openai', () => ({
             completions: {
                 create: jest.fn()
             }
-        }
+        },
+        _client: {} // Add this line to mock the _client property
     }))
 }));
 jest.mock('../utils/logger', () => ({
