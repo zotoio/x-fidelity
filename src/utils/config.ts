@@ -11,7 +11,7 @@ export class ConfigManager {
     private static instance: ConfigManager;
     private config: ArchetypeConfig;
     private rules: any[];
-    private baseUrl: string;
+    public baseUrl: string;
 
     private constructor() {
         this.config = archetypes['node-fullstack'];

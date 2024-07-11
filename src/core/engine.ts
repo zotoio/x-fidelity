@@ -36,14 +36,14 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     });
 
     // Add rules to engine
-    const rules: RuleProperties[] = configManager.getRules();
+    const rules: RuleProperties[] = await loadRules(archetypeConfig.rules, configManager.baseUrl);
     logger.debug(rules);
 
     rules.forEach((rule) => {
         try {
             console.log(`adding rule: ${rule?.name}`);
             engine.addRule(rule);
-            
+                
         } catch (e: any) {
             console.error(`Error loading rule: ${rule?.name}`);
             logger.error(e.message);
