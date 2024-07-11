@@ -7,7 +7,7 @@ import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../facts/openaiAnaly
 import { loadOperators } from '../operators';
 import { loadFacts } from '../facts';
 import { loadRules } from '../rules';
-import { ConfigManager } from '../utils/config';
+import { ConfigManager, REPO_GLOBAL_CHECK } from '../utils/config';
 
 async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack'): Promise<any[]> {
     const configManager = ConfigManager.getInstance();
@@ -16,12 +16,14 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
     const fileData: FileData[] = await collectRepoFileData(repoPath, archetypeConfig);
-    // add REPO_GLOBAL_CHECK to fileData
+
+    // add REPO_GLOBAL_CHECK to fileData, which is the trigger for global checks
     fileData.push({
-        fileName: 'REPO_GLOBAL_CHECK',
-        filePath: 'REPO_GLOBAL_CHECK',
-        fileContent: 'REPO_GLOBAL_CHECK'
+        fileName: REPO_GLOBAL_CHECK,
+        filePath: REPO_GLOBAL_CHECK,
+        fileContent: REPO_GLOBAL_CHECK
     });
+
     const { minimumDependencyVersions, standardStructure } = archetypeConfig.config;
     const openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
 
