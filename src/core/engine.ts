@@ -6,6 +6,7 @@ import { getDependencyVersionFacts } from '../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../facts/openaiAnalysisFacts';
 import { loadOperators } from '../operators';
 import { loadFacts } from '../facts';
+import { loadRules } from '../rules';
 import { ConfigManager } from '../utils/config';
 
 async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack'): Promise<any[]> {
