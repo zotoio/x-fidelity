@@ -11,10 +11,12 @@ export class ConfigManager {
     private static instance: ConfigManager;
     private config: ArchetypeConfig;
     private rules: any[];
+    private baseUrl: string;
 
     private constructor() {
         this.config = archetypes['node-fullstack'];
         this.rules = [];
+        this.baseUrl = '';
     }
 
     public static getInstance(): ConfigManager {
@@ -24,11 +26,13 @@ export class ConfigManager {
         return ConfigManager.instance;
     }
 
-    public async initialize(archetype: string = 'node-fullstack', configUrl?: string): Promise<void> {
+    public async initialize(archetype: string = 'node-fullstack', baseUrl?: string): Promise<void> {
         this.config = archetypes[archetype] || archetypes['node-fullstack'];
+        this.baseUrl = baseUrl || '';
 
-        if (configUrl) {
+        if (this.baseUrl) {
             try {
+                const configUrl = `${this.baseUrl}/archetypes/${archetype}`;
                 const response = await axios.get(configUrl);
                 this.config = {
                     ...this.config,
@@ -43,7 +47,7 @@ export class ConfigManager {
         }
 
         // Load rules after config is initialized
-        this.rules = await loadRules(this.config.rules);
+        this.rules = await loadRules(this.config.rules, this.baseUrl);
     }
 
     public getConfig(): ArchetypeConfig {

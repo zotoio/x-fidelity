@@ -2,29 +2,54 @@ import { logger } from '../utils/logger';
 import { RuleProperties } from 'json-rules-engine';
 import * as fs from 'fs';
 import * as path from 'path';
+import axios from 'axios';
 
-async function loadRules(ruleNames: string[]): Promise<RuleProperties[]> {
+async function loadRules(ruleNames: string[], baseUrl?: string): Promise<RuleProperties[]> {
     console.log(`loading json rules..`);
-    const ruleFiles = (await fs.promises.readdir(__dirname)).filter(file => file.endsWith('-rule.json') && ruleNames.includes(file.split('-')[0]));
-    
-    logger.debug(`found ${ruleFiles.length} rule files to load. ${JSON.stringify(ruleFiles)}`);
-    const ruleProperties: Promise<RuleProperties>[] = [];
-    
-    await Promise.all(ruleFiles.map(async file => {
-        if (!file.startsWith('openai') || (process.env.OPENAI_API_KEY && file.startsWith('openai'))) {
+    const ruleProperties: RuleProperties[] = [];
+
+    for (const ruleName of ruleNames) {
+        let rule: RuleProperties;
+
+        if (baseUrl) {
             try {
-                logger.debug(`loading ${__dirname} ${file}...`);
-                const rule = await import(path.join(__dirname, file));
-                ruleProperties.push(rule);
-            } catch (e) {     
-                logger.error(`FATAL: Error loading rule file: ${file}`);
-                logger.error(e);
-                console.error(e);
-            }      
-        }     
-    }));
-    
-    return await Promise.all(ruleProperties);
+                const response = await axios.get(`${baseUrl}/rules/${ruleName}`);
+                rule = response.data;
+            } catch (error) {
+                logger.error(`Error fetching remote rule ${ruleName}: ${error}`);
+                // If remote fetch fails, fall back to local file
+                rule = await loadLocalRule(ruleName);
+            }
+        } else {
+            rule = await loadLocalRule(ruleName);
+        }
+
+        if (rule) {
+            ruleProperties.push(rule);
+        }
+    }
+
+    logger.debug(`Loaded ${ruleProperties.length} rules`);
+    return ruleProperties;
+}
+
+async function loadLocalRule(ruleName: string): Promise<RuleProperties | null> {
+    const fileName = `${ruleName}-rule.json`;
+    const filePath = path.join(__dirname, fileName);
+
+    if (!fileName.startsWith('openai') || (process.env.OPENAI_API_KEY && fileName.startsWith('openai'))) {
+        try {
+            logger.debug(`Loading local rule file: ${filePath}`);
+            const fileContent = await fs.promises.readFile(filePath, 'utf8');
+            return JSON.parse(fileContent);
+        } catch (error) {
+            logger.error(`FATAL: Error loading local rule file: ${fileName}`);
+            logger.error(error);
+            console.error(error);
+            return null;
+        }
+    }
+    return null;
 }
 
 export { loadRules };
