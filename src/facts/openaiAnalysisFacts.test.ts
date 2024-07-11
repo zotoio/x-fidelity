@@ -65,18 +65,22 @@ describe('openaiAnalysis', () => {
             ]
         };
 
-        (OpenAI as jest.MockedClass<typeof OpenAI>).mockImplementation(() => ({
+        const mockCreate = jest.fn().mockResolvedValue(mockResponse);
+        const mockOpenAI = {
             chat: {
                 completions: {
-                    create: jest.fn().mockResolvedValue(mockResponse)
+                    create: mockCreate
                 }
             }
-        } as unknown as OpenAI));
+        };
+
+        (OpenAI as jest.MockedClass<typeof OpenAI>).mockImplementation(() => mockOpenAI as unknown as OpenAI);
 
         const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
         expect(result).toEqual({ result: [{ issue: 'test issue', severity: 9 }] });
         expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', { result: [{ issue: 'test issue', severity: 9 }] });
+        expect(mockCreate).toHaveBeenCalled();
     });
 
     xit('should log an error if OpenAI request fails', async () => {

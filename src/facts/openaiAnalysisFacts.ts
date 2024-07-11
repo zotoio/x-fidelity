@@ -4,7 +4,7 @@ import { FileData } from './repoFilesystemFacts';
 import { ChatCompletionCreateParams } from 'openai/resources/chat/completions';
 import { Almanac } from 'json-rules-engine';
 
-let openai: OpenAI;
+let openai: OpenAI | undefined;
 if (process.env.OPENAI_API_KEY) {
     const configuration = {
         apiKey: process.env.OPENAI_API_KEY,
@@ -14,9 +14,13 @@ if (process.env.OPENAI_API_KEY) {
 
 const openaiAnalysis = async function (params: any, almanac: Almanac) {
     let result: object = {'result': []};
-    const model = process.env.OPENAI_MODEL || 'gpt-4o';
+    const model = process.env.OPENAI_MODEL || 'gpt-4';
     
     try {
+        if (!openai) {
+            throw new Error('OpenAI client is not initialized');
+        }
+
         const openaiSystemPrompt: string = await almanac.factValue('openaiSystemPrompt');
         const fileData: FileData = await almanac.factValue('fileData');
 
