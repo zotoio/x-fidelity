@@ -3,15 +3,18 @@ import axios from "axios";
 import { logger } from "../utils/logger";
 import { ArchetypeConfig } from "../typeDefs";
 import { archetypes } from "../archetypes";
+import { loadRules } from "../rules";
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
 export class ConfigManager {
     private static instance: ConfigManager;
     private config: ArchetypeConfig;
+    private rules: any[];
 
     private constructor() {
         this.config = archetypes['node-fullstack'];
+        this.rules = [];
     }
 
     public static getInstance(): ConfigManager {
@@ -38,10 +41,17 @@ export class ConfigManager {
                 logger.error(`Error fetching remote config: ${error}`);
             }
         }
+
+        // Load rules after config is initialized
+        this.rules = await loadRules(this.config.rules);
     }
 
     public getConfig(): ArchetypeConfig {
         return this.config;
+    }
+
+    public getRules(): any[] {
+        return this.rules;
     }
 
     public getMinimumDependencyVersions(): Record<string, string> {

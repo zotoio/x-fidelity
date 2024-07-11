@@ -4,29 +4,14 @@ import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
 import { ScanResult, RuleFailure, ArchetypeConfig, OpenAIAnalysisParams } from '../typeDefs';
 import { getDependencyVersionFacts } from '../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../facts/openaiAnalysisFacts';
-import axios from 'axios';
-import { archetypes } from '../archetypes';
-import { loadRules } from '../rules';
 import { loadOperators } from '../operators';
 import { loadFacts } from '../facts';
+import { ConfigManager } from '../utils/config';
 
 async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack'): Promise<any[]> {
-    let archetypeConfig: ArchetypeConfig = archetypes[archetype] || archetypes['node-fullstack'];
-    console.log(archetypeConfig)
-    if (archetypeConfig.configUrl) {
-        try {
-            const response = await axios.get(archetypeConfig.configUrl);
-            archetypeConfig = {
-                ...archetypeConfig,
-                config: {
-                    ...archetypeConfig.config,
-                    ...response.data
-                }
-            };
-        } catch (error) {
-            logger.error(`Error fetching remote config: ${error}`);
-        }
-    }
+    const configManager = ConfigManager.getInstance();
+    await configManager.initialize(archetype);
+    const archetypeConfig = configManager.getConfig();
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
     const fileData: FileData[] = await collectRepoFileData(repoPath, archetypeConfig);
@@ -51,7 +36,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     });
 
     // Add rules to engine
-    const rules: RuleProperties[] = await loadRules(archetypeConfig.rules);
+    const rules: RuleProperties[] = configManager.getRules();
     logger.debug(rules);
 
     rules.forEach((rule) => {
@@ -128,7 +113,6 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     logger.info(`${fileData.length} files analyzed. ${failures.length} files with errors.`)
 
     return failures;
-
 }
 
 export { analyzeCodebase }; 
