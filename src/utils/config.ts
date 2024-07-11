@@ -3,15 +3,20 @@ import axios from "axios";
 import { logger } from "../utils/logger";
 import { ArchetypeConfig } from "../typeDefs";
 import { archetypes } from "../archetypes";
+import { loadRules } from "../rules";
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
 export class ConfigManager {
     private static instance: ConfigManager;
     private config: ArchetypeConfig;
+    private rules: any[];
+    public configServer: string;
 
     private constructor() {
         this.config = archetypes['node-fullstack'];
+        this.rules = [];
+        this.configServer = '';
     }
 
     public static getInstance(): ConfigManager {
@@ -21,11 +26,14 @@ export class ConfigManager {
         return ConfigManager.instance;
     }
 
-    public async initialize(archetype: string = 'node-fullstack', configUrl?: string): Promise<void> {
+    public async initialize(archetype: string = 'node-fullstack', configServer?: string): Promise<void> {
         this.config = archetypes[archetype] || archetypes['node-fullstack'];
-
-        if (configUrl) {
+        this.configServer = configServer || '';
+        console.log(`Initializing config manager for archetype: ${archetype}`);
+        if (this.configServer) {
             try {
+                const configUrl = `${this.configServer}/archetypes/${archetype}`;
+                console.log(`Fetching remote config from: ${configUrl}`);
                 const response = await axios.get(configUrl);
                 this.config = {
                     ...this.config,
@@ -34,14 +42,22 @@ export class ConfigManager {
                         ...response.data
                     }
                 };
+                console.log(`Remote config fetched successfully ${JSON.stringify(this.config)}`);
             } catch (error) {
                 logger.error(`Error fetching remote config: ${error}`);
             }
         }
+
+        // Load rules after config is initialized
+        this.rules = await loadRules(archetype, this.config.rules, this.configServer);
     }
 
     public getConfig(): ArchetypeConfig {
         return this.config;
+    }
+
+    public getRules(): any[] {
+        return this.rules;
     }
 
     public getMinimumDependencyVersions(): Record<string, string> {
@@ -52,11 +68,11 @@ export class ConfigManager {
         return this.config.config.standardStructure;
     }
 
-    public getBlacklistPatterns(): RegExp[] {
+    public getBlacklistPatterns(): string[] {
         return this.config.config.blacklistPatterns;
     }
 
-    public getWhitelistPatterns(): RegExp[] {
+    public getWhitelistPatterns(): string[] {
         return this.config.config.whitelistPatterns;
     }
 }

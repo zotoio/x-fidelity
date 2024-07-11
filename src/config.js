@@ -1,6 +1,6 @@
-import { ArchetypeConfig } from '../typeDefs';
+import axios from 'axios';
 
-export const archetypes: Record<string, ArchetypeConfig> = {
+const archetypes = {
     'node-fullstack': {
         rules: ['sensitiveLogging', 'outdatedFramework', 'noDatabases', 'nonStandardDirectoryStructure', 'openaiAnalysisTop5', 'openaiAnalysisA11y'],
         operators: ['fileContains', 'outdatedFramework', 'nonStandardDirectoryStructure', 'openaiAnalysisHighSeverity'],
@@ -20,17 +20,17 @@ export const archetypes: Record<string, ArchetypeConfig> = {
                 }
             },
             blacklistPatterns: [
-                '.*\\/\\..*', // dot files
-                '.*\\.(log|lock)$', // file extensions blacklisted
-                '.*\\/(dist|coverage|build|node_modules)(\\/.*|$)' // directory names blacklisted
+                /.*\/\..*/, // dot files
+                /.*\.(log|lock)$/, // file extensions blacklisted
+                /.*\/(dist|coverage|build|node_modules)(\/.*|$)/ // directory names blacklisted
             ],
             whitelistPatterns: [
-                '.*\\.(ts|tsx|js|jsx|md)$' // file extensions whitelisted
+                /.*\.(ts|tsx|js|jsx|md)$/ // file extensions whitelisted
             ]
         }
     },
     'java-microservice': {
-        rules: ['sensitiveLogging', 'outdatedFramework', 'noDatabases', 'nonStandardDirectoryStructure'],
+        rules: ['sensitivefLogging', 'outdatedFramework', 'noDatabases', 'nonStandardDirectoryStructure'],
         operators: ['fileContains', 'outdatedFramework', 'nonStandardDirectoryStructure'],
         facts: ['repoFilesystemFacts', 'repoDependencyFacts'],
         config: {
@@ -51,14 +51,51 @@ export const archetypes: Record<string, ArchetypeConfig> = {
                 }
             },
             blacklistPatterns: [
-                '.*\\/\\..*', // dot files
-                '.*\\.(log|lock)$', // file extensions blacklisted
-                '.*\\/(target|build|out|dist|coverage|build|node_modules)(\\/.*|$)' // directory names blacklisted
+                /.*\/\..*/, // dot files
+                /.*\.(log|lock)$/, // file extensions blacklisted
+                /.*\/(target|build|out)(\/.*|$)/ // directory names blacklisted
             ],
             whitelistPatterns: [
-                '.*\\.(java|xml|properties|yml)$',
-                '.*\\/pom\\.xml$'
+                /.*\.(java|xml|properties|yml)$/,
+                /.*\/pom\.xml$/
             ]
         }
     }
 };
+
+export async function getArchetypeConfig(archetype = 'node-fullstack', configUrl) {
+    let config = archetypes[archetype] || archetypes['node-fullstack'];
+
+    if (configUrl) {
+        try {
+            const response = await axios.get(configUrl);
+            config = {
+                ...config,
+                config: {
+                    ...config.config,
+                    ...response.data
+                }
+            };
+        } catch (error) {
+            console.error(`Error fetching remote config: ${error}`);
+        }
+    }
+
+    return config;
+}
+
+export function getMinimumDependencyVersions(config) {
+    return config.config.minimumDependencyVersions;
+}
+
+export function getStandardStructure(config) {
+    return config.config.standardStructure;
+}
+
+export function getBlacklistPatterns(config) {
+    return config.config.blacklistPatterns;
+}
+
+export function getWhitelistPatterns(config) {
+    return config.config.whitelistPatterns;
+}

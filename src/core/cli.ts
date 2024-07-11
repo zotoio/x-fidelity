@@ -19,8 +19,9 @@ console.log(banner);
 logger.info([banner]);
 
 program
-    .option("-d, --dir <directory>", "The checkout directory to analyse")
-    .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack");
+    .option("-d, --dir <directory>", "The checkout directory to analyse", ".")
+    .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
+    .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules");
 
 program.parse();
 
@@ -33,9 +34,11 @@ if (!options.dir) {
     console.error("Checkout directory not provided. Defaulting to current directory.");
 }
 
-console.log(`Archetype ${options.archetype}: analysis of: ${process.env.PWD}/${options.dir}`);
-logger.info(`Archetype ${options.archetype}: analysis of: ${process.env.PWD}/${options.dir}`);
-console.log('=====================================');
-logger.info('=====================================');
+let msg = `Archetype ${options.archetype}: analysis of: ${process.env.PWD}/${options.dir}`;
+logger.info(msg)&& console.log(msg) ;
+msg = `configServer: ${options.configServer ? options.configServer : 'local'}`;
+logger.info(msg)&& console.log(msg) ;
+msg = '=====================================';
+logger.info(msg) && console.log(msg);
 
 export { options };

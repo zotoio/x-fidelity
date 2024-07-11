@@ -2,7 +2,7 @@ import { OperatorEvaluator } from 'json-rules-engine';
 
 export type OperatorDefn = {
     name: string,
-    fn: OperatorEvaluator<string, any>
+    fn: OperatorEvaluator<any, any>
 }
 export interface ScanResult {
     filePath: string;
@@ -46,8 +46,13 @@ export interface ArchetypeConfig {
     config: {
         minimumDependencyVersions: Record<string, string>;
         standardStructure: Record<string, any>;
-        blacklistPatterns: RegExp[];
-        whitelistPatterns: RegExp[];
+        blacklistPatterns: string[];
+        whitelistPatterns: string[];
     };
+}
+
+export interface OpenAIAnalysisParams {
+    prompt: string;
+    resultFact: string;
 }
 

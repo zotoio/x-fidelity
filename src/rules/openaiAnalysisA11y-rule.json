@@ -15,7 +15,7 @@
                     "resultFact": "openaiAnalysisA11y"
                 },
                 "operator": "openaiAnalysisHighSeverity",
-                "value": 8
+                "value": 9
             }
         ]
     },

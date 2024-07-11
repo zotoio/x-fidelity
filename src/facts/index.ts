@@ -1,6 +1,6 @@
 import { collectRepoFileData } from './repoFilesystemFacts';
 import { getDependencyVersionFacts } from './repoDependencyFacts';
-import { collectOpenaiAnalysisFacts, openaiAnalysis } from './openaiAnalysisFacts';
+import { openaiAnalysis } from './openaiAnalysisFacts';
 
 const allFacts: Record<string, { name: string, fn: Function }> = {
     repoFilesystemFacts: { name: 'fileData', fn: collectRepoFileData },

@@ -14,7 +14,8 @@
     "commit": "git-cz",
     "release": "semantic-release",
     "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
-    "build-run": "yarn build && node . --dir . | jq -R -r '. as $line | try fromjson catch $line'"
+    "build-run": "yarn build && node . --dir . | jq -R -r '. as $line | try fromjson catch $line'",
+    "start-config-server": "ts-node src/server/configServer.ts"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
@@ -32,6 +33,7 @@
     "@semantic-release/npm": "^12.0.1",
     "@semantic-release/release-notes-generator": "^14.0.0",
     "@types/esprima": "^4.0.6",
+    "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.17.4",
     "@types/node": "^20.14.2",
@@ -56,6 +58,7 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esprima": "^4.0.1",
+    "express": "^4.18.2",
     "format-json": "^1.0.3",
     "json-rules-engine": "^6.5.0",
     "lodash": "^4.17.21",

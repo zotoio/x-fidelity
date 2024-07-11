@@ -25,7 +25,7 @@ export function collectLocalDependencies(): LocalDependencies {
  * @returns The installed dependency versions.
  */
 export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig) {
-    const localDependencies = await collectLocalDependencies();
+    const localDependencies = collectLocalDependencies();
     const minimumDependencyVersions = archetypeConfig.config.minimumDependencyVersions;
 
     //console.log(localDependencies);

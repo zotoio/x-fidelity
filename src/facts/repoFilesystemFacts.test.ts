@@ -21,8 +21,8 @@ const mockArchetypeConfig: ArchetypeConfig = {
     config: {
         minimumDependencyVersions: {},
         standardStructure: {},
-        blacklistPatterns: [/node_modules/],
-        whitelistPatterns: [/\.js$/, /\.tsx$/]
+        blacklistPatterns: ['node_modules'],
+        whitelistPatterns: ['\\.js$', '\\.tsx$']
     }
 };
 

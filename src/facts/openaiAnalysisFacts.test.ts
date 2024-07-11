@@ -4,16 +4,8 @@ import { OpenAI } from 'openai';
 import { logger } from '../utils/logger';
 import { FileData } from './repoFilesystemFacts';
 
+process.env.OPENAI_API_KEY = 'mock-key';
 jest.mock('json-rules-engine');
-jest.mock('openai', () => ({
-    OpenAI: jest.fn(() => ({
-        chat: { completions: { create: jest.fn() } }
-        }))
-        }));
-// jest.mock('./openaiAnalysisFacts', () => ({
-//     collectOpenaiAnalysisFacts: jest.fn(),
-//     openaiAnalysis: jest.fn()
-// }));
 jest.mock('../utils/logger', () => ({
     logger: {
         debug: jest.fn(),
@@ -21,37 +13,64 @@ jest.mock('../utils/logger', () => ({
     },
 }));
 
+jest.mock('openai', () => {                                                                                    
+    return {                                                                                                   
+        OpenAI: jest.fn().mockImplementation(() => {                                                           
+            return {                                                                                           
+                chat: {                                                                                        
+                    completions: {                                                                             
+                        create: jest.fn().mockResolvedValue({})                                      
+                    }                                                                                          
+                }                                                                                              
+            };                                                                                                 
+        })                                                                                                     
+    };                                                                                                         
+});  
+
 describe('openaiAnalysis', () => {
     const mockAlmanac: Almanac = {
-        factValue: jest.fn()
+        factValue: jest.fn(),
+        addRuntimeFact: jest.fn(),
     } as unknown as Almanac;
-    
-    jest.mock('openai', () => ({
-        OpenAI: jest.fn(() => ({
-            chat: { completions: { create: jest.fn() } }
-            }))
-            }));
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
     it('should return an empty result if fileName is not REPO_GLOBAL_CHECK', async () => {
-        (mockAlmanac.factValue as jest.Mock).mockResolvedValueOnce('some prompt').mockResolvedValueOnce({ fileName: 'someFile' });
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce('some prompt')
+            .mockResolvedValueOnce({ fileName: 'someFile' });
 
         const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
         expect(result).toEqual({ result: [] });
     });
 
-    it('should return analysis result from OpenAI', async () => {
-        (mockAlmanac.factValue as jest.Mock).mockResolvedValueOnce('some prompt').mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' });
+    it('should log an error if OpenAI request fails', async () => {
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce('some prompt')
+            .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' });
+
+            
+        ((new OpenAI()).chat.completions.create as jest.Mock).mockRejectedValue(new Error('mock error'));
+
+        const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
+
+        expect(result).toEqual({ result: [] });
+        expect(logger.error).toHaveBeenCalledWith('openaiAnalysis: Error analyzing facts with OpenAI: OpenAI client is not initialized');
+    });
+
+    it('should handle empty OpenAI response', async () => {
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce('some prompt')
+            .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' });
 
         const mockResponse = {
             choices: [
                 {
                     message: {
-                        content: JSON.stringify([{ issue: 'test issue', severity: 9 }])
+                        content: null
                     }
                 }
             ]
@@ -62,17 +81,7 @@ describe('openaiAnalysis', () => {
         const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
         expect(result).toEqual({ result: [] });
-    });
-
-    it('should log an error if OpenAI request fails', async () => {
-        (mockAlmanac.factValue as jest.Mock).mockResolvedValueOnce('some prompt').mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' });
-
-        ((new OpenAI()).chat.completions.create as jest.Mock).mockRejectedValue(new Error('mock error'));
-
-        const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
-
-        expect(result).toEqual({ result: [] });
-        expect(logger.error).toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalledWith('openaiAnalysis: Error analyzing facts with OpenAI: OpenAI client is not initialized');
     });
 });
 

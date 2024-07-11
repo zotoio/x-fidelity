@@ -5,11 +5,11 @@ import { options } from "./core/cli";
 import { analyzeCodebase } from "./core/engine";
 //import ora, { oraPromise } from 'ora';
 
-//console.log(`analyzing repo at path: [${options.dir}]`);
+console.log(options);
 
 try {
     (async () => {
-        let results = await analyzeCodebase(`${process.env.PWD}/${options.dir}`, options.archetype);
+        let results = await analyzeCodebase(`${process.env.PWD}/${options.dir}`, options.archetype, options.configServer);
         if (results.length > 0) {
             //console.log('WARNING: lo-fi attributes detected in codebase!');
             //console.log(results);

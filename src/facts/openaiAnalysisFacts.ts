@@ -4,7 +4,7 @@ import { FileData } from './repoFilesystemFacts';
 import { ChatCompletionCreateParams } from 'openai/resources/chat/completions';
 import { Almanac } from 'json-rules-engine';
 
-let openai: OpenAI;
+let openai: OpenAI | undefined;
 if (process.env.OPENAI_API_KEY) {
     const configuration = {
         apiKey: process.env.OPENAI_API_KEY,
@@ -15,21 +15,21 @@ if (process.env.OPENAI_API_KEY) {
 const openaiAnalysis = async function (params: any, almanac: Almanac) {
     let result: object = {'result': []};
     const model = process.env.OPENAI_MODEL || 'gpt-4o';
-
-    const openaiSystemPrompt: string = await almanac.factValue('openaiSystemPrompt');
-    const fileData: FileData = await almanac.factValue('fileData');
-
-    //console.log(almanac.factValue('openaiSystemPrompt'));
-    //console.log(almanac.factValue('fileData'));
-
-    if (fileData.fileName !== 'REPO_GLOBAL_CHECK') {
-        return result;
-    }
-
+    
     try {
+        if (!openai) {
+            throw new Error('OpenAI client is not initialized');
+        }
+
+        const openaiSystemPrompt: string = await almanac.factValue('openaiSystemPrompt');
+        const fileData: FileData = await almanac.factValue('fileData');
+
+        if (fileData.fileName !== 'REPO_GLOBAL_CHECK') {
+            return result;
+        }
+
         const payload: ChatCompletionCreateParams = {
             model,
-            //response_format: { type: 'json_object' },
             messages: [
                 { role: 'system', content: openaiSystemPrompt },
                 { role: 'user', content: `${params.prompt} 
@@ -41,7 +41,7 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
                         - description: Detail of the issue.
                         - filePaths: Array of file paths involved. 
                         - suggestion: The suggestion for the fix.
-                        - codeSnippets: Array of code snippets that needs to be fixed in each file with lineNumber of the issue in the file and before and after code.
+                        - codeSnippets: Array of code snippets that needs to be fixed in each file with lineNumber of the issue in each filePath affected and before and after code.
                     3. do not include strings or markdown around the array.` }
             ]
         };
@@ -51,15 +51,24 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
         const response: OpenAI.Chat.Completions.ChatCompletion = await openai.chat.completions.create(payload);
         logger.debug(response);
 
+        if (!response.choices[0].message.content) {
+            throw new Error('OpenAI response is empty');
+        }
+
         const analysis = {
-            'result': JSON.parse(response?.choices[0].message.content ?? '')
+            'result': JSON.parse(response.choices[0].message.content)
         };
 
         almanac.addRuntimeFact(params.resultFact, analysis);
 
         result = analysis;
     } catch (error) {
-        logger.error(`openaiAnalysis: Error analyzing facts with OpenAI: ${error}`);
+        console.log(error);
+        if (error instanceof Error) {
+            logger.error(`openaiAnalysis: Error analyzing facts with OpenAI: ${error.message}`);
+        } else {
+            logger.error(`openaiAnalysis: Unknown error occurred`);
+        }
     }
 
     return result;
@@ -67,14 +76,6 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
 
 const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
 
-    // const formattedFileData: FileData[] = fileData.map((file: FileData) => {                                                                                                                  
-    //     try {
-    //         file.fileAst = createSourceFile(file.fileName, file.fileContent, ScriptTarget.Latest, true);
-    //     } catch (error: any) {
-    //         console.error(`skip file: ${file.filePath} due to error: ${error.message}`);
-    //     }
-    //     return file;                                                                                                             
-    // }); 
     const formattedFileData = fileData.map((file: FileData) => {     
         logger.debug(`formatting ${file.filePath} of length: ${file.fileContent.length}`);                                                                                                             
         if (!['REPO_GLOBAL_CHECK'].includes(file.fileName)) {
