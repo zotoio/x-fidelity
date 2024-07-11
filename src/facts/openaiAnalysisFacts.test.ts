@@ -6,14 +6,13 @@ import { FileData } from './repoFilesystemFacts';
 
 jest.mock('json-rules-engine');
 jest.mock('openai', () => ({
-    ...jest.requireActual('OpenAI'),
+    ...jest.requireActual('openai'),
     OpenAI: jest.fn(() => ({
         chat: {
             completions: {
                 create: jest.fn()
             }
-        },
-        _client: {} // Add this line to mock the _client property
+        }
     }))
 }));
 jest.mock('../utils/logger', () => ({
@@ -29,15 +28,7 @@ describe('openaiAnalysis', () => {
         addRuntimeFact: jest.fn(),
     } as unknown as Almanac;
 
-    const mockOpenAI: OpenAI = {
-        ...jest.requireActual('OpenAI'),
-        chat: {
-            completions: {
-                create: jest.fn(),
-                _client: new OpenAI()._client
-            }
-        }
-    };
+    const mockOpenAI = new OpenAI();
     beforeEach(() => {
         jest.clearAllMocks();
     });
