@@ -1,5 +1,5 @@
 {
-    "name": "openaiAnalysisTop5Rule",
+    "name": "openaiAnalysisTop5",
     "conditions": {
         "all": [
             {

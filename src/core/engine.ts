@@ -12,7 +12,7 @@ import { loadFacts } from '../facts';
 
 async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack'): Promise<any[]> {
     let archetypeConfig: ArchetypeConfig = archetypes[archetype] || archetypes['node-fullstack'];
-    
+    console.log(archetypeConfig)
     if (archetypeConfig.configUrl) {
         try {
             const response = await axios.get(archetypeConfig.configUrl);
@@ -30,6 +30,12 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
     const fileData: FileData[] = await collectRepoFileData(repoPath, archetypeConfig);
+    // add REPO_GLOBAL_CHECK to fileData
+    fileData.push({
+        fileName: 'REPO_GLOBAL_CHECK',
+        filePath: 'REPO_GLOBAL_CHECK',
+        fileContent: 'REPO_GLOBAL_CHECK'
+    });
     const { minimumDependencyVersions, standardStructure } = archetypeConfig.config;
     const openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
 
@@ -46,12 +52,13 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
     // Add rules to engine
     const rules: RuleProperties[] = await loadRules(archetypeConfig.rules);
+    logger.debug(rules);
+
     rules.forEach((rule) => {
         try {
-            if (!rule?.name?.includes('openai') || (process.env.OPENAI_API_KEY && rule?.name?.includes('openai'))) {
-                console.log(`adding rule: ${rule?.name}`);
-                engine.addRule(rule);
-            }
+            console.log(`adding rule: ${rule?.name}`);
+            engine.addRule(rule);
+            
         } catch (e: any) {
             console.error(`Error loading rule: ${rule?.name}`);
             logger.error(e.message);
@@ -67,24 +74,27 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     // Add facts to engine
     const facts = await loadFacts(archetypeConfig.facts);
     facts.forEach((fact) => {
+        console.log(`adding fact: ${fact.name}`);
         engine.addFact(fact.name, fact.fn);
     });
 
     if (process.env.OPENAI_API_KEY && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
-        console.log(`adding openai facts to engine..`);
-        engine.addFact('openaiAnalysis', (params, almanac) => {
-            return async () => {
-                return openaiAnalysis(params as OpenAIAnalysisParams, almanac);
-            };
-        });
+        console.log(`adding additional openai facts to engine..`);
+        engine.addFact('openaiAnalysis', openaiAnalysis)
         engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
     }
 
     // Run the engine for each file's data                                                                             
     let failures: ScanResult[] = [];
     for (const file of fileData) {
-        logger.info(`running engine for ${file.filePath}`);
-
+        if (file.fileName === 'REPO_GLOBAL_CHECK') {
+            let msg = `\n==========================\nSTARTING GLOBAL REPO CHECKS..\n==========================`
+            logger.info(msg) && console.log(msg);
+            
+        } else {  
+            let msg = `running engine for ${file.filePath}`   
+            logger.info(msg) && console.log(msg);
+        }
         const facts = {
             fileData: file,
             dependencyData: {
@@ -95,7 +105,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
         };
         let fileFailures: RuleFailure[] = [];
-        console.log(`running engine for ${file.filePath} ..`);
+        
         await engine.run(facts)
             .then(({ results }: EngineResult) => {
                 //console.log(events);

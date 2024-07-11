@@ -8,13 +8,10 @@ const openaiAnalysisHighSeverity: OperatorDefn = {
             severityThreshold = parseInt(severityThreshold) ? parseInt(severityThreshold) : 8;
             let result = false;
             
-            // check the openai analysis response
-            const analysis = JSON.parse(openaiAnalysis);
-
-            if (analysis?.result?.length > 0) {
-                if (analysis.result.map((issue: any) => {
+            if (openaiAnalysis?.result?.length > 0) {
+                if (openaiAnalysis.result.map((issue: any) => {
                     return parseInt(issue?.severity)
-                }).some((severity: number) => severity > severityThreshold)) {
+                }).some((severity: number) => severity >= severityThreshold)) {
                     logger.error('openai: high severity issues found');
                     result = true;
                 }

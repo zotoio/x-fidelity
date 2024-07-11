@@ -14,7 +14,7 @@ if (process.env.OPENAI_API_KEY) {
 
 const openaiAnalysis = async function (params: any, almanac: Almanac) {
     let result: object = {'result': []};
-    const model = process.env.OPENAI_MODEL || 'gpt-4';
+    const model = process.env.OPENAI_MODEL || 'gpt-4o';
     
     try {
         if (!openai) {
@@ -41,7 +41,7 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
                         - description: Detail of the issue.
                         - filePaths: Array of file paths involved. 
                         - suggestion: The suggestion for the fix.
-                        - codeSnippets: Array of code snippets that needs to be fixed in each file with lineNumber of the issue in the file and before and after code.
+                        - codeSnippets: Array of code snippets that needs to be fixed in each file with lineNumber of the issue in each filePath affected and before and after code.
                     3. do not include strings or markdown around the array.` }
             ]
         };

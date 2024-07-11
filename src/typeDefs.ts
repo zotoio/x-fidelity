@@ -2,7 +2,7 @@ import { OperatorEvaluator } from 'json-rules-engine';
 
 export type OperatorDefn = {
     name: string,
-    fn: OperatorEvaluator<string, any>
+    fn: OperatorEvaluator<any, any>
 }
 export interface ScanResult {
     filePath: string;

@@ -25,13 +25,12 @@ export const archetypes: Record<string, ArchetypeConfig> = {
                 /.*\/(dist|coverage|build|node_modules)(\/.*|$)/ // directory names blacklisted
             ],
             whitelistPatterns: [
-                /.*\.(ts|tsx|js|jsx|md)$/,
-                /.*\/(package|tsconfig)\.json$/
+                /.*\.(ts|tsx|js|jsx|md)$/ // file extensions whitelisted
             ]
         }
     },
     'java-microservice': {
-        rules: ['sensitiveLogging', 'outdatedFramework', 'noDatabases', 'nonStandardDirectoryStructure'],
+        rules: ['sensitivefLogging', 'outdatedFramework', 'noDatabases', 'nonStandardDirectoryStructure'],
         operators: ['fileContains', 'outdatedFramework', 'nonStandardDirectoryStructure'],
         facts: ['repoFilesystemFacts', 'repoDependencyFacts'],
         config: {
