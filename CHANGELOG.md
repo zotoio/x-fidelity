@@ -1,3 +1,21 @@
+# [1.3.0](https://github.com/zotoio/x-fidelity/compare/v1.2.0...v1.3.0) (2024-07-11)
+
+
+### Bug Fixes
+
+* **ai:** fix ([8f94cee](https://github.com/zotoio/x-fidelity/commit/8f94cee6ef990a39db3bc4c61f16b3c56bdb10dd))
+* **ai:** fix ([f5ba9f5](https://github.com/zotoio/x-fidelity/commit/f5ba9f5319e02788f3c6a1f0b70b1fa2638e719d))
+* Initialized OpenAI client before using it to prevent "Cannot read properties of undefined (reading 'chat')" error ([a112b43](https://github.com/zotoio/x-fidelity/commit/a112b4372ff7eef5c00cb4c3fede13eeb932b2a2))
+* **refactor:** logic issues and async issue ([2ad8cdd](https://github.com/zotoio/x-fidelity/commit/2ad8cdd7becbd80217dd0115be266cdf753a8470))
+* **sec:** prevent error reflection ([93eca93](https://github.com/zotoio/x-fidelity/commit/93eca93e4737f01977f27dacf8cabbd5adf1ab2b))
+* **sec:** santize input ([6f78c39](https://github.com/zotoio/x-fidelity/commit/6f78c396a6d83189d3985a0c826f5967e1e6eee4))
+* **server:** fix ai error ([20341fa](https://github.com/zotoio/x-fidelity/commit/20341fa0df7a34791f2a4f34a89ee1cf7e5014ef))
+
+
+### Features
+
+* **server:** remote config server ([f027ed2](https://github.com/zotoio/x-fidelity/commit/f027ed200d94e0bc16c000a8a677da819a8695cf))
+
 # [1.2.0](https://github.com/zotoio/x-fidelity/compare/v1.1.0...v1.2.0) (2024-07-10)
 
 
