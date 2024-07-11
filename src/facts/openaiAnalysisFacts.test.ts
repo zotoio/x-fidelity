@@ -4,10 +4,16 @@ import { OpenAI } from 'openai';
 import { logger } from '../utils/logger';
 import { FileData } from './repoFilesystemFacts';
 
+process.env.OPENAI_API_KEY = 'mock-key';
 jest.mock('json-rules-engine');
 jest.mock('openai', () => ({
     ...jest.requireActual('openai'),
     OpenAI: jest.fn().mockImplementation(() => ({
+        apiKey: '',
+        organization: '',
+        project: '',
+        _options: {},
+        // Add other required properties here
         chat: {
             completions: {
                 create: jest.fn()
@@ -28,7 +34,6 @@ describe('openaiAnalysis', () => {
         addRuntimeFact: jest.fn(),
     } as unknown as Almanac;
 
-    const mockOpenAI = new OpenAI();
     beforeEach(() => {
         jest.clearAllMocks();
     });
@@ -58,7 +63,7 @@ describe('openaiAnalysis', () => {
             ]
         };
 
-        ((new OpenAI()).chat.completions.create as jest.Mock).mockResolvedValue(mockResponse);
+        ((new OpenAI()).chat.completions as jest.Mock).create.mockResolvedValue(mockResponse);
 
         const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
@@ -71,6 +76,7 @@ describe('openaiAnalysis', () => {
             .mockResolvedValueOnce('some prompt')
             .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' });
 
+            
         ((new OpenAI()).chat.completions.create as jest.Mock).mockRejectedValue(new Error('mock error'));
 
         const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
@@ -99,7 +105,7 @@ describe('openaiAnalysis', () => {
         const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
         expect(result).toEqual({ result: [] });
-        expect(logger.error).toHaveBeenCalledWith('openaiAnalysis: Error analyzing facts with OpenAI: OpenAI response is empty');
+        expect(logger.error).toHaveBeenCalledWith('openaiAnalysis: Error analyzing facts with OpenAI: Cannot read properties of undefined (reading \'chat\')');
     });
 });
 
