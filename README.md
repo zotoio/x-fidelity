@@ -50,13 +50,14 @@ To run x-fidelity, use the following command:
 xfidelity --dir <directory> [--configUrl <url>]
 ```
 
-- `--dir <directory>`: The directory of the repository to analyze.
-- `--configUrl <url>`: (Optional) The URL to fetch the configuration from.
+- `-d --dir <directory>`: The directory of the repository to analyze.  Default is current dir.
+- `-c --configUrl <url>`: (Optional) The URL to fetch the configuration from.
+- `-a --archetype <archetype>`: (Optional) The archetype to use for analysis. 'node-fullstack' is the default, or 'java-microservice' and these are extensible)
 
-Example:
+Example for node-fullstack in current dir:
 
 ```sh
-xfidelity --dir ./my-repo --configUrl https://example.com/config.json
+xfidelity --configUrl https://localhost:8888
 ```
 
 ### Configuration Server
@@ -70,7 +71,7 @@ x-fidelity also includes a configuration server that can be used to serve config
 yarn start-config-server
 ```
 
-By default, the server will start on port 3000. You can then use the server URL as the `--configUrl` parameter when running the CLI.
+By default, the server will start on port 8888. You can then use the server URL as the `--configUrl` parameter when running the CLI.
 
 ## OpenAI Integration
 
