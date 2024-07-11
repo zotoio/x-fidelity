@@ -21,7 +21,7 @@ logger.info([banner]);
 program
     .option("-d, --dir <directory>", "The checkout directory to analyse")
     .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
-    .option("-b, --baseUrl <baseUrl>", "The base URL for fetching remote archetype configurations and rules");
+    .option("-b, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules");
 
 program.parse();
 

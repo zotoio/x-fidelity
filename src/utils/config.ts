@@ -11,12 +11,12 @@ export class ConfigManager {
     private static instance: ConfigManager;
     private config: ArchetypeConfig;
     private rules: any[];
-    public baseUrl: string;
+    public configServer: string;
 
     private constructor() {
         this.config = archetypes['node-fullstack'];
         this.rules = [];
-        this.baseUrl = '';
+        this.configServer = '';
     }
 
     public static getInstance(): ConfigManager {
@@ -26,13 +26,13 @@ export class ConfigManager {
         return ConfigManager.instance;
     }
 
-    public async initialize(archetype: string = 'node-fullstack', baseUrl?: string): Promise<void> {
+    public async initialize(archetype: string = 'node-fullstack', configServer?: string): Promise<void> {
         this.config = archetypes[archetype] || archetypes['node-fullstack'];
-        this.baseUrl = baseUrl || '';
+        this.configServer = configServer || '';
 
-        if (this.baseUrl) {
+        if (this.configServer) {
             try {
-                const configUrl = `${this.baseUrl}/archetypes/${archetype}`;
+                const configUrl = `${this.configServer}/archetypes/${archetype}`;
                 const response = await axios.get(configUrl);
                 this.config = {
                     ...this.config,
