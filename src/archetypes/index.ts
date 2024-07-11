@@ -30,7 +30,7 @@ export const archetypes: Record<string, ArchetypeConfig> = {
         }
     },
     'java-microservice': {
-        rules: ['sensitivefLogging', 'outdatedFramework', 'noDatabases', 'nonStandardDirectoryStructure'],
+        rules: ['sensitiveLogging', 'outdatedFramework', 'noDatabases', 'nonStandardDirectoryStructure'],
         operators: ['fileContains', 'outdatedFramework', 'nonStandardDirectoryStructure'],
         facts: ['repoFilesystemFacts', 'repoDependencyFacts'],
         config: {
@@ -53,7 +53,7 @@ export const archetypes: Record<string, ArchetypeConfig> = {
             blacklistPatterns: [
                 '.*\\/\\..*', // dot files
                 '.*\\.(log|lock)$', // file extensions blacklisted
-                '.*\\/(target|build|out)(\\/.*|$)' // directory names blacklisted
+                '.*\\/(target|build|out|dist|coverage|build|node_modules)(\\/.*|$)' // directory names blacklisted
             ],
             whitelistPatterns: [
                 '.*\\.(java|xml|properties|yml)$',
