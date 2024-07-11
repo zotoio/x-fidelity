@@ -93,6 +93,61 @@ Using OpenAI's API may incur costs. Please refer to OpenAI's pricing page for mo
 
 The configuration file should be a JSON file containing rules, operators, facts, and other settings. You can find example configuration files in the `src/rules` directory of the repository.
 
+### Rule Structure
+
+Each rule is defined in a JSON file with the following structure:
+
+```json
+{
+  "name": "ruleName",
+  "description": "A brief description of the rule",
+  "conditions": {
+    "all": [
+      {
+        "fact": "factName",
+        "operator": "operatorName",
+        "value": "expectedValue"
+      }
+    ]
+  },
+  "event": {
+    "type": "ruleFailure",
+    "params": {
+      "message": "Error message when the rule fails"
+    }
+  }
+}
+```
+
+For example, here's the structure of the `sensitiveLogging-rule.json`:
+
+```json
+{
+  "name": "sensitiveLogging",
+  "description": "Check for sensitive logging",
+  "conditions": {
+    "all": [
+      {
+        "fact": "repoFilesystemFacts",
+        "operator": "fileContains",
+        "value": {
+          "pattern": "console\\.log\\(.*password.*\\)",
+          "message": "Sensitive data (password) might be logged"
+        }
+      }
+    ]
+  },
+  "event": {
+    "type": "ruleFailure",
+    "params": {
+      "message": "Sensitive data logging detected"
+    }
+  }
+}
+```
+
+This rule checks for instances where passwords might be logged using `console.log()`.
+
 ## License
 
 This project is licensed under the MIT License.
