@@ -9,7 +9,7 @@ async function loadRules(ruleNames: string[], baseUrl?: string): Promise<RulePro
     const ruleProperties: RuleProperties[] = [];
 
     for (const ruleName of ruleNames) {
-        let rule: RuleProperties;
+        let rule: RuleProperties | null;
 
         if (baseUrl) {
             try {
