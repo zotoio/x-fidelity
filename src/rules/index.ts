@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
 
-async function loadRules(ruleNames: string[], configServer?: string): Promise<RuleProperties[]> {
+async function loadRules(archetype: any, ruleNames: string[], configServer?: string): Promise<RuleProperties[]> {
     console.log(`loading json rules..`);
     const ruleProperties: RuleProperties[] = [];
 
@@ -13,10 +13,13 @@ async function loadRules(ruleNames: string[], configServer?: string): Promise<Ru
 
         if (configServer) {
             try {
-                const response = await axios.get(`${configServer}/rules/${ruleName}`);
+                const url = `${configServer}/archetypes/${archetype}/rules/${ruleName}`;
+                console.log(`Fetching remote rule ${url}`);
+                const response = await axios.get(url);
                 rule = response.data;
+                console.log(`Remote rule fetched successfully: ${rule}`);
             } catch (error) {
-                logger.error(`Error fetching remote rule ${ruleName}: ${error}`);
+                console.log(`Error fetching remote rule ${ruleName}: ${error}`);
                 // If remote fetch fails, fall back to local file
                 rule = await loadLocalRule(ruleName);
             }

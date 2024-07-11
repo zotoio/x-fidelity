@@ -9,9 +9,9 @@ import { loadFacts } from '../facts';
 import { loadRules } from '../rules';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../utils/config';
 
-async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack'): Promise<any[]> {
+async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack', configServer: string = ''): Promise<any[]> {
     const configManager = ConfigManager.getInstance();
-    await configManager.initialize(archetype);
+    await configManager.initialize(archetype, configServer);
     const archetypeConfig = configManager.getConfig();
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
@@ -39,7 +39,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     });
 
     // Add rules to engine
-    const rules: RuleProperties[] = await loadRules(archetypeConfig.rules, configManager.configServer);
+    const rules: RuleProperties[] = await loadRules(archetype, archetypeConfig.rules, configManager.configServer);
     logger.debug(rules);
 
     rules.forEach((rule) => {

@@ -65,7 +65,7 @@ describe('analyzeCodebase', () => {
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalledWith(expect.any(Object));
-        expect(loadRules).toHaveBeenCalledWith(['mockRule'], '');
+        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '');
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
@@ -98,7 +98,7 @@ describe('analyzeCodebase', () => {
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalled();
-        expect(loadRules).toHaveBeenCalledWith(['mockRule'], '');
+        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '');
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
