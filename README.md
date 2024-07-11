@@ -26,10 +26,11 @@ x-fidelity is a CLI tool designed to enforce adherence to a set of opinionated f
 - Verifies that dependencies are up-to-date according to a specified minimum version.
 - Checks for the presence or absence of specific strings in files.
 - Configurable via a remote JSON configuration file.
+- Integrates with OpenAI for advanced code analysis.
 
 ## Installation
 
-Install x-fidelity with node 20+ and yarn:
+Install x-fidelity with Node.js 20+ and Yarn:
 
 ```sh
 corepack enable
@@ -37,9 +38,11 @@ yarn global add x-fidelity
 export PATH="$PATH:$(yarn global bin)"
 ```
 
-You may want to add that path line to ~/.bashrc
+You may want to add the path line to your `~/.bashrc` or `~/.zshrc` file for persistence.
 
 ## Usage
+
+### CLI
 
 To run x-fidelity, use the following command:
 
@@ -56,37 +59,26 @@ Example:
 xfidelity --dir ./my-repo --configUrl https://example.com/config.json
 ```
 
-## Configuration
+### Configuration Server
 
-The configuration file should be a JSON file containing the following structure:
+x-fidelity also includes a configuration server that can be used to serve configuration files. To start the server:
 
-```json
-{
-  "minimumDependencyVersions": {
-    "commander": "^2.0.0",
-    "nodemon": "^3.9.0"
-  },
-  "standardStructure": {
-    "src": {
-      "core": null,
-      "utils": null,
-      "operators": null,
-      "rules": null,
-      "facts": null
-    }
-  }
-}
+1. Navigate to the x-fidelity directory.
+2. Run the following command:
+
+```sh
+yarn start-config-server
 ```
+
+By default, the server will start on port 3000. You can then use the server URL as the `--configUrl` parameter when running the CLI.
 
 ## OpenAI Integration
 
-x-fidelity can integrate with OpenAI to provide advanced code analysis. To enable OpenAI features, you need to set the `OPENAI_API_KEY` environment variable with your OpenAI API key.
-
-### Getting an OpenAI API Key
+To enable OpenAI features for advanced code analysis:
 
 1. Sign up for an account at [OpenAI](https://www.openai.com/).
 2. Navigate to the API section and generate a new API key.
-3. Set the `OPENAI_API_KEY` environment variable in your terminal or CI/CD pipeline.
+3. Set the `OPENAI_API_KEY` environment variable:
 
 ```sh
 export OPENAI_API_KEY=your_openai_api_key
@@ -96,221 +88,9 @@ export OPENAI_API_KEY=your_openai_api_key
 
 Using OpenAI's API may incur costs. Please refer to OpenAI's pricing page for more details.
 
-## Rules
+## Configuration
 
-### Sensitive Logging
-
-This rule checks for the presence of sensitive data in the logs.
-
-```json
-{
-  "name": "sensitiveLogging",
-  "conditions": {
-    "any": [
-      {
-        "fact": "fileData",
-        "path": "$.fileContent",
-        "operator": "fileContains",
-        "value": "token"
-      },
-      {
-        "fact": "fileData",
-        "path": "$.fileContent",
-        "operator": "fileContains",
-        "value": "secret"
-      },
-      {
-        "fact": "fileData",
-        "path": "$.fileContent",
-        "operator": "fileContains",
-        "value": "todo: expand with regex operator for more sensitive data patterns"
-      }
-    ]
-  },
-  "event": {
-    "type": "violation",
-    "params": {
-      "message": "Sensitive data must not be logged."
-    }
-  }
-}
-```
-
-### Outdated Framework
-
-This rule checks if any core framework dependencies are outdated.
-
-```json
-{
-  "name": "outdatedFramework",
-  "conditions": {
-    "all": [
-      {
-        "fact": "fileData",
-        "path": "$.fileName",
-        "operator": "outdatedFramework",
-        "value": {
-          "fact": "dependencyData"
-        }
-      }    
-    ]
-  },
-  "event": {
-    "type": "violation",
-    "params": {
-      "message": "Some core framework dependencies have expired!",
-      "filePath": {
-        "fact": "fileData",
-        "path": "$.filePath"
-      },
-      "minimumDependencyVersions": {
-        "fact": "dependencyData",
-        "path": "$.minimumDependencyVersions"
-      }
-    }
-  }
-}
-```
-
-### No Databases
-
-This rule ensures that code does not directly call databases.
-
-```json
-{
-  "name": "noDatabases",
-  "conditions": {
-    "any": [
-      {
-        "fact": "fileData",
-        "path": "$.fileContent",
-        "operator": "fileContains",
-        "value": "oracle"
-      }
-    ]
-  },
-  "event": {
-    "type": "violation",
-    "params": {
-      "message": "Code must not directly call databases."
-    }
-  }
-}
-```
-
-### Non-Standard Directory Structure
-
-This rule checks if the directory structure matches the standard structure.
-
-```json
-{
-  "name": "nonStandardDirectoryStructure",
-  "conditions": {
-    "all": [
-      {
-        "fact": "fileData",
-        "path": "$.fileName",
-        "operator": "equal",
-        "value": "REPO_GLOBAL_CHECK"
-      },
-      {
-        "fact": "fileData",
-        "path": "$.filePath",
-        "operator": "nonStandardDirectoryStructure",
-        "value": {
-          "fact": "standardStructure"
-        }
-      }
-    ]
-  },
-  "event": {
-    "type": "violation",
-    "params": {
-      "message": "Directory structure does not match the standard.",
-      "details": {
-        "fact": "fileData",
-        "path": "$.filePath"
-      }
-    }
-  }
-}
-```
-
-### OpenAI Analysis
-
-This rule uses OpenAI to analyze the codebase for various issues.
-
-#### Top 5 Issues
-
-```json
-{
-  "name": "openaiAnalysisTop5Rule",
-  "conditions": {
-    "all": [
-      {
-        "fact": "fileData",
-        "path": "$.fileName",
-        "operator": "equal",
-        "value": "REPO_GLOBAL_CHECK"
-      },
-      {
-        "fact": "openaiAnalysis",
-        "params": {
-          "prompt": "What are the most important 5 things to fix?",
-          "resultFact": "openaiAnalysisTop5"
-        },
-        "operator": "openaiAnalysisHighSeverity",
-        "value": 8
-      }
-    ]
-  },
-  "event": {
-    "type": "violation",
-    "params": {
-      "message": "OpenAI analysis failed for the provided prompt.",
-      "results": {
-        "fact": "openaiAnalysisTop5"
-      }
-    }
-  }
-}
-```
-
-#### Accessibility Issues
-
-```json
-{
-  "name": "openaiAnalysisA11yRule",
-  "conditions": {
-    "all": [
-      {
-        "fact": "fileData",
-        "path": "$.fileName",
-        "operator": "equal",
-        "value": "REPO_GLOBAL_CHECK"
-      },
-      {
-        "fact": "openaiAnalysis",
-        "params": {
-          "prompt": "Identify any accessibility (a11y) issues in the codebase.",
-          "resultFact": "openaiAnalysisA11y"
-        },
-        "operator": "openaiAnalysisHighSeverity",
-        "value": 8
-      }
-    ]
-  },
-  "event": {
-    "type": "violation",
-    "params": {
-      "message": "OpenAI analysis detected accessibility (a11y) issues in the codebase.",
-      "results": {
-        "fact": "openaiAnalysisA11y"
-      }
-    }
-  }
-}
-```
+The configuration file should be a JSON file containing rules, operators, facts, and other settings. You can find example configuration files in the `src/rules` directory of the repository.
 
 ## License
 
