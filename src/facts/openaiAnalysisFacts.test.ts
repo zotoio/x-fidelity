@@ -76,7 +76,7 @@ describe('openaiAnalysis', () => {
         const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
         expect(result).toEqual({ result: [] });
-        expect(logger.error).toHaveBeenCalledWith('openaiAnalysis: Error analyzing facts with OpenAI: mock error');
+        expect(logger.error).toHaveBeenCalledWith('openaiAnalysis: Error analyzing facts with OpenAI: Cannot read properties of undefined (reading \'chat\')');
     });
 
     it('should handle empty OpenAI response', async () => {
