@@ -47,7 +47,7 @@ export class ConfigManager {
         }
 
         // Load rules after config is initialized
-        this.rules = await loadRules(this.config.rules, this.baseUrl);
+        this.rules = await loadRules(this.config.rules, this.configServer);
     }
 
     public getConfig(): ArchetypeConfig {

@@ -4,16 +4,16 @@ import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
 
-async function loadRules(ruleNames: string[], baseUrl?: string): Promise<RuleProperties[]> {
+async function loadRules(ruleNames: string[], configServer?: string): Promise<RuleProperties[]> {
     console.log(`loading json rules..`);
     const ruleProperties: RuleProperties[] = [];
 
     for (const ruleName of ruleNames) {
         let rule: RuleProperties | null;
 
-        if (baseUrl) {
+        if (configServer) {
             try {
-                const response = await axios.get(`${baseUrl}/rules/${ruleName}`);
+                const response = await axios.get(`${configServer}/rules/${ruleName}`);
                 rule = response.data;
             } catch (error) {
                 logger.error(`Error fetching remote rule ${ruleName}: ${error}`);
