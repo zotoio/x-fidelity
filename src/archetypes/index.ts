@@ -20,12 +20,12 @@ export const archetypes: Record<string, ArchetypeConfig> = {
                 }
             },
             blacklistPatterns: [
-                /.*\/\..*/, // dot files
-                /.*\.(log|lock)$/, // file extensions blacklisted
-                /.*\/(dist|coverage|build|node_modules)(\/.*|$)/ // directory names blacklisted
+                '.*\\/\\..*', // dot files
+                '.*\\.(log|lock)$', // file extensions blacklisted
+                '.*\\/(dist|coverage|build|node_modules)(\\/.*|$)' // directory names blacklisted
             ],
             whitelistPatterns: [
-                /.*\.(ts|tsx|js|jsx|md)$/ // file extensions whitelisted
+                '.*\\.(ts|tsx|js|jsx|md)$' // file extensions whitelisted
             ]
         }
     },
@@ -51,13 +51,13 @@ export const archetypes: Record<string, ArchetypeConfig> = {
                 }
             },
             blacklistPatterns: [
-                /.*\/\..*/, // dot files
-                /.*\.(log|lock)$/, // file extensions blacklisted
-                /.*\/(target|build|out)(\/.*|$)/ // directory names blacklisted
+                '.*\\/\\..*', // dot files
+                '.*\\.(log|lock)$', // file extensions blacklisted
+                '.*\\/(target|build|out)(\\/.*|$)' // directory names blacklisted
             ],
             whitelistPatterns: [
-                /.*\.(java|xml|properties|yml)$/,
-                /.*\/pom\.xml$/
+                '.*\\.(java|xml|properties|yml)$',
+                '.*\\/pom\\.xml$'
             ]
         }
     }

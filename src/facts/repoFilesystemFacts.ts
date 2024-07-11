@@ -45,10 +45,10 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
     return filesData;
 }
 
-function isBlacklisted(filePath: string, blacklistPatterns: RegExp[]): boolean {
+function isBlacklisted(filePath: string, blacklistPatterns: string[]): boolean {
     logger.debug(`checking blacklist for file: ${filePath}`);
     for (const pattern of blacklistPatterns) {
-        if (pattern.test(filePath)) {
+        if (new RegExp(pattern).test(filePath)) {
             logger.debug(`skipping blacklisted file: ${filePath} with pattern: ${pattern}`);
             return true;
         }
@@ -56,10 +56,10 @@ function isBlacklisted(filePath: string, blacklistPatterns: RegExp[]): boolean {
     return false;
 }
 
-function isWhitelisted(filePath: string, whitelistPatterns: RegExp[]): boolean {
+function isWhitelisted(filePath: string, whitelistPatterns: string[]): boolean {
     logger.debug(`checking whitelist for file: ${filePath}`);
     for (const pattern of whitelistPatterns) {
-        if (pattern.test(filePath)) {
+        if (new RegExp(pattern).test(filePath)) {
             logger.debug(`allowing file: ${filePath} with pattern: ${pattern}`);
             return true;
         }

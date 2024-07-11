@@ -52,11 +52,11 @@ export class ConfigManager {
         return this.config.config.standardStructure;
     }
 
-    public getBlacklistPatterns(): RegExp[] {
+    public getBlacklistPatterns(): string[] {
         return this.config.config.blacklistPatterns;
     }
 
-    public getWhitelistPatterns(): RegExp[] {
+    public getWhitelistPatterns(): string[] {
         return this.config.config.whitelistPatterns;
     }
 }
