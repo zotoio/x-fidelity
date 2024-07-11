@@ -12,7 +12,7 @@ app.get('/archetypes/:archetype', (req, res) => {
         console.log(`Found archetype ${archetype} config: ${JSON.stringify(archetypes[archetype])}`);
         res.json(archetypes[archetype]);
     } else {
-        res.status(404).send(`archetype ${archetype} not found`);
+        res.status(404).send(`archetype not found`);
     }
 });
 
@@ -28,7 +28,7 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
         const rules = await loadRules(archetype, archetypes[archetype].rules);
         res.json(rules);
     } else {
-        res.status(404).send(`archetype ${archetype} not found`);
+        res.status(404).send(`archetype not found`);
     }
 });
 
@@ -41,7 +41,7 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
         const ruleJson = rules.find((r) => r.name === rule);
         res.json(ruleJson);
     } else {
-        res.status(404).send(`rule ${req.params.rule} for archetype ${req.params.archetype} not found`);
+        res.status(404).send(`rule not found`);
     }
 });
 
