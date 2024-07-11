@@ -7,7 +7,7 @@ import { FileData } from './repoFilesystemFacts';
 jest.mock('json-rules-engine');
 jest.mock('openai', () => ({
     ...jest.requireActual('openai'),
-    OpenAI: jest.fn(() => ({
+    OpenAI: jest.fn().mockImplementation(() => ({
         chat: {
             completions: {
                 create: jest.fn()
