@@ -31,7 +31,12 @@ describe('openaiAnalysis', () => {
 
     const mockOpenAI: OpenAI = {
         ...jest.requireActual('OpenAI'),
-        chat: { completions: { create: jest.fn() } }
+        chat: {
+            completions: {
+                create: jest.fn(),
+                _client: new OpenAI()._client
+            }
+        }
     };
     beforeEach(() => {
         jest.clearAllMocks();
