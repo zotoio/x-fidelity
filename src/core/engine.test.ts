@@ -161,5 +161,75 @@ describe('analyzeCodebase', () => {
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
+        const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
+        const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
+        const mockFacts = [{ name: 'mockFact', fn: jest.fn() }];
+
+        (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
+        (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
+        (loadRules as jest.Mock).mockResolvedValue(mockRules);
+        (loadOperators as jest.Mock).mockResolvedValue(mockOperators);
+        (loadFacts as jest.Mock).mockResolvedValue(mockFacts);
+        (collectOpenaiAnalysisFacts as jest.Mock).mockResolvedValue('mock openai system prompt');
+
+        const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+        const engineAddFactMock = jest.fn();
+        (Engine as jest.Mock).mockImplementation(() => ({
+            addOperator: jest.fn(),
+            addRule: jest.fn(),
+            addFact: engineAddFactMock,
+            on: jest.fn(),
+            run: engineRunMock
+        }));
+
+        await analyzeCodebase('mockRepoPath', 'node-fullstack');
+
+        expect(engineAddFactMock).not.toHaveBeenCalledWith('openaiAnalysis', expect.any(Function));
+        expect(engineAddFactMock).not.toHaveBeenCalledWith('openaiSystemPrompt', expect.any(String));
+    });
+
+    it('should handle OpenAI analysis when OPENAI_API_KEY is set', async () => {
+        process.env.OPENAI_API_KEY = 'test-key';
+        const mockFileData = [
+            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
+        ];
+        const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
+        const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
+        const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
+        const mockFacts = [{ name: 'mockFact', fn: jest.fn() }, { name: 'openaiAnalysisFacts', fn: jest.fn() }];
+
+        (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
+        (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
+        (loadRules as jest.Mock).mockResolvedValue(mockRules);
+        (loadOperators as jest.Mock).mockResolvedValue(mockOperators);
+        (loadFacts as jest.Mock).mockResolvedValue(mockFacts);
+        (collectOpenaiAnalysisFacts as jest.Mock).mockResolvedValue('mock openai system prompt');
+
+        const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+        const engineAddFactMock = jest.fn();
+        (Engine as jest.Mock).mockImplementation(() => ({
+            addOperator: jest.fn(),
+            addRule: jest.fn(),
+            addFact: engineAddFactMock,
+            on: jest.fn(),
+            run: engineRunMock
+        }));
+
+        await analyzeCodebase('mockRepoPath', 'node-fullstack');
+
+        expect(engineAddFactMock).toHaveBeenCalledWith('openaiAnalysis', expect.any(Function));
+        expect(engineAddFactMock).toHaveBeenCalledWith('openaiSystemPrompt', 'mock openai system prompt');
+
+        delete process.env.OPENAI_API_KEY;
+    });
+
+    it('should not add OpenAI facts when OPENAI_API_KEY is not set', async () => {
+        delete process.env.OPENAI_API_KEY;
+        const mockFileData = [
+            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
+        ];
+        const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
         const mockRules = [{ name: 'mockRule', conditions: { all: [] },
 });
