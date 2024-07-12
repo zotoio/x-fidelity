@@ -36,13 +36,13 @@ describe('ConfigManager', () => {
         });
 
         it('should fetch remote config when configServer is provided', async () => {
-            const mockConfig = { config: { test: 'value' } };
+            const mockConfig = { test: 'value' };
             (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
 
             await configManager.initialize('test-archetype', 'http://test-server.com');
 
             expect(axios.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype');
-            expect(configManager.getConfig().config).toHaveProperty('test', 'value');
+            expect(configManager.getConfig()).toHaveProperty('test', 'value');
         });
 
         it('should handle errors when fetching remote config', async () => {
