@@ -127,7 +127,7 @@ describe('analyzeCodebase', () => {
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
         const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
         const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
-        const mockFacts = [{ name: 'mockFact', fn: jest.fn() }, { name: 'openaiAnalysisFacts', fn: jest.fn() }];
+        const mockFacts = [{ name: 'openaiAnalysis', fn: jest.fn() }, { name: 'openaiSystemPrompt', fn: 'mock openai system prompt'} ];
 
         (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
         (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
@@ -197,7 +197,7 @@ describe('analyzeCodebase', () => {
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
         const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
         const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
-        const mockFacts = [{ name: 'mockFact', fn: jest.fn() }, { name: 'openaiAnalysisFacts', fn: jest.fn() }];
+        const mockFacts = [{ name: 'openaiAnalysis', fn: jest.fn() }, { name: 'openaiSystemPrompt', fn: 'mock openai system prompt' }];
 
         (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
         (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
