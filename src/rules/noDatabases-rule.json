@@ -13,7 +13,11 @@
     "event": {
         "type": "violation",
         "params": {
-            "message": "code must not directly call databases"
+            "message": "code must not directly call databases",
+            "details": {
+                "fact": "fileData",
+                "path": "$.fileName"
+            }
         }
     }
 }
