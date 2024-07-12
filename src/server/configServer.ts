@@ -1,29 +1,30 @@
 import express from 'express';
 import { archetypes } from '../archetypes';
 import { loadRules } from '../rules';
+import path from 'path';
 
 const app = express();
 const port = process.env.XFI_PORT || 8888;
 
-const validInput = (value: string, res: any) => {
-    // ensure archetype contains only alphanuleric characters and hyphens and is not longer than 50 characters
-    const validArchetypeName = /^[a-zA-Z0-9-]{1,50}$/;
-    if (!validArchetypeName.test(value)) {
-        res.status(400).send('Invalid request');
-        return false;
-    } else {
-        return true;
-    }
+const validInput = (value: string): boolean => {
+    // Ensure input contains only alphanumeric characters, hyphens, and underscores
+    const validName = /^[a-zA-Z0-9-_]{1,50}$/;
+    return validName.test(value);
 }
+
+app.use((req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    next();
+});
 
 app.get('/archetypes/:archetype', (req, res) => {
     console.log(`Fetching archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
-    if (validInput(archetype, res) && archetypes[archetype]) {
+    if (validInput(archetype) && archetypes[archetype]) {
         console.log(`Found archetype ${archetype} config: ${JSON.stringify(archetypes[archetype])}`);
         res.json(archetypes[archetype]);
     } else {
-        res.status(404).send(`archetype not found`);
+        res.status(404).json({ error: 'Archetype not found' });
     }
 });
 
@@ -35,11 +36,11 @@ app.get('/archetypes', (req, res) => {
 app.get('/archetypes/:archetype/rules', async (req, res) => {
     console.log(`Fetching rules for archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
-    if (validInput(archetype, res) && archetypes.hasOwnProperty(archetype) && archetypes[archetype].rules) {
+    if (validInput(archetype) && archetypes.hasOwnProperty(archetype) && archetypes[archetype].rules) {
         const rules = await loadRules(archetype, archetypes[archetype].rules);
         res.json(rules);
     } else {
-        res.status(404).send(`archetype not found`);
+        res.status(404).json({ error: 'Archetype not found' });
     }
 });
 
@@ -47,12 +48,12 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     console.log(`Fetching rule ${req.params.rule} for archetype ${req.params.archetype}..`);
     const archetype = req.params.archetype;
     const rule = req.params.rule;
-    if (validInput(archetype, res) && validInput(rule, res) && archetypes.hasOwnProperty(archetype) && archetypes[archetype].rules.includes(rule)) {
+    if (validInput(archetype) && validInput(rule) && archetypes.hasOwnProperty(archetype) && archetypes[archetype].rules.includes(rule)) {
         const rules = await loadRules(archetype, archetypes[archetype].rules);
         const ruleJson = rules.find((r) => r.name === rule);
         res.json(ruleJson);
     } else {
-        res.status(404).send(`rule not found`);
+        res.status(404).json({ error: 'Rule not found' });
     }
 });
 
