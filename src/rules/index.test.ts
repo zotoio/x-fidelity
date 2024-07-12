@@ -2,10 +2,25 @@ import { loadRules } from './index';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
+import { logger } from '../utils/logger';
 
 jest.mock('axios');
-jest.mock('fs');
+jest.mock('fs', () => ({
+    //...jest.requireActual('fs'),
+    promises: {
+      lstat: jest.fn(),
+      readFile: jest.fn(),
+    },
+    readFileSync: jest.fn(),
+    readdirSync: jest.fn(),
+  }));
 jest.mock('path');
+jest.mock('../utils/logger', () => ({
+    logger: {
+        debug: jest.fn(),
+        error: jest.fn(),
+    },
+}));
 
 describe('loadRules', () => {
     beforeEach(() => {
@@ -14,7 +29,8 @@ describe('loadRules', () => {
 
     it('should load rules from local files when configServer is not provided', async () => {
         const mockRuleContent = JSON.stringify({ name: 'testRule', conditions: {}, event: {} });
-        (fs.promises.readFile as jest.Mock).mockResolvedValue(mockRuleContent);
+        const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+        mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/testRule-rule.json');
 
         const result = await loadRules('testArchetype', ['testRule']);
@@ -36,7 +52,8 @@ describe('loadRules', () => {
     it('should fall back to local file if remote fetch fails', async () => {
         const mockRuleContent = JSON.stringify({ name: 'testRule', conditions: {}, event: {} });
         (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
-        (fs.promises.readFile as jest.Mock).mockResolvedValue(mockRuleContent);
+        const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+        mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/testRule-rule.json');
 
         const result = await loadRules('testArchetype', ['testRule'], 'http://configserver.com');
@@ -55,7 +72,8 @@ describe('loadRules', () => {
     it('should load openai rules if OPENAI_API_KEY is set', async () => {
         process.env.OPENAI_API_KEY = 'test-key';
         const mockRuleContent = JSON.stringify({ name: 'openaiRule', conditions: {}, event: {} });
-        (fs.promises.readFile as jest.Mock).mockResolvedValue(mockRuleContent);
+        const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+        mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/openaiRule-rule.json');
 
         const result = await loadRules('testArchetype', ['openaiRule']);
@@ -64,12 +82,13 @@ describe('loadRules', () => {
     });
 
     it('should handle errors when loading local rules', async () => {
-        (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
+        const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+        mockedFsPromises.readFile.mockRejectedValue(new Error('File not found'));
         (path.join as jest.Mock).mockReturnValue('/path/to/testRule-rule.json');
 
         const result = await loadRules('testArchetype', ['testRule']);
 
         expect(result).toEqual([]);
-        expect(console.error).toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalled();
     });
 });

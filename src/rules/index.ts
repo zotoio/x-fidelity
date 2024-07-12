@@ -48,7 +48,6 @@ async function loadLocalRule(ruleName: string): Promise<RuleProperties | null> {
         } catch (error) {
             logger.error(`FATAL: Error loading local rule file: ${fileName}`);
             logger.error(error);
-            console.error(error);
             return null;
         }
     }

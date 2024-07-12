@@ -182,18 +182,6 @@ describe('findPropertiesInTree', () => {
             { dep: 'babel', ver: '7.14.8', min: '7.14.0 - 7.15.0' }
         ]);
     });
-        const depGraph = {
-            commander: { version: '2.0.0' },
-            nodemon: { version: '3.9.0' }
-        };
-        const minVersions = { commander: '^2.0.0', nodemon: '^3.9.0' };
-
-        const result = findPropertiesInTree(depGraph, minVersions);
-        expect(result).toEqual([
-            { dep: 'commander', ver: '2.0.0', min: '^2.0.0' },
-            { dep: 'nodemon', ver: '3.9.0', min: '^3.9.0' }
-        ]);
-    });
 
     it('should return an empty array if no properties match', () => {
         const depGraph = {
@@ -249,3 +237,4 @@ describe('findPropertiesInTree', () => {
         ]);
     });
 });
+
