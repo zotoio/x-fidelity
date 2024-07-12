@@ -37,10 +37,7 @@ export class ConfigManager {
                 const response = await axios.get(configUrl);
                 this.config = {
                     ...this.config,
-                    config: {
-                        ...this.config.config,
-                        ...response.data
-                    }
+                    ...response.data
                 };
                 console.log(`Remote config fetched successfully ${JSON.stringify(this.config)}`);
             } catch (error) {

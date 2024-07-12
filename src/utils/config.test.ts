@@ -42,7 +42,7 @@ describe('ConfigManager', () => {
             await configManager.initialize('test-archetype', 'http://test-server.com');
 
             expect(axios.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype');
-            expect(configManager.getConfig()).toHaveProperty('test', 'value');
+            expect(configManager.getConfig()).toEqual(expect.objectContaining(mockConfig));
         });
 
         it('should handle errors when fetching remote config', async () => {
