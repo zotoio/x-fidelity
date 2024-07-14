@@ -13,7 +13,8 @@ const fileContains: OperatorDefn = {
             lineNumber++;
             if (regex.test(line)) {
                 logger.debug(`fileContains '${checkString}' found in line ${lineNumber}: ${line}`);
-                result = true
+                result = true;
+                break;
             }
         }
         

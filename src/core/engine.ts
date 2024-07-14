@@ -2,7 +2,7 @@ import { logger } from '../utils/logger';
 import { Almanac, Engine, EngineResult, Event, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
 import { ScanResult, RuleFailure, ArchetypeConfig, OpenAIAnalysisParams } from '../typeDefs';
-import { getDependencyVersionFacts } from '../facts/repoDependencyFacts';
+import { getDependencyVersionFacts, repoDependencyAnalysis } from '../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../facts/openaiAnalysisFacts';
 import { loadOperators } from '../operators';
 import { loadFacts } from '../facts';
@@ -58,6 +58,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     engine.on('success', async ({ type, params }: Event, almanac: Almanac) => {
         if (type === 'violation') {
             //console.log(await almanac.factValue('dependencyData'));
+            console.log(`Rule violation: ${JSON.stringify(params)}}`);
         }
     });
 
@@ -73,9 +74,12 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
     if (process.env.OPENAI_API_KEY && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
         console.log(`adding additional openai facts to engine..`);
-        engine.addFact('openaiAnalysis', openaiAnalysis)
+        engine.addFact('openaiAnalysis', openaiAnalysis);
         engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
     }
+
+    // add output facts
+    engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
 
     // Run the engine for each file's data    
     console.log(`### Executing rules..`);                                                                         

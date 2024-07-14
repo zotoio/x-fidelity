@@ -5,24 +5,26 @@
             {
                 "fact": "fileData",
                 "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "repoDependencyAnalysis",
+                "params": {
+                    "prompt": "what are the most important 5 things to fix?",
+                    "resultFact": "repoDependencyResults"
+                },
                 "operator": "outdatedFramework",
-                "value": {
-                    "fact": "dependencyData"
-                }
-            }    
+                "value": 8
+            }
         ]
     },
     "event": {
         "type": "violation",
         "params": {
             "message": "some core framework dependencies have expired!",
-            "filePath": {
-                "fact": "fileData",
-                "path": "$.filePath"
-            },
-            "minimumDependencyVersions": {
-                "fact": "dependencyData",
-                "path": "$.minimumDependencyVersions"
+            "results": {
+                "fact": "repoDependencyResults"
             }
         }
     }

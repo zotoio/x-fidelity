@@ -140,35 +140,6 @@ Each rule is defined in a JSON file with the following structure:
 }
 ```
 
-For example, here's the structure of the `sensitiveLogging-rule.json`:
-
-```json
-{
-  "name": "sensitiveLogging",
-  "description": "Check for sensitive logging",
-  "conditions": {
-    "all": [
-      {
-        "fact": "repoFilesystemFacts",
-        "operator": "fileContains",
-        "value": {
-          "pattern": "console\\.log\\(.*password.*\\)",
-          "message": "Sensitive data (password) might be logged"
-        }
-      }
-    ]
-  },
-  "event": {
-    "type": "ruleFailure",
-    "params": {
-      "message": "Sensitive data logging detected"
-    }
-  }
-}
-```
-
-This rule checks for instances where passwords might be logged using `console.log()`.
-
 ## License
 
 This project is licensed under the MIT License.

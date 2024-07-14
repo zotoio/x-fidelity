@@ -25,7 +25,11 @@
     "event": {
         "type": "violation",
         "params": {
-            "message": "Sensitive data must not be logged."
+            "message": "Sensitive data must not be logged.",
+            "details": {
+                "fact": "fileData",
+                "path": "$.fileName"
+            }
         }
     }
 }

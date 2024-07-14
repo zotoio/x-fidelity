@@ -2,6 +2,8 @@ import { logger } from '../utils/logger';
 import _ from 'lodash';
 import { execSync } from 'child_process';
 import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } from '../typeDefs';
+import { Almanac } from 'json-rules-engine';
+import * as semver from 'semver';
 
 /**
  * Collects the local dependencies.
@@ -65,3 +67,32 @@ export function findPropertiesInTree(depGraph: LocalDependencies, minVersions: M
     walk(depGraph);
     return results;
 }
+
+export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
+
+    let result: any = {'result': []};
+    let analysis: any = [];
+    const dependencyData: any = await almanac.factValue('dependencyData');
+
+    dependencyData.installedDependencyVersions.map((versionData: VersionData) => { 
+        logger.debug(`outdatedFramework: checking ${versionData.dep}`);
+
+        const requiredRange = new semver.Range(versionData.min);
+        if (!semver.gtr(versionData.ver, requiredRange)) {
+            let dependencyFailure = {
+                'dependency': versionData.dep,
+                'currentVersion': versionData.ver,
+                'requiredVersion': versionData.min
+            };
+            
+            logger.error(`dependencyFailure: ${dependencyFailure}`);
+            analysis.push(dependencyFailure);
+        }
+    });
+
+    result.result = analysis;
+
+    almanac.addRuntimeFact(params.resultFact, result);
+
+    return result;
+};
