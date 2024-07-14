@@ -6,13 +6,13 @@
                 "fact": "fileData",
                 "path": "$.fileContent",
                 "operator": "fileContains",
-                "value": "token"
+                "value": "tokenz"
             },
             {
                 "fact": "fileData",
                 "path": "$.fileContent",
                 "operator": "fileContains",
-                "value": "secret"
+                "value": "secretx"
             },
             {
                 "fact": "fileData",
