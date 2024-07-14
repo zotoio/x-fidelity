@@ -41,7 +41,10 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
                         - description: Detail of the issue.
                         - filePaths: Array of file paths involved. 
                         - suggestion: The suggestion for the fix.
-                        - codeSnippets: Array of code snippets that needs to be fixed in each file with lineNumber of the issue in each filePath affected and before and after code.
+                        - codeSnippets: Array of code snippets that needs to be fixed in each file with each snippet object containing:
+                            - filePath affected
+                            - lineNumber of the issue 
+                            - before and after code snippet lines
                     3. do not include strings or markdown around the array.` }
             ]
         };

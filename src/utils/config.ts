@@ -45,32 +45,11 @@ export class ConfigManager {
             }
         }
 
-        // Load rules after config is initialized
-        this.rules = await loadRules(archetype, this.config.rules, this.configServer);
     }
 
     public getConfig(): ArchetypeConfig {
         return this.config;
     }
 
-    public getRules(): any[] {
-        return this.rules;
-    }
-
-    public getMinimumDependencyVersions(): Record<string, string> {
-        return this.config.config.minimumDependencyVersions;
-    }
-
-    public getStandardStructure(): Record<string, any> {
-        return this.config.config.standardStructure;
-    }
-
-    public getBlacklistPatterns(): string[] {
-        return this.config.config.blacklistPatterns;
-    }
-
-    public getWhitelistPatterns(): string[] {
-        return this.config.config.whitelistPatterns;
-    }
 }
 

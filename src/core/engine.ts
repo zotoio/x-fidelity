@@ -1,5 +1,5 @@
 import { logger } from '../utils/logger';
-import { Engine, EngineResult, RuleProperties, RuleResult } from 'json-rules-engine';
+import { Almanac, Engine, EngineResult, Event, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
 import { ScanResult, RuleFailure, ArchetypeConfig, OpenAIAnalysisParams } from '../typeDefs';
 import { getDependencyVersionFacts } from '../facts/repoDependencyFacts';
@@ -30,6 +30,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
     // Add operators to engine
+    console.log(`### loading custom operators..`);
     const operators = await loadOperators(archetypeConfig.operators);
     operators.forEach((operator) => {
         if (!operator?.name?.includes('openai') || (process.env.OPENAI_API_KEY && operator?.name?.includes('openai'))) {
@@ -39,6 +40,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     });
 
     // Add rules to engine
+    console.log(`### loading json rules..`);
     const rules: RuleProperties[] = await loadRules(archetype, archetypeConfig.rules, configManager.configServer);
     logger.debug(rules);
 
@@ -53,17 +55,20 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
         }
     });
 
-    engine.on('success', ({ type, params }) => {
+    engine.on('success', async ({ type, params }: Event, almanac: Almanac) => {
         if (type === 'violation') {
-            //console.log(params);
+            //console.log(await almanac.factValue('dependencyData'));
         }
     });
 
     // Add facts to engine
+    console.log(`### loading facts..`);
     const facts = await loadFacts(archetypeConfig.facts);
     facts.forEach((fact) => {
-        console.log(`adding fact: ${fact.name}`);
-        engine.addFact(fact.name, fact.fn);
+        if (!fact?.name?.includes('openai') || (process.env.OPENAI_API_KEY && fact?.name?.includes('openai'))) {
+            console.log(`adding fact: ${fact.name}`);
+            engine.addFact(fact.name, fact.fn);
+        }    
     });
 
     if (process.env.OPENAI_API_KEY && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
@@ -72,7 +77,8 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
         engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
     }
 
-    // Run the engine for each file's data                                                                             
+    // Run the engine for each file's data    
+    console.log(`### Executing rules..`);                                                                         
     let failures: ScanResult[] = [];
     for (const file of fileData) {
         if (file.fileName === 'REPO_GLOBAL_CHECK') {

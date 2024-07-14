@@ -4,7 +4,7 @@ import { loadRules } from '../rules';
 import path from 'path';
 
 const app = express();
-const port = process.env.XFI_PORT || 8888;
+const port = process.env.XFI_SERVER_PORT || 8888;
 
 const validInput = (value: string): boolean => {
     // Ensure input contains only alphanumeric characters, hyphens, and underscores

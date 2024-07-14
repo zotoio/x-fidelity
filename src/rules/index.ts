@@ -5,7 +5,7 @@ import * as path from 'path';
 import axios from 'axios';
 
 async function loadRules(archetype: any, ruleNames: string[], configServer?: string): Promise<RuleProperties[]> {
-    console.log(`loading json rules..`);
+    
     const ruleProperties: RuleProperties[] = [];
 
     for (const ruleName of ruleNames) {
@@ -28,7 +28,9 @@ async function loadRules(archetype: any, ruleNames: string[], configServer?: str
         }
 
         if (rule) {
-            ruleProperties.push(rule);
+            if (!ruleName.startsWith('openai') || (process.env.OPENAI_API_KEY && ruleName.startsWith('openai'))) {
+                ruleProperties.push(rule);
+            }    
         }
     }
 

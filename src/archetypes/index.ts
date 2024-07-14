@@ -11,12 +11,10 @@ export const archetypes: Record<string, ArchetypeConfig> = {
                 nodemon: '^3.9.0'
             },
             standardStructure: {
-                src: {
-                    core: null,
-                    utils: null,
-                    operators: null,
-                    rules: null,
-                    facts: null
+                app: {
+                    frontend: null,
+                    common: null,
+                    server: null
                 }
             },
             blacklistPatterns: [
