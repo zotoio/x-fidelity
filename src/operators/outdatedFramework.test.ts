@@ -24,7 +24,7 @@ describe('outdatedFramework', () => {
         const filePath = REPO_GLOBAL_CHECK;
         const dependencyData = {
             installedDependencyVersions: [
-                { dep: 'dep1', ver: '.0.0', min: '1.0.0' },
+                { dep: 'dep1', ver: '1.0.0', min: '1.0.0' },
                 { dep: 'dep2', ver: '1.0.0', min: '2.0.0' }
             ]
         };
