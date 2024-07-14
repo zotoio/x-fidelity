@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/zotoio/x-fidelity/compare/v1.4.0...v1.4.1) (2024-07-14)
+
+
+### Bug Fixes
+
+* **rules:** change default sensitive strings rule ([3e14e24](https://github.com/zotoio/x-fidelity/commit/3e14e248cc8ae95a6a79a7f3d5f75b3db6f9d35f))
+
 # [1.4.0](https://github.com/zotoio/x-fidelity/compare/v1.3.0...v1.4.0) (2024-07-14)
 
 
