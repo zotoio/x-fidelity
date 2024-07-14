@@ -112,7 +112,34 @@ Note that not all models consistently return parseable JSON results, so some exp
 
 ## Configuration
 
-The configuration file should be a JSON file containing rules, operators, facts, and other settings. You can find example configuration files in the `src/rules` directory of the repository.
+The configuration for x-fidelity is based on archetypes, which define the rules, operators, facts, and other settings for a specific type of project. You can find example configuration files in the `src/archetypes` directory of the repository.
+
+### Archetype Schema
+
+An archetype is defined with the following structure:
+
+```typescript
+interface ArchetypeConfig {
+    rules: string[];
+    operators: string[];
+    facts: string[];
+    config: {
+        minimumDependencyVersions: Record<string, string>;
+        standardStructure: Record<string, any>;
+        blacklistPatterns: string[];
+        whitelistPatterns: string[];
+    };
+}
+```
+
+- `rules`: An array of rule names to be applied for this archetype.
+- `operators`: An array of operator names used in the rules.
+- `facts`: An array of fact provider names used to gather information about the codebase.
+- `config`: Additional configuration specific to the archetype:
+  - `minimumDependencyVersions`: Minimum required versions for dependencies.
+  - `standardStructure`: Expected directory structure for the project.
+  - `blacklistPatterns`: Patterns for files/directories to be ignored.
+  - `whitelistPatterns`: Patterns for files/directories to be included.
 
 ### Rule Structure
 
@@ -121,7 +148,6 @@ Each rule is defined in a JSON file with the following structure:
 ```json
 {
   "name": "ruleName",
-  "description": "A brief description of the rule",
   "conditions": {
     "all": [
       {
@@ -132,13 +158,99 @@ Each rule is defined in a JSON file with the following structure:
     ]
   },
   "event": {
-    "type": "ruleFailure",
+    "type": "violation",
     "params": {
       "message": "Error message when the rule fails"
     }
   }
 }
 ```
+
+## Creating New Archetypes
+
+To create a new archetype:
+
+1. Create a new file in the `src/archetypes` directory, e.g., `myNewArchetype.ts`.
+2. Define the archetype configuration following the `ArchetypeConfig` interface.
+3. Add any necessary rules in the `src/rules` directory.
+4. If needed, create custom operators in the `src/operators` directory.
+5. If needed, create custom fact providers in the `src/facts` directory.
+6. Update the `src/archetypes/index.ts` file to include your new archetype.
+
+Example of a new archetype:
+
+```typescript
+export const myNewArchetype: ArchetypeConfig = {
+    rules: ['myCustomRule', 'standardRule1', 'standardRule2'],
+    operators: ['myCustomOperator', 'standardOperator1'],
+    facts: ['myCustomFact', 'standardFact1'],
+    config: {
+        minimumDependencyVersions: {
+            'my-framework': '^2.0.0'
+        },
+        standardStructure: {
+            src: {
+                components: null,
+                utils: null
+            },
+            tests: null
+        },
+        blacklistPatterns: ['.*\\/\\..*', '.*\\/(dist|build)(\\/.*|$)'],
+        whitelistPatterns: ['.*\\.(ts|tsx|js|jsx)$']
+    }
+};
+```
+
+## Extensibility
+
+x-fidelity is designed to be highly extensible:
+
+1. **Custom Rules**: Create new rules by adding JSON files in the `src/rules` directory.
+2. **Custom Operators**: Implement new operators in the `src/operators` directory and add them to `src/operators/index.ts`.
+3. **Custom Facts**: Create new fact providers in the `src/facts` directory and add them to `src/facts/index.ts`.
+4. **New Archetypes**: As described above, create new archetypes to support different project types or frameworks.
+
+## Hosting Config Servers
+
+To host a config server for x-fidelity:
+
+1. Set up a Node.js server environment (e.g., using Express.js).
+2. Implement endpoints that serve the archetype configurations and rules.
+3. Ensure the server is secure and can handle the expected load.
+4. Use HTTPS for secure communication.
+5. Implement caching mechanisms to improve performance.
+6. Consider using a CDN for global distribution and lower latency.
+
+Example server setup (simplified):
+
+```javascript
+const express = require('express');
+const app = express();
+
+app.get('/archetypes/:archetype', (req, res) => {
+    const archetype = req.params.archetype;
+    // Fetch and return the archetype configuration
+});
+
+app.get('/archetypes/:archetype/rules/:rule', (req, res) => {
+    const archetype = req.params.archetype;
+    const rule = req.params.rule;
+    // Fetch and return the specific rule for the archetype
+});
+
+app.listen(8888, () => {
+    console.log('Config server running on port 8888');
+});
+```
+
+Best practices for hosting:
+
+- Use environment variables for sensitive information.
+- Implement proper error handling and logging.
+- Set up monitoring and alerting for the server.
+- Regularly update and maintain the server and its dependencies.
+- Implement rate limiting to prevent abuse.
+- Consider using containerization (e.g., Docker) for easy deployment and scaling.
 
 ## License
 
