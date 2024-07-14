@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/zotoio/x-fidelity/compare/v1.3.0...v1.4.0) (2024-07-14)
+
+
+### Features
+
+* **rule:** report specific dependency issues ([2ccaf6c](https://github.com/zotoio/x-fidelity/commit/2ccaf6cfe9d6cf8a73de5413fffee40dbb0f236d))
+
 # [1.3.0](https://github.com/zotoio/x-fidelity/compare/v1.2.0...v1.3.0) (2024-07-11)
 
 
