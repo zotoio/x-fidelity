@@ -50,7 +50,7 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
         };
 
         logger.debug(payload);
-        console.log(`running global openaiAnalysis with prompt variant: ${params.prompt}..`);
+        logger.debug(`running global openaiAnalysis with prompt variant: ${params.prompt}..`);
         const response: OpenAI.Chat.Completions.ChatCompletion = await openai.chat.completions.create(payload);
         logger.debug(response);
 
@@ -66,7 +66,7 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
 
         result = analysis;
     } catch (error) {
-        console.log(error);
+        logger.debug(error);
         if (error instanceof Error) {
             logger.error(`openaiAnalysis: Error analyzing facts with OpenAI: ${error.message}`);
         } else {

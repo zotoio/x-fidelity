@@ -18,10 +18,10 @@ app.use((req, res, next) => {
 });
 
 app.get('/archetypes/:archetype', (req, res) => {
-    console.log(`Fetching archetype: ${req.params.archetype}`);
+    logger.debug(`Fetching archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
     if (validInput(archetype) && archetypes[archetype]) {
-        console.log(`Found archetype ${archetype} config: ${JSON.stringify(archetypes[archetype])}`);
+        logger.debug(`Found archetype ${archetype} config: ${JSON.stringify(archetypes[archetype])}`);
         res.json(archetypes[archetype]);
     } else {
         res.status(404).json({ error: 'Archetype not found' });
@@ -29,12 +29,12 @@ app.get('/archetypes/:archetype', (req, res) => {
 });
 
 app.get('/archetypes', (req, res) => {
-    console.log('Fetching archetype list..');
+    logger.debug('Fetching archetype list..');
     res.json(Object.keys(archetypes));
 });
 
 app.get('/archetypes/:archetype/rules', async (req, res) => {
-    console.log(`Fetching rules for archetype: ${req.params.archetype}`);
+    logger.debug(`Fetching rules for archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
     if (validInput(archetype) && archetypes.hasOwnProperty(archetype) && archetypes[archetype].rules) {
         const rules = await loadRules(archetype, archetypes[archetype].rules);
@@ -45,7 +45,7 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
 });
 
 app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
-    console.log(`Fetching rule ${req.params.rule} for archetype ${req.params.archetype}..`);
+    logger.debug(`Fetching rule ${req.params.rule} for archetype ${req.params.archetype}..`);
     const archetype = req.params.archetype;
     const rule = req.params.rule;
     if (validInput(archetype) && validInput(rule) && archetypes.hasOwnProperty(archetype) && archetypes[archetype].rules.includes(rule)) {
@@ -58,5 +58,5 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Config server listening at http://localhost:${port}`);
+    logger.debug(`Config server listening at http://localhost:${port}`);
 });

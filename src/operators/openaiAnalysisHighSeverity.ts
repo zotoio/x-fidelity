@@ -20,7 +20,7 @@ const openaiAnalysisHighSeverity: OperatorDefn = {
             return result;
         } catch (e) {
             // for now we don't fail the build if openai respose parsing fails
-            console.log(e)
+            logger.debug(e)
             logger.error(`openaiAnalysisHighSeverity: ${e}`);
             return false;
         }

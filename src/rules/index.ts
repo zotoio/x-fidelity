@@ -14,12 +14,12 @@ async function loadRules(archetype: any, ruleNames: string[], configServer?: str
         if (configServer) {
             try {
                 const url = `${configServer}/archetypes/${archetype}/rules/${ruleName}`;
-                console.log(`Fetching remote rule ${url}`);
+                logger.debug(`Fetching remote rule ${url}`);
                 const response = await axios.get(url);
                 rule = response.data;
-                console.log(`Remote rule fetched successfully: ${rule}`);
+                logger.debug(`Remote rule fetched successfully: ${rule}`);
             } catch (error) {
-                console.log(`Error fetching remote rule ${ruleName}: ${error}`);
+                logger.debug(`Error fetching remote rule ${ruleName}: ${error}`);
                 // If remote fetch fails, fall back to local file
                 rule = await loadLocalRule(ruleName);
             }

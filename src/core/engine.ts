@@ -30,23 +30,23 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
     // Add operators to engine
-    console.log(`### loading custom operators..`);
+    logger.debug(`### loading custom operators..`);
     const operators = await loadOperators(archetypeConfig.operators);
     operators.forEach((operator) => {
         if (!operator?.name?.includes('openai') || (process.env.OPENAI_API_KEY && operator?.name?.includes('openai'))) {
-            console.log(`adding custom operator: ${operator.name}`);
+            logger.debug(`adding custom operator: ${operator.name}`);
             engine.addOperator(operator.name, operator.fn);
         }
     });
 
     // Add rules to engine
-    console.log(`### loading json rules..`);
+    logger.debug(`### loading json rules..`);
     const rules: RuleProperties[] = await loadRules(archetype, archetypeConfig.rules, configManager.configServer);
     logger.debug(rules);
 
     rules.forEach((rule) => {
         try {
-            console.log(`adding rule: ${rule?.name}`);
+            logger.debug(`adding rule: ${rule?.name}`);
             engine.addRule(rule);
                 
         } catch (e: any) {
@@ -58,26 +58,26 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     engine.on('success', async ({ type, params }: Event, almanac: Almanac) => {
         if (type === 'violation') {
             //console.log(await almanac.factValue('dependencyData'));
-            console.log(`violation detected: ${JSON.stringify(params)}}`);
+            logger.debug(`violation detected: ${JSON.stringify(params)}}`);
         }
         if (type === 'fatality') {
             //console.log(await almanac.factValue('dependencyData'));
-            console.log(`fatality detected: ${JSON.stringify(params)}}`);
+            logger.debug(`fatality detected: ${JSON.stringify(params)}}`);
         }
     });
 
     // Add facts to engine
-    console.log(`### loading facts..`);
+    logger.debug(`### loading facts..`);
     const facts = await loadFacts(archetypeConfig.facts);
     facts.forEach((fact) => {
         if (!fact?.name?.includes('openai') || (process.env.OPENAI_API_KEY && fact?.name?.includes('openai'))) {
-            console.log(`adding fact: ${fact.name}`);
+            logger.debug(`adding fact: ${fact.name}`);
             engine.addFact(fact.name, fact.fn);
         }    
     });
 
     if (process.env.OPENAI_API_KEY && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
-        console.log(`adding additional openai facts to engine..`);
+        logger.debug(`adding additional openai facts to engine..`);
         engine.addFact('openaiAnalysis', openaiAnalysis);
         engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
     }
@@ -86,7 +86,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
 
     // Run the engine for each file's data    
-    console.log(`### Executing rules..`);                                                                         
+    logger.debug(`### Executing rules..`);                                                                         
     let failures: ScanResult[] = [];
     for (const file of fileData) {
         if (file.fileName === REPO_GLOBAL_CHECK) {

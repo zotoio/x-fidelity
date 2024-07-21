@@ -15,7 +15,7 @@ const banner = (`
 -------------------------------------
 ${new Date().toString()}`);
 
-console.log(banner);
+logger.debug(banner);
 logger.info([banner]);
 
 program
