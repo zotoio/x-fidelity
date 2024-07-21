@@ -1,6 +1,15 @@
 import { logger } from '../utils/logger';
 import { program } from "commander";
 
+program
+    .option("-d, --dir <directory>", "The checkout directory to analyse", ".")
+    .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
+    .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules");
+
+program.parse();
+
+const options = program.opts();
+
 const banner = (`
 =====================================
  __    __          ________  ______ 
@@ -13,32 +22,16 @@ const banner = (`
  \\##   \\##         \\##       \\######
                                
 -------------------------------------
-${new Date().toString()}`);
+${new Date().toString().slice(0, 24)}
+archetype: ${options.archetype}
+directory: ${process.env.PWD}/${options.dir}
+configServer: ${options.configServer ? options.configServer : 'none'}
+for available options run: xfidelity --help
+=====================================`);
 
-logger.debug(banner);
-logger.info([banner]);
-
-program
-    .option("-d, --dir <directory>", "The checkout directory to analyse", ".")
-    .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
-    .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules");
-
-program.parse();
-
-const options = program.opts();
+logger.info(banner);
 
 // print help if no arguments are passed
 if (program.options.length === 0) program.help();
-
-if (!options.dir) {
-    console.error("Checkout directory not provided. Defaulting to current directory.");
-}
-
-let msg = `Archetype ${options.archetype}: analysis of: ${process.env.PWD}/${options.dir}`;
-logger.info(msg)&& console.log(msg) ;
-msg = `configServer: ${options.configServer ? options.configServer : 'local'}`;
-logger.info(msg)&& console.log(msg) ;
-msg = '=====================================';
-logger.info(msg) && console.log(msg);
 
 export { options };

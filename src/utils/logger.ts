@@ -1,7 +1,7 @@
 import { createLogger, format, transports } from 'winston';
 
 const logger = createLogger({
-    level: 'debug',
+    //level: 'debug',
     format: format.combine(
         format.timestamp({
             format: 'YYYY-MM-DD HH:mm:ss.SSS ZZ'
@@ -12,9 +12,9 @@ const logger = createLogger({
         format.prettyPrint()
     ),
     transports: [
-        new transports.File({ filename: 'x-fidelity.log' }),
+        new transports.File({ filename: 'x-fidelity.log', level: 'debug', handleExceptions: true }),
         new transports.Console({
-            level: 'debug', // Set the minimum level of messages to log
+            level: 'info', // Set the minimum level of messages to log
             handleExceptions: true, // Handle exceptions
             format: format.combine(
                 format.colorize(),
@@ -25,6 +25,5 @@ const logger = createLogger({
 
     ]
 });
-
 
 export { logger };

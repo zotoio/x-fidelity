@@ -1,4 +1,4 @@
-import { OperatorDefn } from '../typeDefs';
+import { OperatorDefn } from '../types/typeDefs';
 import { outdatedFramework } from './outdatedFramework';
 import { fileContains } from './fileContains';
 import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';

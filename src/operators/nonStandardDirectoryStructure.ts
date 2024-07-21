@@ -1,4 +1,4 @@
-import { OperatorDefn } from '../typeDefs';
+import { OperatorDefn } from '../types/typeDefs';
 import { logger } from '../utils/logger';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -20,6 +20,7 @@ const nonStandardDirectoryStructure: OperatorDefn = {
         function checkStructure(currentPath: string, structure: any): boolean {
             for (const key in structure) {
                 const newPath = path.join(currentPath, key);
+                
                 logger.debug(`checking ${newPath}`);
                 if (!fs.existsSync(newPath) || !fs.lstatSync(newPath).isDirectory()) {
                     logger.debug(`Missing or invalid directory: ${newPath}`);

@@ -1,14 +1,14 @@
 import express from 'express';
 import { archetypes } from '../archetypes';
 import { loadRules } from '../rules';
-import path from 'path';
+import { logger } from '../utils/logger';
 
 const app = express();
 const port = process.env.XFI_SERVER_PORT || 8888;
 
 const validInput = (value: string): boolean => {
     // Ensure input contains only alphanumeric characters, hyphens, and underscores
-    const validName = /^[a-zA-Z0-9-_]{1,50}$/;
+    const validName = /^[a-zA-Z0-9-_\-]{1,50}$/;
     return validName.test(value);
 }
 

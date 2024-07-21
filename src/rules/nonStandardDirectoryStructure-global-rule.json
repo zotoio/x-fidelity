@@ -1,5 +1,5 @@
 {
-    "name": "nonStandardDirectoryStructure",
+    "name": "nonStandardDirectoryStructure-global",
     "conditions": {
         "all": [
             {
@@ -21,10 +21,10 @@
     "event": {
         "type": "violation",
         "params": {
+            "level": "fatality",
             "message": "directory structure does not match the standard.",
             "details": {
-                "fact": "fileData",
-                "path": "$.filePath"
+                "fact": "standardStructure"
             }
         }
     }

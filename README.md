@@ -239,7 +239,7 @@ app.get('/archetypes/:archetype/rules/:rule', (req, res) => {
 });
 
 app.listen(8888, () => {
-    console.log('Config server running on port 8888');
+    logger.info('Config server running on port 8888');
 });
 ```
 

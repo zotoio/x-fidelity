@@ -1,5 +1,5 @@
 {
-    "name": "openaiAnalysisA11yRule",
+    "name": "openaiAnalysisTop5-global",
     "conditions": {
         "all": [
             {
@@ -11,20 +11,20 @@
             {
                 "fact": "openaiAnalysis",
                 "params": {
-                    "prompt": "Identify any accessibility (a11y) issues in the codebase.",
-                    "resultFact": "openaiAnalysisA11y"
+                    "prompt": "what are the most important 5 things to fix?",
+                    "resultFact": "openaiAnalysisTop5"
                 },
                 "operator": "openaiAnalysisHighSeverity",
-                "value": 9
+                "value": 8
             }
         ]
     },
     "event": {
         "type": "violation",
         "params": {
-            "message": "OpenAI analysis detected accessibility (a11y) issues in the codebase.",
+            "message": "OpenAI analysis failed for the provided prompt.",
             "results": {
-                "fact": "openaiAnalysisA11y"
+                "fact": "openaiAnalysisTop5"
             }
         }
     }

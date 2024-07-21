@@ -66,7 +66,6 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
 
         result = analysis;
     } catch (error) {
-        logger.debug(error);
         if (error instanceof Error) {
             logger.error(`openaiAnalysis: Error analyzing facts with OpenAI: ${error.message}`);
         } else {
@@ -114,7 +113,7 @@ const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
         Based on the provided codebase and your expertise in software engineering: 
         `;
 
-        //logger.debug(`systemPrompt: ${systemPrompt}`);
+        logger.debug(`systemPrompt: ${systemPrompt}`);
 
     return systemPrompt;
 }    

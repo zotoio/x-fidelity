@@ -1,9 +1,10 @@
 import { logger } from '../utils/logger';
 import _ from 'lodash';
 import { execSync } from 'child_process';
-import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } from '../typeDefs';
+import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } from '../types/typeDefs';
 import { Almanac } from 'json-rules-engine';
 import * as semver from 'semver';
+import { FileData } from './repoFilesystemFacts';
 
 /**
  * Collects the local dependencies.
@@ -71,6 +72,12 @@ export function findPropertiesInTree(depGraph: LocalDependencies, minVersions: M
 export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
     let result: any = {'result': []};
+    const fileData: FileData = await almanac.factValue('fileData');
+
+    if (fileData.fileName !== 'REPO_GLOBAL_CHECK') {
+        return result;
+    }
+
     let analysis: any = [];
     const dependencyData: any = await almanac.factValue('dependencyData');
 
@@ -85,7 +92,7 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
                 'requiredVersion': versionData.min
             };
             
-            logger.error(`dependencyFailure: ${dependencyFailure}`);
+            logger.error(`dependencyFailure: ${JSON.stringify(dependencyFailure)}`);
             analysis.push(dependencyFailure);
         }
     });

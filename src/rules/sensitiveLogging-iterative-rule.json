@@ -1,5 +1,5 @@
 {
-    "name": "sensitiveLogging",
+    "name": "sensitiveLogging-iterative",
     "conditions": {
         "any": [
             {
@@ -25,10 +25,12 @@
     "event": {
         "type": "violation",
         "params": {
+            "level": "warning",
             "message": "Sensitive data must not be logged.",
             "details": {
+                "level": "fatality",
                 "fact": "fileData",
-                "path": "$.fileName"
+                "path": "$.filePath"
             }
         }
     }

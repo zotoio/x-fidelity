@@ -1,8 +1,8 @@
-import { ArchetypeConfig } from '../typeDefs';
+import { ArchetypeConfig } from '../types/typeDefs';
 
 export const archetypes: Record<string, ArchetypeConfig> = {
     'node-fullstack': {
-        rules: ['sensitiveLogging', 'outdatedFramework', 'noDatabases', 'nonStandardDirectoryStructure', 'openaiAnalysisTop5', 'openaiAnalysisA11y'],
+        rules: ['sensitiveLogging-iterative', 'outdatedFramework-global', 'noDatabases-iterative', 'nonStandardDirectoryStructure-global', 'openaiAnalysisTop5-global', 'openaiAnalysisA11y-global'],
         operators: ['fileContains', 'outdatedFramework', 'nonStandardDirectoryStructure', 'openaiAnalysisHighSeverity'],
         facts: ['repoFilesystemFacts', 'repoDependencyFacts', 'openaiAnalysisFacts'],
         config: {
@@ -13,9 +13,12 @@ export const archetypes: Record<string, ArchetypeConfig> = {
             standardStructure: {
                 app: {
                     frontend: null,
-                    common: null,
                     server: null
                 }
+                // app: {
+                //     frontend: 'required',
+                //     server: 'required'
+                // }
             },
             blacklistPatterns: [
                 '.*\\/\\..*', // dot files
@@ -28,7 +31,7 @@ export const archetypes: Record<string, ArchetypeConfig> = {
         }
     },
     'java-microservice': {
-        rules: ['sensitiveLogging', 'outdatedFramework', 'noDatabases', 'nonStandardDirectoryStructure'],
+        rules: ['sensitiveLogging-iterative', 'outdatedFramework-global', 'noDatabases-iterative', 'nonStandardDirectoryStructure-global'],
         operators: ['fileContains', 'outdatedFramework', 'nonStandardDirectoryStructure'],
         facts: ['repoFilesystemFacts', 'repoDependencyFacts'],
         config: {

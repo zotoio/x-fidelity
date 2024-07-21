@@ -1,25 +1,32 @@
 #!/usr/bin/env node
 import { logger } from './utils/logger';
-let json = require('format-json');
+import json from 'prettyjson';
 import { options } from "./core/cli"; 
 import { analyzeCodebase } from "./core/engine";
-//import ora, { oraPromise } from 'ora';
-
-console.log(options);
 
 try {
     (async () => {
         let results = await analyzeCodebase(`${process.env.PWD}/${options.dir}`, options.archetype, options.configServer);
+
+        // if results are found, there were warning level issues found in the codebase
         if (results.length > 0) {
-            //console.log('WARNING: lo-fi attributes detected in codebase!');
-            //console.log(results);
+            logger.warn('WARNING: lo-fi attributes detected in codebase!');
+            logger.warn(JSON.stringify(results));
+            console.log(json.render(results));
         } else {
-            //console.log('hi-fi codebase detected!');
+            // an empty array means no issues were found
+            logger.info('hi-fi codebase detected!');
         }
-        logger.info(results);
-        console.log(JSON.stringify(results));
-        //console.log(`opinionated codebase analysis completed with ${results.length} failed checks.`);
-    })().catch((e) => {console.log(e)});
+        
+    })().catch((e) => {
+        // analyzeCodebase failed which can mean a fatal issue was found in the codebase
+        logger.error('FATAL: lo-fi attributes detected in codebase!');
+        logger.error(e.message);
+        console.log(json.render(JSON.parse(e.message)));
+        setTimeout(() => process.exit(1), 1000);
+    });
+
 } catch(e) {
-    console.log(e)
+    console.log(JSON.stringify(e));
+    process.exit(1);
 }

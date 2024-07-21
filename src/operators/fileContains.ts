@@ -1,5 +1,5 @@
 import { logger } from '../utils/logger';
-import { OperatorDefn } from '../typeDefs';
+import { OperatorDefn } from '../types/typeDefs';
 
 const fileContains: OperatorDefn = {
     'name': 'fileContains', 

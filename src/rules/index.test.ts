@@ -19,6 +19,7 @@ jest.mock('../utils/logger', () => ({
     logger: {
         debug: jest.fn(),
         error: jest.fn(),
+        info: jest.fn(),
     },
 }));
 

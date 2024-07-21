@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger';
 import { Almanac, Engine, EngineResult, Event, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
-import { ScanResult, RuleFailure, ArchetypeConfig, OpenAIAnalysisParams } from '../typeDefs';
+import { ScanResult, RuleFailure, ArchetypeConfig, OpenAIAnalysisParams } from '../types/typeDefs';
 import { getDependencyVersionFacts, repoDependencyAnalysis } from '../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../facts/openaiAnalysisFacts';
 import { loadOperators } from '../operators';
@@ -30,25 +30,25 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
     // Add operators to engine
-    logger.debug(`### loading custom operators..`);
+    logger.info(`### loading custom operators..`);
     const operators = await loadOperators(archetypeConfig.operators);
     operators.forEach((operator) => {
         if (!operator?.name?.includes('openai') || (process.env.OPENAI_API_KEY && operator?.name?.includes('openai'))) {
-            logger.debug(`adding custom operator: ${operator.name}`);
+            logger.info(`adding custom operator: ${operator.name}`);
             engine.addOperator(operator.name, operator.fn);
         }
     });
 
     // Add rules to engine
-    logger.debug(`### loading json rules..`);
+    logger.info(`### loading json rules..`);
     const rules: RuleProperties[] = await loadRules(archetype, archetypeConfig.rules, configManager.configServer);
     logger.debug(rules);
 
     rules.forEach((rule) => {
         try {
-            logger.debug(`adding rule: ${rule?.name}`);
+            logger.info(`adding rule: ${rule?.name}`);
             engine.addRule(rule);
-                
+
         } catch (e: any) {
             console.error(`Error loading rule: ${rule?.name}`);
             logger.error(e.message);
@@ -57,27 +57,25 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
     engine.on('success', async ({ type, params }: Event, almanac: Almanac) => {
         if (type === 'violation') {
-            //console.log(await almanac.factValue('dependencyData'));
-            logger.debug(`violation detected: ${JSON.stringify(params)}}`);
+            logger.warn(`violation detected: ${JSON.stringify(params)}}`);
         }
         if (type === 'fatality') {
-            //console.log(await almanac.factValue('dependencyData'));
-            logger.debug(`fatality detected: ${JSON.stringify(params)}}`);
+            logger.error(`fatality detected: ${JSON.stringify(params)}}`);
         }
     });
 
     // Add facts to engine
-    logger.debug(`### loading facts..`);
+    logger.info(`### loading facts..`);
     const facts = await loadFacts(archetypeConfig.facts);
     facts.forEach((fact) => {
         if (!fact?.name?.includes('openai') || (process.env.OPENAI_API_KEY && fact?.name?.includes('openai'))) {
-            logger.debug(`adding fact: ${fact.name}`);
+            logger.info(`adding fact: ${fact.name}`);
             engine.addFact(fact.name, fact.fn);
-        }    
+        }
     });
 
     if (process.env.OPENAI_API_KEY && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
-        logger.debug(`adding additional openai facts to engine..`);
+        logger.info(`adding additional openai facts to engine..`);
         engine.addFact('openaiAnalysis', openaiAnalysis);
         engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
     }
@@ -86,16 +84,16 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
 
     // Run the engine for each file's data    
-    logger.debug(`### Executing rules..`);                                                                         
+    logger.info(`### Executing rules..`);
     let failures: ScanResult[] = [];
     for (const file of fileData) {
         if (file.fileName === REPO_GLOBAL_CHECK) {
             let msg = `\n==========================\nSTARTING GLOBAL REPO CHECKS..\n==========================`
-            logger.info(msg) && console.log(msg);
-            
-        } else {  
-            let msg = `running engine for ${file.filePath}`   
-            logger.info(msg) && console.log(msg);
+            logger.info(msg);
+
+        } else {
+            let msg = `running engine for ${file.filePath}`
+            logger.info(msg);
         }
         const facts = {
             fileData: file,
@@ -107,10 +105,9 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
         };
         let fileFailures: RuleFailure[] = [];
-        
+
         await engine.run(facts)
             .then(({ results }: EngineResult) => {
-                //console.log(events);
                 results.map((result: RuleResult) => {
                     logger.debug(result);
                     if (result.result) {
@@ -128,14 +125,11 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     }
 
     logger.info(`${fileData.length} files analyzed. ${failures.length} files with errors.`)
-    
-    // if there are fatalities, throw
-    //const fatalities = failures.filter(failure => failure.errors.some(error => error.details?.type === 'fatality')) || [];
+
     const fatalities = findKeyValuePair(failures, 'level', 'fatality');
-    
+
     if (fatalities.length > 0) {
-        logger.info(`Fatalities detected: ${JSON.stringify(fatalities)}`);
-        process.exit(1);
+        throw new Error(JSON.stringify(fatalities));
     }
     return failures;
 }
@@ -144,37 +138,38 @@ const findKeyValuePair = (
     data: any,
     targetKey: string,
     targetValue: any
-  ): any[] => {
+): any[] => {
     let results: any[] = [];
-  
-    const recursiveSearch = (obj: any, root: any): void => {
-      if (typeof obj === 'object' && obj !== null) {
-        for (let key in obj) {
-          if (obj.hasOwnProperty(key)) {
-            if (key === targetKey && obj[key] === targetValue) {
-              results.push(root);
+
+    const recursiveSearch = (obj: any): void => {
+        if (typeof obj === 'object' && obj !== null) {
+            for (let key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    if (key === targetKey && obj[key] === targetValue) {
+                        results.push(obj);
+                        return; // Stop searching this branch as we've found the target in this object
+                    }
+                    if (typeof obj[key] === 'object' || Array.isArray(obj[key])) {
+                        recursiveSearch(obj[key]);
+                    }
+                }
             }
-            if (typeof obj[key] === 'object') {
-              recursiveSearch(obj[key], root);
-            }
-          }
+        } else if (Array.isArray(obj)) {
+            obj.forEach((item) => {
+                recursiveSearch(item);
+            });
         }
-      } else if (Array.isArray(obj)) {
-        obj.forEach((item) => {
-          recursiveSearch(item, root);
-        });
-      }
     };
-  
+
     if (Array.isArray(data)) {
-      data.forEach((item) => {
-        recursiveSearch(item, item);
-      });
+        data.forEach((item) => {
+            recursiveSearch(item);
+        });
     } else {
-      recursiveSearch(data, data);
+        recursiveSearch(data);
     }
-  
+
     return results;
-  };
+};
 
 export { analyzeCodebase }; 

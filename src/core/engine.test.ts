@@ -46,7 +46,7 @@ describe('analyzeCodebase', () => {
 
     it('should analyze the codebase and return results', async () => {
         const mockFileData = [
-            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { filePath: 'src/index.ts', fileContent: 'logger.info("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
@@ -83,7 +83,7 @@ describe('analyzeCodebase', () => {
 
     it('should handle errors during analysis', async () => {
         const mockFileData = [
-            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { filePath: 'src/index.ts', fileContent: 'logger.info("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
@@ -121,7 +121,7 @@ describe('analyzeCodebase', () => {
     it('should handle OpenAI analysis when OPENAI_API_KEY is set', async () => {
         process.env.OPENAI_API_KEY = 'test-key';
         const mockFileData = [
-            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { filePath: 'src/index.ts', fileContent: 'logger.info("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
@@ -157,7 +157,7 @@ describe('analyzeCodebase', () => {
     it('should not add OpenAI facts when OPENAI_API_KEY is not set', async () => {
         delete process.env.OPENAI_API_KEY;
         const mockFileData = [
-            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { filePath: 'src/index.ts', fileContent: 'logger.info("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
@@ -191,7 +191,7 @@ describe('analyzeCodebase', () => {
     it('should handle OpenAI analysis when OPENAI_API_KEY is set', async () => {
         process.env.OPENAI_API_KEY = 'test-key';
         const mockFileData = [
-            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { filePath: 'src/index.ts', fileContent: 'logger.info("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
@@ -227,7 +227,7 @@ describe('analyzeCodebase', () => {
     it('should not add OpenAI facts when OPENAI_API_KEY is not set', async () => {
         delete process.env.OPENAI_API_KEY;
         const mockFileData = [
-            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { filePath: 'src/index.ts', fileContent: 'logger.info("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
