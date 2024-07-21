@@ -58,7 +58,11 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     engine.on('success', async ({ type, params }: Event, almanac: Almanac) => {
         if (type === 'violation') {
             //console.log(await almanac.factValue('dependencyData'));
-            console.log(`Rule violation: ${JSON.stringify(params)}}`);
+            console.log(`violation detected: ${JSON.stringify(params)}}`);
+        }
+        if (type === 'fatality') {
+            //console.log(await almanac.factValue('dependencyData'));
+            console.log(`fatality detected: ${JSON.stringify(params)}}`);
         }
     });
 
@@ -85,7 +89,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     console.log(`### Executing rules..`);                                                                         
     let failures: ScanResult[] = [];
     for (const file of fileData) {
-        if (file.fileName === 'REPO_GLOBAL_CHECK') {
+        if (file.fileName === REPO_GLOBAL_CHECK) {
             let msg = `\n==========================\nSTARTING GLOBAL REPO CHECKS..\n==========================`
             logger.info(msg) && console.log(msg);
             
@@ -124,8 +128,53 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     }
 
     logger.info(`${fileData.length} files analyzed. ${failures.length} files with errors.`)
-
+    
+    // if there are fatalities, throw
+    //const fatalities = failures.filter(failure => failure.errors.some(error => error.details?.type === 'fatality')) || [];
+    const fatalities = findKeyValuePair(failures, 'level', 'fatality');
+    
+    if (fatalities.length > 0) {
+        logger.info(`Fatalities detected: ${JSON.stringify(fatalities)}`);
+        process.exit(1);
+    }
     return failures;
 }
+
+const findKeyValuePair = (
+    data: any,
+    targetKey: string,
+    targetValue: any
+  ): any[] => {
+    let results: any[] = [];
+  
+    const recursiveSearch = (obj: any, root: any): void => {
+      if (typeof obj === 'object' && obj !== null) {
+        for (let key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            if (key === targetKey && obj[key] === targetValue) {
+              results.push(root);
+            }
+            if (typeof obj[key] === 'object') {
+              recursiveSearch(obj[key], root);
+            }
+          }
+        }
+      } else if (Array.isArray(obj)) {
+        obj.forEach((item) => {
+          recursiveSearch(item, root);
+        });
+      }
+    };
+  
+    if (Array.isArray(data)) {
+      data.forEach((item) => {
+        recursiveSearch(item, item);
+      });
+    } else {
+      recursiveSearch(data, data);
+    }
+  
+    return results;
+  };
 
 export { analyzeCodebase }; 

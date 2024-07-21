@@ -12,7 +12,17 @@ const logger = createLogger({
         format.prettyPrint()
     ),
     transports: [
-        new transports.File({ filename: 'x-fidelity.log'})
+        new transports.File({ filename: 'x-fidelity.log' }),
+        new transports.Console({
+            level: 'debug', // Set the minimum level of messages to log
+            handleExceptions: true, // Handle exceptions
+            format: format.combine(
+                format.colorize(),
+                format.printf(({ level, message, timestamp }) => {
+                    return `${timestamp} [${level}]: ${message}`;
+                }))
+        })
+
     ]
 });
 
