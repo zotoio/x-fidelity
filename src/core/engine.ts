@@ -8,6 +8,7 @@ import { loadOperators } from '../operators';
 import { loadFacts } from '../facts';
 import { loadRules } from '../rules';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../utils/config';
+import { sendTelemetry } from '../utils/telemetry';
 
 async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack', configServer: string = ''): Promise<any[]> {
     const configManager = ConfigManager.getInstance();
@@ -28,6 +29,18 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     const openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
 
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
+
+    // Send telemetry for analysis start
+    await sendTelemetry({
+        eventType: 'analysisStart',
+        metadata: {
+            archetype,
+            repoPath,
+            fileCount: fileData.length,
+            configServer: configServer || 'none'
+        },
+        timestamp: new Date().toISOString()
+    });
 
     // Add operators to engine
     logger.info(`### loading custom operators..`);
@@ -58,9 +71,27 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     engine.on('success', async ({ type, params }: Event, almanac: Almanac) => {
         if (type === 'violation') {
             logger.warn(`violation detected: ${JSON.stringify(params)}}`);
+            await sendTelemetry({
+                eventType: 'violation',
+                metadata: {
+                    archetype,
+                    repoPath,
+                    ...params
+                },
+                timestamp: new Date().toISOString()
+            });
         }
         if (type === 'fatality') {
             logger.error(`fatality detected: ${JSON.stringify(params)}}`);
+            await sendTelemetry({
+                eventType: 'fatality',
+                metadata: {
+                    archetype,
+                    repoPath,
+                    ...params
+                },
+                timestamp: new Date().toISOString()
+            });
         }
     });
 
@@ -127,6 +158,19 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     logger.info(`${fileData.length} files analyzed. ${failures.length} files with errors.`)
 
     const fatalities = findKeyValuePair(failures, 'level', 'fatality');
+
+    // Send telemetry for analysis end
+    await sendTelemetry({
+        eventType: 'analysisEnd',
+        metadata: {
+            archetype,
+            repoPath,
+            fileCount: fileData.length,
+            failureCount: failures.length,
+            fatalityCount: fatalities.length
+        },
+        timestamp: new Date().toISOString()
+    });
 
     if (fatalities.length > 0) {
         throw new Error(JSON.stringify(fatalities));
