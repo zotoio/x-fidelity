@@ -6,6 +6,8 @@ import { logger } from '../utils/logger';
 const app = express();
 const port = process.env.XFI_SERVER_PORT || 8888;
 
+app.use(express.json()); // Add this line to parse JSON request bodies
+
 const validInput = (value: string): boolean => {
     // Ensure input contains only alphanumeric characters, hyphens, and underscores
     const validName = /^[a-zA-Z0-9-_\-]{1,50}$/;
@@ -55,6 +57,14 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     } else {
         res.status(404).json({ error: 'Rule not found' });
     }
+});
+
+// New route for telemetry
+app.post('/telemetry', (req, res) => {
+    logger.debug('Received telemetry data:', req.body);
+    // Here you can process and store the telemetry data as needed
+    // For now, we'll just log it and send a success response
+    res.status(200).json({ message: 'Telemetry data received successfully' });
 });
 
 app.listen(port, () => {
