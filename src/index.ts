@@ -3,30 +3,37 @@ import { logger } from './utils/logger';
 import json from 'prettyjson';
 import { options } from "./core/cli"; 
 import { analyzeCodebase } from "./core/engine";
+import { startServer } from './server/configServer';
+
+logger.debug(`startup options: ${options}`);
 
 try {
-    (async () => {
-        let results = await analyzeCodebase(`${process.env.PWD}/${options.dir}`, options.archetype, options.configServer);
+    if (options.mode === 'server') {
+        startServer(options.port);
+    } else {
+        (async () => {
+            let results = await analyzeCodebase(`${process.env.PWD}/${options.dir}`, options.archetype, options.configServer);
 
-        // if results are found, there were warning level issues found in the codebase
-        if (results.length > 0) {
-            logger.warn('WARNING: lo-fi attributes detected in codebase!');
-            logger.warn(JSON.stringify(results));
-            console.log(json.render(results));
-        } else {
-            // an empty array means no issues were found
-            logger.info('hi-fi codebase detected!');
-        }
-        
-    })().catch((e) => {
-        // analyzeCodebase failed which can mean a fatal issue was found in the codebase
-        logger.error('FATAL: lo-fi attributes detected in codebase!');
-        logger.error(e.message);
-        console.log(json.render(JSON.parse(e.message)));
-        setTimeout(() => process.exit(1), 1000);
-    });
+            // if results are found, there were warning level issues found in the codebase
+            if (results.length > 0) {
+                logger.warn('WARNING: lo-fi attributes detected in codebase!');
+                logger.warn(JSON.stringify(results));
+                console.log(json.render(results));
+            } else {
+                // an empty array means no issues were found
+                logger.info('hi-fi codebase detected!');
+            }
+            
+        })().catch((e) => {
+            // analyzeCodebase failed which can mean a fatal issue was found in the codebase
+            logger.error('FATAL: lo-fi attributes detected in codebase!');
+            logger.error(e.message);
+            console.error(json.render(JSON.parse(e.message)));
+            setTimeout(() => process.exit(1), 1000);
+        });
+    }    
 
 } catch(e) {
-    console.log(JSON.stringify(e));
+    console.error(JSON.stringify(e));
     process.exit(1);
 }

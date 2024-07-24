@@ -1,22 +1,19 @@
 import { logger } from '../utils/logger';
 import { program } from "commander";
-import { startServer } from '../server/server';
+import { startServer } from '../server/configServer';
 
 program
     .option("-d, --dir <directory>", "The checkout directory to analyse", ".")
     .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
     .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules")
     .option("-m, --mode <mode>", "Run mode: 'cli' or 'server'", "cli")
-    .option("-p, --port <port>", "Port number for server mode", "3000");
+    .option("-p, --port <port>", "Port number for server mode", "8888");
 
 program.parse();
 
 const options = program.opts();
-
-if (options.mode === 'server') {
-    startServer(options.port);
-} else {
-    const banner = (`
+        
+const banner = (`
 =====================================
  __    __          ________  ______ 
 | ##  | ##        | ######## \\######
@@ -27,7 +24,7 @@ if (options.mode === 'server') {
 | ##  | ##        | ##      |   ## \\
  \\##   \\##         \\##       \\######
                                
--------------------------------------
+--------------------
 ${new Date().toString().slice(0, 24)}
 archetype: ${options.archetype}
 directory: ${process.env.PWD}/${options.dir}

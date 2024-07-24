@@ -3,6 +3,7 @@ import { RuleProperties } from 'json-rules-engine';
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
+import { options } from "../core/cli";
 
 async function loadRules(archetype: any, ruleNames: string[], configServer?: string): Promise<RuleProperties[]> {
     
@@ -33,8 +34,9 @@ async function loadRules(archetype: any, ruleNames: string[], configServer?: str
             }    
         }
     }
-
+    
     logger.info(`Loaded ${ruleProperties.length} rules`);
+    
     return ruleProperties;
 }
 
