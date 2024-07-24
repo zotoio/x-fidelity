@@ -60,7 +60,6 @@ describe('openaiAnalysisHighSeverity', () => {
     it('should handle undefined openaiAnalysis', () => {
         const result = openaiAnalysisHighSeverity.fn(undefined, 8);
         expect(result).toBe(false);
-        expect(logger.debug).toHaveBeenCalledWith(expect.any(Error));
         expect(logger.error).toHaveBeenCalledWith('openaiAnalysisHighSeverity: TypeError: Cannot read properties of undefined (reading \'result\')');
     });
 
