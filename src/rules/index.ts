@@ -21,9 +21,8 @@ async function loadRules(archetype: any, ruleNames: string[], configServer?: str
                         'X-Log-Prefix': logPrefix || ''
                     }
                 });
-                logger.info(`Remote rule fetched successfully: ${rule}`);
                 rule = response.data;
-                logger.info(`Remote rule fetched successfully: ${rule}`);
+                logger.info(`Remote rule fetched successfully: ${JSON.stringify(rule)}`);
             } catch (error) {
                 logger.error(`Error fetching remote rule ${ruleName}: ${error}`);
                 // If remote fetch fails, fall back to local file

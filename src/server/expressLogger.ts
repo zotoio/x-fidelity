@@ -18,12 +18,6 @@ export const expressLogger = (req: Request, res: Response, next: NextFunction) =
     if (requestLogPrefix && typeof requestLogPrefix === 'string') {
         setLogPrefix(requestLogPrefix);
     }
-
-    // Set log prefix if provided in the request headers
-    const requestLogPrefix = req.headers['x-log-prefix'];
-    if (requestLogPrefix && typeof requestLogPrefix === 'string') {
-        setLogPrefix(requestLogPrefix);
-    }
     const { method, url, headers, body: reqBody } = req;
 
     // Log request details
