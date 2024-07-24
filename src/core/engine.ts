@@ -54,7 +54,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
     // Add rules to engine
     logger.info(`### loading json rules..`);
-    const rules: RuleProperties[] = await loadRules(archetype, archetypeConfig.rules, configManager.configServer);
+    const rules: RuleProperties[] = await loadRules(archetype, archetypeConfig.rules, configManager.configServer, logPrefix);
     logger.debug(rules);
 
     rules.forEach((rule) => {
