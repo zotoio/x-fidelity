@@ -5,18 +5,19 @@ const openaiAnalysisHighSeverity: OperatorDefn = {
     'name': 'openaiAnalysisHighSeverity', 
     'fn': (openaiAnalysis: any, severityThreshold: any) => {
         try {
-            if (!openaiAnalysis) {
-                logger.error('openaiAnalysisHighSeverity: openaiAnalysis is undefined');
+            if (!openaiAnalysis || !openaiAnalysis.result) {
+                logger.error('openaiAnalysisHighSeverity: openaiAnalysis or openaiAnalysis.result is undefined');
                 return false;
             }
 
             severityThreshold = parseInt(severityThreshold) ? parseInt(severityThreshold) : 8;
             let result = false;
             
-            if (openaiAnalysis.result?.length > 0) {
-                if (openaiAnalysis.result.map((issue: any) => {
-                    return parseInt(issue?.severity)
-                }).some((severity: number) => severity >= severityThreshold)) {
+            if (Array.isArray(openaiAnalysis.result) && openaiAnalysis.result.length > 0) {
+                if (openaiAnalysis.result.some((issue: any) => {
+                    const severity = parseInt(issue?.severity);
+                    return !isNaN(severity) && severity >= severityThreshold;
+                })) {
                     logger.error('openai: high severity issues found');
                     result = true;
                 }
