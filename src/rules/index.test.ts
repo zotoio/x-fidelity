@@ -64,7 +64,12 @@ describe('loadRules', () => {
         const result = await loadRules('testArchetype', ['testRule'], 'http://configserver.com');
 
         expect(result).toEqual([JSON.parse(mockRuleContent)]);
-        expect(axios.get).toHaveBeenCalledWith('http://configserver.com/archetypes/testArchetype/rules/testRule');
+        expect(axios.get).toHaveBeenCalledWith('http://configserver.com/archetypes/testArchetype/rules/testRule', {
+            headers: {
+                'X-Log-Prefix': ''
+            }
+        });
+
         expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/testRule-rule.json', 'utf8');
     });
 
