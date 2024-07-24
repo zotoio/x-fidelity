@@ -3,15 +3,15 @@ import { createLogger, format, transports } from 'winston';
 
 export let logPrefix: string = randomUUID().substring(0, 8);
 
-export const resetLogPrefix = () => {
+const resetLogPrefix = () => {
     logPrefix = randomUUID().substring(0, 8);
 };
 
-export const setLogPrefix = (prefix: string) => {
+const setLogPrefix = (prefix: string) => {
     logPrefix = prefix;
 };
 
-const logger = createLogger({
+export const logger = createLogger({
     //level: 'debug',
     format: format.combine(
         format.timestamp({
@@ -40,4 +40,4 @@ const logger = createLogger({
     ]
 });
 
-export { logger, resetLogPrefix };
+export { logger, resetLogPrefix, setLogPrefix };
