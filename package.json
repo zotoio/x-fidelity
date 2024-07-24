@@ -16,7 +16,11 @@
     "release": "semantic-release",
     "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
     "build-run": "yarn build && node . --dir . | jq -R -r '. as $line | try fromjson catch $line'",
-    "start-config-server": "ts-node src/server/configServer.ts"
+    "start-config-server": "ts-node src/server/configServer.ts",
+    "start-server": "ts-node src/index.ts --mode server",
+    "start-server-custom-port": "ts-node src/index.ts --mode server --port 9999",
+    "analyze": "ts-node src/index.ts",
+    "analyze-verbose": "ts-node src/index.ts --verbose"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",

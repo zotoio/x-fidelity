@@ -79,21 +79,30 @@ xfidelity
 Use command-line options for more control:
 
 ```sh
-xfidelity [-d --dir <directory>] [-c --configUrl <url>] [-a --archetype <archetype>]
+xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <archetype>] [-m --mode <mode>] [-p --port <port>] [-v --verbose]
 ```
 
 - `-d --dir <directory>`: Specify the root directory to analyze (default: current directory)
-- `-c --configUrl <url>`: URL to fetch the configuration from
+- `-c --configServer <url>`: URL to fetch the configuration from
 - `-a --archetype <archetype>`: Archetype to use for analysis (default: 'node-fullstack')
+- `-m --mode <mode>`: Run mode: 'cli' or 'server' (default: 'cli')
+- `-p --port <port>`: Port number for server mode (default: 8888)
+- `-v --verbose`: Enable verbose logging
 
 Examples:
 
 ```sh
 # Use remote config server
-xfidelity --configUrl https://localhost:8888
+xfidelity --configServer https://localhost:8888
 
 # Analyze parent directory with java-microservice archetype
 xfidelity -d .. -a java-microservice -c https://localhost:8888
+
+# Run in server mode with custom port
+xfidelity --mode server --port 9999
+
+# Run analysis with verbose logging
+xfidelity --verbose
 ```
 
 ### Configuration Server
@@ -104,10 +113,23 @@ Start the built-in configuration server:
 yarn start-config-server
 ```
 
+Or use the CLI:
+
+```sh
+xfidelity --mode server
+```
+
 Set a custom port:
 
 ```sh
+xfidelity --mode server --port 9999
+```
+
+You can also set the port using an environment variable:
+
+```sh
 export XFI_SERVER_PORT=8888
+xfidelity --mode server
 ```
 
 ## Configuration
