@@ -18,6 +18,6 @@ export async function sendTelemetry(event: TelemetryEvent): Promise<void> {
         await axios.post(TELEMETRY_ENDPOINT, event);
         logger.debug(`Telemetry sent: ${JSON.stringify(event)}`);
     } catch (error) {
-        logger.error(`Failed to send telemetry: ${error}`);
+        logger.debug(`Failed to send telemetry: ${error}`);
     }
 }

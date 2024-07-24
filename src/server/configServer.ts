@@ -10,12 +10,6 @@ const port = process.env.XFI_SERVER_PORT || 8888;
 app.use(express.json());
 app.use(expressLogger);
 
-// Middleware to add log prefix to response headers
-app.use((req, res, next) => {
-    res.setHeader('X-Log-Prefix', logPrefix);
-    next();
-});
-
 const validInput = (value: string): boolean => {
     // Ensure input contains only alphanumeric characters, hyphens, and underscores
     const validName = /^[a-zA-Z0-9-_\-]{1,50}$/;

@@ -1,4 +1,4 @@
-import { logger } from '../utils/logger';
+import { logger, logPrefix } from '../utils/logger';
 import { Almanac, Engine, EngineResult, Event, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
 import { ScanResult, RuleFailure, ArchetypeConfig, OpenAIAnalysisParams } from '../types/typeDefs';

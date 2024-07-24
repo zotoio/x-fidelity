@@ -11,7 +11,7 @@ const setLogPrefix = (prefix: string) => {
     logPrefix = prefix;
 };
 
-export const logger = createLogger({
+const logger = createLogger({
     //level: 'debug',
     format: format.combine(
         format.timestamp({
@@ -22,7 +22,7 @@ export const logger = createLogger({
         format.json(),
         format.prettyPrint(),
         format.printf(({ level, message, timestamp }) => {
-            return `${timestamp} [${level}]: [${logPrefix}]: ${message}`;
+            return `${timestamp} [${level}]:[${logPrefix}] ${message}`;
         })
     ),
     transports: [
@@ -33,11 +33,11 @@ export const logger = createLogger({
             format: format.combine(
                 format.colorize(),
                 format.printf(({ level, message, timestamp }) => {
-                    return `${timestamp} [${level}]: [${logPrefix}]: ${message}`;
+                    return `${timestamp} [${level}]:[${logPrefix}] ${message}`;
                 })
             )
         })
     ]
 });
 
-export { resetLogPrefix, setLogPrefix };
+export { logger, logPrefix, resetLogPrefix, setLogPrefix };
