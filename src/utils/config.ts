@@ -41,7 +41,11 @@ export class ConfigManager {
                 };
                 logger.debug(`Remote config fetched successfully ${JSON.stringify(this.config)}`);
             } catch (error) {
-                logger.error(`Error fetching remote config: ${error}`);
+                if (error instanceof Error) {
+                    logger.error(`Error fetching remote config: ${error.message}`);
+                } else {
+                    logger.error('Error fetching remote config: Unknown error');
+                }
             }
         }
 
