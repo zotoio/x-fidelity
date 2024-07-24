@@ -1,5 +1,15 @@
 import { createLogger, format, transports } from 'winston';
 
+let logPrefix = '';
+
+const setLogPrefix = (prefix: string) => {
+    logPrefix = prefix;
+};
+
+const resetLogPrefix = () => {
+    logPrefix = '';
+};
+
 const logger = createLogger({
     //level: 'debug',
     format: format.combine(
@@ -9,7 +19,10 @@ const logger = createLogger({
         format.errors({ stack: true }),
         format.splat(),
         format.json(),
-        format.prettyPrint()
+        format.prettyPrint(),
+        format.printf(({ level, message, timestamp }) => {
+            return `${timestamp} [${level}]: ${logPrefix}${message}`;
+        })
     ),
     transports: [
         new transports.File({ filename: 'x-fidelity.log', level: 'debug', handleExceptions: true }),
@@ -19,11 +32,11 @@ const logger = createLogger({
             format: format.combine(
                 format.colorize(),
                 format.printf(({ level, message, timestamp }) => {
-                    return `${timestamp} [${level}]: ${message}`;
-                }))
+                    return `${timestamp} [${level}]: ${logPrefix}${message}`;
+                })
+            )
         })
-
     ]
 });
 
-export { logger };
+export { logger, setLogPrefix, resetLogPrefix };
