@@ -5,10 +5,15 @@ const openaiAnalysisHighSeverity: OperatorDefn = {
     'name': 'openaiAnalysisHighSeverity', 
     'fn': (openaiAnalysis: any, severityThreshold: any) => {
         try {
+            if (!openaiAnalysis) {
+                logger.error('openaiAnalysisHighSeverity: openaiAnalysis is undefined');
+                return false;
+            }
+
             severityThreshold = parseInt(severityThreshold) ? parseInt(severityThreshold) : 8;
             let result = false;
             
-            if (openaiAnalysis?.result?.length > 0) {
+            if (openaiAnalysis.result?.length > 0) {
                 if (openaiAnalysis.result.map((issue: any) => {
                     return parseInt(issue?.severity)
                 }).some((severity: number) => severity >= severityThreshold)) {
@@ -19,7 +24,7 @@ const openaiAnalysisHighSeverity: OperatorDefn = {
         
             return result;
         } catch (e) {
-            // for now we don't fail the build if openai respose parsing fails
+            // for now we don't fail the build if openai response parsing fails
             logger.debug(e)
             logger.error(`openaiAnalysisHighSeverity: ${e}`);
             return false;
