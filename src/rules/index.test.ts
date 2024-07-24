@@ -47,7 +47,11 @@ describe('loadRules', () => {
         const result = await loadRules('testArchetype', ['testRule'], 'http://configserver.com');
 
         expect(result).toEqual([mockRuleContent]);
-        expect(axios.get).toHaveBeenCalledWith('http://configserver.com/archetypes/testArchetype/rules/testRule');
+        expect(axios.get).toHaveBeenCalledWith('http://configserver.com/archetypes/testArchetype/rules/testRule', {
+            headers: {
+                'X-Log-Prefix': ''
+            }
+        });
     });
 
     it('should fall back to local file if remote fetch fails', async () => {
