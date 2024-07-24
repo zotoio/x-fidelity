@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { createLogger, format, transports } from 'winston';
+import { options } from "../core/cli"; 
 
 let logPrefix: string = randomUUID().substring(0, 8);
 
@@ -28,7 +29,7 @@ const logger = createLogger({
     transports: [
         new transports.File({ filename: 'x-fidelity.log', level: 'debug', handleExceptions: true }),
         new transports.Console({
-            level: process.env.VERBOSE ? 'debug' : 'info', // Set the minimum level of messages to log based on VERBOSE environment variable
+            level: options.verbose == 'enabled' ? 'debug' : 'info', 
             handleExceptions: true, // Handle exceptions
             format: format.combine(
                 format.colorize(),

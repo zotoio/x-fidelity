@@ -1,6 +1,5 @@
 import { logger } from '../utils/logger';
 import { program } from "commander";
-import { startServer } from '../server/configServer';
 
 program
     .option("-d, --dir <directory>", "The checkout directory to analyze", ".")
@@ -13,11 +12,6 @@ program
 program.parse();
 
 const options = program.opts();
-
-// Set VERBOSE environment variable if --verbose flag is used
-if (options.verbose) {
-    process.env.VERBOSE = 'true';
-}
 
 const banner = (`
 =====================================
