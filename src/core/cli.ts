@@ -13,7 +13,12 @@ program
 program.parse();
 
 const options = program.opts();
-        
+
+// Set VERBOSE environment variable if --verbose flag is used
+if (options.verbose) {
+    process.env.VERBOSE = 'true';
+}
+
 const banner = (`
 =====================================
  __    __          ________  ______ 

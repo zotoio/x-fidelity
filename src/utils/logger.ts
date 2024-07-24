@@ -28,7 +28,7 @@ const logger = createLogger({
     transports: [
         new transports.File({ filename: 'x-fidelity.log', level: 'debug', handleExceptions: true }),
         new transports.Console({
-            level: 'info', // Set the minimum level of messages to log
+            level: process.env.VERBOSE ? 'debug' : 'info', // Set the minimum level of messages to log based on VERBOSE environment variable
             handleExceptions: true, // Handle exceptions
             format: format.combine(
                 format.colorize(),
