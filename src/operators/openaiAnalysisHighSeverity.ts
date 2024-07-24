@@ -6,7 +6,7 @@ const openaiAnalysisHighSeverity: OperatorDefn = {
     'fn': (openaiAnalysis: any, severityThreshold: any) => {
         try {
             if (!openaiAnalysis || !openaiAnalysis.result) {
-                logger.error('openaiAnalysisHighSeverity: openaiAnalysis or openaiAnalysis.result is undefined');
+                logger.error('openaiAnalysisHighSeverity: TypeError: Cannot read properties of undefined (reading \'result\')');
                 return false;
             }
 
