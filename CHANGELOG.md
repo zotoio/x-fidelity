@@ -1,3 +1,18 @@
+# [1.5.0](https://github.com/zotoio/x-fidelity/compare/v1.4.1...v1.5.0) (2024-07-24)
+
+
+### Bug Fixes
+
+* **logger:** console transport ([69c62b1](https://github.com/zotoio/x-fidelity/commit/69c62b1b9859bc71801c576b969e9698ecc53a61))
+* **log:** remove console and add process exit codes ([3ec801f](https://github.com/zotoio/x-fidelity/commit/3ec801fe3f913452d1f6ef14723fd0f8cb3a8439))
+
+
+### Features
+
+* **telemetry:** basic start ([47faf3b](https://github.com/zotoio/x-fidelity/commit/47faf3b5f7a88afc07be1b256a611ce46ef64872))
+* **telemetry:** basics including tracing ([f07f6b4](https://github.com/zotoio/x-fidelity/commit/f07f6b4d7ad886008cd20d3ccfa80e0e980bfd34))
+* **telemetry:** request ids ([e19489e](https://github.com/zotoio/x-fidelity/commit/e19489eadd08b06119244a8e1798c2f22bac898b))
+
 ## [1.4.1](https://github.com/zotoio/x-fidelity/compare/v1.4.0...v1.4.1) (2024-07-14)
 
 
