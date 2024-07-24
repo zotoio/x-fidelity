@@ -79,7 +79,7 @@ xfidelity
 Use command-line options for more control:
 
 ```sh
-xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <archetype>] [-m --mode <mode>] [-p --port <port>] [-v --verbose]
+xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <archetype>] [-m --mode <mode>] [-p --port <port>] 
 ```
 
 - `-d --dir <directory>`: Specify the root directory to analyze (default: current directory)
@@ -87,7 +87,6 @@ xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <arch
 - `-a --archetype <archetype>`: Archetype to use for analysis (default: 'node-fullstack')
 - `-m --mode <mode>`: Run mode: 'cli' or 'server' (default: 'cli')
 - `-p --port <port>`: Port number for server mode (default: 8888)
-- `-v --verbose`: Enable verbose logging
 
 Examples:
 
@@ -101,8 +100,6 @@ xfidelity -d .. -a java-microservice -c https://localhost:8888
 # Run in server mode with custom port
 xfidelity --mode server --port 9999
 
-# Run analysis with verbose logging
-xfidelity --verbose
 ```
 
 ### Configuration Server
@@ -110,7 +107,7 @@ xfidelity --verbose
 Start the built-in configuration server:
 
 ```sh
-yarn start-config-server
+yarn start-server
 ```
 
 Or use the CLI:

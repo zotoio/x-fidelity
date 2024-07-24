@@ -12,8 +12,7 @@ program
     .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
     .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules")
     .option("-m, --mode <mode>", "Run mode: 'cli' or 'server'", "cli")
-    .option("-p, --port <port>", "Port number for server mode", "8888")
-    .option("-v, --verbose", "Enable verbose logging");
+    .option("-p, --port <port>", "Port number for server mode", "8888");
 
 program.parse();
 
@@ -37,7 +36,6 @@ directory: ${process.env.PWD}/${options.dir}
 configServer: ${options.configServer ? options.configServer : 'none'}
 mode: ${options.mode}
 port: ${options.mode === 'server' ? options.port : 'N/A'}
-verbose: ${options.verbose ? 'enabled' : 'disabled'}
 for available options run: xfidelity --help
 =====================================`);
 
