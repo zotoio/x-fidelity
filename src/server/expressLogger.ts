@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import bodyParser from 'body-parser';
-import { logger } from '../utils/logger';
+import { logger, resetLogPrefix, setLogPrefix } from '../utils/logger';
 import json from 'prettyjson';
 
 const app = express();
@@ -10,6 +10,14 @@ app.use(bodyParser.json());
 
 // Middleware to log request and response details
 export const expressLogger = (req: Request, res: Response, next: NextFunction) => {
+    // Reset log prefix for each request
+    resetLogPrefix();
+
+    // Set log prefix if provided in the request headers
+    const requestLogPrefix = req.headers['x-log-prefix'];
+    if (requestLogPrefix && typeof requestLogPrefix === 'string') {
+        setLogPrefix(requestLogPrefix);
+    }
     const { method, url, headers, body: reqBody } = req;
 
     // Log request details

@@ -5,7 +5,7 @@ import * as path from 'path';
 import axios from 'axios';
 import { options } from "../core/cli";
 
-async function loadRules(archetype: any, ruleNames: string[], configServer?: string): Promise<RuleProperties[]> {
+async function loadRules(archetype: any, ruleNames: string[], configServer?: string, logPrefix?: string): Promise<RuleProperties[]> {
     
     const ruleProperties: RuleProperties[] = [];
 
@@ -16,7 +16,11 @@ async function loadRules(archetype: any, ruleNames: string[], configServer?: str
             try {
                 const url = `${configServer}/archetypes/${archetype}/rules/${ruleName}`;
                 logger.debug(`Fetching remote rule ${url}`);
-                const response = await axios.get(url);
+                const response = await axios.get(url, {
+                    headers: {
+                        'X-Log-Prefix': logPrefix || ''
+                    }
+                });
                 rule = response.data;
                 logger.info(`Remote rule fetched successfully: ${rule}`);
             } catch (error) {
