@@ -40,4 +40,4 @@ const logger = createLogger({
     ]
 });
 
-export { logger, resetLogPrefix, setLogPrefix };
+export { logger, resetLogPrefix, setLogPrefix, logPrefix };

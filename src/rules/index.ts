@@ -21,6 +21,7 @@ async function loadRules(archetype: any, ruleNames: string[], configServer?: str
                         'X-Log-Prefix': logPrefix || ''
                     }
                 });
+                logger.info(`Remote rule fetched successfully: ${rule}`);
                 rule = response.data;
                 logger.info(`Remote rule fetched successfully: ${rule}`);
             } catch (error) {
