@@ -1,6 +1,12 @@
 import { logger } from '../utils/logger';
 import { program } from "commander";
 
+// Ensure logger is initialized
+if (!logger || typeof logger.info !== 'function') {
+    console.error('Logger is not properly initialized');
+    process.exit(1);
+}
+
 program
     .option("-d, --dir <directory>", "The checkout directory to analyze", ".")
     .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
