@@ -1,6 +1,23 @@
 import { logger } from '../utils/logger';
 import { program } from "commander";
 
+// Ensure logger is initialized
+if (!logger || typeof logger.info !== 'function') {
+    console.error('Logger is not properly initialized');
+    process.exit(1);
+}
+
+program
+    .option("-d, --dir <directory>", "The checkout directory to analyze", ".")
+    .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
+    .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules")
+    .option("-m, --mode <mode>", "Run mode: 'cli' or 'server'", "cli")
+    .option("-p, --port <port>", "Port number for server mode", "8888");
+
+program.parse();
+
+const options = program.opts();
+
 const banner = (`
 =====================================
  __    __          ________  ______ 
@@ -12,33 +29,19 @@ const banner = (`
 | ##  | ##        | ##      |   ## \\
  \\##   \\##         \\##       \\######
                                
--------------------------------------
-${new Date().toString()}`);
+--------------------
+${new Date().toString().slice(0, 24)}
+archetype: ${options.archetype}
+directory: ${process.env.PWD}/${options.dir}
+configServer: ${options.configServer ? options.configServer : 'none'}
+mode: ${options.mode}
+port: ${options.mode === 'server' ? options.port : 'N/A'}
+for available options run: xfidelity --help
+=====================================`);
 
-console.log(banner);
-logger.info([banner]);
-
-program
-    .option("-d, --dir <directory>", "The checkout directory to analyse", ".")
-    .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
-    .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules");
-
-program.parse();
-
-const options = program.opts();
+logger.info(banner);
 
 // print help if no arguments are passed
 if (program.options.length === 0) program.help();
-
-if (!options.dir) {
-    console.error("Checkout directory not provided. Defaulting to current directory.");
-}
-
-let msg = `Archetype ${options.archetype}: analysis of: ${process.env.PWD}/${options.dir}`;
-logger.info(msg)&& console.log(msg) ;
-msg = `configServer: ${options.configServer ? options.configServer : 'local'}`;
-logger.info(msg)&& console.log(msg) ;
-msg = '=====================================';
-logger.info(msg) && console.log(msg);
 
 export { options };

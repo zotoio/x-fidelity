@@ -1,5 +1,5 @@
 {
-    "name": "openaiAnalysisTop5",
+    "name": "outdatedFramework-global",
     "conditions": {
         "all": [
             {
@@ -9,22 +9,23 @@
                 "value": "REPO_GLOBAL_CHECK"
             },
             {
-                "fact": "openaiAnalysis",
+                "fact": "repoDependencyAnalysis",
                 "params": {
                     "prompt": "what are the most important 5 things to fix?",
-                    "resultFact": "openaiAnalysisTop5"
+                    "resultFact": "repoDependencyResults"
                 },
-                "operator": "openaiAnalysisHighSeverity",
+                "operator": "outdatedFramework",
                 "value": 8
             }
         ]
     },
     "event": {
-        "type": "violation",
+        "type": "fatality",
         "params": {
-            "message": "OpenAI analysis failed for the provided prompt.",
-            "results": {
-                "fact": "openaiAnalysisTop5"
+            "level": "fatality",
+            "message": "some core framework dependencies have expired!",
+            "details": {
+                "fact": "repoDependencyResults"
             }
         }
     }

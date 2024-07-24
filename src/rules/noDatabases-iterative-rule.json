@@ -1,5 +1,5 @@
 {
-    "name": "noDatabases",
+    "name": "noDatabases-iterative",
     "conditions": {
         "any": [
             {
@@ -16,7 +16,7 @@
             "message": "code must not directly call databases",
             "details": {
                 "fact": "fileData",
-                "path": "$.fileName"
+                "path": "$.filePath"
             }
         }
     }

@@ -1,5 +1,5 @@
 import { logger } from '../utils/logger';
-import { OperatorDefn, VersionData } from '../typeDefs';
+import { OperatorDefn, VersionData } from '../types/typeDefs';
 import { REPO_GLOBAL_CHECK } from '../utils/config';
 
 const outdatedFramework: OperatorDefn = {

@@ -88,8 +88,8 @@ describe('openaiAnalysis', () => {
 describe('collectOpenaiAnalysisFacts', () => {
     it('should format file data correctly', async () => {
         const mockFileData: FileData[] = [
-            { fileName: 'file1.ts', filePath: '/repo/file1.ts', fileContent: 'console.log("Hello, world!");' },
-            { fileName: 'REPO_GLOBAL_CHECK', filePath: '/repo/REPO_GLOBAL_CHECK', fileContent: 'console.log("Hello, world!");' }
+            { fileName: 'file1.ts', filePath: '/repo/file1.ts', fileContent: 'logger.info("Hello, world!");' },
+            { fileName: 'REPO_GLOBAL_CHECK', filePath: '/repo/REPO_GLOBAL_CHECK', fileContent: 'logger.info("Hello, world!");' }
         ];
 
         const result = await collectOpenaiAnalysisFacts(mockFileData);

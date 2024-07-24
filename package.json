@@ -16,7 +16,7 @@
     "release": "semantic-release",
     "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
     "build-run": "yarn build && node . --dir . | jq -R -r '. as $line | try fromjson catch $line'",
-    "start-config-server": "ts-node src/server/configServer.ts"
+    "start-server": "ts-node src/index.ts --mode server"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
@@ -40,6 +40,7 @@
     "@types/node": "^20.14.2",
     "@types/ora": "^3.2.0",
     "@types/parse-json": "^4.0.2",
+    "@types/prettyjson": "^0.0.33",
     "@types/semver": "^7.5.8",
     "@types/winston": "^2.4.4",
     "commitizen": "^4.3.0",
@@ -54,18 +55,20 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
+    "@types/body-parser": "^1.19.5",
     "@yarnpkg/lockfile": "^1.1.0",
     "axios": "^1.7.2",
-    "commander": "^12.1.0",
+    "body-parser": "^1.20.2",
+    "commander": "^12.0.0",
     "dotenv": "^16.4.5",
     "esprima": "^4.0.1",
     "express": "^4.18.2",
-    "format-json": "^1.0.3",
     "json-rules-engine": "^6.5.0",
     "lodash": "^4.17.21",
     "nodemon": "^3.0.2",
     "openai": "^4.19.0",
     "ora": "^8.0.1",
+    "prettyjson": "^1.2.5",
     "semver": "^7.6.2",
     "winston": "^3.13.0",
     "yarn": "^1.22.21"

@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
-import { ArchetypeConfig } from '../typeDefs';
+import { ArchetypeConfig } from '../types/typeDefs';
 
 interface FileData {
     fileName: string;
