@@ -1,13 +1,10 @@
+import { randomUUID } from 'crypto';
 import { createLogger, format, transports } from 'winston';
 
-let logPrefix = '';
-
-const setLogPrefix = (prefix: string) => {
-    logPrefix = prefix;
-};
+let logPrefix: string = randomUUID().substring(0, 8);
 
 const resetLogPrefix = () => {
-    logPrefix = '';
+    logPrefix = randomUUID().substring(0, 8);
 };
 
 const logger = createLogger({
@@ -21,7 +18,7 @@ const logger = createLogger({
         format.json(),
         format.prettyPrint(),
         format.printf(({ level, message, timestamp }) => {
-            return `${timestamp} [${level}]: ${logPrefix}${message}`;
+            return `${timestamp} [${level}]: [${logPrefix}]: ${message}`;
         })
     ),
     transports: [
@@ -32,11 +29,11 @@ const logger = createLogger({
             format: format.combine(
                 format.colorize(),
                 format.printf(({ level, message, timestamp }) => {
-                    return `${timestamp} [${level}]: ${logPrefix}${message}`;
+                    return `${timestamp} [${level}]: [${logPrefix}]: ${message}`;
                 })
             )
         })
     ]
 });
 
-export { logger, setLogPrefix, resetLogPrefix };
+export { logger, resetLogPrefix };
