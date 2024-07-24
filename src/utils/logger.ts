@@ -11,7 +11,7 @@ const setLogPrefix = (prefix: string) => {
     logPrefix = prefix;
 };
 
-export const logger = createLogger({
+const logger = createLogger({
     //level: 'debug',
     format: format.combine(
         format.timestamp({
