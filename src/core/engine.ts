@@ -12,9 +12,9 @@ import { sendTelemetry } from '../utils/telemetry';
 import { execSync } from 'child_process';
 import os from 'os';
 
-async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack', configServer: string = ''): Promise<any[]> {
+async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack', configServer: string = '', localConfigPath: string = ''): Promise<any[]> {
     const configManager = ConfigManager.getInstance();
-    await configManager.initialize(archetype, configServer);
+    await configManager.initialize(archetype, configServer, localConfigPath);
     const archetypeConfig = configManager.getConfig();
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
