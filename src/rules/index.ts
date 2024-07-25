@@ -30,6 +30,8 @@ async function loadRules(archetype: any, ruleNames: string[], configServer?: str
             }
         } else if (localConfigPath) {
             rule = await loadLocalConfigRule(ruleName, localConfigPath);
+        } else if (localConfigPath) {
+            rule = await loadLocalConfigRule(ruleName, localConfigPath);
         } else {
             rule = await loadLocalRule(ruleName);
         }
@@ -44,6 +46,24 @@ async function loadRules(archetype: any, ruleNames: string[], configServer?: str
     logger.info(`Loaded ${ruleProperties.length} rules`);
     
     return ruleProperties;
+}
+
+async function loadLocalConfigRule(ruleName: string, localConfigPath: string): Promise<RuleProperties | null> {
+    const fileName = `${ruleName}-rule.json`;
+    const filePath = path.join(localConfigPath, 'rules', fileName);
+
+    if (!fileName.startsWith('openai') || (process.env.OPENAI_API_KEY && fileName.startsWith('openai'))) {
+        try {
+            logger.debug(`Loading local config rule file: ${filePath}`);
+            const fileContent = await fs.promises.readFile(filePath, 'utf8');
+            return JSON.parse(fileContent);
+        } catch (error) {
+            logger.error(`Error loading local config rule file: ${fileName}`);
+            logger.error(error);
+            return null;
+        }
+    }
+    return null;
 }
 
 async function loadLocalRule(ruleName: string): Promise<RuleProperties | null> {
