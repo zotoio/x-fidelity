@@ -38,7 +38,7 @@ export class ConfigManager {
         
         if (this.localConfigPath) {
             try {
-                const localConfig = this.loadLocalConfig(archetype);
+                const localConfig = await this.loadLocalConfig(archetype);
                 this.config = {
                     ...this.config,
                     ...localConfig
@@ -51,7 +51,9 @@ export class ConfigManager {
                     logger.error('Error loading local config: Unknown error');
                 }
             }
-        } else if (this.configServer) {
+        }
+
+        if (this.configServer) {
             try {
                 const configUrl = `${this.configServer}/archetypes/${archetype}`;
                 logger.debug(`Fetching remote config from: ${configUrl}`);
@@ -71,13 +73,23 @@ export class ConfigManager {
         }
     }
 
-    private loadLocalConfig(archetype: string): ArchetypeConfig {
+    private async loadLocalConfig(archetype: string): Promise<ArchetypeConfig> {
         const configPath = path.join(this.localConfigPath, `${archetype}.json`);
-        if (!fs.existsSync(configPath)) {
-            throw new Error(`Local config file not found: ${configPath}`);
+        try {
+            const configContent = await fs.promises.readFile(configPath, 'utf8');
+            const localConfig = JSON.parse(configContent);
+            return {
+                ...archetypes[archetype],
+                ...localConfig
+            };
+        } catch (error) {
+            if (error instanceof Error) {
+                logger.error(`Error loading local config: ${error.message}`);
+            } else {
+                logger.error('Error loading local config: Unknown error');
+            }
+            return archetypes[archetype];
         }
-        const configContent = fs.readFileSync(configPath, 'utf8');
-        return JSON.parse(configContent);
     }
 
     public getConfig(): ArchetypeConfig {

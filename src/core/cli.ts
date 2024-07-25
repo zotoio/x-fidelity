@@ -37,6 +37,7 @@ directory: ${process.env.PWD}/${options.dir}
 configServer: ${options.configServer ? options.configServer : 'none'}
 mode: ${options.mode}
 port: ${options.mode === 'server' ? options.port : 'N/A'}
+local-config: ${options.localConfig ? options.localConfig : 'none'}
 for available options run: xfidelity --help
 =====================================`);
 
