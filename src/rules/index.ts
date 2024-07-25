@@ -5,7 +5,7 @@ import * as path from 'path';
 import axios from 'axios';
 import { options } from "../core/cli";
 
-async function loadRules(archetype: any, ruleNames: string[], configServer?: string, logPrefix?: string, localConfigPath?: string): Promise<RuleProperties[]> {
+async function loadRules(archetype: string, ruleNames: string[], configServer?: string, logPrefix?: string, localConfigPath?: string): Promise<RuleProperties[]> {
     
     const ruleProperties: RuleProperties[] = [];
 
