@@ -9,6 +9,8 @@ import { loadFacts } from '../facts';
 import { loadRules } from '../rules';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../utils/config';
 import { sendTelemetry } from '../utils/telemetry';
+import { execSync } from 'child_process';
+import os from 'os';
 
 async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack', configServer: string = ''): Promise<any[]> {
     const configManager = ConfigManager.getInstance();
@@ -34,14 +36,43 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
+    // Get GitHub repository URL
+    let repoUrl = '';
+    try {
+        repoUrl = execSync('git config --get remote.origin.url', { cwd: repoPath }).toString().trim();
+    } catch (error) {
+        logger.warn('Unable to get GitHub repository URL');
+    }
+
+    // Get host information
+    const hostInfo = {
+        platform: os.platform(),
+        release: os.release(),
+        type: os.type(),
+        arch: os.arch(),
+        cpus: os.cpus().length,
+        totalMemory: os.totalmem(),
+        freeMemory: os.freemem()
+    };
+
+    // Get user information
+    const userInfo = {
+        username: os.userInfo().username,
+        homedir: os.userInfo().homedir,
+        shell: os.userInfo().shell
+    };
+
     // Send telemetry for analysis start
     await sendTelemetry({
         eventType: 'analysisStart',
         metadata: {
             archetype,
             repoPath,
+            repoUrl,
             fileCount: fileData.length,
-            configServer: configServer || 'none'
+            configServer: configServer || 'none',
+            hostInfo,
+            userInfo
         },
         timestamp: new Date().toISOString()
     });
@@ -169,9 +200,12 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
         metadata: {
             archetype,
             repoPath,
+            repoUrl,
             fileCount: fileData.length,
             failureCount: failures.length,
-            fatalityCount: fatalities.length
+            fatalityCount: fatalities.length,
+            hostInfo,
+            userInfo
         },
         timestamp: new Date().toISOString()
     });
