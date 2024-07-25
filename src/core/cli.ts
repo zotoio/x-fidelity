@@ -8,11 +8,11 @@ if (!logger || typeof logger.info !== 'function') {
 }
 
 program
-    .option("-d, --dir <directory>", "The checkout directory to analyze", ".")
-    .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
+    .option("-d, --dir <directory>", "The checkout directory to analyze (default: current directory)", ".")
+    .option("-a, --archetype <archetype>", "The archetype to use for analysis (default: node-fullstack)", "node-fullstack")
     .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules")
-    .option("-m, --mode <mode>", "Run mode: 'cli' or 'server'", "cli")
-    .option("-p, --port <port>", "Port number for server mode", "8888")
+    .option("-m, --mode <mode>", "Run mode: 'cli' or 'server' (default: cli)", "cli")
+    .option("-p, --port <port>", "Port number for server mode (default: 8888)", "8888")
     .option("-l, --local-config <path>", "Path to local archetype config and rules");
 
 program.parse();
