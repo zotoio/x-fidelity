@@ -9,10 +9,12 @@ import { loadFacts } from '../facts';
 import { loadRules } from '../rules';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../utils/config';
 import { sendTelemetry } from '../utils/telemetry';
+import { execSync } from 'child_process';
+import os from 'os';
 
-async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack', configServer: string = ''): Promise<any[]> {
+async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack', configServer: string = '', localConfigPath: string = ''): Promise<any[]> {
     const configManager = ConfigManager.getInstance();
-    await configManager.initialize(archetype, configServer);
+    await configManager.initialize(archetype, configServer, localConfigPath);
     const archetypeConfig = configManager.getConfig();
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
@@ -26,9 +28,39 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     });
 
     const { minimumDependencyVersions, standardStructure } = archetypeConfig.config;
-    const openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
+
+    let openaiSystemPrompt; 
+    if (process.env.OPENAI_API_KEY) {
+        openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
+    }    
 
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
+
+    // Get GitHub repository URL
+    let repoUrl = '';
+    try {
+        repoUrl = execSync('git config --get remote.origin.url', { cwd: repoPath }).toString().trim();
+    } catch (error) {
+        logger.warn('Unable to get GitHub repository URL');
+    }
+
+    // Get host information
+    const hostInfo = {
+        platform: os.platform(),
+        release: os.release(),
+        type: os.type(),
+        arch: os.arch(),
+        cpus: os.cpus().length,
+        totalMemory: os.totalmem(),
+        freeMemory: os.freemem()
+    };
+
+    // Get user information
+    const userInfo = {
+        username: os.userInfo().username,
+        homedir: os.userInfo().homedir,
+        shell: os.userInfo().shell
+    };
 
     // Send telemetry for analysis start
     await sendTelemetry({
@@ -36,8 +68,11 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
         metadata: {
             archetype,
             repoPath,
+            repoUrl,
             fileCount: fileData.length,
-            configServer: configServer || 'none'
+            configServer: configServer || 'none',
+            hostInfo,
+            userInfo
         },
         timestamp: new Date().toISOString()
     });
@@ -54,7 +89,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
     // Add rules to engine
     logger.info(`### loading json rules..`);
-    const rules: RuleProperties[] = await loadRules(archetype, archetypeConfig.rules, configManager.configServer, logPrefix);
+    const rules: RuleProperties[] = await loadRules(archetype, archetypeConfig.rules, configManager.configServer, logPrefix, configManager.localConfigPath);
     logger.debug(rules);
 
     rules.forEach((rule) => {
@@ -165,9 +200,12 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
         metadata: {
             archetype,
             repoPath,
+            repoUrl,
             fileCount: fileData.length,
             failureCount: failures.length,
-            fatalityCount: fatalities.length
+            fatalityCount: fatalities.length,
+            hostInfo,
+            userInfo
         },
         timestamp: new Date().toISOString()
     });

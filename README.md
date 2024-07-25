@@ -2,6 +2,24 @@
 
 x-fidelity is an advanced CLI tool designed to enforce opinionated framework adherence checks within a codebase. It provides a flexible and extensible way to ensure your projects follow specific standards and best practices.
 
+## Quick Start
+
+1. Install x-fidelity:
+   ```
+   yarn global add x-fidelity
+   export PATH="$PATH:$(yarn global bin)"
+   ```
+
+2. Run in your project directory:
+   ```
+   xfidelity
+   ```
+
+3. For more options:
+   ```
+   xfidelity --help
+   ```
+
 ```
 =====================================
  __    __          ________  ______ 
