@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/zotoio/x-fidelity/compare/v1.5.0...v1.5.1) (2024-07-25)
+
+
+### Bug Fixes
+
+* **scope:** logging correlation ([ea1c497](https://github.com/zotoio/x-fidelity/commit/ea1c4977cac418c49cd9f6778e7f72458c2c2a61))
+
 # [1.5.0](https://github.com/zotoio/x-fidelity/compare/v1.4.1...v1.5.0) (2024-07-24)
 
 
