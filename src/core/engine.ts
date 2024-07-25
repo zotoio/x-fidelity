@@ -26,7 +26,11 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     });
 
     const { minimumDependencyVersions, standardStructure } = archetypeConfig.config;
-    const openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
+
+    let openaiSystemPrompt; 
+    if (process.env.OPENAI_API_KEY) {
+        openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
+    }    
 
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
