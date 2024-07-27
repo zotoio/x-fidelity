@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
 import { options } from "../core/cli";
+import { isOpenAIEnabled } from '../utils/openaiUtils';
 
 async function loadRules(archetype: string, ruleNames: string[], configServer?: string, logPrefix?: string, localConfigPath?: string): Promise<RuleProperties[]> {
     
@@ -37,9 +38,9 @@ async function loadRules(archetype: string, ruleNames: string[], configServer?: 
         }
 
         if (rule) {
-            if (!ruleName.startsWith('openai') || (process.env.OPENAI_API_KEY && ruleName.startsWith('openai'))) {
+            if (!ruleName.startsWith('openai') || (isOpenAIEnabled() && ruleName.startsWith('openai'))) {
                 ruleProperties.push(rule);
-            }    
+            }
         }
     }
     
@@ -52,7 +53,7 @@ async function loadLocalRule(ruleName: string): Promise<RuleProperties | null> {
     const fileName = `${ruleName}-rule.json`;
     const filePath = path.join(__dirname, fileName);
 
-    if (!fileName.startsWith('openai') || (process.env.OPENAI_API_KEY && fileName.startsWith('openai'))) {
+    if (!fileName.startsWith('openai') || (isOpenAIEnabled() && fileName.startsWith('openai'))) {
         try {
             logger.debug(`Loading local rule file: ${filePath}`);
             const fileContent = await fs.promises.readFile(filePath, 'utf8');

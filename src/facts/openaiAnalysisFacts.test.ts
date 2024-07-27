@@ -3,29 +3,33 @@ import { Almanac } from 'json-rules-engine';
 import { OpenAI } from 'openai';
 import { logger } from '../utils/logger';
 import { FileData } from './repoFilesystemFacts';
+import { isOpenAIEnabled } from '../utils/openaiUtils';
 
-process.env.OPENAI_API_KEY = 'mock-key';
+jest.mock('../utils/openaiUtils');
+(isOpenAIEnabled as jest.Mock).mockReturnValue(true);
 jest.mock('json-rules-engine');
 jest.mock('../utils/logger', () => ({
     logger: {
         debug: jest.fn(),
         error: jest.fn(),
+        info: jest.fn(),
     },
 }));
 
-jest.mock('openai', () => {                                                                                    
-    return {                                                                                                   
-        OpenAI: jest.fn().mockImplementation(() => {                                                           
-            return {                                                                                           
-                chat: {                                                                                        
-                    completions: {                                                                             
-                        create: jest.fn().mockResolvedValue({})                                      
-                    }                                                                                          
-                }                                                                                              
-            };                                                                                                 
-        })                                                                                                     
-    };                                                                                                         
-});  
+jest.mock('openai', () => {
+    const mockCreate = jest.fn().mockResolvedValue({
+        choices: [{ message: { content: '[]' } }]
+    });
+    return {
+        OpenAI: jest.fn().mockImplementation(() => ({
+            chat: {
+                completions: {
+                    create: mockCreate
+                }
+            }
+        }))
+    };
+});
 
 describe('openaiAnalysis', () => {
     const mockAlmanac: Almanac = {

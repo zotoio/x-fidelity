@@ -23,15 +23,14 @@ describe('loadOperators', () => {
         expect(result[1]).toBe(fileContains);
     });
 
-    it('should load all operators when all names are specified', async () => {
+    it('should load only non-openai operators when all names are specified', async () => {
         const operatorNames = ['outdatedFramework', 'fileContains', 'nonStandardDirectoryStructure', 'openaiAnalysisHighSeverity'];
         const result = await loadOperators(operatorNames);
 
-        expect(result).toHaveLength(4);
+        expect(result).toHaveLength(3);
         expect(result[0]).toBe(outdatedFramework);
         expect(result[1]).toBe(fileContains);
         expect(result[2]).toBe(nonStandardDirectoryStructure);
-        expect(result[3]).toBe(openaiAnalysisHighSeverity);
     });
 
     it('should return an empty array when no operator names are specified', async () => {

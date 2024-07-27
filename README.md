@@ -2,6 +2,20 @@
 
 x-fidelity is an advanced CLI tool designed to enforce opinionated framework adherence checks within a codebase. It provides a flexible and extensible way to ensure your projects follow specific standards and best practices.
 
+```
+=====================================
+ __    __          ________  ______ 
+| ##  | ##        | ######## \######
+ \##\/  ## ______ | ##__      | ##  
+  >##  ## |      \| ##  \     | ##  
+ /  ####\  \######| ######    | ##  
+|  ## \##\        | ##       _| ##_ 
+| ##  | ##        | ##      |   ## \
+ \##   \##         \##       \######
+                               
+-------------------------------------
+```
+
 ## Quick Start
 
 1. Install x-fidelity:
@@ -19,20 +33,6 @@ x-fidelity is an advanced CLI tool designed to enforce opinionated framework adh
    ```
    xfidelity --help
    ```
-
-```
-=====================================
- __    __          ________  ______ 
-| ##  | ##        | ######## \######
- \##\/  ## ______ | ##__      | ##  
-  >##  ## |      \| ##  \     | ##  
- /  ####\  \######| ######    | ##  
-|  ## \##\        | ##       _| ##_ 
-| ##  | ##        | ##      |   ## \
- \##   \##         \##       \######
-                               
--------------------------------------
-```
 
 ## Table of Contents
 
@@ -97,14 +97,17 @@ xfidelity
 Use command-line options for more control:
 
 ```sh
-xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <archetype>] [-m --mode <mode>] [-p --port <port>] 
+xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <archetype>] [-m --mode <cli|server>] [-p --port <port>] [-o --openaiEnabled <boolean>] [-t --telemetryCollector <url>] [-l --localConfig <path>]
 ```
 
 - `-d --dir <directory>`: Specify the root directory to analyze (default: current directory)
-- `-c --configServer <url>`: URL to fetch the configuration from
+- `-c --configServer <url>`: URL to fetch the configuration from. eg. https://localhost:8888
 - `-a --archetype <archetype>`: Archetype to use for analysis (default: 'node-fullstack')
 - `-m --mode <mode>`: Run mode: 'cli' or 'server' (default: 'cli')
 - `-p --port <port>`: Port number for server mode (default: 8888)
+- `-o --openaiEnabled <boolean>`: Enable OpenAI analysis (default: false)
+- `-t --telemetryCollector <url>`: The URL telemetry data will be sent to for usage analysis
+- `-l --localConfig <path>`: Path to local archetype config and rules
 
 Examples:
 
@@ -112,11 +115,14 @@ Examples:
 # Use remote config server
 xfidelity --configServer https://localhost:8888
 
-# Analyze parent directory with java-microservice archetype
-xfidelity -d .. -a java-microservice -c https://localhost:8888
+# Analyze parent directory with java-microservice archetype and enable OpenAI analysis
+xfidelity -d .. -a java-microservice -c https://localhost:8888 -o true
 
-# Run in server mode with custom port
-xfidelity --mode server --port 9999
+# Run in server mode with custom port and specify telemetry collector
+xfidelity --mode server --port 9999 -t https://telemetry.example.com
+
+# Use local config and rules
+xfidelity -l /path/to/local/config
 
 ```
 
@@ -165,6 +171,7 @@ interface ArchetypeConfig {
     rules: string[];
     operators: string[];
     facts: string[];
+    configUrl?: string;
     config: {
         minimumDependencyVersions: Record<string, string>;
         standardStructure: Record<string, any>;
@@ -173,6 +180,25 @@ interface ArchetypeConfig {
     };
 }
 ```
+
+## Telemetry
+
+x-fidelity now includes telemetry functionality to help improve the tool. Telemetry data is sent to a specified collector URL and includes information about the analysis process, such as:
+
+- Archetype used
+- Repository path (anonymized)
+- File count
+- Failure count
+- Host information (platform, CPU, memory)
+- User information (anonymized username, home directory, shell)
+
+To specify a telemetry collector, use the `-t` or `--telemetryCollector` option:
+
+```sh
+xfidelity -t https://telemetry.example.com
+```
+
+If no telemetry collector is specified, telemetry data will not be sent.
 
 ## Extending x-fidelity
 
@@ -213,15 +239,39 @@ export const myNewArchetype: ArchetypeConfig = {
 To enable AI-powered code analysis:
 
 1. Sign up for an [OpenAI API key](https://platform.openai.com).
-2. Set environment variables:
+2. Set the OPENAI_API_KEY environment variable:
 
 ```sh
 export OPENAI_API_KEY=your_openai_api_key
+```
+
+3. Enable OpenAI analysis when running x-fidelity:
+
+```sh
+xfidelity -o true
+```
+
+You can also set the OpenAI model using an environment variable (optional):
+
+```sh
 export OPENAI_MODEL=gpt-4  # Optional, default is gpt-4o
 ```
 
 > [!IMPORTANT]
 > Be aware of potential costs and data privacy concerns when using OpenAI's API.
+
+## Local Configuration
+
+You can now use local configuration files for archetypes and rules. To use local configuration, use the `-l` or `--localConfig` option:
+
+```sh
+xfidelity -l /path/to/local/config
+```
+
+The local config directory should contain:
+
+- Archetype configuration files (e.g., `node-fullstack.json`)
+- A `rules` subdirectory containing rule files
 
 ## Hosting Config Servers
 

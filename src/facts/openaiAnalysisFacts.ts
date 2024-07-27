@@ -3,14 +3,15 @@ import { OpenAI } from 'openai';
 import { FileData } from './repoFilesystemFacts';
 import { ChatCompletionCreateParams } from 'openai/resources/chat/completions';
 import { Almanac } from 'json-rules-engine';
+import { isOpenAIEnabled } from '../utils/openaiUtils';
 
 let openai: OpenAI | undefined;
-if (process.env.OPENAI_API_KEY) {
+if (isOpenAIEnabled()) {
     const configuration = {
         apiKey: process.env.OPENAI_API_KEY,
     };
     openai = new OpenAI(configuration); 
-}    
+}
 
 const openaiAnalysis = async function (params: any, almanac: Almanac) {
     let result: object = {'result': []};

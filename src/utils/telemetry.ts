@@ -12,11 +12,11 @@ interface TelemetryEvent {
     timestamp: string;
 }
 
-const TELEMETRY_ENDPOINT = process.env.TELEMETRY_ENDPOINT || (options.configServer ? `${options.configServer}/telemetry` : '');
+const TELEMETRY_ENDPOINT = process.env.TELEMETRY_ENDPOINT || options.telemetryCollector || (options.configServer ? `${options.configServer}/telemetry` : null);
 
 export async function sendTelemetry(event: TelemetryEvent): Promise<void> {
     if (!TELEMETRY_ENDPOINT) {
-        logger.debug('Telemetry endpoint not set. Skipping telemetry');
+        logger.debug('telemetry endpoint not set. skipping telemetry');
         return;
     }
     try {
@@ -27,15 +27,17 @@ export async function sendTelemetry(event: TelemetryEvent): Promise<void> {
                 'User-Agent': 'x-fidelity-telemetry'
             }
         });
-        logger.debug(`Telemetry sent: ${JSON.stringify(event)}`);
+        logger.debug(`telemetry sent: ${JSON.stringify(event)}`);
+        return;
     } catch (error) {
         if (axios.isAxiosError(error)) {
-            logger.error(`Failed to send telemetry: ${error.message}`);
+            logger.debug(`failed to send telemetry: ${error.message}`);
             if (error.response) {
-                logger.error(`Response status: ${error.response.status}`);
+                logger.debug(`response status: ${error.response.status}`);
             }
         } else {
-            logger.error(`Failed to send telemetry: ${error}`);
+            logger.debug(`failed to send telemetry: ${error}`);
         }
+        return;
     }
 }
