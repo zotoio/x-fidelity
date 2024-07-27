@@ -30,9 +30,9 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
     const { minimumDependencyVersions, standardStructure } = archetypeConfig.config;
 
     let openaiSystemPrompt; 
-    if (process.env.OPENAI_API_KEY && options.openaiEnabled) {
+    if (isOpenAIEnabled()) {
         openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
-    }    
+    }
 
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
@@ -140,7 +140,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
         }
     });
 
-    if (process.env.OPENAI_API_KEY && options.openaiEnabled && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
+    if (isOpenAIEnabled() && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
         logger.info(`adding additional openai facts to engine..`);
         engine.addFact('openaiAnalysis', openaiAnalysis);
         engine.addFact('openaiSystemPrompt', openaiSystemPrompt);

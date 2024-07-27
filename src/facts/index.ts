@@ -13,8 +13,9 @@ async function loadFacts(factNames: string[]): Promise<{ name: string, fn: Funct
         .map(name => allFacts[name])
         .filter(fact => 
             fact && (!fact.name.startsWith('openai') || 
-            (process.env.OPENAI_API_KEY && options.openaiEnabled && fact.name.startsWith('openai')))
+            (isOpenAIEnabled() && fact.name.startsWith('openai')))
         );
 }
 
 export { loadFacts };
+import { isOpenAIEnabled } from '../utils/openaiUtils';

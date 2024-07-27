@@ -16,7 +16,7 @@ async function loadOperators(operatorNames: string[]): Promise<OperatorDefn[]> {
         .map(name => allOperators[name])
         .filter(operator => 
             !operator.name.startsWith('openai') || 
-            (process.env.OPENAI_API_KEY && options.openaiEnabled && operator.name.startsWith('openai'))
+            (isOpenAIEnabled() && operator.name.startsWith('openai'))
         );
 }
 
