@@ -15,19 +15,20 @@ jest.mock('../utils/logger', () => ({
     },
 }));
 
-jest.mock('openai', () => {                                                                                    
-    return {                                                                                                   
-        OpenAI: jest.fn().mockImplementation(() => {                                                           
-            return {                                                                                           
-                chat: {                                                                                        
-                    completions: {                                                                             
-                        create: jest.fn().mockResolvedValue({})                                      
-                    }                                                                                          
-                }                                                                                              
-            };                                                                                                 
-        })                                                                                                     
-    };                                                                                                         
-});  
+jest.mock('openai', () => {
+    const mockCreate = jest.fn().mockResolvedValue({
+        choices: [{ message: { content: '[]' } }]
+    });
+    return {
+        OpenAI: jest.fn().mockImplementation(() => ({
+            chat: {
+                completions: {
+                    create: mockCreate
+                }
+            }
+        }))
+    };
+});
 
 describe('openaiAnalysis', () => {
     const mockAlmanac: Almanac = {
