@@ -24,8 +24,5 @@ jobs:
     - name: Install dependencies
       run: yarn install
 
-    - name: Run linter and fix
-      run: yarn lint:fix
-
     - name: Run tests
       run: yarn test

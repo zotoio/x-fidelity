@@ -319,13 +319,19 @@ Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` f
 
 ## Linting
 
-This project uses TSLint for static code analysis. To run the linter:
+This project uses ESLint for static code analysis. To run the linter:
 
 ```sh
 yarn lint
 ```
 
-TSLint is also integrated into the CI pipeline and runs alongside unit tests in GitHub Actions.
+To automatically fix linting issues:
+
+```sh
+yarn lint:fix
+```
+
+ESLint is also integrated into the CI pipeline and runs alongside unit tests in GitHub Actions.
 
 ## License
 

@@ -3,7 +3,7 @@ import { OperatorDefn } from '../types/typeDefs';
 
 const outdatedFramework: OperatorDefn = {
     'name': 'outdatedFramework', 
-    'fn': (repoDependencyAnalysis: any, repoDependencyFacts: any) => {
+    'fn': (repoDependencyAnalysis: any) => {
         let result = false;
         
         try {

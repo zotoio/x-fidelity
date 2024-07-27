@@ -2,7 +2,6 @@ import { loadOperators } from './index';
 import { outdatedFramework } from './outdatedFramework';
 import { fileContains } from './fileContains';
 import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';
-import { openaiAnalysisHighSeverity } from './openaiAnalysisHighSeverity';
 
 jest.mock('./outdatedFramework');
 jest.mock('./fileContains');

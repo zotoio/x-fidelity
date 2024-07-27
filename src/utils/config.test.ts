@@ -1,4 +1,4 @@
-import { ConfigManager } from './config';
+import { ConfigManager, REPO_GLOBAL_CHECK } from './config';
 import { archetypes } from '../archetypes';
 import axios from 'axios';
 

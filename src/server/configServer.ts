@@ -13,7 +13,7 @@ app.use(expressLogger);
 
 const validInput = (value: string): boolean => {
     // Ensure input contains only alphanumeric characters, hyphens, and underscores
-    const validName = /^[a-zA-Z0-9-_\-]{1,50}$/;
+    const validName = /^[a-zA-Z0-9-_-]{1,50}$/;
     return validName.test(value);
 }
 
@@ -36,7 +36,7 @@ app.get('/archetypes', (req, res) => {
 app.get('/archetypes/:archetype/rules', async (req, res) => {
     logger.info(`serving rules for archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
-    if (validInput(archetype) && archetypes.hasOwnProperty(archetype) && archetypes[archetype].rules) {
+    if (validInput(archetype) && Object.prototype.hasOwnProperty.call(archetypes, archetype) && archetypes[archetype].rules) {
         const rules = await loadRules(archetype, archetypes[archetype].rules);
         res.json(rules);
     } else {
@@ -48,7 +48,7 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     logger.info(`serving rule ${req.params.rule} for archetype ${req.params.archetype}..`);
     const archetype = req.params.archetype;
     const rule = req.params.rule;
-    if (validInput(archetype) && validInput(rule) && archetypes.hasOwnProperty(archetype) && archetypes[archetype].rules.includes(rule)) {
+    if (validInput(archetype) && validInput(rule) && Object.prototype.hasOwnProperty.call(archetypes, archetype) && archetypes[archetype].rules.includes(rule)) {
         const rules = await loadRules(archetype, archetypes[archetype].rules);
         const ruleJson = rules.find((r) => r.name === rule);
         res.json(ruleJson);

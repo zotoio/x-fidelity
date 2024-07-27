@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as fs from 'fs';
 import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';
 import { Stats } from 'fs';
