@@ -16,7 +16,8 @@
     "release": "semantic-release",
     "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
     "build-run": "yarn build && node . --dir . | jq -R -r '. as $line | try fromjson catch $line'",
-    "start-server": "ts-node src/index.ts --mode server"
+    "start-server": "ts-node src/index.ts --mode server",
+    "lint": "tslint -c tslint.json 'src/**/*.ts'"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@semantic-release/changelog": "^6.0.3",
+    "tslint": "^6.1.3",
     "@semantic-release/commit-analyzer": "^13.0.0",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^10.0.6",
