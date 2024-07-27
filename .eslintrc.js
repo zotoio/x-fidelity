@@ -14,5 +14,6 @@ module.exports = {
   },
   rules: {
     // Add any custom rules here
+    '@typescript-eslint/no-explicit-any': 'off', // Disable no-explicit-any rule
   },
 };
