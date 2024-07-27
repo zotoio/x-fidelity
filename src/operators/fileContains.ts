@@ -7,9 +7,9 @@ const fileContains: OperatorDefn = {
         let result = false;
 
         const regex = new RegExp(checkString, 'g');
-        let lines = fileContent.split('\n');
+        const lines = fileContent.split('\n');
         let lineNumber = 0;
-        for (let line of lines) {
+        for (const line of lines) {
             lineNumber++;
             if (regex.test(line)) {
                 logger.debug(`fileContains '${checkString}' found in line ${lineNumber}: ${line}`);
