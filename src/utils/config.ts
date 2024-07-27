@@ -29,7 +29,7 @@ export class ConfigManager {
         return ConfigManager.instance;
     }
 
-    public async initialize(archetype: string = 'node-fullstack', configServer?: string, localConfigPath?: string): Promise<void> {
+    public async initialize(archetype = 'node-fullstack', configServer?: string, localConfigPath?: string): Promise<void> {
         this.config = archetypes[archetype] || archetypes['node-fullstack'];
         this.configServer = configServer || '';
         this.localConfigPath = localConfigPath || '';

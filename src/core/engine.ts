@@ -1,7 +1,7 @@
 import { logger, logPrefix } from '../utils/logger';
-import { Almanac, Engine, EngineResult, Event, RuleProperties, RuleResult } from 'json-rules-engine';
+import { Engine, EngineResult, Event, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
-import { ScanResult, RuleFailure, ArchetypeConfig, OpenAIAnalysisParams } from '../types/typeDefs';
+import { ScanResult, RuleFailure} from '../types/typeDefs';
 import { getDependencyVersionFacts, repoDependencyAnalysis } from '../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../facts/openaiAnalysisFacts';
 import { loadOperators } from '../operators';
@@ -13,7 +13,7 @@ import { sendTelemetry } from '../utils/telemetry';
 import { execSync } from 'child_process';
 import os from 'os';
 
-async function analyzeCodebase(repoPath: string, archetype: string = 'node-fullstack', configServer: string = '', localConfigPath: string = ''): Promise<any[]> {
+async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', configServer = '', localConfigPath = ''): Promise<any[]> {
     const configManager = ConfigManager.getInstance();
     await configManager.initialize(archetype, configServer, localConfigPath);
     const archetypeConfig = configManager.getConfig();
@@ -104,7 +104,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
         }
     });
 
-    engine.on('success', async ({ type, params }: Event, almanac: Almanac) => {
+    engine.on('success', async ({ type, params }: Event) => {
         if (type === 'violation') {
             logger.warn(`violation detected: ${JSON.stringify(params)}}`);
             await sendTelemetry({
@@ -152,14 +152,14 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
 
     // Run the engine for each file's data    
     logger.info(`### Executing rules..`);
-    let failures: ScanResult[] = [];
+    const failures: ScanResult[] = [];
     for (const file of fileData) {
         if (file.fileName === REPO_GLOBAL_CHECK) {
-            let msg = `\n==========================\nSTARTING GLOBAL REPO CHECKS..\n==========================`
+            const msg = `\n==========================\nSTARTING GLOBAL REPO CHECKS..\n==========================`
             logger.info(msg);
 
         } else {
-            let msg = `running engine for ${file.filePath}`
+            const msg = `running engine for ${file.filePath}`
             logger.info(msg);
         }
         const facts = {
@@ -171,7 +171,7 @@ async function analyzeCodebase(repoPath: string, archetype: string = 'node-fulls
             standardStructure
 
         };
-        let fileFailures: RuleFailure[] = [];
+        const fileFailures: RuleFailure[] = [];
 
         await engine.run(facts)
             .then(({ results }: EngineResult) => {
@@ -222,12 +222,12 @@ const findKeyValuePair = (
     targetKey: string,
     targetValue: any
 ): any[] => {
-    let results: any[] = [];
+    const results: any[] = [];
 
     const recursiveSearch = (obj: any): void => {
         if (typeof obj === 'object' && obj !== null) {
-            for (let key in obj) {
-                if (obj.hasOwnProperty(key)) {
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
                     if (key === targetKey && obj[key] === targetValue) {
                         results.push(obj);
                         return; // Stop searching this branch as we've found the target in this object

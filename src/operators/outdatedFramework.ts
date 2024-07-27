@@ -1,10 +1,9 @@
 import { logger } from '../utils/logger';
-import { OperatorDefn, VersionData } from '../types/typeDefs';
-import { REPO_GLOBAL_CHECK } from '../utils/config';
+import { OperatorDefn } from '../types/typeDefs';
 
 const outdatedFramework: OperatorDefn = {
     'name': 'outdatedFramework', 
-    'fn': (repoDependencyAnalysis: any, repoDependencyFacts: any) => {
+    'fn': (repoDependencyAnalysis: any) => {
         let result = false;
         
         try {

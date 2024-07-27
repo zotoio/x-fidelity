@@ -59,8 +59,8 @@ describe('analyzeCodebase', () => {
             getConfig: jest.fn().mockReturnValue(archetypes['node-fullstack']),
             configServer: ''
         });
-        jest.spyOn(console, 'log').mockImplementation(() => {});
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(console, 'log').mockImplementation(() => {console.log('z')});
+        jest.spyOn(console, 'error').mockImplementation(() => {console.log('z')});
     });
 
     it('should analyze the codebase and return results', async () => {

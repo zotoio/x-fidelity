@@ -45,8 +45,9 @@ x-fidelity is an advanced CLI tool designed to enforce opinionated framework adh
 7. [OpenAI Integration](#openai-integration)
 8. [Hosting Config Servers](#hosting-config-servers)
 9. [Best Practices](#best-practices)
-10. [Contributing](#contributing)
-11. [License](#license)
+10. [Linting](#linting)
+11. [Contributing](#contributing)
+12. [License](#license)
 
 ## Intent and Purpose
 
@@ -315,6 +316,22 @@ app.listen(8888, () => {
 ## Contributing
 
 Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` file for guidelines on how to contribute to this project.
+
+## Linting
+
+This project uses ESLint for static code analysis. To run the linter:
+
+```sh
+yarn lint
+```
+
+To automatically fix linting issues:
+
+```sh
+yarn lint:fix
+```
+
+ESLint is also integrated into the CI pipeline and runs alongside unit tests in GitHub Actions.
 
 ## License
 

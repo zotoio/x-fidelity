@@ -13,7 +13,7 @@ import { FileData } from './repoFilesystemFacts';
 export function collectLocalDependencies(): LocalDependencies {
     let result: LocalDependencies = {};
     try {
-        let stdout = execSync('npm ls -a --json');
+        const stdout = execSync('npm ls -a --json');
         result = JSON.parse(stdout.toString());
     } catch (e) {
         logger.error(`exec error: ${e}`);
@@ -44,13 +44,13 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
  * @returns An array of results.
  */
 export function findPropertiesInTree(depGraph: LocalDependencies, minVersions: MinimumDepVersions): VersionData[] {
-    let results: VersionData[] = [];
+    const results: VersionData[] = [];
 
     logger.debug(`depGraph: ${depGraph}`);
 
     function walk(depGraph: LocalDependencies) {
         if (_.isObject(depGraph) && !_.isArray(depGraph)) {
-            for (let depName in depGraph) {
+            for (const depName in depGraph) {
                 if (Object.keys(minVersions).includes(depName)) {
                     results.push({ dep: depName, ver: depGraph[depName].version, min: minVersions[depName] });
                 }
@@ -59,7 +59,7 @@ export function findPropertiesInTree(depGraph: LocalDependencies, minVersions: M
                 }
             }
         } else if (_.isArray(depGraph)) {
-            for (let item of depGraph) {
+            for (const item of depGraph) {
                 walk(item);
             }
         }
@@ -71,14 +71,14 @@ export function findPropertiesInTree(depGraph: LocalDependencies, minVersions: M
 
 export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
-    let result: any = {'result': []};
+    const result: any = {'result': []};
     const fileData: FileData = await almanac.factValue('fileData');
 
     if (fileData.fileName !== 'REPO_GLOBAL_CHECK') {
         return result;
     }
 
-    let analysis: any = [];
+    const analysis: any = [];
     const dependencyData: any = await almanac.factValue('dependencyData');
 
     dependencyData.installedDependencyVersions.map((versionData: VersionData) => { 
@@ -86,7 +86,7 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
         const requiredRange = new semver.Range(versionData.min);
         if (!semver.gtr(versionData.ver, requiredRange)) {
-            let dependencyFailure = {
+            const dependencyFailure = {
                 'dependency': versionData.dep,
                 'currentVersion': versionData.ver,
                 'requiredVersion': versionData.min
@@ -102,4 +102,4 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
     almanac.addRuntimeFact(params.resultFact, result);
 
     return result;
-};
+}
