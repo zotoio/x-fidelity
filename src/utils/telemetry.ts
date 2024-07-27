@@ -12,7 +12,7 @@ interface TelemetryEvent {
     timestamp: string;
 }
 
-const TELEMETRY_ENDPOINT = process.env.TELEMETRY_ENDPOINT || (options.configServer ? `${options.configServer}/telemetry` : null);
+const TELEMETRY_ENDPOINT = process.env.TELEMETRY_ENDPOINT || options.telemetryCollector || (options.configServer ? `${options.configServer}/telemetry` : null);
 
 export async function sendTelemetry(event: TelemetryEvent): Promise<void> {
     if (!TELEMETRY_ENDPOINT) {

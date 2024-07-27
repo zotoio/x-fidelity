@@ -8,6 +8,7 @@ import { loadOperators } from '../operators';
 import { loadFacts } from '../facts';
 import { loadRules } from '../rules';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../utils/config';
+import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { sendTelemetry } from '../utils/telemetry';
 import { execSync } from 'child_process';
 import os from 'os';

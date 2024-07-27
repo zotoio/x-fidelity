@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
 import { options } from "../core/cli";
+import { isOpenAIEnabled } from '../utils/openaiUtils';
 
 async function loadRules(archetype: string, ruleNames: string[], configServer?: string, logPrefix?: string, localConfigPath?: string): Promise<RuleProperties[]> {
     

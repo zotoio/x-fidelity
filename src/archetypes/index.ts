@@ -2,7 +2,7 @@ import { ArchetypeConfig } from '../types/typeDefs';
 
 export const archetypes: Record<string, ArchetypeConfig> = {
     'node-fullstack': {
-        rules: ['sensitiveLogging-iterative', 'outdatedFramework-global', 'noDatabases-iterative', 'nonStandardDirectoryStructure-global', 'openaiAnalysisTop5-global', 'openaiAnalysisA11y-global', 'yarnLockfileCheck-global'],
+        rules: ['sensitiveLogging-iterative', 'outdatedFramework-global', 'noDatabases-iterative', 'nonStandardDirectoryStructure-global', 'openaiAnalysisTop5-global', 'openaiAnalysisA11y-global'],
         operators: ['fileContains', 'outdatedFramework', 'nonStandardDirectoryStructure', 'openaiAnalysisHighSeverity'],
         facts: ['repoFilesystemFacts', 'repoDependencyFacts', 'openaiAnalysisFacts'],
         config: {

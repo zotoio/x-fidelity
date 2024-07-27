@@ -1,9 +1,8 @@
 
 import axios from "axios";
-import { logger, logPrefix } from "../utils/logger";
+import { logger } from "../utils/logger";
 import { ArchetypeConfig } from "../types/typeDefs";
 import { archetypes } from "../archetypes";
-import { loadRules } from "../rules";
 import * as fs from 'fs';
 import * as path from 'path';
 

@@ -2,6 +2,20 @@
 
 x-fidelity is an advanced CLI tool designed to enforce opinionated framework adherence checks within a codebase. It provides a flexible and extensible way to ensure your projects follow specific standards and best practices.
 
+```
+=====================================
+ __    __          ________  ______ 
+| ##  | ##        | ######## \######
+ \##\/  ## ______ | ##__      | ##  
+  >##  ## |      \| ##  \     | ##  
+ /  ####\  \######| ######    | ##  
+|  ## \##\        | ##       _| ##_ 
+| ##  | ##        | ##      |   ## \
+ \##   \##         \##       \######
+                               
+-------------------------------------
+```
+
 ## Quick Start
 
 1. Install x-fidelity:
@@ -19,20 +33,6 @@ x-fidelity is an advanced CLI tool designed to enforce opinionated framework adh
    ```
    xfidelity --help
    ```
-
-```
-=====================================
- __    __          ________  ______ 
-| ##  | ##        | ######## \######
- \##\/  ## ______ | ##__      | ##  
-  >##  ## |      \| ##  \     | ##  
- /  ####\  \######| ######    | ##  
-|  ## \##\        | ##       _| ##_ 
-| ##  | ##        | ##      |   ## \
- \##   \##         \##       \######
-                               
--------------------------------------
-```
 
 ## Table of Contents
 

@@ -1,11 +1,12 @@
 import express from 'express';
 import { archetypes } from '../archetypes';
 import { loadRules } from '../rules';
-import { logger, logPrefix } from '../utils/logger';
+import { logger } from '../utils/logger';
 import { expressLogger } from './expressLogger'
+import { options } from '../core/cli';
 
 const app = express();
-const port = process.env.XFI_SERVER_PORT || 8888;
+const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
 
 app.use(express.json());
 app.use(expressLogger);
