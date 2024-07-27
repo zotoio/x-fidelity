@@ -97,11 +97,11 @@ xfidelity
 Use command-line options for more control:
 
 ```sh
-xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <archetype>] [-m --mode <mode>] [-p --port <port>] 
+xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <archetype>] [-m --mode <cli\|server>] [-p --port <port>] 
 ```
 
 - `-d --dir <directory>`: Specify the root directory to analyze (default: current directory)
-- `-c --configServer <url>`: URL to fetch the configuration from
+- `-c --configServer <url>`: URL to fetch the configuration from. eg. https://localhost:8888
 - `-a --archetype <archetype>`: Archetype to use for analysis (default: 'node-fullstack')
 - `-m --mode <mode>`: Run mode: 'cli' or 'server' (default: 'cli')
 - `-p --port <port>`: Port number for server mode (default: 8888)
