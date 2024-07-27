@@ -9,7 +9,12 @@ const allFacts: Record<string, { name: string, fn: Function }> = {
 };
 
 async function loadFacts(factNames: string[]): Promise<{ name: string, fn: Function }[]> {
-    return factNames.map(name => allFacts[name]).filter(Boolean);
+    return factNames
+        .map(name => allFacts[name])
+        .filter(fact => 
+            fact && (!fact.name.startsWith('openai') || 
+            (process.env.OPENAI_API_KEY && options.openaiEnabled && fact.name.startsWith('openai')))
+        );
 }
 
 export { loadFacts };

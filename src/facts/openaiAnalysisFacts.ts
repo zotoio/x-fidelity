@@ -5,7 +5,7 @@ import { ChatCompletionCreateParams } from 'openai/resources/chat/completions';
 import { Almanac } from 'json-rules-engine';
 
 let openai: OpenAI | undefined;
-if (process.env.OPENAI_API_KEY) {
+if (process.env.OPENAI_API_KEY && process.env.OPENAI_ENABLED === 'true') {
     const configuration = {
         apiKey: process.env.OPENAI_API_KEY,
     };
