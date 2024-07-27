@@ -1,3 +1,15 @@
+# [1.6.0](https://github.com/zotoio/x-fidelity/compare/v1.5.1...v1.6.0) (2024-07-27)
+
+
+### Bug Fixes
+
+* **telemetry:** option silent ([e72b366](https://github.com/zotoio/x-fidelity/commit/e72b36603d4a682fee993a330393f453926a187a))
+
+
+### Features
+
+* **config:** local filesystem config, openai option, telemetry option ([16f481c](https://github.com/zotoio/x-fidelity/commit/16f481cbb5c5e2fefd1b7cfcc6e9371461609f85))
+
 ## [1.5.1](https://github.com/zotoio/x-fidelity/compare/v1.5.0...v1.5.1) (2024-07-25)
 
 
