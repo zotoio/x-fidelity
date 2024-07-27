@@ -17,7 +17,7 @@ jest.mock('../core/cli', () => ({
         dir: 'mockDir',
         archetype: 'node-fullstack',
         configServer: '',
-        openaiEnabled: false,
+        openaiEnabled: true,
         telemetryCollector: '',
         mode: 'cli',
         port: '8888',
