@@ -1,7 +1,6 @@
 import { collectRepoFileData, parseFile, isBlacklisted, isWhitelisted } from './repoFilesystemFacts';
 import fs from 'fs';
 import path from 'path';
-import { logger } from '../utils/logger';
 import { ArchetypeConfig } from '../types/typeDefs';
 
 jest.mock('fs', () => ({

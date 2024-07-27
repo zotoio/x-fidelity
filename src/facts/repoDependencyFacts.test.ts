@@ -2,7 +2,6 @@ import { execSync } from 'child_process';
 import { collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree } from './repoDependencyFacts';
 import { logger } from '../utils/logger';
 import { ConfigManager } from '../utils/config';
-import { arch } from 'os';
 import { archetypes } from '../archetypes';
 
 jest.mock('child_process', () => ({
