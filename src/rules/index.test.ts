@@ -3,6 +3,9 @@ import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../utils/logger';
+import { isOpenAIEnabled } from '../utils/openaiUtils';
+
+jest.mock('../utils/openaiUtils');
 
 jest.mock('axios');
 jest.mock('fs', () => ({
@@ -73,14 +76,14 @@ describe('loadRules', () => {
         expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/testRule-rule.json', 'utf8');
     });
 
-    it('should not load openai rules if OPENAI_API_KEY is not set', async () => {
-        delete process.env.OPENAI_API_KEY;
+    it('should not load openai rules if OpenAI is not enabled', async () => {
+        (isOpenAIEnabled as jest.Mock).mockReturnValue(false);
         const result = await loadRules('testArchetype', ['openaiRule']);
         expect(result).toEqual([]);
     });
 
-    it('should load openai rules if OPENAI_API_KEY is set', async () => {
-        process.env.OPENAI_API_KEY = 'test-key';
+    it('should load openai rules if OpenAI is enabled', async () => {
+        (isOpenAIEnabled as jest.Mock).mockReturnValue(true);
         const mockRuleContent = JSON.stringify({ name: 'openaiRule', conditions: {}, event: {} });
         const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
         mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);

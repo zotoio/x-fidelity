@@ -3,8 +3,10 @@ import { Almanac } from 'json-rules-engine';
 import { OpenAI } from 'openai';
 import { logger } from '../utils/logger';
 import { FileData } from './repoFilesystemFacts';
+import { isOpenAIEnabled } from '../utils/openaiUtils';
 
-process.env.OPENAI_API_KEY = 'mock-key';
+jest.mock('../utils/openaiUtils');
+(isOpenAIEnabled as jest.Mock).mockReturnValue(true);
 jest.mock('json-rules-engine');
 jest.mock('../utils/logger', () => ({
     logger: {

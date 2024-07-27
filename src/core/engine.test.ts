@@ -9,6 +9,9 @@ import { loadFacts } from '../facts';
 import { archetypes } from '../archetypes';
 import { ConfigManager } from '../utils/config';
 import { sendTelemetry } from '../utils/telemetry';
+import { isOpenAIEnabled } from '../utils/openaiUtils';
+
+jest.mock('../utils/openaiUtils');
 
 jest.mock('json-rules-engine');
 jest.mock('../facts/repoFilesystemFacts');
@@ -122,8 +125,8 @@ describe('analyzeCodebase', () => {
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Once for start, once for end
     });
 
-    it('should handle OpenAI analysis when OPENAI_API_KEY is set', async () => {
-        process.env.OPENAI_API_KEY = 'test-key';
+    it('should handle OpenAI analysis when OpenAI is enabled', async () => {
+        (isOpenAIEnabled as jest.Mock).mockReturnValue(true);
         const mockFileData = [
             { filePath: 'src/index.ts', fileContent: 'logger.info("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
@@ -159,8 +162,8 @@ describe('analyzeCodebase', () => {
         delete process.env.OPENAI_API_KEY;
     });
 
-    it('should not add OpenAI facts when OPENAI_API_KEY is not set', async () => {
-        delete process.env.OPENAI_API_KEY;
+    it('should not add OpenAI facts when OpenAI is not enabled', async () => {
+        (isOpenAIEnabled as jest.Mock).mockReturnValue(false);
         const mockFileData = [
             { filePath: 'src/index.ts', fileContent: 'logger.info("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
