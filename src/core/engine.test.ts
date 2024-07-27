@@ -12,6 +12,18 @@ import { sendTelemetry } from '../utils/telemetry';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
 
 jest.mock('../utils/openaiUtils');
+jest.mock('../core/cli', () => ({
+    options: {
+        dir: 'mockDir',
+        archetype: 'node-fullstack',
+        configServer: '',
+        openaiEnabled: false,
+        telemetryCollector: '',
+        mode: 'cli',
+        port: '8888',
+        localConfig: ''
+    }
+}));
 
 jest.mock('json-rules-engine');
 jest.mock('../facts/repoFilesystemFacts');
@@ -47,6 +59,8 @@ describe('analyzeCodebase', () => {
             getConfig: jest.fn().mockReturnValue(archetypes['node-fullstack']),
             configServer: ''
         });
+        jest.spyOn(console, 'log').mockImplementation(() => {});
+        jest.spyOn(console, 'error').mockImplementation(() => {});
     });
 
     it('should analyze the codebase and return results', async () => {
