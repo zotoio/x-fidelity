@@ -169,8 +169,7 @@ describe('analyzeCodebase', () => {
 
         await analyzeCodebase('mockRepoPath', 'node-fullstack');
 
-        expect(engineAddFactMock).toHaveBeenCalledWith('openaiAnalysis', expect.any(Function));
-        expect(engineAddFactMock).toHaveBeenCalledWith('openaiSystemPrompt', 'mock openai system prompt');
+        expect(engineAddFactMock).toHaveBeenCalledWith('repoDependencyAnalysis', expect.any(Function));
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Once for start, once for end
 
         delete process.env.OPENAI_API_KEY;
