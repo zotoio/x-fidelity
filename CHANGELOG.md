@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/zotoio/x-fidelity/compare/v1.6.0...v1.6.1) (2024-07-27)
+
+
+### Bug Fixes
+
+* **lint:** setup ([f559331](https://github.com/zotoio/x-fidelity/commit/f5593314bc591cb2d6e8cb809c828455fa294b62))
+
 # [1.6.0](https://github.com/zotoio/x-fidelity/compare/v1.5.1...v1.6.0) (2024-07-27)
 
 
