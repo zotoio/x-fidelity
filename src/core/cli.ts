@@ -4,7 +4,14 @@ import { program } from "commander";
 // Ensure logger is initialized
 if (!logger || typeof logger.info !== 'function') {
     console.error('Logger is not properly initialized');
-    process.exit(1);
+    // Instead of exiting, we'll create a fallback logger
+    const fallbackLogger = {
+        info: console.log,
+        error: console.error,
+        warn: console.warn,
+        debug: console.debug
+    };
+    (global as any).logger = fallbackLogger;
 }
 
 program
