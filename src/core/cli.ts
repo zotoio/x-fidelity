@@ -11,9 +11,11 @@ program
     .option("-d, --dir <directory>", "The checkout directory to analyze (default: current directory)", ".")
     .option("-a, --archetype <archetype>", "The archetype to use for analysis (default: node-fullstack)", "node-fullstack")
     .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules")
+    .option("-o, --openaiEnabled <boolean>", "Enable OpenAI analysis (default: false)", false)
+    .option("-t, --telemetryCollector <telemetryCollector>", "The URL telemetry data will be sent to for usage analysis")
     .option("-m, --mode <mode>", "Run mode: 'cli' or 'server' (default: cli)", "cli")
-    .option("-p, --port <port>", "Port number for server mode (default: 8888)", "8888")
-    .option("-l, --local-config <path>", "Path to local archetype config and rules");
+    .option("-p, --port <port>", "The port to run the server on (default: 8888)", "8888")
+    .option("-l, --localConfig <path>", "Path to local archetype config and rules");
 
 program.parse();
 
