@@ -153,11 +153,10 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
     // Run the engine for each file's data    
     logger.info(`### Executing rules..`);
     const failures: ScanResult[] = [];
-    for (const file of fileData) {
+    const enginePromises = fileData.map(async (file) => {
         if (file.fileName === REPO_GLOBAL_CHECK) {
             const msg = `\n==========================\nSTARTING GLOBAL REPO CHECKS..\n==========================`
             logger.info(msg);
-
         } else {
             const msg = `running engine for ${file.filePath}`
             logger.debug(msg);
@@ -169,27 +168,30 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
                 minimumDependencyVersions
             },
             standardStructure
-
         };
         const fileFailures: RuleFailure[] = [];
 
-        await engine.run(facts)
-            .then(({ results }: EngineResult) => {
-                results.map((result: RuleResult) => {
-                    logger.debug(result);
-                    if (result.result) {
-                        fileFailures.push({
-                            ruleFailure: result.name,
-                            details: result.event?.params
-                        })
-                    }
-                })
-            }).catch(e => logger.error(e));
+        try {
+            const { results }: EngineResult = await engine.run(facts);
+            results.forEach((result: RuleResult) => {
+                logger.debug(result);
+                if (result.result) {
+                    fileFailures.push({
+                        ruleFailure: result.name,
+                        details: result.event?.params
+                    });
+                }
+            });
 
-        if (fileFailures.length > 0) {
-            failures.push({ filePath: file.filePath, errors: fileFailures });
+            if (fileFailures.length > 0) {
+                failures.push({ filePath: file.filePath, errors: fileFailures });
+            }
+        } catch (e) {
+            logger.error(e);
         }
-    }
+    });
+
+    await Promise.all(enginePromises);
 
     logger.info(`${fileData.length} files analyzed. ${failures.length} files with errors.`)
 
