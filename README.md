@@ -119,44 +119,20 @@ xfidelity --configServer https://localhost:8888
 # Analyze parent directory with java-microservice archetype and enable OpenAI analysis
 xfidelity -d .. -a java-microservice -c https://localhost:8888 -o true
 
-# Run in server mode with custom port and specify telemetry collector
+#Run in server mode with custom port and specify telemetry collector
 xfidelity --mode server --port 9999 -t https://telemetry.example.com
 
 # Use local config and rules
 xfidelity -l /path/to/local/config
-
-```
-
-### Configuration Server
-
-Start the built-in configuration server:
-
-```sh
-yarn start-server
-```
-
-Or use the CLI:
-
-```sh
-xfidelity --mode server
-```
-
-Set a custom port:
-
-```sh
-xfidelity --mode server --port 9999
-```
-
-You can also set the port using an environment variable:
-
-```sh
-export XFI_SERVER_PORT=8888
-xfidelity --mode server
 ```
 
 ## Configuration
 
-x-fidelity uses archetypes to define project-specific configurations. Archetypes specify:
+x-fidelity uses archetypes to define project-specific configurations. Archetypes are now managed as JSON files, which can be stored locally or on a remote server.
+
+### Archetype Structure
+
+Archetypes specify:
 
 - Rules to apply
 - Operators to use
@@ -165,74 +141,144 @@ x-fidelity uses archetypes to define project-specific configurations. Archetypes
 - Standard directory structure
 - File patterns to include or exclude
 
-Example archetype structure:
+Example archetype JSON structure:
 
-```typescript
-interface ArchetypeConfig {
-    rules: string[];
-    operators: string[];
-    facts: string[];
-    configUrl?: string;
-    config: {
-        minimumDependencyVersions: Record<string, string>;
-        standardStructure: Record<string, any>;
-        blacklistPatterns: string[];
-        whitelistPatterns: string[];
-    };
+```json
+{
+    "rules": ["rule1", "rule2"],
+    "operators": ["operator1", "operator2"],
+    "facts": ["fact1", "fact2"],
+    "config": {
+        "minimumDependencyVersions": {
+            "dependency1": "^1.0.0",
+            "dependency2": "^2.0.0"
+        },
+        "standardStructure": {
+            "src": {
+                "components": null,
+                "utils": null
+            },
+            "tests": null
+        },
+        "blacklistPatterns": [".*\\/\\..*", ".*\\/(dist|build)(\\/.*|$)"],
+        "whitelistPatterns": [".*\\.(ts|tsx|js|jsx)$"]
+    }
 }
 ```
 
-## Telemetry
+### Local Configuration
 
-x-fidelity now includes telemetry functionality to help improve the tool. Telemetry data is sent to a specified collector URL and includes information about the analysis process, such as:
-
-- Archetype used
-- Repository path (anonymized)
-- File count
-- Failure count
-- Host information (platform, CPU, memory)
-- User information (anonymized username, home directory, shell)
-
-To specify a telemetry collector, use the `-t` or `--telemetryCollector` option:
+To use local configuration files for archetypes and rules, use the `-l` or `--localConfig` option:
 
 ```sh
-xfidelity -t https://telemetry.example.com
+xfidelity -l /path/to/local/config
 ```
 
-If no telemetry collector is specified, telemetry data will not be sent.
+The local config directory should contain:
+- Archetype JSON files (e.g., `node-fullstack.json`)
+- A `rules` subdirectory containing rule JSON files
+
+You can override default archetypes or add new ones by placing the corresponding JSON files in the local config directory.
+
+### Remote Configuration
+
+To use a remote configuration server, use the `-c` or `--configServer` option:
+
+```sh
+xfidelity -c https://config-server.example.com
+```
+
+The remote server should provide endpoints to serve archetype and rule configurations.
+
+## Hosting Config Servers
+
+x-fidelity allows for centrally managed, hot-updatable custom rulesets that can be executed within managed CI pipelines and locally, ensuring consistency of applied rules. Here's an overview of the setup required:
+
+1. Set up a Node.js host environment (Docker containerization recommended).
+2. Create a GitHub repository to host your archetypes and rules.
+3. Clone the GitHub repository to the server filesystem.
+4. Install the x-fidelity CLI on the server.
+5. Configure the CLI to:
+   - Run on startup in server mode (`--mode server`)
+   - Point to your rules directory cloned from GitHub (`--localConfig ../rule-repo/config`)
+   - Optionally set the port to listen on (`--port <port>`)
+6. Create a simple CI pipeline step 'framework fidelity' after git repo clone to workspace:
+   - Install the x-fidelity CLI
+   - Run the CLI on the checked-out repo, pointing to the server (`--configServer http://my-server:8888`)
+
+### Docker Example
+
+Here's a basic Docker setup for hosting an x-fidelity config server:
+
+```dockerfile
+FROM node:18
+
+# Install x-fidelity
+RUN yarn global add x-fidelity
+
+# Clone your rules repository
+RUN git clone https://github.com/your-org/x-fidelity-rules.git /rules
+
+# Set up the start command
+CMD ["x-fidelity", "--mode", "server", "--localConfig", "/rules", "--port", "8888"]
+```
+
+Build and run the Docker container:
+
+```sh
+docker build -t x-fidelity-server .
+docker run -p 8888:8888 x-fidelity-server
+```
+
+### CI Pipeline Integration
+
+In your CI pipeline (e.g., GitHub Actions, GitLab CI, Jenkins), add a step to run x-fidelity:
+
+```yaml
+steps:
+  - name: Check out code
+    uses: actions/checkout@v2
+
+  - name: Install x-fidelity
+    run: yarn global add x-fidelity
+
+  - name: Run x-fidelity
+    run: xfidelity --configServer http://x-fidelity-server:8888
+```
+
+This setup allows you to maintain a centralized set of rules and archetypes that can be easily updated and applied across all your projects.
 
 ## Extending x-fidelity
 
-x-fidelity is designed to be highly extensible:
+x-fidelity is designed to be highly extensible. You can add custom rules, operators, facts, and archetypes:
 
-1. **Custom Rules**: Add new JSON rule files in `src/rules`.
-2. **Custom Operators**: Implement new operators in `src/operators` and add them to `src/operators/index.ts`.
-3. **Custom Facts**: Create new fact providers in `src/facts` and add them to `src/facts/index.ts`.
-4. **New Archetypes**: Define new archetypes in `src/archetypes` and include them in `src/archetypes/index.ts`.
+1. **Custom Rules**: Add new JSON rule files in the `rules` subdirectory of your local config or on your config server.
+2. **Custom Operators**: Implement new operators and add them to your x-fidelity fork or plugin.
+3. **Custom Facts**: Create new fact providers and add them to your x-fidelity fork or plugin.
+4. **New Archetypes**: Define new archetypes as JSON files in your local config directory or on your config server.
 
-Example of creating a new archetype:
+Example of a custom archetype JSON file (`my-custom-archetype.json`):
 
-```typescript
-// src/archetypes/myNewArchetype.ts
-export const myNewArchetype: ArchetypeConfig = {
-    rules: ['myCustomRule', 'standardRule1', 'standardRule2'],
-    operators: ['myCustomOperator', 'standardOperator1'],
-    facts: ['myCustomFact', 'standardFact1'],
-    config: {
-        minimumDependencyVersions: {
-            'my-framework': '^2.0.0'
+```json
+{
+    "rules": ["myCustomRule", "standardRule1", "standardRule2"],
+    "operators": ["myCustomOperator", "standardOperator1"],
+    "facts": ["myCustomFact", "standardFact1"],
+    "config": {
+        "minimumDependencyVersions": {
+            "my-framework": "^2.0.0"
         },
-        standardStructure: {
-            src: {
-                components: null,
-                utils: null
+        "standardStructure": {
+            "src": {
+                "components": null,
+                "utils": null
             },
-            tests: null
+            "tests": null
         },
-        blacklistPatterns: ['.*\\/\\..*', '.*\\/(dist|build)(\\/.*|$)'],
-        whitelistPatterns: ['.*\\.(ts|tsx|js|jsx)$']
+        "blacklistPatterns": [".*\\/\\..*", ".*\\/(dist|build)(\\/.*|$)"],
+        "whitelistPatterns": [".*\\.(ts|tsx|js|jsx)$"]
     }
-};
+}
 ```
 
 ## OpenAI Integration
@@ -261,66 +307,20 @@ export OPENAI_MODEL=gpt-4  # Optional, default is gpt-4o
 > [!IMPORTANT]
 > Be aware of potential costs and data privacy concerns when using OpenAI's API.
 
-## Local Configuration
-
-You can now use local configuration files for archetypes and rules. To use local configuration, use the `-l` or `--localConfig` option:
-
-```sh
-xfidelity -l /path/to/local/config
-```
-
-The local config directory should contain:
-
-- Archetype configuration files (e.g., `node-fullstack.json`)
-- A `rules` subdirectory containing rule files
-
-## Hosting a Config Server
-
-x-fidelity is intended to allow central hot-updatable custom rulesets to be executed within managed CI pipelines and also locally with consistency of rules applied.  Here is an overview of the following setup required:
-
-1. setup a node host environment. docker/containerised recommended. 
-2. create a github repo to host your archetypes and rules.
-3. clone the github repo to the server filesystem.
-4. install the xfidelity cli
-5. configure the cli to:
-    - run on startup in server mode (`--mode server`)
-    - pointed at your rules directory cloned from github. (`--localConfig ../rule-repo/config`)
-    - optionally set the port to listen on (`--port <port>`)
-6. create a simple CI pipeline step 'framework fidelity' after git repo clone to workspace to: 
-    - install the xfidelity cli
-    - run the cli on checked out repo pointed at the server (`--configServer http://my-server:8888`)
-
-<todo: docker example>
-
 ## Best Practices
 
-1. **Version Control**: Keep your x-fidelity configurations in version control.
+1. **Version Control**: Keep your x-fidelity configurations (archetypes and rules) in version control.
 2. **Continuous Integration**: Integrate x-fidelity checks into your CI/CD pipeline.
 3. **Regular Updates**: Keep your archetypes, rules, and dependencies up to date.
 4. **Documentation**: Document custom rules, operators, and archetypes for your team.
 5. **Gradual Implementation**: When introducing x-fidelity to an existing project, start with basic checks and gradually increase strictness.
 6. **Team Alignment**: Ensure your team understands and agrees on the rules being enforced.
 7. **Performance**: Be mindful of the performance impact, especially for large codebases.
+8. **Centralized Management**: Use a config server to manage and distribute your archetypes and rules across projects.
 
 ## Contributing
 
 Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` file for guidelines on how to contribute to this project.
-
-## Linting
-
-This project uses ESLint for static code analysis. To run the linter:
-
-```sh
-yarn lint
-```
-
-To automatically fix linting issues:
-
-```sh
-yarn lint:fix
-```
-
-ESLint is also integrated into the CI pipeline and runs alongside unit tests in GitHub Actions.
 
 ## License
 
