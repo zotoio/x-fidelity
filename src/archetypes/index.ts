@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 function loadArchetypeFromJson(fileName: string): ArchetypeConfig {
-    const filePath = path.join(__dirname, 'json', fileName);
+    const filePath = path.join(__dirname, fileName);
     const fileContent = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(fileContent) as ArchetypeConfig;
 }
