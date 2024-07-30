@@ -14,6 +14,7 @@ import { execSync } from 'child_process';
 import os from 'os';
 
 async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', configServer = '', localConfigPath = ''): Promise<any[]> {
+    logger.info(`INITIALISING..`);
     const configManager = ConfigManager.getInstance();
     await configManager.initialize(archetype, configServer, localConfigPath);
     const archetypeConfig = configManager.getConfig();
@@ -79,7 +80,7 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
     });
 
     // Add operators to engine
-    logger.info(`### loading custom operators..`);
+    logger.info(`=== loading custom operators..`);
     const operators = await loadOperators(archetypeConfig.operators);
     operators.forEach((operator) => {
         if (!operator?.name?.includes('openai') || (process.env.OPENAI_API_KEY && operator?.name?.includes('openai'))) {
@@ -89,7 +90,7 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
     });
 
     // Add rules to engine
-    logger.info(`### loading json rules..`);
+    logger.info(`=== loading json rules..`);
     const rules: RuleProperties[] = await loadRules(archetype, archetypeConfig.rules, configManager.configServer, logPrefix, configManager.localConfigPath);
     logger.debug(rules);
 
@@ -132,7 +133,7 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
     });
 
     // Add facts to engine
-    logger.info(`### loading facts..`);
+    logger.info(`=== loading facts..`);
     const facts = await loadFacts(archetypeConfig.facts);
     facts.forEach((fact) => {
         if (!fact?.name?.includes('openai') || (process.env.OPENAI_API_KEY && fact?.name?.includes('openai'))) {
@@ -151,15 +152,16 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
     engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
 
     // Run the engine for each file's data    
-    logger.info(`### Executing rules..`);
+    const msg = `\n==========================\nRUNNING FILE CHECKS..\n==========================`;
+    logger.info(msg);
     const failures: ScanResult[] = [];
     const enginePromises = fileData.map(async (file) => {
         if (file.fileName === REPO_GLOBAL_CHECK) {
-            const msg = `\n==========================\nSTARTING GLOBAL REPO CHECKS..\n==========================`
+            const msg = `\n==========================\nRUNNING GLOBAL REPO CHECKS..\n==========================`;
             logger.info(msg);
         } else {
-            const msg = `running engine for ${file.filePath}`
-            logger.debug(msg);
+            const msg = `analysing ${file.filePath} ...`
+            logger.info(msg);
         }
         const facts = {
             fileData: file,
@@ -193,6 +195,8 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
 
     await Promise.all(enginePromises);
 
+    const finishMsg = `\n==========================\nCHECKS COMPLETED..\n==========================`;
+    logger.info(finishMsg);
     logger.info(`${fileData.length} files analyzed. ${failures.length} files with errors.`)
 
     const fatalities = findKeyValuePair(failures, 'level', 'fatality');
