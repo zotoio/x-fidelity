@@ -104,7 +104,7 @@ xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <arch
 - `-d --dir <directory>`: Specify the root directory to analyze (default: current directory)
 - `-c --configServer <url>`: URL to fetch the configuration from. eg. https://localhost:8888
 - `-a --archetype <archetype>`: Archetype to use for analysis (default: 'node-fullstack')
-- `-m --mode <mode>`: Run mode: 'cli' or 'server' (default: 'cli')
+- `-m --mode <mode>`: Run mode: 'client' or 'server' (default: 'client')
 - `-p --port <port>`: Port number for server mode (default: 8888)
 - `-o --openaiEnabled <boolean>`: Enable OpenAI analysis (default: false)
 - `-t --telemetryCollector <url>`: The URL telemetry data will be sent to for usage analysis
@@ -274,34 +274,23 @@ The local config directory should contain:
 - Archetype configuration files (e.g., `node-fullstack.json`)
 - A `rules` subdirectory containing rule files
 
-## Hosting Config Servers
+## Hosting a Config Server
 
-To host a config server for x-fidelity:
+x-fidelity is intended to allow central hot-updatable custom rulesets to be executed within managed CI pipelines and also locally with consistency of rules applied.  Here is an overview of the following setup required:
 
-1. Set up a Node.js server (e.g., Express.js)
-2. Implement endpoints for archetype configurations and rules
-3. Ensure security, scalability, and performance
-4. Use HTTPS and implement proper authentication
-5. Consider using a CDN for global distribution
+1. setup a node host environment. docker/containerised recommended. 
+2. create a github repo to host your archetypes and rules.
+3. clone the github repo to the server filesystem.
+4. install the xfidelity cli
+5. configure the cli to:
+    - run on startup in server mode (`--mode server`)
+    - pointed at your rules directory cloned from github. (`--localConfig ../rule-repo/config`)
+    - optionally set the port to listen on (`--port <port>`)
+6. create a simple CI pipeline step 'framework fidelity' after git repo clone to workspace to: 
+    - install the xfidelity cli
+    - run the cli on checked out repo pointed at the server (`--configServer http://my-server:8888`)
 
-Example server setup:
-
-```javascript
-const express = require('express');
-const app = express();
-
-app.get('/archetypes/:archetype', (req, res) => {
-    // Fetch and return archetype configuration
-});
-
-app.get('/archetypes/:archetype/rules/:rule', (req, res) => {
-    // Fetch and return specific rule
-});
-
-app.listen(8888, () => {
-    console.log('Config server running on port 8888');
-});
-```
+<todo: docker example>
 
 ## Best Practices
 
