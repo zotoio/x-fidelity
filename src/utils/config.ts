@@ -21,6 +21,10 @@ export class ConfigManager {
         this.localConfigPath = '';
     }
 
+    public async getAvailableArchetypes(): Promise<string[]> {
+        return Object.keys(archetypes);
+    }
+
     public static getInstance(): ConfigManager {
         if (!ConfigManager.instance) {
             ConfigManager.instance = new ConfigManager();

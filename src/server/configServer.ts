@@ -1,9 +1,9 @@
 import express from 'express';
-import { archetypes } from '../archetypes';
 import { loadRules } from '../rules';
 import { logger } from '../utils/logger';
 import { expressLogger } from './expressLogger'
 import { options } from '../core/cli';
+import { ConfigManager } from '../utils/config';
 
 const app = express();
 const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
@@ -17,30 +17,42 @@ const validInput = (value: string): boolean => {
     return validName.test(value);
 }
 
-app.get('/archetypes/:archetype', (req, res) => {
+app.get('/archetypes/:archetype', async (req, res) => {
     logger.info(`serving archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
-    if (validInput(archetype) && archetypes[archetype]) {
-        logger.debug(`Found archetype ${archetype} config: ${JSON.stringify(archetypes[archetype])}`);
-        res.json(archetypes[archetype]);
+    if (validInput(archetype)) {
+        const configManager = ConfigManager.getInstance();
+        await configManager.initialize(archetype);
+        const archetypeConfig = configManager.getConfig();
+        logger.debug(`Found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
+        res.json(archetypeConfig);
     } else {
         res.status(404).json({ error: 'archetype not found' });
     }
 });
 
-app.get('/archetypes', (req, res) => {
+app.get('/archetypes', async (req, res) => {
     logger.info('serving archetype list..');
-    res.json(Object.keys(archetypes));
+    const configManager = ConfigManager.getInstance();
+    const archetypes = await configManager.getAvailableArchetypes();
+    res.json(archetypes);
 });
 
 app.get('/archetypes/:archetype/rules', async (req, res) => {
     logger.info(`serving rules for archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
-    if (validInput(archetype) && Object.prototype.hasOwnProperty.call(archetypes, archetype) && archetypes[archetype].rules) {
-        const rules = await loadRules(archetype, archetypes[archetype].rules);
-        res.json(rules);
+    if (validInput(archetype)) {
+        const configManager = ConfigManager.getInstance();
+        await configManager.initialize(archetype);
+        const archetypeConfig = configManager.getConfig();
+        if (archetypeConfig && archetypeConfig.rules) {
+            const rules = await loadRules(archetype, archetypeConfig.rules);
+            res.json(rules);
+        } else {
+            res.status(404).json({ error: 'archetype not found or has no rules' });
+        }
     } else {
-        res.status(404).json({ error: 'archetype not found' });
+        res.status(404).json({ error: 'invalid archetype name' });
     }
 });
 
@@ -48,12 +60,19 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     logger.info(`serving rule ${req.params.rule} for archetype ${req.params.archetype}..`);
     const archetype = req.params.archetype;
     const rule = req.params.rule;
-    if (validInput(archetype) && validInput(rule) && Object.prototype.hasOwnProperty.call(archetypes, archetype) && archetypes[archetype].rules.includes(rule)) {
-        const rules = await loadRules(archetype, archetypes[archetype].rules);
-        const ruleJson = rules.find((r) => r.name === rule);
-        res.json(ruleJson);
+    if (validInput(archetype) && validInput(rule)) {
+        const configManager = ConfigManager.getInstance();
+        await configManager.initialize(archetype);
+        const archetypeConfig = configManager.getConfig();
+        if (archetypeConfig && archetypeConfig.rules && archetypeConfig.rules.includes(rule)) {
+            const rules = await loadRules(archetype, archetypeConfig.rules);
+            const ruleJson = rules.find((r) => r.name === rule);
+            res.json(ruleJson);
+        } else {
+            res.status(404).json({ error: 'rule not found' });
+        }
     } else {
-        res.status(404).json({ error: 'rule not found' });
+        res.status(404).json({ error: 'invalid archetype or rule name' });
     }
 });
 
