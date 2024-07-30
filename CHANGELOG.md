@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/zotoio/x-fidelity/compare/v1.6.1...v1.7.0) (2024-07-30)
+
+
+### Features
+
+* **extensibility:** archtypes as replacable json files and docs ([ce7b06d](https://github.com/zotoio/x-fidelity/commit/ce7b06df4b3ae76c4d5094b478e7425579b585b2))
+
 ## [1.6.1](https://github.com/zotoio/x-fidelity/compare/v1.6.0...v1.6.1) (2024-07-27)
 
 
