@@ -18,17 +18,17 @@ try {
             if (results.length > 0) {
                 logger.warn('WARNING: lo-fi attributes detected in codebase!');
                 logger.warn(JSON.stringify(results));
-                console.log(json.render(results));
+                console.log(`\n${json.render(results)}`);
             } else {
                 // an empty array means no issues were found
-                logger.info('hi-fi codebase detected!');
+                logger.info('SUCCESS! hi-fi codebase detected.');
             }
             
         })().catch((e) => {
             // analyzeCodebase failed which can mean a fatal issue was found in the codebase
             logger.error('FATAL: lo-fi attributes detected in codebase!');
             logger.error(e.message);
-            console.error(json.render(JSON.parse(e.message)));
+            logger.error(`\n${json.render(JSON.parse(e.message))}`);
             setTimeout(() => process.exit(1), 1000);
         });
     }    

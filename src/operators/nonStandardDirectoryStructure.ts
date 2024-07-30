@@ -11,7 +11,7 @@ const nonStandardDirectoryStructure: OperatorDefn = {
             return false;
         }
 
-        console.log(`running global directory structure analysis..`);
+        logger.debug(`running global directory structure analysis..`);
 
         const repoPath = path.dirname(filePath);
         let result = false;

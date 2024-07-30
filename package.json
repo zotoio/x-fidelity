@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "rimraf dist/ && tsc && yarn copy-files",
-    "copy-files": "cp src/rules/*.json dist/rules/ && cp dist/index.js dist/xfidelity",
+    "copy-files": "cp src/rules/*.json dist/rules/ && cp src/archetypes/*.json dist/archetypes/ && cp dist/index.js dist/xfidelity",
     "start": "OPENAI_API_KEY= jest --watch",
     "test": "yarn lint && OPENAI_API_KEY= jest",
     "test:coverage": "OPENAI_API_KEY= jest --coverage",

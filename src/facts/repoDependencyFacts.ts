@@ -15,6 +15,7 @@ export function collectLocalDependencies(): LocalDependencies {
     try {
         const stdout = execSync('npm ls -a --json');
         result = JSON.parse(stdout.toString());
+        logger.debug(`collectLocalDependencies: ${JSON.stringify(result)}`);
     } catch (e) {
         logger.error(`exec error: ${e}`);
         //console.error(`exec error: ${e}`);
@@ -31,7 +32,10 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
     const localDependencies = collectLocalDependencies();
     const minimumDependencyVersions = archetypeConfig.config.minimumDependencyVersions;
 
-    //console.log(localDependencies);
+    if (!localDependencies) {
+        logger.error('getDependencyVersionFacts: no local dependencies found');
+        return [];
+    }
 
     const installedDependencyVersions = findPropertiesInTree(localDependencies, minimumDependencyVersions);
     return installedDependencyVersions;

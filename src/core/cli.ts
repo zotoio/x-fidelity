@@ -20,7 +20,7 @@ program
     .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules")
     .option("-o, --openaiEnabled <boolean>", "Enable OpenAI analysis (default: false)", false)
     .option("-t, --telemetryCollector <telemetryCollector>", "The URL telemetry data will be sent to for usage analysis")
-    .option("-m, --mode <mode>", "Run mode: 'cli' or 'server' (default: cli)", "cli")
+    .option("-m, --mode <mode>", "Run mode: 'client' or 'server' (default: client)", "client")
     .option("-p, --port <port>", "The port to run the server on (default: 8888)", "8888")
     .option("-l, --localConfig <path>", "Path to local archetype config and rules");
 
@@ -45,7 +45,7 @@ archetype: ${options.archetype}
 directory: ${process.env.PWD}/${options.dir}
 configServer: ${options.configServer ? options.configServer : 'none'}
 mode: ${options.mode}
-port: ${options.mode === 'server' ? options.port : 'N/A'}
+port: ${options.mode === 'server' ? options.port : 'n/a'}
 local-config: ${options.localConfig ? options.localConfig : 'none'}
 for available options run: xfidelity --help
 =====================================`);

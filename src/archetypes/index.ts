@@ -1,6 +1,7 @@
 import { ArchetypeConfig } from '../types/typeDefs';
 import * as fs from 'fs';
 import * as path from 'path';
+import logger from '../utils/logger';
 
 function loadArchetypeFromJson(fileName: string): ArchetypeConfig {
     const filePath = path.join(__dirname, fileName);
@@ -8,7 +9,7 @@ function loadArchetypeFromJson(fileName: string): ArchetypeConfig {
     try {
         return JSON.parse(fileContent) as ArchetypeConfig;
     } catch (error) {
-        console.error(`Error parsing JSON in file ${fileName}: ${error}`);
+        logger.error(`Error parsing JSON in file ${fileName}: ${error}`);
         return {} as ArchetypeConfig; // Return an empty object as a fallback
     }
 }
