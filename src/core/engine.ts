@@ -160,7 +160,7 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
 
         } else {
             const msg = `running engine for ${file.filePath}`
-            logger.info(msg);
+            logger.debug(msg);
         }
         const facts = {
             fileData: file,
