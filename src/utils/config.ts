@@ -1,4 +1,3 @@
-
 import axios from "axios";
 import { logger } from "../utils/logger";
 import { ArchetypeConfig } from "../types/typeDefs";
@@ -61,28 +60,10 @@ export class ConfigManager {
         }
     }
 
-    private async loadLocalConfig(archetype: string): Promise<void> {
+    private async loadLocalConfig(archetype: string): Promise<ArchetypeConfig> {
+        
         try {
             const configPath = path.join(this.localConfigPath, `${archetype}.json`);
-            const configContent = await fs.promises.readFile(configPath, 'utf8');
-            const localConfig = JSON.parse(configContent);
-            this.config = {
-                ...this.config,
-                ...localConfig
-            };
-            logger.debug(`Local config loaded successfully ${JSON.stringify(this.config)}`);
-        } catch (error) {
-            if (error instanceof Error) {
-                logger.error(`Error loading local config: ${error.message}`);
-            } else {
-                logger.error('Error loading local config: Unknown error');
-            }
-        }
-    }
-
-    private async loadLocalConfig(archetype: string): Promise<ArchetypeConfig> {
-        const configPath = path.join(this.localConfigPath, `${archetype}.json`);
-        try {
             const configContent = await fs.promises.readFile(configPath, 'utf8');
             const localConfig = JSON.parse(configContent);
             return {
