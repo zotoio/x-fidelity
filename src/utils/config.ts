@@ -35,23 +35,6 @@ export class ConfigManager {
         this.localConfigPath = localConfigPath || '';
         logger.debug(`Initializing config manager for archetype: ${archetype}`);
         
-        if (this.localConfigPath) {
-            try {
-                const localConfig = await this.loadLocalConfig(archetype);
-                this.config = {
-                    ...this.config,
-                    ...localConfig
-                };
-                logger.debug(`Local config loaded successfully ${JSON.stringify(this.config)}`);
-            } catch (error) {
-                if (error instanceof Error) {
-                    logger.error(`Error loading local config: ${error.message}`);
-                } else {
-                    logger.error('Error loading local config: Unknown error');
-                }
-            }
-        }
-
         if (this.configServer) {
             try {
                 const configUrl = `${this.configServer}/archetypes/${archetype}`;
@@ -68,6 +51,31 @@ export class ConfigManager {
                 } else {
                     logger.error('Error fetching remote config: Unknown error');
                 }
+                // If remote fetch fails, fall back to local config
+                if (this.localConfigPath) {
+                    await this.loadLocalConfig(archetype);
+                }
+            }
+        } else if (this.localConfigPath) {
+            await this.loadLocalConfig(archetype);
+        }
+    }
+
+    private async loadLocalConfig(archetype: string): Promise<void> {
+        try {
+            const configPath = path.join(this.localConfigPath, `${archetype}.json`);
+            const configContent = await fs.promises.readFile(configPath, 'utf8');
+            const localConfig = JSON.parse(configContent);
+            this.config = {
+                ...this.config,
+                ...localConfig
+            };
+            logger.debug(`Local config loaded successfully ${JSON.stringify(this.config)}`);
+        } catch (error) {
+            if (error instanceof Error) {
+                logger.error(`Error loading local config: ${error.message}`);
+            } else {
+                logger.error('Error loading local config: Unknown error');
             }
         }
     }
