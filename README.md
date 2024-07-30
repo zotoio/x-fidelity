@@ -286,6 +286,10 @@ Example of a custom rule JSON file (`my-custom-rule.json`):
 }
 ```
 
+Note on rule event types:
+- Events of type "violation" are treated as warnings and do not cause the tool to return an error code.
+- Events of type "fatality" are strictly enforced and will cause the tool to return an error code 1.
+
 Example of a custom archetype JSON file (`my-custom-archetype.json`):
 
 ```json
