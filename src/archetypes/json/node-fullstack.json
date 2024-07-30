@@ -1,0 +1,41 @@
+{
+    "rules": [
+        "sensitiveLogging-iterative",
+        "outdatedFramework-global",
+        "noDatabases-iterative",
+        "nonStandardDirectoryStructure-global",
+        "openaiAnalysisTop5-global",
+        "openaiAnalysisA11y-global"
+    ],
+    "operators": [
+        "fileContains",
+        "outdatedFramework",
+        "nonStandardDirectoryStructure",
+        "openaiAnalysisHighSeverity"
+    ],
+    "facts": [
+        "repoFilesystemFacts",
+        "repoDependencyFacts",
+        "openaiAnalysisFacts"
+    ],
+    "config": {
+        "minimumDependencyVersions": {
+            "commander": "^2.0.0",
+            "nodemon": "^3.9.0"
+        },
+        "standardStructure": {
+            "app": {
+                "frontend": null,
+                "server": null
+            }
+        },
+        "blacklistPatterns": [
+            ".*\\/\\..*",
+            ".*\\.(log|lock)$",
+            ".*\\/(dist|coverage|build|node_modules)(\\/.*|$)"
+        ],
+        "whitelistPatterns": [
+            ".*\\.(ts|tsx|js|jsx|md)$"
+        ]
+    }
+}

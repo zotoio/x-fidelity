@@ -1,0 +1,44 @@
+{
+    "rules": [
+        "sensitiveLogging-iterative",
+        "outdatedFramework-global",
+        "noDatabases-iterative",
+        "nonStandardDirectoryStructure-global"
+    ],
+    "operators": [
+        "fileContains",
+        "outdatedFramework",
+        "nonStandardDirectoryStructure"
+    ],
+    "facts": [
+        "repoFilesystemFacts",
+        "repoDependencyFacts"
+    ],
+    "config": {
+        "minimumDependencyVersions": {
+            "spring-boot-starter": "^2.5.0",
+            "spring-boot-starter-web": "^2.5.0"
+        },
+        "standardStructure": {
+            "src": {
+                "main": {
+                    "java": null,
+                    "resources": null
+                },
+                "test": {
+                    "java": null,
+                    "resources": null
+                }
+            }
+        },
+        "blacklistPatterns": [
+            ".*\\/\\..*",
+            ".*\\.(log|lock)$",
+            ".*\\/(target|build|out|dist|coverage|build|node_modules)(\\/.*|$)"
+        ],
+        "whitelistPatterns": [
+            ".*\\.(java|xml|properties|yml)$",
+            ".*\\/pom\\.xml$"
+        ]
+    }
+}
