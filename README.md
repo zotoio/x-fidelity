@@ -257,6 +257,35 @@ x-fidelity is designed to be highly extensible. You can add custom rules, operat
 3. **Custom Facts**: Create new fact providers and add them to your x-fidelity fork or plugin.
 4. **New Archetypes**: Define new archetypes as JSON files in your local config directory or on your config server.
 
+Example of a custom rule JSON file (`my-custom-rule.json`):
+
+```json
+{
+    "name": "my-custom-rule",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileContent",
+                "operator": "fileContains",
+                "value": "TODO:"
+            }
+        ]
+    },
+    "event": {
+        "type": "violation",
+        "params": {
+            "message": "TODO comments should be resolved before committing",
+            "level": "warning",
+            "details": {
+                "fact": "fileData",
+                "path": "$.filePath"
+            }
+        }
+    }
+}
+```
+
 Example of a custom archetype JSON file (`my-custom-archetype.json`):
 
 ```json
