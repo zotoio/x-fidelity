@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/zotoio/x-fidelity/compare/v1.7.0...v1.8.0) (2024-08-01)
+
+
+### Features
+
+* Add system architecture diagram to README.md ([ce80b79](https://github.com/zotoio/x-fidelity/commit/ce80b795031c366b232e51c0cf0e651fa77c364c))
+
 # [1.7.0](https://github.com/zotoio/x-fidelity/compare/v1.6.1...v1.7.0) (2024-07-30)
 
 
