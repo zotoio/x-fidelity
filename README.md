@@ -1,6 +1,6 @@
 # x-fidelity
 
-x-fidelity is an advanced CLI tool designed to enforce opinionated framework adherence checks within a codebase. It provides a flexible and extensible way to ensure your projects follow specific standards and best practices.
+x-fidelity is an advanced CLI tool and paired config server designed to perform opinionated framework adherence checks within a codebase. It provides a flexible and extensible way to ensure your projects are using specific standards, tools and best practices.
 
 ```
 =====================================
@@ -38,28 +38,31 @@ x-fidelity is an advanced CLI tool designed to enforce opinionated framework adh
 
 1. [Intent and Purpose](#intent-and-purpose)
 2. [Key Features](#key-features)
-3. [Installation](#installation)
-4. [Usage](#usage)
-5. [Configuration](#configuration)
-6. [Extending x-fidelity](#extending-x-fidelity)
-7. [OpenAI Integration](#openai-integration)
-8. [Hosting Config Servers](#hosting-config-servers)
-9. [Best Practices](#best-practices)
-10. [Linting](#linting)
-11. [Contributing](#contributing)
-12. [License](#license)
+3. [System Architecture](#system-architecture)
+4. [Installation](#installation)
+5. [Usage](#usage)
+6. [Configuration](#configuration)
+7. [Extending x-fidelity](#extending-x-fidelity)
+8. [OpenAI Integration](#openai-integration)
+9. [Hosting Config Servers](#hosting-config-servers)
+10. [Best Practices](#best-practices)
+11. [Linting](#linting)
+12. [Contributing](#contributing)
+13. [License](#license)
 
 ## Intent and Purpose
 
 x-fidelity aims to streamline the process of maintaining code quality and consistency across projects. By providing a flexible, rule-based system, it allows teams to:
 
-- Enforce coding standards and best practices
-- Ensure consistent project structures
-- Maintain up-to-date dependencies
+- Enforce bespoke coding standards and best practices
+- Ensure consistent project archetype structures
+- Maintain up-to-date private dependencies
 - Catch potential issues early in the development process
-- Integrate advanced code analysis using AI (via OpenAI)
+- Integrate GenAI-based advanced code analysis (experimental)
 
 The tool is designed to be highly customizable, allowing teams to define their own archetypes, rules, and checks tailored to their specific needs and tech stacks.
+
+> x-fidelity is not a replacement for standard linting more generalised code analysis tools.  it is intended to help with management of bespoke requirements and as a simple way to experiment with GenAI based code reviews.
 
 ## Key Features
 
@@ -71,6 +74,69 @@ The tool is designed to be highly customizable, allowing teams to define their o
 - **Remote Configuration**: Fetch configurations from a remote server for centralized management.
 - **OpenAI Integration**: Leverage AI for advanced code analysis and suggestions.
 - **Extensible Architecture**: Easily add new operators, facts, and rules to suit your needs.
+
+## System Architecture
+
+The following diagram illustrates the overall architecture of the x-fidelity system:
+
+```mermaid
+graph TD
+    subgraph "Client Environments"
+        CI[CI Environment]
+        Local[Local Development]
+    end
+
+    subgraph "x-fidelity Core"
+        Engine[Analysis Engine]
+        CLI[CLI Interface]
+        ConfigMgr[Config Manager]
+    end
+
+    subgraph "x-fidelity Infrastructure"
+        CS[Config Server]
+        TS[Telemetry Server]
+    end
+
+    subgraph "External Services"
+        GH[GitHub]
+        OAI[OpenAI API]
+    end
+
+    subgraph "Data Sources"
+        Files[Repository Files]
+        Deps[Dependencies]
+    end
+
+    CI -->|Use| Engine
+    Local -->|Use| Engine
+    CI -->|Use| CLI
+    Local -->|Use| CLI
+
+    CLI -->|Initialize| ConfigMgr
+    Engine -->|Use| ConfigMgr
+
+    ConfigMgr -->|Fetch config| CS
+    Engine -->|Send telemetry| TS
+
+    Engine -->|Analyze| Files
+    Engine -->|Check| Deps
+
+    CS -->|Optional: Fetch rules| GH
+    TS -->|Optional: Store data| GH
+
+    Engine -.->|Optional: AI analysis| OAI
+
+    classDef optional stroke-dasharray: 5 5
+    class OAI optional
+```
+
+This diagram shows the main components of x-fidelity and how they interact:
+
+- **Client Environments**: Where x-fidelity is used (CI systems or local development).
+- **x-fidelity Core**: The main components of the system, including the analysis engine, CLI interface, and configuration manager.
+- **x-fidelity Infrastructure**: Servers for configuration and telemetry.
+- **External Services**: GitHub for repository interaction and optional OpenAI integration.
+- **Data Sources**: The files and dependencies that x-fidelity analyzes.
 
 ## Installation
 
