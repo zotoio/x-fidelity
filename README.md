@@ -1,6 +1,6 @@
 # x-fidelity
 
-x-fidelity is an advanced CLI tool designed to enforce opinionated framework adherence checks within a codebase. It provides a flexible and extensible way to ensure your projects follow specific standards and best practices.
+x-fidelity is an advanced CLI tool and paired config server designed to perform opinionated framework adherence checks within a codebase. It provides a flexible and extensible way to ensure your projects are using specific standards, tools and best practices.
 
 ```
 =====================================
@@ -49,6 +49,31 @@ x-fidelity is an advanced CLI tool designed to enforce opinionated framework adh
 11. [Linting](#linting)
 12. [Contributing](#contributing)
 13. [License](#license)
+
+## Intent and Purpose
+
+x-fidelity aims to streamline the process of maintaining code quality and consistency across projects. By providing a flexible, rule-based system, it allows teams to:
+
+- Enforce bespoke coding standards and best practices
+- Ensure consistent project archetype structures
+- Maintain up-to-date private dependencies
+- Catch potential issues early in the development process
+- Integrate GenAI-based advanced code analysis (experimental)
+
+The tool is designed to be highly customizable, allowing teams to define their own archetypes, rules, and checks tailored to their specific needs and tech stacks.
+
+> x-fidelity is not a replacement for standard linting more generalised code analysis tools.  it is intended to help with management of bespoke requirements and as a simple way to experiment with GenAI based code reviews.
+
+## Key Features
+
+- **Flexible Archetype System**: Define custom project archetypes with specific rules and configurations.
+- **Customizable Rules**: Create and apply rules for various aspects of your codebase.
+- **Directory Structure Validation**: Ensure your project follows a predefined directory structure.
+- **Dependency Version Checking**: Verify that your project uses up-to-date dependencies.
+- **Content Analysis**: Search for specific patterns or strings within your codebase.
+- **Remote Configuration**: Fetch configurations from a remote server for centralized management.
+- **OpenAI Integration**: Leverage AI for advanced code analysis and suggestions.
+- **Extensible Architecture**: Easily add new operators, facts, and rules to suit your needs.
 
 ## System Architecture
 
@@ -112,29 +137,6 @@ This diagram shows the main components of x-fidelity and how they interact:
 - **x-fidelity Infrastructure**: Servers for configuration and telemetry.
 - **External Services**: GitHub for repository interaction and optional OpenAI integration.
 - **Data Sources**: The files and dependencies that x-fidelity analyzes.
-
-## Intent and Purpose
-
-x-fidelity aims to streamline the process of maintaining code quality and consistency across projects. By providing a flexible, rule-based system, it allows teams to:
-
-- Enforce coding standards and best practices
-- Ensure consistent project structures
-- Maintain up-to-date dependencies
-- Catch potential issues early in the development process
-- Integrate advanced code analysis using AI (via OpenAI)
-
-The tool is designed to be highly customizable, allowing teams to define their own archetypes, rules, and checks tailored to their specific needs and tech stacks.
-
-## Key Features
-
-- **Flexible Archetype System**: Define custom project archetypes with specific rules and configurations.
-- **Customizable Rules**: Create and apply rules for various aspects of your codebase.
-- **Directory Structure Validation**: Ensure your project follows a predefined directory structure.
-- **Dependency Version Checking**: Verify that your project uses up-to-date dependencies.
-- **Content Analysis**: Search for specific patterns or strings within your codebase.
-- **Remote Configuration**: Fetch configurations from a remote server for centralized management.
-- **OpenAI Integration**: Leverage AI for advanced code analysis and suggestions.
-- **Extensible Architecture**: Easily add new operators, facts, and rules to suit your needs.
 
 ## Installation
 
