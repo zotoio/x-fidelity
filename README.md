@@ -38,16 +38,80 @@ x-fidelity is an advanced CLI tool designed to enforce opinionated framework adh
 
 1. [Intent and Purpose](#intent-and-purpose)
 2. [Key Features](#key-features)
-3. [Installation](#installation)
-4. [Usage](#usage)
-5. [Configuration](#configuration)
-6. [Extending x-fidelity](#extending-x-fidelity)
-7. [OpenAI Integration](#openai-integration)
-8. [Hosting Config Servers](#hosting-config-servers)
-9. [Best Practices](#best-practices)
-10. [Linting](#linting)
-11. [Contributing](#contributing)
-12. [License](#license)
+3. [System Architecture](#system-architecture)
+4. [Installation](#installation)
+5. [Usage](#usage)
+6. [Configuration](#configuration)
+7. [Extending x-fidelity](#extending-x-fidelity)
+8. [OpenAI Integration](#openai-integration)
+9. [Hosting Config Servers](#hosting-config-servers)
+10. [Best Practices](#best-practices)
+11. [Linting](#linting)
+12. [Contributing](#contributing)
+13. [License](#license)
+
+## System Architecture
+
+The following diagram illustrates the overall architecture of the x-fidelity system:
+
+```mermaid
+graph TD
+    subgraph "Client Environments"
+        CI[CI Environment]
+        Local[Local Development]
+    end
+
+    subgraph "x-fidelity Core"
+        Engine[Analysis Engine]
+        CLI[CLI Interface]
+        ConfigMgr[Config Manager]
+    end
+
+    subgraph "x-fidelity Infrastructure"
+        CS[Config Server]
+        TS[Telemetry Server]
+    end
+
+    subgraph "External Services"
+        GH[GitHub]
+        OAI[OpenAI API]
+    end
+
+    subgraph "Data Sources"
+        Files[Repository Files]
+        Deps[Dependencies]
+    end
+
+    CI -->|Use| Engine
+    Local -->|Use| Engine
+    CI -->|Use| CLI
+    Local -->|Use| CLI
+
+    CLI -->|Initialize| ConfigMgr
+    Engine -->|Use| ConfigMgr
+
+    ConfigMgr -->|Fetch config| CS
+    Engine -->|Send telemetry| TS
+
+    Engine -->|Analyze| Files
+    Engine -->|Check| Deps
+
+    CS -->|Optional: Fetch rules| GH
+    TS -->|Optional: Store data| GH
+
+    Engine -.->|Optional: AI analysis| OAI
+
+    classDef optional stroke-dasharray: 5 5
+    class OAI optional
+```
+
+This diagram shows the main components of x-fidelity and how they interact:
+
+- **Client Environments**: Where x-fidelity is used (CI systems or local development).
+- **x-fidelity Core**: The main components of the system, including the analysis engine, CLI interface, and configuration manager.
+- **x-fidelity Infrastructure**: Servers for configuration and telemetry.
+- **External Services**: GitHub for repository interaction and optional OpenAI integration.
+- **Data Sources**: The files and dependencies that x-fidelity analyzes.
 
 ## Intent and Purpose
 
