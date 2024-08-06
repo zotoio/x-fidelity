@@ -1,3 +1,15 @@
+# [1.9.0](https://github.com/zotoio/x-fidelity/compare/v1.8.0...v1.9.0) (2024-08-06)
+
+
+### Bug Fixes
+
+* **config:** local paths and config option resolutions ([52a8144](https://github.com/zotoio/x-fidelity/commit/52a81448eab3376f063f867b0ab476fbfc0e210f))
+
+
+### Features
+
+* add support for relative and absolute paths in directory and local-config options ([c67f0fe](https://github.com/zotoio/x-fidelity/commit/c67f0fe802139d9b4422cfb77bf0ed46e820f73a))
+
 # [1.8.0](https://github.com/zotoio/x-fidelity/compare/v1.7.0...v1.8.0) (2024-08-01)
 
 
