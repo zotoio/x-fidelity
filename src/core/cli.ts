@@ -1,5 +1,6 @@
 import { logger } from '../utils/logger';
 import { program } from "commander";
+import path from "path";
 
 // Ensure logger is initialized
 if (!logger || typeof logger.info !== 'function') {
@@ -23,6 +24,17 @@ program
     .option("-m, --mode <mode>", "Run mode: 'client' or 'server' (default: client)", "client")
     .option("-p, --port <port>", "The port to run the server on (default: 8888)", "8888")
     .option("-l, --localConfig <path>", "Path to local archetype config and rules");
+
+program.parse();
+
+const options = program.opts();
+
+// Resolve paths
+const resolvePath = (inputPath: string) => path.resolve(process.cwd(), inputPath);
+options.dir = resolvePath(options.dir);
+if (options.localConfig) {
+    options.localConfig = resolvePath(options.localConfig);
+}
 
 program.parse();
 
