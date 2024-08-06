@@ -12,7 +12,7 @@ try {
         startServer(options.port);
     } else {
         (async () => {
-            const results = await analyzeCodebase(`${process.env.PWD}/${options.dir}`, options.archetype, options.configServer);
+            const results = await analyzeCodebase(options.dir, options.archetype, options.configServer, options.localConfig);
 
             // if results are found, there were warning level issues found in the codebase
             if (results.length > 0) {

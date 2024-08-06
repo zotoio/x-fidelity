@@ -52,11 +52,11 @@ async function loadLocalRule(ruleName: string): Promise<RuleProperties | null> {
 
     if (!fileName.startsWith('openai') || (isOpenAIEnabled() && fileName.startsWith('openai'))) {
         try {
-            logger.debug(`Loading local rule file: ${filePath}`);
+            logger.info(`Loading default rule file: ${filePath}`);
             const fileContent = await fs.promises.readFile(filePath, 'utf8');
             return JSON.parse(fileContent);
         } catch (error) {
-            logger.error(`FATAL: Error loading local rule file: ${fileName}`);
+            logger.error(`FATAL: Error loading default rule file: ${fileName}`);
             logger.error(error);
             return null;
         }
@@ -68,6 +68,7 @@ export { loadRules };
 async function loadLocalConfigRule(ruleName: string, localConfigPath: string): Promise<RuleProperties | null> {
     const fileName = `${ruleName}-rule.json`;
     const filePath = path.join(localConfigPath, 'rules', fileName);
+    logger.info(`Loading local config rule file: ${filePath}`);
 
     if (!fileName.startsWith('openai') || (process.env.OPENAI_API_KEY && fileName.startsWith('openai'))) {
         try {

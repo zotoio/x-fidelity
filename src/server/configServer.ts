@@ -22,7 +22,7 @@ app.get('/archetypes/:archetype', async (req, res) => {
     const archetype = req.params.archetype;
     if (validInput(archetype)) {
         const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype);
+        await configManager.initialize(archetype, options.configServer, options.localConfig);
         const archetypeConfig = configManager.getConfig();
         logger.debug(`Found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
         res.json(archetypeConfig);
@@ -43,10 +43,10 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
     const archetype = req.params.archetype;
     if (validInput(archetype)) {
         const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype);
+        await configManager.initialize(archetype, options.configServer, options.localConfig);
         const archetypeConfig = configManager.getConfig();
         if (archetypeConfig && archetypeConfig.rules) {
-            const rules = await loadRules(archetype, archetypeConfig.rules);
+            const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, '', options.localConfig);
             res.json(rules);
         } else {
             res.status(404).json({ error: 'archetype not found or has no rules' });
@@ -62,10 +62,10 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     const rule = req.params.rule;
     if (validInput(archetype) && validInput(rule)) {
         const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype);
+        await configManager.initialize(archetype, options.configServer, options.localConfig);
         const archetypeConfig = configManager.getConfig();
         if (archetypeConfig && archetypeConfig.rules && archetypeConfig.rules.includes(rule)) {
-            const rules = await loadRules(archetype, archetypeConfig.rules);
+            const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, '', options.localConfig);
             const ruleJson = rules.find((r) => r.name === rule);
             res.json(ruleJson);
         } else {

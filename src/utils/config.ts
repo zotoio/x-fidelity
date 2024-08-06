@@ -41,18 +41,18 @@ export class ConfigManager {
         if (this.configServer) {
             try {
                 const configUrl = `${this.configServer}/archetypes/${archetype}`;
-                logger.debug(`Fetching remote config from: ${configUrl}`);
+                logger.debug(`Fetching remote archetype config from: ${configUrl}`);
                 const response = await axios.get(configUrl);
                 this.config = {
                     ...this.config,
                     ...response.data
                 };
-                logger.debug(`Remote config fetched successfully ${JSON.stringify(this.config)}`);
+                logger.debug(`Remote archetype config fetched successfully ${JSON.stringify(this.config)}`);
             } catch (error) {
                 if (error instanceof Error) {
-                    logger.error(`Error fetching remote config: ${error.message}`);
+                    logger.error(`Error fetching remote archetype config: ${error.message}`);
                 } else {
-                    logger.error('Error fetching remote config: Unknown error');
+                    logger.error('Error fetching remote archetype config: Unknown error');
                 }
                 // If remote fetch fails, fall back to local config
                 if (this.localConfigPath) {
@@ -68,6 +68,7 @@ export class ConfigManager {
         
         try {
             const configPath = path.join(this.localConfigPath, `${archetype}.json`);
+            logger.info(`Loading local archetype config from: ${configPath}`);
             const configContent = await fs.promises.readFile(configPath, 'utf8');
             const localConfig = JSON.parse(configContent);
             return {
@@ -76,9 +77,9 @@ export class ConfigManager {
             };
         } catch (error) {
             if (error instanceof Error) {
-                logger.error(`Error loading local config: ${error.message}`);
+                logger.error(`Error loading local archetype config: ${error.message}`);
             } else {
-                logger.error('Error loading local config: Unknown error');
+                logger.error('Error loading local archetype config: Unknown error');
             }
             return archetypes[archetype];
         }
