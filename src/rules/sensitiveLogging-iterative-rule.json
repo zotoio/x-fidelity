@@ -6,19 +6,37 @@
                 "fact": "fileData",
                 "path": "$.fileContent",
                 "operator": "fileContains",
-                "value": "tokenz"
+                "value": "(?i)(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)"
             },
             {
                 "fact": "fileData",
                 "path": "$.fileContent",
                 "operator": "fileContains",
-                "value": "secretx"
+                "value": "(?i)(password|passphrase)"
             },
             {
                 "fact": "fileData",
                 "path": "$.fileContent",
                 "operator": "fileContains",
-                "value": "todo: expand with regex operator for more sensitive data patterns"
+                "value": "(?i)(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)"
+            },
+            {
+                "fact": "fileData",
+                "path": "$.fileContent",
+                "operator": "fileContains",
+                "value": "(?i)(private[_-]?key|ssh[_-]?key)"
+            },
+            {
+                "fact": "fileData",
+                "path": "$.fileContent",
+                "operator": "fileContains",
+                "value": "(?i)(oauth[_-]?token|jwt[_-]?token)"
+            },
+            {
+                "fact": "fileData",
+                "path": "$.fileContent",
+                "operator": "fileContains",
+                "value": "(?i)db[_-]?password"
             }
         ]
     },
@@ -26,7 +44,7 @@
         "type": "violation",
         "params": {
             "level": "warning",
-            "message": "Sensitive data must not be logged.",
+            "message": "Potential sensitive data detected. This must not be logged or exposed.",
             "details": {
                 "level": "fatality",
                 "fact": "fileData",
