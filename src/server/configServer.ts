@@ -12,7 +12,7 @@ const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
 
 // Simple in-memory cache
 const cache: { [key: string]: { data: any; expiry: number } } = {};
-const DEFAULT_TTL = parseInt(options.ttl) * 60 * 1000; // Convert CLI option to milliseconds
+const DEFAULT_TTL = parseInt(options.jsonTTL) * 60 * 1000; // Convert CLI option to milliseconds
 
 function getCachedData(key: string): any | null {
     const item = cache[key];
