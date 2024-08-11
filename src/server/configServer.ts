@@ -1,4 +1,6 @@
 import express from 'express';
+import https from 'https';
+import fs from 'fs';
 import { loadRules } from '../rules';
 import { logger } from '../utils/logger';
 import { expressLogger } from './expressLogger'
@@ -6,7 +8,7 @@ import { options } from '../core/cli';
 import { ConfigManager } from '../utils/config';
 
 const app = express();
-const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
+const port = options.port || process.env.XFI_LISTEN_PORT || 8443;
 
 app.use(express.json());
 app.use(expressLogger);
@@ -86,7 +88,16 @@ app.post('/telemetry', (req, res) => {
 
 export function startServer(customPort?: string) {
     const serverPort = customPort ? parseInt(customPort) : port;
-    app.listen(serverPort, () => {
-        logger.info(`xfidelity server is running on port ${serverPort}`);
+    
+    // Read SSL certificate and key
+    const privateKey = fs.readFileSync('path/to/private-key.pem', 'utf8');
+    const certificate = fs.readFileSync('path/to/certificate.pem', 'utf8');
+    const credentials = { key: privateKey, cert: certificate };
+
+    // Create HTTPS server
+    const httpsServer = https.createServer(credentials, app);
+
+    httpsServer.listen(serverPort, () => {
+        logger.info(`xfidelity server is running on https://localhost:${serverPort}`);
     });
 }
