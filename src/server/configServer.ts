@@ -14,6 +14,10 @@ const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
 const cache: { [key: string]: { data: any; expiry: number } } = {};
 const DEFAULT_TTL = parseInt(options.jsonTTL) * 60 * 1000; // Convert CLI option to milliseconds
 
+// Cache for archetype lists and rule lists
+const archetypeListCache: { data: string[]; expiry: number } = { data: [], expiry: 0 };
+const ruleListCache: { [archetype: string]: { data: string[]; expiry: number } } = {};
+
 function getCachedData(key: string): any | null {
     const item = cache[key];
     if (item && item.expiry > Date.now()) {
@@ -63,8 +67,14 @@ app.get('/archetypes/:archetype', async (req, res) => {
 
 app.get('/archetypes', async (req, res) => {
     logger.info('serving archetype list..');
+    if (archetypeListCache.expiry > Date.now()) {
+        logger.debug('Serving cached archetype list');
+        return res.json(archetypeListCache.data);
+    }
     const configManager = ConfigManager.getInstance();
     const archetypes = await configManager.getAvailableArchetypes();
+    archetypeListCache.data = archetypes;
+    archetypeListCache.expiry = Date.now() + DEFAULT_TTL;
     res.json(archetypes);
 });
 
@@ -72,11 +82,19 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
     logger.info(`serving rules for archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
     if (validInput(archetype)) {
+        if (ruleListCache[archetype] && ruleListCache[archetype].expiry > Date.now()) {
+            logger.debug(`Serving cached rule list for archetype: ${archetype}`);
+            return res.json(ruleListCache[archetype].data);
+        }
         const configManager = ConfigManager.getInstance();
         await configManager.initialize(archetype, options.configServer, options.localConfig);
         const archetypeConfig = configManager.getConfig();
         if (archetypeConfig && archetypeConfig.rules) {
             const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, '', options.localConfig);
+            ruleListCache[archetype] = {
+                data: rules,
+                expiry: Date.now() + DEFAULT_TTL
+            };
             res.json(rules);
         } else {
             res.status(404).json({ error: 'archetype not found or has no rules' });
