@@ -8,7 +8,7 @@ import { options } from '../core/cli';
 import { ConfigManager } from '../utils/config';
 
 const app = express();
-const port = options.port || process.env.XFI_LISTEN_PORT || 8443;
+const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
 
 app.use(express.json());
 app.use(expressLogger);
@@ -90,14 +90,22 @@ export function startServer(customPort?: string) {
     const serverPort = customPort ? parseInt(customPort) : port;
     
     // Read SSL certificate and key
-    const privateKey = fs.readFileSync('path/to/private-key.pem', 'utf8');
-    const certificate = fs.readFileSync('path/to/certificate.pem', 'utf8');
-    const credentials = { key: privateKey, cert: certificate };
+    try {
+        const privateKey = fs.readFileSync(`${__dirname}/private-key.pem`, 'utf8');
+        const certificate = fs.readFileSync(`${__dirname}/certificate.pem`, 'utf8');
+        const credentials = { key: privateKey, cert: certificate };
 
-    // Create HTTPS server
-    const httpsServer = https.createServer(credentials, app);
+        // Create HTTPS server
+        const httpsServer = https.createServer(credentials, app);
 
-    httpsServer.listen(serverPort, () => {
-        logger.info(`xfidelity server is running on https://localhost:${serverPort}`);
-    });
+        httpsServer.listen(serverPort, () => {
+            logger.info(`xfidelity server is running on https://localhost:${serverPort}`);
+        });
+        
+    } catch (error) {
+        logger.warn('Failed to start server with tls, falling back to http:', error);
+        app.listen(serverPort, () => {
+            logger.info(`xfidelity server is running on http://localhost:${serverPort}`);
+        });
+    }
 }
