@@ -12,7 +12,7 @@ const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
 
 // Simple in-memory cache
 const cache: { [key: string]: { data: any; expiry: number } } = {};
-const DEFAULT_TTL = 10 * 60 * 1000; // 10 minutes in milliseconds
+const DEFAULT_TTL = parseInt(options.ttl) * 60 * 1000; // Convert CLI option to milliseconds
 
 function getCachedData(key: string): any | null {
     const item = cache[key];
@@ -119,16 +119,6 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     }
 });
 
-// Route to set custom TTL
-app.post('/set-ttl', (req, res) => {
-    const { ttl } = req.body;
-    if (typeof ttl === 'number' && ttl > 0) {
-        DEFAULT_TTL = ttl * 60 * 1000; // Convert minutes to milliseconds
-        res.json({ message: `TTL set to ${ttl} minutes` });
-    } else {
-        res.status(400).json({ error: 'Invalid TTL value' });
-    }
-});
 
 // New route for telemetry
 app.post('/telemetry', (req, res) => {
