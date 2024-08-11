@@ -1,7 +1,7 @@
 import express from 'express';
 import https from 'https';
 import fs from 'fs';
-import { loadRules } from '../rules';
+import { loadRules, RuleProperties } from '../rules';
 import { logger } from '../utils/logger';
 import { expressLogger } from './expressLogger'
 import { options } from '../core/cli';
@@ -16,7 +16,7 @@ const DEFAULT_TTL = parseInt(options.jsonTTL) * 60 * 1000; // Convert CLI option
 
 // Cache for archetype lists and rule lists
 const archetypeListCache: { data: string[]; expiry: number } = { data: [], expiry: 0 };
-const ruleListCache: { [archetype: string]: { data: string[]; expiry: number } } = {};
+const ruleListCache: { [archetype: string]: { data: RuleProperties[]; expiry: number } } = {};
 
 function getCachedData(key: string): any | null {
     const item = cache[key];
