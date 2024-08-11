@@ -1,7 +1,8 @@
 import express from 'express';
 import https from 'https';
 import fs from 'fs';
-import { loadRules, RuleProperties } from '../rules';
+import { loadRules } from '../rules';
+import { RuleProperties } from 'json-rules-engine';
 import { logger } from '../utils/logger';
 import { expressLogger } from './expressLogger'
 import { options } from '../core/cli';
