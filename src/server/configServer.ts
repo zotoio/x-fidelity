@@ -10,6 +10,25 @@ import { ConfigManager } from '../utils/config';
 const app = express();
 const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
 
+// Simple in-memory cache
+const cache: { [key: string]: { data: any; expiry: number } } = {};
+const DEFAULT_TTL = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+function getCachedData(key: string): any | null {
+    const item = cache[key];
+    if (item && item.expiry > Date.now()) {
+        return item.data;
+    }
+    return null;
+}
+
+function setCachedData(key: string, data: any, ttl: number = DEFAULT_TTL): void {
+    cache[key] = {
+        data,
+        expiry: Date.now() + ttl
+    };
+}
+
 app.use(express.json());
 app.use(expressLogger);
 
@@ -23,10 +42,19 @@ app.get('/archetypes/:archetype', async (req, res) => {
     logger.info(`serving archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
     if (validInput(archetype)) {
+        const cacheKey = `archetype:${archetype}`;
+        const cachedData = getCachedData(cacheKey);
+        if (cachedData) {
+            logger.debug(`Serving cached archetype ${archetype}`);
+            return res.json(cachedData);
+        }
+
         const configManager = ConfigManager.getInstance();
         await configManager.initialize(archetype, options.configServer, options.localConfig);
         const archetypeConfig = configManager.getConfig();
         logger.debug(`Found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
+        
+        setCachedData(cacheKey, archetypeConfig);
         res.json(archetypeConfig);
     } else {
         res.status(404).json({ error: 'archetype not found' });
@@ -63,18 +91,42 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     const archetype = req.params.archetype;
     const rule = req.params.rule;
     if (validInput(archetype) && validInput(rule)) {
+        const cacheKey = `rule:${archetype}:${rule}`;
+        const cachedData = getCachedData(cacheKey);
+        if (cachedData) {
+            logger.debug(`Serving cached rule ${rule} for archetype ${archetype}`);
+            return res.json(cachedData);
+        }
+
         const configManager = ConfigManager.getInstance();
         await configManager.initialize(archetype, options.configServer, options.localConfig);
         const archetypeConfig = configManager.getConfig();
         if (archetypeConfig && archetypeConfig.rules && archetypeConfig.rules.includes(rule)) {
             const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, '', options.localConfig);
             const ruleJson = rules.find((r) => r.name === rule);
-            res.json(ruleJson);
+            
+            if (ruleJson) {
+                setCachedData(cacheKey, ruleJson);
+                res.json(ruleJson);
+            } else {
+                res.status(404).json({ error: 'rule not found' });
+            }
         } else {
             res.status(404).json({ error: 'rule not found' });
         }
     } else {
         res.status(404).json({ error: 'invalid archetype or rule name' });
+    }
+});
+
+// Route to set custom TTL
+app.post('/set-ttl', (req, res) => {
+    const { ttl } = req.body;
+    if (typeof ttl === 'number' && ttl > 0) {
+        DEFAULT_TTL = ttl * 60 * 1000; // Convert minutes to milliseconds
+        res.json({ message: `TTL set to ${ttl} minutes` });
+    } else {
+        res.status(400).json({ error: 'Invalid TTL value' });
     }
 });
 
