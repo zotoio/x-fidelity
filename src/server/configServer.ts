@@ -21,6 +21,7 @@ const archetypeListCache: { data: string[]; expiry: number } = { data: [], expir
 const ruleListCache: { [archetype: string]: { data: RuleProperties[]; expiry: number } } = {};
 
 function getCachedData(key: string): any | null {
+    logger.debug(`Checking cache for key: ${key}`);
     const item = cache[key];
     if (item && item.expiry > Date.now()) {
         return item.data;
@@ -29,6 +30,7 @@ function getCachedData(key: string): any | null {
 }
 
 function setCachedData(key: string, data: any, ttl: number = DEFAULT_TTL): void {
+    logger.debug(`Setting cache for key: ${key}`);
     cache[key] = {
         data,
         expiry: Date.now() + ttl
@@ -91,7 +93,7 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
-    if (validInput(archetype)) {
+    if (validateInput(archetype)) {
         if (ruleListCache[archetype] && ruleListCache[archetype].expiry > Date.now()) {
             logger.debug(`Serving cached rule list for archetype: ${archetype}`);
             return res.json(ruleListCache[archetype].data);
