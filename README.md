@@ -302,7 +302,6 @@ services:
     ports:
       - "8888:8888"
     volumes:
-      - ./src:/usr/src/app/src
       - ../xfi-server/xfi-config:/usr/src/app/config
     environment:
       - NODE_ENV=production

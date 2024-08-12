@@ -9,4 +9,4 @@ services:
     environment:
       - NODE_ENV=production
       - XFI_LISTEN_PORT=8888
-    command: ["node", "dist/index.js", "--mode", "server", "--localConfig", "/usr/src/app/config"]
+    command: ["xfidelity", "--mode", "server", "--localConfig", "/usr/src/app/config"]
