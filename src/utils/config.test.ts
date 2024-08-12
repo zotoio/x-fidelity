@@ -55,6 +55,14 @@ describe('ConfigManager', () => {
 
     });
 
+    it('should throw an error when unable to load local archetype config', async () => {
+        const configManager = ConfigManager.getInstance();
+        configManager.localConfigPath = '/non/existent/path';
+
+        await expect(configManager.initialize('test-archetype', '', '/non/existent/path'))
+            .rejects.toThrow('Failed to load local archetype config');
+    });
+
 });
 
 describe('REPO_GLOBAL_CHECK', () => {
