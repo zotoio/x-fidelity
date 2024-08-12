@@ -47,6 +47,7 @@ app.get('/archetypes/:archetype', async (req, res) => {
     logger.info(`serving archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
+    const configServerFromHeader = req.headers['x-config-server'] as string;
     if (validInput(archetype)) {
         const cacheKey = `archetype:${archetype}`;
         const cachedData = getCachedData(cacheKey);
@@ -56,7 +57,7 @@ app.get('/archetypes/:archetype', async (req, res) => {
         }
 
         const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype, options.configServer, options.localConfig);
+        await configManager.initialize(archetype, configServerFromHeader || options.configServer, options.localConfig);
         const archetypeConfig = configManager.getConfig();
         logger.debug(`Found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
         
