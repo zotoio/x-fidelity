@@ -277,23 +277,42 @@ x-fidelity allows for centrally managed, hot-updatable custom rulesets that can 
 Here's a basic Docker setup for hosting an x-fidelity config server:
 
 ```dockerfile
-FROM node:18
+# Use an official Node.js runtime as the base image
+FROM node:20
 
-# Install x-fidelity
+# Set the working directory in the container
+WORKDIR /usr/src/app
+
 RUN yarn global add x-fidelity
+RUN export PATH="$PATH:$(yarn global bin)"
 
-# Clone your rules repository
-RUN git clone https://github.com/your-org/x-fidelity-rules.git /rules
+# Expose the port the app runs on
+EXPOSE 8888
 
-# Set up the start command
-CMD ["x-fidelity", "--mode", "server", "--localConfig", "/rules", "--port", "8888"]
+# Define the command to run the app
+CMD ["xfidelity", "--mode", "server", "--localConfig", "/usr/src/app/config"]
+```
+
+And here's a sample docker-compose.yml file to configure and run the container:
+
+```yaml
+services:
+  x-fidelity-server:
+    build: .
+    ports:
+      - "8888:8888"
+    volumes:
+      - ../xfi-server/xfi-config:/usr/src/app/config
+    environment:
+      - NODE_ENV=production
+      - XFI_LISTEN_PORT=8888
+    command: ["xfidelity", "--mode", "server", "--localConfig", "/usr/src/app/config"]
 ```
 
 Build and run the Docker container:
 
 ```sh
-docker build -t x-fidelity-server .
-docker run -p 8888:8888 x-fidelity-server
+docker-compose up --build
 ```
 
 ### CI Pipeline Integration

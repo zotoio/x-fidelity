@@ -1,0 +1,12 @@
+services:
+  x-fidelity-server:
+    build: .
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./src:/usr/src/app/src
+      - ../xfi-server/xfi-config:/usr/src/app/config
+    environment:
+      - NODE_ENV=production
+      - XFI_LISTEN_PORT=8888
+    command: ["xfidelity", "--mode", "server", "--localConfig", "/usr/src/app/config"]
