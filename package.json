@@ -76,7 +76,8 @@
     "prettyjson": "^1.2.5",
     "semver": "^7.6.2",
     "winston": "^3.13.0",
-    "yarn": "^1.22.21"
+    "yarn": "^1.22.21",
+    "joi": "^17.9.2"
   },
   "config": {
     "commitizen": {

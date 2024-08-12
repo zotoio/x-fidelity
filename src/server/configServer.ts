@@ -7,6 +7,7 @@ import { logger, setLogPrefix } from '../utils/logger';
 import { expressLogger } from './expressLogger'
 import { options } from '../core/cli';
 import { ConfigManager } from '../utils/config';
+import Joi from 'joi';
 
 const app = express();
 const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
@@ -37,10 +38,11 @@ function setCachedData(key: string, data: any, ttl: number = DEFAULT_TTL): void 
 app.use(express.json());
 app.use(expressLogger);
 
-const validInput = (value: string): boolean => {
-    // Ensure input contains only alphanumeric characters, hyphens, and underscores
-    const validName = /^[a-zA-Z0-9-_-]{1,50}$/;
-    return validName.test(value);
+const inputSchema = Joi.string().alphanum().max(50);
+
+const validateInput = (value: string): boolean => {
+    const { error } = inputSchema.validate(value);
+    return !error;
 }
 
 app.get('/archetypes/:archetype', async (req, res) => {
@@ -48,7 +50,7 @@ app.get('/archetypes/:archetype', async (req, res) => {
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
-    if (validInput(archetype)) {
+    if (validateInput(archetype)) {
         const cacheKey = `archetype:${archetype}`;
         const cachedData = getCachedData(cacheKey);
         if (cachedData) {
@@ -64,7 +66,7 @@ app.get('/archetypes/:archetype', async (req, res) => {
         setCachedData(cacheKey, archetypeConfig);
         res.json(archetypeConfig);
     } else {
-        res.status(404).json({ error: 'archetype not found' });
+        res.status(400).json({ error: 'Invalid archetype name' });
     }
 });
 
@@ -118,7 +120,7 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     const rule = req.params.rule;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
-    if (validInput(archetype) && validInput(rule)) {
+    if (validateInput(archetype) && validateInput(rule)) {
         const cacheKey = `rule:${archetype}:${rule}`;
         const cachedData = getCachedData(cacheKey);
         if (cachedData) {
@@ -137,13 +139,13 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
                 setCachedData(cacheKey, ruleJson);
                 res.json(ruleJson);
             } else {
-                res.status(404).json({ error: 'rule not found' });
+                res.status(404).json({ error: 'Rule not found' });
             }
         } else {
-            res.status(404).json({ error: 'rule not found' });
+            res.status(404).json({ error: 'Rule not found' });
         }
     } else {
-        res.status(404).json({ error: 'invalid archetype or rule name' });
+        res.status(400).json({ error: 'Invalid archetype or rule name' });
     }
 });
 
