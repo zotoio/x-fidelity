@@ -11,6 +11,10 @@ const setLogPrefix = (prefix: string) => {
     logPrefix = prefix;
 };
 
+const generateLogPrefix = (): string => {
+    return randomUUID().substring(0, 8);
+};
+
 const logger = createLogger({
     //level: 'debug',
     format: format.combine(

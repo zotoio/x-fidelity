@@ -1,4 +1,4 @@
-import { logger, logPrefix } from '../utils/logger';
+import { logger, logPrefix, generateLogPrefix } from '../utils/logger';
 import { Engine, EngineResult, Event, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
 import { ScanResult, RuleFailure} from '../types/typeDefs';
@@ -14,6 +14,7 @@ import { execSync } from 'child_process';
 import os from 'os';
 
 async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', configServer = '', localConfigPath = ''): Promise<any[]> {
+    const executionLogPrefix = generateLogPrefix();
     logger.info(`INITIALISING..`);
     const configManager = ConfigManager.getInstance();
     await configManager.initialize(archetype, configServer, localConfigPath);
@@ -77,7 +78,7 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
             userInfo
         },
         timestamp: new Date().toISOString()
-    });
+    }, executionLogPrefix);
 
     // Add operators to engine
     logger.info(`=== loading custom operators..`);
@@ -116,7 +117,7 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
                     ...params
                 },
                 timestamp: new Date().toISOString()
-            });
+            }, executionLogPrefix);
         }
         if (type === 'fatality') {
             logger.error(`fatality detected: ${JSON.stringify(params)}}`);
@@ -128,7 +129,7 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
                     ...params
                 },
                 timestamp: new Date().toISOString()
-            });
+            }, executionLogPrefix);
         }
     });
 
@@ -215,7 +216,7 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
             userInfo
         },
         timestamp: new Date().toISOString()
-    });
+    }, executionLogPrefix);
 
     if (fatalities.length > 0) {
         throw new Error(JSON.stringify(fatalities));
