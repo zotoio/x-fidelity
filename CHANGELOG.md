@@ -1,3 +1,30 @@
+# [1.10.0](https://github.com/zotoio/x-fidelity/compare/v1.9.0...v1.10.0) (2024-08-12)
+
+
+### Bug Fixes
+
+* Import RuleProperties from json-rules-engine ([9f312b6](https://github.com/zotoio/x-fidelity/commit/9f312b6687feb22e9cb5276bb412ef76959fdf9c))
+* **logprefix and sec:** tracing, tls, masking, logic fixes ([7efc593](https://github.com/zotoio/x-fidelity/commit/7efc5934c7ca17964f83ba53f8584c9871a2c492))
+* Update default server port to 8888 ([1ae67df](https://github.com/zotoio/x-fidelity/commit/1ae67df23f6db660c96411dc1c668407de23b88c))
+* Update default TTL configuration in configServer ([babee16](https://github.com/zotoio/x-fidelity/commit/babee162e74468375266d80233eced76932216f6))
+* Update type of `data` property in `ruleListCache` object ([63def63](https://github.com/zotoio/x-fidelity/commit/63def633d95e8603a3a68da57574700d52037eb5))
+* Use generateLogPrefix to get the log prefix ([59fb55b](https://github.com/zotoio/x-fidelity/commit/59fb55b1d0f655ed3aedada0969c51eee752e936))
+
+
+### Features
+
+* Add CLI option for cache TTL ([fde1885](https://github.com/zotoio/x-fidelity/commit/fde1885697c9c9442117e163106a24808b1245e5))
+* add config server URL from header ([40e8390](https://github.com/zotoio/x-fidelity/commit/40e83906872dea2534e480c4662b32b9078dbe68))
+* Add logPrefix parameter to ConfigManager initialization ([fb675c3](https://github.com/zotoio/x-fidelity/commit/fb675c39fe931d2ce26b7e136fc243e871fd53ab))
+* Add request log prefix to API endpoints ([ffbf74e](https://github.com/zotoio/x-fidelity/commit/ffbf74e1f195910ad26c1880e6b11460eb63b01b))
+* add test for error when unable to load local archetype config ([61d4e43](https://github.com/zotoio/x-fidelity/commit/61d4e43946f26e3b5e05c84cc0da8fbf0195ed09))
+* Cache the archetype lists and rule lists ([89f260a](https://github.com/zotoio/x-fidelity/commit/89f260af41a4dea68653594f259f30057d568516))
+* Enhance sensitive data detection in logging rule ([ff9281d](https://github.com/zotoio/x-fidelity/commit/ff9281d4521db005fd66d0a4c837459663da70a2))
+* ensure consistent log prefix for telemetry calls ([a4f182b](https://github.com/zotoio/x-fidelity/commit/a4f182bc0f0baa787031b11c397328b0f412c159))
+* Implement caching for archetype and rule JSON files in the config server ([e3e077b](https://github.com/zotoio/x-fidelity/commit/e3e077b518ec38899d0ef6418486225031bf167d))
+* update config tests to expect error when unable to load from configServer ([4d96bdf](https://github.com/zotoio/x-fidelity/commit/4d96bdf2c868f8453d8b48bd84dc5583b4c6822f))
+* Use TLS for the config server ([ef5a7a2](https://github.com/zotoio/x-fidelity/commit/ef5a7a22e8ef7697b212363a1bf3c156187416d7))
+
 # [1.9.0](https://github.com/zotoio/x-fidelity/compare/v1.8.0...v1.9.0) (2024-08-06)
 
 

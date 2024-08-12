@@ -1,6 +1,6 @@
 {
   "name": "x-fidelity",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "cli for opinionated framework adherence checks",
   "main": "dist/xfidelity",
   "bin": {
