@@ -46,6 +46,7 @@ const validInput = (value: string): boolean => {
 app.get('/archetypes/:archetype', async (req, res) => {
     logger.info(`serving archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
+    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     if (validInput(archetype)) {
         const cacheKey = `archetype:${archetype}`;
         const cachedData = getCachedData(cacheKey);
@@ -82,6 +83,7 @@ app.get('/archetypes', async (req, res) => {
 app.get('/archetypes/:archetype/rules', async (req, res) => {
     logger.info(`serving rules for archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
+    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     if (validInput(archetype)) {
         if (ruleListCache[archetype] && ruleListCache[archetype].expiry > Date.now()) {
             logger.debug(`Serving cached rule list for archetype: ${archetype}`);
@@ -91,7 +93,7 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
         await configManager.initialize(archetype, options.configServer, options.localConfig);
         const archetypeConfig = configManager.getConfig();
         if (archetypeConfig && archetypeConfig.rules) {
-            const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, '', options.localConfig);
+            const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, requestLogPrefix, options.localConfig);
             ruleListCache[archetype] = {
                 data: rules,
                 expiry: Date.now() + DEFAULT_TTL
@@ -109,6 +111,7 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     logger.info(`serving rule ${req.params.rule} for archetype ${req.params.archetype}..`);
     const archetype = req.params.archetype;
     const rule = req.params.rule;
+    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     if (validInput(archetype) && validInput(rule)) {
         const cacheKey = `rule:${archetype}:${rule}`;
         const cachedData = getCachedData(cacheKey);
@@ -121,7 +124,7 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
         await configManager.initialize(archetype, options.configServer, options.localConfig);
         const archetypeConfig = configManager.getConfig();
         if (archetypeConfig && archetypeConfig.rules && archetypeConfig.rules.includes(rule)) {
-            const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, '', options.localConfig);
+            const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, requestLogPrefix, options.localConfig);
             const ruleJson = rules.find((r) => r.name === rule);
             
             if (ruleJson) {
