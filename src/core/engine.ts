@@ -58,7 +58,7 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
     }, executionLogPrefix);
 
     const configManager = ConfigManager.getInstance();
-    await configManager.initialize(archetype, configServer, localConfigPath);
+    await configManager.initialize(archetype, configServer, localConfigPath, executionLogPrefix);
     const archetypeConfig = configManager.getConfig();
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
