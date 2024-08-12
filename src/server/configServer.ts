@@ -60,13 +60,18 @@ app.get('/archetypes/:archetype', async (req, res) => {
             return res.json(cachedData);
         }
 
-        const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype, options.configServer, options.localConfig, requestLogPrefix);
-        const archetypeConfig = configManager.getConfig();
-        logger.debug(`Found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
-        
-        setCachedData(cacheKey, archetypeConfig);
-        res.json(archetypeConfig);
+        try {
+            const configManager = ConfigManager.getInstance();
+            await configManager.initialize(archetype, options.configServer, options.localConfig, requestLogPrefix);
+            const archetypeConfig = configManager.getConfig();
+            logger.debug(`Found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
+            
+            setCachedData(cacheKey, archetypeConfig);
+            res.json(archetypeConfig);
+        } catch (error) {
+            logger.error(`Error fetching archetype ${archetype}: ${error}`);
+            res.status(500).json({ error: 'Internal server error' });
+        }
     } else {
         res.status(400).json({ error: 'Invalid archetype name' });
     }
@@ -130,21 +135,26 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
             return res.json(cachedData);
         }
 
-        const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype, options.configServer, options.localConfig, requestLogPrefix);
-        const archetypeConfig = configManager.getConfig();
-        if (archetypeConfig && archetypeConfig.rules && archetypeConfig.rules.includes(rule)) {
-            const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, requestLogPrefix, options.localConfig);
-            const ruleJson = rules.find((r) => r.name === rule);
-            
-            if (ruleJson) {
-                setCachedData(cacheKey, ruleJson);
-                res.json(ruleJson);
+        try {
+            const configManager = ConfigManager.getInstance();
+            await configManager.initialize(archetype, options.configServer, options.localConfig, requestLogPrefix);
+            const archetypeConfig = configManager.getConfig();
+            if (archetypeConfig && archetypeConfig.rules && archetypeConfig.rules.includes(rule)) {
+                const rules = await loadRules(archetype, [rule], options.configServer, requestLogPrefix, options.localConfig);
+                const ruleJson = rules[0]; // We're only loading one rule, so it's the first element
+                
+                if (ruleJson) {
+                    setCachedData(cacheKey, ruleJson);
+                    res.json(ruleJson);
+                } else {
+                    res.status(404).json({ error: 'Rule not found' });
+                }
             } else {
                 res.status(404).json({ error: 'Rule not found' });
             }
-        } else {
-            res.status(404).json({ error: 'Rule not found' });
+        } catch (error) {
+            logger.error(`Error fetching rule ${rule} for archetype ${archetype}: ${error}`);
+            res.status(500).json({ error: 'Internal server error' });
         }
     } else {
         res.status(400).json({ error: 'Invalid archetype or rule name' });
