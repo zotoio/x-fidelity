@@ -10,6 +10,7 @@ import { archetypes } from '../archetypes';
 import { ConfigManager } from '../utils/config';
 import { sendTelemetry } from '../utils/telemetry';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
+import { generateLogPrefix } from '../utils/logger';
 
 jest.mock('../utils/openaiUtils');
 jest.mock('../core/cli', () => ({
@@ -32,7 +33,10 @@ jest.mock('../facts/openaiAnalysisFacts');
 jest.mock('../rules');
 jest.mock('../operators');
 jest.mock('../facts');
-jest.mock('../utils/logger');
+jest.mock('../utils/logger', () => ({
+    ...jest.requireActual('../utils/logger'),
+    generateLogPrefix: jest.fn().mockReturnValue('mockLogPrefix')
+}));
 jest.mock('../utils/config');
 jest.mock('../utils/telemetry');
 jest.mock('../archetypes', () => ({
@@ -73,6 +77,10 @@ describe('analyzeCodebase', () => {
         const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
         const mockFacts = [{ name: 'mockFact', fn: jest.fn() }];
 
+        const mockLogPrefix = 'mockLogPrefix';
+
+        (generateLogPrefix as jest.Mock).mockResolvedValue(mockLogPrefix);
+
         (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
         (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
         (loadRules as jest.Mock).mockResolvedValue(mockRules);
@@ -93,7 +101,7 @@ describe('analyzeCodebase', () => {
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalledWith(expect.any(Object));
-        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '', expect.any(String), undefined);
+        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '', mockLogPrefix);
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
@@ -110,7 +118,9 @@ describe('analyzeCodebase', () => {
         const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
         const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
         const mockFacts = [{ name: 'mockFact', fn: jest.fn() }];
+        const mockLogPrefix = 'mockLogPrefix';
 
+        (generateLogPrefix as jest.Mock).mockResolvedValue(mockLogPrefix);
         (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
         (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
         (loadRules as jest.Mock).mockResolvedValue(mockRules);
@@ -131,7 +141,7 @@ describe('analyzeCodebase', () => {
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalled();
-        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '', expect.any(String), undefined);
+        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '', mockLogPrefix);
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);

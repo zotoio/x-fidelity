@@ -1,4 +1,4 @@
-import { logger, logPrefix, generateLogPrefix } from '../utils/logger';
+import { logger, generateLogPrefix } from '../utils/logger';
 import { Engine, EngineResult, Event, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
 import { ScanResult, RuleFailure} from '../types/typeDefs';
@@ -16,6 +16,47 @@ import os from 'os';
 async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', configServer = '', localConfigPath = ''): Promise<any[]> {
     const executionLogPrefix = generateLogPrefix();
     logger.info(`INITIALISING..`);
+
+    // Get host information
+    const hostInfo = {
+        platform: os.platform(),
+        release: os.release(),
+        type: os.type(),
+        arch: os.arch(),
+        cpus: os.cpus().length,
+        totalMemory: os.totalmem(),
+        freeMemory: os.freemem()
+    };
+
+    // Get user information
+    const userInfo = {
+        username: os.userInfo().username,
+        homedir: os.userInfo().homedir,
+        shell: os.userInfo().shell
+    };
+
+    // Get GitHub repository URL
+    let repoUrl = '';
+    try {
+        repoUrl = execSync('git config --get remote.origin.url', { cwd: repoPath }).toString().trim();
+    } catch (error) {
+        logger.warn('Unable to get GitHub repository URL');
+    }
+
+    // Send telemetry for analysis start
+    await sendTelemetry({
+        eventType: 'analysisStart',
+        metadata: {
+            archetype,
+            repoPath,
+            repoUrl,
+            configServer: configServer || 'none',
+            hostInfo,
+            userInfo
+        },
+        timestamp: new Date().toISOString()
+    }, executionLogPrefix);
+
     const configManager = ConfigManager.getInstance();
     await configManager.initialize(archetype, configServer, localConfigPath);
     const archetypeConfig = configManager.getConfig();
@@ -39,47 +80,6 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
 
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
-    // Get GitHub repository URL
-    let repoUrl = '';
-    try {
-        repoUrl = execSync('git config --get remote.origin.url', { cwd: repoPath }).toString().trim();
-    } catch (error) {
-        logger.warn('Unable to get GitHub repository URL');
-    }
-
-    // Get host information
-    const hostInfo = {
-        platform: os.platform(),
-        release: os.release(),
-        type: os.type(),
-        arch: os.arch(),
-        cpus: os.cpus().length,
-        totalMemory: os.totalmem(),
-        freeMemory: os.freemem()
-    };
-
-    // Get user information
-    const userInfo = {
-        username: os.userInfo().username,
-        homedir: os.userInfo().homedir,
-        shell: os.userInfo().shell
-    };
-
-    // Send telemetry for analysis start
-    await sendTelemetry({
-        eventType: 'analysisStart',
-        metadata: {
-            archetype,
-            repoPath,
-            repoUrl,
-            fileCount: fileData.length,
-            configServer: configServer || 'none',
-            hostInfo,
-            userInfo
-        },
-        timestamp: new Date().toISOString()
-    }, executionLogPrefix);
-
     // Add operators to engine
     logger.info(`=== loading custom operators..`);
     const operators = await loadOperators(archetypeConfig.operators);
@@ -92,7 +92,7 @@ async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', c
 
     // Add rules to engine
     logger.info(`=== loading json rules..`);
-    const rules: RuleProperties[] = await loadRules(archetype, archetypeConfig.rules, configManager.configServer, logPrefix, configManager.localConfigPath);
+    const rules: RuleProperties[] = await loadRules(archetype, archetypeConfig.rules, configManager.configServer, executionLogPrefix, configManager.localConfigPath);
     logger.debug(rules);
 
     rules.forEach((rule) => {
