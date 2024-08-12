@@ -44,10 +44,11 @@ describe('ConfigManager', () => {
             expect(configManager.getConfig()).toEqual(expect.objectContaining(mockConfig));
         });
 
-        it('should handle errors when fetching remote config', async () => {
+        it('should throw an error when unable to fetch from configServer', async () => {
             (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-            await configManager.initialize('test-archetype', 'http://test-server.com');
+            await expect(configManager.initialize('test-archetype', 'http://test-server.com'))
+                .rejects.toThrow('Failed to fetch remote archetype config');
 
             expect(configManager.getConfig()).toEqual(archetypes['node-fullstack']);
         });
