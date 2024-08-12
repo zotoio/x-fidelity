@@ -1,5 +1,5 @@
 import axios from "axios";
-import { logger } from "../utils/logger";
+import { logger, setLogPrefix } from "../utils/logger";
 import { ArchetypeConfig } from "../types/typeDefs";
 import { archetypes } from "../archetypes";
 import * as fs from 'fs';
@@ -32,17 +32,22 @@ export class ConfigManager {
         return ConfigManager.instance;
     }
 
-    public async initialize(archetype = 'node-fullstack', configServer?: string, localConfigPath?: string): Promise<void> {
+    public async initialize(archetype = 'node-fullstack', configServer?: string, localConfigPath?: string, logPrefix?: string): Promise<void> {
         this.config = archetypes[archetype] || archetypes['node-fullstack'];
         this.configServer = configServer || '';
         this.localConfigPath = localConfigPath || '';
+        if (logPrefix) setLogPrefix(logPrefix);
         logger.debug(`Initializing config manager for archetype: ${archetype}`);
         
         if (this.configServer) {
             try {
                 const configUrl = `${this.configServer}/archetypes/${archetype}`;
                 logger.debug(`Fetching remote archetype config from: ${configUrl}`);
-                const response = await axios.get(configUrl);
+                const response = await axios.get(configUrl, {
+                    headers: {
+                        'X-Log-Prefix': logPrefix || ''
+                    }
+                });
                 this.config = {
                     ...this.config,
                     ...response.data
@@ -54,10 +59,7 @@ export class ConfigManager {
                 } else {
                     logger.error('Error fetching remote archetype config: Unknown error');
                 }
-                // If remote fetch fails, fall back to local config
-                if (this.localConfigPath) {
-                    await this.loadLocalConfig(archetype);
-                }
+                throw new Error('Failed to fetch remote archetype config');
             }
         } else if (this.localConfigPath) {
             await this.loadLocalConfig(archetype);
@@ -81,7 +83,7 @@ export class ConfigManager {
             } else {
                 logger.error('Error loading local archetype config: Unknown error');
             }
-            return archetypes[archetype];
+            throw new Error('Failed to load local archetype config');
         }
     }
 

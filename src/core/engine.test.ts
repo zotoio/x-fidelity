@@ -61,7 +61,8 @@ describe('analyzeCodebase', () => {
         (ConfigManager.getInstance as jest.Mock).mockReturnValue({
             initialize: jest.fn(),
             getConfig: jest.fn().mockReturnValue(archetypes['node-fullstack']),
-            configServer: ''
+            configServer: '',
+            executionLogPrefix: 'mockLogPrefix'
         });
         jest.spyOn(console, 'log').mockImplementation(() => {console.log('z')});
         jest.spyOn(console, 'error').mockImplementation(() => {console.log('z')});
@@ -79,7 +80,7 @@ describe('analyzeCodebase', () => {
 
         const mockLogPrefix = 'mockLogPrefix';
 
-        (generateLogPrefix as jest.Mock).mockResolvedValue(mockLogPrefix);
+        (generateLogPrefix as jest.Mock).mockReturnValue(mockLogPrefix);
 
         (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
         (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
@@ -101,7 +102,7 @@ describe('analyzeCodebase', () => {
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalledWith(expect.any(Object));
-        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '', mockLogPrefix);
+        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '', mockLogPrefix, undefined);
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
@@ -120,7 +121,7 @@ describe('analyzeCodebase', () => {
         const mockFacts = [{ name: 'mockFact', fn: jest.fn() }];
         const mockLogPrefix = 'mockLogPrefix';
 
-        (generateLogPrefix as jest.Mock).mockResolvedValue(mockLogPrefix);
+        (generateLogPrefix as jest.Mock).mockReturnValue(mockLogPrefix);
         (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
         (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
         (loadRules as jest.Mock).mockResolvedValue(mockRules);
@@ -141,7 +142,7 @@ describe('analyzeCodebase', () => {
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalled();
-        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '', mockLogPrefix);
+        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '', mockLogPrefix, undefined);
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);

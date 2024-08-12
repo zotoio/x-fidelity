@@ -3,7 +3,7 @@ import https from 'https';
 import fs from 'fs';
 import { loadRules } from '../rules';
 import { RuleProperties } from 'json-rules-engine';
-import { logger } from '../utils/logger';
+import { logger, setLogPrefix } from '../utils/logger';
 import { expressLogger } from './expressLogger'
 import { options } from '../core/cli';
 import { ConfigManager } from '../utils/config';
@@ -47,7 +47,7 @@ app.get('/archetypes/:archetype', async (req, res) => {
     logger.info(`serving archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
-    const configServerFromHeader = req.headers['x-config-server'] as string;
+    setLogPrefix(requestLogPrefix);
     if (validInput(archetype)) {
         const cacheKey = `archetype:${archetype}`;
         const cachedData = getCachedData(cacheKey);
@@ -57,7 +57,7 @@ app.get('/archetypes/:archetype', async (req, res) => {
         }
 
         const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype, configServerFromHeader || options.configServer, options.localConfig);
+        await configManager.initialize(archetype, options.configServer, options.localConfig, requestLogPrefix);
         const archetypeConfig = configManager.getConfig();
         logger.debug(`Found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
         
@@ -70,11 +70,14 @@ app.get('/archetypes/:archetype', async (req, res) => {
 
 app.get('/archetypes', async (req, res) => {
     logger.info('serving archetype list..');
+    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
+    setLogPrefix(requestLogPrefix);
     if (archetypeListCache.expiry > Date.now()) {
         logger.debug('Serving cached archetype list');
         return res.json(archetypeListCache.data);
     }
     const configManager = ConfigManager.getInstance();
+    
     const archetypes = await configManager.getAvailableArchetypes();
     archetypeListCache.data = archetypes;
     archetypeListCache.expiry = Date.now() + DEFAULT_TTL;
@@ -85,13 +88,14 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
     logger.info(`serving rules for archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
+    setLogPrefix(requestLogPrefix);
     if (validInput(archetype)) {
         if (ruleListCache[archetype] && ruleListCache[archetype].expiry > Date.now()) {
             logger.debug(`Serving cached rule list for archetype: ${archetype}`);
             return res.json(ruleListCache[archetype].data);
         }
         const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype, options.configServer, options.localConfig);
+        await configManager.initialize(archetype, options.configServer, options.localConfig, requestLogPrefix);
         const archetypeConfig = configManager.getConfig();
         if (archetypeConfig && archetypeConfig.rules) {
             const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, requestLogPrefix, options.localConfig);
@@ -113,6 +117,7 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     const archetype = req.params.archetype;
     const rule = req.params.rule;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
+    setLogPrefix(requestLogPrefix);
     if (validInput(archetype) && validInput(rule)) {
         const cacheKey = `rule:${archetype}:${rule}`;
         const cachedData = getCachedData(cacheKey);
@@ -122,7 +127,7 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
         }
 
         const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype, options.configServer, options.localConfig);
+        await configManager.initialize(archetype, options.configServer, options.localConfig, requestLogPrefix);
         const archetypeConfig = configManager.getConfig();
         if (archetypeConfig && archetypeConfig.rules && archetypeConfig.rules.includes(rule)) {
             const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, requestLogPrefix, options.localConfig);
@@ -145,6 +150,8 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
 
 // New route for telemetry
 app.post('/telemetry', (req, res) => {
+    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
+    setLogPrefix(requestLogPrefix);
     logger.info('accepting telemetry data:', req.body);
     // Here you can process and store the telemetry data as needed
     // For now, we'll just log it and send a success response

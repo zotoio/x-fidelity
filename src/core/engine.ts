@@ -1,4 +1,4 @@
-import { logger, generateLogPrefix } from '../utils/logger';
+import { logger, generateLogPrefix, setLogPrefix } from '../utils/logger';
 import { Engine, EngineResult, Event, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData, collectRepoFileData } from '../facts/repoFilesystemFacts';
 import { ScanResult, RuleFailure} from '../types/typeDefs';
@@ -15,6 +15,7 @@ import os from 'os';
 
 async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', configServer = '', localConfigPath = ''): Promise<any[]> {
     const executionLogPrefix = generateLogPrefix();
+    setLogPrefix(executionLogPrefix);
     logger.info(`INITIALISING..`);
 
     // Get host information

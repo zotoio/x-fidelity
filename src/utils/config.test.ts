@@ -40,7 +40,7 @@ describe('ConfigManager', () => {
 
             await configManager.initialize('test-archetype', 'http://test-server.com');
 
-            expect(axios.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype');
+            expect(axios.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype', {'headers': {'X-Log-Prefix': ''}});
             expect(configManager.getConfig()).toEqual(expect.objectContaining(mockConfig));
         });
 

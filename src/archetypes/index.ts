@@ -1,7 +1,7 @@
 import { ArchetypeConfig } from '../types/typeDefs';
 import * as fs from 'fs';
 import * as path from 'path';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 
 function loadArchetypeFromJson(fileName: string): ArchetypeConfig {
     const filePath = path.join(__dirname, fileName);
