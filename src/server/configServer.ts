@@ -38,7 +38,7 @@ function setCachedData(key: string, data: any, ttl: number = DEFAULT_TTL): void 
 app.use(express.json());
 app.use(expressLogger);
 
-const inputSchema = Joi.string().alphanum().max(50);
+const inputSchema = Joi.string().pattern(/^[a-zA-Z0-9-_]{1,50}$/).required();
 
 const validateInput = (value: string): boolean => {
     const { error } = inputSchema.validate(value);
