@@ -277,23 +277,54 @@ x-fidelity allows for centrally managed, hot-updatable custom rulesets that can 
 Here's a basic Docker setup for hosting an x-fidelity config server:
 
 ```dockerfile
-FROM node:18
+# Use an official Node.js runtime as the base image
+FROM node:20
 
-# Install x-fidelity
-RUN yarn global add x-fidelity
+# Set the working directory in the container
+WORKDIR /usr/src/app
 
-# Clone your rules repository
-RUN git clone https://github.com/your-org/x-fidelity-rules.git /rules
+# Copy package.json and yarn.lock etc
+COPY package.json ./
+COPY yarn.lock ./
+COPY tsconfig.json ./
 
-# Set up the start command
-CMD ["x-fidelity", "--mode", "server", "--localConfig", "/rules", "--port", "8888"]
+# Install the application dependencies
+RUN yarn install
+
+# Copy the rest of the application code
+COPY ./src ./src
+
+# Build the application
+RUN yarn build
+
+# Expose the port the app runs on
+EXPOSE 8888
+
+# Define the command to run the app
+CMD ["node", "dist/index.js", "--mode", "server", "--localConfig", "/usr/src/app/config"]
+```
+
+And here's a sample docker-compose.yml file to configure and run the container:
+
+```yaml
+services:
+  x-fidelity-server:
+    build: .
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./src:/usr/src/app/src
+      - ../xfi-server/xfi-config:/usr/src/app/config
+    environment:
+      - NODE_ENV=production
+      - XFI_LISTEN_PORT=8888
+    command: ["node", "dist/index.js", "--mode", "server", "--localConfig", "/usr/src/app/config"]
 ```
 
 Build and run the Docker container:
 
 ```sh
-docker build -t x-fidelity-server .
-docker run -p 8888:8888 x-fidelity-server
+docker-compose up --build
 ```
 
 ### CI Pipeline Integration
