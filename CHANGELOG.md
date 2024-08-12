@@ -1,3 +1,11 @@
+## [1.10.1](https://github.com/zotoio/x-fidelity/compare/v1.10.0...v1.10.1) (2024-08-12)
+
+
+### Bug Fixes
+
+* **docker:** dockerfile based on latest npm release ([5a503a1](https://github.com/zotoio/x-fidelity/commit/5a503a1ae46cda54bd836c88ae8ea6e921277ea5))
+* **server:** add working dockerfile and compose file examples ([2e19d48](https://github.com/zotoio/x-fidelity/commit/2e19d482f40138d8aff971f1d33423300d4ac33f))
+
 # [1.10.0](https://github.com/zotoio/x-fidelity/compare/v1.9.0...v1.10.0) (2024-08-12)
 
 
