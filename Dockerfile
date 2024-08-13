@@ -17,8 +17,8 @@ RUN openssl req -x509 -newkey rsa:4096 -keyout private-key.pem -out certificate.
 EXPOSE 8888
 
 # Copy the certificate and private key to the appropriate location
-RUN mkdir -p /usr/src/app/dist/server && \
-    mv private-key.pem certificate.pem /usr/src/app/dist/server/
+RUN mkdir -p /usr/src/app/certs && \
+    mv private-key.pem certificate.pem /usr/src/app/certs/
 
 # Define the command to run the app
-CMD ["xfidelity", "--mode", "server", "--localConfig", "/usr/src/app/config"]
+CMD ["xfidelity", "--mode", "server", "--localConfig", "/usr/src/app/config", "--archetype", "${ARCHETYPE}"]

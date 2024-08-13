@@ -9,4 +9,6 @@ services:
     environment:
       - NODE_ENV=production
       - XFI_LISTEN_PORT=8888
-    command: ["xfidelity", "--mode", "server", "--localConfig", "/usr/src/app/config"]
+      - CERT_PATH=/usr/src/app/certs
+      - ARCHETYPE=node-fullstack
+    command: ["xfidelity", "--mode", "server", "--localConfig", "/usr/src/app/config", "--archetype", "${ARCHETYPE}"]

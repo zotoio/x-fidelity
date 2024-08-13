@@ -178,8 +178,9 @@ export function startServer(customPort?: string) {
     
     // Read SSL certificate and key
     try {
-        const privateKey = fs.readFileSync(`${__dirname}/private-key.pem`, 'utf8');
-        const certificate = fs.readFileSync(`${__dirname}/certificate.pem`, 'utf8');
+        const certPath = process.env.CERT_PATH || __dirname;
+        const privateKey = fs.readFileSync(`${certPath}/private-key.pem`, 'utf8');
+        const certificate = fs.readFileSync(`${certPath}/certificate.pem`, 'utf8');
         const credentials = { key: privateKey, cert: certificate };
 
         // Create HTTPS server
