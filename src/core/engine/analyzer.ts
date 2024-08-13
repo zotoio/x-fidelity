@@ -1,4 +1,4 @@
-import { logger, setLogPrefix } from '../../utils/logger';
+import { logger, setLogPrefix, generateLogPrefix } from '../../utils/logger';
 import { Engine, EngineResult, Event, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData } from '../../facts/repoFilesystemFacts';
 import { ScanResult, RuleFailure } from '../../types/typeDefs';
@@ -11,13 +11,17 @@ import { loadRules } from '../../rules';
 import { collectRepoFileData } from '../../facts/repoFilesystemFacts';
 import { getDependencyVersionFacts, repoDependencyAnalysis } from '../../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../../facts/openaiAnalysisFacts';
+import { collectTelemetryData } from './telemetryCollector';
+import { setupEngine } from './engineSetup';
+import { runEngineOnFiles } from './engineRunner';
+import { findKeyValuePair } from './utils';
 
 export async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', configServer = '', localConfigPath = ''): Promise<any[]> {
     const executionLogPrefix = generateLogPrefix();
     setLogPrefix(executionLogPrefix);
     logger.info(`INITIALISING..`);
 
-    const telemetryData = await collectTelemetryData(repoPath);
+    const telemetryData = await collectTelemetryData(repoPath, configServer);
 
     // Send telemetry for analysis start
     await sendTelemetry({
