@@ -1,3 +1,38 @@
+# [1.13.0](https://github.com/zotoio/x-fidelity/compare/v1.12.0...v1.13.0) (2024-08-13)
+
+
+### Bug Fixes
+
+* Add helmet dependency to improve security ([897fbe5](https://github.com/zotoio/x-fidelity/commit/897fbe5b76579e181ca091ccdb0bb3559beb0ad8))
+* Add import for validateArchetypeWithLogging in src/core/engine.ts ([7e686ed](https://github.com/zotoio/x-fidelity/commit/7e686edf073a6488a52c2a7b62a2d12ed749fc94))
+* Add JSON schema validation for archetypes and rules ([56e5857](https://github.com/zotoio/x-fidelity/commit/56e58571402560ee3560ee403db56b1c2b6fb70f))
+* Add required property to minimumDependencyVersions object in archetypeSchema ([e253a04](https://github.com/zotoio/x-fidelity/commit/e253a04d21c1aa7d20bb4be2854d3c9587136653))
+* Implement Helmet middleware for improved security headers ([79228a1](https://github.com/zotoio/x-fidelity/commit/79228a16bffa450fe571f548629cc4f385d6f960))
+* Remove duplicate 'required' property in archetypeSchema ([004b914](https://github.com/zotoio/x-fidelity/commit/004b914270456662817b9e39ba5cbf5ada36f7d7))
+* Remove unnecessary else blocks ([67e5789](https://github.com/zotoio/x-fidelity/commit/67e5789ea18c38b4661bb433e2b69028538fb779))
+* Resolve TypeScript errors in configServer.test.ts ([cc84ffe](https://github.com/zotoio/x-fidelity/commit/cc84ffe7ea77116b600d57f33d2183c9b47745e1))
+* update 'additionalProperties' in archetypeSchema ([8616c4b](https://github.com/zotoio/x-fidelity/commit/8616c4bc187d5dc9e38f70170f5bc058fe399c7c))
+* update archetypeSchema additionalProperties type ([01a5f10](https://github.com/zotoio/x-fidelity/commit/01a5f108252ee2edf7b13af0f1556fce9c2c41b8))
+* update archetypeSchema to use oneOf for standardStructure ([e2b10b6](https://github.com/zotoio/x-fidelity/commit/e2b10b65a39b9fb99766e7ac24d0d610daa8f2ff))
+* Update JSON schema to allow any type for minimumDependencyVersions property ([6a07399](https://github.com/zotoio/x-fidelity/commit/6a073999db5366246fe725f22fc5614edfcd9989))
+* Update mocking of validateArchetype and validateRule in configServer.test.ts ([818fb31](https://github.com/zotoio/x-fidelity/commit/818fb31f5b2058d06fee6cce8a1f4de81b47de6f))
+* Update standardStructure schema in archetypeSchema ([0bf8551](https://github.com/zotoio/x-fidelity/commit/0bf8551b83e9ec7639a438eddb2dfa00518242d1))
+* Validate input before processing requests ([83f6850](https://github.com/zotoio/x-fidelity/commit/83f6850fd54be771370a831733ab130fce719e14))
+
+
+### Features
+
+* Add additionalProperties constraint to archetypeSchema ([7ba52d6](https://github.com/zotoio/x-fidelity/commit/7ba52d61d1f05888d23aba1621fd7aa790d3b400))
+* Add rate limiting to Express server ([b577ce0](https://github.com/zotoio/x-fidelity/commit/b577ce0a2af22f76b67c81e22a2c1093cb211125))
+* add required property to archetypeSchema ([8624daf](https://github.com/zotoio/x-fidelity/commit/8624daf6d886890c22bb3b3e4202862b9d610019))
+* Add support for additional properties in archetype schema ([6cc5433](https://github.com/zotoio/x-fidelity/commit/6cc54334c0f853aec2446bcd8323dcd621c50477))
+* extend usage of joi to cover all user inputs, including query parameters and request bodies across all routes in `configServer.ts` ([5f8d3c6](https://github.com/zotoio/x-fidelity/commit/5f8d3c61288f82eef9bca7a442d74738bbd42738))
+* Increase rate limiter window and max requests ([e0a913d](https://github.com/zotoio/x-fidelity/commit/e0a913d1e38c6f885b03b6000229c6535ade5aa7))
+* optimize the jsonschema definition for archetype ([48b7188](https://github.com/zotoio/x-fidelity/commit/48b7188ea2c951c1c7c9071cf3189ebc403c6775))
+* replace Joi with AJV for JSON schema validation ([e7582da](https://github.com/zotoio/x-fidelity/commit/e7582da938521a70f08ee8039d4c740eda1db673))
+* **security:** jsonschema, joi input checks, http header safety, rate-limiting ([5ac07b3](https://github.com/zotoio/x-fidelity/commit/5ac07b30c2d813fef5019d92b6280ea69fd81fe7))
+* Update JSON schema for archetypeConfig ([3ae2176](https://github.com/zotoio/x-fidelity/commit/3ae217609fbe60f67abd173929424e2fa30db664))
+
 # [1.12.0](https://github.com/zotoio/x-fidelity/compare/v1.11.0...v1.12.0) (2024-08-13)
 
 
