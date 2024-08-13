@@ -28,7 +28,7 @@ export async function setupEngine(
 
     // Add rules to engine
     logger.info(`=== loading json rules..`);
-    const rules = await loadRules(archetype, archetypeConfig.rules, configManager.configServer, executionLogPrefix, configManager.localConfigPath);
+    const rules = await loadRules(archetype, archetypeConfig.rules, configManager.configServer, executionLogPrefix, localConfigPath);
     logger.debug(rules);
 
     rules.forEach((rule) => {
