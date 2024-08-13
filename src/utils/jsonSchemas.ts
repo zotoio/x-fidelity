@@ -23,15 +23,28 @@ export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
         config: {
             type: 'object',
             properties: {
-                minimumDependencyVersions: { type: 'object', additionalProperties: { type: 'string' } },
-                standardStructure: { type: 'object' },
-                blacklistPatterns: { type: 'array', items: { type: 'string' } },
-                whitelistPatterns: { type: 'array', items: { type: 'string' } }
+                minimumDependencyVersions: {
+                    type: 'object',
+                    additionalProperties: { type: 'string' }
+                },
+                standardStructure: {
+                    type: 'object',
+                    additionalProperties: true
+                },
+                blacklistPatterns: {
+                    type: 'array',
+                    items: { type: 'string' }
+                },
+                whitelistPatterns: {
+                    type: 'array',
+                    items: { type: 'string' }
+                }
             },
             required: ['minimumDependencyVersions', 'standardStructure', 'blacklistPatterns', 'whitelistPatterns']
         }
     },
-    required: ['rules', 'operators', 'facts', 'config']
+    required: ['rules', 'operators', 'facts', 'config'],
+    additionalProperties: false
 };
 
 interface RuleConfig {
