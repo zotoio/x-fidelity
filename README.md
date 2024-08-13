@@ -175,6 +175,7 @@ xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <arch
 - `-o --openaiEnabled <boolean>`: Enable OpenAI analysis (default: false)
 - `-t --telemetryCollector <url>`: The URL telemetry data will be sent to for usage analysis
 - `-l --localConfig <path>`: Path to local archetype config and rules
+- `-j --jsonTTL <minutes>` : The server json cache TTL in minutes (default: 10)
 
 Examples:
 

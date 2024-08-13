@@ -24,7 +24,7 @@ program
     .option("-m, --mode <mode>", "Run mode: 'client' or 'server'", "client")
     .option("-p, --port <port>", "The port to run the server on", "8888")
     .option("-l, --localConfig <path>", "Path to local archetype config and rules")
-    .option("--ttl <minutes>", "Set the cache TTL in minutes", "10");
+    .option("-j, --jsonTTL <minutes>", "Set the server json cache TTL in minutes", "10");
 
 program.parse();
 
@@ -56,7 +56,7 @@ configServer: ${options.configServer ? options.configServer : 'none'}
 mode: ${options.mode}
 port: ${options.mode === 'server' ? options.port : 'n/a'}
 localConfig: ${options.localConfig ? options.localConfig : 'none'}
-ttl: ${options.ttl} minutes
+jsonTTL: ${options.jsonTTL} minutes
 for available options run: xfidelity --help
 =====================================`);
 

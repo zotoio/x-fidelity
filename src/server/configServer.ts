@@ -35,6 +35,7 @@ function setCachedData(key: string, data: any, ttl: number = DEFAULT_TTL): void 
         data,
         expiry: Date.now() + ttl
     };
+    logger.debug(JSON.stringify(cache));
 }
 
 app.use(express.json());
