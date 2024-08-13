@@ -1,0 +1,47 @@
+import { startServer } from './configServer';
+import express from 'express';
+import https from 'https';
+import fs from 'fs';
+import { ConfigManager } from '../utils/config';
+import { loadRules } from '../rules';
+import { validateArchetype, validateRule } from '../utils/jsonSchemas';
+
+jest.mock('../utils/config');
+jest.mock('../rules');
+jest.mock('../utils/jsonSchemas');
+
+describe('configServer', () => {
+  const mockArchetypeConfig = {
+    rules: ['rule1', 'rule2'],
+    operators: ['operator1', 'operator2'],
+    facts: ['fact1', 'fact2'],
+    config: {
+      minimumDependencyVersions: {},
+      standardStructure: {},
+      blacklistPatterns: [],
+      whitelistPatterns: []
+    }
+  };
+
+  const mockRule = {
+    name: 'testRule',
+    conditions: { all: [] },
+    event: { type: 'testEvent', params: {} }
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (validateArchetype as jest.Mock).mockReturnValue(true);
+    (validateRule as jest.Mock).mockReturnValue(true);
+  });
+
+  it('should validate archetype config', () => {
+    expect(validateArchetype(mockArchetypeConfig)).toBe(true);
+  });
+
+  it('should validate rule', () => {
+    expect(validateRule(mockRule)).toBe(true);
+  });
+
+  // Add more tests for configServer functionality here
+});
