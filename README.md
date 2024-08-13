@@ -46,9 +46,8 @@ x-fidelity is an advanced CLI tool and paired config server designed to perform 
 8. [OpenAI Integration](#openai-integration)
 9. [Hosting Config Servers](#hosting-config-servers)
 10. [Best Practices](#best-practices)
-11. [Linting](#linting)
-12. [Contributing](#contributing)
-13. [License](#license)
+11. [Contributing](#contributing)
+12. [License](#license)
 
 ## Intent and Purpose
 
@@ -284,14 +283,27 @@ FROM node:20
 # Set the working directory in the container
 WORKDIR /usr/src/app
 
+ENV XFI_LISTEN_PORT=8888
+ENV CERT_PATH=/usr/src/app/certs
+
 RUN yarn global add x-fidelity
 RUN export PATH="$PATH:$(yarn global bin)"
 
-# Expose the port the app runs on
-EXPOSE 8888
+# Install OpenSSL
+RUN apt-get update && apt-get install -y openssl
 
-# Define the command to run the app
-CMD ["xfidelity", "--mode", "server", "--localConfig", "/usr/src/app/config"]
+# Generate self-signed certificate
+RUN openssl req -x509 -newkey rsa:4096 -keyout private-key.pem -out certificate.pem -days 365 -nodes -subj "/CN=localhost"
+
+# Expose the port the app runs on
+EXPOSE ${XFI_LISTEN_PORT}
+
+# Copy the certificate and private key to the appropriate location
+RUN mkdir -p $CERT_PATH && \
+    mv private-key.pem certificate.pem $CERT_PATH/
+
+# Define the command to run the app using shell form
+CMD xfidelity --mode server --localConfig /usr/src/app/config
 ```
 
 And here's a sample docker-compose.yml file to configure and run the container:
@@ -301,13 +313,16 @@ services:
   x-fidelity-server:
     build: .
     ports:
-      - "8888:8888"
+      - 8888:8888
     volumes:
+      - ./src:/usr/src/app/src
       - ../xfi-server/xfi-config:/usr/src/app/config
     environment:
       - NODE_ENV=production
       - XFI_LISTEN_PORT=8888
-    command: ["xfidelity", "--mode", "server", "--localConfig", "/usr/src/app/config"]
+      - CERT_PATH=/usr/src/app/certs
+
+
 ```
 
 Build and run the Docker container:
@@ -318,7 +333,7 @@ docker-compose up --build
 
 ### CI Pipeline Integration
 
-In your CI pipeline (e.g., GitHub Actions, GitLab CI, Jenkins), add a step to run x-fidelity:
+In your CI pipeline (e.g., GitHub Actions, GitLab CI, Jenkins), add a step to run x-fidelity in client mode:
 
 ```yaml
 steps:

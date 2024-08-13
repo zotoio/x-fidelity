@@ -4,7 +4,6 @@ FROM node:20
 # Set the working directory in the container
 WORKDIR /usr/src/app
 
-ENV ARCHETYPE=node-fullstack
 ENV XFI_LISTEN_PORT=8888
 ENV CERT_PATH=/usr/src/app/certs
 
@@ -25,4 +24,4 @@ RUN mkdir -p $CERT_PATH && \
     mv private-key.pem certificate.pem $CERT_PATH/
 
 # Define the command to run the app using shell form
-CMD xfidelity --mode server --localConfig /usr/src/app/config --archetype $ARCHETYPE
+CMD xfidelity --mode server --localConfig /usr/src/app/config
