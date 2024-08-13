@@ -47,6 +47,8 @@ export async function setupEngine(
                 eventType: 'violation',
                 metadata: {
                     archetype,
+                    repoPath: '',
+                    repoPath: '',
                     ...params
                 },
                 timestamp: new Date().toISOString()
