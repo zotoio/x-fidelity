@@ -9,8 +9,8 @@ import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 jest.mock('../utils/config');
 jest.mock('../rules');
 jest.mock('../utils/jsonSchemas', () => ({
-  validateArchetype: jest.fn(),
-  validateRule: jest.fn()
+  validateArchetype: jest.fn().mockReturnValue(true),
+  validateRule: jest.fn().mockReturnValue(true)
 }));
 
 describe('configServer', () => {
@@ -34,8 +34,6 @@ describe('configServer', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (validateArchetype as jest.Mock).mockReturnValue(true);
-    (validateRule as jest.Mock).mockReturnValue(true);
   });
 
   it('should validate archetype config', () => {
