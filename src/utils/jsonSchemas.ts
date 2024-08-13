@@ -25,7 +25,7 @@ export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
             properties: {
                 minimumDependencyVersions: {
                     type: 'object',
-                    additionalProperties: { type: 'string' }
+                    additionalProperties: true
                 },
                 standardStructure: {
                     type: 'object',
@@ -40,7 +40,8 @@ export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
                     items: { type: 'string' }
                 }
             },
-            required: ['minimumDependencyVersions', 'standardStructure', 'blacklistPatterns', 'whitelistPatterns']
+            required: ['minimumDependencyVersions', 'standardStructure', 'blacklistPatterns', 'whitelistPatterns'],
+            additionalProperties: true
         }
     },
     required: ['rules', 'operators', 'facts', 'config'],
