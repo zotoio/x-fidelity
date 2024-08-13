@@ -69,8 +69,8 @@ app.get('/archetypes/:archetype', async (req, res) => {
     if (!validateInput(archetype)) {
         return res.status(400).json({ error: 'Invalid archetype name' });
     }
-        const cacheKey = `archetype:${archetype}`;
-        const cachedData = getCachedData(cacheKey);
+    const cacheKey = `archetype:${archetype}`;
+    const cachedData = getCachedData(cacheKey);
         if (cachedData) {
             logger.debug(`Serving cached archetype ${archetype}`);
             return res.json(cachedData);
@@ -88,9 +88,6 @@ app.get('/archetypes/:archetype', async (req, res) => {
             logger.error(`Error fetching archetype ${archetype}: ${error}`);
             res.status(500).json({ error: 'Internal server error' });
         }
-    } else {
-        res.status(400).json({ error: 'Invalid archetype name' });
-    }
 });
 
 app.get('/archetypes', async (req, res) => {
@@ -117,8 +114,8 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
     if (!validateInput(archetype)) {
         return res.status(400).json({ error: 'Invalid archetype name' });
     }
-        if (ruleListCache[archetype] && ruleListCache[archetype].expiry > Date.now()) {
-            logger.debug(`Serving cached rule list for archetype: ${archetype}`);
+    if (ruleListCache[archetype] && ruleListCache[archetype].expiry > Date.now()) {
+        logger.debug(`Serving cached rule list for archetype: ${archetype}`);
             return res.json(ruleListCache[archetype].data);
         }
         const configManager = ConfigManager.getInstance();
@@ -134,9 +131,6 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
         } else {
             res.status(404).json({ error: 'archetype not found or has no rules' });
         }
-    } else {
-        res.status(404).json({ error: 'invalid archetype name' });
-    }
 });
 
 app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
@@ -148,8 +142,8 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     if (!validateInput(archetype) || !validateInput(rule)) {
         return res.status(400).json({ error: 'Invalid archetype or rule name' });
     }
-        const cacheKey = `rule:${archetype}:${rule}`;
-        const cachedData = getCachedData(cacheKey);
+    const cacheKey = `rule:${archetype}:${rule}`;
+    const cachedData = getCachedData(cacheKey);
         if (cachedData) {
             logger.debug(`Serving cached rule ${rule} for archetype ${archetype}`);
             return res.json(cachedData);
@@ -176,9 +170,6 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
             logger.error(`Error fetching rule ${rule} for archetype ${archetype}: ${error}`);
             res.status(500).json({ error: 'Internal server error' });
         }
-    } else {
-        res.status(400).json({ error: 'Invalid archetype or rule name' });
-    }
 });
 
 
