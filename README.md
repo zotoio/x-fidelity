@@ -331,6 +331,8 @@ Build and run the Docker container:
 docker-compose up --build
 ```
 
+> If you are testing the server using https/tls using the self-signed cert example in the Dockerfile above, you will need to use this environment variable on xfidelity clients connecting: `NODE_TLS_REJECT_UNAUTHORIZED=0`
+
 ### CI Pipeline Integration
 
 In your CI pipeline (e.g., GitHub Actions, GitLab CI, Jenkins), add a step to run x-fidelity in client mode:

@@ -1,9 +1,13 @@
 import { ConfigManager, REPO_GLOBAL_CHECK } from './config';
 import { archetypes } from '../archetypes';
 import axios from 'axios';
+import { validateArchetype } from './jsonSchemas';
 
 jest.mock('axios');
 jest.mock('../rules');
+jest.mock('./jsonSchemas', () => ({
+  validateArchetype: jest.fn().mockReturnValue(true)
+}));
 
 describe('ConfigManager', () => {
     let configManager: ConfigManager;
@@ -35,13 +39,24 @@ describe('ConfigManager', () => {
         });
 
         it('should fetch remote config when configServer is provided', async () => {
-            const mockConfig = { test: 'value' };
+            const mockConfig = {
+              rules: ['rule1', 'rule2'],
+              operators: ['operator1', 'operator2'],
+              facts: ['fact1', 'fact2'],
+              config: {
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                blacklistPatterns: [],
+                whitelistPatterns: []
+              }
+            };
             (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
 
             await configManager.initialize('test-archetype', 'http://test-server.com');
 
             expect(axios.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype', {'headers': {'X-Log-Prefix': ''}});
             expect(configManager.getConfig()).toEqual(expect.objectContaining(mockConfig));
+            expect(validateArchetype).toHaveBeenCalledWith(expect.objectContaining(mockConfig));
         });
 
         it('should throw an error when unable to fetch from configServer', async () => {

@@ -1,20 +1,10 @@
 import Ajv, { JSONSchemaType } from 'ajv';
+import { logger } from './logger';
+import { ArchetypeConfig, RuleConfig } from '../types/typeDefs';
 
 const ajv = new Ajv();
 
-interface ArchetypeConfig {
-    rules: string[];
-    operators: string[];
-    facts: string[];
-    config: {
-        minimumDependencyVersions: Record<string, string>;
-        standardStructure: Record<string, any>;
-        blacklistPatterns: string[];
-        whitelistPatterns: string[];
-    };
-}
-
-export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
+const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
     type: 'object',
     properties: {
         rules: { type: 'array', items: { type: 'string' }, minItems: 1 },
@@ -25,13 +15,11 @@ export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
             properties: {
                 minimumDependencyVersions: {
                     type: 'object',
-                    additionalProperties: { type: 'string' },
                     minProperties: 1,
                     required: []
                 },
                 standardStructure: {
                     type: 'object',
-                    additionalProperties: { type: 'string' },
                     minProperties: 1,
                     required: []
                 },
@@ -54,19 +42,7 @@ export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
     additionalProperties: false
 };
 
-interface RuleConfig {
-    name: string;
-    conditions: {
-        all?: any[];
-        any?: any[];
-    };
-    event: {
-        type: string;
-        params: Record<string, any>;
-    };
-}
-
-export const ruleSchema: JSONSchemaType<RuleConfig> = {
+const ruleSchema: JSONSchemaType<RuleConfig> = {
     type: 'object',
     properties: {
         name: { type: 'string' },
@@ -93,5 +69,33 @@ export const ruleSchema: JSONSchemaType<RuleConfig> = {
     required: ['name', 'conditions', 'event']
 };
 
-export const validateArchetype = ajv.compile(archetypeSchema);
-export const validateRule = ajv.compile(ruleSchema);
+const validateArchetypeSchema = ajv.compile(archetypeSchema);
+const validateRuleSchema = ajv.compile(ruleSchema);
+
+// Helper function to log validation errors
+const logValidationErrors = (errors: any[] | null | undefined) => {
+    if (errors) {
+        errors.forEach((error) => {
+            logger.error(`Validation error: ${error.instancePath} ${error.message}`);
+        });
+    }
+};
+
+// Wrap the validate functions to log errors
+const validateArchetype = (data: any) => {
+    const isValid = validateArchetypeSchema(data);
+    if (!isValid) {
+        logValidationErrors(validateArchetypeSchema.errors);
+    }
+    return isValid;
+};
+
+const validateRule = (data: any) => {
+    const isValid = validateRuleSchema(data);
+    if (!isValid) {
+        logValidationErrors(validateRuleSchema.errors);
+    }
+    return isValid;
+};
+
+export { validateArchetype, validateRule };

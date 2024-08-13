@@ -6,6 +6,9 @@ import { logger } from '../utils/logger';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
 
 jest.mock('../utils/openaiUtils');
+jest.mock('../utils/jsonSchemas', () => ({
+  validateRule: jest.fn().mockReturnValue(true)
+}));
 
 jest.mock('axios');
 jest.mock('fs', () => ({
@@ -32,7 +35,7 @@ describe('loadRules', () => {
     });
 
     it('should load rules from local files when configServer is not provided', async () => {
-        const mockRuleContent = JSON.stringify({ name: 'testRule', conditions: {}, event: {} });
+        const mockRuleContent = JSON.stringify({ name: 'testRule', conditions: { all: [] }, event: { type: 'testEvent', params: {} } });
         const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
         mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/testRule-rule.json');

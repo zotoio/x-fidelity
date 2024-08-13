@@ -4,6 +4,7 @@ import { ArchetypeConfig } from "../types/typeDefs";
 import { archetypes } from "../archetypes";
 import * as fs from 'fs';
 import * as path from 'path';
+import { validateArchetype } from './jsonSchemas';
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
@@ -48,11 +49,17 @@ export class ConfigManager {
                         'X-Log-Prefix': logPrefix || ''
                     }
                 });
-                this.config = {
+                const fetchedConfig = {
                     ...this.config,
                     ...response.data
                 };
-                logger.debug(`Remote archetype config fetched successfully ${JSON.stringify(this.config)}`);
+                if (validateArchetype(fetchedConfig)) {
+                    this.config = fetchedConfig;
+                    logger.debug(`Remote archetype config fetched successfully ${JSON.stringify(this.config)}`);
+                } else {
+                    logger.error(`Invalid remote archetype configuration for ${archetype}`);
+                    throw new Error('Invalid remote archetype configuration');
+                }
             } catch (error) {
                 if (error instanceof Error) {
                     logger.error(`Error fetching remote archetype config: ${error.message}`);

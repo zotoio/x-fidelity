@@ -42,12 +42,23 @@ export interface ArchetypeConfig {
     rules: string[];
     operators: string[];
     facts: string[];
-    configUrl?: string;
     config: {
         minimumDependencyVersions: Record<string, string>;
         standardStructure: Record<string, any>;
         blacklistPatterns: string[];
         whitelistPatterns: string[];
+    };
+}
+
+export interface RuleConfig {
+    name: string;
+    conditions: {
+        all?: any[];
+        any?: any[];
+    };
+    event: {
+        type: string;
+        params: Record<string, any>;
     };
 }
 

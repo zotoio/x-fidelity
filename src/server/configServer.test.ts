@@ -1,9 +1,3 @@
-import { startServer } from './configServer';
-import express from 'express';
-import https from 'https';
-import fs from 'fs';
-import { ConfigManager } from '../utils/config';
-import { loadRules } from '../rules';
 import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 
 jest.mock('../utils/config');
