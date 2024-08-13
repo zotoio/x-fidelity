@@ -1,3 +1,17 @@
+# [1.12.0](https://github.com/zotoio/x-fidelity/compare/v1.11.0...v1.12.0) (2024-08-13)
+
+
+### Bug Fixes
+
+* **docker:** tls ([ddc482c](https://github.com/zotoio/x-fidelity/commit/ddc482c36727bf8b2c5c070061856fa722caa870))
+
+
+### Features
+
+* Generate self-signed certificate and use it in Dockerfile ([9827ce4](https://github.com/zotoio/x-fidelity/commit/9827ce428cee13b437215068207bdc343320d484))
+* Use environment variables for certificate path and archetype ([abc254e](https://github.com/zotoio/x-fidelity/commit/abc254e03f855f1caa7562c23059a5f1fb70bd11))
+* Use environment variables in Dockerfile CMD and docker-compose.yml ([2278a68](https://github.com/zotoio/x-fidelity/commit/2278a683cd73924333b4baba75600de5dd49e9f8))
+
 # [1.11.0](https://github.com/zotoio/x-fidelity/compare/v1.10.1...v1.11.0) (2024-08-13)
 
 
