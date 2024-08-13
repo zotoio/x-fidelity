@@ -55,7 +55,9 @@ app.get('/archetypes/:archetype', async (req, res) => {
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
-    if (validateInput(archetype)) {
+    if (!validateInput(archetype)) {
+        return res.status(400).json({ error: 'Invalid archetype name' });
+    }
         const cacheKey = `archetype:${archetype}`;
         const cachedData = getCachedData(cacheKey);
         if (cachedData) {
@@ -101,7 +103,9 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
-    if (validateInput(archetype)) {
+    if (!validateInput(archetype)) {
+        return res.status(400).json({ error: 'Invalid archetype name' });
+    }
         if (ruleListCache[archetype] && ruleListCache[archetype].expiry > Date.now()) {
             logger.debug(`Serving cached rule list for archetype: ${archetype}`);
             return res.json(ruleListCache[archetype].data);
@@ -130,7 +134,9 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     const rule = req.params.rule;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
-    if (validateInput(archetype) && validateInput(rule)) {
+    if (!validateInput(archetype) || !validateInput(rule)) {
+        return res.status(400).json({ error: 'Invalid archetype or rule name' });
+    }
         const cacheKey = `rule:${archetype}:${rule}`;
         const cachedData = getCachedData(cacheKey);
         if (cachedData) {
@@ -169,9 +175,11 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
 app.post('/telemetry', (req, res) => {
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
+    if (!validateTelemetryData(req.body)) {
+        return res.status(400).json({ error: 'Invalid telemetry data' });
+    }
     logger.info('accepting telemetry data:', req.body);
     // Here you can process and store the telemetry data as needed
-    // For now, we'll just log it and send a success response
     res.status(200).json({ message: 'telemetry data received successfully' });
 });
 
