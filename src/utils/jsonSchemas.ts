@@ -52,7 +52,7 @@ export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
                 }
             },
             required: ['minimumDependencyVersions', 'standardStructure', 'blacklistPatterns', 'whitelistPatterns'],
-            additionalProperties: false
+            additionalProperties: true
         }
     },
     required: ['rules', 'operators', 'facts', 'config'],
