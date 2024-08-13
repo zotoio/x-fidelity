@@ -8,8 +8,10 @@ import { expressLogger } from './expressLogger'
 import { options } from '../core/cli';
 import { ConfigManager } from '../utils/config';
 import Joi from 'joi';
+import helmet from 'helmet';
 
 const app = express();
+app.use(helmet());
 const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
 
 // Simple in-memory cache
