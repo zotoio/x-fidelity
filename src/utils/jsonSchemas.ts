@@ -34,11 +34,8 @@ export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
                 },
                 standardStructure: {
                     type: 'object',
-                    additionalProperties: { 
-                        oneOf: [
-                            { type: 'object' },
-                            { type: 'null' }
-                        ]
+                    additionalProperties: {
+                        type: ['object', 'null']
                     }
                 },
                 blacklistPatterns: {
