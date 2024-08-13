@@ -48,7 +48,6 @@ export async function setupEngine(
                 metadata: {
                     archetype,
                     repoPath: '',
-                    repoPath: '',
                     ...params
                 },
                 timestamp: new Date().toISOString()
@@ -60,6 +59,7 @@ export async function setupEngine(
                 eventType: 'fatality',
                 metadata: {
                     archetype,
+                    repoPath: '',
                     ...params
                 },
                 timestamp: new Date().toISOString()
