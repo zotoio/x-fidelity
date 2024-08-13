@@ -9,9 +9,20 @@ import { options } from '../core/cli';
 import { ConfigManager } from '../utils/config';
 import Joi from 'joi';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 app.use(helmet());
+
+// Create a rate limiter
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+});
+
+// Apply rate limiter to all routes
+app.use(limiter);
+
 const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
 
 // Simple in-memory cache
