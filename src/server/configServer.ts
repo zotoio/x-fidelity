@@ -7,10 +7,9 @@ import { logger, setLogPrefix } from '../utils/logger';
 import { expressLogger } from './expressLogger'
 import { options } from '../core/cli';
 import { ConfigManager } from '../utils/config';
-import Joi from 'joi';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { archetypeSchema, ruleSchema } from '../utils/jsonSchemas';
+import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 
 const app = express();
 app.use(helmet());
@@ -55,32 +54,17 @@ function setCachedData(key: string, data: any, ttl: number = DEFAULT_TTL): void 
 app.use(express.json());
 app.use(expressLogger);
 
-const inputSchema = Joi.string().pattern(/^[a-zA-Z0-9-_]{1,50}$/).required();
-
 const validateInput = (value: string): boolean => {
-    const { error } = inputSchema.validate(value);
-    return !error;
+    return /^[a-zA-Z0-9-_]{1,50}$/.test(value);
 }
-
-const telemetrySchema = Joi.object({
-    eventType: Joi.string().required(),
-    metadata: Joi.object().required(),
-    timestamp: Joi.string().isoDate().required()
-});
 
 const validateTelemetryData = (data: any): boolean => {
-    const { error } = telemetrySchema.validate(data);
-    return !error;
-}
-
-const validateArchetype = (data: any): boolean => {
-    const { error } = archetypeSchema.validate(data);
-    return !error;
-}
-
-const validateRule = (data: any): boolean => {
-    const { error } = ruleSchema.validate(data);
-    return !error;
+    return (
+        typeof data.eventType === 'string' &&
+        typeof data.metadata === 'object' &&
+        typeof data.timestamp === 'string' &&
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(data.timestamp)
+    );
 }
 
 app.get('/archetypes/:archetype', async (req, res) => {

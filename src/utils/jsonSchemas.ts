@@ -1,25 +1,77 @@
-import Joi from 'joi';
+import Ajv, { JSONSchemaType } from 'ajv';
 
-export const archetypeSchema = Joi.object({
-    rules: Joi.array().items(Joi.string()).required(),
-    operators: Joi.array().items(Joi.string()).required(),
-    facts: Joi.array().items(Joi.string()).required(),
-    config: Joi.object({
-        minimumDependencyVersions: Joi.object().pattern(Joi.string(), Joi.string()).required(),
-        standardStructure: Joi.object().required(),
-        blacklistPatterns: Joi.array().items(Joi.string()).required(),
-        whitelistPatterns: Joi.array().items(Joi.string()).required()
-    }).required()
-});
+const ajv = new Ajv();
 
-export const ruleSchema = Joi.object({
-    name: Joi.string().required(),
-    conditions: Joi.object({
-        all: Joi.array().items(Joi.object()),
-        any: Joi.array().items(Joi.object())
-    }).xor('all', 'any').required(),
-    event: Joi.object({
-        type: Joi.string().required(),
-        params: Joi.object().required()
-    }).required()
-});
+interface ArchetypeConfig {
+    rules: string[];
+    operators: string[];
+    facts: string[];
+    config: {
+        minimumDependencyVersions: Record<string, string>;
+        standardStructure: Record<string, any>;
+        blacklistPatterns: string[];
+        whitelistPatterns: string[];
+    };
+}
+
+export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
+    type: 'object',
+    properties: {
+        rules: { type: 'array', items: { type: 'string' } },
+        operators: { type: 'array', items: { type: 'string' } },
+        facts: { type: 'array', items: { type: 'string' } },
+        config: {
+            type: 'object',
+            properties: {
+                minimumDependencyVersions: { type: 'object', additionalProperties: { type: 'string' } },
+                standardStructure: { type: 'object' },
+                blacklistPatterns: { type: 'array', items: { type: 'string' } },
+                whitelistPatterns: { type: 'array', items: { type: 'string' } }
+            },
+            required: ['minimumDependencyVersions', 'standardStructure', 'blacklistPatterns', 'whitelistPatterns']
+        }
+    },
+    required: ['rules', 'operators', 'facts', 'config']
+};
+
+interface RuleConfig {
+    name: string;
+    conditions: {
+        all?: any[];
+        any?: any[];
+    };
+    event: {
+        type: string;
+        params: Record<string, any>;
+    };
+}
+
+export const ruleSchema: JSONSchemaType<RuleConfig> = {
+    type: 'object',
+    properties: {
+        name: { type: 'string' },
+        conditions: {
+            type: 'object',
+            properties: {
+                all: { type: 'array', items: { type: 'object' }, nullable: true },
+                any: { type: 'array', items: { type: 'object' }, nullable: true }
+            },
+            oneOf: [
+                { required: ['all'] },
+                { required: ['any'] }
+            ]
+        },
+        event: {
+            type: 'object',
+            properties: {
+                type: { type: 'string' },
+                params: { type: 'object' }
+            },
+            required: ['type', 'params']
+        }
+    },
+    required: ['name', 'conditions', 'event']
+};
+
+export const validateArchetype = ajv.compile(archetypeSchema);
+export const validateRule = ajv.compile(ruleSchema);
