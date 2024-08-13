@@ -1,16 +1,7 @@
 import axios from 'axios';
 import { logger } from './logger';
 import { options } from "../core/cli";
-
-interface TelemetryEvent {
-    eventType: string;
-    metadata: {
-        archetype: string;
-        repoPath: string;
-        [key: string]: any;
-    };
-    timestamp: string;
-}
+import { TelemetryEvent } from '../types/typeDefs';
 
 const TELEMETRY_ENDPOINT = process.env.TELEMETRY_ENDPOINT || options.telemetryCollector || (options.configServer ? `${options.configServer}/telemetry` : null);
 
