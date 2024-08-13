@@ -17,31 +17,42 @@ interface ArchetypeConfig {
 export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
     type: 'object',
     properties: {
-        rules: { type: 'array', items: { type: 'string' } },
-        operators: { type: 'array', items: { type: 'string' } },
-        facts: { type: 'array', items: { type: 'string' } },
+        rules: { type: 'array', items: { type: 'string' }, minItems: 1 },
+        operators: { type: 'array', items: { type: 'string' }, minItems: 1 },
+        facts: { type: 'array', items: { type: 'string' }, minItems: 1 },
+        configUrl: { type: 'string', format: 'uri', nullable: true },
         config: {
             type: 'object',
             properties: {
                 minimumDependencyVersions: {
                     type: 'object',
-                    additionalProperties: true
+                    patternProperties: {
+                        "^[a-zA-Z0-9-_]+$": { type: 'string', pattern: '^[\\^~><=]?\\d+\\.\\d+\\.\\d+' }
+                    },
+                    additionalProperties: false
                 },
                 standardStructure: {
                     type: 'object',
-                    additionalProperties: true
+                    additionalProperties: { 
+                        oneOf: [
+                            { type: 'object' },
+                            { type: 'null' }
+                        ]
+                    }
                 },
                 blacklistPatterns: {
                     type: 'array',
-                    items: { type: 'string' }
+                    items: { type: 'string', format: 'regex' },
+                    minItems: 1
                 },
                 whitelistPatterns: {
                     type: 'array',
-                    items: { type: 'string' }
+                    items: { type: 'string', format: 'regex' },
+                    minItems: 1
                 }
             },
             required: ['minimumDependencyVersions', 'standardStructure', 'blacklistPatterns', 'whitelistPatterns'],
-            additionalProperties: true
+            additionalProperties: false
         }
     },
     required: ['rules', 'operators', 'facts', 'config'],
