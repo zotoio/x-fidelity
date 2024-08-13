@@ -20,38 +20,29 @@ export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
         rules: { type: 'array', items: { type: 'string' }, minItems: 1 },
         operators: { type: 'array', items: { type: 'string' }, minItems: 1 },
         facts: { type: 'array', items: { type: 'string' }, minItems: 1 },
-        configUrl: { type: 'string', format: 'uri', nullable: true },
         config: {
             type: 'object',
             properties: {
                 minimumDependencyVersions: {
                     type: 'object',
-                    patternProperties: {
-                        "^[a-zA-Z0-9-_]+$": { type: 'string', pattern: '^[\\^~><=]?\\d+\\.\\d+\\.\\d+' }
-                    },
-                    additionalProperties: false,
+                    additionalProperties: { type: 'string' },
+                    minProperties: 1,
                     required: []
                 },
                 standardStructure: {
                     type: 'object',
-                    patternProperties: {
-                        "^.*$": {
-                            oneOf: [
-                                { type: 'object' },
-                                { type: 'null' }
-                            ]
-                        }
-                    },
-                    additionalProperties: false
+                    additionalProperties: { type: 'string' },
+                    minProperties: 1,
+                    required: []
                 },
                 blacklistPatterns: {
                     type: 'array',
-                    items: { type: 'string', format: 'regex' },
+                    items: { type: 'string'},
                     minItems: 1
                 },
                 whitelistPatterns: {
                     type: 'array',
-                    items: { type: 'string', format: 'regex' },
+                    items: { type: 'string'},
                     minItems: 1
                 }
             },
