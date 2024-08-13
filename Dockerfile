@@ -24,5 +24,5 @@ EXPOSE ${XFI_LISTEN_PORT}
 RUN mkdir -p $CERT_PATH && \
     mv private-key.pem certificate.pem $CERT_PATH/
 
-# Define the command to run the app
-CMD ["xfidelity", "--mode", "server", "--localConfig", "/usr/src/app/config", "--archetype", "$ARCHETYPE"]
+# Define the command to run the app using shell form
+CMD xfidelity --mode server --localConfig /usr/src/app/config --archetype $ARCHETYPE

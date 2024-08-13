@@ -2,12 +2,12 @@ services:
   x-fidelity-server:
     build: .
     ports:
-      - "8888:8888"
+      - "${XFI_LISTEN_PORT}:${XFI_LISTEN_PORT}"
     volumes:
       - ./src:/usr/src/app/src
       - ../xfi-server/xfi-config:/usr/src/app/config
     environment:
       - NODE_ENV=production
-      - XFI_LISTEN_PORT=8888
-      - CERT_PATH=/usr/src/app/certs
-      - ARCHETYPE=node-fullstack
+      - XFI_LISTEN_PORT=${XFI_LISTEN_PORT}
+      - CERT_PATH=${CERT_PATH}
+      - ARCHETYPE=${ARCHETYPE}
