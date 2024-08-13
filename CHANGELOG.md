@@ -1,3 +1,18 @@
+# [1.11.0](https://github.com/zotoio/x-fidelity/compare/v1.10.1...v1.11.0) (2024-08-13)
+
+
+### Bug Fixes
+
+* Add logging for cache operations in configServer ([caa6b28](https://github.com/zotoio/x-fidelity/commit/caa6b28d7071073b03005696e402dc46df9e0217))
+* Improve caching and error handling in config server ([5adb358](https://github.com/zotoio/x-fidelity/commit/5adb3581c2d34871ac461d461c38deaf17c7e2d5))
+* **server:** cachettl option fix ([ee85fe3](https://github.com/zotoio/x-fidelity/commit/ee85fe360d8ff6b496f048d9c93c8129532cc02c))
+
+
+### Features
+
+* Implement Joi for input validation ([f950b28](https://github.com/zotoio/x-fidelity/commit/f950b28e4549a7c753914ce9321d5d6813230b35))
+* use Joi to validate input with alphanumeric, hyphen, and underscore characters, length between 1 and 50 ([8306f2f](https://github.com/zotoio/x-fidelity/commit/8306f2fa79f68e2ce38e906845f74cde9c0929c1))
+
 ## [1.10.1](https://github.com/zotoio/x-fidelity/compare/v1.10.0...v1.10.1) (2024-08-12)
 
 
