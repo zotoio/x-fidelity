@@ -8,7 +8,10 @@ import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 
 jest.mock('../utils/config');
 jest.mock('../rules');
-jest.mock('../utils/jsonSchemas');
+jest.mock('../utils/jsonSchemas', () => ({
+  validateArchetype: jest.fn(),
+  validateRule: jest.fn()
+}));
 
 describe('configServer', () => {
   const mockArchetypeConfig = {
