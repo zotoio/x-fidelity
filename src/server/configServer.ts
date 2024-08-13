@@ -50,6 +50,17 @@ const validateInput = (value: string): boolean => {
     return !error;
 }
 
+const telemetrySchema = Joi.object({
+    eventType: Joi.string().required(),
+    metadata: Joi.object().required(),
+    timestamp: Joi.string().isoDate().required()
+});
+
+const validateTelemetryData = (data: any): boolean => {
+    const { error } = telemetrySchema.validate(data);
+    return !error;
+}
+
 app.get('/archetypes/:archetype', async (req, res) => {
     logger.info(`serving archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
