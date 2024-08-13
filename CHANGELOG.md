@@ -1,3 +1,20 @@
+# [1.14.0](https://github.com/zotoio/x-fidelity/compare/v1.13.0...v1.14.0) (2024-08-13)
+
+
+### Bug Fixes
+
+* Add missing 'repoPath' property to metadata object in engineSetup.ts ([2ff3378](https://github.com/zotoio/x-fidelity/commit/2ff3378272fdf874bd422e18fbf5a34222ee065b))
+* Remove duplicate `repoPath` property in `metadata` object ([a31341b](https://github.com/zotoio/x-fidelity/commit/a31341b45da33fb230a7f4057ea445ebfa4c0d22))
+* Update loadRules function call in engine.test.ts ([aea43bb](https://github.com/zotoio/x-fidelity/commit/aea43bb894dd463941eecf2ed1301f77df847d28))
+* Update loadRules function call in setupEngine ([b116048](https://github.com/zotoio/x-fidelity/commit/b1160489445e1c9ec043786c2c3528d04f2e9f91))
+* Update telemetry data collection ([051a166](https://github.com/zotoio/x-fidelity/commit/051a166502e08ae82b1c36396850a61c9d457714))
+
+
+### Features
+
+* Add localConfigPath parameter to setupEngine function ([cbfff7a](https://github.com/zotoio/x-fidelity/commit/cbfff7aeecdf5af685dd248013f432f6a4c4df98))
+* reorganize codebase for maintainability and consistency ([13a454d](https://github.com/zotoio/x-fidelity/commit/13a454d8383de0ca7647c4113b89939958061b31))
+
 # [1.13.0](https://github.com/zotoio/x-fidelity/compare/v1.12.0...v1.13.0) (2024-08-13)
 
 
