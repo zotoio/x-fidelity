@@ -2,7 +2,7 @@
 import { logger } from './utils/logger';
 import json from 'prettyjson';
 import { options } from "./core/cli"; 
-import { analyzeCodebase } from "./core/engine";
+import { analyzeCodebase } from "./core/engine/analyzer";
 import { startServer } from './server/configServer';
 
 logger.debug(`startup options: ${options}`);

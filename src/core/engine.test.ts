@@ -1,4 +1,4 @@
-import { analyzeCodebase } from './engine';
+import { analyzeCodebase } from './engine/analyzer';
 import { Engine } from 'json-rules-engine';
 import { collectRepoFileData } from '../facts/repoFilesystemFacts';
 import { getDependencyVersionFacts } from '../facts/repoDependencyFacts';
@@ -142,7 +142,7 @@ describe('analyzeCodebase', () => {
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalled();
-        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '', mockLogPrefix, undefined);
+        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '', mockLogPrefix, '');
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);

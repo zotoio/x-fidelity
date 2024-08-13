@@ -1,13 +1,8 @@
 import { logger, setLogPrefix, generateLogPrefix } from '../../utils/logger';
-import { Engine, EngineResult, Event, RuleProperties, RuleResult } from 'json-rules-engine';
 import { FileData } from '../../facts/repoFilesystemFacts';
-import { ScanResult, RuleFailure } from '../../types/typeDefs';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../../config/configManager';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';
-import { loadOperators } from '../../operators';
-import { loadFacts } from '../../facts';
-import { loadRules } from '../../rules';
 import { collectRepoFileData } from '../../facts/repoFilesystemFacts';
 import { getDependencyVersionFacts, repoDependencyAnalysis } from '../../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../../facts/openaiAnalysisFacts';
@@ -55,7 +50,7 @@ export async function analyzeCodebase(repoPath: string, archetype = 'node-fullst
         openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
     }
 
-    const engine = await setupEngine(archetypeConfig, archetype, configManager, executionLogPrefix);
+    const engine = await setupEngine(archetypeConfig, archetype, configManager, executionLogPrefix, localConfigPath);
 
     if (isOpenAIEnabled() && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
         logger.info(`adding additional openai facts to engine..`);

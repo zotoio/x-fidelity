@@ -66,4 +66,13 @@ export interface OpenAIAnalysisParams {
     prompt: string;
     resultFact: string;
 }
+export interface TelemetryEvent {
+    eventType: string;
+    metadata: {
+        archetype: string;
+        repoPath: string;
+        [key: string]: any;
+    };
+    timestamp: string;
+}
 
