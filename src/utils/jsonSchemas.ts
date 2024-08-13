@@ -32,6 +32,7 @@ export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
         }
     },
     required: ['rules', 'operators', 'facts', 'config']
+    required: ['rules', 'operators', 'facts', 'config']
 };
 
 interface RuleConfig {
