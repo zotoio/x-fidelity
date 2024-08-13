@@ -12,6 +12,7 @@ import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { sendTelemetry } from '../utils/telemetry';
 import { execSync } from 'child_process';
 import os from 'os';
+import { validateArchetypeWithLogging as validateArchetype } from '../utils/jsonSchemas';
 
 async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', configServer = '', localConfigPath = ''): Promise<any[]> {
     const executionLogPrefix = generateLogPrefix();
