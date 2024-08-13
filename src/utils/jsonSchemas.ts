@@ -29,7 +29,8 @@ export const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
                     patternProperties: {
                         "^[a-zA-Z0-9-_]+$": { type: 'string', pattern: '^[\\^~><=]?\\d+\\.\\d+\\.\\d+' }
                     },
-                    additionalProperties: false
+                    additionalProperties: false,
+                    required: []
                 },
                 standardStructure: {
                     type: 'object',
