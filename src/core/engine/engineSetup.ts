@@ -11,7 +11,8 @@ export async function setupEngine(
     archetypeConfig: ArchetypeConfig, 
     archetype: string, 
     configManager: ConfigManager, 
-    executionLogPrefix: string
+    executionLogPrefix: string,
+    localConfigPath: string
 ): Promise<Engine> {
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
