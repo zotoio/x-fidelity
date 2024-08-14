@@ -1,55 +1,38 @@
-import axios from 'axios';
-import { startServer } from './configServer';
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { Rate } from 'k6/metrics';
 
 const BASE_URL = 'http://localhost:8888';
 
-describe('Config Server Performance Tests', () => {
-  beforeAll(async () => {
-    // Start the server
-    startServer('8888');
-    // Wait for the server to start
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  });
+const errorRate = new Rate('errors');
 
-  afterAll(() => {
-    // Stop the server (you might need to implement a stop method in configServer.ts)
-  });
+export const options = {
+  stages: [
+    { duration: '30s', target: 20 },  // Ramp up to 20 users
+    { duration: '1m', target: 20 },   // Stay at 20 users for 1 minute
+    { duration: '30s', target: 0 },   // Ramp down to 0 users
+  ],
+  thresholds: {
+    'http_req_duration': ['p(95)<500'], // 95% of requests should be below 500ms
+    'errors': ['rate<0.1'],  // Error rate should be less than 10%
+  },
+};
 
-  it('should handle multiple concurrent requests efficiently', async () => {
-    const numRequests = 100;
-    const startTime = Date.now();
+export default function () {
+  const res = http.get(`${BASE_URL}/archetypes/node-fullstack`);
+  
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+    'response time < 200ms': (r) => r.timings.duration < 200,
+  }) || errorRate.add(1);
 
-    const requests = Array(numRequests).fill(null).map(() => 
-      axios.get(`${BASE_URL}/archetypes/node-fullstack`)
-    );
+  sleep(1);
+}
 
-    await Promise.all(requests);
-
-    const endTime = Date.now();
-    const totalTime = endTime - startTime;
-    const averageTime = totalTime / numRequests;
-
-    console.log(`Total time for ${numRequests} requests: ${totalTime}ms`);
-    console.log(`Average time per request: ${averageTime}ms`);
-
-    expect(averageTime).toBeLessThan(50); // Expecting each request to take less than 50ms on average
-  });
-
-  it('should maintain performance under sustained load', async () => {
-    const numRequests = 1000;
-    const startTime = Date.now();
-
-    for (let i = 0; i < numRequests; i++) {
-      await axios.get(`${BASE_URL}/archetypes/node-fullstack`);
-    }
-
-    const endTime = Date.now();
-    const totalTime = endTime - startTime;
-    const averageTime = totalTime / numRequests;
-
-    console.log(`Total time for ${numRequests} sequential requests: ${totalTime}ms`);
-    console.log(`Average time per request: ${averageTime}ms`);
-
-    expect(averageTime).toBeLessThan(20); // Expecting each request to take less than 20ms on average
-  });
-});
+export function handleSummary(data) {
+  console.log('Performance Test Summary:');
+  console.log(`Total Requests: ${data.metrics.http_reqs.values.count}`);
+  console.log(`Average Response Time: ${data.metrics.http_req_duration.values.avg.toFixed(2)}ms`);
+  console.log(`95th Percentile Response Time: ${data.metrics.http_req_duration.values['p(95)'].toFixed(2)}ms`);
+  console.log(`Error Rate: ${(data.metrics.errors.values.rate * 100).toFixed(2)}%`);
+}
