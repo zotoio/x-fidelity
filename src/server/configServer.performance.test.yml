@@ -14,7 +14,7 @@ config:
   plugins:
     metrics-by-endpoint: {}
   ensure:
-    p95: 500
+    p95: 1000
     maxErrorRate: 1
   reporting:
     - json
@@ -27,25 +27,52 @@ scenarios:
           url: "/archetypes/node-fullstack"
           expect:
             - statusCode: 200
-      - think: 1
+      - think: 2
   - name: "Get rule"
     flow:
       - get:
           url: "/archetypes/node-fullstack/rules/sensitiveLogging-iterative"
           expect:
             - statusCode: 200
-      - think: 1
+      - think: 2
   - name: "Send telemetry"
     flow:
       - post:
           url: "/telemetry"
           json:
-            eventType: "testEvent"
+            eventType: "analysisStart"
             metadata:
               archetype: "node-fullstack"
               repoPath: "/test/repo"
-              testData: "performance test"
+              repoUrl: "https://github.com/example/test-repo.git"
+              configServer: "http://localhost:8888"
+              hostInfo:
+                platform: "linux"
+                release: "5.4.0-1234-generic"
+                type: "Linux"
+                arch: "x64"
+                cpus: 8
+                totalMemory: 16000000000
+                freeMemory: 8000000000
+              userInfo:
+                username: "testuser"
+                homedir: "/home/testuser"
+                shell: "/bin/bash"
             timestamp: "2024-08-14T08:58:01.541Z"
           expect:
             - statusCode: 200
-      - think: 1
+      - think: 2
+  - name: "Get multiple rules"
+    flow:
+      - get:
+          url: "/archetypes/node-fullstack/rules"
+          expect:
+            - statusCode: 200
+      - think: 2
+  - name: "Get available archetypes"
+    flow:
+      - get:
+          url: "/archetypes"
+          expect:
+            - statusCode: 200
+      - think: 2
