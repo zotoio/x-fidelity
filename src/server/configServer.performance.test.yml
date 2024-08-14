@@ -1,0 +1,29 @@
+config:
+  target: "http://localhost:8888"
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 20
+      name: "Ramp up load"
+    - duration: 120
+      arrivalRate: 20
+      name: "Sustained load"
+  defaults:
+    headers:
+      User-Agent: "Artillery"
+
+scenarios:
+  - name: "Get archetype config"
+    flow:
+      - get:
+          url: "/archetypes/node-fullstack"
+          expect:
+            - statusCode: 200
+      - think: 1
+  - name: "Get rule"
+    flow:
+      - get:
+          url: "/archetypes/node-fullstack/rules/sensitiveLogging-iterative"
+          expect:
+            - statusCode: 200
+      - think: 1
