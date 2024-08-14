@@ -18,7 +18,8 @@
     "build-run": "yarn build && node . --dir . | jq -R -r '. as $line | try fromjson catch $line'",
     "start-server": "ts-node src/index.ts --mode server",
     "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix"
+    "lint:fix": "eslint . --ext .ts --fix",
+    "perftest": "k6 run src/server/configServer.performance.test.ts"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
@@ -72,6 +73,7 @@
     "express-rate-limit": "^6.7.0",
     "helmet": "^7.1.0",
     "json-rules-engine": "^6.5.0",
+    "k6": "^0.0.0",
     "lodash": "^4.17.21",
     "nodemon": "^3.0.2",
     "openai": "^4.19.0",
