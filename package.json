@@ -19,7 +19,8 @@
     "start-server": "ts-node src/index.ts --mode server",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "perftest": "artillery run src/server/configServer.performance.test.yml"
+    "perftest": "artillery run src/server/configServer.performance.test.yml",
+    "perftest:cloud": "echo 'expecting env var ARTILLERY_CLOUD_API_KEY from artillery.io' && artillery run src/server/configServer.performance.test.yml --record"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",

@@ -45,7 +45,7 @@ scenarios:
               archetype: "node-fullstack"
               repoPath: "/test/repo"
               testData: "performance test"
-            timestamp: "{{ $isoTimestamp }}"
+            timestamp: "2024-08-14T08:58:01.541Z"
           expect:
             - statusCode: 200
       - think: 1
