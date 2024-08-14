@@ -1,3 +1,19 @@
+# [1.15.0](https://github.com/zotoio/x-fidelity/compare/v1.14.0...v1.15.0) (2024-08-14)
+
+
+### Features
+
+* Add performance test script ([0097cfe](https://github.com/zotoio/x-fidelity/commit/0097cfe9d4849ac70a6501c871435d0ded821c2d))
+* Add telemetry requests to the performance test and generate a report with graphs ([282af87](https://github.com/zotoio/x-fidelity/commit/282af87ea4af1e04d14ba6700b416c39077b21f9))
+* Update artillery test YAML with more realistic payload sizes ([1dcb5e4](https://github.com/zotoio/x-fidelity/commit/1dcb5e42011fee66d8674864386767a18a605a2f))
+* Update performance tests to use Artillery ([31ee453](https://github.com/zotoio/x-fidelity/commit/31ee4536609fb7369e850204bbeac67a9bebfb6b))
+
+
+### Performance Improvements
+
+* Add performance tests for the server ([33e3546](https://github.com/zotoio/x-fidelity/commit/33e3546a6d19a00dcc9851d91eee4dce9f2534d7))
+* **rate-limit:** increase rate-limit and test intensity ([206bd5b](https://github.com/zotoio/x-fidelity/commit/206bd5ba46111aa41dac5144ea41946e85deadf0))
+
 # [1.14.0](https://github.com/zotoio/x-fidelity/compare/v1.13.0...v1.14.0) (2024-08-13)
 
 
