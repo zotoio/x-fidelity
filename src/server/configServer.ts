@@ -210,13 +210,13 @@ export function startServer(customPort?: string) {
         // Create HTTPS server
         const httpsServer = https.createServer(credentials, app);
 
-        httpsServer.listen(serverPort, () => {
+        return httpsServer.listen(serverPort, () => {
             logger.info(`xfidelity server is running on https://localhost:${serverPort}`);
         });
         
     } catch (error) {
         logger.warn('Failed to start server with tls, falling back to http:', error);
-        app.listen(serverPort, () => {
+        return app.listen(serverPort, () => {
             logger.info(`xfidelity server is running on http://localhost:${serverPort}`);
         });
     }
