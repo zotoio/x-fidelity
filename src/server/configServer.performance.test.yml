@@ -1,18 +1,19 @@
 config:
   target: "http://localhost:8888"
   phases:
-    - duration: 60
-      arrivalRate: 5
-      rampTo: 20
+    - duration: 30
+      arrivalRate: 25
+      rampTo: 120
       name: "Ramp up load"
-    - duration: 120
-      arrivalRate: 20
+    - duration: 240
+      arrivalRate: 120
       name: "Sustained load"
   defaults:
     headers:
       User-Agent: "Artillery"
   plugins:
     metrics-by-endpoint: {}
+    ensure: {}
   ensure:
     p95: 1000
     maxErrorRate: 1

@@ -254,7 +254,7 @@ To use a remote configuration server, use the `-c` or `--configServer` option:
 xfidelity -c https://config-server.example.com
 ```
 
-The remote server should provide endpoints to serve archetype and rule configurations.
+The remote server is also the xfidelity cli configured in server mode to serve archetype and rule configurations.
 
 ## Hosting Config Servers
 
@@ -271,6 +271,8 @@ x-fidelity allows for centrally managed, hot-updatable custom rulesets that can 
 6. Create a simple CI pipeline step 'framework fidelity' after git repo clone to workspace:
    - Install the x-fidelity CLI
    - Run the CLI on the checked-out repo, pointing to the server (`--configServer http://my-server:8888`)
+
+> Performance report for config server for 30k requests over 5mins https://app.artillery.io/share/sh_98c74c2e592b6d3fdd326570c3e90caaac318697e2009980ac8d35309685df36
 
 ### Docker Example
 

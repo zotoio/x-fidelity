@@ -17,7 +17,7 @@ app.use(helmet());
 // Create a rate limiter
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minutes
-    max: 5000 // limit each IP to 5000 requests per windowMs
+    max: 10000 // limit each IP to 10000 requests per windowMs
 });
 
 // Apply rate limiter to all routes
