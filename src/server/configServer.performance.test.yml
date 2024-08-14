@@ -11,6 +11,14 @@ config:
   defaults:
     headers:
       User-Agent: "Artillery"
+  plugins:
+    metrics-by-endpoint: {}
+  ensure:
+    p95: 500
+    maxErrorRate: 1
+  reporting:
+    - json
+    - html
 
 scenarios:
   - name: "Get archetype config"
@@ -24,6 +32,20 @@ scenarios:
     flow:
       - get:
           url: "/archetypes/node-fullstack/rules/sensitiveLogging-iterative"
+          expect:
+            - statusCode: 200
+      - think: 1
+  - name: "Send telemetry"
+    flow:
+      - post:
+          url: "/telemetry"
+          json:
+            eventType: "testEvent"
+            metadata:
+              archetype: "node-fullstack"
+              repoPath: "/test/repo"
+              testData: "performance test"
+            timestamp: "{{ $isoTimestamp }}"
           expect:
             - statusCode: 200
       - think: 1
