@@ -82,7 +82,7 @@ app.get('/archetypes/:archetype', async (req, res) => {
     }
 
     try {
-        const config = await ConfigManager.getConfig(archetype, requestLogPrefix);
+        const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
         const archetypeConfig = config.archetype;
         logger.debug(`found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
 
@@ -112,7 +112,7 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
         logger.debug(`serving cached rule list for archetype: ${archetype}`);
         return res.json(ruleListCache[archetype].data);
     }
-    const config = await ConfigManager.getConfig(archetype, requestLogPrefix);
+    const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
     const archetypeConfig = config.archetype;
     if (archetypeConfig && archetypeConfig.rules) {
         const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, requestLogPrefix, options.localConfigPath);

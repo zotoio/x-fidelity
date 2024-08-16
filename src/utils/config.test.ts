@@ -1,4 +1,5 @@
 import { ConfigManager, REPO_GLOBAL_CHECK } from './config';
+import { ArchetypeConfig } from '../types/typeDefs';
 jest.mock('../archetypes', () => ({
   archetypes: {
     'node-fullstack': {
@@ -87,13 +88,13 @@ describe('ConfigManager', () => {
 
         it('should initialize with default archetype when not specified', async () => {
             (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
-            const config = await ConfigManager.getConfig();
+            const config = await ConfigManager.getConfig({});
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
         });
 
         it('should initialize with specified archetype', async () => {
             (axios.get as jest.Mock).mockResolvedValue({ data: { ...mockConfig, name: 'java-microservice' } });
-            const config = await ConfigManager.getConfig('java-microservice');
+            const config = await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(config.archetype.name).toBe('java-microservice');
         });
     });
@@ -101,7 +102,7 @@ describe('ConfigManager', () => {
     describe('initialize', () => {
         it('should fetch remote config when configServer is provided', async () => {
             (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
-            const config = await ConfigManager.getConfig('test-archetype');
+            const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
             expect(axios.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype', expect.any(Object));
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
             expect(validateArchetype).toHaveBeenCalledWith(expect.objectContaining(mockConfig));
@@ -109,14 +110,14 @@ describe('ConfigManager', () => {
 
         it('should throw an error when unable to fetch from configServer', async () => {
             (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
-            await expect(ConfigManager.getConfig('test-archetype')).rejects.toThrow('Network error');
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Network error');
             expect(logger.error).toHaveBeenCalled();
         });
 
         it('should load local config when localConfigPath is provided', async () => {
             options.configServer = '';
             (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
-            const config = await ConfigManager.getConfig('test-archetype');
+            const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
             expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/test-archetype.json', 'utf8');
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
         });
@@ -142,7 +143,7 @@ describe('ConfigManager', () => {
         it('should use default archetypes when no configServer or localConfigPath is provided', async () => {
             options.configServer = '';
             options.localConfigPath = '';
-            const config = await ConfigManager.getConfig('node-fullstack');
+            const config = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             expect(config.archetype).toEqual(expect.objectContaining(archetypes['node-fullstack']));
         });
     });
@@ -150,8 +151,8 @@ describe('ConfigManager', () => {
     describe('getLoadedConfigs', () => {
         it('should return an array of loaded config names', async () => {
             (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
-            await ConfigManager.getConfig('archetype1');
-            await ConfigManager.getConfig('archetype2');
+            await ConfigManager.getConfig({ archetype: 'archetype1' });
+            await ConfigManager.getConfig({ archetype: 'archetype2' });
             const loadedConfigs = await ConfigManager.getLoadedConfigs();
             expect(loadedConfigs).toEqual(['archetype1', 'archetype2']);
         });

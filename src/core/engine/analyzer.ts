@@ -30,7 +30,7 @@ export async function analyzeCodebase(repoPath: string, archetype = 'node-fullst
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
 
-    const executionConfig = await ConfigManager.getConfig(archetype, executionLogPrefix);
+    const executionConfig = await ConfigManager.getConfig({ archetype, logPrefix: executionLogPrefix });
     const archetypeConfig: ArchetypeConfig = executionConfig.archetype;
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
