@@ -1,6 +1,7 @@
 import { logger, setLogPrefix, generateLogPrefix } from '../../utils/logger';
 import { FileData } from '../../facts/repoFilesystemFacts';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../../utils/config';
+import { ArchetypeConfig } from '../../types/typeDefs';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';
 import { collectRepoFileData } from '../../facts/repoFilesystemFacts';
@@ -29,7 +30,8 @@ export async function analyzeCodebase(repoPath: string, archetype = 'node-fullst
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
 
-    const archetypeConfig = await ConfigManager.getConfig(archetype, executionLogPrefix);
+    const executionConfig = await ConfigManager.getConfig(archetype, executionLogPrefix);
+    const archetypeConfig: ArchetypeConfig = executionConfig.archetype;
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
     const fileData: FileData[] = await collectRepoFileData(repoPath, archetypeConfig);
@@ -48,7 +50,7 @@ export async function analyzeCodebase(repoPath: string, archetype = 'node-fullst
         openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
     }
 
-    const engine = await setupEngine(archetypeConfig, archetype, configManager, executionLogPrefix, localConfigPath);
+    const engine = await setupEngine(archetypeConfig, archetype, ConfigManager, executionLogPrefix, localConfigPath);
 
     if (isOpenAIEnabled() && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
         logger.info(`adding additional openai facts to engine..`);
