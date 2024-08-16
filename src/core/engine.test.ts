@@ -101,7 +101,7 @@ describe('analyzeCodebase', () => {
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalledWith(expect.any(Object));
-        expect(loadRules).toHaveBeenCalledWith('node-fullstack', ['mockRule'], '', mockLogPrefix, '');
+        expect(loadRules).toHaveBeenCalledWith({ archetype: 'node-fullstack', ruleNames: ['mockRule'], configServer: '', logPrefix: mockLogPrefix, localConfigPath: '' });
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
