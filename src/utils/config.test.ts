@@ -12,30 +12,30 @@ jest.mock('./jsonSchemas', () => ({
 describe('ConfigManager', () => {
     let configManager: ConfigManager;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         jest.clearAllMocks();
-        configManager = ConfigManager.getInstance();
+        configManager = await ConfigManager.getConfig();
     });
 
     afterEach(() => {
         jest.resetModules();
     });
 
-    it('should be a singleton', () => {
-        const instance1 = ConfigManager.getInstance();
-        const instance2 = ConfigManager.getInstance();
+    it('should be a singleton', async () => {
+        const instance1 = await ConfigManager.getConfig();
+        const instance2 = await ConfigManager.getConfig();
         expect(instance1).toBe(instance2);
     });
 
     describe('initialize', () => {
         it('should initialize with default archetype when not specified', async () => {
-            await configManager.initialize();
-            expect(configManager.getConfig()).toEqual(archetypes['node-fullstack']);
+            const config = await ConfigManager.getConfig()
+            expect(config.archetype.name).toEqual('node-fullstack');
         });
 
         it('should initialize with specified archetype', async () => {
-            await configManager.initialize('java-microservice');
-            expect(configManager.getConfig()).toEqual(archetypes['java-microservice']);
+            const config = await ConfigManager.getConfig('java-microservice');
+            expect(config.archetype.name).toEqual('java-microservice');
         });
 
         it('should fetch remote config when configServer is provided', async () => {
