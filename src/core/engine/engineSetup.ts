@@ -4,7 +4,7 @@ import { loadOperators } from '../../operators';
 import { loadFacts } from '../../facts';
 import { loadRules } from '../../rules';
 import { ArchetypeConfig } from '../../types/typeDefs';
-import { ConfigManager } from '../../config/configManager';
+import { ConfigManager } from '../../utils/config';
 import { sendTelemetry } from '../../utils/telemetry';
 
 export async function setupEngine(
