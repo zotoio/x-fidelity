@@ -30,11 +30,10 @@ const cache: { [key: string]: { data: any; expiry: number } } = {};
 const DEFAULT_TTL = parseInt(options.jsonTTL) * 60 * 1000; // Convert CLI option to milliseconds
 
 // Cache for archetype lists and rule lists
-const archetypeListCache: { data: string[]; expiry: number } = { data: [], expiry: 0 };
 const ruleListCache: { [archetype: string]: { data: RuleProperties[]; expiry: number } } = {};
 
 function getCachedData(key: string): any | null {
-    logger.debug(`Checking cache for key: ${key}`);
+    logger.debug(`checking cache for key: ${key}`);
     const item = cache[key];
     if (item && item.expiry > Date.now()) {
         return item.data;
@@ -43,7 +42,7 @@ function getCachedData(key: string): any | null {
 }
 
 function setCachedData(key: string, data: any, ttl: number = DEFAULT_TTL): void {
-    logger.debug(`Setting cache for key: ${key}`);
+    logger.debug(`setting cache for key: ${key}`);
     cache[key] = {
         data,
         expiry: Date.now() + ttl
@@ -68,119 +67,103 @@ const validateTelemetryData = (data: any): boolean => {
 }
 
 app.get('/archetypes/:archetype', async (req, res) => {
-    logger.info(`serving archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
     if (!validateInput(archetype)) {
+        logger.error(`invalid archetype name: ${archetype}`);
         return res.status(400).json({ error: 'Invalid archetype name' });
     }
     const cacheKey = `archetype:${archetype}`;
     const cachedData = getCachedData(cacheKey);
     if (cachedData) {
-        logger.debug(`Serving cached archetype ${archetype}`);
+        logger.info(`serving cached archetype ${archetype}`);
         return res.json(cachedData);
     }
 
     try {
-        const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype, options.configServer, options.localConfig, requestLogPrefix);
-        const archetypeConfig = configManager.getConfig();
-        logger.debug(`Found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
-        
+        const config = await ConfigManager.getConfig(archetype, requestLogPrefix);
+        const archetypeConfig = config.archetype;
+        logger.debug(`found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
+
         if (!validateArchetype(archetypeConfig)) {
-            logger.error(`Invalid archetype configuration for ${archetype}`);
-            return res.status(500).json({ error: 'Invalid archetype configuration' });
+            logger.error(`invalid archetype configuration for ${archetype}`);
+            return res.status(500).json({ error: 'invalid archetype configuration' });
         }
-        
+
         setCachedData(cacheKey, archetypeConfig);
+        logger.info(`serving archetype ${archetype}`);
         res.json(archetypeConfig);
     } catch (error) {
-        logger.error(`Error fetching archetype ${archetype}: ${error}`);
-        res.status(500).json({ error: 'Internal server error' });
+        logger.error(`error fetching archetype ${archetype}: ${error}`);
+        res.status(500).json({ error: 'internal server error' });
     }
-});
-
-app.get('/archetypes', async (req, res) => {
-    logger.info('serving archetype list..');
-    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
-    setLogPrefix(requestLogPrefix);
-    if (archetypeListCache.expiry > Date.now()) {
-        logger.debug('Serving cached archetype list');
-        return res.json(archetypeListCache.data);
-    }
-    const configManager = ConfigManager.getInstance();
-    
-    const archetypes = await configManager.getAvailableArchetypes();
-    archetypeListCache.data = archetypes;
-    archetypeListCache.expiry = Date.now() + DEFAULT_TTL;
-    res.json(archetypes);
 });
 
 app.get('/archetypes/:archetype/rules', async (req, res) => {
-    logger.info(`serving rules for archetype: ${req.params.archetype}`);
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
     if (!validateInput(archetype)) {
+        logger.error(`invalid archetype name: ${archetype}`);
         return res.status(400).json({ error: 'Invalid archetype name' });
     }
     if (ruleListCache[archetype] && ruleListCache[archetype].expiry > Date.now()) {
-        logger.debug(`Serving cached rule list for archetype: ${archetype}`);
-            return res.json(ruleListCache[archetype].data);
-        }
-        const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype, options.configServer, options.localConfig, requestLogPrefix);
-        const archetypeConfig = configManager.getConfig();
-        if (archetypeConfig && archetypeConfig.rules) {
-            const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, requestLogPrefix, options.localConfig);
-            ruleListCache[archetype] = {
-                data: rules,
-                expiry: Date.now() + DEFAULT_TTL
-            };
-            res.json(rules);
-        } else {
-            res.status(404).json({ error: 'archetype not found or has no rules' });
-        }
+        logger.debug(`serving cached rule list for archetype: ${archetype}`);
+        return res.json(ruleListCache[archetype].data);
+    }
+    const config = await ConfigManager.getConfig(archetype, requestLogPrefix);
+    const archetypeConfig = config.archetype;
+    if (archetypeConfig && archetypeConfig.rules) {
+        const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, requestLogPrefix, options.localConfigPath);
+        ruleListCache[archetype] = {
+            data: rules,
+            expiry: Date.now() + DEFAULT_TTL
+        };
+        res.json(rules);
+    } else {
+        logger.error(`archetype ${archetype} not found or has no rules`);
+        res.status(404).json({ error: 'archetype not found or has no rules' });
+    }
 });
 
 app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
-    logger.info(`serving rule ${req.params.rule} for archetype ${req.params.archetype}..`);
     const archetype = req.params.archetype;
     const rule = req.params.rule;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
     if (!validateInput(archetype) || !validateInput(rule)) {
-        return res.status(400).json({ error: 'Invalid archetype or rule name' });
+        logger.error(`invalid archetype or rule name: ${archetype}, ${rule}`);
+        return res.status(400).json({ error: 'invalid archetype or rule name' });
     }
     const cacheKey = `rule:${archetype}:${rule}`;
     const cachedData = getCachedData(cacheKey);
     if (cachedData) {
-        logger.debug(`Serving cached rule ${rule} for archetype ${archetype}`);
+        logger.debug(`serving cached rule ${rule} for archetype ${archetype}`);
         return res.json(cachedData);
     }
 
     try {
-        const configManager = ConfigManager.getInstance();
-        await configManager.initialize(archetype, options.configServer, options.localConfig, requestLogPrefix);
-        const archetypeConfig = configManager.getConfig();
+        const config = await ConfigManager.getConfig(archetype, requestLogPrefix);
+        const archetypeConfig = config.archetype;
         if (archetypeConfig && archetypeConfig.rules && archetypeConfig.rules.includes(rule)) {
-            const rules = await loadRules(archetype, [rule], options.configServer, requestLogPrefix, options.localConfig);
+            const rules = await loadRules(archetype, [rule], options.configServer, requestLogPrefix, options.localConfigPath);
             const ruleJson = rules[0]; // We're only loading one rule, so it's the first element
-            
+
             if (ruleJson && validateRule(ruleJson)) {
                 setCachedData(cacheKey, ruleJson);
+                logger.info(`serving rule ${req.params.rule} for archetype ${req.params.archetype}`);
                 res.json(ruleJson);
             } else {
-                logger.error(`Invalid rule configuration for ${rule}`);
-                res.status(500).json({ error: 'Invalid rule configuration' });
+                logger.error(`invalid rule configuration for ${rule}`);
+                res.status(500).json({ error: 'invalid rule configuration' });
             }
         } else {
-            res.status(404).json({ error: 'Rule not found' });
+            res.status(404).json({ error: 'rule not found' });
         }
     } catch (error) {
-        logger.error(`Error fetching rule ${rule} for archetype ${archetype}: ${error}`);
-        res.status(500).json({ error: 'Internal server error' });
+        logger.error(`error fetching rule ${rule} for archetype ${archetype}: ${error}`);
+        res.status(500).json({ error: 'internal server error' });
     }
 });
 
@@ -199,7 +182,7 @@ app.post('/telemetry', (req, res) => {
 
 export function startServer(customPort?: string) {
     const serverPort = customPort ? parseInt(customPort) : port;
-    
+
     // Read SSL certificate and key
     try {
         const certPath = process.env.CERT_PATH || __dirname;
@@ -213,9 +196,9 @@ export function startServer(customPort?: string) {
         return httpsServer.listen(serverPort, () => {
             logger.info(`xfidelity server is running on https://localhost:${serverPort}`);
         });
-        
+
     } catch (error) {
-        logger.warn('Failed to start server with tls, falling back to http:', error);
+        logger.warn('failed to start server with tls, falling back to http:', error);
         return app.listen(serverPort, () => {
             logger.info(`xfidelity server is running on http://localhost:${serverPort}`);
         });

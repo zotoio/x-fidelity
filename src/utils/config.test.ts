@@ -19,6 +19,7 @@ import { validateArchetype } from './jsonSchemas';
 import fs from 'fs';
 import { options } from '../core/cli';
 import { logger } from './logger';
+import { archetypes } from '../archetypes';
 
 jest.mock('axios');
 jest.mock('../rules');
@@ -46,6 +47,7 @@ jest.mock('./logger', () => ({
         debug: jest.fn(),
         error: jest.fn(),
         info: jest.fn(),
+        warn: jest.fn()
     }
 }));
 
@@ -137,7 +139,7 @@ describe('ConfigManager', () => {
             expect(logger.error).toHaveBeenCalled();
         });
 
-        it('should use archetypes when no configServer or localConfigPath is provided', async () => {
+        it('should use default archetypes when no configServer or localConfigPath is provided', async () => {
             options.configServer = '';
             options.localConfigPath = '';
             const config = await ConfigManager.getConfig('node-fullstack');

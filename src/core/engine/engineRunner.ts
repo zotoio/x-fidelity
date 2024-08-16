@@ -2,7 +2,7 @@ import { Engine, EngineResult, RuleResult } from 'json-rules-engine';
 import { FileData } from '../../facts/repoFilesystemFacts';
 import { ScanResult, RuleFailure } from '../../types/typeDefs';
 import { logger } from '../../utils/logger';
-import { REPO_GLOBAL_CHECK } from '../../config/configManager';
+import { REPO_GLOBAL_CHECK } from '../../utils/config';
 
 export async function runEngineOnFiles(
     engine: Engine,

@@ -1,4 +1,5 @@
 {
+    "name": "java-microservice",
     "rules": [
         "sensitiveLogging-iterative",
         "outdatedFramework-global",

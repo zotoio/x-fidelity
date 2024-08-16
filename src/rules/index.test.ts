@@ -1,7 +1,7 @@
 import { loadRules } from './index';
 import axios from 'axios';
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
 import { logger } from '../utils/logger';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
 

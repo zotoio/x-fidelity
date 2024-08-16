@@ -7,6 +7,7 @@ jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
     promises: {
       lstat: jest.fn(),
+      readFile: jest.fn(),
     },
     readFileSync: jest.fn(),
     readdirSync: jest.fn(),
@@ -14,6 +15,7 @@ jest.mock('fs', () => ({
 jest.mock('../utils/logger');
 
 const mockArchetypeConfig: ArchetypeConfig = {
+    name: 'testArchetype',
     rules: [],
     operators: [],
     facts: [],

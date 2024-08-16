@@ -22,7 +22,7 @@ jest.mock('../core/cli', () => ({
         telemetryCollector: '',
         mode: 'cli',
         port: '8888',
-        localConfig: ''
+        localConfigPath: ''
     }
 }));
 

@@ -1,12 +1,7 @@
-import express, { Request, Response, NextFunction } from 'express';
-import bodyParser from 'body-parser';
+import { Request, Response, NextFunction } from 'express';
 import { logger, resetLogPrefix, setLogPrefix } from '../utils/logger';
 import json from 'prettyjson';
 
-const app = express();
-
-// Middleware to parse JSON request bodies
-app.use(bodyParser.json());
 
 // Middleware to log request and response details
 export const expressLogger = (req: Request, res: Response, next: NextFunction) => {

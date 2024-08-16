@@ -38,7 +38,14 @@ export interface LocalDependencies {
     [propertyName: string]: { version: string; };
 }
 
+export interface ExecutionConfig {
+    archetype: ArchetypeConfig;
+    rules: RuleConfig[];
+    cliOptions: { [key: string]: any };
+}
+
 export interface ArchetypeConfig {
+    name: string;
     rules: string[];
     operators: string[];
     facts: string[];

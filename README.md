@@ -173,7 +173,7 @@ xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <arch
 - `-p --port <port>`: Port number for server mode (default: 8888)
 - `-o --openaiEnabled <boolean>`: Enable OpenAI analysis (default: false)
 - `-t --telemetryCollector <url>`: The URL telemetry data will be sent to for usage analysis
-- `-l --localConfig <path>`: Path to local archetype config and rules
+- `-l --localConfigPath <path>`: Path to local archetype config and rules
 - `-j --jsonTTL <minutes>` : The server json cache TTL in minutes (default: 10)
 
 Examples:
@@ -234,7 +234,7 @@ Example archetype JSON structure:
 
 ### Local Configuration
 
-To use local configuration files for archetypes and rules, use the `-l` or `--localConfig` option:
+To use local configuration files for archetypes and rules, use the `-l` or `--localConfigPath` option:
 
 ```sh
 xfidelity -l /path/to/local/config
@@ -266,7 +266,7 @@ x-fidelity allows for centrally managed, hot-updatable custom rulesets that can 
 4. Install the x-fidelity CLI on the server.
 5. Configure the CLI to:
    - Run on startup in server mode (`--mode server`)
-   - Point to your rules directory cloned from GitHub (`--localConfig ../rule-repo/config`)
+   - Point to your rules directory cloned from GitHub (`--localConfigPath ../rule-repo/config`)
    - Optionally set the port to listen on (`--port <port>`)
 6. Create a simple CI pipeline step 'framework fidelity' after git repo clone to workspace:
    - Install the x-fidelity CLI
@@ -305,7 +305,7 @@ RUN mkdir -p $CERT_PATH && \
     mv private-key.pem certificate.pem $CERT_PATH/
 
 # Define the command to run the app using shell form
-CMD xfidelity --mode server --localConfig /usr/src/app/config
+CMD xfidelity --mode server --localConfigPath /usr/src/app/config
 ```
 
 And here's a sample docker-compose.yml file to configure and run the container:

@@ -1,4 +1,5 @@
 {
+    "name": "node-fullstack",
     "rules": [
         "sensitiveLogging-iterative",
         "outdatedFramework-global",

@@ -24,4 +24,4 @@ RUN mkdir -p $CERT_PATH && \
     mv private-key.pem certificate.pem $CERT_PATH/
 
 # Define the command to run the app using shell form
-CMD xfidelity --mode server --localConfig /usr/src/app/config
+CMD xfidelity --mode server --localConfigPath /usr/src/app/config

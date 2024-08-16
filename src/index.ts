@@ -12,7 +12,7 @@ try {
         startServer(options.port);
     } else {
         (async () => {
-            const results = await analyzeCodebase(options.dir, options.archetype, options.configServer, options.localConfig);
+            const results = await analyzeCodebase(options.dir, options.archetype, options.configServer, options.localConfigPath);
 
             // if results are found, there were warning level issues found in the codebase
             if (results.length > 0) {

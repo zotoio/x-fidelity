@@ -7,6 +7,7 @@ const ajv = new Ajv();
 const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
     type: 'object',
     properties: {
+        name: { type: 'string' },
         rules: { type: 'array', items: { type: 'string' }, minItems: 1 },
         operators: { type: 'array', items: { type: 'string' }, minItems: 1 },
         facts: { type: 'array', items: { type: 'string' }, minItems: 1 },

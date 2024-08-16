@@ -23,7 +23,7 @@ program
     .option("-t, --telemetryCollector <telemetryCollector>", "The URL telemetry data will be sent to for usage analysis")
     .option("-m, --mode <mode>", "Run mode: 'client' or 'server'", "client")
     .option("-p, --port <port>", "The port to run the server on", "8888")
-    .option("-l, --localConfig <path>", "Path to local archetype config and rules")
+    .option("-l, --localConfigPath <path>", "Path to local archetype config and rules")
     .option("-j, --jsonTTL <minutes>", "Set the server json cache TTL in minutes", "10");
 
 program.parse();
@@ -33,8 +33,8 @@ const options = program.opts();
 // Resolve paths
 const resolvePath = (inputPath: string) => path.resolve(process.cwd(), inputPath);
 options.dir = resolvePath(options.dir);
-if (options.localConfig) {
-    options.localConfig = resolvePath(options.localConfig);
+if (options.localConfigPath) {
+    options.localConfigPath = resolvePath(options.localConfigPath);
 }
 
 const banner = (`
@@ -55,7 +55,7 @@ directory: ${options.dir}
 configServer: ${options.configServer ? options.configServer : 'none'}
 mode: ${options.mode}
 port: ${options.mode === 'server' ? options.port : 'n/a'}
-localConfig: ${options.localConfig ? options.localConfig : 'none'}
+localConfigPath: ${options.localConfigPath ? options.localConfigPath : 'none'}
 jsonTTL: ${options.jsonTTL} minutes
 for available options run: xfidelity --help
 =====================================`);
