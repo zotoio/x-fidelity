@@ -5,6 +5,7 @@ import { loadFacts } from '../../facts';
 import { loadRules } from '../../rules';
 import { ArchetypeConfig } from '../../types/typeDefs';
 import { ConfigManager } from '../../utils/config';
+import { options } from '../../core/cli';
 import { sendTelemetry } from '../../utils/telemetry';
 
 export async function setupEngine(
@@ -28,7 +29,7 @@ export async function setupEngine(
 
     // Add rules to engine
     logger.info(`=== loading json rules..`);
-    const rules = await loadRules(archetype, archetypeConfig.rules, configManager.configServer, executionLogPrefix, localConfigPath);
+    const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, executionLogPrefix, localConfigPath);
     logger.debug(rules);
 
     rules.forEach((rule) => {
