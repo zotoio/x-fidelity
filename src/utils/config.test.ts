@@ -85,7 +85,7 @@ describe('ConfigManager', () => {
             (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
 
             await expect(ConfigManager.getConfig('test-archetype'))
-                .rejects.toThrow('Failed to fetch remote archetype config');
+                .rejects.toThrow('Network error');
         });
 
         it('should load local config when localConfigPath is provided', async () => {
@@ -103,6 +103,7 @@ describe('ConfigManager', () => {
             (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
 
             options.configServer = '';
+            options.localConfigPath = '/path/to/local/config';
             const config = await ConfigManager.getConfig('test-archetype');
 
             expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/test-archetype.json', 'utf8');
@@ -113,8 +114,9 @@ describe('ConfigManager', () => {
             (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
 
             options.configServer = '';
+            options.localConfigPath = '/path/to/local/config';
             await expect(ConfigManager.getConfig('test-archetype'))
-                .rejects.toThrow('Failed to load local archetype config');
+                .rejects.toThrow('File not found');
         });
     });
 });
