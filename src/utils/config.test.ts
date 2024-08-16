@@ -2,40 +2,47 @@ import { ConfigManager, REPO_GLOBAL_CHECK } from './config';
 import { archetypes } from '../archetypes';
 import axios from 'axios';
 import { validateArchetype } from './jsonSchemas';
+import * as fs from 'fs';
 
 jest.mock('axios');
 jest.mock('../rules');
 jest.mock('./jsonSchemas', () => ({
   validateArchetype: jest.fn().mockReturnValue(true)
 }));
+jest.mock('fs', () => ({
+  promises: {
+    readFile: jest.fn(),
+  },
+}));
 
 describe('ConfigManager', () => {
-    let configManager: ConfigManager;
-
-    beforeEach(async () => {
+    beforeEach(() => {
         jest.clearAllMocks();
-        configManager = await ConfigManager.getConfig();
     });
 
-    afterEach(() => {
-        jest.resetModules();
-    });
+    describe('getConfig', () => {
+        it('should return the same instance for the same archetype', async () => {
+            const instance1 = await ConfigManager.getConfig('node-fullstack');
+            const instance2 = await ConfigManager.getConfig('node-fullstack');
+            expect(instance1).toBe(instance2);
+        });
 
-    it('should be a singleton', async () => {
-        const instance1 = await ConfigManager.getConfig();
-        const instance2 = await ConfigManager.getConfig();
-        expect(instance1).toBe(instance2);
+        it('should return different instances for different archetypes', async () => {
+            const instance1 = await ConfigManager.getConfig('node-fullstack');
+            const instance2 = await ConfigManager.getConfig('java-microservice');
+            expect(instance1).not.toBe(instance2);
+        });
     });
 
     describe('initialize', () => {
         it('should initialize with default archetype when not specified', async () => {
-            const config = await ConfigManager.getConfig()
-            expect(config.archetype.name).toEqual('node-fullstack');
+            const config = await ConfigManager.getConfig();
+            expect(config.archetype).toEqual(expect.objectContaining(archetypes['node-fullstack']));
         });
 
         it('should initialize with specified archetype', async () => {
             const config = await ConfigManager.getConfig('java-microservice');
-            expect(config.archetype.name).toEqual('java-microservice');
+            expect(config.archetype).toEqual(expect.objectContaining(archetypes['java-microservice']));
         });
 
         it('should fetch remote config when configServer is provided', async () => {
@@ -52,32 +59,47 @@ describe('ConfigManager', () => {
             };
             (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
 
-            await configManager.initialize('test-archetype', 'http://test-server.com');
+            const config = await ConfigManager.getConfig('test-archetype', 'http://test-server.com');
 
             expect(axios.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype', {'headers': {'X-Log-Prefix': ''}});
-            expect(configManager.getConfig()).toEqual(expect.objectContaining(mockConfig));
+            expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
             expect(validateArchetype).toHaveBeenCalledWith(expect.objectContaining(mockConfig));
         });
 
         it('should throw an error when unable to fetch from configServer', async () => {
             (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-            await expect(configManager.initialize('test-archetype', 'http://test-server.com'))
+            await expect(ConfigManager.getConfig('test-archetype', 'http://test-server.com'))
                 .rejects.toThrow('Failed to fetch remote archetype config');
-
-            expect(configManager.getConfig()).toEqual(archetypes['node-fullstack']);
         });
 
+        it('should load local config when localConfigPath is provided', async () => {
+            const mockConfig = {
+              rules: ['rule1', 'rule2'],
+              operators: ['operator1', 'operator2'],
+              facts: ['fact1', 'fact2'],
+              config: {
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                blacklistPatterns: [],
+                whitelistPatterns: []
+              }
+            };
+            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
+
+            const config = await ConfigManager.getConfig('test-archetype', '', '/path/to/local/config');
+
+            expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/test-archetype.json', 'utf8');
+            expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
+        });
+
+        it('should throw an error when unable to load local archetype config', async () => {
+            (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
+
+            await expect(ConfigManager.getConfig('test-archetype', '', '/non/existent/path'))
+                .rejects.toThrow('Failed to load local archetype config');
+        });
     });
-
-    it('should throw an error when unable to load local archetype config', async () => {
-        const configManager = ConfigManager.getInstance();
-        configManager.localConfigPath = '/non/existent/path';
-
-        await expect(configManager.initialize('test-archetype', '', '/non/existent/path'))
-            .rejects.toThrow('Failed to load local archetype config');
-    });
-
 });
 
 describe('REPO_GLOBAL_CHECK', () => {
