@@ -116,7 +116,7 @@ describe('ConfigManager', () => {
             options.configServer = '';
             options.localConfigPath = '/path/to/local/config';
             await expect(ConfigManager.getConfig('test-archetype'))
-                .rejects.toThrow('File not found');
+                .rejects.toThrow('Failed to load local archetype config');
         });
     });
 });
