@@ -12,9 +12,12 @@ jest.mock('./jsonSchemas', () => ({
   validateArchetype: jest.fn().mockReturnValue(true)
 }));
 jest.mock('fs', () => ({
+    ...jest.requireActual('fs'),
     promises: {
-      readFile: jest.fn(),
+      lstat: jest.fn(),
     },
+    readFileSync: jest.fn(),
+    readdirSync: jest.fn(),
 }));
 jest.mock('../core/cli', () => ({
     options: {
