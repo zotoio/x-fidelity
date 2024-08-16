@@ -58,11 +58,10 @@ jest.mock('../archetypes', () => ({
 describe('analyzeCodebase', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        (ConfigManager.getInstance as jest.Mock).mockReturnValue({
-            initialize: jest.fn(),
-            getConfig: jest.fn().mockReturnValue(archetypes['node-fullstack']),
-            configServer: '',
-            executionLogPrefix: 'mockLogPrefix'
+        (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
+            archetype: archetypes['node-fullstack'],
+            rules: [],
+            cliOptions: {}
         });
         jest.spyOn(console, 'log').mockImplementation(() => {console.log('z')});
         jest.spyOn(console, 'error').mockImplementation(() => {console.log('z')});
