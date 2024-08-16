@@ -60,7 +60,19 @@ export class ConfigManager {
             }
 
             if (!config.archetype || Object.keys(config.archetype).length === 0) {
-                throw new Error(`No valid configuration found for archetype: ${archetype}`);
+                logger.warn(`No valid configuration found for archetype: ${archetype}. Using default configuration.`);
+                config.archetype = {
+                    name: archetype,
+                    rules: [],
+                    operators: [],
+                    facts: [],
+                    config: {
+                        minimumDependencyVersions: {},
+                        standardStructure: {},
+                        blacklistPatterns: [],
+                        whitelistPatterns: []
+                    }
+                };
             }
 
             return config;
@@ -75,7 +87,6 @@ export class ConfigManager {
     }
 
     private static async loadLocalConfig(archetype: string, localConfigPath: string): Promise<ArchetypeConfig> {
-
         try {
             const configPath = path.join(localConfigPath, `${archetype}.json`);
             logger.info(`Loading local archetype config from: ${configPath}`);
@@ -90,7 +101,19 @@ export class ConfigManager {
             } else {
                 logger.error('Error loading local archetype config: Unknown error');
             }
-            throw new Error('Failed to load local archetype config');
+            logger.warn('Falling back to default configuration');
+            return {
+                name: archetype,
+                rules: [],
+                operators: [],
+                facts: [],
+                config: {
+                    minimumDependencyVersions: {},
+                    standardStructure: {},
+                    blacklistPatterns: [],
+                    whitelistPatterns: []
+                }
+            };
         }
     }
 
