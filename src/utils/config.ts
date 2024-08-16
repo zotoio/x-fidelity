@@ -100,7 +100,18 @@ export class ConfigManager {
             };
         } catch (error: any) {
             logger.error(`Error loading local archetype config: ${error.message}`);
-            throw error;
+            return {
+                name: archetype,
+                rules: [],
+                operators: [],
+                facts: [],
+                config: {
+                    minimumDependencyVersions: {},
+                    standardStructure: {},
+                    blacklistPatterns: [],
+                    whitelistPatterns: []
+                }
+            };
         }
     }
 }

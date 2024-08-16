@@ -124,9 +124,11 @@ describe('ConfigManager', () => {
 
         it('should return a default config when unable to load local archetype config', async () => {
             options.configServer = '';
+            options.localConfigPath = '/path/to/local/config';
             (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
             const result = await ConfigManager.getConfig({ archetype: 'test-archetype' });
-            expect(result.archetype).toEqual(expect.objectContaining({
+            expect(result.archetype).toEqual({
+                name: 'test-archetype',
                 config: {
                     blacklistPatterns: [],
                     minimumDependencyVersions: {},
@@ -136,7 +138,7 @@ describe('ConfigManager', () => {
                 facts: [],
                 operators: [],
                 rules: []
-            }));
+            });
             expect(logger.error).toHaveBeenCalled();
         });
 
