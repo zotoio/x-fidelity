@@ -2,7 +2,7 @@ import { ConfigManager, REPO_GLOBAL_CHECK } from './config';
 import { archetypes } from '../archetypes';
 import axios from 'axios';
 import { validateArchetype } from './jsonSchemas';
-import * as fs from 'fs';
+import fs from 'fs';
 
 jest.mock('axios');
 jest.mock('../rules');
@@ -10,9 +10,12 @@ jest.mock('./jsonSchemas', () => ({
   validateArchetype: jest.fn().mockReturnValue(true)
 }));
 jest.mock('fs', () => ({
-  promises: {
-    readFile: jest.fn(),
-  },
+    ...jest.requireActual('fs'),
+    promises: {
+      lstat: jest.fn(),
+    },
+    readFileSync: jest.fn(),
+    readdirSync: jest.fn(),
 }));
 
 describe('ConfigManager', () => {
@@ -59,7 +62,7 @@ describe('ConfigManager', () => {
             };
             (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
 
-            const config = await ConfigManager.getConfig('test-archetype', 'http://test-server.com');
+            const config = await ConfigManager.getConfig('test-archetype');
 
             expect(axios.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype', {'headers': {'X-Log-Prefix': ''}});
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
@@ -69,7 +72,7 @@ describe('ConfigManager', () => {
         it('should throw an error when unable to fetch from configServer', async () => {
             (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-            await expect(ConfigManager.getConfig('test-archetype', 'http://test-server.com'))
+            await expect(ConfigManager.getConfig('test-archetype'))
                 .rejects.toThrow('Failed to fetch remote archetype config');
         });
 
@@ -87,7 +90,7 @@ describe('ConfigManager', () => {
             };
             (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
 
-            const config = await ConfigManager.getConfig('test-archetype', '', '/path/to/local/config');
+            const config = await ConfigManager.getConfig('test-archetype');
 
             expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/test-archetype.json', 'utf8');
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
@@ -96,7 +99,7 @@ describe('ConfigManager', () => {
         it('should throw an error when unable to load local archetype config', async () => {
             (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
 
-            await expect(ConfigManager.getConfig('test-archetype', '', '/non/existent/path'))
+            await expect(ConfigManager.getConfig('test-archetype'))
                 .rejects.toThrow('Failed to load local archetype config');
         });
     });
