@@ -3,15 +3,13 @@ import { logger } from '../../utils/logger';
 import { loadOperators } from '../../operators';
 import { loadFacts } from '../../facts';
 import { loadRules } from '../../rules';
-import { ArchetypeConfig } from '../../types/typeDefs';
-import { ConfigManager } from '../../utils/config';
 import { options } from '../../core/cli';
 import { sendTelemetry } from '../../utils/telemetry';
 
 import { SetupEngineParams } from '../../types/typeDefs';
 
 export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
-    const { archetypeConfig, archetype, configManager, executionLogPrefix, localConfigPath } = params;
+    const { archetypeConfig, archetype, executionLogPrefix, localConfigPath } = params;
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
     // Add operators to engine

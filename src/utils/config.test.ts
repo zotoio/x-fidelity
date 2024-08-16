@@ -1,5 +1,5 @@
 import { ConfigManager, REPO_GLOBAL_CHECK } from './config';
-import { ArchetypeConfig } from '../types/typeDefs';
+
 jest.mock('../archetypes', () => ({
   archetypes: {
     'node-fullstack': {

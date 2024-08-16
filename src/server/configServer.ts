@@ -115,7 +115,7 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
     const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
     const archetypeConfig = config.archetype;
     if (archetypeConfig && archetypeConfig.rules) {
-        const rules = await loadRules(archetype, archetypeConfig.rules, options.configServer, requestLogPrefix, options.localConfigPath);
+        const rules = await loadRules({ archetype, ruleNames: archetypeConfig.rules, configServer: options.configServer, logPrefix: requestLogPrefix, localConfigPath: options.localConfigPath });
         ruleListCache[archetype] = {
             data: rules,
             expiry: Date.now() + DEFAULT_TTL
@@ -144,10 +144,10 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     }
 
     try {
-        const config = await ConfigManager.getConfig(archetype, requestLogPrefix);
+        const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
         const archetypeConfig = config.archetype;
         if (archetypeConfig && archetypeConfig.rules && archetypeConfig.rules.includes(rule)) {
-            const rules = await loadRules(archetype, [rule], options.configServer, requestLogPrefix, options.localConfigPath);
+            const rules = await loadRules({ archetype, ruleNames: [rule], configServer: options.configServer, logPrefix: requestLogPrefix, localConfigPath: options.localConfigPath });
             const ruleJson = rules[0]; // We're only loading one rule, so it's the first element
 
             if (ruleJson && validateRule(ruleJson)) {
@@ -175,7 +175,7 @@ app.post('/telemetry', (req, res) => {
     if (!validateTelemetryData(req.body)) {
         return res.status(400).json({ error: 'Invalid telemetry data' });
     }
-    logger.info('accepting telemetry data:', req.body);
+    logger.debug(`accepting telemetry data: ${JSON.stringify(req.body)}`);
     // Here you can process and store the telemetry data as needed
     res.status(200).json({ message: 'telemetry data received successfully' });
 });

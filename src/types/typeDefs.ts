@@ -1,4 +1,6 @@
-import { OperatorEvaluator } from 'json-rules-engine';
+import { Engine, OperatorEvaluator } from 'json-rules-engine';
+import { ConfigManager } from '../utils/config';
+import { FileData } from '../facts/repoFilesystemFacts';
 
 export type OperatorDefn = {
     name: string,
@@ -8,31 +10,21 @@ export interface ScanResult {
     filePath: string;
     errors: RuleFailure[];
 }
-/**
- * Represents a rule failure.
- */
+
 export interface RuleFailure {
     ruleFailure: string;
     details: Record<string, any> | undefined;
-}/**
- * Represents the version data of a dependency.
- */
+}
 
 export interface VersionData {
     dep: string;
     ver: string;
     min: string;
 }
-/**
- * Represents the minimum dependency versions.
- */
 
 export interface MinimumDepVersions {
     [propertyName: string]: string;
 }
-/**
- * Represents the local dependencies.
- */
 
 export interface LocalDependencies {
     [propertyName: string]: { version: string; };

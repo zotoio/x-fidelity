@@ -140,7 +140,10 @@ describe('analyzeCodebase', () => {
             run: engineRunMock
         }));
 
-        const results = await analyzeCodebase('mockRepoPath', 'node-fullstack');
+        const results = await analyzeCodebase({
+            repoPath: 'mockRepoPath',
+            archetype: 'node-fullstack'
+        });
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalled();
@@ -219,7 +222,7 @@ describe('analyzeCodebase', () => {
             run: engineRunMock
         }));
 
-        await analyzeCodebase('mockRepoPath', 'node-fullstack');
+        await analyzeCodebase({ repoPath: 'mockRepoPath', archetype: 'node-fullstack' });
 
         expect(engineAddFactMock).not.toHaveBeenCalledWith('openaiAnalysis', expect.any(Function));
         expect(engineAddFactMock).not.toHaveBeenCalledWith('openaiSystemPrompt', expect.any(String));

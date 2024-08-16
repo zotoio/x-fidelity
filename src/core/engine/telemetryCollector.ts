@@ -2,6 +2,7 @@ import { execSync } from 'child_process';
 import os from 'os';
 
 import { CollectTelemetryDataParams } from '../../types/typeDefs';
+import { logger } from '../../utils/logger';
 
 export async function collectTelemetryData(params: CollectTelemetryDataParams) {
     const { repoPath, configServer } = params;
@@ -28,7 +29,7 @@ export async function collectTelemetryData(params: CollectTelemetryDataParams) {
     try {
         repoUrl = execSync('git config --get remote.origin.url', { cwd: repoPath }).toString().trim();
     } catch (error) {
-        console.warn('Unable to get GitHub repository URL');
+        logger.warn('Unable to get GitHub repository URL');
     }
 
     return {

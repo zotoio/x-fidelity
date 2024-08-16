@@ -20,7 +20,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<an
     setLogPrefix(executionLogPrefix);
     logger.info(`INITIALISING..`);
 
-    const telemetryData = await collectTelemetryData(repoPath, configServer);
+    const telemetryData = await collectTelemetryData({ repoPath, configServer});
 
     // Send telemetry for analysis start
     await sendTelemetry({
@@ -53,7 +53,13 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<an
         openaiSystemPrompt = await collectOpenaiAnalysisFacts(fileData);
     }
 
-    const engine = await setupEngine(archetypeConfig, archetype, ConfigManager, executionLogPrefix, localConfigPath);
+    const engine = await setupEngine({
+        archetypeConfig,
+        archetype,
+        configManager: ConfigManager,
+        executionLogPrefix,
+        localConfigPath
+    });
 
     if (isOpenAIEnabled() && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
         logger.info(`adding additional openai facts to engine..`);
@@ -64,7 +70,13 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<an
     // add output facts
     engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
 
-    const failures = await runEngineOnFiles(engine, fileData, installedDependencyVersions, minimumDependencyVersions, standardStructure);
+    const failures = await runEngineOnFiles({
+        engine,
+        fileData,
+        installedDependencyVersions,
+        minimumDependencyVersions,
+        standardStructure
+    });
 
     const finishMsg = `\n==========================\nCHECKS COMPLETED..\n==========================`;
     logger.info(finishMsg);
