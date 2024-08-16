@@ -89,9 +89,7 @@ describe('loadRules', () => {
         (isOpenAIEnabled as jest.Mock).mockReturnValue(true);
         const mockRuleContent = JSON.stringify({ name: 'openaiRule', conditions: {}, event: {} });
         const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
-        mockedFsPromises.readFile.mockResolvedValue(mock
-
-RuleContent);
+        mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/openaiRule-rule.json');
 
         const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['openaiRule'] });
