@@ -29,6 +29,7 @@ jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
     promises: {
       lstat: jest.fn(),
+      readFile: jest.fn(),
     },
     readFileSync: jest.fn(),
     readdirSync: jest.fn(),
