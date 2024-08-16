@@ -73,16 +73,16 @@ describe('ConfigManager', () => {
     describe('getConfig', () => {
         it('should return the same instance for the same archetype', async () => {
             (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
-            const instance1 = await ConfigManager.getConfig('node-fullstack');
-            const instance2 = await ConfigManager.getConfig('node-fullstack');
+            const instance1 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
+            const instance2 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             expect(instance1).toBe(instance2);
         });
 
         it('should return different instances for different archetypes', async () => {
             (axios.get as jest.Mock).mockResolvedValueOnce({ data: { ...mockConfig, name: 'node-fullstack' } });
             (axios.get as jest.Mock).mockResolvedValueOnce({ data: { ...mockConfig, name: 'java-microservice' } });
-            const instance1 = await ConfigManager.getConfig('node-fullstack');
-            const instance2 = await ConfigManager.getConfig('java-microservice');
+            const instance1 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
+            const instance2 = await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(instance1).not.toBe(instance2);
         });
 
@@ -125,7 +125,7 @@ describe('ConfigManager', () => {
         it('should return a default config when unable to load local archetype config', async () => {
             options.configServer = '';
             (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
-            const result = await ConfigManager.getConfig('test-archetype');
+            const result = await ConfigManager.getConfig({ archetype: 'test-archetype' });
             expect(result.archetype).toEqual(expect.objectContaining({
                 config: {
                     blacklistPatterns: [],
