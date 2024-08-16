@@ -1,3 +1,37 @@
+# [1.16.0](https://github.com/zotoio/x-fidelity/compare/v1.15.0...v1.16.0) (2024-08-16)
+
+
+### Bug Fixes
+
+* Add missing mocks for fs module in config.test.ts ([3274a48](https://github.com/zotoio/x-fidelity/commit/3274a48bf6216f01f20e4d4ecf1922d98a9216cb))
+* Add missing readFile mock to fs.promises in config.test.ts ([db4bfc0](https://github.com/zotoio/x-fidelity/commit/db4bfc0127c4af7f40bf35e5813ac33049c52773))
+* Change log level from debug to info when initializing config manager ([c9c45f1](https://github.com/zotoio/x-fidelity/commit/c9c45f11de2934e1ecbaf40964a5f19dbdb0e901))
+* Handle errors when loading local archetype config ([a4a97a4](https://github.com/zotoio/x-fidelity/commit/a4a97a4672024ac1f7ad972e257f8138afeda8d4))
+* Handle missing configuration in ConfigManager ([667cfff](https://github.com/zotoio/x-fidelity/commit/667cfff654543f4942be834f3f2ae49611551649))
+* Improve error handling in ConfigManager ([3743bcf](https://github.com/zotoio/x-fidelity/commit/3743bcf8b81e051894a31ccef102f39e93e89896))
+* Mock archetypes in config.test.ts ([5738736](https://github.com/zotoio/x-fidelity/commit/5738736a3322578b210f90641fefa26cf90249af))
+* Resolve issues with ConfigManager tests ([8fc2a8e](https://github.com/zotoio/x-fidelity/commit/8fc2a8ecdf0aee4e763f1d4d3d1780d4065a49b6))
+* Resolve TypeScript errors in analyzer.ts ([5e231f5](https://github.com/zotoio/x-fidelity/commit/5e231f5daa2d2d95c9ff56c3cfbf881023cdd094))
+* update `config` tests to match new implementation ([4350668](https://github.com/zotoio/x-fidelity/commit/4350668d6a15ea3f1ef09ebd4f021129c2bcf3c8))
+* Update config.test.ts to use fs module correctly ([66823cc](https://github.com/zotoio/x-fidelity/commit/66823cc1734eeb2a18ffd7ca9c628ec9fed8c2b4))
+* Update ConfigManager mock in engine.test.ts ([78e76c7](https://github.com/zotoio/x-fidelity/commit/78e76c786227079d5a5a537e98e0ca7346365ee6))
+* Update ConfigManager tests ([2e7b73f](https://github.com/zotoio/x-fidelity/commit/2e7b73faebf3a3ad1f4339236d8758c45b984cf8))
+* Update ConfigManager to use async getConfig method ([f95725f](https://github.com/zotoio/x-fidelity/commit/f95725f3a49ec906d574af62b42136a07e5ffe0c))
+* Update ConfigManager usage in analyzer.ts ([3a9aaf0](https://github.com/zotoio/x-fidelity/commit/3a9aaf0c9fabd77d978fb5950d2c4acf94b4b50b))
+* Update engineSetup.ts to use correct config server property ([b54f5fb](https://github.com/zotoio/x-fidelity/commit/b54f5fb95d0ca74de49ffff1041422a26fc6e7f7))
+* Update import path for ConfigManager ([bed4610](https://github.com/zotoio/x-fidelity/commit/bed461063c6100583faaae577994f00965557c90))
+* Update test case to expect correct error message ([a02d2df](https://github.com/zotoio/x-fidelity/commit/a02d2df458bed70c9d3cd5e3ef4c9f45232274b4))
+* Update test case to expect resolved value instead of rejection ([ab3d704](https://github.com/zotoio/x-fidelity/commit/ab3d70492f1c7c555f28c6a90f4f1126c36fe8f8))
+* Update test to match actual implementation ([3236978](https://github.com/zotoio/x-fidelity/commit/323697814cc4b782c0a82a21366813b1e309a79b))
+
+
+### Features
+
+* **config:** refactor and start to centralise ([d71e65b](https://github.com/zotoio/x-fidelity/commit/d71e65b7d0b88f47d91df8b05b9725c3a5e5f1df))
+* Move ConfigManager to utils/config ([23a449c](https://github.com/zotoio/x-fidelity/commit/23a449c24a08adc0013471b9b4d494565ebc99b9))
+* Refactor ConfigManager to use static methods and caching ([811975a](https://github.com/zotoio/x-fidelity/commit/811975af3a35e7ccda2343984c480da597faba6b))
+* Rewrite config.test.ts to ensure mocks work and all features are exercised ([0fdbe11](https://github.com/zotoio/x-fidelity/commit/0fdbe11301692e2b3d451000a8c002accde81ce7))
+
 # [1.15.0](https://github.com/zotoio/x-fidelity/compare/v1.14.0...v1.15.0) (2024-08-14)
 
 
