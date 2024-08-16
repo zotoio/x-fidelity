@@ -1,5 +1,7 @@
 import { OperatorEvaluator } from 'json-rules-engine';
 
+import { OperatorEvaluator } from 'json-rules-engine';
+
 export type OperatorDefn = {
     name: string,
     fn: OperatorEvaluator<any, any>
@@ -81,5 +83,20 @@ export interface TelemetryEvent {
         [key: string]: any;
     };
     timestamp: string;
+}
+
+export interface GetConfigParams {
+    archetype?: string;
+    logPrefix?: string;
+}
+
+export interface InitializeParams {
+    archetype: string;
+    logPrefix?: string;
+}
+
+export interface LoadLocalConfigParams {
+    archetype: string;
+    localConfigPath: string;
 }
 

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { logger, setLogPrefix } from "../utils/logger";
-import { ArchetypeConfig, RuleConfig, ExecutionConfig } from "../types/typeDefs";
+import { ArchetypeConfig, RuleConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams } from "../types/typeDefs";
 import { archetypes } from "../archetypes";
 import { options } from '../core/cli';
 import fs from 'fs';
@@ -16,14 +16,16 @@ export class ConfigManager {
         return Object.keys(ConfigManager.configs);
     }
 
-    public static async getConfig(archetype = options.archetype, logPrefix?: string): Promise<ExecutionConfig> {
+    public static async getConfig(params: GetConfigParams): Promise<ExecutionConfig> {
+        const { archetype = options.archetype, logPrefix } = params;
         if (!ConfigManager.configs[archetype]) {
-            ConfigManager.configs[archetype] = await ConfigManager.initialize(archetype, logPrefix);
+            ConfigManager.configs[archetype] = await ConfigManager.initialize({ archetype, logPrefix });
         }
         return ConfigManager.configs[archetype];
     }
 
-    private static async initialize(archetype: string, logPrefix?: string): Promise<ExecutionConfig> {
+    private static async initialize(params: InitializeParams): Promise<ExecutionConfig> {
+        const { archetype, logPrefix } = params;
         const configServer = options.configServer;
         const localConfigPath = options.localConfigPath;
 
@@ -54,7 +56,7 @@ export class ConfigManager {
                     throw new Error('Invalid remote archetype configuration');
                 }
             } else if (localConfigPath) {
-                config.archetype = await ConfigManager.loadLocalConfig(archetype, localConfigPath);
+                config.archetype = await ConfigManager.loadLocalConfig({ archetype, localConfigPath });
             } else {
                 config.archetype = archetypes[archetype];
             }
@@ -86,7 +88,8 @@ export class ConfigManager {
         }
     }
 
-    private static async loadLocalConfig(archetype: string, localConfigPath: string): Promise<ArchetypeConfig> {
+    private static async loadLocalConfig(params: LoadLocalConfigParams): Promise<ArchetypeConfig> {
+        const { archetype, localConfigPath } = params;
         try {
             const configPath = path.join(localConfigPath, `${archetype}.json`);
             logger.info(`Loading local archetype config from: ${configPath}`);
@@ -116,6 +119,5 @@ export class ConfigManager {
             };
         }
     }
-
 }
 
