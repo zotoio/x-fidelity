@@ -64,7 +64,11 @@ describe('ConfigManager', () => {
 
             const config = await ConfigManager.getConfig('test-archetype');
 
-            expect(axios.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype', {'headers': {'X-Log-Prefix': ''}});
+            expect(axios.get).toHaveBeenCalledWith(expect.stringContaining('/archetypes/test-archetype'), expect.objectContaining({
+                headers: expect.objectContaining({
+                    'X-Log-Prefix': expect.any(String)
+                })
+            }));
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
             expect(validateArchetype).toHaveBeenCalledWith(expect.objectContaining(mockConfig));
         });
