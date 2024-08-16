@@ -1,5 +1,19 @@
 import { ConfigManager, REPO_GLOBAL_CHECK } from './config';
-import { archetypes } from '../archetypes';
+jest.mock('../archetypes', () => ({
+  archetypes: {
+    'node-fullstack': {
+      rules: ['rule1', 'rule2'],
+      operators: ['operator1', 'operator2'],
+      facts: ['fact1', 'fact2'],
+      config: {
+        minimumDependencyVersions: {},
+        standardStructure: {},
+        blacklistPatterns: [],
+        whitelistPatterns: []
+      }
+    }
+  }
+}));
 import axios from 'axios';
 import { validateArchetype } from './jsonSchemas';
 import fs from 'fs';
