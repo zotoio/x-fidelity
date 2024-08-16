@@ -1,3 +1,25 @@
+# [1.17.0](https://github.com/zotoio/x-fidelity/compare/v1.16.1...v1.17.0) (2024-08-16)
+
+
+### Bug Fixes
+
+* Add missing type definitions in src/rules/index.ts ([f9fc2f7](https://github.com/zotoio/x-fidelity/commit/f9fc2f7bde8ca7ef29a11f5576139b664a7d4575))
+* Handle error when loading local archetype config ([a1bf9de](https://github.com/zotoio/x-fidelity/commit/a1bf9de6961d393f4e75cf56f4de978aef5a6e27))
+* Return default config when unable to load local archetype config ([0934a71](https://github.com/zotoio/x-fidelity/commit/0934a712964275e22e553e8fca4c8f7f3ad1105c))
+* Update `loadRules` function call in `src/core/engine/engineSetup.ts` ([3ffa9b0](https://github.com/zotoio/x-fidelity/commit/3ffa9b09cfc580302583ae858f2beec1e5f1f97b))
+* Update ConfigManager.getConfig calls to use object parameter ([d9011ab](https://github.com/zotoio/x-fidelity/commit/d9011abb9282db7f0b2b5d27b30d12c31d612302))
+* Update functions to use parameter objects defined in typedefs and ensure unit tests are updated accordingly ([0f5330a](https://github.com/zotoio/x-fidelity/commit/0f5330ab357f7bbd7584ca5a69457c8a7d8fdab6))
+* Update loadRules function call in test ([3837151](https://github.com/zotoio/x-fidelity/commit/3837151f061c3b79f21464bf69d0b2dcc26f4ba2))
+* Update test case for loadRules function ([5d6c08a](https://github.com/zotoio/x-fidelity/commit/5d6c08a6ddf072ec60f5a037b8b398470d8d5225))
+* Update unit tests and files to use new GetConfigParams interface ([455691d](https://github.com/zotoio/x-fidelity/commit/455691de3deefd505e43f20b4a43047afdce5df2))
+
+
+### Features
+
+* Add type definition for OperatorDefn ([f9b09d5](https://github.com/zotoio/x-fidelity/commit/f9b09d51fe66f0f2f0cfa864c3f962ec508e35a4))
+* update engine-related functions to use parameter objects ([9c76bc8](https://github.com/zotoio/x-fidelity/commit/9c76bc804fcea563260ee0fa0492674bfd77cd3b))
+* Update functions to take parameter objects with types defined in typedefs ([dabcc2b](https://github.com/zotoio/x-fidelity/commit/dabcc2be18784e33fc82ac3c4ff95b05ff924077))
+
 ## [1.16.1](https://github.com/zotoio/x-fidelity/compare/v1.16.0...v1.16.1) (2024-08-16)
 
 
