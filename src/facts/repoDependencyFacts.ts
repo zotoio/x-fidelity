@@ -5,6 +5,7 @@ import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } f
 import { Almanac } from 'json-rules-engine';
 import * as semver from 'semver';
 import { FileData } from './repoFilesystemFacts';
+import { options } from '../core/cli';
 
 /**
  * Collects the local dependencies.
@@ -13,7 +14,7 @@ import { FileData } from './repoFilesystemFacts';
 export function collectLocalDependencies(): LocalDependencies {
     let result: LocalDependencies = {};
     try {
-        const stdout = execSync('npm ls -a --json');
+        const stdout = execSync(`npm ls -a --json --prefix ${options.dir}`);
         result = JSON.parse(stdout.toString());
         logger.debug(`collectLocalDependencies: ${JSON.stringify(result)}`);
     } catch (e) {
