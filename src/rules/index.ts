@@ -7,6 +7,30 @@ import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { options } from '../core/cli';
 import { validateRule } from '../utils/jsonSchemas';
 
+interface LoadRulesParams {
+    archetype: string;
+    ruleNames: string[];
+    configServer?: string;
+    logPrefix?: string;
+    localConfigPath?: string;
+}
+
+interface LoadRemoteRuleParams {
+    configServer: string;
+    archetype: string;
+    ruleName: string;
+    logPrefix?: string;
+}
+
+interface LoadLocalRuleParams {
+    ruleName: string;
+}
+
+interface LoadLocalConfigRuleParams {
+    ruleName: string;
+    localConfigPath: string;
+}
+
 async function loadRules(params: LoadRulesParams): Promise<RuleProperties[]> {
     const { archetype, ruleNames, configServer, logPrefix, localConfigPath } = params;
     const ruleProperties: RuleProperties[] = [];
