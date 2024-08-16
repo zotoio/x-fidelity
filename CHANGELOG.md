@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/zotoio/x-fidelity/compare/v1.16.0...v1.16.1) (2024-08-16)
+
+
+### Bug Fixes
+
+* **dependencies:** ensure correct dir prefix ([5d3fcb3](https://github.com/zotoio/x-fidelity/commit/5d3fcb39faeb9ad13de9fe55e8ccb6645c260b0e))
+
 # [1.16.0](https://github.com/zotoio/x-fidelity/compare/v1.15.0...v1.16.0) (2024-08-16)
 
 
