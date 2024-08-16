@@ -84,8 +84,7 @@ describe('ConfigManager', () => {
         it('should throw an error when unable to fetch from configServer', async () => {
             (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-            await expect(ConfigManager.getConfig('test-archetype'))
-                .rejects.toThrow('Network error');
+            await expect(ConfigManager.getConfig('test-archetype')).rejects.toThrow('Network error');
         });
 
         it('should load local config when localConfigPath is provided', async () => {
