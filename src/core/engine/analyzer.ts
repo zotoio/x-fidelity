@@ -1,6 +1,6 @@
 import { logger, setLogPrefix, generateLogPrefix } from '../../utils/logger';
 import { FileData } from '../../facts/repoFilesystemFacts';
-import { ConfigManager, REPO_GLOBAL_CHECK } from '../../config/configManager';
+import { ConfigManager, REPO_GLOBAL_CHECK } from '../../utils/config';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';
 import { collectRepoFileData } from '../../facts/repoFilesystemFacts';
