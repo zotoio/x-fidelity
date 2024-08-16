@@ -40,7 +40,7 @@ describe('loadRules', () => {
         mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/testRule-rule.json');
 
-        const result = await loadRules('testArchetype', ['testRule']);
+        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'] });
 
         expect(result).toEqual([JSON.parse(mockRuleContent)]);
         expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/testRule-rule.json', 'utf8');
@@ -50,7 +50,7 @@ describe('loadRules', () => {
         const mockRuleContent = { name: 'testRule', conditions: {}, event: {} };
         (axios.get as jest.Mock).mockResolvedValue({ data: mockRuleContent });
 
-        const result = await loadRules('testArchetype', ['testRule'], 'http://configserver.com');
+        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'], configServer: 'http://configserver.com' });
 
         expect(result).toEqual([mockRuleContent]);
         expect(axios.get).toHaveBeenCalledWith('http://configserver.com/archetypes/testArchetype/rules/testRule', expect.objectContaining({
@@ -67,7 +67,7 @@ describe('loadRules', () => {
         mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/testRule-rule.json');
 
-        const result = await loadRules('testArchetype', ['testRule'], 'http://configserver.com');
+        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'], configServer: 'http://configserver.com' });
 
         expect(result).toEqual([JSON.parse(mockRuleContent)]);
         expect(axios.get).toHaveBeenCalledWith('http://configserver.com/archetypes/testArchetype/rules/testRule', {
@@ -81,7 +81,7 @@ describe('loadRules', () => {
 
     it('should not load openai rules if OpenAI is not enabled', async () => {
         (isOpenAIEnabled as jest.Mock).mockReturnValue(false);
-        const result = await loadRules('testArchetype', ['openaiRule']);
+        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['openaiRule'] });
         expect(result).toEqual([]);
     });
 
@@ -89,10 +89,12 @@ describe('loadRules', () => {
         (isOpenAIEnabled as jest.Mock).mockReturnValue(true);
         const mockRuleContent = JSON.stringify({ name: 'openaiRule', conditions: {}, event: {} });
         const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
-        mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
+        mockedFsPromises.readFile.mockResolvedValue(mock
+
+RuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/openaiRule-rule.json');
 
-        const result = await loadRules('testArchetype', ['openaiRule']);
+        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['openaiRule'] });
 
         expect(result).toEqual([JSON.parse(mockRuleContent)]);
     });
@@ -102,7 +104,7 @@ describe('loadRules', () => {
         mockedFsPromises.readFile.mockRejectedValue(new Error('File not found'));
         (path.join as jest.Mock).mockReturnValue('/path/to/testRule-rule.json');
 
-        const result = await loadRules('testArchetype', ['testRule']);
+        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'] });
 
         expect(result).toEqual([]);
         expect(logger.error).toHaveBeenCalled();

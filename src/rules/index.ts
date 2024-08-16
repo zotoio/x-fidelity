@@ -7,33 +7,19 @@ import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { options } from '../core/cli';
 import { validateRule } from '../utils/jsonSchemas';
 
-async function loadRules(archetype: string, ruleNames: string[], configServer?: string, logPrefix?: string, localConfigPath?: string): Promise<RuleProperties[]> {
-    
+async function loadRules(params: LoadRulesParams): Promise<RuleProperties[]> {
+    const { archetype, ruleNames, configServer, logPrefix, localConfigPath } = params;
     const ruleProperties: RuleProperties[] = [];
 
     for (const ruleName of ruleNames) {
         let rule: RuleProperties | null;
 
         if (configServer) {
-            try {
-                const url = `${configServer}/archetypes/${archetype}/rules/${ruleName}`;
-                logger.info(`fetching remote rule ${url}`);
-                const response = await axios.get(url, {
-                    headers: {
-                        'X-Log-Prefix': logPrefix || ''
-                    }
-                });
-                rule = response.data;
-                logger.debug(`remote rule fetched successfully: ${JSON.stringify(rule)}`);
-            } catch (error) {
-                logger.error(`error fetching remote rule ${ruleName}: ${error}`);
-                // If remote fetch fails, fall back to local file
-                rule = await loadLocalRule(ruleName);
-            }
+            rule = await loadRemoteRule({ configServer, archetype, ruleName, logPrefix });
         } else if (localConfigPath) {
-            rule = await loadLocalConfigRule(ruleName, localConfigPath);
+            rule = await loadLocalConfigRule({ ruleName, localConfigPath });
         } else {
-            rule = await loadLocalRule(ruleName);
+            rule = await loadLocalRule({ ruleName });
         }
 
         if (rule) {
@@ -52,7 +38,28 @@ async function loadRules(archetype: string, ruleNames: string[], configServer?: 
     return ruleProperties;
 }
 
-async function loadLocalRule(ruleName: string): Promise<RuleProperties | null> {
+async function loadRemoteRule(params: LoadRemoteRuleParams): Promise<RuleProperties | null> {
+    const { configServer, archetype, ruleName, logPrefix } = params;
+    try {
+        const url = `${configServer}/archetypes/${archetype}/rules/${ruleName}`;
+        logger.info(`fetching remote rule ${url}`);
+        const response = await axios.get(url, {
+            headers: {
+                'X-Log-Prefix': logPrefix || ''
+            }
+        });
+        const rule = response.data;
+        logger.debug(`remote rule fetched successfully: ${JSON.stringify(rule)}`);
+        return rule;
+    } catch (error) {
+        logger.error(`error fetching remote rule ${ruleName}: ${error}`);
+        // If remote fetch fails, fall back to local file
+        return await loadLocalRule({ ruleName });
+    }
+}
+
+async function loadLocalRule(params: LoadLocalRuleParams): Promise<RuleProperties | null> {
+    const { ruleName } = params;
     const fileName = `${ruleName}-rule.json`;
     const filePath = path.join(__dirname, fileName);
 
@@ -70,8 +77,8 @@ async function loadLocalRule(ruleName: string): Promise<RuleProperties | null> {
     return null;
 }
 
-export { loadRules };
-async function loadLocalConfigRule(ruleName: string, localConfigPath: string): Promise<RuleProperties | null> {
+async function loadLocalConfigRule(params: LoadLocalConfigRuleParams): Promise<RuleProperties | null> {
+    const { ruleName, localConfigPath } = params;
     const fileName = `${ruleName}-rule.json`;
     const filePath = path.join(localConfigPath, 'rules', fileName);
 
@@ -88,3 +95,5 @@ async function loadLocalConfigRule(ruleName: string, localConfigPath: string): P
     }
     return null;
 }
+
+export { loadRules };
