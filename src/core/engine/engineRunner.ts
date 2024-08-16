@@ -4,13 +4,10 @@ import { ScanResult, RuleFailure } from '../../types/typeDefs';
 import { logger } from '../../utils/logger';
 import { REPO_GLOBAL_CHECK } from '../../utils/config';
 
-export async function runEngineOnFiles(
-    engine: Engine,
-    fileData: FileData[],
-    installedDependencyVersions: any,
-    minimumDependencyVersions: any,
-    standardStructure: any
-): Promise<ScanResult[]> {
+import { RunEngineOnFilesParams } from '../../types/typeDefs';
+
+export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<ScanResult[]> {
+    const { engine, fileData, installedDependencyVersions, minimumDependencyVersions, standardStructure } = params;
     const msg = `\n==========================\nRUNNING FILE CHECKS..\n==========================`;
     logger.info(msg);
     const failures: ScanResult[] = [];

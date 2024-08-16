@@ -1,7 +1,10 @@
 import { execSync } from 'child_process';
 import os from 'os';
 
-export async function collectTelemetryData(repoPath: string, configServer: string) {
+import { CollectTelemetryDataParams } from '../../types/typeDefs';
+
+export async function collectTelemetryData(params: CollectTelemetryDataParams) {
+    const { repoPath, configServer } = params;
     // Get host information
     const hostInfo = {
         platform: os.platform(),

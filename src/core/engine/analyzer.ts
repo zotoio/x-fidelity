@@ -12,7 +12,10 @@ import { setupEngine } from './engineSetup';
 import { runEngineOnFiles } from './engineRunner';
 import { findKeyValuePair } from './utils';
 
-export async function analyzeCodebase(repoPath: string, archetype = 'node-fullstack', configServer = '', localConfigPath = ''): Promise<any[]> {
+import { AnalyzeCodebaseParams } from '../../types/typeDefs';
+
+export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<any[]> {
+    const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '' } = params;
     const executionLogPrefix = generateLogPrefix();
     setLogPrefix(executionLogPrefix);
     logger.info(`INITIALISING..`);

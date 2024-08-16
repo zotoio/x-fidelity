@@ -8,13 +8,10 @@ import { ConfigManager } from '../../utils/config';
 import { options } from '../../core/cli';
 import { sendTelemetry } from '../../utils/telemetry';
 
-export async function setupEngine(
-    archetypeConfig: ArchetypeConfig, 
-    archetype: string, 
-    configManager: ConfigManager, 
-    executionLogPrefix: string,
-    localConfigPath: string
-): Promise<Engine> {
+import { SetupEngineParams } from '../../types/typeDefs';
+
+export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
+    const { archetypeConfig, archetype, configManager, executionLogPrefix, localConfigPath } = params;
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
     // Add operators to engine

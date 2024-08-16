@@ -44,6 +44,34 @@ export interface ExecutionConfig {
     cliOptions: { [key: string]: any };
 }
 
+export interface SetupEngineParams {
+    archetypeConfig: ArchetypeConfig;
+    archetype: string;
+    configManager: ConfigManager;
+    executionLogPrefix: string;
+    localConfigPath: string;
+}
+
+export interface RunEngineOnFilesParams {
+    engine: Engine;
+    fileData: FileData[];
+    installedDependencyVersions: any;
+    minimumDependencyVersions: any;
+    standardStructure: any;
+}
+
+export interface AnalyzeCodebaseParams {
+    repoPath: string;
+    archetype?: string;
+    configServer?: string;
+    localConfigPath?: string;
+}
+
+export interface CollectTelemetryDataParams {
+    repoPath: string;
+    configServer: string;
+}
+
 export interface ArchetypeConfig {
     name: string;
     rules: string[];

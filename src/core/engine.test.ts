@@ -97,7 +97,10 @@ describe('analyzeCodebase', () => {
             run: engineRunMock
         }));
 
-        const results = await analyzeCodebase('mockRepoPath', 'node-fullstack');
+        const results = await analyzeCodebase({
+            repoPath: 'mockRepoPath',
+            archetype: 'node-fullstack'
+        });
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalledWith(expect.any(Object));
@@ -177,7 +180,10 @@ describe('analyzeCodebase', () => {
             run: engineRunMock
         }));
 
-        await analyzeCodebase('mockRepoPath', 'node-fullstack');
+        await analyzeCodebase({
+            repoPath: 'mockRepoPath',
+            archetype: 'node-fullstack'
+        });
 
         expect(engineAddFactMock).toHaveBeenCalledWith('repoDependencyAnalysis', expect.any(Function));
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Once for start, once for end
@@ -248,7 +254,10 @@ describe('analyzeCodebase', () => {
             run: engineRunMock
         }));
 
-        await expect(analyzeCodebase('mockRepoPath', 'node-fullstack')).rejects.toThrow();
+        await expect(analyzeCodebase({
+            repoPath: 'mockRepoPath',
+            archetype: 'node-fullstack'
+        })).rejects.toThrow();
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Start, violation/fatality, and end
     });
 });
