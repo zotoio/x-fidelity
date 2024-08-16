@@ -28,7 +28,7 @@ export class ConfigManager {
         const localConfigPath = options.localConfigPath;
 
         if (logPrefix) setLogPrefix(logPrefix);
-        logger.debug(`Initializing config manager for archetype: ${archetype}`);
+        logger.info(`Initializing config manager for archetype: ${archetype}`);
 
         const config: ExecutionConfig = { 
             archetype: {} as ArchetypeConfig, 
@@ -61,18 +61,7 @@ export class ConfigManager {
 
             if (!config.archetype || Object.keys(config.archetype).length === 0) {
                 logger.warn(`No valid configuration found for archetype: ${archetype}. Using default configuration.`);
-                config.archetype = {
-                    name: archetype,
-                    rules: [],
-                    operators: [],
-                    facts: [],
-                    config: {
-                        minimumDependencyVersions: {},
-                        standardStructure: {},
-                        blacklistPatterns: [],
-                        whitelistPatterns: []
-                    }
-                };
+                throw new Error('No valid configuration found');
             }
 
             return config;
