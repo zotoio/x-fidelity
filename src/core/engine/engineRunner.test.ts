@@ -14,7 +14,7 @@ jest.mock('../../utils/logger', () => ({
 
 describe('runEngineOnFiles', () => {
     const mockEngine = {
-        run: jest.fn(),
+        run: jest.fn().mockImplementation(() => Promise.resolve({ results: [] })),
     } as unknown as Engine;
 
     const mockFileData = [
@@ -35,7 +35,7 @@ describe('runEngineOnFiles', () => {
     });
 
     it('should run engine on all files', async () => {
-        mockEngine.run.mockResolvedValue({ results: [] });
+        (mockEngine.run as jest.Mock).mockResolvedValue({ results: [] });
 
         await runEngineOnFiles(mockParams);
 
@@ -45,7 +45,7 @@ describe('runEngineOnFiles', () => {
     });
 
     it('should handle engine failures', async () => {
-        mockEngine.run.mockRejectedValue(new Error('Engine failure'));
+        (mockEngine.run as jest.Mock).mockRejectedValue(new Error('Engine failure'));
 
         await runEngineOnFiles(mockParams);
 
@@ -54,7 +54,7 @@ describe('runEngineOnFiles', () => {
     });
 
     it('should return failures when rules are violated', async () => {
-        mockEngine.run.mockResolvedValue({
+        (mockEngine.run as jest.Mock).mockResolvedValue({
             results: [
                 { result: true, name: 'Test Rule', event: { type: 'warning', params: { message: 'Test warning' } } },
             ],
