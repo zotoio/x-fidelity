@@ -5,7 +5,7 @@ import { options } from "./core/cli";
 import { analyzeCodebase } from "./core/engine/analyzer";
 import { startServer } from './server/configServer';
 import { sendTelemetry } from './utils/telemetry';
-import { countRuleFailures, findKeyValuePair } from './utils/utils';
+import { countRuleFailures } from './utils/utils';
 
 const executionLogPrefix = generateLogPrefix();
 setLogPrefix(executionLogPrefix);
@@ -54,6 +54,13 @@ try {
         metadata: {
             archetype: options.archetype,
             repoPath: options.dir,
+            fileCount: 0,
+            failureCount: 0,
+            fatalityCount: 0,
+            failureDetails: [],
+            startTime: Date.now(),
+            finishTime: Date.now(),
+            durationSeconds: 0,
             ...options,
             error: e
         },
