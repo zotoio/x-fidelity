@@ -1,7 +1,6 @@
 import { collectTelemetryData } from './telemetryCollector';
 import { execSync } from 'child_process';
 import os from 'os';
-import fs from 'fs';
 
 jest.mock('child_process');
 jest.mock('os', () => ({
@@ -15,8 +14,12 @@ jest.mock('os', () => ({
     userInfo: jest.fn(),
 }));
 jest.mock('fs', () => ({
+    existsSync: jest.fn(),
+    mkdirSync: jest.fn(),
+    stat: jest.fn(),
     promises: {
         readFile: jest.fn(),
+        existsSync: jest.fn(),
     },
 }));
 
