@@ -38,20 +38,13 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     });
 
     engine.on('success', async ({ type, params }: Event) => {
-        if (type === 'violation') {
-            logger.warn(`violation detected: ${JSON.stringify(params)}}`);
+        if (type === 'warning') {
+            logger.warn(`warning detected: ${JSON.stringify(params)}}`);
             await sendTelemetry({
-                eventType: 'violation',
+                eventType: 'warning',
                 metadata: {
                     archetype,
                     repoPath: '',
-                    fileCount: 0,
-                    failureCount: 0,
-                    fatalityCount: 0,
-                    failureDetails: [],
-                    startTime: Date.now(),
-                    finishTime: Date.now(),
-                    durationSeconds: 0,
                     ...params
                 },
                 timestamp: new Date().toISOString()
@@ -65,7 +58,8 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     archetype,
                     repoPath: '',
                     fileCount: 0,
-                    failureCount: 0,
+                    totalIssues: 0,
+                    warningCount: 0,
                     fatalityCount: 0,
                     failureDetails: [],
                     startTime: Date.now(),
