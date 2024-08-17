@@ -1,3 +1,55 @@
+# [2.0.0](https://github.com/zotoio/x-fidelity/compare/v1.17.0...v2.0.0) (2024-08-17)
+
+
+### Bug Fixes
+
+* Add additional logging to configManager.ts ([bab63c1](https://github.com/zotoio/x-fidelity/commit/bab63c13a714d6d69440380c886a227b388baa41))
+* Add missing properties to ResultMetadata in engineSetup.ts ([1c2d276](https://github.com/zotoio/x-fidelity/commit/1c2d276512a4958b5ae75cec44df00e36551bccc))
+* Add missing properties to ResultMetadata interface ([eb2b71f](https://github.com/zotoio/x-fidelity/commit/eb2b71f375f7d0f8615213f693704e91f8a610f0))
+* Add missing properties to telemetry metadata ([30fefbc](https://github.com/zotoio/x-fidelity/commit/30fefbc3709bb1d13a3624d2e4d66c6b6f78e7a7))
+* Correct the typo in the GPT-4 model name ([438c772](https://github.com/zotoio/x-fidelity/commit/438c77288fe58441adc7956b4ba64db445e7d82f))
+* Fix TypeScript errors in src/index.ts ([30fc784](https://github.com/zotoio/x-fidelity/commit/30fc784580763d956c75003c965821e646bf716d))
+* Fix TypeScript errors in test files ([25af375](https://github.com/zotoio/x-fidelity/commit/25af3759ff321a91d4e0f6a90531a384888c7a39))
+* handle network error in loadRules test ([05a26e6](https://github.com/zotoio/x-fidelity/commit/05a26e634b2a6b43ec860e01ad74caf26dc924db))
+* Import fs module in telemetryCollector.test.ts ([64245d9](https://github.com/zotoio/x-fidelity/commit/64245d90786a3be99a255b5d240afc6dd4737c81))
+* Improve error handling in ConfigManager ([d1bb512](https://github.com/zotoio/x-fidelity/commit/d1bb5127a3e0bac630d613afced3fdf849b8b211))
+* refactor `src/core/engine.test.ts` into separate test files ([4055f8f](https://github.com/zotoio/x-fidelity/commit/4055f8f3179d44862fd779d8bb09022cb4d946b9))
+* Refactor analyzeCodebase function to return ResultMetadata ([81d1936](https://github.com/zotoio/x-fidelity/commit/81d1936618ac2abd0a85718c2f1f0b910fb8b910))
+* Remove expectation of `mockLogPrefix` in `loadRules` calls ([7b8669e](https://github.com/zotoio/x-fidelity/commit/7b8669e864150123e02ba025f73652a82898c723))
+* Remove unused import and update metadata object ([ff4bfc0](https://github.com/zotoio/x-fidelity/commit/ff4bfc0ad0ed13bc3c919722c34de81160e486fa))
+* Update event handling in engineSetup.ts ([73e5358](https://github.com/zotoio/x-fidelity/commit/73e53583b82fab78b72f48c8daa14da41fe244bf))
+* Update import path for ConfigManager ([e87f101](https://github.com/zotoio/x-fidelity/commit/e87f10135d9afddd43ac145c6308ca1fd70d3fd7))
+* Update import path for ConfigManager ([6a6b05a](https://github.com/zotoio/x-fidelity/commit/6a6b05af2dc9e217ae53d5f315116ffd565a2fad))
+* Update ResultMetadata interface ([b95fab7](https://github.com/zotoio/x-fidelity/commit/b95fab7731d8040913b7fbd832b1589a31acef0b))
+* Update telemetryCollector.test.ts to use mocked fs functions ([29d435d](https://github.com/zotoio/x-fidelity/commit/29d435dd24fc4cc01c07d2eecbebb43339474005))
+* Update test case for loadRules function ([5b6278d](https://github.com/zotoio/x-fidelity/commit/5b6278d6323c576ac1b980f41cef78f683b3ae5d))
+* Update test case to expect resolved value instead of rejection ([580108a](https://github.com/zotoio/x-fidelity/commit/580108ae927c00f17673f82125718ca8c4205493))
+* Update test expectation for `analyzeCodebase` results ([bdafd3f](https://github.com/zotoio/x-fidelity/commit/bdafd3f3eaf5a70315e323dd9dfe2af1f82908be))
+* Update test expectations for addOperator and addFact ([c86a33a](https://github.com/zotoio/x-fidelity/commit/c86a33a9042f234c5a934d0ff555af438ebaff1f))
+* Update test expectations to match actual results structure ([3398a84](https://github.com/zotoio/x-fidelity/commit/3398a8433e5a543084c1dcaaf69dd910fae6d297))
+* Update tests to expect new ResultMetadata structure ([fc16223](https://github.com/zotoio/x-fidelity/commit/fc162232c976f6638228a2e450a793ea7d087bb4))
+
+
+### Features
+
+* Add BasicTelemetryMetadata interface ([be87308](https://github.com/zotoio/x-fidelity/commit/be873084164d592822193cad70badeedd2fa17de))
+* Add details on creating custom OpenAI rules ([80abb24](https://github.com/zotoio/x-fidelity/commit/80abb24652565bce89ce61bba16dc4de8c0f5654))
+* add interface for the result of collectTelemetryData ([ea6089a](https://github.com/zotoio/x-fidelity/commit/ea6089a2a35b6445550adde1aa5c63ac1a701dc9))
+* Add new CLI options and examples ([fab7b81](https://github.com/zotoio/x-fidelity/commit/fab7b81db053bcf144fb104b0bba82ff7679ab57))
+* Add ResultMetadata interface ([08c3fe2](https://github.com/zotoio/x-fidelity/commit/08c3fe2f20bfac98ddb173ac482fb8f09a661780))
+* Add telemetry reporting and improve error handling ([ac16e44](https://github.com/zotoio/x-fidelity/commit/ac16e4400197b59fa40384b3802f40dfe9bc5941))
+* Expand OpenAI Integration section in README.md ([c4e34e7](https://github.com/zotoio/x-fidelity/commit/c4e34e7626c264b3972bfc28eaaff172bbba6295))
+* Implement ConfigManager class to manage application configuration ([6836652](https://github.com/zotoio/x-fidelity/commit/6836652ce82791eaa85ddc1eb5a27d63dbaf9b4a))
+* Refactor codebase analysis and reporting ([7f7d30e](https://github.com/zotoio/x-fidelity/commit/7f7d30e607bde3d29a68c4fcf42ecd0779029b24))
+* Refactor ResultMetadata interface ([7d9ddf2](https://github.com/zotoio/x-fidelity/commit/7d9ddf2457b5d3d0981f66dcf07cd4ec03e79554))
+* **system:** fixes, refactor, optimisations ([4da8c9f](https://github.com/zotoio/x-fidelity/commit/4da8c9f0d0dbc8b151ee01b21dfaab150ee02dfe))
+* Update README with callout for OpenAI rule naming convention ([103a470](https://github.com/zotoio/x-fidelity/commit/103a4704213f417f30be0936965ae2d90b29ee75))
+
+
+### BREAKING CHANGES
+
+* **system:** some of the contract for cli has changed, and output interfaces updated
+
 # [1.17.0](https://github.com/zotoio/x-fidelity/compare/v1.16.1...v1.17.0) (2024-08-16)
 
 
