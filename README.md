@@ -509,12 +509,15 @@ By leveraging OpenAI's advanced language models, x-fidelity provides a unique bl
 
 You can create custom OpenAI rules to leverage AI-powered analysis for specific aspects of your codebase. Here's how to create a new OpenAI rule:
 
-1. Create a new JSON file in your rules directory (e.g., `my-openai-rule.json`).
+> [!IMPORTANT]
+> By convention, all OpenAI rules must have a name starting with 'openai'. This naming convention is used to identify and handle OpenAI-specific rules in the system.
+
+1. Create a new JSON file in your rules directory (e.g., `openai-custom-analysis-rule.json`).
 2. Use the following template structure for your rule:
 
 ```json
 {
-    "name": "my-openai-rule",
+    "name": "openai-custom-analysis",
     "conditions": {
         "all": [
             {
@@ -527,7 +530,7 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
                 "fact": "openaiAnalysis",
                 "params": {
                     "prompt": "Your custom prompt here",
-                    "resultFact": "myOpenAIAnalysisResult"
+                    "resultFact": "openaiCustomAnalysisResult"
                 },
                 "operator": "openaiAnalysisHighSeverity",
                 "value": 8
@@ -539,7 +542,7 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
         "params": {
             "message": "Custom message for the violation",
             "results": {
-                "fact": "myOpenAIAnalysisResult"
+                "fact": "openaiCustomAnalysisResult"
             }
         }
     }
@@ -547,14 +550,14 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
 ```
 
 3. Customize the rule:
-   - Set a unique `name` for your rule.
+   - Set a unique `name` for your rule, ensuring it starts with 'openai'.
    - Modify the `prompt` in the `params` section to specify what you want the AI to analyze.
    - Adjust the `value` in the `openaiAnalysisHighSeverity` operator to set the severity threshold (1-10).
    - Customize the `message` in the `event` params to describe the violation.
 
 4. Add your new rule to the appropriate archetype configuration file.
 
-This structure allows you to create custom AI-powered rules that can analyze your codebase for specific patterns, best practices, or potential issues.
+This structure allows you to create custom AI-powered rules that can analyze your codebase for specific patterns, best practices, or potential issues. Remember to follow the naming convention to ensure proper handling of OpenAI rules in the system.
 
 ## Best Practices
 
