@@ -505,6 +505,57 @@ export OPENAI_MODEL=gpt-4  # Optional, default is gpt-4o
 
 By leveraging OpenAI's advanced language models, x-fidelity provides a unique blend of rule-based checks and AI-powered insights, offering a comprehensive analysis of your codebase that goes beyond traditional static analysis tools.
 
+### Creating Custom OpenAI Rules
+
+You can create custom OpenAI rules to leverage AI-powered analysis for specific aspects of your codebase. Here's how to create a new OpenAI rule:
+
+1. Create a new JSON file in your rules directory (e.g., `my-openai-rule.json`).
+2. Use the following template structure for your rule:
+
+```json
+{
+    "name": "my-openai-rule",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "openaiAnalysis",
+                "params": {
+                    "prompt": "Your custom prompt here",
+                    "resultFact": "myOpenAIAnalysisResult"
+                },
+                "operator": "openaiAnalysisHighSeverity",
+                "value": 8
+            }
+        ]
+    },
+    "event": {
+        "type": "violation",
+        "params": {
+            "message": "Custom message for the violation",
+            "results": {
+                "fact": "myOpenAIAnalysisResult"
+            }
+        }
+    }
+}
+```
+
+3. Customize the rule:
+   - Set a unique `name` for your rule.
+   - Modify the `prompt` in the `params` section to specify what you want the AI to analyze.
+   - Adjust the `value` in the `openaiAnalysisHighSeverity` operator to set the severity threshold (1-10).
+   - Customize the `message` in the `event` params to describe the violation.
+
+4. Add your new rule to the appropriate archetype configuration file.
+
+This structure allows you to create custom AI-powered rules that can analyze your codebase for specific patterns, best practices, or potential issues.
+
 ## Best Practices
 
 1. **Version Control**: Keep your x-fidelity configurations (archetypes and rules) in version control.
