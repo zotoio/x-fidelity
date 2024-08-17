@@ -23,13 +23,15 @@ x-fidelity is an advanced CLI tool and paired config server designed to perform 
    yarn global add x-fidelity
    export PATH="$PATH:$(yarn global bin)"
    ```
-
-2. Run in your project directory:
+2. Run cli without parameters to view help
    ```
    xfidelity
    ```
-
-3. For more options:
+3. Execute in current project directory with built-in demo rules for node-fullstack:
+   ```
+   xfidelity .
+   ```
+4. For more options:
    ```
    xfidelity --help
    ```
@@ -163,30 +165,38 @@ xfidelity
 Use command-line options for more control:
 
 ```sh
-xfidelity [-d --dir <directory>] [-c --configServer <url>] [-a --archetype <archetype>] [-m --mode <cli|server>] [-p --port <port>] [-o --openaiEnabled <boolean>] [-t --telemetryCollector <url>] [-l --localConfig <path>]
-```
+Usage: x-fidelity [options] [directory]
 
-- `-d --dir <directory>`: Specify the root directory to analyze (default: current directory)
-- `-c --configServer <url>`: URL to fetch the configuration from. eg. https://localhost:8888
-- `-a --archetype <archetype>`: Archetype to use for analysis (default: 'node-fullstack')
-- `-m --mode <mode>`: Run mode: 'client' or 'server' (default: 'client')
-- `-p --port <port>`: Port number for server mode (default: 8888)
-- `-o --openaiEnabled <boolean>`: Enable OpenAI analysis (default: false)
-- `-t --telemetryCollector <url>`: The URL telemetry data will be sent to for usage analysis
-- `-l --localConfigPath <path>`: Path to local archetype config and rules
-- `-j --jsonTTL <minutes>` : The server json cache TTL in minutes (default: 10)
+Arguments:
+  directory                                      code directory to analyze
+
+Options:
+  -d, --dir <directory>                          code directory to analyze. if an arg was passed to command it
+                                                 will be treated as the dir (default: ".")
+  -a, --archetype <archetype>                    The archetype to use for analysis (default: "node-fullstack")
+  -c, --configServer <configServer>              The config server URL for fetching remote archetype
+                                                 configurations and rules
+  -o, --openaiEnabled <boolean>                  Enable OpenAI analysis (default: false)
+  -t, --telemetryCollector <telemetryCollector>  The URL telemetry data will be sent to for usage analysis
+  -m, --mode <mode>                              Run mode: 'client' or 'server' (default: "client")
+  -p, --port <port>                              The port to run the server on (default: "8888")
+  -l, --localConfigPath <path>                   Path to local archetype config and rules
+  -j, --jsonTTL <minutes>                        Set the server json cache TTL in minutes (default: "10")
+  -v, --version                                  Output the version number of xfidelity
+  -h, --help                                     Display help for command
+```
 
 Examples:
 
 ```sh
-# Use remote config server
-xfidelity --configServer https://localhost:8888
+# Run client to analyse current dir using config from remote config server
+xfidelity --configServer http://localhost:8888
 
-# Analyze parent directory with java-microservice archetype and enable OpenAI analysis
-xfidelity -d .. -a java-microservice -c https://localhost:8888 -o true
+# Analyze a specific directory with java-microservice archetype config from remote config server and enable OpenAI analysis
+xfidelity /home/projects/my-codebase -a java-microservice -c https://localhost:8888 -o true
 
-#Run in server mode with custom port and specify telemetry collector
-xfidelity --mode server --port 9999 -t https://telemetry.example.com
+# Run in config server mode with custom port
+xfidelity --mode server --port 9999 
 
 # Use local config and rules
 xfidelity -l /path/to/local/config
