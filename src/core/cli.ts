@@ -1,6 +1,8 @@
 import { logger } from '../utils/logger';
 import { program } from "commander";
 import path from "path";
+import fs from "fs";
+import { version } from "../../package.json";
 
 // Ensure logger is initialized
 if (!logger || typeof logger.info !== 'function') {
@@ -16,7 +18,7 @@ if (!logger || typeof logger.info !== 'function') {
 }
 
 program
-    .option("-d, --dir <directory>", "The checkout directory to analyze", ".")
+    .option("-d, --dir <directory>", "code directory to analyze. equivalent of directory argument")
     .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
     .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules")
     .option("-o, --openaiEnabled <boolean>", "Enable OpenAI analysis", false)
@@ -24,17 +26,39 @@ program
     .option("-m, --mode <mode>", "Run mode: 'client' or 'server'", "client")
     .option("-p, --port <port>", "The port to run the server on", "8888")
     .option("-l, --localConfigPath <path>", "Path to local archetype config and rules")
-    .option("-j, --jsonTTL <minutes>", "Set the server json cache TTL in minutes", "10");
-
-program.parse();
+    .option("-j, --jsonTTL <minutes>", "Set the server json cache TTL in minutes", "10")
+    .version(version, "-v, --version", "Output the version number of xfidelity")
+    .helpOption("-h, --help", "Display help for command")
+    .argument('[directory]', 'code directory to analyze');
 
 const options = program.opts();
 
+program.parse(process.argv);
+
+// If no options or args are provided, display the help message
+if (process.argv.length === 2 && program.args.length === 0) {
+    // dont exit in tests
+    if (process.env.NODE_ENV !== 'test') program.help();
+}
+
 // Resolve paths
-const resolvePath = (inputPath: string) => path.resolve(process.cwd(), inputPath);
-options.dir = resolvePath(options.dir);
+if (process.env.NODE_ENV === 'test' || options.mode === 'server') options.dir = '.';
+const resolvePath = (inputPath: string) => path?.resolve(process.cwd(), inputPath);
+options.dir = program.args.length == 1 ? resolvePath(program.args[0]) : resolvePath(options.dir);
 if (options.localConfigPath) {
     options.localConfigPath = resolvePath(options.localConfigPath);
+}
+
+// if dir does not exist, exit
+if (!options.dir || !fs.existsSync(options.dir)) {
+    logger.error(`target directory ${options.dir} does not exist`);
+    if (process.env.NODE_ENV !== 'test') process.exit(1);
+}
+
+// if localConfig path does not exist, exit
+if (options.localConfigPath && !fs.existsSync(options.localConfigPath)) {
+    logger.error(`localConfigPath ${options.localConfigPath} does not exist`);
+    if (process.env.NODE_ENV !== 'test') process.exit(1);
 }
 
 const banner = (`
@@ -50,6 +74,7 @@ const banner = (`
                                
 -------------------------------------
 ${new Date().toString().slice(0, 24)}
+version: ${version}
 archetype: ${options.archetype}
 directory: ${options.dir}
 configServer: ${options.configServer ? options.configServer : 'none'}
@@ -57,7 +82,7 @@ mode: ${options.mode}
 port: ${options.mode === 'server' ? options.port : 'n/a'}
 localConfigPath: ${options.localConfigPath ? options.localConfigPath : 'none'}
 jsonTTL: ${options.jsonTTL} minutes
-for available options run: xfidelity --help
+for options run: xfidelity --help
 =====================================`);
 
 logger.info(banner);

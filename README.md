@@ -391,11 +391,11 @@ x-fidelity is designed to be highly extensible. You can add custom rules, operat
 3. **Custom Facts**: Create new fact providers and add them to your x-fidelity fork or plugin.
 4. **New Archetypes**: Define new archetypes as JSON files in your local config directory or on your config server.
 
-Example of a custom rule JSON file (`my-custom-rule.json`):
+Example of a custom rule JSON file (`myCustomRule.json`):
 
 ```json
 {
-    "name": "my-custom-rule",
+    "name": "myCustomRule",
     "conditions": {
         "all": [
             {
@@ -407,10 +407,9 @@ Example of a custom rule JSON file (`my-custom-rule.json`):
         ]
     },
     "event": {
-        "type": "violation",
+        "type": "warning",
         "params": {
             "message": "TODO comments should be resolved before committing",
-            "level": "warning",
             "details": {
                 "fact": "fileData",
                 "path": "$.filePath"
@@ -421,7 +420,7 @@ Example of a custom rule JSON file (`my-custom-rule.json`):
 ```
 
 Note on rule event types:
-- Events of type "violation" are treated as warnings and do not cause the tool to return an error code.
+- Events of type "warning" are treated as such and do not cause the tool to return an error code.
 - Events of type "fatality" are strictly enforced and will cause the tool to return an error code 1.
 
 Example of a custom archetype JSON file (`my-custom-archetype.json`):
@@ -451,6 +450,9 @@ Example of a custom archetype JSON file (`my-custom-archetype.json`):
 ## OpenAI Integration
 
 x-fidelity offers advanced AI-powered code analysis through integration with OpenAI's language models. This feature provides in-depth insights and suggestions for improving your codebase.
+
+> [!IMPORTANT]
+> Carefully consider the costs and data privacy implications before enabling OpenAI integration, especially for large codebases or sensitive projects.
 
 ### How It Works
 
@@ -500,9 +502,6 @@ You can also set the OpenAI model using an environment variable (optional):
 export OPENAI_MODEL=gpt-4  # Optional, default is gpt-4o
 ```
 
-> [!IMPORTANT]
-> Carefully consider the costs and data privacy implications before enabling OpenAI integration, especially for large codebases or sensitive projects.
-
 By leveraging OpenAI's advanced language models, x-fidelity provides a unique blend of rule-based checks and AI-powered insights, offering a comprehensive analysis of your codebase that goes beyond traditional static analysis tools.
 
 ### Creating Custom OpenAI Rules
@@ -512,7 +511,7 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
 > [!IMPORTANT]
 > By convention, all OpenAI rules must have a name starting with 'openai'. This naming convention is used to identify and handle OpenAI-specific rules in the system.
 
-1. Create a new JSON file in your rules directory (e.g., `openai-custom-analysis-rule.json`).
+1. Create a new JSON file in your rules directory (e.g., `openaiCustomAnalysis-global-rule.json`).
 2. Use the following template structure for your rule:
 
 ```json
@@ -538,9 +537,9 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
         ]
     },
     "event": {
-        "type": "violation",
+        "type": "warning",
         "params": {
-            "message": "Custom message for the violation",
+            "message": "Custom message for the warning",
             "results": {
                 "fact": "openaiCustomAnalysisResult"
             }
@@ -553,7 +552,7 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
    - Set a unique `name` for your rule, ensuring it starts with 'openai'.
    - Modify the `prompt` in the `params` section to specify what you want the AI to analyze.
    - Adjust the `value` in the `openaiAnalysisHighSeverity` operator to set the severity threshold (1-10).
-   - Customize the `message` in the `event` params to describe the violation.
+   - Customize the `message` in the `event` params to describe the warning.
 
 4. Add your new rule to the appropriate archetype configuration file.
 
@@ -578,7 +577,7 @@ Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` f
 
 - **Archetype**: A predefined configuration template for a specific type of project or technology stack. It defines the rules, operators, facts, and other settings to be applied during analysis.
 
-- **Rule**: A set of conditions and corresponding actions that define a specific check or requirement for the codebase. Rules are used to identify violations or issues in the code.
+- **Rule**: A set of conditions and corresponding actions that define a specific check or requirement for the codebase. Rules are used to identify warnings or fatal issues in the codebase.
 
 - **Operator**: A function that performs a specific comparison or check within a rule. Operators are used to evaluate conditions in rules.
 

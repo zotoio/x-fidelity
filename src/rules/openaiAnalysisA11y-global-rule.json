@@ -20,10 +20,10 @@
         ]
     },
     "event": {
-        "type": "violation",
+        "type": "warning",
         "params": {
             "message": "OpenAI analysis detected accessibility (a11y) issues in the codebase.",
-            "results": {
+            "details": {
                 "fact": "openaiAnalysisA11y"
             }
         }

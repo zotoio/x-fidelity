@@ -105,6 +105,7 @@ export interface BasicTelemetryMetadata {
     archetype: string;
     repoPath: string;
     telemetryData?: TelemetryData;
+    errorMessage?: string;
     options?: any
 }
 
@@ -129,21 +130,21 @@ export interface StartServerParams {
 }
 
 export interface ResultMetadata {
-    archetype: string;
-    repoPath: string;
-    fileCount: number;
-    totalIssues: number;
-    warningCount: number;
-    fatalityCount: number;
-    issueDetails: ScanResult[];
-    startTime: number;
-    finishTime: number;
-    durationSeconds: number;
-    telemetryData: TelemetryData;
-    options: any;
-    telemetryData: TelemetryData;
-    options: any;
-    [key: string]: any; // For any additional properties from telemetryData
+    XFI_RESULT: {
+        archetype: string;
+        repoPath: string;
+        fileCount: number;
+        totalIssues: number;
+        warningCount: number;
+        fatalityCount: number;
+        issueDetails: ScanResult[];
+        startTime: number;
+        finishTime: number;
+        durationSeconds: number;
+        telemetryData: TelemetryData;
+        options: any;
+        [key: string]: any;
+    };
 }
 
 export interface TelemetryData {

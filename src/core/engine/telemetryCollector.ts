@@ -1,10 +1,10 @@
 import { execSync } from 'child_process';
 import os from 'os';
-
-import { CollectTelemetryDataParams } from '../../types/typeDefs';
+import { CollectTelemetryDataParams, TelemetryData } from '../../types/typeDefs';
 import { logger } from '../../utils/logger';
+import fs from 'fs'; 
 
-export async function collectTelemetryData(params: CollectTelemetryDataParams) {
+export async function collectTelemetryData(params: CollectTelemetryDataParams): Promise<TelemetryData> {
     const { repoPath, configServer } = params;
     // Get host information
     const hostInfo = {
@@ -29,13 +29,20 @@ export async function collectTelemetryData(params: CollectTelemetryDataParams) {
     try {
         repoUrl = execSync('git config --get remote.origin.url', { cwd: repoPath }).toString().trim();
     } catch (error) {
-        logger.warn('Unable to get GitHub repository URL');
+        try {
+            const packageJson = await fs.promises.readFile(`${repoPath}/package.json`, 'utf8');
+            const packageJsonObj = JSON.parse(packageJson);
+            repoUrl = packageJsonObj?.repository;
+        } catch (error) {
+            logger.warn('Unable to get GitHub repository URL');
+        }
     }
 
     return {
         repoUrl,
         configServer: configServer || 'none',
         hostInfo,
-        userInfo
+        userInfo,
+        startTime: new Date().getTime()
     };
 }

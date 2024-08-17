@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';
 import { Stats } from 'fs';
-import { REPO_GLOBAL_CHECK } from '../utils/config';
+import { REPO_GLOBAL_CHECK } from '../utils/configManager';
 
 jest.mock('fs');
 jest.mock('path');

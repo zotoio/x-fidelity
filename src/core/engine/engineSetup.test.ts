@@ -5,6 +5,7 @@ import { loadFacts } from '../../facts';
 import { loadRules } from '../../rules';
 import { sendTelemetry } from '../../utils/telemetry';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
+import { options } from '../cli';
 
 jest.mock('json-rules-engine');
 jest.mock('../../operators');
@@ -78,6 +79,8 @@ describe('setupEngine', () => {
     });
 
     it('should not add OpenAI-related operators and facts when OpenAI is disabled', async () => {
+        options.openai = false;
+        process.env.OPENAI_API_KEY = '';
         const mockEngine = {
             addOperator: jest.fn(),
             addRule: jest.fn(),
@@ -99,8 +102,8 @@ describe('setupEngine', () => {
 
         await setupEngine(mockParams);
 
-        expect(mockEngine.addOperator).toHaveBeenCalledTimes(2);
-        expect(mockEngine.addFact).toHaveBeenCalledTimes(2);
+        expect(mockEngine.addOperator).toHaveBeenCalledTimes(1);
+        expect(mockEngine.addFact).toHaveBeenCalledTimes(1);
         expect(mockEngine.addOperator).not.toHaveBeenCalledWith('openaiOperator', expect.any(Function));
         expect(mockEngine.addFact).not.toHaveBeenCalledWith('openaiAnalysis', expect.any(Function));
     });

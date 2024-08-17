@@ -63,7 +63,9 @@ describe('analyzeCodebase', () => {
             rules: [],
             cliOptions: {}
         });
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         jest.spyOn(console, 'log').mockImplementation(() => {});
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         jest.spyOn(console, 'error').mockImplementation(() => {});
     });
 

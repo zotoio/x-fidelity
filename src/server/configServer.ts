@@ -6,10 +6,11 @@ import { RuleProperties } from 'json-rules-engine';
 import { logger, setLogPrefix } from '../utils/logger';
 import { expressLogger } from './expressLogger'
 import { options } from '../core/cli';
-import { ConfigManager } from '../utils/config';
+import { ConfigManager } from '../utils/configManager';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { validateArchetype, validateRule } from '../utils/jsonSchemas';
+import { StartServerParams } from '../types/typeDefs';
 
 const app = express();
 app.use(helmet());
@@ -88,7 +89,7 @@ app.get('/archetypes/:archetype', async (req, res) => {
 
         if (!validateArchetype(archetypeConfig)) {
             logger.error(`invalid archetype configuration for ${archetype}`);
-            return res.status(500).json({ error: 'invalid archetype configuration' });
+            return res.status(400).json({ error: 'invalid archetype requested' });
         }
 
         setCachedData(cacheKey, archetypeConfig);
@@ -106,7 +107,7 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
     setLogPrefix(requestLogPrefix);
     if (!validateInput(archetype)) {
         logger.error(`invalid archetype name: ${archetype}`);
-        return res.status(400).json({ error: 'Invalid archetype name' });
+        return res.status(400).json({ error: 'invalid archetype' });
     }
     if (ruleListCache[archetype] && ruleListCache[archetype].expiry > Date.now()) {
         logger.debug(`serving cached rule list for archetype: ${archetype}`);
@@ -180,8 +181,9 @@ app.post('/telemetry', (req, res) => {
     res.status(200).json({ message: 'telemetry data received successfully' });
 });
 
-export function startServer(customPort?: string) {
+export function startServer({ customPort, executionLogPrefix }: StartServerParams): any {
     const serverPort = customPort ? parseInt(customPort) : port;
+    executionLogPrefix && setLogPrefix(executionLogPrefix);
 
     // Read SSL certificate and key
     try {

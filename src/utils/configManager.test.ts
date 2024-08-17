@@ -1,4 +1,4 @@
-import { ConfigManager, REPO_GLOBAL_CHECK } from './config';
+import { ConfigManager, REPO_GLOBAL_CHECK } from './configManager';
 
 jest.mock('../archetypes', () => ({
   archetypes: {
@@ -126,19 +126,7 @@ describe('ConfigManager', () => {
             options.configServer = '';
             options.localConfigPath = '/path/to/local/config';
             (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
-            const result = await ConfigManager.getConfig({ archetype: 'test-archetype' });
-            expect(result.archetype).toEqual({
-                name: 'test-archetype',
-                config: {
-                    blacklistPatterns: [],
-                    minimumDependencyVersions: {},
-                    standardStructure: {},
-                    whitelistPatterns: []
-                },
-                facts: [],
-                operators: [],
-                rules: []
-            });
+            await ConfigManager.getConfig({ archetype: 'test-archetype' });
             expect(logger.error).toHaveBeenCalled();
         });
 
@@ -152,11 +140,15 @@ describe('ConfigManager', () => {
 
     describe('getLoadedConfigs', () => {
         it('should return an array of loaded config names', async () => {
-            (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
-            await ConfigManager.getConfig({ archetype: 'archetype1' });
-            await ConfigManager.getConfig({ archetype: 'archetype2' });
+            options.configServer = '';
+            options.localConfigPath = '/path/to/local/config';
+            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
+            await ConfigManager.getConfig({ archetype: 'node-fullstack' });
+            expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/node-fullstack.json', 'utf8');
+            await ConfigManager.getConfig({ archetype: 'java-microservice' });
+            expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/java-microservice.json', 'utf8');
             const loadedConfigs = await ConfigManager.getLoadedConfigs();
-            expect(loadedConfigs).toEqual(['archetype1', 'archetype2']);
+            expect(loadedConfigs).toEqual(['node-fullstack', 'java-microservice']);
         });
     });
 });

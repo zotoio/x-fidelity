@@ -19,9 +19,8 @@
         ]
     },
     "event": {
-        "type": "violation",
+        "type": "warning",
         "params": {
-            "level": "fatality",
             "message": "directory structure does not match the standard.",
             "details": {
                 "fact": "standardStructure"

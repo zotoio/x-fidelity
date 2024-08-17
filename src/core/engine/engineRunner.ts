@@ -1,7 +1,7 @@
 import { EngineResult, RuleResult } from 'json-rules-engine';
 import { ScanResult, RuleFailure } from '../../types/typeDefs';
 import { logger } from '../../utils/logger';
-import { REPO_GLOBAL_CHECK } from '../../utils/config';
+import { REPO_GLOBAL_CHECK } from '../../utils/configManager';
 
 import { RunEngineOnFilesParams } from '../../types/typeDefs';
 
@@ -31,10 +31,11 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
         try {
             const { results }: EngineResult = await engine.run(facts);
             results.forEach((result: RuleResult) => {
-                logger.debug(result);
+                logger.debug(JSON.stringify(result));
                 if (result.result) {
                     fileFailures.push({
                         ruleFailure: result.name,
+                        level: result.event?.type,
                         details: result.event?.params
                     });
                 }

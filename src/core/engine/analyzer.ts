@@ -13,6 +13,7 @@ import { runEngineOnFiles } from './engineRunner';
 import { countRuleFailures } from '../../utils/utils';
 
 import { AnalyzeCodebaseParams } from '../../types/typeDefs';
+import { options } from '../cli';
 
 export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<ResultMetadata> {
     const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '', executionLogPrefix = '' } = params;
@@ -27,14 +28,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         metadata: {
             archetype,
             repoPath,
-            ...telemetryData,
-            fileCount: 0,
-            failureCount: 0,
-            fatalityCount: 0,
-            failureDetails: [],
-            startTime: telemetryData.startTime,
-            finishTime: telemetryData.startTime,
-            durationSeconds: 0
+            telemetryData,
+            options
         },
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
@@ -91,20 +86,25 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     logger.info(`${fileData.length} files analyzed. ${totalFailureCount} rule failures.`);
 
     const fatalityCount = countRuleFailures(failures, 'fatality');
+    const warningCount = countRuleFailures(failures, 'warning');
 
     const finishTime = new Date().getTime();
 
     const resultMetadata: ResultMetadata = {
-        archetype,
-        repoPath,
-        ...telemetryData,
-        fileCount: fileData.length,
-        failureCount: failures.length,
-        fatalityCount: fatalityCount,
-        failureDetails: failures,
-        startTime: telemetryData.startTime,
-        finishTime: finishTime,
-        durationSeconds: (finishTime - telemetryData.startTime) / 1000
+        XFI_RESULT: {
+            archetype,
+            repoPath,
+            fileCount: fileData.length,
+            totalIssues: totalFailureCount,
+            warningCount: warningCount,
+            fatalityCount: fatalityCount,
+            issueDetails: failures,
+            startTime: telemetryData.startTime,
+            finishTime: finishTime,
+            durationSeconds: (finishTime - telemetryData.startTime) / 1000,
+            telemetryData,
+            options
+        }
     }
     
     // Send telemetry for analysis end

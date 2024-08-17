@@ -15,7 +15,7 @@ jest.mock('../utils/logger', () => ({
     },
 }));
 
-jest.mock('../utils/config', () => ({
+jest.mock('../utils/configManager', () => ({
     ConfigManager: {
         getInstance: jest.fn().mockReturnValue({
             getConfig: jest.fn().mockReturnValue({

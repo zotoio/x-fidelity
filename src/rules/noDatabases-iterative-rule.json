@@ -11,7 +11,7 @@
         ]
     },
     "event": {
-        "type": "violation",
+        "type": "warning",
         "params": {
             "message": "code must not directly call databases",
             "details": {

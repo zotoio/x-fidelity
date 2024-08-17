@@ -20,10 +20,10 @@
         ]
     },
     "event": {
-        "type": "violation",
+        "type": "warning",
         "params": {
             "message": "OpenAI analysis failed for the provided prompt.",
-            "results": {
+            "details": {
                 "fact": "openaiAnalysisTop5"
             }
         }

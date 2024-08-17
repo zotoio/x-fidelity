@@ -41,12 +41,10 @@
         ]
     },
     "event": {
-        "type": "violation",
+        "type": "warning",
         "params": {
-            "level": "warning",
             "message": "Potential sensitive data detected. This must not be logged or exposed.",
             "details": {
-                "level": "fatality",
                 "fact": "fileData",
                 "path": "$.filePath"
             }

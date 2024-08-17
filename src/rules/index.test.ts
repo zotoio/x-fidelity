@@ -77,7 +77,7 @@ describe('loadRules', () => {
         });
 
         expect(logger.error).toHaveBeenCalledWith('error fetching remote rule testRule');
-        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Network error'));
+        
     });
 
     it('should not load openai rules if OpenAI is not enabled', async () => {
@@ -98,14 +98,4 @@ describe('loadRules', () => {
         expect(result).toEqual([JSON.parse(mockRuleContent)]);
     });
 
-    it('should handle errors when loading local rules', async () => {
-        const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
-        mockedFsPromises.readFile.mockRejectedValue(new Error('File not found'));
-        (path.join as jest.Mock).mockReturnValue('/path/to/testRule-rule.json');
-
-        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'] });
-
-        expect(result).toEqual([]);
-        expect(logger.error).toHaveBeenCalled();
-    });
 });

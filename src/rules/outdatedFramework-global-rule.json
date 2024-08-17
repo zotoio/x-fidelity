@@ -22,7 +22,6 @@
     "event": {
         "type": "fatality",
         "params": {
-            "level": "fatality",
             "message": "some core framework dependencies have expired!",
             "details": {
                 "fact": "repoDependencyResults"
