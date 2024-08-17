@@ -97,8 +97,15 @@ export interface OpenAIAnalysisParams {
 }
 export interface TelemetryEvent {
     eventType: string;
-    metadata: ResultMetadata;
+    metadata: ResultMetadata | BasicTelemetryMetadata;
     timestamp: string;
+}
+
+export interface BasicTelemetryMetadata {
+    archetype: string;
+    repoPath: string;
+    telemetryData?: TelemetryData;
+    options?: any
 }
 
 export interface GetConfigParams {
@@ -132,6 +139,8 @@ export interface ResultMetadata {
     startTime: number;
     finishTime: number;
     durationSeconds: number;
+    telemetryData: TelemetryData;
+    options: any;
     [key: string]: any; // For any additional properties from telemetryData
 }
 
@@ -150,19 +159,7 @@ export interface TelemetryData {
     userInfo: {
         username: string;
         homedir: string;
-        shell: string;
+        shell: string | null;
     };
     startTime: number;
 }
-
-export interface ResultMetadata {
-    archetype: string;
-    repoPath: string;
-    telemetryData: TelemetryData;
-    fileCount: number;
-    failureCount: number;
-    fatalityCount: number;
-    failureDetails: ScanResult[];
-    startTime: number;
-    finishTime: number;
-    durationSeconds: number;
