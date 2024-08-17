@@ -97,11 +97,7 @@ export interface OpenAIAnalysisParams {
 }
 export interface TelemetryEvent {
     eventType: string;
-    metadata: {
-        archetype: string;
-        repoPath: string;
-        [key: string]: any;
-    };
+    metadata: ResultMetadata;
     timestamp: string;
 }
 
@@ -129,11 +125,17 @@ export interface ResultMetadata {
     archetype: string;
     repoPath: string;
     fileCount: number;
-    failureCount: number;
+    totalIssues: number;
+    warningCount: number;
     fatalityCount: number;
-    failureDetails: ScanResult[];
+    issueDetails: ScanResult[];
     startTime: number;
     finishTime: number;
     durationSeconds: number;
     [key: string]: any; // For any additional properties from telemetryData
 }
+
+export interface ResultMetadata {
+    archetype: string;
+    repoPath: string;
+    telemetryData,
