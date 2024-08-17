@@ -456,7 +456,7 @@ x-fidelity offers advanced AI-powered code analysis through integration with Ope
 
 1. **Data Collection**: x-fidelity gathers relevant information about your codebase, including file contents, structure, and dependencies.
 
-2. **AI Analysis**: This data is sent to OpenAI's API, where it's analyzed by a powerful language model (default is GPT-4).
+2. **AI Analysis**: This data is sent to OpenAI's API, where it's analyzed by a powerful language model (default is GPT-4o).
 
 3. **Insights Generation**: The AI generates detailed insights, suggestions, and potential issues based on best practices, common pitfalls, and the specific context of your project.
 
