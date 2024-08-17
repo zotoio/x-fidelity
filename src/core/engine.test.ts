@@ -257,10 +257,19 @@ describe('analyzeCodebase', () => {
             run: engineRunMock
         }));
 
-        await expect(analyzeCodebase({
+        const result = await analyzeCodebase({
             repoPath: 'mockRepoPath',
             archetype: 'node-fullstack'
-        })).rejects.toThrow();
+        });
+        expect(result).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                errors: expect.arrayContaining([
+                    expect.objectContaining({
+                        level: 'fatality'
+                    })
+                ])
+            })
+        ]));
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Start, violation/fatality, and end
     });
 });
