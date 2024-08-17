@@ -108,7 +108,14 @@ describe('analyzeCodebase', () => {
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
-        expect(results).toEqual([]);
+        expect(results).toEqual(expect.objectContaining({
+            archetype: 'node-fullstack',
+            repoPath: 'mockRepoPath',
+            fileCount: 3,
+            failureCount: 0,
+            fatalityCount: 0,
+            failureDetails: [],
+        }));
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Once for start, once for end
     });
 
@@ -261,15 +268,22 @@ describe('analyzeCodebase', () => {
             repoPath: 'mockRepoPath',
             archetype: 'node-fullstack'
         });
-        expect(result).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                errors: expect.arrayContaining([
-                    expect.objectContaining({
-                        level: 'fatality'
-                    })
-                ])
-            })
-        ]));
+        expect(result).toEqual(expect.objectContaining({
+            archetype: 'node-fullstack',
+            repoPath: 'mockRepoPath',
+            fileCount: 3,
+            failureCount: 3,
+            fatalityCount: 3,
+            failureDetails: expect.arrayContaining([
+                expect.objectContaining({
+                    errors: expect.arrayContaining([
+                        expect.objectContaining({
+                            level: 'fatality'
+                        })
+                    ])
+                })
+            ])
+        }));
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Start, violation/fatality, and end
     });
 });
