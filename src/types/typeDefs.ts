@@ -1,5 +1,5 @@
 import { Engine, OperatorEvaluator } from 'json-rules-engine';
-import { ConfigManager } from '../utils/config';
+import { ConfigManager } from '../utils/configManager';
 import { FileData } from '../facts/repoFilesystemFacts';
 
 export type OperatorDefn = {
@@ -13,6 +13,7 @@ export interface ScanResult {
 
 export interface RuleFailure {
     ruleFailure: string;
+    level: string | undefined;
     details: Record<string, any> | undefined;
 }
 
@@ -57,6 +58,7 @@ export interface AnalyzeCodebaseParams {
     archetype?: string;
     configServer?: string;
     localConfigPath?: string;
+    executionLogPrefix?: string;
 }
 
 export interface CollectTelemetryDataParams {
@@ -118,3 +120,7 @@ export interface LoadLocalConfigParams {
     localConfigPath: string;
 }
 
+export interface StartServerParams { 
+    customPort?: string; 
+    executionLogPrefix?: string;
+}
