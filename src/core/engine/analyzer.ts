@@ -1,7 +1,7 @@
-import { logger, setLogPrefix, generateLogPrefix } from '../../utils/logger';
+import { logger } from '../../utils/logger';
 import { FileData } from '../../facts/repoFilesystemFacts';
-import { ConfigManager, REPO_GLOBAL_CHECK } from '../../utils/config';
-import { ArchetypeConfig } from '../../types/typeDefs';
+import { ConfigManager, REPO_GLOBAL_CHECK } from '../../utils/configManager';
+import { ArchetypeConfig, ResultMetadata } from '../../types/typeDefs';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';
 import { collectRepoFileData } from '../../facts/repoFilesystemFacts';
@@ -10,15 +10,14 @@ import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../../facts/openaiAn
 import { collectTelemetryData } from './telemetryCollector';
 import { setupEngine } from './engineSetup';
 import { runEngineOnFiles } from './engineRunner';
-import { findKeyValuePair } from './utils';
+import { countRuleFailures } from '../../utils/utils';
 
 import { AnalyzeCodebaseParams } from '../../types/typeDefs';
 
-export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<any[]> {
-    const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '' } = params;
-    const executionLogPrefix = generateLogPrefix();
-    setLogPrefix(executionLogPrefix);
-    logger.info(`INITIALISING..`);
+export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<ResultMetadata> {
+    const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '', executionLogPrefix = '' } = params;
+    
+    logger.info(`STARTING..`);
 
     const telemetryData = await collectTelemetryData({ repoPath, configServer});
 
@@ -80,28 +79,34 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<an
 
     const finishMsg = `\n==========================\nCHECKS COMPLETED..\n==========================`;
     logger.info(finishMsg);
-    logger.info(`${fileData.length} files analyzed. ${failures.length} files with errors.`)
 
-    const fatalities = findKeyValuePair(failures, 'level', 'fatality');
+    const totalFailureCount = countRuleFailures(failures);
+    logger.info(`${fileData.length} files analyzed. ${totalFailureCount} rule failures.`);
 
+    const fatalityCount = countRuleFailures(failures, 'fatality');
+
+    const finishTime = new Date().getTime();
+
+    const resultMetadata: ResultMetadata = {
+        archetype,
+        repoPath,
+        ...telemetryData,
+        fileCount: fileData.length,
+        failureCount: failures.length,
+        fatalityCount: fatalityCount,
+        failureDetails: failures,
+        startTime: telemetryData.startTime,
+        finishTime: finishTime,
+        durationSeconds: (finishTime - telemetryData.startTime) / 1000
+    }
+    
     // Send telemetry for analysis end
     await sendTelemetry({
-        eventType: 'analysisEnd',
-        metadata: {
-            archetype,
-            repoPath,
-            ...telemetryData,
-            fileCount: fileData.length,
-            failureCount: failures.length,
-            fatalityCount: fatalities.length
-        },
+        eventType: 'analysisResults',
+        metadata: resultMetadata,
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
 
-    if (fatalities.length > 0) {
-        throw new Error(JSON.stringify(fatalities));
-    }
-    return failures;
+    return resultMetadata;
 }
 
-// ... (rest of the helper functions)
