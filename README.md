@@ -489,6 +489,20 @@ export OPENAI_MODEL=gpt-4  # Optional, default is gpt-4o
 
 Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` file for guidelines on how to contribute to this project.
 
+## Glossary
+
+- **Archetype**: A predefined configuration template for a specific type of project or technology stack. It defines the rules, operators, facts, and other settings to be applied during analysis.
+
+- **Rule**: A set of conditions and corresponding actions that define a specific check or requirement for the codebase. Rules are used to identify violations or issues in the code.
+
+- **Operator**: A function that performs a specific comparison or check within a rule. Operators are used to evaluate conditions in rules.
+
+- **Fact**: A piece of information about the codebase or its environment that is collected and used during the analysis process. Facts can include file contents, dependency versions, or other relevant data.
+
+- **Config Server**: A server that hosts and distributes archetype configurations and rules, allowing for centralized management of x-fidelity settings.
+
+- **Telemetry**: Data collected about the usage and performance of x-fidelity, which can be used for improving the tool and understanding its impact.
+
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
