@@ -27,7 +27,14 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         metadata: {
             archetype,
             repoPath,
-            ...telemetryData
+            ...telemetryData,
+            fileCount: 0,
+            failureCount: 0,
+            fatalityCount: 0,
+            failureDetails: [],
+            startTime: telemetryData.startTime,
+            finishTime: telemetryData.startTime,
+            durationSeconds: 0
         },
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
