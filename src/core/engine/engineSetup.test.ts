@@ -99,8 +99,8 @@ describe('setupEngine', () => {
 
         await setupEngine(mockParams);
 
-        expect(mockEngine.addOperator).toHaveBeenCalledTimes(1);
-        expect(mockEngine.addFact).toHaveBeenCalledTimes(1);
+        expect(mockEngine.addOperator).toHaveBeenCalledTimes(2);
+        expect(mockEngine.addFact).toHaveBeenCalledTimes(2);
         expect(mockEngine.addOperator).not.toHaveBeenCalledWith('openaiOperator', expect.any(Function));
         expect(mockEngine.addFact).not.toHaveBeenCalledWith('openaiAnalysis', expect.any(Function));
     });
