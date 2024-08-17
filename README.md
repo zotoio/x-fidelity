@@ -450,6 +450,35 @@ Example of a custom archetype JSON file (`my-custom-archetype.json`):
 
 ## OpenAI Integration
 
+x-fidelity offers advanced AI-powered code analysis through integration with OpenAI's language models. This feature provides in-depth insights and suggestions for improving your codebase.
+
+### How It Works
+
+1. **Data Collection**: x-fidelity gathers relevant information about your codebase, including file contents, structure, and dependencies.
+
+2. **AI Analysis**: This data is sent to OpenAI's API, where it's analyzed by a powerful language model (default is GPT-4).
+
+3. **Insights Generation**: The AI generates detailed insights, suggestions, and potential issues based on best practices, common pitfalls, and the specific context of your project.
+
+4. **Results Integration**: These insights are integrated into x-fidelity's output, providing you with AI-enhanced analysis alongside the tool's standard checks.
+
+### Key Features
+
+- **Code Quality Assessment**: Identifies potential bugs, anti-patterns, and areas for improvement.
+- **Architecture Suggestions**: Offers insights on overall code structure and architectural decisions.
+- **Performance Optimization**: Highlights areas where performance could be improved.
+- **Security Analysis**: Flags potential security vulnerabilities.
+- **Best Practices**: Suggests adherence to industry-standard best practices.
+
+### Limitations and Considerations
+
+- **Cost**: Using OpenAI's API incurs charges based on the amount of text processed.
+- **Privacy**: Code snippets are sent to OpenAI's servers for analysis. Ensure this complies with your organization's data policies.
+- **Accuracy**: While highly advanced, AI suggestions should be reviewed by human developers for context and applicability.
+- **Rate Limits**: OpenAI's API has rate limits that may affect analysis of very large codebases.
+
+### Setup and Usage
+
 To enable AI-powered code analysis:
 
 1. Sign up for an [OpenAI API key](https://platform.openai.com).
@@ -472,7 +501,9 @@ export OPENAI_MODEL=gpt-4  # Optional, default is gpt-4o
 ```
 
 > [!IMPORTANT]
-> Be aware of potential costs and data privacy concerns when using OpenAI's API.
+> Carefully consider the costs and data privacy implications before enabling OpenAI integration, especially for large codebases or sensitive projects.
+
+By leveraging OpenAI's advanced language models, x-fidelity provides a unique blend of rule-based checks and AI-powered insights, offering a comprehensive analysis of your codebase that goes beyond traditional static analysis tools.
 
 ## Best Practices
 
