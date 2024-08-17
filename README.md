@@ -202,6 +202,25 @@ xfidelity --mode server --port 9999
 xfidelity -l /path/to/local/config
 ```
 
+### Environment Variables
+
+x-fidelity supports the following environment variables:
+
+- `OPENAI_API_KEY`: Your OpenAI API key for AI-powered analysis.
+- `OPENAI_MODEL`: The OpenAI model to use (default is 'gpt-4o').
+- `XFI_LISTEN_PORT`: The port for the config server to listen on (default is 8888).
+- `CERT_PATH`: The path to SSL certificates for HTTPS config server.
+- `NODE_TLS_REJECT_UNAUTHORIZED`: Set to '0' to allow self-signed certificates (use with caution).
+
+Example usage:
+
+```sh
+export OPENAI_API_KEY=your_api_key_here
+export OPENAI_MODEL=gpt-4
+export XFI_LISTEN_PORT=9999
+xfidelity -o true
+```
+
 ## Configuration
 
 x-fidelity uses archetypes to define project-specific configurations. Archetypes are now managed as JSON files, which can be stored locally or on a remote server.
