@@ -7,7 +7,7 @@ import { loadRules } from '../rules';
 import { loadOperators } from '../operators';
 import { loadFacts } from '../facts';
 import { archetypes } from '../archetypes';
-import { ConfigManager } from '../utils/config';
+import { ConfigManager } from '../utils/configManager';
 import { sendTelemetry } from '../utils/telemetry';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { generateLogPrefix } from '../utils/logger';
@@ -37,7 +37,7 @@ jest.mock('../utils/logger', () => ({
     ...jest.requireActual('../utils/logger'),
     generateLogPrefix: jest.fn().mockReturnValue('mockLogPrefix')
 }));
-jest.mock('../utils/config');
+jest.mock('../utils/configManager');
 jest.mock('../utils/telemetry');
 jest.mock('../archetypes', () => ({
     archetypes: {
