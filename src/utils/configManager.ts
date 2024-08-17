@@ -31,6 +31,7 @@ export class ConfigManager {
 
         if (logPrefix) setLogPrefix(logPrefix);
         logger.info(`Initializing config manager for archetype: ${archetype}`);
+        logger.debug(`Initialize params: ${JSON.stringify(params)}`);
 
         const config: ExecutionConfig = { 
             archetype: {} as ArchetypeConfig, 
