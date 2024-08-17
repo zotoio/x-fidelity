@@ -159,3 +159,10 @@ export interface ResultMetadata {
     archetype: string;
     repoPath: string;
     telemetryData: TelemetryData;
+    fileCount: number;
+    failureCount: number;
+    fatalityCount: number;
+    failureDetails: ScanResult[];
+    startTime: number;
+    finishTime: number;
+    durationSeconds: number;
