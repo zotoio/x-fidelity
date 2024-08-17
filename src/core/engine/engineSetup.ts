@@ -45,6 +45,13 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                 metadata: {
                     archetype,
                     repoPath: '',
+                    fileCount: 0,
+                    failureCount: 0,
+                    fatalityCount: 0,
+                    failureDetails: [],
+                    startTime: Date.now(),
+                    finishTime: Date.now(),
+                    durationSeconds: 0,
                     ...params
                 },
                 timestamp: new Date().toISOString()
@@ -57,6 +64,13 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                 metadata: {
                     archetype,
                     repoPath: '',
+                    fileCount: 0,
+                    failureCount: 0,
+                    fatalityCount: 0,
+                    failureDetails: [],
+                    startTime: Date.now(),
+                    finishTime: Date.now(),
+                    durationSeconds: 0,
                     ...params
                 },
                 timestamp: new Date().toISOString()
