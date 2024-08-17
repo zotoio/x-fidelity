@@ -67,17 +67,17 @@ describe('loadRules', () => {
         mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/testRule-rule.json');
 
-        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'], configServer: 'http://configserver.com' });
+        await expect(loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'], configServer: 'http://configserver.com' }))
+            .rejects.toThrow('Network error');
 
-        expect(result).toEqual([JSON.parse(mockRuleContent)]);
         expect(axios.get).toHaveBeenCalledWith('http://configserver.com/archetypes/testArchetype/rules/testRule', {
             headers: {
                 'X-Log-Prefix': ''
             }
         });
 
-        // expect an error to be logged
-        expect(logger.error).toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalledWith('error fetching remote rule testRule');
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Network error'));
     });
 
     it('should not load openai rules if OpenAI is not enabled', async () => {
