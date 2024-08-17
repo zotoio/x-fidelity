@@ -291,6 +291,6 @@ describe('analyzeCodebase', () => {
                 })
             ])
         }));
-        expect(sendTelemetry).toHaveBeenCalledTimes(2); // Start, violation/fatality, and end
+        expect(sendTelemetry).toHaveBeenCalledTimes(2); // Start, warning/fatality, and end
     });
 });
