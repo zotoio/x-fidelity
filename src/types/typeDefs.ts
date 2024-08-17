@@ -135,7 +135,27 @@ export interface ResultMetadata {
     [key: string]: any; // For any additional properties from telemetryData
 }
 
+export interface TelemetryData {
+    repoUrl: string;
+    configServer: string;
+    hostInfo: {
+        platform: string;
+        release: string;
+        type: string;
+        arch: string;
+        cpus: number;
+        totalMemory: number;
+        freeMemory: number;
+    };
+    userInfo: {
+        username: string;
+        homedir: string;
+        shell: string;
+    };
+    startTime: number;
+}
+
 export interface ResultMetadata {
     archetype: string;
     repoPath: string;
-    telemetryData,
+    telemetryData: TelemetryData;
