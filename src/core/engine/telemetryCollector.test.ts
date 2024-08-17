@@ -1,6 +1,7 @@
 import { collectTelemetryData } from './telemetryCollector';
 import { execSync } from 'child_process';
 import os from 'os';
+import fs from 'fs';
 
 jest.mock('child_process');
 jest.mock('os', () => ({
