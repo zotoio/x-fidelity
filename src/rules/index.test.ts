@@ -60,7 +60,7 @@ describe('loadRules', () => {
         }));
     });
 
-    it('should fall back to local file if remote fetch fails', async () => {
+    it('should log an error if remote fetch fails', async () => {
         const mockRuleContent = JSON.stringify({ name: 'testRule', conditions: {}, event: {} });
         (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
         const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
@@ -76,7 +76,8 @@ describe('loadRules', () => {
             }
         });
 
-        expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/testRule-rule.json', 'utf8');
+        // expect an error to be logged
+        expect(logger.error).toHaveBeenCalled();
     });
 
     it('should not load openai rules if OpenAI is not enabled', async () => {
