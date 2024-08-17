@@ -32,7 +32,7 @@ try {
 
             // if results are found, there were issues found in the codebase
             if (resultMetadata.XFI_RESULT.totalIssues > 0) {
-                logger.warn(`WARNING: lo-fi attributes detected in codebase. ${resultMetadata.XFI_RESULT.warningCount} are warnings, ${resultMetadata.fatalityCount} are fatal.`);
+                logger.warn(`WARNING: lo-fi attributes detected in codebase. ${resultMetadata.XFI_RESULT.warningCount} are warnings, ${resultMetadata.XFI_RESULT.fatalityCount} are fatal.`);
                 logger.warn(JSON.stringify({XFI_RESULT: resultMetadata}));
             
                 if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
@@ -70,7 +70,7 @@ try {
             finishTime: Date.now(),
             durationSeconds: 0,
             ...options,
-            error: e
+            errorMessage: e.message
         },
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
