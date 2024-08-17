@@ -63,7 +63,9 @@ export class ConfigManager {
 
             if (!config.archetype || Object.keys(config.archetype).length === 0) {
                 logger.error(`No valid configuration found for archetype: ${archetype}.`);
-                throw new Error('No valid configuration found for archetype');
+                logger.error(`Config object: ${JSON.stringify(config)}`);
+                logger.error(`Archetype object: ${JSON.stringify(config.archetype)}`);
+                throw new Error(`No valid configuration found for archetype: ${archetype}`);
             }
 
             return config;
