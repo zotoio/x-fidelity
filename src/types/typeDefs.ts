@@ -141,6 +141,8 @@ export interface ResultMetadata {
     durationSeconds: number;
     telemetryData: TelemetryData;
     options: any;
+    telemetryData: TelemetryData;
+    options: any;
     [key: string]: any; // For any additional properties from telemetryData
 }
 
