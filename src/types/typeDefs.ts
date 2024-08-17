@@ -124,3 +124,16 @@ export interface StartServerParams {
     customPort?: string; 
     executionLogPrefix?: string;
 }
+
+export interface ResultMetadata {
+    archetype: string;
+    repoPath: string;
+    fileCount: number;
+    failureCount: number;
+    fatalityCount: number;
+    failureDetails: ScanResult[];
+    startTime: number;
+    finishTime: number;
+    durationSeconds: number;
+    [key: string]: any; // For any additional properties from telemetryData
+}
