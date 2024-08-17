@@ -108,15 +108,22 @@ describe('analyzeCodebase', () => {
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
-        expect(results).toEqual(expect.objectContaining({
-            archetype: 'node-fullstack',
-            repoPath: 'mockRepoPath',
-            fileCount: 3,
-            totalIssues: 0,
-            warningCount: 0,
-            fatalityCount: 0,
-            issueDetails: [],
-        }));
+        expect(results).toEqual({
+            XFI_RESULT: expect.objectContaining({
+                archetype: 'node-fullstack',
+                repoPath: 'mockRepoPath',
+                fileCount: 3,
+                totalIssues: 0,
+                warningCount: 0,
+                fatalityCount: 0,
+                issueDetails: [],
+                durationSeconds: expect.any(Number),
+                finishTime: expect.any(Number),
+                startTime: expect.any(Number),
+                options: expect.any(Object),
+                telemetryData: expect.any(Object),
+            })
+        });
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Once for start, once for end
     });
 
@@ -159,15 +166,22 @@ describe('analyzeCodebase', () => {
         expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
         expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
-        expect(results).toEqual(expect.objectContaining({
-            archetype: 'node-fullstack',
-            repoPath: 'mockRepoPath',
-            fileCount: 3,
-            totalIssues: 0,
-            warningCount: 0,
-            fatalityCount: 0,
-            issueDetails: [],
-        }));
+        expect(results).toEqual({
+            XFI_RESULT: expect.objectContaining({
+                archetype: 'node-fullstack',
+                repoPath: 'mockRepoPath',
+                fileCount: 3,
+                totalIssues: 0,
+                warningCount: 0,
+                fatalityCount: 0,
+                issueDetails: [],
+                durationSeconds: expect.any(Number),
+                finishTime: expect.any(Number),
+                startTime: expect.any(Number),
+                options: expect.any(Object),
+                telemetryData: expect.any(Object),
+            })
+        });
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Once for start, once for end
     });
 
@@ -275,23 +289,30 @@ describe('analyzeCodebase', () => {
             repoPath: 'mockRepoPath',
             archetype: 'node-fullstack'
         });
-        expect(result).toEqual(expect.objectContaining({
-            archetype: 'node-fullstack',
-            repoPath: 'mockRepoPath',
-            fileCount: 3,
-            totalIssues: 3,
-            warningCount: 0,
-            fatalityCount: 3,
-            issueDetails: expect.arrayContaining([
-                expect.objectContaining({
-                    errors: expect.arrayContaining([
-                        expect.objectContaining({
-                            level: 'fatality'
-                        })
-                    ])
-                })
-            ])
-        }));
+        expect(result).toEqual({
+            XFI_RESULT: expect.objectContaining({
+                archetype: 'node-fullstack',
+                repoPath: 'mockRepoPath',
+                fileCount: 3,
+                totalIssues: 3,
+                warningCount: 0,
+                fatalityCount: 3,
+                issueDetails: expect.arrayContaining([
+                    expect.objectContaining({
+                        errors: expect.arrayContaining([
+                            expect.objectContaining({
+                                level: 'fatality'
+                            })
+                        ])
+                    })
+                ]),
+                durationSeconds: expect.any(Number),
+                finishTime: expect.any(Number),
+                startTime: expect.any(Number),
+                options: expect.any(Object),
+                telemetryData: expect.any(Object),
+            })
+        });
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Start and end
     });
 });
