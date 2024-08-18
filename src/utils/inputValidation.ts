@@ -1,6 +1,12 @@
 import { logger } from './logger';
 
-export function validateInput(input: string): boolean {
+export function validateInput(input: string | undefined): boolean {
+    // Check if input is undefined or null
+    if (input == null) {
+        logger.warn(`Invalid input: ${input}`);
+        return false;
+    }
+
     // Check for potential directory traversal attempts
     if (input.includes('..') || input.includes('~')) {
         logger.warn(`Potential directory traversal attempt detected: ${input}`);
