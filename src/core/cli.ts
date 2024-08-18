@@ -3,6 +3,7 @@ import { program } from "commander";
 import path from "path";
 import fs from "fs";
 import { version } from "../../package.json";
+import { validateInput } from '../utils/inputValidation';
 
 // Ensure logger is initialized
 if (!logger || typeof logger.info !== 'function') {
@@ -43,21 +44,28 @@ if (process.argv.length === 2 && program.args.length === 0) {
 
 // Resolve paths
 if (process.env.NODE_ENV === 'test' || options.mode === 'server') options.dir = '.';
-const resolvePath = (inputPath: string) => path?.resolve(process.cwd(), inputPath);
+const resolvePath = (inputPath: string) => {
+    const resolvedPath = path?.resolve(process.cwd(), inputPath);
+    if (!validateInput(resolvedPath)) {
+        logger.warn(`Potential malicious input detected: ${inputPath}`);
+        return null;
+    }
+    return resolvedPath;
+};
 options.dir = program.args.length == 1 ? resolvePath(program.args[0]) : resolvePath(options.dir);
 if (options.localConfigPath) {
     options.localConfigPath = resolvePath(options.localConfigPath);
 }
 
-// if dir does not exist, exit
+// if dir does not exist or is invalid, exit
 if (!options.dir || !fs.existsSync(options.dir)) {
-    logger.error(`target directory ${options.dir} does not exist`);
+    logger.error(`Target directory ${options.dir} does not exist or is invalid`);
     if (process.env.NODE_ENV !== 'test') process.exit(1);
 }
 
-// if localConfig path does not exist, exit
-if (options.localConfigPath && !fs.existsSync(options.localConfigPath)) {
-    logger.error(`localConfigPath ${options.localConfigPath} does not exist`);
+// if localConfig path does not exist or is invalid, exit
+if (options.localConfigPath && (!fs.existsSync(options.localConfigPath) || !validateInput(options.localConfigPath))) {
+    logger.error(`LocalConfigPath ${options.localConfigPath} does not exist or is invalid`);
     if (process.env.NODE_ENV !== 'test') process.exit(1);
 }
 
