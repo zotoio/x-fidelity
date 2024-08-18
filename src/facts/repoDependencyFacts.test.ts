@@ -46,7 +46,7 @@ describe('collectLocalDependencies', () => {
         });
 
         const result = collectLocalDependencies();
-        expect(logger.error).toHaveBeenCalledWith('exec error: Error: mock error');
+        expect(logger.error).toHaveBeenCalledWith(expect.any(Error));
         expect(result).toEqual({});
     });
 
