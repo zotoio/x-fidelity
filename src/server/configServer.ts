@@ -13,6 +13,8 @@ import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 import { StartServerParams } from '../types/typeDefs';
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
+const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';
+logger.info(`Shared secret is ${maskedSecret}`);
 
 const app = express();
 app.use(helmet());
@@ -32,6 +34,7 @@ const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
 const checkSharedSecret = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const clientSecret = req.headers['x-shared-secret'];
     if (SHARED_SECRET && clientSecret !== SHARED_SECRET) {
+        logger.warn(`Unauthorized access attempt with incorrect shared secret: ${maskedSecret}`);
         return res.status(403).json({ error: 'Unauthorized' });
     }
     next();
