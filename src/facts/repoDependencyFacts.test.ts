@@ -9,9 +9,9 @@ import {
   getDependencyVersionFacts,
   findPropertiesInTree,
   repoDependencyAnalysis
-} from '../repoDependencyFacts';
-import { LocalDependencies, ArchetypeConfig, VersionData } from '../../types/typeDefs';
-import { options } from '../../core/cli';
+} from './repoDependencyFacts';
+import { LocalDependencies, ArchetypeConfig, VersionData } from '../types/typeDefs';
+import { options } from '../core/cli';
 
 jest.mock('fs');
 jest.mock('child_process');
@@ -28,7 +28,7 @@ describe('repoDependencyFacts', () => {
 
   describe('collectLocalDependencies', () => {
     it('should collect Yarn dependencies when yarn.lock exists', () => {
-      (fs.existsSync as jest.Mock).mockImplementation((file) => file.endsWith('yarn.lock'));
+      (fs.existsSync as jest.Mock).mockImplementation((file: string) => file.endsWith('yarn.lock'));
       (execSync as jest.Mock).mockReturnValue(JSON.stringify({
         data: {
           trees: [
@@ -45,7 +45,7 @@ describe('repoDependencyFacts', () => {
     });
 
     it('should collect NPM dependencies when package-lock.json exists', () => {
-      (fs.existsSync as jest.Mock).mockImplementation((file) => file.endsWith('package-lock.json'));
+      (fs.existsSync as jest.Mock).mockImplementation((file: string) => file.endsWith('package-lock.json'));
       (execSync as jest.Mock).mockReturnValue(JSON.stringify({
         dependencies: {
           'package-a': { version: '1.0.0', dependencies: { 'package-b': { version: '2.0.0' } } }
@@ -84,11 +84,11 @@ describe('repoDependencyFacts', () => {
         }
       };
 
-      jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([
+      jest.spyOn(global, 'collectLocalDependencies' as keyof typeof global).mockReturnValue([
         { name: 'package-a', version: '1.1.0' },
         { name: 'package-b', version: '2.1.0' },
         { name: 'package-c', version: '3.0.0' }
-      ]);
+      ] as LocalDependencies[]);
 
       const result = await getDependencyVersionFacts(mockArchetypeConfig);
 
@@ -112,7 +112,7 @@ describe('repoDependencyFacts', () => {
         }
       };
 
-      jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([]);
+      jest.spyOn(global, 'collectLocalDependencies' as keyof typeof global).mockReturnValue([] as LocalDependencies[]);
 
       const result = await getDependencyVersionFacts(mockArchetypeConfig);
 
@@ -167,7 +167,7 @@ describe('repoDependencyFacts', () => {
   describe('repoDependencyAnalysis', () => {
     it('should return an empty result for non-global checks', async () => {
       const almanac = {
-        factValue: jest.fn().mockResolvedValue({ fileName: 'not-global-check' })
+        factValue: jest.fn().mockResolvedValue({ fileName: 'not-global-check' } as FileData)
       } as unknown as Almanac;
 
       const result = await repoDependencyAnalysis({}, almanac);
