@@ -1,4 +1,6 @@
 import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 import { collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree, repoDependencyAnalysis } from './repoDependencyFacts';
 import { logger } from '../utils/logger';
 import { Almanac } from 'json-rules-engine';
@@ -7,6 +9,10 @@ import { LocalDependencies } from '../types/typeDefs';
 
 jest.mock('child_process', () => ({
     execSync: jest.fn(),
+}));
+
+jest.mock('fs', () => ({
+    existsSync: jest.fn(),
 }));
 
 jest.mock('../utils/logger', () => ({
@@ -28,31 +34,35 @@ describe('collectLocalDependencies', () => {
         jest.clearAllMocks();
     });
 
-    it('should return parsed JSON result when yarn execSync succeeds', () => {
-        const mockResult = JSON.stringify({ dependencies: {} });
-        (execSync as jest.Mock).mockReturnValue(Buffer.from(mockResult));
+    it('should call collectYarnDependencies when yarn.lock exists', () => {
+        (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+            return path.basename(filePath) === 'yarn.lock';
+        });
+        const mockYarnOutput = { data: { trees: [{ name: 'package@1.0.0' }] } };
+        (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
 
         const result = collectLocalDependencies();
-        expect(result).toEqual({ dependencies: {} });
-        expect(execSync).toHaveBeenCalledWith('yarn list --json --depth=0 --cwd /mock/dir');
+        expect(result).toEqual([{ name: 'package', version: '1.0.0' }]);
+        expect(execSync).toHaveBeenCalledWith('yarn list --json --cwd /mock/dir');
     });
 
-    it('should try npm when yarn fails', () => {
-        (execSync as jest.Mock)
-            .mockImplementationOnce(() => { throw new Error('yarn error'); })
-            .mockReturnValueOnce(Buffer.from(JSON.stringify({ dependencies: {} })));
+    it('should call collectNpmDependencies when package-lock.json exists', () => {
+        (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+            return path.basename(filePath) === 'package-lock.json';
+        });
+        const mockNpmOutput = { dependencies: { 'package': { version: '1.0.0' } } };
+        (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockNpmOutput)));
 
         const result = collectLocalDependencies();
-        expect(result).toEqual({ dependencies: {} });
-        expect(execSync).toHaveBeenCalledWith('yarn list --json --depth=0 --cwd /mock/dir');
+        expect(result).toEqual([{ name: 'package', version: '1.0.0' }]);
         expect(execSync).toHaveBeenCalledWith('npm ls -a --json --prefix /mock/dir');
     });
 
-    it('should log error and throw when both yarn and npm fail', () => {
-        (execSync as jest.Mock).mockImplementation(() => { throw new Error('command error'); });
+    it('should throw an error when no lock file is found', () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
 
-        expect(() => collectLocalDependencies()).toThrow();
-        expect(logger.error).toHaveBeenCalledTimes(2);
+        expect(() => collectLocalDependencies()).toThrow('Unsupported package manager');
+        expect(logger.error).toHaveBeenCalledWith('No yarn.lock or package-lock.json found');
     });
 });
 
@@ -78,7 +88,7 @@ describe('getDependencyVersionFacts', () => {
     });
 
     it('should return an empty array if no local dependencies found', async () => {
-        jest.spyOn(global, collectLocalDependencies as any).mockReturnValue(null);
+        jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue([]);
         
         const mockArchetypeConfig = {
             config: {
