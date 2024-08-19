@@ -12,6 +12,8 @@ import rateLimit from 'express-rate-limit';
 import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 import { StartServerParams } from '../types/typeDefs';
 
+const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
+
 const app = express();
 app.use(helmet());
 
@@ -23,6 +25,18 @@ const limiter = rateLimit({
 
 // Apply rate limiter to all routes
 app.use(limiter);
+
+// Middleware to check for shared secret
+const checkSharedSecret = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const clientSecret = req.headers['x-shared-secret'];
+    if (SHARED_SECRET && clientSecret !== SHARED_SECRET) {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    next();
+};
+
+// Apply shared secret check to all routes
+app.use(checkSharedSecret);
 
 const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
 

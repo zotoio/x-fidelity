@@ -4,6 +4,7 @@ import { options } from "../core/cli";
 import { TelemetryEvent } from '../types/typeDefs';
 
 const TELEMETRY_ENDPOINT = process.env.TELEMETRY_ENDPOINT || options.telemetryCollector || (options.configServer ? `${options.configServer}/telemetry` : null);
+const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 
 export async function sendTelemetry(event: TelemetryEvent, logPrefix: string): Promise<void> {
     if (!TELEMETRY_ENDPOINT) {
@@ -16,7 +17,8 @@ export async function sendTelemetry(event: TelemetryEvent, logPrefix: string): P
             headers: {
                 'Content-Type': 'application/json',
                 'User-Agent': 'x-fidelity-telemetry',
-                'X-Log-Prefix': logPrefix
+                'X-Log-Prefix': logPrefix,
+                'X-Shared-Secret': SHARED_SECRET
             }
         });
         logger.debug(`telemetry sent: ${JSON.stringify(event)}`);
