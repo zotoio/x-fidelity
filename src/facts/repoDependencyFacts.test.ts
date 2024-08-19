@@ -16,7 +16,7 @@ import { FileData } from './repoFilesystemFacts';
 
 jest.mock('fs');
 jest.mock('child_process');
-jest.mock('../../core/cli', () => ({
+jest.mock('../core/cli', () => ({
   options: {
     dir: '/test/dir'
   }
@@ -85,7 +85,7 @@ describe('repoDependencyFacts', () => {
         }
       };
 
-      jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([
+      jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue([
         { name: 'package-a', version: '1.1.0' },
         { name: 'package-b', version: '2.1.0' },
         { name: 'package-c', version: '3.0.0' }
@@ -113,7 +113,7 @@ describe('repoDependencyFacts', () => {
         }
       };
 
-      jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([]);
+      jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue([]);
 
       const result = await getDependencyVersionFacts(mockArchetypeConfig);
 
@@ -168,7 +168,7 @@ describe('repoDependencyFacts', () => {
   describe('repoDependencyAnalysis', () => {
     it('should return an empty result for non-global checks', async () => {
       const almanac = {
-        factValue: jest.fn().mockResolvedValue({ fileName: 'not-global-check' } as FileData)
+        factValue: jest.fn().mockResolvedValue({ fileName: 'not-global-check' } as never)
       } as unknown as Almanac;
 
       const result = await repoDependencyAnalysis({}, almanac);
