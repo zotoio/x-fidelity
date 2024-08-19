@@ -72,6 +72,64 @@ describe('collectLocalDependencies', () => {
     });
 });
 
+jest.mock('semver', () => ({
+    gtr: jest.fn(),
+    Range: jest.fn()
+}));
+
+describe('repoDependencyAnalysis', () => {
+    let mockAlmanac: Almanac;
+
+    beforeEach(() => {
+        mockAlmanac = {
+            factValue: jest.fn(),
+            addRuntimeFact: jest.fn(),
+        } as unknown as Almanac;
+    });
+
+    it('should return empty result for non-REPO_GLOBAL_CHECK files', async () => {
+        (mockAlmanac.factValue as jest.Mock).mockResolvedValueOnce({ fileName: 'someFile.js' });
+        
+        const result = await repoDependencyAnalysis({}, mockAlmanac);
+        expect(result).toEqual({ result: [] });
+    });
+
+    it('should analyze dependencies correctly', async () => {
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' })
+            .mockResolvedValueOnce({
+                installedDependencyVersions: [
+                    { dep: 'outdated', ver: '1.0.0', min: '^2.0.0' },
+                    { dep: 'uptodate', ver: '3.0.0', min: '^2.0.0' }
+                ]
+            });
+
+        jest.spyOn(semver, 'gtr').mockImplementation((version, range) => {
+            return version === '3.0.0';  // Only 'uptodate' should be greater than required
+        });
+
+        const result = await repoDependencyAnalysis({ resultFact: 'testResult' }, mockAlmanac);
+        
+        expect(result).toEqual({
+            result: [
+                { dependency: 'outdated', currentVersion: '1.0.0', requiredVersion: '^2.0.0' }
+            ]
+        });
+        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', result);
+    });
+
+    it('should handle errors gracefully', async () => {
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' })
+            .mockRejectedValueOnce(new Error('Test error'));
+
+        const result = await repoDependencyAnalysis({}, mockAlmanac);
+        
+        expect(result).toEqual({ result: [] });
+        expect(logger.error).toHaveBeenCalled();
+    });
+});
+
 describe('getDependencyVersionFacts', () => {
     it('should return installed dependency versions correctly', async () => {
         
