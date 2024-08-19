@@ -80,15 +80,15 @@ function processNpmDependencies(npmOutput: any): LocalDependencies[] {
         const newDep: LocalDependencies = {name, version: info.version };
         if (info.dependencies) {
             newDep.dependencies = [];
-            Object.entries(info.dependencies).forEach(([name, info]: [string, any]) => {
-                newDep.dependencies?.push(processDependency(name, info));
+            Object.entries(info.dependencies).forEach(([childName, childInfo]: [string, any]) => {
+                newDep.dependencies?.push(processDependency(childName, childInfo));
             });
         }
         return newDep;
     };
     if (npmOutput.dependencies) {
         Object.entries(npmOutput.dependencies).forEach(([name, info]: [string, any]) => {
-            processDependency(name, info);
+            dependencies.push(processDependency(name, info));
         });
     }
     return dependencies;
