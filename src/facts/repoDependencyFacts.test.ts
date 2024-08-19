@@ -25,6 +25,7 @@ jest.mock('../utils/logger', () => ({
         error: jest.fn(),
         debug: jest.fn(),
         info: jest.fn(),
+        warn: jest.fn(),
     },
 }));
 
@@ -73,6 +74,11 @@ describe('collectLocalDependencies', () => {
 
 describe('getDependencyVersionFacts', () => {
     it('should return installed dependency versions correctly', async () => {
+        
+        (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+            return path.basename(filePath) === 'package-lock.json';
+        });
+        
         const mockLocalDependencies: LocalDependencies[] = [
             { name: 'commander', version: '2.0.0' },
             { name: 'nodemon', version: '3.9.0' }
