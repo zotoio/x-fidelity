@@ -14,14 +14,16 @@ import path from 'path';
  * @returns The local dependencies.
  */
 export function collectLocalDependencies(): LocalDependencies[] {
+    let result = [];
     if (fs.existsSync(path.join(options.dir, 'yarn.lock'))) {
-        return collectYarnDependencies();
+        result = collectYarnDependencies();
     } else if (fs.existsSync(path.join(options.dir, 'package-lock.json'))) {
-        return collectNpmDependencies();
+        result = collectNpmDependencies();
     } else {
         logger.error('No yarn.lock or package-lock.json found');
         throw new Error('Unsupported package manager');
     }
+    return result;
 }
 
 function collectYarnDependencies(): LocalDependencies[] {
@@ -121,7 +123,7 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
 
     logger.debug(`depGraph: ${JSON.stringify(depGraph)}`);
 
-    function walk(dep: LocalDependencies, parentName: string = '') {
+    function walk(dep: LocalDependencies, parentName = '') {
         const fullName = parentName ? `${parentName}/${dep.name}` : dep.name;
         if (Object.keys(minVersions).includes(dep.name)) {
             results.push({ dep: fullName, ver: dep.version, min: minVersions[dep.name] });
