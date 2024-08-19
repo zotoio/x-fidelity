@@ -14,15 +14,16 @@ import path from 'path';
  * @returns The local dependencies.
  */
 export function collectLocalDependencies(): LocalDependencies[] {
-    let result = [];
+    let result:LocalDependencies[] = [];
     if (fs.existsSync(path.join(options.dir, 'yarn.lock'))) {
         result = collectYarnDependencies();
     } else if (fs.existsSync(path.join(options.dir, 'package-lock.json'))) {
         result = collectNpmDependencies();
     } else {
         logger.error('No yarn.lock or package-lock.json found');
-        throw new Error('Unsupported package manager');
+        //throw new Error('Unsupported package manager');
     }
+    logger.info(`collectLocalDependencies: ${JSON.stringify(result)}`);
     return result;
 }
 
