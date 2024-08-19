@@ -58,7 +58,7 @@ describe('collectLocalDependencies', () => {
 
 describe('getDependencyVersionFacts', () => {
     it('should return installed dependency versions correctly', async () => {
-        const mockLocalDependencies = [
+        const mockLocalDependencies: LocalDependencies[] = [
             { name: 'commander', version: '2.0.0' },
             { name: 'nodemon', version: '3.9.0' }
         ];
