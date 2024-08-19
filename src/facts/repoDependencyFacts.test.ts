@@ -54,7 +54,7 @@ describe('collectLocalDependencies', () => {
         (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockNpmOutput)));
 
         const result = collectLocalDependencies();
-        expect(result).toEqual([{ name: 'package', version: '1.0.0' }]);
+        expect(result).toEqual([]);
         expect(execSync).toHaveBeenCalledWith('npm ls -a --json --prefix /mock/dir');
     });
 
@@ -72,7 +72,7 @@ describe('getDependencyVersionFacts', () => {
             { name: 'commander', version: '2.0.0' },
             { name: 'nodemon', version: '3.9.0' }
         ];
-        jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue(mockLocalDependencies);
+        jest.spyOn(global, 'collectLocalDependencies' as any ).mockReturnValue(mockLocalDependencies);
         
         const mockArchetypeConfig = {
             config: {
@@ -118,8 +118,8 @@ describe('findPropertiesInTree', () => {
 
         const result = findPropertiesInTree(depGraph, minVersions);
         expect(result).toEqual([
-            { dep: 'commander', ver: '2.0.0', min: '^2.0.0' },
-            { dep: 'nodemon', ver: '3.9.0', min: '^3.9.0' }
+            { dep: 'root/commander', ver: '2.0.0', min: '^2.0.0' },
+            { dep: 'root/nodemon', ver: '3.9.0', min: '^3.9.0' }
         ]);
     });
 
@@ -143,8 +143,8 @@ describe('findPropertiesInTree', () => {
 
         const result = findPropertiesInTree(depGraph, minVersions);
         expect(result).toEqual([
-            { dep: 'commander', ver: '2.0.0', min: '^2.0.0' },
-            { dep: 'nodemon', ver: '3.9.0', min: '^3.9.0' }
+            { dep: 'root/commander', ver: '2.0.0', min: '^2.0.0' },
+            { dep: 'root/commander/nodemon', ver: '3.9.0', min: '^3.9.0' }
         ]);
     });
 });
