@@ -1,3 +1,50 @@
+# [2.1.0](https://github.com/zotoio/x-fidelity/compare/v2.0.0...v2.1.0) (2024-08-19)
+
+
+### Bug Fixes
+
+* Add missing mock implementation for fs.existsSync in repoDependencyFacts.test.ts ([f69c22b](https://github.com/zotoio/x-fidelity/commit/f69c22b6421c1e98714c5391a6f6c97e0f11f917))
+* Add mocks for semver in repoDependencyFacts.test.ts ([a852ff5](https://github.com/zotoio/x-fidelity/commit/a852ff5092a0f7f65292b98013e435685a16f2c2))
+* Add null check for input in validateInput function ([c5d8bf3](https://github.com/zotoio/x-fidelity/commit/c5d8bf3c735ac6aa9598ba5254de14a9f75ddcf1))
+* Add type annotation for mockLocalDependencies in repoDependencyFacts.test.ts ([79cfff0](https://github.com/zotoio/x-fidelity/commit/79cfff07a78328a881ae24309564e4b6954f7770))
+* Correct the structure of LocalDependencies in repoDependencyFacts.test.ts ([346924f](https://github.com/zotoio/x-fidelity/commit/346924f93b968baf123f4fc5e2e7de45dbba81e9))
+* Ensure dependencies are properly added to the result array in processNpmDependencies ([21025db](https://github.com/zotoio/x-fidelity/commit/21025db2ef520c104bb32d3dd0396d93503e3061))
+* **facts:** ensure dependencies are compatible with npm and yarn, and extensible ([fe0e40f](https://github.com/zotoio/x-fidelity/commit/fe0e40f7e0fb2c263fa63ad2eeda1ff5574fc669))
+* Fix mocked import path for cli options ([8806297](https://github.com/zotoio/x-fidelity/commit/8806297dafe2d6a587efb6957c93028964393879))
+* fix type annotation for collectLocalDependencies mock ([d2a7739](https://github.com/zotoio/x-fidelity/commit/d2a7739fcd78f775dbff648727729204474507ac))
+* Fix type error in unit test ([58f14aa](https://github.com/zotoio/x-fidelity/commit/58f14aaaf92070805194f5012df798fe78f3bdcb))
+* Fix TypeScript errors in repoDependencyFacts.test.ts ([50a2029](https://github.com/zotoio/x-fidelity/commit/50a2029bb49304177a2fec1f092642bf19689a4e))
+* Fix TypeScript errors in repoDependencyFacts.test.ts ([a3da3da](https://github.com/zotoio/x-fidelity/commit/a3da3dacf4cf08810969e8b988c978ef7781c66b))
+* Fix TypeScript errors in repoDependencyFacts.test.ts ([1869968](https://github.com/zotoio/x-fidelity/commit/1869968282cbc609235ee061d953081bd6113675))
+* Handle missing package manager files gracefully ([95da9ab](https://github.com/zotoio/x-fidelity/commit/95da9ab4fe5dcfadfae6209ffffcf74ed6274f06))
+* Implement dependency analysis tests ([9b0426b](https://github.com/zotoio/x-fidelity/commit/9b0426b2a5be278f9dae8f8d4eee8293b7cffad9))
+* Improve error handling and return value in collectLocalDependencies function ([7c6c06c](https://github.com/zotoio/x-fidelity/commit/7c6c06c223bc5f239f937b707948b67320ba0d2d))
+* Improve input validation and add logging for potential attacks ([e5e2cd4](https://github.com/zotoio/x-fidelity/commit/e5e2cd4bd907d54837d512e5907b49ce6f4d8f6b))
+* Mock `collectLocalDependencies` function in `repoDependencyFacts.test.ts` ([33a1634](https://github.com/zotoio/x-fidelity/commit/33a16349c7bb4396d7217138deda2ddf13a07d52))
+* mock collectLocalDependencies function correctly ([fde463a](https://github.com/zotoio/x-fidelity/commit/fde463aa536ce466b605d038acefe57ef85c91bc))
+* Mock fs and child_process modules in repoDependencyFacts.test.ts ([f43c3a5](https://github.com/zotoio/x-fidelity/commit/f43c3a53d8961962cfda6107a37815a3e13bbc01))
+* Refactor repoDependencyFacts tests ([cb2fd9a](https://github.com/zotoio/x-fidelity/commit/cb2fd9a3d941061fc9aff928b17c6640498abdf9))
+* Resolve TypeScript error in repoDependencyFacts.test.ts ([6bb0f22](https://github.com/zotoio/x-fidelity/commit/6bb0f220538e4b672309f20c57688a9b2de1039a))
+* rewrite src/facts/repoDependencyFacts.test.ts to ensure it adheres to the logic in the implementation and that it mocks required objects correctly and covers all positive and negative use-cases ([2d4548c](https://github.com/zotoio/x-fidelity/commit/2d4548c5b922bea31c7b1aa5accafbf1ae1593dd))
+* Throw error when no lock file is found and return empty array when no local dependencies are found ([a30a660](https://github.com/zotoio/x-fidelity/commit/a30a6600c3b930cbb8237c1e82f91e3b5d76bc91))
+* Update `src/facts/repoDependencyFacts.test.ts` to fix TypeScript error ([254f770](https://github.com/zotoio/x-fidelity/commit/254f7706f807558f5a227c2091953a499e70c23c))
+* Update collectLocalDependencies test to return an empty array ([04bdda7](https://github.com/zotoio/x-fidelity/commit/04bdda734f335c06c56965fa7043c9d40c5e78a7))
+* Update error message expectation in test ([6f287bd](https://github.com/zotoio/x-fidelity/commit/6f287bd9bfca340d9e2e3f6fd3d268196251effe))
+* Update yarn dependency processing logic ([5f2a39d](https://github.com/zotoio/x-fidelity/commit/5f2a39dbd19e3a72bee7bb9964568ff2dfc499b5))
+* Use yarn instead of npm to collect local dependencies ([482b479](https://github.com/zotoio/x-fidelity/commit/482b479a372897f95c50bed63a2ca9faac92b96d))
+
+
+### Features
+
+* create comprehensive unit test file for repoDependencyFacts ([1253f74](https://github.com/zotoio/x-fidelity/commit/1253f744dcfa6c267c33ae02dfbf418710d1c85b))
+* Decompose collectLocalDependencies ([b865d09](https://github.com/zotoio/x-fidelity/commit/b865d0977482f33f9708f623655bcf3e26812b25))
+* Implement recursive processing of dependencies in repoDependencyFacts.ts ([557916a](https://github.com/zotoio/x-fidelity/commit/557916abe77acb9eaefd682e8b2374d4fd000abc))
+* Refactor dependency collection and processing ([fc7e037](https://github.com/zotoio/x-fidelity/commit/fc7e0376d59992f573af7fe1b3a031f3cb279a81))
+* Rewrite the entire `src/facts/repoDependencyFacts.test.ts` based on the new implementations ([83466b4](https://github.com/zotoio/x-fidelity/commit/83466b41ba8ebcb87593277adeab9c695f7200c7))
+* update `findPropertiesInTree` to operate on the new output structure of the `LocalDependencies` ([608f301](https://github.com/zotoio/x-fidelity/commit/608f301ef4997dad923952700672115c5725149a))
+* update code to conform to updated `LocalDependencies` interface ([864bc68](https://github.com/zotoio/x-fidelity/commit/864bc683b95eccfa92f5b4135e7e0821994928e9))
+* update repoDependencyFacts unit tests to match implementations ([7f56ead](https://github.com/zotoio/x-fidelity/commit/7f56ead5659d45ddbc359d5976a47cc16154452e))
+
 # [2.0.0](https://github.com/zotoio/x-fidelity/compare/v1.17.0...v2.0.0) (2024-08-17)
 
 
