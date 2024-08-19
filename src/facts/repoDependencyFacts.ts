@@ -121,19 +121,19 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
 
     logger.debug(`depGraph: ${JSON.stringify(depGraph)}`);
 
-    function walk(deps: LocalDependencies, parentName: string = '') {
-        for (const [depName, depInfo] of Object.entries(deps)) {
-            const fullName = parentName ? `${parentName}/${depName}` : depName;
-            if (Object.keys(minVersions).includes(depName)) {
-                results.push({ dep: fullName, ver: depInfo.version, min: minVersions[depName] });
-            }
-            if (depInfo.dependencies) {
-                walk(depInfo.dependencies, fullName);
-            }
+    function walk(dep: LocalDependencies, parentName: string = '') {
+        const fullName = parentName ? `${parentName}/${dep.name}` : dep.name;
+        if (Object.keys(minVersions).includes(dep.name)) {
+            results.push({ dep: fullName, ver: dep.version, min: minVersions[dep.name] });
+        }
+        if (dep.dependencies) {
+            dep.dependencies.forEach(childDep => {
+                walk(childDep, fullName);
+            });
         }
     }
 
-    walk(depGraph);
+    depGraph.forEach(dep => walk(dep));
     return results;
 }
 
