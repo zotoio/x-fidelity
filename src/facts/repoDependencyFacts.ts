@@ -49,18 +49,19 @@ function collectNpmDependencies(): LocalDependencies {
 }
 
 function processYarnDependencies(yarnOutput: any): LocalDependencies {
-    const dependencies: LocalDependencies = { dependencies: {} };
-    if (yarnOutput.data && yarnOutput.data.trees) {
+    const dependencies: LocalDependencies = { 'XFI_ROOT': {version: "8.8.8.8", dependencies: [] }};
+    if (yarnOutput?.data.trees) {
         const processDependency = (tree: any) => {
-            const name = tree.name.split('@')[0];
-            const version = tree.name.split('@')[1];
+            const name: string = tree.name.split('@')[0];
+            const version:string = tree.name.split('@')[1];
+            if (!dependencies.dependencies) {
+                dependencies.dependencies = {};
+            }
             dependencies.dependencies[name] = { version };
             if (tree.children) {
                 dependencies.dependencies[name].dependencies = {};
                 tree.children.forEach((child: any) => {
-                    const childName = child.name.split('@')[0];
-                    const childVersion = child.name.split('@')[1];
-                    dependencies.dependencies[name].dependencies![childName] = { version: childVersion };
+                    processDependency(child);
                 });
             }
         };
