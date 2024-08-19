@@ -94,12 +94,16 @@ describe('getDependencyVersionFacts', () => {
 
 describe('findPropertiesInTree', () => {
     it('should find properties in the tree correctly', () => {
-        const depGraph: LocalDependencies = {
-            dependencies: {
-                commander: { version: '2.0.0' },
-                nodemon: { version: '3.9.0' }
+        const depGraph: LocalDependencies[] = [
+            {
+                name: 'root',
+                version: '1.0.0',
+                dependencies: [
+                    { name: 'commander', version: '2.0.0' },
+                    { name: 'nodemon', version: '3.9.0' }
+                ]
             }
-        };
+        ];
         const minVersions = { commander: '^2.0.0', nodemon: '^3.9.0' };
 
         const result = findPropertiesInTree(depGraph, minVersions);
@@ -110,16 +114,21 @@ describe('findPropertiesInTree', () => {
     });
 
     it('should handle nested dependencies correctly', () => {
-        const depGraph: LocalDependencies = {
-            dependencies: {
-                commander: { 
-                    version: '2.0.0',
-                    dependencies: {
-                        nodemon: { version: '3.9.0' }
+        const depGraph: LocalDependencies[] = [
+            {
+                name: 'root',
+                version: '1.0.0',
+                dependencies: [
+                    {
+                        name: 'commander',
+                        version: '2.0.0',
+                        dependencies: [
+                            { name: 'nodemon', version: '3.9.0' }
+                        ]
                     }
-                }
+                ]
             }
-        };
+        ];
         const minVersions = { commander: '^2.0.0', nodemon: '^3.9.0' };
 
         const result = findPropertiesInTree(depGraph, minVersions);
