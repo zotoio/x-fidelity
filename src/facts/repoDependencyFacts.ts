@@ -21,7 +21,7 @@ export function collectLocalDependencies(): LocalDependencies[] {
         result = collectNpmDependencies();
     } else {
         logger.error('No yarn.lock or package-lock.json found');
-        //throw new Error('Unsupported package manager');
+        throw new Error('Unsupported package manager');
     }
     logger.info(`collectLocalDependencies: ${JSON.stringify(result)}`);
     return result;
@@ -100,11 +100,11 @@ function processNpmDependencies(npmOutput: any): LocalDependencies[] {
  * @param archetypeConfig The archetype configuration.
  * @returns The installed dependency versions.
  */
-export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig) {
+export function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig): VersionData[] {
     const localDependencies = collectLocalDependencies();
     const minimumDependencyVersions = archetypeConfig.config.minimumDependencyVersions;
 
-    if (!localDependencies) {
+    if (!localDependencies || localDependencies.length === 0) {
         logger.error('getDependencyVersionFacts: no local dependencies found');
         return [];
     }
