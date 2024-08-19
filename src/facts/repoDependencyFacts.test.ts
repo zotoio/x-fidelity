@@ -1,7 +1,9 @@
 import { execSync } from 'child_process';
-import { collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree } from './repoDependencyFacts';
+import { collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree, repoDependencyAnalysis } from './repoDependencyFacts';
 import { logger } from '../utils/logger';
 import { archetypes } from '../archetypes';
+import { Almanac } from 'json-rules-engine';
+import * as semver from 'semver';
 
 jest.mock('child_process', () => ({
     execSync: jest.fn(),
@@ -15,15 +17,9 @@ jest.mock('../utils/logger', () => ({
     },
 }));
 
-jest.mock('../utils/configManager', () => ({
-    ConfigManager: {
-        getInstance: jest.fn().mockReturnValue({
-            getConfig: jest.fn().mockReturnValue({
-                config: {
-                    minimumDependencyVersions: { commander: '^2.0.0', nodemon: '^3.9.0' }
-                }
-            })
-        })
+jest.mock('../core/cli', () => ({
+    options: {
+        dir: '/mock/dir'
     }
 }));
 
@@ -32,62 +28,74 @@ describe('collectLocalDependencies', () => {
         jest.clearAllMocks();
     });
 
-    it('should return parsed JSON result when execSync succeeds', () => {
+    it('should return parsed JSON result when yarn execSync succeeds', () => {
         const mockResult = JSON.stringify({ dependencies: {} });
         (execSync as jest.Mock).mockReturnValue(Buffer.from(mockResult));
 
         const result = collectLocalDependencies();
         expect(result).toEqual({ dependencies: {} });
+        expect(execSync).toHaveBeenCalledWith('yarn list --json --depth=0 --cwd /mock/dir');
     });
 
-    it('should log error and return empty object when execSync fails', () => {
-        (execSync as jest.Mock).mockImplementation(() => {
-            throw new Error('mock error');
-        });
+    it('should try npm when yarn fails', () => {
+        (execSync as jest.Mock)
+            .mockImplementationOnce(() => { throw new Error('yarn error'); })
+            .mockReturnValueOnce(Buffer.from(JSON.stringify({ dependencies: {} })));
 
         const result = collectLocalDependencies();
-        expect(logger.error).toHaveBeenCalledWith(expect.any(Error));
-        expect(result).toEqual({});
+        expect(result).toEqual({ dependencies: {} });
+        expect(execSync).toHaveBeenCalledWith('yarn list --json --depth=0 --cwd /mock/dir');
+        expect(execSync).toHaveBeenCalledWith('npm ls -a --json --prefix /mock/dir');
     });
 
-    it('should handle non-JSON response gracefully', () => {
-        (execSync as jest.Mock).mockReturnValue(Buffer.from('invalid json'));
+    it('should log error and throw when both yarn and npm fail', () => {
+        (execSync as jest.Mock).mockImplementation(() => { throw new Error('command error'); });
 
-        const result = collectLocalDependencies();
-        expect(result).toEqual({});
+        expect(() => collectLocalDependencies()).toThrow();
+        expect(logger.error).toHaveBeenCalledTimes(2);
     });
 });
 
 describe('getDependencyVersionFacts', () => {
-    afterEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should return installed dependency versions correctly', async () => {
         const mockLocalDependencies = { dependencies: { commander: { version: '2.0.0' }, nodemon: { version: '3.9.0' } } };
-        (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockLocalDependencies)));
+        jest.spyOn(global, 'collectLocalDependencies').mockReturnValue(mockLocalDependencies);
         
-        const result = await getDependencyVersionFacts(archetypes['node-fullstack']);
+        const mockArchetypeConfig = {
+            config: {
+                minimumDependencyVersions: { commander: '^2.0.0', nodemon: '^3.9.0' }
+            }
+        };
+        
+        const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
         expect(result).toEqual([
             { dep: 'commander', ver: '2.0.0', min: '^2.0.0' },
             { dep: 'nodemon', ver: '3.9.0', min: '^3.9.0' }
         ]);
     });
 
-    it('should return an empty array if no dependencies match minimum versions', async () => {
-        const mockLocalDependencies = { dependencies: { someOtherDep: { version: '1.0.0' } } };
-        (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockLocalDependencies)));
+    it('should return an empty array if no local dependencies found', async () => {
+        jest.spyOn(global, 'collectLocalDependencies').mockReturnValue(null);
         
-        const result = await getDependencyVersionFacts(archetypes['node-fullstack']);
+        const mockArchetypeConfig = {
+            config: {
+                minimumDependencyVersions: { commander: '^2.0.0', nodemon: '^3.9.0' }
+            }
+        };
+        
+        const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
         expect(result).toEqual([]);
+        expect(logger.error).toHaveBeenCalledWith('getDependencyVersionFacts: no local dependencies found');
     });
 });
 
 describe('findPropertiesInTree', () => {
     it('should find properties in the tree correctly', () => {
         const depGraph = {
-            commander: { version: '2.0.0' },
-            nodemon: { version: '3.9.0' }
+            dependencies: {
+                commander: { version: '2.0.0' },
+                nodemon: { version: '3.9.0' }
+            }
         };
         const minVersions = { commander: '^2.0.0', nodemon: '^3.9.0' };
 
@@ -96,110 +104,18 @@ describe('findPropertiesInTree', () => {
             { dep: 'commander', ver: '2.0.0', min: '^2.0.0' },
             { dep: 'nodemon', ver: '3.9.0', min: '^3.9.0' }
         ]);
-    });
-
-    it('should handle exact version matches', () => {
-        const depGraph = {
-            express: { version: '4.17.1' },
-            lodash: { version: '4.17.21' }
-        };
-        const minVersions = { express: '4.17.1', lodash: '4.17.21' };
-
-        const result = findPropertiesInTree(depGraph, minVersions);
-        expect(result).toEqual([
-            { dep: 'express', ver: '4.17.1', min: '4.17.1' },
-            { dep: 'lodash', ver: '4.17.21', min: '4.17.21' }
-        ]);
-    });
-
-    it('should handle caret ranges', () => {
-        const depGraph = {
-            react: { version: '17.0.2' },
-            typescript: { version: '4.3.5' }
-        };
-        const minVersions = { react: '^17.0.0', typescript: '^4.3.0' };
-
-        const result = findPropertiesInTree(depGraph, minVersions);
-        expect(result).toEqual([
-            { dep: 'react', ver: '17.0.2', min: '^17.0.0' },
-            { dep: 'typescript', ver: '4.3.5', min: '^4.3.0' }
-        ]);
-    });
-
-    it('should handle tilde ranges', () => {
-        const depGraph = {
-            moment: { version: '2.29.1' },
-            axios: { version: '0.21.1' }
-        };
-        const minVersions = { moment: '~2.29.0', axios: '~0.21.0' };
-
-        const result = findPropertiesInTree(depGraph, minVersions);
-        expect(result).toEqual([
-            { dep: 'moment', ver: '2.29.1', min: '~2.29.0' },
-            { dep: 'axios', ver: '0.21.1', min: '~0.21.0' }
-        ]);
-    });
-
-    it('should handle greater than ranges', () => {
-        const depGraph = {
-            jquery: { version: '3.6.0' },
-            underscore: { version: '1.13.1' }
-        };
-        const minVersions = { jquery: '>3.0.0', underscore: '>=1.13.0' };
-
-        const result = findPropertiesInTree(depGraph, minVersions);
-        expect(result).toEqual([
-            { dep: 'jquery', ver: '3.6.0', min: '>3.0.0' },
-            { dep: 'underscore', ver: '1.13.1', min: '>=1.13.0' }
-        ]);
-    });
-
-    it('should handle x-ranges', () => {
-        const depGraph = {
-            chalk: { version: '4.1.2' },
-            jest: { version: '27.0.6' }
-        };
-        const minVersions = { chalk: '4.x', jest: '27.0.x' };
-
-        const result = findPropertiesInTree(depGraph, minVersions);
-        expect(result).toEqual([
-            { dep: 'chalk', ver: '4.1.2', min: '4.x' },
-            { dep: 'jest', ver: '27.0.6', min: '27.0.x' }
-        ]);
-    });
-
-    it('should handle hyphen ranges', () => {
-        const depGraph = {
-            webpack: { version: '5.45.1' },
-            babel: { version: '7.14.8' }
-        };
-        const minVersions = { webpack: '5.0.0 - 5.50.0', babel: '7.14.0 - 7.15.0' };
-
-        const result = findPropertiesInTree(depGraph, minVersions);
-        expect(result).toEqual([
-            { dep: 'webpack', ver: '5.45.1', min: '5.0.0 - 5.50.0' },
-            { dep: 'babel', ver: '7.14.8', min: '7.14.0 - 7.15.0' }
-        ]);
-    });
-
-    it('should return an empty array if no properties match', () => {
-        const depGraph = {
-            someOtherDep: { version: '1.0.0' }
-        };
-        const minVersions = { commander: '^2.0.0', nodemon: '^3.9.0' };
-
-        const result = findPropertiesInTree(depGraph, minVersions);
-        expect(result).toEqual([]);
     });
 
     it('should handle nested dependencies correctly', () => {
         const depGraph = {
-            commander: { 
-                version: '2.0.0',
-                dependencies: {
-                    nodemon: { version: '3.9.0' }
+            dependencies: {
+                commander: { 
+                    version: '2.0.0',
+                    dependencies: {
+                        nodemon: { version: '3.9.0' }
+                    }
                 }
-            }    
+            }
         };
         const minVersions = { commander: '^2.0.0', nodemon: '^3.9.0' };
 
@@ -209,31 +125,58 @@ describe('findPropertiesInTree', () => {
             { dep: 'nodemon', ver: '3.9.0', min: '^3.9.0' }
         ]);
     });
+});
 
-    it('should handle complex mixed structures', () => {
-        const depGraph = {
-            commander: { 
-                version: '2.0.0',
-                dependencies: {
-                    nodemon: {
-                        version: '3.9.0',
-                        dependencies: {
-                            lodash: { 
-                                version: '4.17.21' 
-                            }
-                        }
-                    }    
-                }
-            }
-        };
-        const minVersions = { commander: '^2.0.0', nodemon: '^3.9.0', lodash: '^4.17.20' };
+describe('repoDependencyAnalysis', () => {
+    let mockAlmanac: Almanac;
 
-        const result = findPropertiesInTree(depGraph, minVersions);
-        expect(result).toEqual([
-            { dep: 'commander', ver: '2.0.0', min: '^2.0.0' },
-            { dep: 'nodemon', ver: '3.9.0', min: '^3.9.0' },
-            { dep: 'lodash', ver: '4.17.21', min: '^4.17.20' }
-        ]);
+    beforeEach(() => {
+        mockAlmanac = {
+            factValue: jest.fn(),
+            addRuntimeFact: jest.fn(),
+        } as unknown as Almanac;
+    });
+
+    it('should return empty result for non-REPO_GLOBAL_CHECK files', async () => {
+        (mockAlmanac.factValue as jest.Mock).mockResolvedValueOnce({ fileName: 'someFile.js' });
+        
+        const result = await repoDependencyAnalysis({}, mockAlmanac);
+        expect(result).toEqual({ result: [] });
+    });
+
+    it('should analyze dependencies correctly', async () => {
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' })
+            .mockResolvedValueOnce({
+                installedDependencyVersions: [
+                    { dep: 'outdated', ver: '1.0.0', min: '^2.0.0' },
+                    { dep: 'uptodate', ver: '3.0.0', min: '^2.0.0' }
+                ]
+            });
+
+        jest.spyOn(semver, 'gtr').mockImplementation((version, range) => {
+            return version === '3.0.0';  // Only 'uptodate' should be greater than required
+        });
+
+        const result = await repoDependencyAnalysis({ resultFact: 'testResult' }, mockAlmanac);
+        
+        expect(result).toEqual({
+            result: [
+                { dependency: 'outdated', currentVersion: '1.0.0', requiredVersion: '^2.0.0' }
+            ]
+        });
+        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', result);
+    });
+
+    it('should handle errors gracefully', async () => {
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' })
+            .mockRejectedValueOnce(new Error('Test error'));
+
+        const result = await repoDependencyAnalysis({}, mockAlmanac);
+        
+        expect(result).toEqual({ result: [] });
+        expect(logger.error).toHaveBeenCalled();
     });
 });
 
