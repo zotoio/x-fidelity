@@ -48,20 +48,43 @@ function collectNpmDependencies(): LocalDependencies {
     }
 }
 
+function collectYarnDependencies(): LocalDependencies {
+    try {
+        const stdout = execSync(`yarn list --json --depth=0 --cwd ${options.dir}`);
+        const result = JSON.parse(stdout.toString());
+        logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
+        return processYarnDependencies(result);
+    } catch (e) {
+        logger.error(`Error collecting Yarn dependencies: ${e}`);
+        throw e;
+    }
+}
+
+function collectNpmDependencies(): LocalDependencies {
+    try {
+        const stdout = execSync(`npm ls -a --json --depth=0 --prefix ${options.dir}`);
+        const result = JSON.parse(stdout.toString());
+        logger.debug(`collectNpmDependencies: ${JSON.stringify(result)}`);
+        return processNpmDependencies(result);
+    } catch (e) {
+        logger.error(`Error collecting NPM dependencies: ${e}`);
+        throw e;
+    }
+}
+
 function processYarnDependencies(yarnOutput: any): LocalDependencies {
-    const dependencies: LocalDependencies = { 'XFI_ROOT': {version: "8.8.8.8", dependencies: [] }};
-    if (yarnOutput?.data.trees) {
+    const dependencies: LocalDependencies = {};
+    if (yarnOutput?.data?.trees) {
         const processDependency = (tree: any) => {
             const name: string = tree.name.split('@')[0];
-            const version:string = tree.name.split('@')[1];
-            if (!dependencies.dependencies) {
-                dependencies.dependencies = {};
-            }
-            dependencies.dependencies[name] = { version };
+            const version: string = tree.name.split('@')[1];
+            dependencies[name] = { version };
             if (tree.children) {
-                dependencies.dependencies[name].dependencies = {};
+                dependencies[name].dependencies = {};
                 tree.children.forEach((child: any) => {
-                    processDependency(child);
+                    const childName = child.name.split('@')[0];
+                    const childVersion = child.name.split('@')[1];
+                    dependencies[name].dependencies![childName] = { version: childVersion };
                 });
             }
         };
@@ -71,13 +94,13 @@ function processYarnDependencies(yarnOutput: any): LocalDependencies {
 }
 
 function processNpmDependencies(npmOutput: any): LocalDependencies {
-    const dependencies: LocalDependencies = { dependencies: {} };
+    const dependencies: LocalDependencies = {};
     const processDependency = (name: string, info: any) => {
-        dependencies.dependencies[name] = { version: info.version };
+        dependencies[name] = { version: info.version };
         if (info.dependencies) {
-            dependencies.dependencies[name].dependencies = {};
+            dependencies[name].dependencies = {};
             Object.entries(info.dependencies).forEach(([childName, childInfo]: [string, any]) => {
-                dependencies.dependencies[name].dependencies![childName] = { version: childInfo.version };
+                dependencies[name].dependencies![childName] = { version: childInfo.version };
             });
         }
     };
@@ -118,7 +141,7 @@ export function findPropertiesInTree(depGraph: LocalDependencies, minVersions: M
 
     logger.debug(`depGraph: ${JSON.stringify(depGraph)}`);
 
-    function walk(deps: LocalDependencies['dependencies'], parentName: string = '') {
+    function walk(deps: LocalDependencies, parentName: string = '') {
         for (const [depName, depInfo] of Object.entries(deps)) {
             const fullName = parentName ? `${parentName}/${depName}` : depName;
             if (Object.keys(minVersions).includes(depName)) {
@@ -130,7 +153,7 @@ export function findPropertiesInTree(depGraph: LocalDependencies, minVersions: M
         }
     }
 
-    walk(depGraph.dependencies);
+    walk(depGraph);
     return results;
 }
 
