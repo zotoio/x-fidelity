@@ -12,15 +12,22 @@ import { options } from '../core/cli';
  * @returns The local dependencies.
  */
 export function collectLocalDependencies(): LocalDependencies {
-    let result: LocalDependencies = {};
+    let result: LocalDependencies;
     try {
-        const stdout = execSync(`npm ls -a --json --prefix ${options.dir}`);
+        const stdout = execSync(`yarn list --json --cwd ${options.dir}`);
         result = JSON.parse(stdout.toString());
         logger.debug(`collectLocalDependencies: ${JSON.stringify(result)}`);
     } catch (e) {
-        logger.error(`exec error: ${e}`);
-        //console.error(`exec error: ${e}`);
+        try {
+            const stdout = execSync(`npm ls -a --json --prefix ${options.dir}`);
+            result = JSON.parse(stdout.toString());
+            logger.debug(`collectLocalDependencies: ${JSON.stringify(result)}`);
+        } catch (e) {
+            logger.error(e);
+            throw e;
+        }
     }
+    logger.info(`collectLocalDependencies: ${JSON.stringify(result)}`);
     return result;
 }
 
