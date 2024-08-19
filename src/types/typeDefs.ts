@@ -28,7 +28,9 @@ export interface MinimumDepVersions {
 }
 
 export interface LocalDependencies {
-    [propertyName: string]: { version: string; };
+    name: string;
+    version: string;
+    dependencies?: LocalDependencies[];
 }
 
 export interface ExecutionConfig {

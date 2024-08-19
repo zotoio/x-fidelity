@@ -1,5 +1,4 @@
 import { logger } from '../utils/logger';
-import _ from 'lodash';
 import { execSync } from 'child_process';
 import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } from '../types/typeDefs';
 import { Almanac } from 'json-rules-engine';
@@ -23,7 +22,7 @@ export function collectLocalDependencies(): LocalDependencies[] {
         logger.error('No yarn.lock or package-lock.json found');
         throw new Error('Unsupported package manager');
     }
-    logger.info(`collectLocalDependencies: ${JSON.stringify(result)}`);
+    logger.debug(`collectLocalDependencies: ${JSON.stringify(result)}`);
     return result;
 }
 

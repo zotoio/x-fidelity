@@ -1,28 +1,9 @@
 import { jest } from '@jest/globals';
 import * as fs from 'fs';
-import * as path from 'path';
 import { execSync } from 'child_process';
-import * as semver from 'semver';
 import { Almanac } from 'json-rules-engine';
-import {
-  collectLocalDependencies,
-  getDependencyVersionFacts,
-  findPropertiesInTree,
-  repoDependencyAnalysis
-} from './repoDependencyFacts';
-import { LocalDependencies, ArchetypeConfig, VersionData } from '../types/typeDefs';
-import { options } from '../core/cli';
-import { FileData } from './repoFilesystemFacts';
-
-declare global {
-  namespace NodeJS {
-    interface Global {
-      collectLocalDependencies: typeof collectLocalDependencies;
-    }
-  }
-}
-
-global.collectLocalDependencies = collectLocalDependencies;
+import * as repoDependencyFacts from './repoDependencyFacts';
+import { LocalDependencies, ArchetypeConfig } from '../types/typeDefs';
 
 jest.mock('fs');
 jest.mock('child_process');
@@ -48,7 +29,7 @@ describe('repoDependencyFacts', () => {
         }
       }));
 
-      const result = collectLocalDependencies();
+      const result = repoDependencyFacts.collectLocalDependencies();
 
       expect(result).toEqual([
         { name: 'package-a', version: '1.0.0', dependencies: [{ name: 'package-b', version: '2.0.0' }] }
@@ -63,7 +44,7 @@ describe('repoDependencyFacts', () => {
         }
       }));
 
-      const result = collectLocalDependencies();
+      const result = repoDependencyFacts.collectLocalDependencies();
 
       expect(result).toEqual([
         { name: 'package-a', version: '1.0.0', dependencies: [{ name: 'package-b', version: '2.0.0' }] }
@@ -73,7 +54,7 @@ describe('repoDependencyFacts', () => {
     it('should throw an error when no lock file is found', () => {
       (fs.existsSync as jest.Mock).mockReturnValue(false);
 
-      expect(() => collectLocalDependencies()).toThrow('Unsupported package manager');
+      expect(() => repoDependencyFacts.collectLocalDependencies()).toThrow('Unsupported package manager');
     });
   });
 
@@ -95,17 +76,24 @@ describe('repoDependencyFacts', () => {
         }
       };
 
-      jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([
+      (fs.existsSync as jest.Mock).mockImplementation((file: unknown) => typeof file === 'string' && file.endsWith('package-lock.json'));
+      (execSync as jest.Mock).mockReturnValue(JSON.stringify({
+        dependencies: {
+          'package-a': { version: '1.1.0', dependencies: { 'package-b': { version: '2.1.0' } } }
+        }
+      }));
+
+      jest.spyOn(repoDependencyFacts, 'collectLocalDependencies' as any).mockReturnValue([
         { name: 'package-a', version: '1.1.0' },
         { name: 'package-b', version: '2.1.0' },
         { name: 'package-c', version: '3.0.0' }
       ]);
 
-      const result = await getDependencyVersionFacts(mockArchetypeConfig);
+      const result = repoDependencyFacts.getDependencyVersionFacts(mockArchetypeConfig);
 
       expect(result).toEqual([
         { dep: 'package-a', ver: '1.1.0', min: '1.0.0' },
-        { dep: 'package-b', ver: '2.1.0', min: '2.0.0' }
+        { dep: 'package-a/package-b', ver: '2.1.0', min: '2.0.0' }
       ]);
     });
 
@@ -123,9 +111,9 @@ describe('repoDependencyFacts', () => {
         }
       };
 
-      jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([]);
+      jest.spyOn(repoDependencyFacts, 'collectLocalDependencies' as any).mockReturnValue([]);
 
-      const result = await getDependencyVersionFacts(mockArchetypeConfig);
+      const result = repoDependencyFacts.getDependencyVersionFacts(mockArchetypeConfig);
 
       expect(result).toEqual([]);
     });
@@ -150,7 +138,7 @@ describe('repoDependencyFacts', () => {
         'package-d': '3.9.0'
       };
 
-      const result = findPropertiesInTree(depGraph, minVersions);
+      const result = repoDependencyFacts.findPropertiesInTree(depGraph, minVersions);
 
       expect(result).toEqual([
         { dep: 'package-a', ver: '1.0.0', min: '0.9.0' },
@@ -169,7 +157,7 @@ describe('repoDependencyFacts', () => {
         'package-z': '3.0.0'
       };
 
-      const result = findPropertiesInTree(depGraph, minVersions);
+      const result = repoDependencyFacts.findPropertiesInTree(depGraph, minVersions);
 
       expect(result).toEqual([]);
     });
@@ -181,7 +169,7 @@ describe('repoDependencyFacts', () => {
         factValue: jest.fn().mockResolvedValue({ fileName: 'not-global-check' } as never)
       } as unknown as Almanac;
 
-      const result = await repoDependencyAnalysis({}, almanac);
+      const result = await repoDependencyFacts.repoDependencyAnalysis({}, almanac);
 
       expect(result).toEqual({ result: [] });
     });
@@ -204,7 +192,7 @@ describe('repoDependencyFacts', () => {
         addRuntimeFact: jest.fn()
       } as unknown as Almanac;
 
-      const result = await repoDependencyAnalysis({ resultFact: 'testFact' }, almanac);
+      const result = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testFact' }, almanac);
 
       expect(result).toEqual({
         result: [
@@ -232,7 +220,7 @@ describe('repoDependencyFacts', () => {
         addRuntimeFact: jest.fn()
       } as unknown as Almanac;
 
-      const result = await repoDependencyAnalysis({ resultFact: 'testFact' }, almanac);
+      const result = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testFact' }, almanac);
 
       expect(result).toEqual({ result: [] });
       expect(almanac.addRuntimeFact).toHaveBeenCalledWith('testFact', result);
