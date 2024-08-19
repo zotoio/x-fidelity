@@ -7,6 +7,11 @@ import { Almanac } from 'json-rules-engine';
 import * as semver from 'semver';
 import { LocalDependencies } from '../types/typeDefs';
 
+jest.mock('./repoDependencyFacts', () => ({
+    ...jest.requireActual('./repoDependencyFacts'),
+    collectLocalDependencies: jest.fn(),
+}));
+
 jest.mock('child_process', () => ({
     execSync: jest.fn(),
 }));
@@ -72,7 +77,7 @@ describe('getDependencyVersionFacts', () => {
             { name: 'commander', version: '2.0.0' },
             { name: 'nodemon', version: '3.9.0' }
         ];
-        jest.spyOn(global, 'collectLocalDependencies' as any ).mockReturnValue(mockLocalDependencies);
+        (collectLocalDependencies as jest.Mock).mockReturnValue(mockLocalDependencies);
         
         const mockArchetypeConfig = {
             config: {
@@ -88,7 +93,7 @@ describe('getDependencyVersionFacts', () => {
     });
 
     it('should return an empty array if no local dependencies found', async () => {
-        jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue([]);
+        (collectLocalDependencies as jest.Mock).mockReturnValue([]);
         
         const mockArchetypeConfig = {
             config: {
