@@ -1,9 +1,9 @@
 import { execSync } from 'child_process';
 import { collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree, repoDependencyAnalysis } from './repoDependencyFacts';
 import { logger } from '../utils/logger';
-import { archetypes } from '../archetypes';
 import { Almanac } from 'json-rules-engine';
 import * as semver from 'semver';
+import { LocalDependencies } from '../types/typeDefs';
 
 jest.mock('child_process', () => ({
     execSync: jest.fn(),
@@ -59,7 +59,7 @@ describe('collectLocalDependencies', () => {
 describe('getDependencyVersionFacts', () => {
     it('should return installed dependency versions correctly', async () => {
         const mockLocalDependencies = { dependencies: { commander: { version: '2.0.0' }, nodemon: { version: '3.9.0' } } };
-        jest.spyOn(global, 'collectLocalDependencies').mockReturnValue(mockLocalDependencies);
+        jest.spyOn(global, collectLocalDependencies as any).mockReturnValue(mockLocalDependencies);
         
         const mockArchetypeConfig = {
             config: {
@@ -75,7 +75,7 @@ describe('getDependencyVersionFacts', () => {
     });
 
     it('should return an empty array if no local dependencies found', async () => {
-        jest.spyOn(global, 'collectLocalDependencies').mockReturnValue(null);
+        jest.spyOn(global, collectLocalDependencies as any).mockReturnValue(null);
         
         const mockArchetypeConfig = {
             config: {
@@ -91,7 +91,7 @@ describe('getDependencyVersionFacts', () => {
 
 describe('findPropertiesInTree', () => {
     it('should find properties in the tree correctly', () => {
-        const depGraph = {
+        const depGraph: LocalDependencies = {
             dependencies: {
                 commander: { version: '2.0.0' },
                 nodemon: { version: '3.9.0' }
@@ -107,7 +107,7 @@ describe('findPropertiesInTree', () => {
     });
 
     it('should handle nested dependencies correctly', () => {
-        const depGraph = {
+        const depGraph: LocalDependencies = {
             dependencies: {
                 commander: { 
                     version: '2.0.0',
