@@ -51,20 +51,38 @@ function collectNpmDependencies(): LocalDependencies {
 function processYarnDependencies(yarnOutput: any): LocalDependencies {
     const dependencies: LocalDependencies = { dependencies: {} };
     if (yarnOutput.data && yarnOutput.data.trees) {
-        yarnOutput.data.trees.forEach((tree: any) => {
+        const processDependency = (tree: any) => {
             const name = tree.name.split('@')[0];
             const version = tree.name.split('@')[1];
             dependencies.dependencies[name] = { version };
-        });
+            if (tree.children) {
+                dependencies.dependencies[name].dependencies = {};
+                tree.children.forEach((child: any) => {
+                    const childName = child.name.split('@')[0];
+                    const childVersion = child.name.split('@')[1];
+                    dependencies.dependencies[name].dependencies![childName] = { version: childVersion };
+                });
+            }
+        };
+        yarnOutput.data.trees.forEach(processDependency);
     }
     return dependencies;
 }
 
 function processNpmDependencies(npmOutput: any): LocalDependencies {
     const dependencies: LocalDependencies = { dependencies: {} };
+    const processDependency = (name: string, info: any) => {
+        dependencies.dependencies[name] = { version: info.version };
+        if (info.dependencies) {
+            dependencies.dependencies[name].dependencies = {};
+            Object.entries(info.dependencies).forEach(([childName, childInfo]: [string, any]) => {
+                dependencies.dependencies[name].dependencies![childName] = { version: childInfo.version };
+            });
+        }
+    };
     if (npmOutput.dependencies) {
         Object.entries(npmOutput.dependencies).forEach(([name, info]: [string, any]) => {
-            dependencies.dependencies[name] = { version: info.version };
+            processDependency(name, info);
         });
     }
     return dependencies;
@@ -97,26 +115,21 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
 export function findPropertiesInTree(depGraph: LocalDependencies, minVersions: MinimumDepVersions): VersionData[] {
     const results: VersionData[] = [];
 
-    logger.debug(`depGraph: ${depGraph}`);
+    logger.debug(`depGraph: ${JSON.stringify(depGraph)}`);
 
-    function walk(depGraph: LocalDependencies) {
-        if (_.isObject(depGraph) && !_.isArray(depGraph)) {
-            for (const depName in depGraph) {
-                if (Object.keys(minVersions).includes(depName)) {
-                    results.push({ dep: depName, ver: depGraph[depName].version, min: minVersions[depName] });
-                }
-                if (_.isObject(depGraph[depName])) {
-                    walk(depGraph[depName] as unknown as LocalDependencies);
-                }
+    function walk(deps: LocalDependencies['dependencies'], parentName: string = '') {
+        for (const [depName, depInfo] of Object.entries(deps)) {
+            const fullName = parentName ? `${parentName}/${depName}` : depName;
+            if (Object.keys(minVersions).includes(depName)) {
+                results.push({ dep: fullName, ver: depInfo.version, min: minVersions[depName] });
             }
-        } else if (_.isArray(depGraph)) {
-            for (const item of depGraph) {
-                walk(item);
+            if (depInfo.dependencies) {
+                walk(depInfo.dependencies, fullName);
             }
         }
     }
 
-    walk(depGraph);
+    walk(depGraph.dependencies);
     return results;
 }
 
