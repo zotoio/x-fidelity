@@ -13,7 +13,7 @@ import path from 'path';
  * Collects the local dependencies.
  * @returns The local dependencies.
  */
-export function collectLocalDependencies(): LocalDependencies {
+export function collectLocalDependencies(): LocalDependencies[] {
     if (fs.existsSync(path.join(options.dir, 'yarn.lock'))) {
         return collectYarnDependencies();
     } else if (fs.existsSync(path.join(options.dir, 'package-lock.json'))) {
@@ -24,9 +24,9 @@ export function collectLocalDependencies(): LocalDependencies {
     }
 }
 
-function collectYarnDependencies(): LocalDependencies {
+function collectYarnDependencies(): LocalDependencies[] {
     try {
-        const stdout = execSync(`yarn list --json --depth=0 --cwd ${options.dir}`);
+        const stdout = execSync(`yarn list --json --cwd ${options.dir}`);
         const result = JSON.parse(stdout.toString());
         logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
         return processYarnDependencies(result);
@@ -36,9 +36,9 @@ function collectYarnDependencies(): LocalDependencies {
     }
 }
 
-function collectNpmDependencies(): LocalDependencies {
+function collectNpmDependencies(): LocalDependencies[] {
     try {
-        const stdout = execSync(`npm ls -a --json --depth=0 --prefix ${options.dir}`);
+        const stdout = execSync(`npm ls -a --json --prefix ${options.dir}`);
         const result = JSON.parse(stdout.toString());
         logger.debug(`collectNpmDependencies: ${JSON.stringify(result)}`);
         return processNpmDependencies(result);
@@ -48,61 +48,41 @@ function collectNpmDependencies(): LocalDependencies {
     }
 }
 
-function collectYarnDependencies(): LocalDependencies {
-    try {
-        const stdout = execSync(`yarn list --json --depth=0 --cwd ${options.dir}`);
-        const result = JSON.parse(stdout.toString());
-        logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
-        return processYarnDependencies(result);
-    } catch (e) {
-        logger.error(`Error collecting Yarn dependencies: ${e}`);
-        throw e;
-    }
-}
-
-function collectNpmDependencies(): LocalDependencies {
-    try {
-        const stdout = execSync(`npm ls -a --json --depth=0 --prefix ${options.dir}`);
-        const result = JSON.parse(stdout.toString());
-        logger.debug(`collectNpmDependencies: ${JSON.stringify(result)}`);
-        return processNpmDependencies(result);
-    } catch (e) {
-        logger.error(`Error collecting NPM dependencies: ${e}`);
-        throw e;
-    }
-}
-
-function processYarnDependencies(yarnOutput: any): LocalDependencies {
-    const dependencies: LocalDependencies = {};
+function processYarnDependencies(yarnOutput: any): LocalDependencies[] {
+    const dependencies: LocalDependencies[] = [];
     if (yarnOutput?.data?.trees) {
-        const processDependency = (tree: any) => {
-            const name: string = tree.name.split('@')[0];
-            const version: string = tree.name.split('@')[1];
-            dependencies[name] = { version };
-            if (tree.children) {
-                dependencies[name].dependencies = {};
-                tree.children.forEach((child: any) => {
-                    const childName = child.name.split('@')[0];
-                    const childVersion = child.name.split('@')[1];
-                    dependencies[name].dependencies![childName] = { version: childVersion };
+        const processDependency = (node: any) => {
+            const newDep: LocalDependencies = extractNameAndVersion(node.name);
+            if (node.children) {
+                newDep.dependencies = [];
+                node.children.forEach((child: any) => {
+                    newDep.dependencies?.push(processDependency(child));
                 });
             }
+            return newDep;
         };
-        yarnOutput.data.trees.forEach(processDependency);
+        const extractNameAndVersion = (nameAndVersion: string) => {
+            const parts = nameAndVersion.split('@');
+            return { name: parts[0], version: parts[1] };
+        }
+        yarnOutput.data.trees.forEach((tree: any) => {
+            dependencies.push(processDependency(tree));
+        });
     }
     return dependencies;
 }
 
-function processNpmDependencies(npmOutput: any): LocalDependencies {
-    const dependencies: LocalDependencies = {};
+function processNpmDependencies(npmOutput: any): LocalDependencies[] {
+    const dependencies: LocalDependencies[] = [];
     const processDependency = (name: string, info: any) => {
-        dependencies[name] = { version: info.version };
+        const newDep: LocalDependencies = {name, version: info.version };
         if (info.dependencies) {
-            dependencies[name].dependencies = {};
-            Object.entries(info.dependencies).forEach(([childName, childInfo]: [string, any]) => {
-                dependencies[name].dependencies![childName] = { version: childInfo.version };
+            newDep.dependencies = [];
+            Object.entries(info.dependencies).forEach(([name, info]: [string, any]) => {
+                newDep.dependencies?.push(processDependency(name, info));
             });
         }
+        return newDep;
     };
     if (npmOutput.dependencies) {
         Object.entries(npmOutput.dependencies).forEach(([name, info]: [string, any]) => {
@@ -136,7 +116,7 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
  * @param minVersions - The minimum dependency versions to search for.
  * @returns An array of results.
  */
-export function findPropertiesInTree(depGraph: LocalDependencies, minVersions: MinimumDepVersions): VersionData[] {
+export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions: MinimumDepVersions): VersionData[] {
     const results: VersionData[] = [];
 
     logger.debug(`depGraph: ${JSON.stringify(depGraph)}`);
