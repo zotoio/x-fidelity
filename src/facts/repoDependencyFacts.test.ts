@@ -1,19 +1,19 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree, repoDependencyAnalysis } from './repoDependencyFacts';
+import { getDependencyVersionFacts, findPropertiesInTree, repoDependencyAnalysis } from './repoDependencyFacts';
 import { logger } from '../utils/logger';
 import { Almanac } from 'json-rules-engine';
 import * as semver from 'semver';
 import { LocalDependencies, ArchetypeConfig } from '../types/typeDefs';
 
-jest.mock('child_process', () => ({
-    execSync: jest.fn(),
-}));
-
-jest.mock('fs', () => ({
-    existsSync: jest.fn(),
-}));
+jest.mock('./repoDependencyFacts', () => {
+    const originalModule = jest.requireActual('./repoDependencyFacts');
+    return {
+        ...originalModule,
+        collectLocalDependencies: jest.fn(),
+    };
+});
 
 jest.mock('../utils/logger', () => ({
     logger: {
@@ -24,16 +24,12 @@ jest.mock('../utils/logger', () => ({
     },
 }));
 
-jest.mock('../core/cli', () => ({
-    options: {
-        dir: '/mock/dir'
-    }
-}));
-
 jest.mock('semver', () => ({
     gtr: jest.fn(),
     Range: jest.fn(),
 }));
+
+const { collectLocalDependencies } = jest.requireMock('./repoDependencyFacts');
 
 describe('collectLocalDependencies', () => {
     afterEach(() => {
@@ -76,7 +72,7 @@ describe('getDependencyVersionFacts', () => {
                 { name: 'nodemon', version: '3.9.0' }
             ]}
         ];
-        jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue(mockLocalDependencies);
+        collectLocalDependencies.mockReturnValue(mockLocalDependencies);
         
         const mockArchetypeConfig: ArchetypeConfig = {
             name: 'test',
@@ -99,7 +95,7 @@ describe('getDependencyVersionFacts', () => {
     });
 
     it('should return an empty array if no local dependencies found', async () => {
-        jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue([]);
+        collectLocalDependencies.mockReturnValue([]);
         
         const mockArchetypeConfig: ArchetypeConfig = {
             name: 'test',
