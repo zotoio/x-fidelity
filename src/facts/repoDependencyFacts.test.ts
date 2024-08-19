@@ -76,7 +76,7 @@ describe('getDependencyVersionFacts', () => {
                 { name: 'nodemon', version: '3.9.0' }
             ]}
         ];
-        jest.spyOn(global, 'collectLocalDependencies').mockReturnValue(mockLocalDependencies);
+        jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue(mockLocalDependencies);
         
         const mockArchetypeConfig: ArchetypeConfig = {
             name: 'test',
@@ -99,7 +99,7 @@ describe('getDependencyVersionFacts', () => {
     });
 
     it('should return an empty array if no local dependencies found', async () => {
-        jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([]);
+        jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue([]);
         
         const mockArchetypeConfig: ArchetypeConfig = {
             name: 'test',
