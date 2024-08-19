@@ -58,8 +58,11 @@ describe('collectLocalDependencies', () => {
 
 describe('getDependencyVersionFacts', () => {
     it('should return installed dependency versions correctly', async () => {
-        const mockLocalDependencies = { dependencies: { commander: { version: '2.0.0' }, nodemon: { version: '3.9.0' } } };
-        jest.spyOn(global, collectLocalDependencies as any).mockReturnValue(mockLocalDependencies);
+        const mockLocalDependencies = [
+            { name: 'commander', version: '2.0.0' },
+            { name: 'nodemon', version: '3.9.0' }
+        ];
+        jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue(mockLocalDependencies);
         
         const mockArchetypeConfig = {
             config: {
