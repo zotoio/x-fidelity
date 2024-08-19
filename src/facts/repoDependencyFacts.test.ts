@@ -7,6 +7,9 @@ import { Almanac } from 'json-rules-engine';
 import * as semver from 'semver';
 import { LocalDependencies, ArchetypeConfig } from '../types/typeDefs';
 
+jest.mock('fs');
+jest.mock('child_process');
+
 jest.mock('./repoDependencyFacts', () => {
     const originalModule = jest.requireActual('./repoDependencyFacts');
     return {
