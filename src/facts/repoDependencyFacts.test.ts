@@ -5,12 +5,7 @@ import { collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTr
 import { logger } from '../utils/logger';
 import { Almanac } from 'json-rules-engine';
 import * as semver from 'semver';
-import { LocalDependencies } from '../types/typeDefs';
-
-jest.mock('./repoDependencyFacts', () => ({
-    ...jest.requireActual('./repoDependencyFacts'),
-    collectLocalDependencies: jest.fn(),
-}));
+import { LocalDependencies, ArchetypeConfig } from '../types/typeDefs';
 
 jest.mock('child_process', () => ({
     execSync: jest.fn(),
@@ -35,32 +30,33 @@ jest.mock('../core/cli', () => ({
     }
 }));
 
+jest.mock('semver', () => ({
+    gtr: jest.fn(),
+    Range: jest.fn(),
+}));
+
 describe('collectLocalDependencies', () => {
     afterEach(() => {
         jest.clearAllMocks();
     });
 
     it('should call collectYarnDependencies when yarn.lock exists', () => {
-        (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
-            return path.basename(filePath) === 'yarn.lock';
-        });
-        const mockYarnOutput = { data: { trees: [{ name: 'package@1.0.0' }] } };
+        (fs.existsSync as jest.Mock).mockImplementation((filePath) => path.basename(filePath) === 'yarn.lock');
+        const mockYarnOutput = { data: { trees: [{ name: 'package@1.0.0', children: [{ name: 'child@2.0.0' }] }] } };
         (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
 
         const result = collectLocalDependencies();
-        expect(result).toEqual([{ name: 'package', version: '1.0.0' }]);
+        expect(result).toEqual([{ name: 'package', version: '1.0.0', dependencies: [{ name: 'child', version: '2.0.0' }] }]);
         expect(execSync).toHaveBeenCalledWith('yarn list --json --cwd /mock/dir');
     });
 
     it('should call collectNpmDependencies when package-lock.json exists', () => {
-        (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
-            return path.basename(filePath) === 'package-lock.json';
-        });
-        const mockNpmOutput = { dependencies: { 'package': { version: '1.0.0' } } };
+        (fs.existsSync as jest.Mock).mockImplementation((filePath) => path.basename(filePath) === 'package-lock.json');
+        const mockNpmOutput = { dependencies: { 'package': { version: '1.0.0', dependencies: { 'child': { version: '2.0.0' } } } } };
         (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockNpmOutput)));
 
         const result = collectLocalDependencies();
-        expect(result).toEqual([]);
+        expect(result).toEqual([{ name: 'package', version: '1.0.0', dependencies: [{ name: 'child', version: '2.0.0' }] }]);
         expect(execSync).toHaveBeenCalledWith('npm ls -a --json --prefix /mock/dir');
     });
 
@@ -72,10 +68,57 @@ describe('collectLocalDependencies', () => {
     });
 });
 
-jest.mock('semver', () => ({
-    gtr: jest.fn(),
-    Range: jest.fn()
-}));
+describe('getDependencyVersionFacts', () => {
+    it('should return installed dependency versions correctly', async () => {
+        const mockLocalDependencies: LocalDependencies[] = [
+            { name: 'root', version: '1.0.0', dependencies: [
+                { name: 'commander', version: '2.0.0' },
+                { name: 'nodemon', version: '3.9.0' }
+            ]}
+        ];
+        jest.spyOn(global, 'collectLocalDependencies').mockReturnValue(mockLocalDependencies);
+        
+        const mockArchetypeConfig: ArchetypeConfig = {
+            name: 'test',
+            rules: [],
+            operators: [],
+            facts: [],
+            config: {
+                minimumDependencyVersions: { commander: '^2.0.0', nodemon: '^3.9.0' },
+                standardStructure: {},
+                blacklistPatterns: [],
+                whitelistPatterns: [],
+            }
+        };
+        
+        const result = await getDependencyVersionFacts(mockArchetypeConfig);
+        expect(result).toEqual([
+            { dep: 'root/commander', ver: '2.0.0', min: '^2.0.0' },
+            { dep: 'root/nodemon', ver: '3.9.0', min: '^3.9.0' }
+        ]);
+    });
+
+    it('should return an empty array if no local dependencies found', async () => {
+        jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([]);
+        
+        const mockArchetypeConfig: ArchetypeConfig = {
+            name: 'test',
+            rules: [],
+            operators: [],
+            facts: [],
+            config: {
+                minimumDependencyVersions: { commander: '^2.0.0', nodemon: '^3.9.0' },
+                standardStructure: {},
+                blacklistPatterns: [],
+                whitelistPatterns: [],
+            }
+        };
+        
+        const result = await getDependencyVersionFacts(mockArchetypeConfig);
+        expect(result).toEqual([]);
+        expect(logger.error).toHaveBeenCalledWith('getDependencyVersionFacts: no local dependencies found');
+    });
+});
 
 describe('repoDependencyAnalysis', () => {
     let mockAlmanac: Almanac;
@@ -85,6 +128,9 @@ describe('repoDependencyAnalysis', () => {
             factValue: jest.fn(),
             addRuntimeFact: jest.fn(),
         } as unknown as Almanac;
+        (semver.gtr as jest.Mock).mockImplementation((version, range) => {
+            return semver.gt(version, range.replace(/[\^~]/, ''));
+        });
     });
 
     it('should return empty result for non-REPO_GLOBAL_CHECK files', async () => {
@@ -104,10 +150,6 @@ describe('repoDependencyAnalysis', () => {
                 ]
             });
 
-        jest.spyOn(semver, 'gtr').mockImplementation((version, range) => {
-            return version === '3.0.0';  // Only 'uptodate' should be greater than required
-        });
-
         const result = await repoDependencyAnalysis({ resultFact: 'testResult' }, mockAlmanac);
         
         expect(result).toEqual({
@@ -115,6 +157,22 @@ describe('repoDependencyAnalysis', () => {
                 { dependency: 'outdated', currentVersion: '1.0.0', requiredVersion: '^2.0.0' }
             ]
         });
+        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', result);
+    });
+
+    it('should handle all up-to-date dependencies', async () => {
+        (mockAlmanac.factValue as jest.Mock)
+            .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' })
+            .mockResolvedValueOnce({
+                installedDependencyVersions: [
+                    { dep: 'uptodate1', ver: '2.0.0', min: '^1.0.0' },
+                    { dep: 'uptodate2', ver: '3.0.0', min: '^2.0.0' }
+                ]
+            });
+
+        const result = await repoDependencyAnalysis({ resultFact: 'testResult' }, mockAlmanac);
+        
+        expect(result).toEqual({ result: [] });
         expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', result);
     });
 
@@ -127,47 +185,6 @@ describe('repoDependencyAnalysis', () => {
         
         expect(result).toEqual({ result: [] });
         expect(logger.error).toHaveBeenCalled();
-    });
-});
-
-describe('getDependencyVersionFacts', () => {
-    it('should return installed dependency versions correctly', async () => {
-        
-        (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
-            return path.basename(filePath) === 'package-lock.json';
-        });
-        
-        const mockLocalDependencies: LocalDependencies[] = [
-            { name: 'commander', version: '2.0.0' },
-            { name: 'nodemon', version: '3.9.0' }
-        ];
-        (collectLocalDependencies as jest.Mock).mockReturnValue(mockLocalDependencies);
-        
-        const mockArchetypeConfig = {
-            config: {
-                minimumDependencyVersions: { commander: '^2.0.0', nodemon: '^3.9.0' }
-            }
-        };
-        
-        const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
-        expect(result).toEqual([
-            { dep: 'commander', ver: '2.0.0', min: '^2.0.0' },
-            { dep: 'nodemon', ver: '3.9.0', min: '^3.9.0' }
-        ]);
-    });
-
-    it('should return an empty array if no local dependencies found', async () => {
-        (collectLocalDependencies as jest.Mock).mockReturnValue([]);
-        
-        const mockArchetypeConfig = {
-            config: {
-                minimumDependencyVersions: { commander: '^2.0.0', nodemon: '^3.9.0' }
-            }
-        };
-        
-        const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
-        expect(result).toEqual([]);
-        expect(logger.error).toHaveBeenCalledWith('getDependencyVersionFacts: no local dependencies found');
     });
 });
 
