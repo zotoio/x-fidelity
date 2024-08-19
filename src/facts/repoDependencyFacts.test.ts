@@ -14,6 +14,16 @@ import { LocalDependencies, ArchetypeConfig, VersionData } from '../types/typeDe
 import { options } from '../core/cli';
 import { FileData } from './repoFilesystemFacts';
 
+declare global {
+  namespace NodeJS {
+    interface Global {
+      collectLocalDependencies: typeof collectLocalDependencies;
+    }
+  }
+}
+
+global.collectLocalDependencies = collectLocalDependencies;
+
 jest.mock('fs');
 jest.mock('child_process');
 jest.mock('../core/cli', () => ({
@@ -85,7 +95,7 @@ describe('repoDependencyFacts', () => {
         }
       };
 
-      jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue([
+      jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([
         { name: 'package-a', version: '1.1.0' },
         { name: 'package-b', version: '2.1.0' },
         { name: 'package-c', version: '3.0.0' }
@@ -113,7 +123,7 @@ describe('repoDependencyFacts', () => {
         }
       };
 
-      jest.spyOn(global, 'collectLocalDependencies' as any).mockReturnValue([]);
+      jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([]);
 
       const result = await getDependencyVersionFacts(mockArchetypeConfig);
 
