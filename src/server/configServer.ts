@@ -26,6 +26,8 @@ const limiter = rateLimit({
 // Apply rate limiter to all routes
 app.use(limiter);
 
+const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
+
 // Middleware to check for shared secret
 const checkSharedSecret = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const clientSecret = req.headers['x-shared-secret'];
@@ -34,11 +36,6 @@ const checkSharedSecret = (req: express.Request, res: express.Response, next: ex
     }
     next();
 };
-
-// Apply shared secret check to all routes
-app.use(checkSharedSecret);
-
-const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
 
 // Simple in-memory cache
 const cache: { [key: string]: { data: any; expiry: number } } = {};
@@ -184,7 +181,7 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
 
 
 // New route for telemetry
-app.post('/telemetry', (req, res) => {
+app.post('/telemetry', checkSharedSecret, (req, res) => {
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
     if (!validateTelemetryData(req.body)) {
