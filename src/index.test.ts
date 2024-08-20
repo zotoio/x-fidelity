@@ -65,15 +65,16 @@ describe('index', () => {
       }
     } as any);
 
-    await import('./index');
+    const indexModule = await import('./index');
+    await indexModule.default;
 
-    expect(analyzeCodebase).toHaveBeenCalledWith({
+    expect(analyzeCodebase).toHaveBeenCalledWith(expect.objectContaining({
       repoPath: '/test/dir',
       archetype: 'test-archetype',
       configServer: 'http://test-server',
       localConfigPath: '/test/local/config',
       executionLogPrefix: expect.any(String)
-    });
+    }));
     expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('SUCCESS! hi-fi codebase detected.'));
   });
 
@@ -93,9 +94,10 @@ describe('index', () => {
       }
     } as any);
 
-    await import('./index');
+    const indexModule = await import('./index');
+    await indexModule.default;
 
-    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('THERE WERE 1 FATAL ERRORS DETECTED'));
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('THERE WERE 1 FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!'));
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
@@ -114,9 +116,10 @@ describe('index', () => {
       }
     } as any);
 
-    await import('./index');
+    const indexModule = await import('./index');
+    await indexModule.default;
 
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No fatal errors were found'));
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No fatal errors were found, however please review the following warnings.'));
   });
 
   it('should handle errors during execution', async () => {
@@ -125,9 +128,10 @@ describe('index', () => {
     const mockAnalyzeCodebase = analyzeCodebase as jest.MockedFunction<typeof analyzeCodebase>;
     mockAnalyzeCodebase.mockRejectedValue(new Error('Test error'));
 
-    await import('./index');
+    const indexModule = await import('./index');
+    await indexModule.default;
 
-    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('FATAL: execution failed'));
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('FATAL: execution failed!'));
     expect(sendTelemetry).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: 'execution failure',
