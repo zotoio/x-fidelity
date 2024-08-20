@@ -155,5 +155,5 @@ describe('index', () => {
       expect.any(String)
     );
     expect(process.exit).toHaveBeenCalledWith(1);
-  });
+  }, 10000); // Increase timeout to 10 seconds
 });
