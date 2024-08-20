@@ -175,7 +175,7 @@ describe('analyzeCodebase', () => {
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalled();
         expect(loadOperators).toHaveBeenCalledWith(['operator1']);
-        expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
+        expect(loadFacts).toHaveBeenCalledWith(['fact1']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
         expect(results).toEqual({
             XFI_RESULT: expect.objectContaining({
