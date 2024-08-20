@@ -2,7 +2,6 @@ import axios from 'axios';
 import { logger } from './logger';
 import { options } from "../core/cli";
 import { TelemetryEvent } from '../types/typeDefs';
-import { maskSensitiveData } from './maskSensitiveData';
 
 const TELEMETRY_ENDPOINT = process.env.TELEMETRY_ENDPOINT || options.telemetryCollector || (options.configServer ? `${options.configServer}/telemetry` : null);
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;

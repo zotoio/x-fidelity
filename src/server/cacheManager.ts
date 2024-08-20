@@ -1,3 +1,4 @@
+import { ConfigManager } from '../utils/configManager';
 import { logger } from '../utils/logger';
 
 // Simple in-memory cache
@@ -26,7 +27,7 @@ export function setCachedData(key: string, data: any, ttl: number = DEFAULT_TTL)
 }
 
 export function clearCache(): void {
-    logger.info('Clearing cache');
+    logger.debug('Clearing cache');
     Object.keys(cache).forEach((key) => {
         delete cache[key];
     });
@@ -55,4 +56,10 @@ export function getRuleListCache(archetype: string): any | null {
         return item.data;
     }
     return null;
+}export function handleConfigChange(path: string, fileType: string, changeType: string) {
+    logger.info(`${fileType} ${path} has been ${changeType}`);
+    clearCache();
+    ConfigManager.clearLoadedConfigs();
+    logger.debug('Cache and loaded configs cleared due to local config change');
 }
+

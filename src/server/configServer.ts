@@ -15,8 +15,7 @@ import { clearCacheRoute } from './routes/clearCacheRoute';
 import { viewCacheRoute } from './routes/viewCacheRoute';
 import { githubWebhookRoute } from './routes/githubWebhookRoute';
 import chokidar from 'chokidar';
-import { clearCache } from './cacheManager';
-import { ConfigManager } from '../utils/configManager';
+import { handleConfigChange } from './cacheManager';
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';
@@ -122,9 +121,4 @@ export function startServer({ customPort, executionLogPrefix }: StartServerParam
     }
 }
 
-function handleConfigChange(path: string, fileType: string, changeType: string) {
-    logger.info(`${fileType} ${path} has been ${changeType}`);
-    clearCache();
-    ConfigManager.clearLoadedConfigs();
-    logger.info('Cache and loaded configs cleared due to local config change');
-}
+

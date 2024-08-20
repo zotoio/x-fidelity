@@ -6,7 +6,6 @@ import { collectOpenaiAnalysisFacts } from '../../facts/openaiAnalysisFacts';
 import { loadRules } from '../../rules';
 import { loadOperators } from '../../operators';
 import { loadFacts } from '../../facts';
-import { archetypes } from '../../archetypes';
 import { ConfigManager } from '../../utils/configManager';
 import { sendTelemetry } from '../../utils/telemetry';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
