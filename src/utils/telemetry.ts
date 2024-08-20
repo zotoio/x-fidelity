@@ -1,4 +1,4 @@
-import { axiosClient } from './axiosClient';
+import { axiosClient, isAxiosError } from './axiosClient';
 import { logger } from './logger';
 import { options } from "../core/cli";
 import { TelemetryEvent } from '../types/typeDefs';
@@ -23,7 +23,7 @@ export async function sendTelemetry(event: TelemetryEvent, logPrefix: string): P
         });
         logger.debug(`Telemetry sent: ${JSON.stringify(event)}`);
     } catch (error) {
-        if (axios.isAxiosError(error)) {
+        if (isAxiosError(error)) {
             logger.debug(`Failed to send telemetry: ${error.message}`);
             if (error.response) {
                 logger.debug(`Response status: ${error.response.status}`);

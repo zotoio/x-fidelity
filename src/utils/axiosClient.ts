@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
 import { logger } from './logger';
 
 const MAX_RETRIES = 3;
@@ -36,3 +36,5 @@ export const axiosClient = {
   delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => 
     axiosInstance.delete(url, config),
 };
+
+export { isAxiosError };
