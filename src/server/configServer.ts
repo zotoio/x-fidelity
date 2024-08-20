@@ -13,10 +13,8 @@ import { archetypeRuleRoute } from './routes/archetypeRuleRoute';
 import { telemetryRoute } from './routes/telemetryRoute';
 import { clearCacheRoute } from './routes/clearCacheRoute';
 import { viewCacheRoute } from './routes/viewCacheRoute';
+import { githubWebhookRoute } from './routes/githubWebhookRoute';
 import chokidar from 'chokidar';
-import crypto from 'crypto';
-import path from 'path';
-import axios from 'axios';
 import { clearCache } from './cacheManager';
 import { ConfigManager } from '../utils/configManager';
 
