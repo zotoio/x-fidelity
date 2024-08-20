@@ -7,7 +7,16 @@ import { options } from './core/cli';
 jest.mock('./core/engine/analyzer');
 jest.mock('./server/configServer');
 jest.mock('./utils/telemetry');
-jest.mock('./utils/logger');
+jest.mock('./utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  },
+  setLogPrefix: jest.fn(),
+  generateLogPrefix: jest.fn().mockReturnValue('mockLogPrefix'),
+}));
 jest.mock('./core/cli', () => ({
   options: {
     mode: 'client',
