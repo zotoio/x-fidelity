@@ -199,6 +199,19 @@ app.post('/clearcache', checkSharedSecret, (req, res) => {
     res.status(200).json({ message: 'Cache cleared successfully' });
 });
 
+// New route to view cache
+app.get('/viewcache', checkSharedSecret, (req, res) => {
+    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
+    setLogPrefix(requestLogPrefix);
+    logger.info('Viewing cache');
+    const cacheContent = {
+        cache: cache,
+        ruleListCache: ruleListCache,
+        loadedConfigs: ConfigManager.getLoadedConfigs()
+    };
+    res.status(200).json(cacheContent);
+});
+
 export function startServer({ customPort, executionLogPrefix }: StartServerParams): any {
     const serverPort = customPort ? parseInt(customPort) : port;
     executionLogPrefix && setLogPrefix(executionLogPrefix);
