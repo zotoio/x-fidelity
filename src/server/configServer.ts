@@ -194,7 +194,7 @@ app.post('/clearcache', checkSharedSecret, (req, res) => {
         delete cache[key];
     });
     Object.keys(ruleListCache).forEach((key) => {
-        delete cache[key];
+        delete ruleListCache[key];
     });
     res.status(200).json({ message: 'Cache cleared successfully' });
 });
