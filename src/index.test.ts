@@ -116,8 +116,8 @@ describe('index', () => {
       }
     } as any);
 
-    const indexModule = await import('./index');
-    await indexModule.default;
+    const { main } = await import('./index');
+    await main();
 
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No fatal errors were found, however please review the following warnings.'));
   });
@@ -128,8 +128,8 @@ describe('index', () => {
     const mockAnalyzeCodebase = analyzeCodebase as jest.MockedFunction<typeof analyzeCodebase>;
     mockAnalyzeCodebase.mockRejectedValue(new Error('Test error'));
 
-    const indexModule = await import('./index');
-    await indexModule.default;
+    const { main } = await import('./index');
+    await main();
 
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('FATAL: execution failed!'));
     expect(sendTelemetry).toHaveBeenCalledWith(
