@@ -57,9 +57,14 @@ describe('configServer', () => {
   });
 
   it('should route GET /viewcache to viewCacheRoute with checkSharedSecret middleware', async () => {
+    (checkSharedSecret as jest.Mock).mockImplementation((req, res, next) => next());
     await request(app).get('/viewcache');
     expect(checkSharedSecret).toHaveBeenCalled();
     expect(viewCacheRoute).toHaveBeenCalled();
+  });
+
+  afterAll(() => {
+    jest.resetAllMocks();
   });
 
   // it('should route POST /github-webhook to handleGithubWebhook', async () => {
