@@ -14,6 +14,9 @@ import { telemetryRoute } from './routes/telemetryRoute';
 import { clearCacheRoute } from './routes/clearCacheRoute';
 import { viewCacheRoute } from './routes/viewCacheRoute';
 import { githubWebhookRoute } from './routes/githubWebhookRoute';
+import { validateUrlInput } from './middleware/validateUrlInput';
+import { validateTelemetryData } from './middleware/validateTelemetryData';
+import { validateGithubWebhook } from './middleware/validateGithubWebhook';
 import chokidar from 'chokidar';
 import { handleConfigChange } from './cacheManager';
 
