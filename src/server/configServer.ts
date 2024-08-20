@@ -1,17 +1,18 @@
 import express from 'express';
 import https from 'https';
 import fs from 'fs';
-import { RuleProperties } from 'json-rules-engine';
 import { logger, setLogPrefix } from '../utils/logger';
 import { expressLogger } from './expressLogger'
 import { options } from '../core/cli';
-import { ConfigManager } from '../utils/configManager';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { validateArchetype, validateRule } from '../utils/jsonSchemas';
-import { RuleConfig, StartServerParams } from '../types/typeDefs';
-import { validateUrlInput, validateTelemetryData } from '../utils/inputValidation';
-import { getCachedData, setCachedData, clearCache, getCacheContent, setRuleListCache, getRuleListCache } from './cacheManager';
+import { StartServerParams } from '../types/typeDefs';
+import { archetypeRoute } from './routes/archetypeRoute';
+import { archetypeRulesRoute } from './routes/archetypeRulesRoute';
+import { archetypeRuleRoute } from './routes/archetypeRuleRoute';
+import { telemetryRoute } from './routes/telemetryRoute';
+import { clearCacheRoute } from './routes/clearCacheRoute';
+import { viewCacheRoute } from './routes/viewCacheRoute';
 import chokidar from 'chokidar';
 import crypto from 'crypto';
 import path from 'path';
@@ -52,137 +53,12 @@ const DEFAULT_TTL = parseInt(options.jsonTTL) * 60 * 1000; // Convert CLI option
 app.use(express.json());
 app.use(expressLogger);
 
-app.get('/archetypes/:archetype', async (req, res) => {
-    const archetype = req.params.archetype;
-    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
-    setLogPrefix(requestLogPrefix);
-    if (!validateUrlInput(archetype)) {
-        logger.error(`invalid archetype name: ${archetype}`);
-        return res.status(400).json({ error: 'Invalid archetype name' });
-    }
-    const cacheKey = `archetype:${archetype}`;
-    const cachedData = getCachedData(cacheKey);
-    if (cachedData) {
-        logger.info(`serving cached archetype ${archetype}`);
-        return res.json(cachedData);
-    }
-
-    try {
-        const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
-        const archetypeConfig = config.archetype;
-        logger.debug(`found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
-
-        if (!validateArchetype(archetypeConfig)) {
-            logger.error(`invalid archetype configuration for ${archetype}`);
-            return res.status(400).json({ error: 'invalid archetype requested' });
-        }
-
-        setCachedData(cacheKey, archetypeConfig);
-        logger.info(`serving fresh archetype ${archetype}`);
-        res.json(archetypeConfig);
-    } catch (error) {
-        logger.error(`error fetching archetype ${archetype}: ${error}`);
-        res.status(500).json({ error: 'internal server error' });
-    }
-});
-
-app.get('/archetypes/:archetype/rules', async (req, res) => {
-    const archetype = req.params.archetype;
-    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
-    setLogPrefix(requestLogPrefix);
-    if (!validateUrlInput(archetype)) {
-        logger.error(`invalid archetype name: ${archetype}`);
-        return res.status(400).json({ error: 'invalid archetype' });
-    }
-    const cachedRules = getRuleListCache(archetype);
-    if (cachedRules) {
-        logger.info(`serving cached rule list for archetype: ${archetype}`);
-        return res.json(cachedRules);
-    }
-    const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
-    const archetypeConfig = config.archetype;
-    if (archetypeConfig && archetypeConfig.rules) {
-        const rules = config.rules;
-        setRuleListCache(archetype, rules as RuleProperties[], DEFAULT_TTL);
-        logger.info(`serving fresh rule list for archetype: ${archetype}`);
-        res.json(rules);
-    } else {
-        logger.error(`archetype ${archetype} not found or has no rules`);
-        res.status(404).json({ error: 'archetype not found or has no rules' });
-    }
-});
-
-app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
-    const archetype = req.params.archetype;
-    const rule = req.params.rule;
-    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
-    setLogPrefix(requestLogPrefix);
-    if (!validateUrlInput(archetype) || !validateUrlInput(rule)) {
-        logger.error(`invalid archetype or rule name: ${archetype}, ${rule}`);
-        return res.status(400).json({ error: 'invalid archetype or rule name' });
-    }
-    const cacheKey = `rule:${archetype}:${rule}`;
-    const cachedData = getCachedData(cacheKey);
-    if (cachedData) {
-        logger.info(`serving cached rule ${rule} for archetype ${archetype}`);
-        return res.json(cachedData);
-    }
-
-    try {
-        const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
-        const ruleConfigs: RuleConfig[] = config.rules;
-        if (ruleConfigs.length > 0 && config.archetype.rules.includes(rule)) {
-            const ruleConf = ruleConfigs.find((r) => r.name === rule);
-
-            if (ruleConf && validateRule(ruleConf)) {
-                setCachedData(cacheKey, ruleConf);
-                logger.info(`serving fresh rule ${req.params.rule} for archetype ${req.params.archetype}`);
-                res.json(ruleConf);
-            } else {
-                logger.error(`invalid rule configuration for ${rule}`);
-                res.status(500).json({ error: 'invalid rule configuration' });
-            }
-        } else {
-            res.status(404).json({ error: 'rule not found' });
-        }
-    } catch (error) {
-        logger.error(`error fetching rule ${rule} for archetype ${archetype}: ${error}`);
-        res.status(500).json({ error: 'internal server error' });
-    }
-});
-
-// New route for telemetry
-app.post('/telemetry', checkSharedSecret, (req, res) => {
-    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
-    setLogPrefix(requestLogPrefix);
-    if (!validateTelemetryData(req.body)) {
-        return res.status(400).json({ error: 'Invalid telemetry data' });
-    }
-    logger.debug(`accepting telemetry data: ${JSON.stringify(req.body)}`);
-    // Here you can process and store the telemetry data as needed
-    res.status(200).json({ message: 'telemetry data received successfully' });
-});
-
-// New route to clear cache
-app.post('/clearcache', checkSharedSecret, (req, res) => {
-    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
-    setLogPrefix(requestLogPrefix);
-    clearCache();
-    ConfigManager.clearLoadedConfigs();
-    res.status(200).json({ message: 'Cache cleared successfully' });
-});
-
-// New route to view cache
-app.get('/viewcache', checkSharedSecret, (req, res) => {
-    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
-    setLogPrefix(requestLogPrefix);
-    logger.info('Viewing cache');
-    const cacheContent = {
-        ...getCacheContent(),
-        loadedConfigs: ConfigManager.getLoadedConfigs()
-    };
-    res.status(200).json(cacheContent);
-});
+app.get('/archetypes/:archetype', archetypeRoute);
+app.get('/archetypes/:archetype/rules', archetypeRulesRoute);
+app.get('/archetypes/:archetype/rules/:rule', archetypeRuleRoute);
+app.post('/telemetry', checkSharedSecret, telemetryRoute);
+app.post('/clearcache', checkSharedSecret, clearCacheRoute);
+app.get('/viewcache', checkSharedSecret, viewCacheRoute);
 
 // GitHub webhook route
 app.post('/github-webhook', (req, res) => {
