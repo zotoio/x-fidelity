@@ -1,5 +1,5 @@
 import { loadRules } from './index';
-import axios from 'axios';
+import { axiosClient } from '../utils/axiosClient';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger';
@@ -10,7 +10,7 @@ jest.mock('../utils/jsonSchemas', () => ({
   validateRule: jest.fn().mockReturnValue(true)
 }));
 
-jest.mock('axios');
+jest.mock('../utils/axiosClient');
 jest.mock('fs', () => ({
     //...jest.requireActual('fs'),
     promises: {
@@ -49,12 +49,12 @@ describe('loadRules', () => {
 
     it('should load rules from config server when provided', async () => {
         const mockRuleContent = { name: 'testRule', conditions: {}, event: {} };
-        (axios.get as jest.Mock).mockResolvedValue({ data: mockRuleContent });
+        (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockRuleContent });
 
         const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'], configServer: 'http://configserver.com' });
 
         expect(result).toEqual([mockRuleContent]);
-        expect(axios.get).toHaveBeenCalledWith('http://configserver.com/archetypes/testArchetype/rules/testRule', expect.objectContaining({
+        expect(axiosClient.get).toHaveBeenCalledWith('http://configserver.com/archetypes/testArchetype/rules/testRule', expect.objectContaining({
             headers: expect.objectContaining({
                 'X-Log-Prefix': expect.any(String)
             })
@@ -63,7 +63,7 @@ describe('loadRules', () => {
 
     it('should log an error if remote fetch fails', async () => {
         const mockRuleContent = JSON.stringify({ name: 'testRule', conditions: {}, event: {} });
-        (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
+        (axiosClient.get as jest.Mock).mockRejectedValue(new Error('Network error'));
         const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
         mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/testRule-rule.json');
@@ -71,7 +71,7 @@ describe('loadRules', () => {
         await expect(loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'], configServer: 'http://configserver.com' }))
             .rejects.toThrow('Network error');
 
-        expect(axios.get).toHaveBeenCalledWith('http://configserver.com/archetypes/testArchetype/rules/testRule', {
+        expect(axiosClient.get).toHaveBeenCalledWith('http://configserver.com/archetypes/testArchetype/rules/testRule', {
             headers: {
                 'X-Log-Prefix': ''
             }
