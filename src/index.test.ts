@@ -21,7 +21,7 @@ jest.mock('./core/cli', () => ({
 describe('index', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(process, 'exit').mockImplementation((code?: number | undefined): never => {
+    jest.spyOn(process, 'exit').mockImplementation((code?: string | number | null | undefined): never => {
       throw new Error(`Process.exit(${code})`);
     });
   });
