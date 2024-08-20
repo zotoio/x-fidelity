@@ -1,6 +1,6 @@
 import axios from "axios";
 import { logger, setLogPrefix } from "./logger";
-import { ArchetypeConfig, RuleConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams } from "../types/typeDefs";
+import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig } from "../types/typeDefs";
 import { archetypes } from "../archetypes";
 import { options } from '../core/cli';
 import fs from 'fs';
@@ -13,8 +13,14 @@ export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 export class ConfigManager {
     private static configs: { [key: string]: ExecutionConfig } = {};
 
-    public static async getLoadedConfigs(): Promise<string[]> {
+    public static getLoadedConfigs(): string[] {
         return Object.keys(ConfigManager.configs);
+    }
+
+    public static clearLoadedConfigs(): void {
+        Object.keys(ConfigManager.configs).forEach(key => {
+            delete ConfigManager.configs[key];
+        });    
     }
 
     public static async getConfig(params: GetConfigParams): Promise<ExecutionConfig> {
@@ -80,11 +86,11 @@ export class ConfigManager {
             });
 
             // Validate each rule
-            config.rules = config.rules.filter(rule => {
+            config.rules = config.rules?.filter((rule: RuleConfig) => {
                 if (validateRule(rule)) {
                     return true;
                 } else {
-                    logger.error(`Invalid rule configuration: ${rule.name}`);
+                    logger.error(`Invalid rule configuration: ${JSON.stringify(rule)}`);
                     return false;
                 }
             });
