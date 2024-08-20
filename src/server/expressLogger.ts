@@ -4,7 +4,7 @@ import json from 'prettyjson';
 
 // Function to mask sensitive data
 const maskSensitiveData = (obj: any): any => {
-    const maskedObj = { ...obj };
+    const maskedObj = JSON.parse(JSON.stringify(obj));
     if (maskedObj.headers && maskedObj.headers['x-shared-secret']) {
         maskedObj.headers['x-shared-secret'] = '********';
     }
