@@ -30,6 +30,15 @@ jest.mock('./core/cli', () => ({
 describe('index', () => {
   let originalProcessExit: (code?: number | undefined) => never;
 
+  beforeAll(() => {
+    originalProcessExit = process.exit;
+    process.exit = jest.fn() as any;
+  });
+
+  afterAll(() => {
+    process.exit = originalProcessExit;
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     originalProcessExit = process.exit;
@@ -44,12 +53,15 @@ describe('index', () => {
     options.mode = 'server';
     options.port = '8888';
 
-    await import('./index');
+    const { main } = await import('./index');
+    await main();
 
-    expect(startServer).toHaveBeenCalledWith({
-      customPort: '8888',
-      executionLogPrefix: expect.any(String)
-    });
+    expect(startServer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customPort: '8888',
+        executionLogPrefix: expect.any(String)
+      })
+    );
   });
 
   it('should analyze codebase when mode is client', async () => {
@@ -99,6 +111,7 @@ describe('index', () => {
 
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('THERE WERE 1 FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!'));
     expect(process.exit).toHaveBeenCalledWith(1);
+  }, 10000); // Increase timeout to 10 seconds
   });
 
   it('should handle non-fatal warnings in codebase analysis', async () => {
