@@ -14,6 +14,8 @@ import { validateUrlInput, validateTelemetryData } from '../utils/inputValidatio
 import { getCachedData, setCachedData, clearCache, getCacheContent, setRuleListCache, getRuleListCache } from './cacheManager';
 import chokidar from 'chokidar';
 import crypto from 'crypto';
+import path from 'path';
+import axios from 'axios';
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';
@@ -215,11 +217,82 @@ app.post('/github-webhook', (req, res) => {
         clearCache();
         ConfigManager.clearLoadedConfigs();
         logger.info('Cache and loaded configs cleared due to GitHub push event');
+
+        // Extract repository information from the payload
+        const payload = req.body;
+        const repoOwner = payload.repository.owner.name;
+        const repoName = payload.repository.name;
+        const branch = payload.ref.split('/').pop();
+
+        // Update local config
+        await updateLocalConfig(repoOwner, repoName, branch);
+
         return res.status(200).send('Webhook received and processed');
     }
 
     res.status(200).send('Received');
 });
+
+async function updateLocalConfig(repoOwner: string, repoName: string, branch: string) {
+    if (!options.localConfigPath) {
+        logger.error('Local config path is not set');
+        return;
+    }
+
+    const baseUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents`;
+    const headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'XFidelity-Webhook'
+    };
+
+    try {
+        const response = await axios.get(`${baseUrl}?ref=${branch}`, { headers });
+        for (const item of response.data) {
+            if (item.type === 'file') {
+                await downloadFile(item.download_url, item.path);
+            } else if (item.type === 'dir') {
+                await processDirectory(`${baseUrl}/${item.path}`, item.path, branch);
+            }
+        }
+        logger.info('Local config updated successfully');
+    } catch (error) {
+        logger.error(`Error updating local config: ${error}`);
+    }
+}
+
+async function processDirectory(url: string, dirPath: string, branch: string) {
+    const headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'XFidelity-Webhook'
+    };
+
+    try {
+        const response = await axios.get(`${url}?ref=${branch}`, { headers });
+        for (const item of response.data) {
+            if (item.type === 'file') {
+                await downloadFile(item.download_url, path.join(dirPath, item.name));
+            } else if (item.type === 'dir') {
+                await processDirectory(`${url}/${item.name}`, path.join(dirPath, item.name), branch);
+            }
+        }
+    } catch (error) {
+        logger.error(`Error processing directory ${dirPath}: ${error}`);
+    }
+}
+
+async function downloadFile(url: string, filePath: string) {
+    const fullPath = path.join(options.localConfigPath, filePath);
+    const dir = path.dirname(fullPath);
+
+    try {
+        await fs.promises.mkdir(dir, { recursive: true });
+        const response = await axios.get(url, { responseType: 'arraybuffer' });
+        await fs.promises.writeFile(fullPath, response.data);
+        logger.info(`File downloaded: ${fullPath}`);
+    } catch (error) {
+        logger.error(`Error downloading file ${filePath}: ${error}`);
+    }
+}
 
 export function startServer({ customPort, executionLogPrefix }: StartServerParams): any {
     const serverPort = customPort ? parseInt(customPort) : port;
