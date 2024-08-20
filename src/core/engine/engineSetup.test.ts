@@ -27,23 +27,9 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 describe('setupEngine', () => {
-    const mockArchetypeConfig = {
-        name: 'test-archetype',
-        rules: ['rule1'],
-        operators: ['operator1'],
-        facts: ['fact1'],
-        config: {
-            minimumDependencyVersions: {},
-            standardStructure: {},
-            blacklistPatterns: [],
-            whitelistPatterns: []
-        },
-    };
-
     const mockParams = {
-        archetypeConfig: mockArchetypeConfig,
         archetype: 'test-archetype',
-        configManager: {} as any,
+        configManager: ConfigManager,
         executionLogPrefix: 'test-prefix',
         localConfigPath: '/test/path',
     };
