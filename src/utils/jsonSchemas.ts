@@ -1,6 +1,7 @@
 import Ajv, { JSONSchemaType } from 'ajv';
 import { logger } from './logger';
-import { ArchetypeConfig, RuleConfig } from '../types/typeDefs';
+import { ArchetypeConfig } from '../types/typeDefs';
+import { RuleProperties } from 'json-rules-engine';
 
 const ajv = new Ajv();
 
@@ -43,7 +44,7 @@ const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
     additionalProperties: false
 };
 
-const ruleSchema: JSONSchemaType<RuleConfig> = {
+const ruleSchema: JSONSchemaType<RuleProperties> = {
     type: 'object',
     properties: {
         name: { type: 'string' },
@@ -65,9 +66,13 @@ const ruleSchema: JSONSchemaType<RuleConfig> = {
                 params: { type: 'object' }
             },
             required: ['type', 'params']
-        }
-    },
-    required: ['name', 'conditions', 'event']
+        },
+        priority: { type: 'number', nullable: true }, 
+        onSuccess: { type: 'object', nullable: true },
+        onFailure: { type: 'object', nullable: true },
+        required: [ 'name', 'conditions', 'event' ]
+    }
+    
 };
 
 const validateArchetypeSchema = ajv.compile(archetypeSchema);
