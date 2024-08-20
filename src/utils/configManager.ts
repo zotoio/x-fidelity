@@ -110,7 +110,12 @@ export class ConfigManager {
     private static async loadLocalConfig(params: LoadLocalConfigParams): Promise<ArchetypeConfig> {
         const { archetype, localConfigPath } = params;
         try {
-            const configPath = path.join(localConfigPath, `${archetype}.json`);
+            // Validate and sanitize the archetype input
+            if (!/^[a-zA-Z0-9-_]+$/.test(archetype)) {
+                throw new Error('Invalid archetype name');
+            }
+            const sanitizedArchetype = archetype.replace(/[^a-zA-Z0-9-_]/g, '');
+            const configPath = path.join(localConfigPath, `${sanitizedArchetype}.json`);
             logger.info(`Loading local archetype config from: ${configPath}`);
             const configContent = await fs.promises.readFile(configPath, 'utf8');
             const localConfig = JSON.parse(configContent);
