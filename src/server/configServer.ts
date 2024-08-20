@@ -13,6 +13,7 @@ import { RuleConfig, StartServerParams } from '../types/typeDefs';
 import { validateUrlInput, validateTelemetryData } from '../utils/inputValidation';
 import { getCachedData, setCachedData, clearCache, getCacheContent, setRuleListCache, getRuleListCache } from './cacheManager';
 import chokidar from 'chokidar';
+import crypto from 'crypto';
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';
@@ -179,6 +180,45 @@ app.get('/viewcache', checkSharedSecret, (req, res) => {
         loadedConfigs: ConfigManager.getLoadedConfigs()
     };
     res.status(200).json(cacheContent);
+});
+
+// GitHub webhook route
+app.post('/github-webhook', (req, res) => {
+    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
+    setLogPrefix(requestLogPrefix);
+
+    const signature = req.headers['x-hub-signature-256'] as string;
+    const githubSecret = process.env.GITHUB_WEBHOOK_SECRET;
+
+    if (!githubSecret) {
+        logger.error('GitHub webhook secret is not set');
+        return res.status(500).send('Server is not configured for webhooks');
+    }
+
+    if (!signature) {
+        logger.error('No X-Hub-Signature-256 found on request');
+        return res.status(400).send('No X-Hub-Signature-256 found on request');
+    }
+
+    const hmac = crypto.createHmac('sha256', githubSecret);
+    const digest = 'sha256=' + hmac.update(JSON.stringify(req.body)).digest('hex');
+
+    if (signature !== digest) {
+        logger.error('Request body digest did not match X-Hub-Signature-256');
+        return res.status(400).send('Invalid signature');
+    }
+
+    const event = req.headers['x-github-event'] as string;
+    if (event === 'push') {
+        logger.info('Received push event from GitHub');
+        // Clear cache and loaded configs
+        clearCache();
+        ConfigManager.clearLoadedConfigs();
+        logger.info('Cache and loaded configs cleared due to GitHub push event');
+        return res.status(200).send('Webhook received and processed');
+    }
+
+    res.status(200).send('Received');
 });
 
 export function startServer({ customPort, executionLogPrefix }: StartServerParams): any {
