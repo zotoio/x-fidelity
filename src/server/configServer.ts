@@ -12,6 +12,7 @@ import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 import { RuleConfig, StartServerParams } from '../types/typeDefs';
 import { validateUrlInput, validateTelemetryData } from '../utils/inputValidation';
 import { getCachedData, setCachedData, clearCache, getCacheContent, setRuleListCache, getRuleListCache } from './cacheManager';
+import chokidar from 'chokidar';
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';
@@ -194,14 +195,55 @@ export function startServer({ customPort, executionLogPrefix }: StartServerParam
         // Create HTTPS server
         const httpsServer = https.createServer(credentials, app);
 
-        return httpsServer.listen(serverPort, () => {
+        const server = httpsServer.listen(serverPort, () => {
             logger.info(`xfidelity server is running on https://localhost:${serverPort}`);
         });
 
+        // Set up file watcher for local config path
+        if (options.localConfigPath) {
+            const watcher = chokidar.watch(options.localConfigPath, {
+                ignored: /(^|[\/\\])\../, // ignore dotfiles
+                persistent: true
+            });
+
+            watcher
+                .on('add', path => handleConfigChange(path, 'File', 'added'))
+                .on('change', path => handleConfigChange(path, 'File', 'changed'))
+                .on('unlink', path => handleConfigChange(path, 'File', 'removed'));
+
+            logger.info(`Watching for changes in ${options.localConfigPath}`);
+        }
+
+        return server;
+
     } catch (error) {
         logger.warn('failed to start server with tls, falling back to http:', error);
-        return app.listen(serverPort, () => {
+        const server = app.listen(serverPort, () => {
             logger.info(`xfidelity server is running on http://localhost:${serverPort}`);
         });
+
+        // Set up file watcher for local config path
+        if (options.localConfigPath) {
+            const watcher = chokidar.watch(options.localConfigPath, {
+                ignored: /(^|[\/\\])\../, // ignore dotfiles
+                persistent: true
+            });
+
+            watcher
+                .on('add', path => handleConfigChange(path, 'File', 'added'))
+                .on('change', path => handleConfigChange(path, 'File', 'changed'))
+                .on('unlink', path => handleConfigChange(path, 'File', 'removed'));
+
+            logger.info(`Watching for changes in ${options.localConfigPath}`);
+        }
+
+        return server;
     }
+}
+
+function handleConfigChange(path: string, fileType: string, changeType: string) {
+    logger.info(`${fileType} ${path} has been ${changeType}`);
+    clearCache();
+    ConfigManager.clearLoadedConfigs();
+    logger.info('Cache and loaded configs cleared due to local config change');
 }
