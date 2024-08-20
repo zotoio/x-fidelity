@@ -33,7 +33,7 @@ ${message}
 
 logger.debug(`startup options: ${JSON.stringify(options)}`);
 
-(async () => {
+export async function main() {
     try {
         if (options.mode === 'server') {
             await startServer({ customPort: options.port, executionLogPrefix });
@@ -66,4 +66,8 @@ logger.debug(`startup options: ${JSON.stringify(options)}`);
         logger.error(outcomeMessage('FATAL: execution failed!'));
         await handleError(e);
     }
-})();
+}
+
+if (require.main === module) {
+    main().catch(handleError);
+}

@@ -65,8 +65,8 @@ describe('index', () => {
       }
     } as any);
 
-    const indexModule = await import('./index');
-    await indexModule.default;
+    const { main } = await import('./index');
+    await main();
 
     expect(analyzeCodebase).toHaveBeenCalledWith(expect.objectContaining({
       repoPath: '/test/dir',
@@ -94,8 +94,8 @@ describe('index', () => {
       }
     } as any);
 
-    const indexModule = await import('./index');
-    await indexModule.default;
+    const { main } = await import('./index');
+    await main();
 
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('THERE WERE 1 FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!'));
     expect(process.exit).toHaveBeenCalledWith(1);
