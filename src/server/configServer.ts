@@ -11,6 +11,7 @@ import rateLimit from 'express-rate-limit';
 import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 import { RuleConfig, StartServerParams } from '../types/typeDefs';
 import { validateUrlInput, validateTelemetryData } from '../utils/inputValidation';
+import { getCachedData, setCachedData, clearCache, getCacheContent, setRuleListCache, getRuleListCache } from './cacheManager';
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';
@@ -42,30 +43,7 @@ const checkSharedSecret = (req: express.Request, res: express.Response, next: ex
     next();
 };
 
-// Simple in-memory cache
-const cache: { [key: string]: { data: any; expiry: number } } = {};
 const DEFAULT_TTL = parseInt(options.jsonTTL) * 60 * 1000; // Convert CLI option to milliseconds
-
-// Cache for archetype lists and rule lists
-const ruleListCache: { [archetype: string]: { data: RuleProperties[]; expiry: number } } = {};
-
-function getCachedData(key: string): any | null {
-    logger.debug(`checking cache for key: ${key}`);
-    const item = cache[key];
-    if (item && item.expiry > Date.now()) {
-        return item.data;
-    }
-    return null;
-}
-
-function setCachedData(key: string, data: any, ttl: number = DEFAULT_TTL): void {
-    logger.debug(`setting cache for key: ${key}`);
-    cache[key] = {
-        data,
-        expiry: Date.now() + ttl
-    };
-    logger.debug(JSON.stringify(cache));
-}
 
 app.use(express.json());
 app.use(expressLogger);
@@ -112,18 +90,16 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
         logger.error(`invalid archetype name: ${archetype}`);
         return res.status(400).json({ error: 'invalid archetype' });
     }
-    if (ruleListCache[archetype] && ruleListCache[archetype].expiry > Date.now()) {
+    const cachedRules = getRuleListCache(archetype);
+    if (cachedRules) {
         logger.info(`serving cached rule list for archetype: ${archetype}`);
-        return res.json(ruleListCache[archetype].data);
+        return res.json(cachedRules);
     }
     const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
     const archetypeConfig = config.archetype;
     if (archetypeConfig && archetypeConfig.rules) {
         const rules = config.rules;
-        ruleListCache[archetype] = {
-            data: rules as RuleProperties[],
-            expiry: Date.now() + DEFAULT_TTL
-        };
+        setRuleListCache(archetype, rules as RuleProperties[], DEFAULT_TTL);
         logger.info(`serving fresh rule list for archetype: ${archetype}`);
         res.json(rules);
     } else {
@@ -171,7 +147,6 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     }
 });
 
-
 // New route for telemetry
 app.post('/telemetry', checkSharedSecret, (req, res) => {
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
@@ -188,14 +163,8 @@ app.post('/telemetry', checkSharedSecret, (req, res) => {
 app.post('/clearcache', checkSharedSecret, (req, res) => {
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
-    logger.info('Clearing cache');
+    clearCache();
     ConfigManager.clearLoadedConfigs();
-    Object.keys(cache).forEach((key) => {
-        delete cache[key];
-    });
-    Object.keys(ruleListCache).forEach((key) => {
-        delete ruleListCache[key];
-    });
     res.status(200).json({ message: 'Cache cleared successfully' });
 });
 
@@ -205,8 +174,7 @@ app.get('/viewcache', checkSharedSecret, (req, res) => {
     setLogPrefix(requestLogPrefix);
     logger.info('Viewing cache');
     const cacheContent = {
-        cache: cache,
-        ruleListCache: ruleListCache,
+        ...getCacheContent(),
         loadedConfigs: ConfigManager.getLoadedConfigs()
     };
     res.status(200).json(cacheContent);
