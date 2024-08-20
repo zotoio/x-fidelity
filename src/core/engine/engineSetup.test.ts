@@ -6,6 +6,9 @@ import { loadRules } from '../../rules';
 import { sendTelemetry } from '../../utils/telemetry';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { options } from '../cli';
+import { set } from 'lodash';
+import { setLogPrefix } from '../../utils/logger';
+import { ConfigManager } from '../../utils/configManager';
 
 jest.mock('json-rules-engine');
 jest.mock('../../operators');
@@ -20,6 +23,7 @@ jest.mock('../../utils/logger', () => ({
         error: jest.fn(),
         warn: jest.fn(),
     },
+    setLogPrefix: jest.fn(),
 }));
 
 describe('setupEngine', () => {
@@ -68,10 +72,10 @@ describe('setupEngine', () => {
         expect(Engine).toHaveBeenCalled();
         expect(loadOperators).toHaveBeenCalledWith(['operator1']);
         expect(loadFacts).toHaveBeenCalledWith(['fact1']);
-        expect(loadRules).toHaveBeenCalledWith(expect.objectContaining({
+        expect(ConfigManager.getConfig).toHaveBeenCalledWith({
             archetype: 'test-archetype',
-            ruleNames: ['rule1'],
-        }));
+            logPrefix: 'test-prefix',
+        });
         expect(mockEngine.addOperator).toHaveBeenCalled();
         expect(mockEngine.addRule).toHaveBeenCalled();
         expect(mockEngine.addFact).toHaveBeenCalled();
