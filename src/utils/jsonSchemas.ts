@@ -51,28 +51,52 @@ const ruleSchema: JSONSchemaType<RuleProperties> = {
         conditions: {
             type: 'object',
             properties: {
-                all: { type: 'array', items: { type: 'object' }, nullable: true },
-                any: { type: 'array', items: { type: 'object' }, nullable: true }
+                all: { 
+                    type: 'array', 
+                    items: { 
+                        type: 'object',
+                        additionalProperties: true
+                    }, 
+                    nullable: true 
+                },
+                any: { 
+                    type: 'array', 
+                    items: { 
+                        type: 'object',
+                        additionalProperties: true
+                    }, 
+                    nullable: true 
+                }
             },
-            oneOf: [
-                { required: ['all'] },
-                { required: ['any'] }
-            ]
+            additionalProperties: false,
+            minProperties: 1,
         },
         event: {
             type: 'object',
             properties: {
                 type: { type: 'string' },
-                params: { type: 'object' }
+                params: { 
+                    type: 'object',
+                    additionalProperties: true
+                }
             },
-            required: ['type', 'params']
+            required: ['type', 'params'],
+            additionalProperties: false
         },
-        priority: { type: 'number', nullable: true }, 
-        onSuccess: { type: 'object', nullable: true },
-        onFailure: { type: 'object', nullable: true },
-        required: [ 'name', 'conditions', 'event' ]
-    }
-    
+        priority: { type: 'number', nullable: true },
+        onSuccess: { 
+            type: 'object', 
+            nullable: true,
+            additionalProperties: true
+        },
+        onFailure: { 
+            type: 'object', 
+            nullable: true,
+            additionalProperties: true
+        }
+    },
+    required: ['name', 'conditions', 'event'],
+    additionalProperties: false
 };
 
 const validateArchetypeSchema = ajv.compile(archetypeSchema);
