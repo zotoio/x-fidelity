@@ -1,3 +1,21 @@
+# [2.2.0](https://github.com/zotoio/x-fidelity/compare/v2.1.0...v2.2.0) (2024-08-20)
+
+
+### Bug Fixes
+
+* Centralize SHARED_SECRET check in sendTelemetry function ([2a99183](https://github.com/zotoio/x-fidelity/commit/2a99183059e815dc56ba731da9f432bad5049e16))
+* Ensure object to be masked is not mutated in expressLogger ([af111a8](https://github.com/zotoio/x-fidelity/commit/af111a8eb6a9467f84d35db65ed21466097dfc38))
+
+
+### Features
+
+* add shared secret header security to restrict access to the telemetry server using an environment variable, and update the client in the same way ([7935f69](https://github.com/zotoio/x-fidelity/commit/7935f6958bec827b8d4c8d144d4dc8c647948934))
+* Apply shared secret check only to the /telemetry route ([72e7466](https://github.com/zotoio/x-fidelity/commit/72e746623d5058f4b7b36f9f00494d5aad4f9add))
+* centralise masking in one reusable function ([d2f29d5](https://github.com/zotoio/x-fidelity/commit/d2f29d53f65ee76112774a2590559b1538af855e))
+* Mask X-Shared-Secret header in request and response logs ([c6056ce](https://github.com/zotoio/x-fidelity/commit/c6056cecc527119123e8fb2d2f06ea44a9cbe803))
+* partially mask shared secret and avoid logging it in full ([953be35](https://github.com/zotoio/x-fidelity/commit/953be35ab716692439e95121b13e96cbe0347716))
+* **telemetry:** option for sharedSecret for telemetry client and server ([f85b312](https://github.com/zotoio/x-fidelity/commit/f85b312f7773668cd44e1e1799694ac421825a35))
+
 # [2.1.0](https://github.com/zotoio/x-fidelity/compare/v2.0.0...v2.1.0) (2024-08-19)
 
 
