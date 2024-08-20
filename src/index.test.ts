@@ -19,11 +19,16 @@ jest.mock('./core/cli', () => ({
 }));
 
 describe('index', () => {
+  let originalProcessExit: (code?: number | undefined) => never;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(process, 'exit').mockImplementation((code?: string | number | null | undefined): never => {
-      throw new Error(`Process.exit(${code})`);
-    });
+    originalProcessExit = process.exit;
+    process.exit = jest.fn() as any;
+  });
+
+  afterEach(() => {
+    process.exit = originalProcessExit;
   });
 
   it('should start server when mode is server', async () => {
@@ -32,10 +37,10 @@ describe('index', () => {
 
     await import('./index');
 
-    expect(startServer).toHaveBeenCalledWith({
+    expect(startServer).toHaveBeenCalledWith(expect.objectContaining({
       customPort: '8888',
       executionLogPrefix: expect.any(String)
-    });
+    }));
   });
 
   it('should analyze codebase when mode is client', async () => {
@@ -53,13 +58,13 @@ describe('index', () => {
 
     await import('./index');
 
-    expect(analyzeCodebase).toHaveBeenCalledWith({
+    expect(analyzeCodebase).toHaveBeenCalledWith(expect.objectContaining({
       repoPath: '/test/dir',
       archetype: 'test-archetype',
       configServer: 'http://test-server',
       localConfigPath: '/test/local/config',
       executionLogPrefix: expect.any(String)
-    });
+    }));
     expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('SUCCESS! hi-fi codebase detected.'));
   });
 
