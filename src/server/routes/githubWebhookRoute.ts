@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { logger, setLogPrefix } from '../../utils/logger';
 import crypto from 'crypto';
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
+import { URL } from 'url';
 import path from 'path';
 import fs from 'fs';
 import { clearCache } from '../cacheManager';
@@ -62,19 +63,23 @@ async function updateLocalConfig(repoOwner: string, repoName: string, branch: st
         return;
     }
 
-    const baseUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents`;
+    const baseUrl = new URL(`https://api.github.com/repos/${repoOwner}/${repoName}/contents`);
     const headers = {
         'Accept': 'application/vnd.github.v3+json',
         'User-Agent': 'XFidelity-Webhook'
     };
 
     try {
-        const response = await axios.get(`${baseUrl}?ref=${branch}`, { headers });
+        const response = await axios.get(baseUrl.toString(), { 
+            headers,
+            params: { ref: branch },
+            validateStatus: (status) => status === 200
+        });
         for (const item of response.data) {
             if (item.type === 'file') {
-                await downloadFile(item.download_url, item.path);
+                await downloadFile(new URL(item.download_url), item.path);
             } else if (item.type === 'dir') {
-                await processDirectory(`${baseUrl}/${item.path}`, item.path, branch);
+                await processDirectory(new URL(`${baseUrl}/${item.path}`), item.path, branch);
             }
         }
         logger.info('Local config updated successfully');
@@ -83,19 +88,23 @@ async function updateLocalConfig(repoOwner: string, repoName: string, branch: st
     }
 }
 
-async function processDirectory(url: string, dirPath: string, branch: string) {
+async function processDirectory(url: URL, dirPath: string, branch: string) {
     const headers = {
         'Accept': 'application/vnd.github.v3+json',
         'User-Agent': 'XFidelity-Webhook'
     };
 
     try {
-        const response = await axios.get(`${url}?ref=${branch}`, { headers });
+        const response = await axios.get(url.toString(), { 
+            headers,
+            params: { ref: branch },
+            validateStatus: (status) => status === 200
+        });
         for (const item of response.data) {
             if (item.type === 'file') {
-                await downloadFile(item.download_url, path.join(dirPath, item.name));
+                await downloadFile(new URL(item.download_url), path.join(dirPath, item.name));
             } else if (item.type === 'dir') {
-                await processDirectory(`${url}/${item.name}`, path.join(dirPath, item.name), branch);
+                await processDirectory(new URL(`${url}/${item.name}`), path.join(dirPath, item.name), branch);
             }
         }
     } catch (error) {
@@ -103,13 +112,17 @@ async function processDirectory(url: string, dirPath: string, branch: string) {
     }
 }
 
-async function downloadFile(url: string, filePath: string) {
+async function downloadFile(url: URL, filePath: string) {
     const fullPath = path.join(options.localConfigPath, filePath);
     const dir = path.dirname(fullPath);
 
     try {
         await fs.promises.mkdir(dir, { recursive: true });
-        const response = await axios.get(url, { responseType: 'arraybuffer' });
+        const response = await axios.get(url.toString(), { 
+            responseType: 'arraybuffer',
+            validateStatus: (status) => status === 200,
+            maxRedirects: 5
+        });
         await fs.promises.writeFile(fullPath, response.data);
         logger.info(`File downloaded: ${fullPath}`);
     } catch (error) {
