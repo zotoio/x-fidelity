@@ -167,4 +167,24 @@ export interface TelemetryData {
         shell: string | null;
     };
     startTime: number;
+}export interface LoadRulesParams {
+    archetype: string;
+    ruleNames: string[];
+    configServer?: string;
+    logPrefix?: string;
+    localConfigPath?: string;
 }
+export interface LoadRemoteRuleParams {
+    configServer: string;
+    archetype: string;
+    ruleName: string;
+    logPrefix?: string;
+}
+export interface LoadLocalRuleParams {
+    ruleName: string;
+}
+export interface LoadLocalConfigRuleParams {
+    ruleName: string;
+    localConfigPath: string;
+}
+

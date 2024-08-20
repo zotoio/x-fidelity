@@ -6,7 +6,6 @@ import { collectOpenaiAnalysisFacts } from '../../facts/openaiAnalysisFacts';
 import { loadRules } from '../../rules';
 import { loadOperators } from '../../operators';
 import { loadFacts } from '../../facts';
-import { archetypes } from '../../archetypes';
 import { ConfigManager } from '../../utils/configManager';
 import { sendTelemetry } from '../../utils/telemetry';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
@@ -59,8 +58,19 @@ describe('analyzeCodebase', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
-            archetype: archetypes['node-fullstack'],
-            rules: [],
+            archetype: {
+                name: 'test-archetype',
+                rules: ['rule1'],
+                operators: ['operator1'],
+                facts: ['fact1'],
+                config: {
+                    minimumDependencyVersions: {},
+                    standardStructure: {},
+                    blacklistPatterns: [],
+                    whitelistPatterns: []
+                }
+            },
+            rules: [{ name: 'rule1', conditions: { all: [] }, event: { type: 'test', params: {} } }],
             cliOptions: {}
         });
         // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -106,9 +116,8 @@ describe('analyzeCodebase', () => {
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalledWith(expect.any(Object));
-        expect(loadRules).toHaveBeenCalledWith({ archetype: 'node-fullstack', ruleNames: ['mockRule'], configServer: '', logPrefix: '', localConfigPath: '' });
-        expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
-        expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
+        expect(loadOperators).toHaveBeenCalledWith(['operator1']);
+        expect(loadFacts).toHaveBeenCalledWith(['fact1']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
         expect(results).toEqual({
             XFI_RESULT: expect.objectContaining({
@@ -164,9 +173,8 @@ describe('analyzeCodebase', () => {
 
         expect(collectRepoFileData).toHaveBeenCalledWith('mockRepoPath', expect.any(Object));
         expect(getDependencyVersionFacts).toHaveBeenCalled();
-        expect(loadRules).toHaveBeenCalledWith({ archetype: 'node-fullstack', ruleNames: ['mockRule'], configServer: '', logPrefix: '', localConfigPath: '' });
-        expect(loadOperators).toHaveBeenCalledWith(['mockOperator']);
-        expect(loadFacts).toHaveBeenCalledWith(['mockFact']);
+        expect(loadOperators).toHaveBeenCalledWith(['operator1']);
+        expect(loadFacts).toHaveBeenCalledWith(['fact1']);
         expect(engineRunMock).toHaveBeenCalledTimes(mockFileData.length);
         expect(results).toEqual({
             XFI_RESULT: expect.objectContaining({

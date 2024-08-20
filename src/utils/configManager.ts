@@ -1,19 +1,26 @@
 import axios from "axios";
 import { logger, setLogPrefix } from "./logger";
-import { ArchetypeConfig, RuleConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams } from "../types/typeDefs";
+import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig } from "../types/typeDefs";
 import { archetypes } from "../archetypes";
 import { options } from '../core/cli';
 import fs from 'fs';
 import * as path from 'path';
-import { validateArchetype } from './jsonSchemas';
+import { validateArchetype, validateRule } from './jsonSchemas';
+import { loadRules } from '../rules';
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
 export class ConfigManager {
     private static configs: { [key: string]: ExecutionConfig } = {};
 
-    public static async getLoadedConfigs(): Promise<string[]> {
+    public static getLoadedConfigs(): string[] {
         return Object.keys(ConfigManager.configs);
+    }
+
+    public static clearLoadedConfigs(): void {
+        Object.keys(ConfigManager.configs).forEach(key => {
+            delete ConfigManager.configs[key];
+        });    
     }
 
     public static async getConfig(params: GetConfigParams): Promise<ExecutionConfig> {
@@ -41,12 +48,13 @@ export class ConfigManager {
 
         try {
             if (configServer) {
-                const configUrl = `${configServer}/archetypes/${archetype}`;
+                const configUrl = new URL(`/archetypes/${archetype}`, configServer).toString();
                 logger.debug(`Fetching remote archetype config from: ${configUrl}`);
                 const response = await axios.get(configUrl, {
                     headers: {
                         'X-Log-Prefix': logPrefix || ''
-                    }
+                    },
+                    validateStatus: (status) => status === 200
                 });
                 const fetchedConfig = response.data;
                 if (validateArchetype(fetchedConfig)) {
@@ -69,6 +77,25 @@ export class ConfigManager {
                 throw new Error(`No valid configuration found for archetype: ${archetype}`);
             }
 
+            // Load all RuleConfig for the archetype
+            config.rules = await loadRules({
+                archetype,
+                ruleNames: config.archetype.rules,
+                configServer,
+                logPrefix,
+                localConfigPath
+            });
+
+            // Validate each rule
+            config.rules = config.rules?.filter((rule: RuleConfig) => {
+                if (validateRule(rule)) {
+                    return true;
+                } else {
+                    logger.error(`Invalid rule configuration: ${JSON.stringify(rule)}`);
+                    return false;
+                }
+            });
+
             return config;
         } catch (error) {
             if (error instanceof Error) {
@@ -83,7 +110,12 @@ export class ConfigManager {
     private static async loadLocalConfig(params: LoadLocalConfigParams): Promise<ArchetypeConfig> {
         const { archetype, localConfigPath } = params;
         try {
-            const configPath = path.join(localConfigPath, `${archetype}.json`);
+            // Validate and sanitize the archetype input
+            if (!/^[a-zA-Z0-9-_]+$/.test(archetype)) {
+                throw new Error('Invalid archetype name');
+            }
+            const sanitizedArchetype = archetype.replace(/[^a-zA-Z0-9-_]/g, '');
+            const configPath = path.join(localConfigPath, `${sanitizedArchetype}.json`);
             logger.info(`Loading local archetype config from: ${configPath}`);
             const configContent = await fs.promises.readFile(configPath, 'utf8');
             const localConfig = JSON.parse(configContent);
