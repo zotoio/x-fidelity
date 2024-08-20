@@ -10,6 +10,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 import { RuleConfig, StartServerParams } from '../types/typeDefs';
+import { validateUrlInput, validateTelemetryData } from '../utils/inputValidation';
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';
@@ -69,24 +70,11 @@ function setCachedData(key: string, data: any, ttl: number = DEFAULT_TTL): void 
 app.use(express.json());
 app.use(expressLogger);
 
-const validateInput = (value: string): boolean => {
-    return /^[a-zA-Z0-9-_]{1,50}$/.test(value);
-}
-
-const validateTelemetryData = (data: any): boolean => {
-    return (
-        typeof data.eventType === 'string' &&
-        typeof data.metadata === 'object' &&
-        typeof data.timestamp === 'string' &&
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(data.timestamp)
-    );
-}
-
 app.get('/archetypes/:archetype', async (req, res) => {
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
-    if (!validateInput(archetype)) {
+    if (!validateUrlInput(archetype)) {
         logger.error(`invalid archetype name: ${archetype}`);
         return res.status(400).json({ error: 'Invalid archetype name' });
     }
@@ -108,7 +96,7 @@ app.get('/archetypes/:archetype', async (req, res) => {
         }
 
         setCachedData(cacheKey, archetypeConfig);
-        logger.info(`serving archetype ${archetype}`);
+        logger.info(`serving fresh archetype ${archetype}`);
         res.json(archetypeConfig);
     } catch (error) {
         logger.error(`error fetching archetype ${archetype}: ${error}`);
@@ -120,12 +108,12 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
-    if (!validateInput(archetype)) {
+    if (!validateUrlInput(archetype)) {
         logger.error(`invalid archetype name: ${archetype}`);
         return res.status(400).json({ error: 'invalid archetype' });
     }
     if (ruleListCache[archetype] && ruleListCache[archetype].expiry > Date.now()) {
-        logger.debug(`serving cached rule list for archetype: ${archetype}`);
+        logger.info(`serving cached rule list for archetype: ${archetype}`);
         return res.json(ruleListCache[archetype].data);
     }
     const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
@@ -136,6 +124,7 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
             data: rules as RuleProperties[],
             expiry: Date.now() + DEFAULT_TTL
         };
+        logger.info(`serving fresh rule list for archetype: ${archetype}`);
         res.json(rules);
     } else {
         logger.error(`archetype ${archetype} not found or has no rules`);
@@ -148,14 +137,14 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
     const rule = req.params.rule;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
-    if (!validateInput(archetype) || !validateInput(rule)) {
+    if (!validateUrlInput(archetype) || !validateUrlInput(rule)) {
         logger.error(`invalid archetype or rule name: ${archetype}, ${rule}`);
         return res.status(400).json({ error: 'invalid archetype or rule name' });
     }
     const cacheKey = `rule:${archetype}:${rule}`;
     const cachedData = getCachedData(cacheKey);
     if (cachedData) {
-        logger.debug(`serving cached rule ${rule} for archetype ${archetype}`);
+        logger.info(`serving cached rule ${rule} for archetype ${archetype}`);
         return res.json(cachedData);
     }
 
@@ -167,7 +156,7 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
 
             if (ruleConf && validateRule(ruleConf)) {
                 setCachedData(cacheKey, ruleConf);
-                logger.info(`serving rule ${req.params.rule} for archetype ${req.params.archetype}`);
+                logger.info(`serving fresh rule ${req.params.rule} for archetype ${req.params.archetype}`);
                 res.json(ruleConf);
             } else {
                 logger.error(`invalid rule configuration for ${rule}`);
@@ -200,8 +189,13 @@ app.post('/clearcache', checkSharedSecret, (req, res) => {
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
     logger.info('Clearing cache');
-    cache = {};
-    ruleListCache = {};
+    ConfigManager.clearLoadedConfigs();
+    Object.keys(cache).forEach((key) => {
+        delete cache[key];
+    });
+    Object.keys(ruleListCache).forEach((key) => {
+        delete cache[key];
+    });
     res.status(200).json({ message: 'Cache cleared successfully' });
 });
 
