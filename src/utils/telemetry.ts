@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { axiosClient } from './axiosClient';
 import { logger } from './logger';
 import { options } from "../core/cli";
 import { TelemetryEvent } from '../types/typeDefs';
@@ -12,7 +12,7 @@ export async function sendTelemetry(event: TelemetryEvent, logPrefix: string): P
         return;
     }
     try {
-        await axios.post(TELEMETRY_ENDPOINT, event, {
+        await axiosClient.post(TELEMETRY_ENDPOINT, event, {
             timeout: 5000, // 5 seconds timeout
             headers: {
                 'Content-Type': 'application/json',

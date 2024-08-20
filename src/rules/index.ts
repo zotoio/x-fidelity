@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
-import axios from 'axios';
+import { axiosClient } from '../utils/axiosClient';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { validateRule } from '../utils/jsonSchemas';
 import { LoadLocalConfigRuleParams, LoadLocalRuleParams, LoadRemoteRuleParams, LoadRulesParams, RuleConfig } from '../types/typeDefs';
@@ -42,7 +42,7 @@ async function loadRemoteRule(params: LoadRemoteRuleParams): Promise<RuleConfig 
     try {
         const url = `${configServer}/archetypes/${archetype}/rules/${ruleName}`;
         logger.info(`fetching remote rule ${url}`);
-        const response = await axios.get(url, {
+        const response = await axiosClient.get(url, {
             headers: {
                 'X-Log-Prefix': logPrefix || ''
             }

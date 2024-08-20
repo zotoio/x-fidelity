@@ -1,4 +1,4 @@
-import axios from "axios";
+import { axiosClient } from "./axiosClient";
 import { logger, setLogPrefix } from "./logger";
 import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig } from "../types/typeDefs";
 import { archetypes } from "../archetypes";
@@ -50,7 +50,7 @@ export class ConfigManager {
             if (configServer) {
                 const configUrl = new URL(`/archetypes/${archetype}`, configServer).toString();
                 logger.debug(`Fetching remote archetype config from: ${configUrl}`);
-                const response = await axios.get(configUrl, {
+                const response = await axiosClient.get(configUrl, {
                     headers: {
                         'X-Log-Prefix': logPrefix || ''
                     },
