@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger, resetLogPrefix, setLogPrefix } from '../utils/logger';
 import json from 'prettyjson';
-
+import { maskSensitiveData } from '../utils/maskSensitiveData';
 
 // Middleware to log request and response details
 export const expressLogger = (req: Request, res: Response, next: NextFunction) => {
@@ -15,14 +15,24 @@ export const expressLogger = (req: Request, res: Response, next: NextFunction) =
     }
     const { method, url, headers, body: reqBody } = req;
 
+    // Mask sensitive data before logging
+    const maskedReq = maskSensitiveData({ method, url, headers, body: reqBody });
+
     // Log request details
-    logger.info( json.render({request: { method, url, headers, body: reqBody }}, { keysColor: 'cyan', stringColor: 'white', defaultIndentation: 2}) );
+    logger.info( json.render({request: maskedReq}, { keysColor: 'cyan', stringColor: 'white', defaultIndentation: 2}) );
     // Capture the original send function
     const originalSend = res.send;
 
     res.send = function (body?: any) {
+        // Mask sensitive data before logging
+        const maskedRes = maskSensitiveData({
+            headers: res.getHeaders(),
+            statusCode: res.statusCode,
+            body: body
+        });
+
         // Log response details
-        logger.info( json.render({response: {  headers: res.getHeaders(), statusCode: res.statusCode, body: body }}, { keysColor: 'cyan', stringColor: 'white', defaultIndentation: 2}) );
+        logger.info( json.render({response: maskedRes}, { keysColor: 'cyan', stringColor: 'white', defaultIndentation: 2}) );
 
         // Call the original send function
         return originalSend.call(this, body)

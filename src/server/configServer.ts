@@ -12,6 +12,10 @@ import rateLimit from 'express-rate-limit';
 import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 import { StartServerParams } from '../types/typeDefs';
 
+const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
+const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';
+logger.info(`Shared secret is ${maskedSecret}`);
+
 const app = express();
 app.use(helmet());
 
@@ -25,6 +29,16 @@ const limiter = rateLimit({
 app.use(limiter);
 
 const port = options.port || process.env.XFI_LISTEN_PORT || 8888;
+
+// Middleware to check for shared secret
+const checkSharedSecret = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const clientSecret = req.headers['x-shared-secret'];
+    if (SHARED_SECRET && clientSecret !== SHARED_SECRET) {
+        logger.error(`Unauthorized access attempt with incorrect shared secret: ${maskedSecret}`);
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    next();
+};
 
 // Simple in-memory cache
 const cache: { [key: string]: { data: any; expiry: number } } = {};
@@ -170,7 +184,7 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
 
 
 // New route for telemetry
-app.post('/telemetry', (req, res) => {
+app.post('/telemetry', checkSharedSecret, (req, res) => {
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
     if (!validateTelemetryData(req.body)) {
