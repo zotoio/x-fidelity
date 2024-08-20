@@ -15,14 +15,14 @@ jest.mock('../archetypes', () => ({
     }
   }
 }));
-import axios from 'axios';
+import { axiosClient } from './axiosClient';
 import { validateArchetype } from './jsonSchemas';
 import fs from 'fs';
 import { options } from '../core/cli';
 import { logger } from './logger';
 import { archetypes } from '../archetypes';
 
-jest.mock('axios');
+jest.mock('./axiosClient');
 jest.mock('../rules');
 jest.mock('./jsonSchemas', () => ({
   validateArchetype: jest.fn().mockReturnValue(true)
@@ -72,28 +72,28 @@ describe('ConfigManager', () => {
 
     describe('getConfig', () => {
         it('should return the same instance for the same archetype', async () => {
-            (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
             const instance1 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             const instance2 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             expect(instance1).toBe(instance2);
         });
 
         it('should return different instances for different archetypes', async () => {
-            (axios.get as jest.Mock).mockResolvedValueOnce({ data: { ...mockConfig, name: 'node-fullstack' } });
-            (axios.get as jest.Mock).mockResolvedValueOnce({ data: { ...mockConfig, name: 'java-microservice' } });
+            (axiosClient.get as jest.Mock).mockResolvedValueOnce({ data: { ...mockConfig, name: 'node-fullstack' } });
+            (axiosClient.get as jest.Mock).mockResolvedValueOnce({ data: { ...mockConfig, name: 'java-microservice' } });
             const instance1 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             const instance2 = await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(instance1).not.toBe(instance2);
         });
 
         it('should initialize with default archetype when not specified', async () => {
-            (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
             const config = await ConfigManager.getConfig({});
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
         });
 
         it('should initialize with specified archetype', async () => {
-            (axios.get as jest.Mock).mockResolvedValue({ data: { ...mockConfig, name: 'java-microservice' } });
+            (axiosClient.get as jest.Mock).mockResolvedValue({ data: { ...mockConfig, name: 'java-microservice' } });
             const config = await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(config.archetype.name).toBe('java-microservice');
         });
@@ -101,15 +101,15 @@ describe('ConfigManager', () => {
 
     describe('initialize', () => {
         it('should fetch remote config when configServer is provided', async () => {
-            (axios.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
             const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
-            expect(axios.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype', expect.any(Object));
+            expect(axiosClient.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype', expect.any(Object));
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
             expect(validateArchetype).toHaveBeenCalledWith(expect.objectContaining(mockConfig));
         });
 
         it('should throw an error when unable to fetch from configServer', async () => {
-            (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
+            (axiosClient.get as jest.Mock).mockRejectedValue(new Error('Network error'));
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Network error');
             expect(logger.error).toHaveBeenCalled();
         });
