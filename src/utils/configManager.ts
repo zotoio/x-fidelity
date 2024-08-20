@@ -48,12 +48,13 @@ export class ConfigManager {
 
         try {
             if (configServer) {
-                const configUrl = `${configServer}/archetypes/${archetype}`;
+                const configUrl = new URL(`/archetypes/${archetype}`, configServer).toString();
                 logger.debug(`Fetching remote archetype config from: ${configUrl}`);
                 const response = await axios.get(configUrl, {
                     headers: {
                         'X-Log-Prefix': logPrefix || ''
-                    }
+                    },
+                    validateStatus: (status) => status === 200
                 });
                 const fetchedConfig = response.data;
                 if (validateArchetype(fetchedConfig)) {

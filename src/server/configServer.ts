@@ -50,14 +50,14 @@ const checkSharedSecret = (req: express.Request, res: express.Response, next: ex
 app.use(express.json());
 app.use(expressLogger);
 
-app.get('/archetypes/:archetype', archetypeRoute);
-app.get('/archetypes/:archetype/rules', archetypeRulesRoute);
-app.get('/archetypes/:archetype/rules/:rule', archetypeRuleRoute);
-app.post('/telemetry', checkSharedSecret, telemetryRoute);
+app.get('/archetypes/:archetype', validateUrlInput, archetypeRoute);
+app.get('/archetypes/:archetype/rules', validateUrlInput, archetypeRulesRoute);
+app.get('/archetypes/:archetype/rules/:rule', validateUrlInput, archetypeRuleRoute);
+app.post('/telemetry', checkSharedSecret, validateTelemetryData, telemetryRoute);
 app.post('/clearcache', checkSharedSecret, clearCacheRoute);
 app.get('/viewcache', checkSharedSecret, viewCacheRoute);
 
-app.post('/github-webhook', githubWebhookRoute);
+app.post('/github-webhook', validateGithubWebhook, githubWebhookRoute);
 
 export function startServer({ customPort, executionLogPrefix }: StartServerParams): any {
     const serverPort = customPort ? parseInt(customPort) : port;
