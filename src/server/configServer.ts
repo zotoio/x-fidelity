@@ -202,8 +202,9 @@ export function startServer({ customPort, executionLogPrefix }: StartServerParam
         // Set up file watcher for local config path
         if (options.localConfigPath) {
             const watcher = chokidar.watch(options.localConfigPath, {
-                ignored: /(^|[\/\\])\../, // ignore dotfiles
-                persistent: true
+                ignored: /(^|[/\\])\../, // ignore dotfiles
+                persistent: true,
+                depth: 1
             });
 
             watcher
@@ -225,8 +226,9 @@ export function startServer({ customPort, executionLogPrefix }: StartServerParam
         // Set up file watcher for local config path
         if (options.localConfigPath) {
             const watcher = chokidar.watch(options.localConfigPath, {
-                ignored: /(^|[\/\\])\../, // ignore dotfiles
-                persistent: true
+                ignored: /(^|[/\\])\../, // ignore dotfiles
+                persistent: true,
+                depth: 1
             });
 
             watcher

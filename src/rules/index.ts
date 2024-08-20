@@ -1,41 +1,17 @@
 import { logger } from '../utils/logger';
-import { RuleProperties } from 'json-rules-engine';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { validateRule } from '../utils/jsonSchemas';
+import { LoadLocalConfigRuleParams, LoadLocalRuleParams, LoadRemoteRuleParams, LoadRulesParams, RuleConfig } from '../types/typeDefs';
 
-interface LoadRulesParams {
-    archetype: string;
-    ruleNames: string[];
-    configServer?: string;
-    logPrefix?: string;
-    localConfigPath?: string;
-}
-
-interface LoadRemoteRuleParams {
-    configServer: string;
-    archetype: string;
-    ruleName: string;
-    logPrefix?: string;
-}
-
-interface LoadLocalRuleParams {
-    ruleName: string;
-}
-
-interface LoadLocalConfigRuleParams {
-    ruleName: string;
-    localConfigPath: string;
-}
-
-async function loadRules(params: LoadRulesParams): Promise<RuleProperties[]> {
+async function loadRules(params: LoadRulesParams): Promise<RuleConfig[]> {
     const { archetype, ruleNames, configServer, logPrefix, localConfigPath } = params;
-    const ruleProperties: RuleProperties[] = [];
+    const ruleProperties: RuleConfig[] = [];
 
     for (const ruleName of ruleNames) {
-        let rule: RuleProperties | null;
+        let rule: RuleConfig | null;
 
         if (configServer) {
             rule = await loadRemoteRule({ configServer, archetype, ruleName, logPrefix });
@@ -61,7 +37,7 @@ async function loadRules(params: LoadRulesParams): Promise<RuleProperties[]> {
     return ruleProperties;
 }
 
-async function loadRemoteRule(params: LoadRemoteRuleParams): Promise<RuleProperties | null> {
+async function loadRemoteRule(params: LoadRemoteRuleParams): Promise<RuleConfig | null> {
     const { configServer, archetype, ruleName, logPrefix } = params;
     try {
         const url = `${configServer}/archetypes/${archetype}/rules/${ruleName}`;
@@ -81,7 +57,7 @@ async function loadRemoteRule(params: LoadRemoteRuleParams): Promise<RulePropert
     }
 }
 
-async function loadDefaultRule(params: LoadLocalRuleParams): Promise<RuleProperties | null> {
+async function loadDefaultRule(params: LoadLocalRuleParams): Promise<RuleConfig | null> {
     const { ruleName } = params;
     const fileName = `${ruleName}-rule.json`;
     const filePath = path.join(__dirname, fileName);
@@ -101,7 +77,7 @@ async function loadDefaultRule(params: LoadLocalRuleParams): Promise<RulePropert
     return result;
 }
 
-async function loadLocalConfigRule(params: LoadLocalConfigRuleParams): Promise<RuleProperties | null> {
+async function loadLocalConfigRule(params: LoadLocalConfigRuleParams): Promise<RuleConfig | null> {
     const { ruleName, localConfigPath } = params;
     const fileName = `${ruleName}-rule.json`;
     const filePath = path.join(localConfigPath, 'rules', fileName);

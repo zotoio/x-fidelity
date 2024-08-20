@@ -1,7 +1,6 @@
 import Ajv, { JSONSchemaType } from 'ajv';
 import { logger } from './logger';
-import { ArchetypeConfig } from '../types/typeDefs';
-import { RuleProperties } from 'json-rules-engine';
+import { ArchetypeConfig, RuleConfig } from '../types/typeDefs';
 
 const ajv = new Ajv();
 
@@ -44,59 +43,31 @@ const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
     additionalProperties: false
 };
 
-const ruleSchema: JSONSchemaType<RuleProperties> = {
+const ruleSchema: JSONSchemaType<RuleConfig> = {
     type: 'object',
     properties: {
         name: { type: 'string' },
         conditions: {
             type: 'object',
             properties: {
-                all: { 
-                    type: 'array', 
-                    items: { 
-                        type: 'object',
-                        additionalProperties: true
-                    }, 
-                    nullable: true 
-                },
-                any: { 
-                    type: 'array', 
-                    items: { 
-                        type: 'object',
-                        additionalProperties: true
-                    }, 
-                    nullable: true 
-                }
+                all: { type: 'array', items: { type: 'object' }, nullable: true },
+                any: { type: 'array', items: { type: 'object' }, nullable: true }
             },
-            required: [],
-            additionalProperties: false
+            oneOf: [
+                { required: ['all'] },
+                { required: ['any'] }
+            ]
         },
         event: {
             type: 'object',
             properties: {
                 type: { type: 'string' },
-                params: { 
-                    type: 'object',
-                    additionalProperties: true
-                }
+                params: { type: 'object' }
             },
-            required: ['type', 'params'],
-            additionalProperties: false
-        },
-        priority: { type: 'number', nullable: true },
-        onSuccess: { 
-            type: 'object', 
-            nullable: true,
-            additionalProperties: true
-        },
-        onFailure: { 
-            type: 'object', 
-            nullable: true,
-            additionalProperties: true
+            required: ['type', 'params']
         }
     },
-    required: ['conditions', 'event'],
-    additionalProperties: false
+    required: ['name', 'conditions', 'event']
 };
 
 const validateArchetypeSchema = ajv.compile(archetypeSchema);

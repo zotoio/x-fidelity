@@ -30,3 +30,17 @@ export function validateInput(input: string | undefined): boolean {
 
     return true;
 }
+
+export function validateUrlInput(input: string): boolean {
+    return /^[a-zA-Z0-9-_]{1,50}$/.test(input)
+}    
+
+export const validateTelemetryData = (data: any): boolean => {
+    return (
+        typeof data.eventType === 'string' &&
+        typeof data.metadata === 'object' &&
+        typeof data.timestamp === 'string' &&
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(data.timestamp)
+    );
+};
+

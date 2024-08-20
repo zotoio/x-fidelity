@@ -1,15 +1,14 @@
-import { Engine, Event } from 'json-rules-engine';
+import { Engine, Event, RuleProperties } from 'json-rules-engine';
 import { logger } from '../../utils/logger';
 import { loadOperators } from '../../operators';
 import { loadFacts } from '../../facts';
-import { loadRules } from '../../rules';
-import { options } from '../../core/cli';
 import { sendTelemetry } from '../../utils/telemetry';
 
 import { SetupEngineParams } from '../../types/typeDefs';
+import { ConfigManager } from '../../utils/configManager';
 
 export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
-    const { archetypeConfig, archetype, executionLogPrefix, localConfigPath } = params;
+    const { archetypeConfig, archetype, executionLogPrefix } = params;
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
     // Add operators to engine
@@ -24,13 +23,14 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
 
     // Add rules to engine
     logger.info(`=== loading json rules..`);
-    const rules = await loadRules({ archetype, ruleNames: archetypeConfig.rules, configServer: options.configServer, logPrefix: executionLogPrefix, localConfigPath });
-    logger.debug(rules);
+    const config = await ConfigManager.getConfig({ archetype, logPrefix: executionLogPrefix });
+        
+    logger.debug(config.rules);
 
-    rules.forEach((rule) => {
+    config.rules.forEach((rule) => {
         try {
             logger.info(`adding rule: ${rule?.name}`);
-            engine.addRule(rule);
+            engine.addRule(rule as RuleProperties);
         } catch (e: any) {
             console.error(`Error loading rule: ${rule?.name}`);
             logger.error(e.message);
@@ -39,7 +39,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
 
     engine.on('success', async ({ type, params }: Event) => {
         if (type === 'warning') {
-            logger.warn(`warning detected: ${JSON.stringify(params)}}`);
+            logger.warn(`warning detected: ${JSON.stringify(params)}`);
             await sendTelemetry({
                 eventType: 'warning',
                 metadata: {
@@ -51,7 +51,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
             }, executionLogPrefix);
         }
         if (type === 'fatality') {
-            logger.error(`fatality detected: ${JSON.stringify(params)}}`);
+            logger.error(`fatality detected: ${JSON.stringify(params)}`);
             await sendTelemetry({
                 eventType: 'fatality',
                 metadata: {

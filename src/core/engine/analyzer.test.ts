@@ -71,7 +71,7 @@ describe('analyzeCodebase', () => {
                     whitelistPatterns: []
                 }
             },
-            rules: [],
+            rules: [{ name: 'rule1', conditions: { all: [] }, event: { type: 'test', params: {} } }],
             cliOptions: {}
         });
         // eslint-disable-next-line @typescript-eslint/no-empty-function
