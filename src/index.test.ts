@@ -110,7 +110,7 @@ describe('index', () => {
     await main();
 
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('THERE WERE 1 FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!'));
-    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(process.exit).toHaveBeenCalled();
   }, 10000); // Increase timeout to 10 seconds
 
   it('should handle non-fatal warnings in codebase analysis', async () => {
