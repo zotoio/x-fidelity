@@ -98,7 +98,7 @@ describe('setupEngine', () => {
         await setupEngine(mockParams);
 
         expect(mockAddRule).toHaveBeenCalledTimes(2);
-        expect(logger.error).toHaveBeenCalledWith('Error loading rule: rule1');
+        expect(logger.error).toHaveBeenCalledWith('Rule loading error');
     });
 
     it('should set up event listeners for success events', async () => {
