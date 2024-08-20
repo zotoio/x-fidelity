@@ -1,7 +1,6 @@
 import express from 'express';
 import https from 'https';
 import fs from 'fs';
-import { loadRules } from '../rules';
 import { RuleProperties } from 'json-rules-engine';
 import { logger, setLogPrefix } from '../utils/logger';
 import { expressLogger } from './expressLogger'
@@ -10,13 +9,15 @@ import { ConfigManager } from '../utils/configManager';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { validateArchetype, validateRule } from '../utils/jsonSchemas';
-import { StartServerParams } from '../types/typeDefs';
+import { RuleConfig, StartServerParams } from '../types/typeDefs';
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';
 logger.info(`Shared secret is ${maskedSecret}`);
 
 const app = express();
+
+// Add security headers
 app.use(helmet());
 
 // Create a rate limiter
@@ -130,9 +131,9 @@ app.get('/archetypes/:archetype/rules', async (req, res) => {
     const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
     const archetypeConfig = config.archetype;
     if (archetypeConfig && archetypeConfig.rules) {
-        const rules = await loadRules({ archetype, ruleNames: archetypeConfig.rules, configServer: options.configServer, logPrefix: requestLogPrefix, localConfigPath: options.localConfigPath });
+        const rules = config.rules;
         ruleListCache[archetype] = {
-            data: rules,
+            data: rules as RuleProperties[],
             expiry: Date.now() + DEFAULT_TTL
         };
         res.json(rules);
@@ -160,15 +161,14 @@ app.get('/archetypes/:archetype/rules/:rule', async (req, res) => {
 
     try {
         const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
-        const archetypeConfig = config.archetype;
-        if (archetypeConfig && archetypeConfig.rules && archetypeConfig.rules.includes(rule)) {
-            const rules = await loadRules({ archetype, ruleNames: [rule], configServer: options.configServer, logPrefix: requestLogPrefix, localConfigPath: options.localConfigPath });
-            const ruleJson = rules[0]; // We're only loading one rule, so it's the first element
+        const ruleConfigs: RuleConfig[] = config.rules;
+        if (ruleConfigs.length > 0 && config.archetype.rules.includes(rule)) {
+            const ruleConf = ruleConfigs.find((r) => r.name === rule);
 
-            if (ruleJson && validateRule(ruleJson)) {
-                setCachedData(cacheKey, ruleJson);
+            if (ruleConf && validateRule(ruleConf)) {
+                setCachedData(cacheKey, ruleConf);
                 logger.info(`serving rule ${req.params.rule} for archetype ${req.params.archetype}`);
-                res.json(ruleJson);
+                res.json(ruleConf);
             } else {
                 logger.error(`invalid rule configuration for ${rule}`);
                 res.status(500).json({ error: 'invalid rule configuration' });
