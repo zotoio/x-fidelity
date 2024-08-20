@@ -1,3 +1,49 @@
+# [2.3.0](https://github.com/zotoio/x-fidelity/compare/v2.2.0...v2.3.0) (2024-08-20)
+
+
+### Bug Fixes
+
+* Add clearCache import and ConfigManager import to configServer.ts ([4212096](https://github.com/zotoio/x-fidelity/commit/4212096ea2459e4c55a7c6b396755d72f440ecb6))
+* address SSRF risks in `githubWebhookRoute` ([9b6d64a](https://github.com/zotoio/x-fidelity/commit/9b6d64acf7e49604815b606292890a4b50a11ab8))
+* Clear rule list cache correctly ([3cb17c7](https://github.com/zotoio/x-fidelity/commit/3cb17c7e54e9c8be19b03405a3b13eeaf21bf16c))
+* import missing middleware functions ([fd00a4f](https://github.com/zotoio/x-fidelity/commit/fd00a4f9b4b2dac3ef41782f517186a07ce1c53c))
+* Improve security and mitigate potential SSRF risks in configManager and configServer ([f87ccab](https://github.com/zotoio/x-fidelity/commit/f87ccab24c465d374ef191973d4f3f500ebcca00))
+* move the github webhook route and related update code to separate route file ([4deb57e](https://github.com/zotoio/x-fidelity/commit/4deb57e57f4b95cda757aaa84e8c3f89485e24cd))
+* Properly handle asynchronous operations in configServer.test.ts ([2de6174](https://github.com/zotoio/x-fidelity/commit/2de6174330e518a49c0530455f9bfd4118f648d2))
+* Refactor ConfigManager class ([7f1c2fe](https://github.com/zotoio/x-fidelity/commit/7f1c2fe2e895684145c843615876e3118be095a9))
+* Update configServer to use RuleConfig from ConfigManager ([100c0b3](https://github.com/zotoio/x-fidelity/commit/100c0b301423ca111aa8e452073d3c190a317fbc))
+* Update engineSetup.test.ts to use ConfigManager and setLogPrefix ([c36c64d](https://github.com/zotoio/x-fidelity/commit/c36c64de689a952a500a360dffe8e57605d2dbac))
+* Update error message and fix warning detection test ([9f37bf5](https://github.com/zotoio/x-fidelity/commit/9f37bf502407404ddad355a5ac7d4d8710153b80))
+* Update mock configuration in engineSetup.test.ts ([fd3d7db](https://github.com/zotoio/x-fidelity/commit/fd3d7dbaab3ae51b5c6cbc6d0970f3bf2b2db32c))
+* Update mockParams object to include archetypeConfig property ([b0c9628](https://github.com/zotoio/x-fidelity/commit/b0c9628050643fbc508a087f2387144961a74264))
+* Update rule schema definition ([ed5d87a](https://github.com/zotoio/x-fidelity/commit/ed5d87a3579cd2f6d7eb414207a3cfb9bd571d70))
+* Update ruleSchema to match RuleProperties type ([0f09992](https://github.com/zotoio/x-fidelity/commit/0f099925b14d32d044e5c8fb3583cfec4bb39ae7))
+* Update test configuration for analyzer ([f0b139d](https://github.com/zotoio/x-fidelity/commit/f0b139d7b208553d131d682e19a7b0ccebd5febf))
+* Update test expectation for loadFacts ([ee04ee0](https://github.com/zotoio/x-fidelity/commit/ee04ee0c38883e5c073e6360fe6febed45e42cc6))
+* Update test expectations for loadFacts ([4c57421](https://github.com/zotoio/x-fidelity/commit/4c57421de624622404e6232f450057f200781a2b))
+* Validate and sanitize archetype input in configManager ([3a92119](https://github.com/zotoio/x-fidelity/commit/3a921195beb1ac0da0421aafb443adbf77d83eb2))
+
+
+### Features
+
+* add clearcache route ([89e9633](https://github.com/zotoio/x-fidelity/commit/89e96333ae1bb36b4673c09ddc8b69f6b1ed9740))
+* Add file watcher for local config path ([43da2f3](https://github.com/zotoio/x-fidelity/commit/43da2f3b84f2c852426813068487702c4745d549))
+* Add GitHub webhook route ([cab04ae](https://github.com/zotoio/x-fidelity/commit/cab04ae5c7fbba954e9b85c8182ec3595215a8f9))
+* Add GitHub webhook route to handle archetype or rule config updates ([5af3d63](https://github.com/zotoio/x-fidelity/commit/5af3d63d4d9ef6f3f48a5be4001d3f28f1522d6c))
+* Add high-value unit tests for utility functions ([f90d5e2](https://github.com/zotoio/x-fidelity/commit/f90d5e218cc8c5743515744fc9584801c3003398))
+* Add input validation for URL parameters and telemetry data ([77bdfaa](https://github.com/zotoio/x-fidelity/commit/77bdfaa4e35c34e62c341fca6f87db46726db993))
+* Add support for additional properties in rule schema ([98826e5](https://github.com/zotoio/x-fidelity/commit/98826e5edad1a443d6299a1ad3b970517c384783))
+* add viewcache route ([1fa105c](https://github.com/zotoio/x-fidelity/commit/1fa105c6c29ef05b8eb5312c638785dd5d56af07))
+* Create comprehensive unit test file for engineSetup.ts ([50556ce](https://github.com/zotoio/x-fidelity/commit/50556ce257cb579ef856b74a012b986b81490f2b))
+* Implement GitHub webhook to update local config ([351fbf0](https://github.com/zotoio/x-fidelity/commit/351fbf022100f8e9acc3734b291afdac9057e386))
+* Implement server routes and middleware ([3de18a6](https://github.com/zotoio/x-fidelity/commit/3de18a6cab08a26ecd51f7dc9148da5fee93aeba))
+* load all RuleConfig for a given archetype into the ExecutionConfig ([a122c52](https://github.com/zotoio/x-fidelity/commit/a122c52986adeadeec9085b5c94bfd5e142e80d8))
+* move the configServer features related to caching into a new file ([95a9908](https://github.com/zotoio/x-fidelity/commit/95a9908c97878b062337e100b37ae1d4919b53e5))
+* **rules:** github hook to refresh config ([2485fbe](https://github.com/zotoio/x-fidelity/commit/2485fbe36a9f5102fe815209e0961f604b0e6f30))
+* **rules:** optimise loading of rules, and filesystem watcher for server ([6e6c5ac](https://github.com/zotoio/x-fidelity/commit/6e6c5ac0a784ab76b9d3ec476de580225932b443))
+* update configserver to use new route files ([eda8240](https://github.com/zotoio/x-fidelity/commit/eda8240a09073612f060d65494d4973b1b170c94))
+* Update rule schema to improve flexibility and compatibility ([989bdf6](https://github.com/zotoio/x-fidelity/commit/989bdf64ead3148a366c046f6c0e883d6b1b1109))
+
 # [2.2.0](https://github.com/zotoio/x-fidelity/compare/v2.1.0...v2.2.0) (2024-08-20)
 
 
