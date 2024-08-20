@@ -5,7 +5,8 @@ import { archetypes } from "../archetypes";
 import { options } from '../core/cli';
 import fs from 'fs';
 import * as path from 'path';
-import { validateArchetype } from './jsonSchemas';
+import { validateArchetype, validateRule } from './jsonSchemas';
+import { loadRules } from '../rules';
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
@@ -68,6 +69,25 @@ export class ConfigManager {
                 logger.error(`Archetype object: ${JSON.stringify(config.archetype)}`);
                 throw new Error(`No valid configuration found for archetype: ${archetype}`);
             }
+
+            // Load all RuleConfig for the archetype
+            config.rules = await loadRules({
+                archetype,
+                ruleNames: config.archetype.rules,
+                configServer,
+                logPrefix,
+                localConfigPath
+            });
+
+            // Validate each rule
+            config.rules = config.rules.filter(rule => {
+                if (validateRule(rule)) {
+                    return true;
+                } else {
+                    logger.error(`Invalid rule configuration: ${rule.name}`);
+                    return false;
+                }
+            });
 
             return config;
         } catch (error) {
