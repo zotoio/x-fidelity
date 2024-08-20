@@ -68,8 +68,8 @@ const ruleSchema: JSONSchemaType<RuleProperties> = {
                     nullable: true 
                 }
             },
-            additionalProperties: false,
-            minProperties: 1,
+            required: [],
+            additionalProperties: false
         },
         event: {
             type: 'object',
@@ -95,8 +95,8 @@ const ruleSchema: JSONSchemaType<RuleProperties> = {
             additionalProperties: true
         }
     },
-    required: ['name', 'conditions', 'event'],
-    additionalProperties: true
+    required: ['conditions', 'event'],
+    additionalProperties: false
 };
 
 const validateArchetypeSchema = ajv.compile(archetypeSchema);
