@@ -17,6 +17,8 @@ import chokidar from 'chokidar';
 import crypto from 'crypto';
 import path from 'path';
 import axios from 'axios';
+import { clearCache } from './cacheManager';
+import { ConfigManager } from '../utils/configManager';
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';
@@ -48,8 +50,6 @@ const checkSharedSecret = (req: express.Request, res: express.Response, next: ex
     next();
 };
 
-const DEFAULT_TTL = parseInt(options.jsonTTL) * 60 * 1000; // Convert CLI option to milliseconds
-
 app.use(express.json());
 app.use(expressLogger);
 
@@ -61,7 +61,7 @@ app.post('/clearcache', checkSharedSecret, clearCacheRoute);
 app.get('/viewcache', checkSharedSecret, viewCacheRoute);
 
 // GitHub webhook route
-app.post('/github-webhook', (req, res) => {
+app.post('/github-webhook', async (req, res) => {
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
 
