@@ -195,6 +195,16 @@ app.post('/telemetry', checkSharedSecret, (req, res) => {
     res.status(200).json({ message: 'telemetry data received successfully' });
 });
 
+// New route to clear cache
+app.post('/clearcache', checkSharedSecret, (req, res) => {
+    const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
+    setLogPrefix(requestLogPrefix);
+    logger.info('Clearing cache');
+    cache = {};
+    ruleListCache = {};
+    res.status(200).json({ message: 'Cache cleared successfully' });
+});
+
 export function startServer({ customPort, executionLogPrefix }: StartServerParams): any {
     const serverPort = customPort ? parseInt(customPort) : port;
     executionLogPrefix && setLogPrefix(executionLogPrefix);
