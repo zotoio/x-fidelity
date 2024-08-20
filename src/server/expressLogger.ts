@@ -1,15 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger, resetLogPrefix, setLogPrefix } from '../utils/logger';
 import json from 'prettyjson';
-
-// Function to mask sensitive data
-const maskSensitiveData = (obj: any): any => {
-    const maskedObj = JSON.parse(JSON.stringify(obj));
-    if (maskedObj.headers && maskedObj.headers['x-shared-secret']) {
-        maskedObj.headers['x-shared-secret'] = '********';
-    }
-    return maskedObj;
-};
+import { maskSensitiveData } from '../utils/maskSensitiveData';
 
 // Middleware to log request and response details
 export const expressLogger = (req: Request, res: Response, next: NextFunction) => {
