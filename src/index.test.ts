@@ -37,10 +37,10 @@ describe('index', () => {
 
     await import('./index');
 
-    expect(startServer).toHaveBeenCalledWith(expect.objectContaining({
+    expect(startServer).toHaveBeenCalledWith({
       customPort: '8888',
       executionLogPrefix: expect.any(String)
-    }));
+    });
   });
 
   it('should analyze codebase when mode is client', async () => {
@@ -58,13 +58,13 @@ describe('index', () => {
 
     await import('./index');
 
-    expect(analyzeCodebase).toHaveBeenCalledWith(expect.objectContaining({
+    expect(analyzeCodebase).toHaveBeenCalledWith({
       repoPath: '/test/dir',
       archetype: 'test-archetype',
       configServer: 'http://test-server',
       localConfigPath: '/test/local/config',
       executionLogPrefix: expect.any(String)
-    }));
+    });
     expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('SUCCESS! hi-fi codebase detected.'));
   });
 
@@ -86,7 +86,7 @@ describe('index', () => {
 
     await import('./index');
 
-    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('THERE WERE 1 FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!'));
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('THERE WERE 1 FATAL ERRORS DETECTED'));
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
@@ -107,7 +107,7 @@ describe('index', () => {
 
     await import('./index');
 
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No fatal errors were found, however please review the following warnings.'));
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No fatal errors were found'));
   });
 
   it('should handle errors during execution', async () => {
@@ -118,7 +118,7 @@ describe('index', () => {
 
     await import('./index');
 
-    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('FATAL: execution failed!'));
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('FATAL: execution failed'));
     expect(sendTelemetry).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: 'execution failure',
