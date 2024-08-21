@@ -32,7 +32,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
             logger.info(`adding rule: ${rule?.name}`);
             engine.addRule(rule as RuleProperties);
         } catch (e: any) {
-            console.error(`Error loading rule: ${rule?.name}`);
+            logger.error(`Error loading rule: ${rule?.name}`);
             logger.error(e.message);
         }
     });

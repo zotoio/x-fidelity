@@ -23,7 +23,6 @@ const handleError = async (error: Error) => {
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
     logger.error(JSON.stringify(error));
-    return 1; // Return exit code instead of calling process.exit
 };
 
 const outcomeMessage = (message: string) => `\n
@@ -34,7 +33,6 @@ ${message}
 logger.debug(`startup options: ${JSON.stringify(options)}`);
 
 export async function main() {
-    let exitCode = 0;
     try {
         if (options.mode === 'server') {
             await startServer({ customPort: options.port, executionLogPrefix });
@@ -50,28 +48,34 @@ export async function main() {
             // if results are found, there were issues found in the codebase
             if (resultMetadata.XFI_RESULT.totalIssues > 0) {
                 logger.warn(`WARNING: lo-fi attributes detected in codebase. ${resultMetadata.XFI_RESULT.warningCount} are warnings, ${resultMetadata.XFI_RESULT.fatalityCount} are fatal.`);
-                logger.warn(JSON.stringify({ XFI_RESULT: resultMetadata }));
+                logger.warn(JSON.stringify(resultMetadata));
+                logger.warn(`\n${json.render(resultMetadata)}\n\n`);
 
                 if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
                     logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
+                    logger.on('finish', function () {
+                        process.exit(1);
+                    });
                     logger.error(`\n${json.render(resultMetadata.XFI_RESULT.issueDetails)}\n\n`);
-                    exitCode = 1;
+                    logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
+                    logger.end();
                 } else {
                     logger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
                     logger.warn(`\n${json.render(resultMetadata.XFI_RESULT.issueDetails)}\n\n`);
+                    logger.warn(outcomeMessage('No fatal errors were found, however please review the above warnings.'));
+                    
                 }
             } else {
+                logger.info(outcomeMessage('SUCCESS! hi-fi codebase detected.'));
+                logger.info(JSON.stringify(resultMetadata));
+                logger.info(`\n${json.render(resultMetadata)}\n\n`);
                 logger.info(outcomeMessage('SUCCESS! hi-fi codebase detected.'));
             }
         }
     } catch (e: any) {
-        logger.error(outcomeMessage('FATAL: execution failed!'));
-        exitCode = await handleError(e);
+        await handleError(e);
+        
     }
-    if (process.env.NODE_ENV !== 'test') {
-        process.exit(exitCode);
-    }
-    return exitCode;
 }
 
 if (require.main === module) {

@@ -36,6 +36,7 @@ const logger = createLogger({
     transports: [
         new transports.File({ filename: 'x-fidelity.log', level: 'debug', handleExceptions: true }),
         new transports.Console({
+            silent: process.env.NODE_ENV === 'test',
             level: 'info', 
             handleExceptions: true, // Handle exceptions
             format: format.combine(

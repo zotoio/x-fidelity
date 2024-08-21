@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { logger, setLogPrefix } from '../../utils/logger';
 import crypto from 'crypto';
-import axios, { AxiosRequestConfig } from 'axios';
+import axios from 'axios';
 import { URL } from 'url';
 import path from 'path';
 import fs from 'fs';
