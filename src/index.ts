@@ -23,7 +23,7 @@ const handleError = async (error: Error) => {
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
     logger.error(JSON.stringify(error));
-    setTimeout(() => process.exit(1), 1000);
+    process.exit(1);
 };
 
 const outcomeMessage = (message: string) => `\n
