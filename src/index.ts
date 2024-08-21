@@ -23,7 +23,7 @@ const handleError = async (error: Error) => {
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
     logger.error(JSON.stringify(error));
-    process.exit(1);
+    if (process.env.NODE_ENV !== 'test') process.exit(1);
 };
 
 const outcomeMessage = (message: string) => `\n
@@ -53,11 +53,15 @@ export async function main() {
 
                 if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
                     logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
-                    process.exit(1);
+                    logger.error(`\n${json.render(resultMetadata.XFI_RESULT.issueDetails)}\n\n`);
                 } else {
                     logger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
+                    logger.warn(`\n${json.render(resultMetadata.XFI_RESULT.issueDetails)}\n\n`);
                 }
-                console.log(`\n${json.render(resultMetadata.XFI_RESULT.issueDetails)}\n\n`);
+                
+                if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
+                    throw new Error('Fatal errors detected in codebase.');
+                }
             } else {
                 logger.info(outcomeMessage('SUCCESS! hi-fi codebase detected.'));
             }
