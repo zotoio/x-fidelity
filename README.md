@@ -211,6 +211,7 @@ x-fidelity supports the following environment variables:
 - `XFI_LISTEN_PORT`: The port for the config server to listen on (default is 8888).
 - `CERT_PATH`: The path to SSL certificates for HTTPS config server.
 - `NODE_TLS_REJECT_UNAUTHORIZED`: Set to '0' to allow self-signed certificates (use with caution).
+- `XFI_SHARED_SECRET`: Shared secret for securing telemetry and certain server routes.
 
 Example usage:
 
@@ -218,12 +219,97 @@ Example usage:
 export OPENAI_API_KEY=your_api_key_here
 export OPENAI_MODEL=gpt-4
 export XFI_LISTEN_PORT=9999
+export XFI_SHARED_SECRET=your_shared_secret_here
 xfidelity -o true
 ```
 
+## Docker Support
+
+x-fidelity now includes Docker support for easy deployment and configuration.
+
+### Using Docker Compose
+
+1. Ensure you have Docker and Docker Compose installed on your system.
+2. Create a `docker-compose.yml` file with the following content:
+
+   ```yaml
+   services:
+     x-fidelity-server:
+       build: .
+       ports:
+         - 8888:8888
+       volumes:
+         - ./src:/usr/src/app/src
+         - ../xfi-server/xfi-config:/usr/src/app/config
+       environment:
+         - NODE_ENV=production
+         - XFI_LISTEN_PORT=8888
+         - CERT_PATH=/usr/src/app/certs
+   ```
+
+3. Run the following command to start the x-fidelity server:
+
+   ```
+   docker-compose up --build
+   ```
+
+### Using Dockerfile
+
+If you prefer to use the Dockerfile directly:
+
+1. Build the Docker image:
+
+   ```
+   docker build -t x-fidelity .
+   ```
+
+2. Run the container:
+
+   ```
+   docker run -p 8888:8888 -v /path/to/local/config:/usr/src/app/config x-fidelity
+   ```
+
+The Dockerfile includes the following features:
+- Automatic generation of self-signed SSL certificates for HTTPS support
+- Installation of x-fidelity from npm
+- Configuration of environment variables for port and certificate path
+
+## HTTPS/TLS Support
+
+x-fidelity now generates self-signed SSL certificates automatically when running in Docker. This enables HTTPS support out of the box. 
+
+> Note: When testing the server using the self-signed certificate, you may need to set the following environment variable on x-fidelity clients:
+> ```
+> NODE_TLS_REJECT_UNAUTHORIZED=0
+> ```
+> Use this with caution and only in testing environments.
+
 ## Configuration
 
+When using Docker, you can mount your local configuration and source files:
+
+- `/usr/src/app/src`: Mount your local source files here
+- `/usr/src/app/config`: Mount your local x-fidelity configuration files here
+
 x-fidelity uses archetypes to define project-specific configurations. Archetypes are now managed as JSON files, which can be stored locally or on a remote server.
+
+## New Features and Enhancements
+
+- Support for relative and absolute paths in directory and local-config options
+- Implementation of GitHub webhook to update local config
+- New cache routes: clearcache and viewcache
+- JSON schema validation for archetypes and rules
+- Input validation using Joi for URL parameters and telemetry data
+- Helmet middleware for improved security headers
+- Rate limiting on the Express server
+- Refactored ConfigManager with static methods and caching
+- Performance test scripts using Artillery
+- Expanded OpenAI Integration with custom rule creation
+- Shared secret option for telemetry client and server
+- Improved dependency compatibility checks for npm and yarn
+- Enhanced error handling and logging
+
+For more detailed information on these features and how to use them, please refer to the respective sections in this README.
 
 ### Archetype Structure
 
