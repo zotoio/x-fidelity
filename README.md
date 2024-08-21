@@ -200,6 +200,9 @@ xfidelity --mode server --port 9999
 
 # Use local config and rules
 xfidelity -l /path/to/local/config
+
+# Set custom cache TTL for server mode
+xfidelity --mode server --jsonTTL 30
 ```
 
 ### Environment Variables
