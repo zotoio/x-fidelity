@@ -1,3 +1,15 @@
+# [2.5.0](https://github.com/zotoio/x-fidelity/compare/v2.4.0...v2.5.0) (2024-08-21)
+
+
+### Bug Fixes
+
+* Update README.md with new CLI options and environment variables ([04d5172](https://github.com/zotoio/x-fidelity/commit/04d5172c0e9e24a0731f6d009f7495a789f85023))
+
+
+### Features
+
+* Add support for Docker and HTTPS/TLS ([7eeb497](https://github.com/zotoio/x-fidelity/commit/7eeb497b1fd115346c029acde39b220bcc5ea3ec))
+
 # [2.4.0](https://github.com/zotoio/x-fidelity/compare/v2.3.0...v2.4.0) (2024-08-21)
 
 
