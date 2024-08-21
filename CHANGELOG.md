@@ -1,3 +1,33 @@
+# [2.4.0](https://github.com/zotoio/x-fidelity/compare/v2.3.0...v2.4.0) (2024-08-21)
+
+
+### Bug Fixes
+
+* add unit tests for all files except typeDefs ([b1d1fd9](https://github.com/zotoio/x-fidelity/commit/b1d1fd9d069d2bd54712ae0cf96a9e48ebec903e))
+* **deps:** make artillery a peer dependency ([d89361f](https://github.com/zotoio/x-fidelity/commit/d89361fcc24744cfa52df6cbe52b6117b92e46d8))
+* Handle errors during execution ([48a9488](https://github.com/zotoio/x-fidelity/commit/48a94882eff7db64e0f996a6b55d3dde9eca080b))
+* Improve error handling and execution flow in index.ts ([0b8ca73](https://github.com/zotoio/x-fidelity/commit/0b8ca73d3cc4b0b498ab9a8cf93d9d67965243af))
+* Increase timeout for test case to prevent "force exited" issue ([ab3d0b3](https://github.com/zotoio/x-fidelity/commit/ab3d0b30696f6056df8a386b5eb366f4c545dbfa))
+* **logging:** silence in logs and increase unit test coverage ([5017a12](https://github.com/zotoio/x-fidelity/commit/5017a1216c5dedc443d40787aa70ea40814de49c))
+* Mock axiosClient instead of axios in rules/index.test.ts ([40e7410](https://github.com/zotoio/x-fidelity/commit/40e74108b45813244fa3810649d1b681a1e85af5))
+* Pass executionLogPrefix to startServer and analyzeCodebase ([99a6692](https://github.com/zotoio/x-fidelity/commit/99a669232d77a8bfaeca22590efcdc9fd9ecb80a))
+* Prevent unnecessary process exit in test environment ([aab777f](https://github.com/zotoio/x-fidelity/commit/aab777f76f4ab3c98322c93250bbfa5d35f2812a))
+* Remove setTimeout and directly call process.exit(1) in error handling function ([8a7587e](https://github.com/zotoio/x-fidelity/commit/8a7587ea169ff8313d187f4ea71487eb8273623f))
+* resolve TypeScript errors in telemetry utility ([3c68aa1](https://github.com/zotoio/x-fidelity/commit/3c68aa1d4d3b2594dd05fa120233a56ff06d5206))
+* Update import and call of main function in index.test.ts ([70e11b1](https://github.com/zotoio/x-fidelity/commit/70e11b18dfbf272035e96a004b6f7b889644c229))
+* Update import and export in index.test.ts and index.ts ([b15203d](https://github.com/zotoio/x-fidelity/commit/b15203d8aa3b37b211c5a57edd8dd0ea58c9d93f))
+* Update index.test.ts ([b3d1799](https://github.com/zotoio/x-fidelity/commit/b3d1799153de1f502f5b897d268c30999189f1ca))
+* Update process.exit usage in src/index.ts ([ac398c3](https://github.com/zotoio/x-fidelity/commit/ac398c31cd944e2c062db5d7b57254f026a89f8c))
+* Update startServer function call and process exit handling ([7be6c28](https://github.com/zotoio/x-fidelity/commit/7be6c280dda46f49a8c1c45149b93fcadd261ccb))
+* update test expectations ([d24279e](https://github.com/zotoio/x-fidelity/commit/d24279e8520f882260299190b9562831b7c79528))
+* Update test expectations to match actual error messages ([454aea6](https://github.com/zotoio/x-fidelity/commit/454aea6a8cf38cfdd1b9ed31288c119f7f37dbbf))
+* update type of `code` parameter in `mockImplementation` function ([f7aab15](https://github.com/zotoio/x-fidelity/commit/f7aab15c67e155da2fedb29a704633629561964a))
+
+
+### Features
+
+* centralise the axios client usage in one file and implement exponential backoff ([9a6d000](https://github.com/zotoio/x-fidelity/commit/9a6d00051c92cbe498c429503356f445d64d1685))
+
 # [2.3.0](https://github.com/zotoio/x-fidelity/compare/v2.2.0...v2.3.0) (2024-08-20)
 
 
