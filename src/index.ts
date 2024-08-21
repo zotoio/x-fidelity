@@ -23,7 +23,7 @@ const handleError = async (error: Error) => {
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
     logger.error(JSON.stringify(error));
-    if (process.env.NODE_ENV !== 'test') process.exit(1);
+    return 1; // Return exit code instead of calling process.exit
 };
 
 const outcomeMessage = (message: string) => `\n
@@ -34,6 +34,7 @@ ${message}
 logger.debug(`startup options: ${JSON.stringify(options)}`);
 
 export async function main() {
+    let exitCode = 0;
     try {
         if (options.mode === 'server') {
             await startServer({ customPort: options.port, executionLogPrefix });
@@ -54,13 +55,10 @@ export async function main() {
                 if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
                     logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
                     logger.error(`\n${json.render(resultMetadata.XFI_RESULT.issueDetails)}\n\n`);
+                    exitCode = 1;
                 } else {
                     logger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
                     logger.warn(`\n${json.render(resultMetadata.XFI_RESULT.issueDetails)}\n\n`);
-                }
-                
-                if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
-                    throw new Error('Fatal errors detected in codebase.');
                 }
             } else {
                 logger.info(outcomeMessage('SUCCESS! hi-fi codebase detected.'));
@@ -68,10 +66,14 @@ export async function main() {
         }
     } catch (e: any) {
         logger.error(outcomeMessage('FATAL: execution failed!'));
-        await handleError(e);
+        exitCode = await handleError(e);
     }
+    if (process.env.NODE_ENV !== 'test') {
+        process.exit(exitCode);
+    }
+    return exitCode;
 }
 
 if (require.main === module) {
-    main().catch(handleError);
+    main();
 }
