@@ -53,6 +53,14 @@ export interface RunEngineOnFilesParams {
     installedDependencyVersions: any;
     minimumDependencyVersions: any;
     standardStructure: any;
+    repoUrl: string;
+}
+
+export interface Exemption {
+    repoUrl: string;
+    rule: string;
+    expirationDate: string;
+    reason: string;
 }
 
 export interface AnalyzeCodebaseParams {

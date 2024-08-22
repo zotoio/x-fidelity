@@ -20,7 +20,13 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     
     logger.info(`STARTING..`);
 
+    // Load exemptions
+    if (localConfigPath) {
+        await ConfigManager.loadExemptions(localConfigPath);
+    }
+
     const telemetryData = await collectTelemetryData({ repoPath, configServer});
+    const repoUrl = telemetryData.repoUrl;
 
     // Send telemetry for analysis start
     await sendTelemetry({
@@ -76,7 +82,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         fileData,
         installedDependencyVersions,
         minimumDependencyVersions,
-        standardStructure
+        standardStructure,
+        repoUrl
     });
 
     const finishMsg = `\n==========================\nCHECKS COMPLETED..\n==========================`;

@@ -49,13 +49,25 @@ export class ConfigManager {
         return ConfigManager.exemptions;
     }
 
+    public static getExemptionExpirationDate(repoUrl: string, ruleName: string): Date | undefined {
+        const exemption = ConfigManager.exemptions.find(exemption => 
+            exemption.repoUrl === repoUrl &&
+            exemption.rule === ruleName
+        );
+        return exemption ? new Date(exemption.expirationDate) : undefined;
+    }
+
     public static isExempt(repoUrl: string, ruleName: string): boolean {
         const now = new Date();
-        return ConfigManager.exemptions.some(exemption => 
+        const result =  ConfigManager.exemptions.some(exemption => 
             exemption.repoUrl === repoUrl &&
             exemption.rule === ruleName &&
             new Date(exemption.expirationDate) > now
         );
+        if (result) {
+            logger.error(`Exempting rule ${ruleName} for repo ${repoUrl} until ${ConfigManager.getExemptionExpirationDate(repoUrl, ruleName)}`);
+        }
+        return result;
     }
 
     private static async initialize(params: InitializeParams): Promise<ExecutionConfig> {
