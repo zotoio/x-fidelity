@@ -14,6 +14,7 @@ import { telemetryRoute } from './routes/telemetryRoute';
 import { clearCacheRoute } from './routes/clearCacheRoute';
 import { viewCacheRoute } from './routes/viewCacheRoute';
 import { githubWebhookRoute } from './routes/githubWebhookRoute';
+import { exemptionsRoute } from './routes/exemptionsRoute';
 import { validateUrlInput } from './middleware/validateUrlInput';
 import { validateTelemetryData } from './middleware/validateTelemetryData';
 import { validateGithubWebhook } from './middleware/validateGithubWebhook';
@@ -59,6 +60,7 @@ app.get('/archetypes/:archetype/rules/:rule', validateUrlInput, archetypeRuleRou
 app.post('/telemetry', checkSharedSecret, validateTelemetryData, telemetryRoute);
 app.post('/clearcache', checkSharedSecret, clearCacheRoute);
 app.get('/viewcache', checkSharedSecret, viewCacheRoute);
+app.get('/exemptions', checkSharedSecret, exemptionsRoute);
 
 app.post('/github-webhook', validateGithubWebhook, githubWebhookRoute);
 
