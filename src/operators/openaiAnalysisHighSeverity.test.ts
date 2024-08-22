@@ -21,7 +21,7 @@ describe('openaiAnalysisHighSeverity', () => {
             ]
         };
         const result = openaiAnalysisHighSeverity.fn(openaiAnalysis, 8);
-        expect(result).toBe(false);
+        expect(result).toEqual(false);
         expect(logger.error).not.toHaveBeenCalled();
     });
 
@@ -33,7 +33,7 @@ describe('openaiAnalysisHighSeverity', () => {
             ]
         };
         const result = openaiAnalysisHighSeverity.fn(openaiAnalysis, 8);
-        expect(result).toBe(true);
+        expect(result).toEqual(true);
         expect(logger.error).toHaveBeenCalledWith('openai: high severity issues found');
     });
 
@@ -44,7 +44,7 @@ describe('openaiAnalysisHighSeverity', () => {
             ]
         };
         const result = openaiAnalysisHighSeverity.fn(openaiAnalysis, null);
-        expect(result).toBe(true);
+        expect(result).toEqual(true);
         expect(logger.error).toHaveBeenCalledWith('openai: high severity issues found');
     });
 
