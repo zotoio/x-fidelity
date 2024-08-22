@@ -155,8 +155,8 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
     dependencyData.installedDependencyVersions.map((versionData: VersionData) => { 
         logger.debug(`outdatedFramework: checking ${versionData.dep}`);
 
-        const requiredRange = new semver.Range(versionData.min);
-        if (!semver.gtr(versionData.ver, requiredRange)) {
+        const isValid = semver.satisfies(versionData.ver, versionData.min);
+        if (!isValid) {
             const dependencyFailure = {
                 'dependency': versionData.dep,
                 'currentVersion': versionData.ver,
