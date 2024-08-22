@@ -1,6 +1,6 @@
 import { axiosClient } from "./axiosClient";
 import { logger, setLogPrefix } from "./logger";
-import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig } from "../types/typeDefs";
+import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig, Exemption } from "../types/typeDefs";
 import { archetypes } from "../archetypes";
 import { options } from '../core/cli';
 import fs from 'fs';
@@ -12,6 +12,7 @@ export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
 export class ConfigManager {
     private static configs: { [key: string]: ExecutionConfig } = {};
+    private static exemptions: Exemption[] = [];
 
     public static getLoadedConfigs(): string[] {
         return Object.keys(ConfigManager.configs);
@@ -29,6 +30,32 @@ export class ConfigManager {
             ConfigManager.configs[archetype] = await ConfigManager.initialize({ archetype, logPrefix });
         }
         return ConfigManager.configs[archetype];
+    }
+
+    public static async loadExemptions(localConfigPath: string): Promise<void> {
+        const exemptionsPath = path.join(localConfigPath, 'exemptions.json');
+        try {
+            const exemptionsData = await fs.promises.readFile(exemptionsPath, 'utf-8');
+            const exemptionsJson = JSON.parse(exemptionsData);
+            ConfigManager.exemptions = exemptionsJson.exemptions;
+            logger.info(`Loaded ${ConfigManager.exemptions.length} exemptions`);
+        } catch (error) {
+            logger.warn(`Failed to load exemptions: ${error}`);
+            ConfigManager.exemptions = [];
+        }
+    }
+
+    public static getExemptions(): Exemption[] {
+        return ConfigManager.exemptions;
+    }
+
+    public static isExempt(repoUrl: string, ruleName: string): boolean {
+        const now = new Date();
+        return ConfigManager.exemptions.some(exemption => 
+            exemption.repoUrl === repoUrl &&
+            exemption.rule === ruleName &&
+            new Date(exemption.expirationDate) > now
+        );
     }
 
     private static async initialize(params: InitializeParams): Promise<ExecutionConfig> {
