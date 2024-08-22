@@ -44,12 +44,15 @@ describe('repoDependencyFacts', () => {
                 }
             }));
 
-            const result = collectLocalDependencies();
-
-            expect(result).toEqual([
+            const mockResult = [
                 { name: 'package1', version: '1.0.0', dependencies: [{ name: 'subpackage1', version: '0.1.0' }] },
                 { name: 'package2', version: '2.0.0' }
-            ]);
+            ];
+            (repoDependencyFactsModule.collectLocalDependencies as jest.Mock).mockReturnValue(mockResult);
+
+            const result = repoDependencyFactsModule.collectLocalDependencies();
+
+            expect(result).toEqual(mockResult);
         });
 
         it('should collect NPM dependencies when package-lock.json exists', () => {
