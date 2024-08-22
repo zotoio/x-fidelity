@@ -163,14 +163,9 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
         
         
 
-        const installedRange = new semver.Range(versionData.ver);
-        if (installedRange.set.length === 0) {
-            logger.error(`Invalid semver range: ${versionData.ver}`);
-            return;
-        }
-
-        // Check if the installed version is less than the required version and support both ranges and also specific versions
-        if (!semver.satisfies(versionData.ver, requiredRange)) {
+        // Check if the installed version satisfies the required version, supporting both ranges and specific versions
+        const isValid = semver.satisfies(versionData.ver, versionData.min);
+        if (!isValid) {
             const dependencyFailure = {
                 'dependency': versionData.dep,
                 'currentVersion': versionData.ver,
