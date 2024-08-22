@@ -23,7 +23,14 @@ export function collectLocalDependencies(): LocalDependencies[] {
         throw new Error('Unsupported package manager');
     }
     logger.info(`collectLocalDependencies: ${JSON.stringify(result)}`);
-    return result;
+    return result.map(dep => ({
+        name: dep.name,
+        version: dep.version,
+        dependencies: dep.dependencies ? dep.dependencies.map(subDep => ({
+            name: subDep.name,
+            version: subDep.version
+        })) : undefined
+    }));
 }
 
 function collectYarnDependencies(): LocalDependencies[] {
