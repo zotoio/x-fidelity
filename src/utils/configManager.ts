@@ -7,6 +7,7 @@ import fs from 'fs';
 import * as path from 'path';
 import { validateArchetype, validateRule } from './jsonSchemas';
 import { loadRules } from '../rules';
+import { sendTelemetry } from './telemetry';
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
@@ -59,15 +60,29 @@ export class ConfigManager {
 
     public static isExempt(repoUrl: string, ruleName: string): boolean {
         const now = new Date();
-        const result =  ConfigManager.exemptions.some(exemption => 
+        const exemption = ConfigManager.exemptions.find(exemption => 
             exemption.repoUrl === repoUrl &&
             exemption.rule === ruleName &&
             new Date(exemption.expirationDate) > now
         );
-        if (result) {
-            logger.error(`Exempting rule ${ruleName} for repo ${repoUrl} until ${ConfigManager.getExemptionExpirationDate(repoUrl, ruleName)}`);
+        if (exemption) {
+            logger.error(`Exempting rule ${ruleName} for repo ${repoUrl} until ${exemption.expirationDate}`);
+            
+            // Send telemetry event for the allowed exemption
+            sendTelemetry({
+                eventType: 'exemptionAllowed',
+                metadata: {
+                    repoUrl: exemption.repoUrl,
+                    rule: exemption.rule,
+                    expirationDate: exemption.expirationDate,
+                    reason: exemption.reason
+                },
+                timestamp: new Date().toISOString()
+            }, '');
+            
+            return true;
         }
-        return result;
+        return false;
     }
 
     private static async initialize(params: InitializeParams): Promise<ExecutionConfig> {
