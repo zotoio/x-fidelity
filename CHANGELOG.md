@@ -1,3 +1,31 @@
+# [2.6.0](https://github.com/zotoio/x-fidelity/compare/v2.5.0...v2.6.0) (2024-08-22)
+
+
+### Bug Fixes
+
+* Change log level from debug to info for better visibility ([8173462](https://github.com/zotoio/x-fidelity/commit/817346206d084a0dcad79ceeec548b8b51342135))
+* **deps:** monorepo fixes ([07021e8](https://github.com/zotoio/x-fidelity/commit/07021e8af78db05515ffe8e73b337f431c8caf61))
+* Fix issues with dependency version validation and handling ([75282c1](https://github.com/zotoio/x-fidelity/commit/75282c1d392c49d8f152eac29fdedca7e7add2fa))
+* Improve implementation and test coverage of openaiAnalysisHighSeverity ([acaf784](https://github.com/zotoio/x-fidelity/commit/acaf784b79560c9f303cab65c76e873419275ebc))
+* Improve local dependency collection ([8d7732f](https://github.com/zotoio/x-fidelity/commit/8d7732f80cfea9beef6b35656b8488168070a9ef))
+* improve semver range checking in repoDependencyAnalysis ([ba15f5a](https://github.com/zotoio/x-fidelity/commit/ba15f5ab31c1e2228e26e1eaeeea7d060f5ac033))
+* Improve semver version comparison logic ([8f943e1](https://github.com/zotoio/x-fidelity/commit/8f943e1477fb041d97828829306c6de4af8695ae))
+* Update `collectLocalDependencies` function to return correct dependency structure ([fc3fccb](https://github.com/zotoio/x-fidelity/commit/fc3fccb8780e23816c6cc6c18789a52395e9bbf9))
+* Update collectLocalDependencies function to return expected structure ([42ee815](https://github.com/zotoio/x-fidelity/commit/42ee8159311692a10db648aafa1c34002ad7572e))
+* Update mocking of `collectLocalDependencies` function in tests ([5d8d647](https://github.com/zotoio/x-fidelity/commit/5d8d647702e1cdd8cd979d9abd5da9791e9eed3c))
+* Update repoDependencyAnalysis function to only add dependencies that don't meet requirements ([1070e5f](https://github.com/zotoio/x-fidelity/commit/1070e5faf990e1287a9ba6d36297ef8781e04658))
+* Update semverValid function to return correct result ([158f555](https://github.com/zotoio/x-fidelity/commit/158f55506b6f96ecd18b04ca30557f5a03849a3b))
+* Update test case for collectLocalDependencies function ([4b35d3f](https://github.com/zotoio/x-fidelity/commit/4b35d3faf3c9d9832e9d1a00d26f6b7ece2c19ca))
+* Use toEqual for boolean comparisons in openaiAnalysisHighSeverity tests ([16425c6](https://github.com/zotoio/x-fidelity/commit/16425c67e07fa7c14569fa739b38f2353fa8a466))
+
+
+### Features
+
+* Add collectLocalDependencies function to repoDependencyFacts ([8aa6311](https://github.com/zotoio/x-fidelity/commit/8aa6311e3471ceed1bf07f2564b5de086d5440f1))
+* Add support for version ranges in repoDependencyAnalysis ([ce82a21](https://github.com/zotoio/x-fidelity/commit/ce82a218227eca3b3ccb42cab393dcfe20e3de29))
+* create comprehensive unit test suite for repoDependencyFacts.ts ([a92b83b](https://github.com/zotoio/x-fidelity/commit/a92b83b9ffedffd5f47e15cd7a7fed40353d3754))
+* rewrite src/facts/repoDependencyFacts.test.ts with correct mocking and comprehensive test coverage ([66e26c2](https://github.com/zotoio/x-fidelity/commit/66e26c2bad485c71adca1187aafb81796d38148f))
+
 # [2.5.0](https://github.com/zotoio/x-fidelity/compare/v2.4.0...v2.5.0) (2024-08-21)
 
 
