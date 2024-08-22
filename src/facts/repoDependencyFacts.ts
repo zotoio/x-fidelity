@@ -155,16 +155,8 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
     dependencyData.installedDependencyVersions.map((versionData: VersionData) => { 
         logger.debug(`outdatedFramework: checking ${versionData.dep}`);
 
-        const requiredRange = new semver.Range(versionData.min);
-        if (requiredRange.set.length === 0) {
-            logger.error(`Invalid semver range: ${versionData.min}`);
-            return;
-        }
-        
-        
-
         // Check if the installed version satisfies the required version, supporting both ranges and specific versions
-        const isValid = semver.satisfies(versionData.ver, versionData.min);
+        const isValid = semverValid(versionData.ver, versionData.min);
         if (!isValid) {
             const dependencyFailure = {
                 'dependency': versionData.dep,
@@ -175,17 +167,6 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
             logger.error(`dependencyFailure: ${JSON.stringify(dependencyFailure)}`);
             analysis.push(dependencyFailure);
         }
-
-        // if (!semver.gtr(semver.maxSatisfying(installedRange), requiredRange)) {
-        //     const dependencyFailure = {
-        //         'dependency': versionData.dep,
-        //         'currentVersion': versionData.ver,
-        //         'requiredVersion': versionData.min
-        //     };
-            
-        //     logger.error(`dependencyFailure: ${JSON.stringify(dependencyFailure)}`);
-        //     analysis.push(dependencyFailure);
-        // }
     });
 
     result.result = analysis;
@@ -193,4 +174,33 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
     almanac.addRuntimeFact(params.resultFact, result);
 
     return result;
+}
+
+export function semverValid(required: string, installed: string): boolean {
+
+    // If 'installed' is a single version and 'required' is a range
+    if (semver.valid(installed) && semver.validRange(required)) {
+        logger.debug('range vs version');
+        return semver.satisfies(installed, required);
+    }
+
+    // If 'required' is a single version and 'installed' is a range
+    if (semver.valid(required) && semver.validRange(installed)) {
+        logger.debug('version vs range');
+        return semver.satisfies(required, installed);
+    }
+
+    // If both are single versions, simply compare them
+    if (semver.valid(required) && semver.valid(installed)) {
+        logger.debug('version vs version');
+        return semver.gt(installed, required);
+    }
+
+    // If both are ranges, check if they intersect
+    if (semver.validRange(required) && semver.validRange(installed)) {
+        logger.debug('range vs range');
+        return semver.intersects(required, installed);
+    }
+
+    return false;
 }
