@@ -152,7 +152,7 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
     const analysis: any = [];
     const dependencyData: any = await almanac.factValue('dependencyData');
 
-    dependencyData.installedDependencyVersions.map((versionData: VersionData) => { 
+    dependencyData.installedDependencyVersions.forEach((versionData: VersionData) => { 
         logger.debug(`outdatedFramework: checking ${versionData.dep}`);
 
         // Check if the installed version satisfies the required version, supporting both ranges and specific versions
