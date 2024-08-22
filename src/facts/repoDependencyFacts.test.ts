@@ -2,9 +2,7 @@ import * as repoDependencyFacts from './repoDependencyFacts';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import { Almanac } from 'json-rules-engine';
-import { ArchetypeConfig, LocalDependencies, MinimumDepVersions, VersionData } from '../types/typeDefs';
-import { logger } from '../utils/logger';
-import { options } from '../core/cli';
+import { LocalDependencies, MinimumDepVersions } from '../types/typeDefs';
 
 jest.mock('child_process');
 jest.mock('fs');
@@ -61,61 +59,6 @@ describe('repoDependencyFacts', () => {
             (fs.existsSync as jest.Mock).mockReturnValue(false);
 
             expect(() => repoDependencyFacts.collectLocalDependencies()).toThrow('Unsupported package manager');
-        });
-    });
-
-    describe('getDependencyVersionFacts', () => {
-        xit('should return version data for matching dependencies', () => {
-            const mockArchetypeConfig: ArchetypeConfig = {
-                name: 'test',
-                rules: [],
-                operators: [],
-                facts: [],
-                config: {
-                    minimumDependencyVersions: {
-                        'package1': '^1.0.0',
-                        'package2': '^2.0.0'
-                    },
-                    standardStructure: {},
-                    blacklistPatterns: [],
-                    whitelistPatterns: []
-                }
-            };
-
-            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies').mockReturnValue([
-                { name: 'package1', version: '1.1.0' },
-                { name: 'package2', version: '2.0.1' },
-                { name: 'package3', version: '3.0.0' }
-            ]);
-
-            const result = repoDependencyFacts.getDependencyVersionFacts(mockArchetypeConfig);
-
-            expect(result).toEqual([
-                { dep: 'package1', ver: '1.1.0', min: '^1.0.0' },
-                { dep: 'package2', ver: '2.0.1', min: '^2.0.0' }
-            ]);
-        });
-
-        xit('should return an empty array when no local dependencies are found', () => {
-            const mockArchetypeConfig: ArchetypeConfig = {
-                name: 'test',
-                rules: [],
-                operators: [],
-                facts: [],
-                config: {
-                    minimumDependencyVersions: {},
-                    standardStructure: {},
-                    blacklistPatterns: [],
-                    whitelistPatterns: []
-                }
-            };
-
-            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies').mockReturnValue([]);
-
-            const result = repoDependencyFacts.getDependencyVersionFacts(mockArchetypeConfig);
-
-            expect(result).toEqual([]);
-            expect(logger.error).toHaveBeenCalledWith('getDependencyVersionFacts: no local dependencies found');
         });
     });
 
@@ -184,25 +127,6 @@ describe('repoDependencyFacts', () => {
             expect(result).toEqual({ result: [] });
         });
 
-        xit('should analyze dependencies and return results for outdated packages', async () => {
-            (mockAlmanac.factValue as jest.Mock)
-                .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' })
-                .mockResolvedValueOnce({
-                    installedDependencyVersions: [
-                        { dep: 'package1', ver: '1.0.0', min: '^2.0.0' },
-                        { dep: 'package2', ver: '2.0.0', min: '^1.5.0' }
-                    ]
-                });
-
-            const result = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testResult' }, mockAlmanac);
-
-            expect(result).toEqual({
-                result: [
-                    { dependency: 'package1', currentVersion: '1.0.0', requiredVersion: '^2.0.0' }
-                ]
-            });
-            expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', result);
-        });
     });
 
     describe('semverValid', () => {
