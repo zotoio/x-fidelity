@@ -23,14 +23,7 @@ export function collectLocalDependencies(): LocalDependencies[] {
         throw new Error('Unsupported package manager');
     }
     logger.info(`collectLocalDependencies: ${JSON.stringify(result)}`);
-    return result.map(dep => ({
-        name: dep.name,
-        version: dep.version,
-        dependencies: dep.dependencies ? dep.dependencies.map(subDep => ({
-            name: subDep.name,
-            version: subDep.version
-        })) : undefined
-    }));
+    return result;
 }
 
 function collectYarnDependencies(): LocalDependencies[] {
@@ -184,6 +177,10 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 }
 
 export function semverValid(required: string, installed: string): boolean {
+
+    if (!required || !installed) {
+        return true;
+    }
 
     // If 'installed' is a single version and 'required' is a range
     if (semver.valid(installed) && semver.validRange(required)) {
