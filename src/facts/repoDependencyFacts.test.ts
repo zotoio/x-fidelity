@@ -1,4 +1,5 @@
-import { collectLocalDependencies, getDependencyVersionFacts, findPropertiesInTree, repoDependencyAnalysis, semverValid } from './repoDependencyFacts';
+import { getDependencyVersionFacts, findPropertiesInTree, repoDependencyAnalysis, semverValid } from './repoDependencyFacts';
+import * as repoDependencyFactsModule from './repoDependencyFacts';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -16,6 +17,13 @@ jest.mock('../core/cli', () => ({
         dir: '/mock/dir'
     }
 }));
+jest.mock('./repoDependencyFacts', () => {
+    const originalModule = jest.requireActual('./repoDependencyFacts');
+    return {
+        ...originalModule,
+        collectLocalDependencies: jest.fn()
+    };
+});
 
 describe('repoDependencyFacts', () => {
     beforeEach(() => {
@@ -88,7 +96,7 @@ describe('repoDependencyFacts', () => {
                 }
             };
 
-            jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([
+            (repoDependencyFactsModule.collectLocalDependencies as jest.Mock).mockReturnValue([
                 { name: 'package1', version: '1.1.0' },
                 { name: 'package2', version: '2.0.1' },
                 { name: 'package3', version: '3.0.0' }
@@ -116,7 +124,7 @@ describe('repoDependencyFacts', () => {
                 }
             };
 
-            jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([]);
+            (repoDependencyFactsModule.collectLocalDependencies as jest.Mock).mockReturnValue([]);
 
             const result = getDependencyVersionFacts(mockArchetypeConfig);
 
