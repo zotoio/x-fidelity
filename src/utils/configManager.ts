@@ -1,6 +1,7 @@
 import { axiosClient } from "./axiosClient";
 import { logger, setLogPrefix } from "./logger";
 import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig, Exemption } from "../types/typeDefs";
+import { loadExemptions } from "./exemptionLoader";
 import { archetypes } from "../archetypes";
 import { options } from '../core/cli';
 import fs from 'fs';
@@ -97,7 +98,8 @@ export class ConfigManager {
         const config: ExecutionConfig = { 
             archetype: {} as ArchetypeConfig, 
             rules: [] as RuleConfig[], 
-            cliOptions: options 
+            cliOptions: options,
+            exemptions: [] as Exemption[]
         };
 
         try {
@@ -149,6 +151,13 @@ export class ConfigManager {
                     return false;
                 }
             });
+
+            // Load exemptions
+            if (configServer) {
+                config.exemptions = await loadExemptions(configServer, logPrefix);
+            } else if (localConfigPath) {
+                config.exemptions = await this.loadExemptions(localConfigPath);
+            }
 
             return config;
         } catch (error) {
