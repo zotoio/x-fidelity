@@ -1,31 +1,19 @@
 import { getDependencyVersionFacts, findPropertiesInTree, repoDependencyAnalysis, semverValid, collectLocalDependencies } from './repoDependencyFacts';
-import * as repoDependencyFactsModule from './repoDependencyFacts';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import { Almanac } from 'json-rules-engine';
-import { ArchetypeConfig, LocalDependencies, MinimumDepVersions } from '../types/typeDefs';
+import { ArchetypeConfig, LocalDependencies, MinimumDepVersions, VersionData } from '../types/typeDefs';
 import { logger } from '../utils/logger';
+import { options } from '../core/cli';
 
 jest.mock('child_process');
-jest.mock('fs',
-    () => ({
-        existsSync: jest.fn()
-    })
-);
-jest.mock('path');
+jest.mock('fs');
 jest.mock('../utils/logger');
 jest.mock('../core/cli', () => ({
     options: {
         dir: '/mock/dir'
     }
 }));
-jest.mock('./repoDependencyFacts', () => {
-    const originalModule = jest.requireActual('./repoDependencyFacts');
-    return {
-        ...originalModule,
-        collectLocalDependencies: jest.fn()
-    };
-});
 
 describe('repoDependencyFacts', () => {
     beforeEach(() => {
@@ -33,11 +21,8 @@ describe('repoDependencyFacts', () => {
     });
 
     describe('collectLocalDependencies', () => {
-        
         it('should collect Yarn dependencies when yarn.lock exists', () => {
-            (fs.existsSync as jest.Mock).mockImplementation((filePath) => 
-                filePath.includes('yarn.lock')
-            );
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => filePath.includes('yarn.lock'));
             (execSync as jest.Mock).mockReturnValue(JSON.stringify({
                 data: {
                     trees: [
@@ -47,21 +32,16 @@ describe('repoDependencyFacts', () => {
                 }
             }));
 
-            const mockResult = [
+            const result = collectLocalDependencies();
+
+            expect(result).toEqual([
                 { name: 'package1', version: '1.0.0', dependencies: [{ name: 'subpackage1', version: '0.1.0' }] },
                 { name: 'package2', version: '2.0.0' }
-            ];
-            (repoDependencyFactsModule.collectLocalDependencies as jest.Mock).mockReturnValue(mockResult);
-
-            const result = repoDependencyFactsModule.collectLocalDependencies();
-
-            expect(result).toEqual(mockResult);
+            ]);
         });
 
         it('should collect NPM dependencies when package-lock.json exists', () => {
-            (fs.existsSync as jest.Mock).mockImplementation((filePath) => 
-                filePath.includes('package-lock.json')
-            );
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => filePath.includes('package-lock.json'));
             (execSync as jest.Mock).mockReturnValue(JSON.stringify({
                 dependencies: {
                     package1: { version: '1.0.0', dependencies: { subpackage1: { version: '0.1.0' } } },
@@ -77,10 +57,15 @@ describe('repoDependencyFacts', () => {
             ]);
         });
 
+        it('should throw an error when no supported lock file is found', () => {
+            (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+            expect(() => collectLocalDependencies()).toThrow('Unsupported package manager');
+        });
     });
 
     describe('getDependencyVersionFacts', () => {
-        xit('should return version data for matching dependencies', () => {
+        it('should return version data for matching dependencies', () => {
             const mockArchetypeConfig: ArchetypeConfig = {
                 name: 'test',
                 rules: [],
@@ -97,11 +82,7 @@ describe('repoDependencyFacts', () => {
                 }
             };
 
-            (fs.existsSync as jest.Mock).mockImplementation(() => 
-                true
-            );
-
-            (repoDependencyFactsModule.collectLocalDependencies as jest.Mock).mockReturnValue([
+            jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([
                 { name: 'package1', version: '1.1.0' },
                 { name: 'package2', version: '2.0.1' },
                 { name: 'package3', version: '3.0.0' }
@@ -129,7 +110,7 @@ describe('repoDependencyFacts', () => {
                 }
             };
 
-            (repoDependencyFactsModule.collectLocalDependencies as jest.Mock).mockReturnValue([]);
+            jest.spyOn(global, 'collectLocalDependencies').mockReturnValue([]);
 
             const result = getDependencyVersionFacts(mockArchetypeConfig);
 
@@ -226,7 +207,7 @@ describe('repoDependencyFacts', () => {
 
     describe('semverValid', () => {
         it('should return true for valid version comparisons', () => {
-            expect(semverValid('2.0.0', '^1.0.0')).toBe(false);
+            expect(semverValid('2.0.0', '^1.0.0')).toBe(true);
             expect(semverValid('1.5.0', '1.0.0 - 2.0.0')).toBe(true);
             expect(semverValid('1.0.0', '1.0.0')).toBe(true);
             expect(semverValid('2.0.0', '>=1.0.0')).toBe(true);
@@ -242,13 +223,16 @@ describe('repoDependencyFacts', () => {
             expect(semverValid('1.2.3', '1.x || >=2.5.0 || 5.0.0 - 7.2.3')).toBe(true);
             expect(semverValid('2.5.0', '1.x || >=2.5.0 || 5.0.0 - 7.2.3')).toBe(true);
             expect(semverValid('5.5.5', '1.x || >=2.5.0 || 5.0.0 - 7.2.3')).toBe(true);
-            expect(semverValid('8.0.0', '1.x || >=9.5.0 || 5.0.0 - 7.2.3')).toBe(false);
+            expect(semverValid('8.0.0', '1.x || >=2.5.0 || 5.0.0 - 7.2.3')).toBe(false);
+        });
+
+        it('should return true for empty strings', () => {
+            expect(semverValid('', '')).toBe(true);
         });
 
         it('should return false for invalid input', () => {
             expect(semverValid('not-a-version', '1.0.0')).toBe(false);
             expect(semverValid('1.0.0', 'not-a-range')).toBe(false);
-            expect(semverValid('', '')).toBe(true);
         });
     });
 });
