@@ -87,4 +87,16 @@ describe('openaiAnalysisHighSeverity', () => {
         expect(result).toBe(true);
         expect(logger.error).toHaveBeenCalledWith('openai: high severity issues found');
     });
+
+    it('should use default severity threshold when not provided', () => {
+        const openaiAnalysis = {
+            result: [
+                { severity: 7 },
+                { severity: 8 }
+            ]
+        };
+        const result = openaiAnalysisHighSeverity.fn(openaiAnalysis, null);
+        expect(result).toBe(true);
+        expect(logger.error).toHaveBeenCalledWith('openai: high severity issues found');
+    });
 });

@@ -10,23 +10,24 @@ const openaiAnalysisHighSeverity: OperatorDefn = {
                 return false;
             }
 
-            severityThreshold = parseInt(severityThreshold) ? parseInt(severityThreshold) : 8;
-            let result = false;
+            const threshold = parseInt(severityThreshold) || 8;
             
             if (Array.isArray(openaiAnalysis.result) && openaiAnalysis.result.length > 0) {
-                if (openaiAnalysis.result.some((issue: any) => {
+                const hasHighSeverityIssue = openaiAnalysis.result.some((issue: any) => {
                     const severity = parseInt(issue?.severity);
-                    return !isNaN(severity) && severity >= severityThreshold;
-                })) {
+                    return !isNaN(severity) && severity >= threshold;
+                });
+
+                if (hasHighSeverityIssue) {
                     logger.error('openai: high severity issues found');
-                    result = true;
+                    return true;
                 }
             }
         
-            return result;
+            return false;
         } catch (e) {
             // for now we don't fail the build if openai response parsing fails
-            logger.debug(e)
+            logger.debug(e);
             logger.error(`openaiAnalysisHighSeverity: ${e}`);
             return false;
         }
