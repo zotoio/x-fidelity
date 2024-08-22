@@ -1,4 +1,4 @@
-import { getDependencyVersionFacts, findPropertiesInTree, repoDependencyAnalysis, semverValid } from './repoDependencyFacts';
+import { getDependencyVersionFacts, findPropertiesInTree, repoDependencyAnalysis, semverValid, collectLocalDependencies } from './repoDependencyFacts';
 import * as repoDependencyFactsModule from './repoDependencyFacts';
 import { execSync } from 'child_process';
 import fs from 'fs';
