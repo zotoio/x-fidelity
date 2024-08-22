@@ -29,6 +29,7 @@ describe('runEngineOnFiles', () => {
         installedDependencyVersions: {},
         minimumDependencyVersions: {},
         standardStructure: {},
+        repoUrl: 'https://github.com/mock/repo',
     };
 
     beforeEach(() => {
