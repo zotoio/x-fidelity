@@ -136,7 +136,7 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
     }
 
     depGraph.forEach(dep => walk(dep));
-    logger.info(JSON.stringify(results))
+    logger.info(JSON.stringify(depGraph))
     return results;
 }
 
@@ -155,8 +155,22 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
     dependencyData.installedDependencyVersions.map((versionData: VersionData) => { 
         logger.debug(`outdatedFramework: checking ${versionData.dep}`);
 
-        const isValid = semver.satisfies(versionData.ver, versionData.min);
-        if (!isValid) {
+        const requiredRange = new semver.Range(versionData.min);
+        if (requiredRange.set.length === 0) {
+            logger.error(`Invalid semver range: ${versionData.min}`);
+            return;
+        }
+        
+        
+
+        const installedRange = new semver.Range(versionData.ver);
+        if (installedRange.set.length === 0) {
+            logger.error(`Invalid semver range: ${versionData.ver}`);
+            return;
+        }
+
+        // Check if the installed version is less than the required version and support both ranges and also specific versions
+        if (!semver.satisfies(versionData.ver, requiredRange)) {
             const dependencyFailure = {
                 'dependency': versionData.dep,
                 'currentVersion': versionData.ver,
@@ -166,6 +180,17 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
             logger.error(`dependencyFailure: ${JSON.stringify(dependencyFailure)}`);
             analysis.push(dependencyFailure);
         }
+
+        // if (!semver.gtr(semver.maxSatisfying(installedRange), requiredRange)) {
+        //     const dependencyFailure = {
+        //         'dependency': versionData.dep,
+        //         'currentVersion': versionData.ver,
+        //         'requiredVersion': versionData.min
+        //     };
+            
+        //     logger.error(`dependencyFailure: ${JSON.stringify(dependencyFailure)}`);
+        //     analysis.push(dependencyFailure);
+        // }
     });
 
     result.result = analysis;
