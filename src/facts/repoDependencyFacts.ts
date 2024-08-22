@@ -13,7 +13,7 @@ import path from 'path';
  * @returns The local dependencies.
  */
 export function collectLocalDependencies(): LocalDependencies[] {
-    let result:LocalDependencies[] = [];
+    let result: LocalDependencies[] = [];
     if (fs.existsSync(path.join(options.dir, 'yarn.lock'))) {
         result = collectYarnDependencies();
     } else if (fs.existsSync(path.join(options.dir, 'package-lock.json'))) {
