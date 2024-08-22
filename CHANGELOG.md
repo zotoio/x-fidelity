@@ -1,3 +1,15 @@
+# [2.7.0](https://github.com/zotoio/x-fidelity/compare/v2.6.0...v2.7.0) (2024-08-22)
+
+
+### Bug Fixes
+
+* Add missing `repoUrl` property to `mockParams` object ([e94114d](https://github.com/zotoio/x-fidelity/commit/e94114dced7c9f6b4f53caa034937d07313abd71))
+
+
+### Features
+
+* **exemption process:** allow a repo to have a timelimited waiver for a given rule ([42d4b7d](https://github.com/zotoio/x-fidelity/commit/42d4b7de181131bbc3400710fc86876f4f3d8748))
+
 # [2.6.0](https://github.com/zotoio/x-fidelity/compare/v2.5.0...v2.6.0) (2024-08-22)
 
 
