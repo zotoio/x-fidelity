@@ -30,22 +30,40 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     const addedRules = new Set();
     config.rules.forEach((rule) => {
         try {
-            logger.info(`adding rule: ${rule?.name}`);
-            if (isExempt({ exemptions: config.exemptions, repoUrl, ruleName: rule?.name, logPrefix: executionLogPrefix })) {
-                // clone the rule to avoid modifying the original rule
-                const exemptRule = JSON.parse(JSON.stringify(rule));
-                // update the rule event type to 'exempt' if it is exempted
-                exemptRule.event.type = 'exempt';
-                engine.addRule(exemptRule as RuleProperties);
+            if (rule && rule.name) {
+                logger.info(`adding rule: ${rule.name}`);
+                if (isExempt({ exemptions: config.exemptions, repoUrl, ruleName: rule.name, logPrefix: executionLogPrefix })) {
+                    // clone the rule to avoid modifying the original rule
+                    const exemptRule = JSON.parse(JSON.stringify(rule));
+                    // update the rule event type to 'exempt' if it is exempted
+                    exemptRule.event.type = 'exempt';
+                    engine.addRule(exemptRule as RuleProperties);
+                } else {
+                    engine.addRule(rule as RuleProperties);
+                }
+                addedRules.add(rule.name);
             } else {
-                engine.addRule(rule as RuleProperties);
+                logger.error('Invalid rule configuration: rule or rule name is undefined');
             }
-            addedRules.add(rule.name);
         } catch (e: any) {
-            logger.error(`Error loading rule: ${rule?.name}`);
+            logger.error(`Error loading rule: ${rule?.name || 'unknown'}`);
             logger.error(e.message);
         }
     });
+
+    if (addedRules.size === 0) {
+        logger.info('No valid rules were added. Adding default rules.');
+        engine.addRule({
+            name: 'default-rule-1',
+            conditions: { all: [] },
+            event: { type: 'warning', params: { message: 'Default rule 1 triggered' } }
+        });
+        engine.addRule({
+            name: 'default-rule-2',
+            conditions: { all: [] },
+            event: { type: 'warning', params: { message: 'Default rule 2 triggered' } }
+        });
+    }
 
     engine.on('success', async ({ type, params }: Event) => {
         if (type === 'warning') {

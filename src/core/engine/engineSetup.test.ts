@@ -84,10 +84,7 @@ describe('setupEngine', () => {
     });
 
     it('should handle errors when loading rules and add default rules', async () => {
-        const mockAddRule = jest.fn().mockImplementationOnce(() => {
-            throw new Error('Rule loading error');
-        });
-
+        const mockAddRule = jest.fn();
         (Engine as jest.Mock).mockImplementation(() => ({
             addOperator: jest.fn(),
             addRule: mockAddRule,
@@ -95,11 +92,24 @@ describe('setupEngine', () => {
             on: jest.fn()
         }));
 
+        (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
+            archetype: mockArchetypeConfig,
+            rules: [
+                undefined,
+                { name: undefined },
+                { name: 'invalidRule', conditions: null }
+            ],
+            cliOptions: {}
+        });
+
         await setupEngine(mockParams);
 
-        expect(logger.error).toHaveBeenCalledWith('Rule loading error');
-        expect(logger.info).toHaveBeenCalledWith('Adding default rule: default-rule-1');
-        expect(logger.info).toHaveBeenCalledWith('Adding default rule: default-rule-2');
+        expect(logger.error).toHaveBeenCalledWith('Invalid rule configuration: rule or rule name is undefined');
+        expect(logger.error).toHaveBeenCalledWith('Invalid rule configuration: rule or rule name is undefined');
+        expect(logger.error).toHaveBeenCalledWith('Error loading rule: invalidRule');
+        expect(logger.info).toHaveBeenCalledWith('No valid rules were added. Adding default rules.');
+        expect(mockAddRule).toHaveBeenCalledWith(expect.objectContaining({ name: 'default-rule-1' }));
+        expect(mockAddRule).toHaveBeenCalledWith(expect.objectContaining({ name: 'default-rule-2' }));
     });
 
     it('should set up event listeners for success events', async () => {
