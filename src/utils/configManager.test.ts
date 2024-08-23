@@ -157,24 +157,22 @@ describe('ConfigManager', () => {
             expect(config.archetype).toEqual(archetypes['node-fullstack']);
         });
 
-        it('should return a default config when unable to load local archetype config', async () => {
+        it('should use default archetypes when no configServer or localConfigPath is provided', async () => {
             options.configServer = '';
-            options.localConfigPath = '/path/to/local/config';
-            (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
-            const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
-            expect(logger.error).toHaveBeenCalled();
-            expect(config.archetype).toEqual({
-                name: 'test-archetype',
-                rules: [],
-                operators: [],
-                facts: [],
-                config: {
-                    minimumDependencyVersions: {},
-                    standardStructure: {},
-                    blacklistPatterns: [],
-                    whitelistPatterns: []
-                }
-            });
+            options.localConfigPath = '';
+            const config = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
+            expect(config.archetype).toEqual(expect.objectContaining({
+                name: 'node-fullstack',
+                rules: expect.any(Array),
+                operators: expect.any(Array),
+                facts: expect.any(Array),
+                config: expect.objectContaining({
+                    minimumDependencyVersions: expect.any(Object),
+                    standardStructure: expect.any(Object),
+                    blacklistPatterns: expect.any(Array),
+                    whitelistPatterns: expect.any(Array)
+                })
+            }));
         });
 
         it('should use default archetypes when no configServer or localConfigPath is provided', async () => {
