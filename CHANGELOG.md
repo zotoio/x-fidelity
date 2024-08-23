@@ -1,3 +1,10 @@
+# [2.9.0](https://github.com/zotoio/x-fidelity/compare/v2.8.0...v2.9.0) (2024-08-23)
+
+
+### Features
+
+* Add exemptions section to README ([8e43dfe](https://github.com/zotoio/x-fidelity/commit/8e43dfe70c652bdb1e09b876fc2efbe785e4a3f5))
+
 # [2.8.0](https://github.com/zotoio/x-fidelity/compare/v2.7.0...v2.8.0) (2024-08-23)
 
 
