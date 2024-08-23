@@ -32,11 +32,13 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
             logger.info(`adding rule: ${rule?.name}`);
             if (isExempt({ exemptions: config.exemptions, repoUrl, ruleName: rule?.name, logPrefix: executionLogPrefix })) {
                 // clone the rule to avoid modifying the original rule
-                rule = JSON.parse(JSON.stringify(rule));
+                const exemptRule = JSON.parse(JSON.stringify(rule));
                 // update the rule event type to 'exempt' if it is exempted
-                rule.event.type = 'exempt';
-            }
-            engine.addRule(rule as RuleProperties);
+                exemptRule.event.type = 'exempt';
+                engine.addRule(exemptRule as RuleProperties);
+            } else {
+                engine.addRule(rule as RuleProperties);
+            }    
         } catch (e: any) {
             logger.error(`Error loading rule: ${rule?.name}`);
             logger.error(e.message);
