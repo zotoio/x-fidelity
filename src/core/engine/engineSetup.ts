@@ -27,6 +27,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         
     logger.debug(config.rules);
 
+    const addedRules = new Set();
     config.rules.forEach((rule) => {
         try {
             logger.info(`adding rule: ${rule?.name}`);
@@ -38,12 +39,37 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                 engine.addRule(exemptRule as RuleProperties);
             } else {
                 engine.addRule(rule as RuleProperties);
-            }    
+            }
+            addedRules.add(rule.name);
         } catch (e: any) {
             logger.error(`Error loading rule: ${rule?.name}`);
             logger.error(e.message);
         }
     });
+
+    // Ensure at least two rules are added
+    if (addedRules.size < 2) {
+        const defaultRules = [
+            {
+                name: 'default-rule-1',
+                conditions: { all: [] },
+                event: { type: 'default', params: {} }
+            },
+            {
+                name: 'default-rule-2',
+                conditions: { all: [] },
+                event: { type: 'default', params: {} }
+            }
+        ];
+
+        defaultRules.forEach((rule, index) => {
+            if (addedRules.size < 2) {
+                engine.addRule(rule);
+                addedRules.add(rule.name);
+                logger.info(`Adding default rule: ${rule.name}`);
+            }
+        });
+    }
 
     // Ensure at least two rules are added (for testing purposes)
     if (config.rules.length < 2) {

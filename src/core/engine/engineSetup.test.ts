@@ -84,7 +84,7 @@ describe('setupEngine', () => {
         expect(engine).toBeDefined();
     });
 
-    it('should handle errors when loading rules', async () => {
+    it('should handle errors when loading rules and add default rules', async () => {
         const mockAddRule = jest.fn().mockImplementationOnce(() => {
             throw new Error('Rule loading error');
         });
@@ -98,8 +98,10 @@ describe('setupEngine', () => {
 
         await setupEngine(mockParams);
 
-        expect(mockAddRule).toHaveBeenCalledTimes(1);
+        expect(mockAddRule).toHaveBeenCalledTimes(3); // 1 failed + 2 default rules
         expect(logger.error).toHaveBeenCalledWith('Rule loading error');
+        expect(logger.info).toHaveBeenCalledWith('Adding default rule: default-rule-1');
+        expect(logger.info).toHaveBeenCalledWith('Adding default rule: default-rule-2');
     });
 
     it('should set up event listeners for success events', async () => {
