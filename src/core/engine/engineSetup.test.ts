@@ -32,7 +32,8 @@ describe('setupEngine', () => {
         archetype: 'test-archetype',
         configManager: ConfigManager,
         executionLogPrefix: 'test-prefix',
-        localConfigPath: '/test/path'
+        localConfigPath: '/test/path',
+        repoUrl: 'test-url'
     };
 
     beforeEach(() => {

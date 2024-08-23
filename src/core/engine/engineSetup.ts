@@ -8,7 +8,7 @@ import { SetupEngineParams } from '../../types/typeDefs';
 import { ConfigManager } from '../../utils/configManager';
 
 export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
-    const { archetypeConfig, archetype, executionLogPrefix } = params;
+    const { archetypeConfig, archetype, executionLogPrefix, repoUrl } = params;
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
     // Add operators to engine
@@ -30,6 +30,12 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     config.rules.forEach((rule) => {
         try {
             logger.info(`adding rule: ${rule?.name}`);
+            if (ConfigManager.isExempt({ exemptions: config.exemptions, repoUrl, ruleName: rule?.name, logPrefix: executionLogPrefix })) {
+                // clone the rule to avoid modifying the original rule
+                rule = JSON.parse(JSON.stringify(rule));
+                // update the rule event type to 'exempt' if it is exempted
+                rule.event.type = 'exempt';
+            }
             engine.addRule(rule as RuleProperties);
         } catch (e: any) {
             logger.error(`Error loading rule: ${rule?.name}`);
@@ -54,6 +60,18 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
             logger.error(`fatality detected: ${JSON.stringify(params)}`);
             await sendTelemetry({
                 eventType: 'fatality',
+                metadata: {
+                    archetype,
+                    repoPath: '',
+                    ...params
+                },
+                timestamp: new Date().toISOString()
+            }, executionLogPrefix);
+        }
+        if (type === 'exempt') {
+            logger.error(`exemption detected: ${JSON.stringify(params)}`);
+            await sendTelemetry({
+                eventType: 'exempt',
                 metadata: {
                     archetype,
                     repoPath: '',

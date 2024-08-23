@@ -1,6 +1,6 @@
 import { axiosClient } from "./axiosClient";
 import { logger, setLogPrefix } from "./logger";
-import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig, Exemption } from "../types/typeDefs";
+import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig, Exemption, IsExemptParams } from "../types/typeDefs";
 import { loadExemptions } from "./exemptionLoader";
 import { archetypes } from "../archetypes";
 import { options } from '../core/cli';
@@ -14,7 +14,6 @@ export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
 export class ConfigManager {
     private static configs: { [key: string]: ExecutionConfig } = {};
-    private static exemptions: Exemption[] = [];
 
     public static getLoadedConfigs(): string[] {
         return Object.keys(ConfigManager.configs);
@@ -34,34 +33,25 @@ export class ConfigManager {
         return ConfigManager.configs[archetype];
     }
 
-    public static async loadExemptions(localConfigPath: string): Promise<void> {
+    public static async loadExemptions(localConfigPath: string): Promise<Exemption[]> {
         const exemptionsPath = path.join(localConfigPath, 'exemptions.json');
+        let exemptions: Exemption[] = [];
         try {
             const exemptionsData = await fs.promises.readFile(exemptionsPath, 'utf-8');
-            const exemptionsJson = JSON.parse(exemptionsData);
-            ConfigManager.exemptions = exemptionsJson.exemptions;
-            logger.info(`Loaded ${ConfigManager.exemptions.length} exemptions`);
+            exemptions = JSON.parse(exemptionsData);
+            logger.info(`Loaded ${exemptions.length} exemptions`);
+            logger.debug(`Exemptions: ${JSON.stringify(exemptions)}`);
         } catch (error) {
             logger.warn(`Failed to load exemptions: ${error}`);
-            ConfigManager.exemptions = [];
+            exemptions = [];
         }
+        return exemptions;
     }
 
-    public static getExemptions(): Exemption[] {
-        return ConfigManager.exemptions;
-    }
-
-    public static getExemptionExpirationDate(repoUrl: string, ruleName: string): Date | undefined {
-        const exemption = ConfigManager.exemptions.find(exemption => 
-            exemption.repoUrl === repoUrl &&
-            exemption.rule === ruleName
-        );
-        return exemption ? new Date(exemption.expirationDate) : undefined;
-    }
-
-    public static isExempt(repoUrl: string, ruleName: string): boolean {
+    public static isExempt(params: IsExemptParams): boolean {
+        const { repoUrl, ruleName, exemptions, logPrefix } = params;
         const now = new Date();
-        const exemption = ConfigManager.exemptions.find(exemption => 
+        const exemption = exemptions.find(exemption => 
             exemption.repoUrl === repoUrl &&
             exemption.rule === ruleName &&
             new Date(exemption.expirationDate) > now
@@ -79,7 +69,7 @@ export class ConfigManager {
                     reason: exemption.reason
                 },
                 timestamp: new Date().toISOString()
-            }, '');
+            }, logPrefix);
             
             return true;
         }

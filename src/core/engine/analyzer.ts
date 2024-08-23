@@ -20,13 +20,11 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     
     logger.info(`STARTING..`);
 
-    // Load exemptions
-    if (localConfigPath) {
-        await ConfigManager.loadExemptions(localConfigPath);
-    }
-
     const telemetryData = await collectTelemetryData({ repoPath, configServer});
     const repoUrl = telemetryData.repoUrl;
+
+    const executionConfig = await ConfigManager.getConfig({ archetype, logPrefix: executionLogPrefix });
+    const archetypeConfig: ArchetypeConfig = executionConfig.archetype;
 
     // Send telemetry for analysis start
     await sendTelemetry({
@@ -39,9 +37,6 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         },
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
-
-    const executionConfig = await ConfigManager.getConfig({ archetype, logPrefix: executionLogPrefix });
-    const archetypeConfig: ArchetypeConfig = executionConfig.archetype;
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
     const fileData: FileData[] = await collectRepoFileData(repoPath, archetypeConfig);
@@ -63,9 +58,9 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     const engine = await setupEngine({
         archetypeConfig,
         archetype,
-        configManager: ConfigManager,
         executionLogPrefix,
-        localConfigPath
+        localConfigPath,
+        repoUrl
     });
 
     if (isOpenAIEnabled() && archetypeConfig.facts.includes('openaiAnalysisFacts')) {

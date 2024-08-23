@@ -1,12 +1,12 @@
 import { EngineResult, RuleResult } from 'json-rules-engine';
 import { ScanResult, RuleFailure } from '../../types/typeDefs';
 import { logger } from '../../utils/logger';
-import { REPO_GLOBAL_CHECK, ConfigManager } from '../../utils/configManager';
+import { REPO_GLOBAL_CHECK } from '../../utils/configManager';
 
 import { RunEngineOnFilesParams } from '../../types/typeDefs';
 
 export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<ScanResult[]> {
-    const { engine, fileData, installedDependencyVersions, minimumDependencyVersions, standardStructure, repoUrl } = params;
+    const { engine, fileData, installedDependencyVersions, minimumDependencyVersions, standardStructure } = params;
     const msg = `\n==========================\nRUNNING FILE CHECKS..\n==========================`;
     logger.info(msg);
     const failures: ScanResult[] = [];
@@ -32,7 +32,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
             const { results }: EngineResult = await engine.run(facts);
             results.forEach((result: RuleResult) => {
                 logger.debug(JSON.stringify(result));
-                if (result.result && !ConfigManager.isExempt(repoUrl, result.name)) {
+                if (result.result) {
                     fileFailures.push({
                         ruleFailure: result.name,
                         level: result.event?.type,

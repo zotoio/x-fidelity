@@ -22,7 +22,7 @@ export function collectLocalDependencies(): LocalDependencies[] {
         logger.error('No yarn.lock or package-lock.json found');
         throw new Error('Unsupported package manager');
     }
-    logger.info(`collectLocalDependencies: ${JSON.stringify(result)}`);
+    logger.debug(`collectLocalDependencies: ${JSON.stringify(result)}`);
     return result;
 }
 
@@ -121,7 +121,7 @@ export function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig): Ver
 export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions: MinimumDepVersions): VersionData[] {
     const results: VersionData[] = [];
 
-    logger.info(`depGraph: ${JSON.stringify(depGraph)}`);
+    logger.debug(`depGraph: ${JSON.stringify(depGraph)}`);
 
     function walk(dep: LocalDependencies, parentName = '') {
         const fullName = parentName ? `${parentName}/${dep.name}` : dep.name;
@@ -136,7 +136,7 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
     }
 
     depGraph.forEach(dep => walk(dep));
-    logger.info(JSON.stringify(depGraph))
+    logger.debug(JSON.stringify(depGraph))
     return results;
 }
 

@@ -1,5 +1,4 @@
 import { Engine, OperatorEvaluator } from 'json-rules-engine';
-import { ConfigManager } from '../utils/configManager';
 import { FileData } from '../facts/repoFilesystemFacts';
 
 export type OperatorDefn = {
@@ -37,12 +36,13 @@ export interface ExecutionConfig {
     archetype: ArchetypeConfig;
     rules: RuleConfig[];
     cliOptions: { [key: string]: any };
+    exemptions: Exemption[];
 }
 
 export interface SetupEngineParams {
     archetypeConfig: ArchetypeConfig;
     archetype: string;
-    configManager: ConfigManager;
+    repoUrl: string;
     executionLogPrefix: string;
     localConfigPath: string;
 }
@@ -61,6 +61,13 @@ export interface Exemption {
     rule: string;
     expirationDate: string;
     reason: string;
+}
+
+export interface IsExemptParams { 
+    exemptions: Exemption[]; 
+    repoUrl: string; 
+    ruleName: string; 
+    logPrefix: string; 
 }
 
 export interface AnalyzeCodebaseParams {
@@ -107,7 +114,7 @@ export interface OpenAIAnalysisParams {
 }
 export interface TelemetryEvent {
     eventType: string;
-    metadata: ResultMetadata | BasicTelemetryMetadata;
+    metadata: ResultMetadata | BasicTelemetryMetadata | ExemptionTelemetryMetadata;
     timestamp: string;
 }
 
@@ -117,6 +124,13 @@ export interface BasicTelemetryMetadata {
     telemetryData?: TelemetryData;
     errorMessage?: string;
     options?: any
+}
+
+export interface ExemptionTelemetryMetadata {
+    repoUrl: string;
+    rule: string;
+    expirationDate: string;
+    reason: string;
 }
 
 export interface GetConfigParams {

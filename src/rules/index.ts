@@ -11,6 +11,7 @@ async function loadRules(params: LoadRulesParams): Promise<RuleConfig[]> {
     const ruleProperties: RuleConfig[] = [];
 
     for (const ruleName of ruleNames) {
+
         let rule: RuleConfig | null;
 
         if (configServer) {
