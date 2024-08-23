@@ -1,4 +1,4 @@
-import { ConfigManager, REPO_GLOBAL_CHECK } from './configManager';
+import { ConfigManager, REPO_GLOBAL_CHECK, normalizeGitHubUrl } from './configManager';
 
 jest.mock('../archetypes', () => ({
   archetypes: {
@@ -15,6 +15,28 @@ jest.mock('../archetypes', () => ({
     }
   }
 }));
+
+describe('normalizeGitHubUrl', () => {
+  it('should remove protocol and .git suffix', () => {
+    expect(normalizeGitHubUrl('https://github.com/user/repo.git')).toBe('user/repo');
+    expect(normalizeGitHubUrl('http://github.com/user/repo')).toBe('user/repo');
+    expect(normalizeGitHubUrl('github.com/user/repo.git')).toBe('user/repo');
+  });
+
+  it('should handle URLs without protocol or .git suffix', () => {
+    expect(normalizeGitHubUrl('github.com/user/repo')).toBe('user/repo');
+    expect(normalizeGitHubUrl('user/repo')).toBe('user/repo');
+  });
+
+  it('should handle custom GitHub hostnames', () => {
+    expect(normalizeGitHubUrl('https://custom-github.com/user/repo.git')).toBe('user/repo');
+    expect(normalizeGitHubUrl('http://github.mycompany.com/user/repo')).toBe('user/repo');
+  });
+
+  it('should handle empty strings', () => {
+    expect(normalizeGitHubUrl('')).toBe('');
+  });
+});
 import { axiosClient } from './axiosClient';
 import { validateArchetype } from './jsonSchemas';
 import fs from 'fs';
