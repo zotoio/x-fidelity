@@ -13,7 +13,7 @@ import { sendTelemetry } from './telemetry';
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
 function normalizeGitHubUrl(url: string): string {
-    return url.replace(/^(https?:\/\/)?(www\.)?github\.com\//, '').replace(/\.git$/, '');
+    return url.replace(/^(https?:\/\/)?([^\/]+)\//, '').replace(/\.git$/, '');
 }
 
 export class ConfigManager {
