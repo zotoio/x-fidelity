@@ -77,7 +77,7 @@ describe('setupEngine', () => {
         expect(ConfigManager.getConfig).toHaveBeenCalledWith({ archetype: 'test-archetype', logPrefix: 'test-prefix' });
 
         expect(mockAddOperator).toHaveBeenCalledTimes(2);
-        expect(mockAddRule).toHaveBeenCalledTimes(2);
+        expect(mockAddRule).toHaveBeenCalledTimes(4);
         expect(mockAddFact).toHaveBeenCalledTimes(2);
         expect(mockOn).toHaveBeenCalledTimes(1);
 
