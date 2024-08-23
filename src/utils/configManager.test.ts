@@ -150,6 +150,13 @@ describe('ConfigManager', () => {
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
         });
 
+        it('should use default archetypes when no configServer or localConfigPath is provided', async () => {
+            options.configServer = '';
+            options.localConfigPath = '';
+            const config = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
+            expect(config.archetype).toEqual(archetypes['node-fullstack']);
+        });
+
         it('should return a default config when unable to load local archetype config', async () => {
             options.configServer = '';
             options.localConfigPath = '/path/to/local/config';
