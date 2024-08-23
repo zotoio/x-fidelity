@@ -1,0 +1,14 @@
+[
+  {
+    "repoUrl": "https://github.com/example/java-microservice-project",
+    "rule": "nonStandardDirectoryStructure-global",
+    "expirationDate": "2024-10-31",
+    "reason": "Project restructuring planned for Q4 2024"
+  },
+  {
+    "repoUrl": "https://github.com/example/another-java-project",
+    "rule": "noDatabases-iterative",
+    "expirationDate": "2024-11-30",
+    "reason": "Database abstraction layer implementation scheduled for November 2024"
+  }
+]

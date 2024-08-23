@@ -1,0 +1,14 @@
+[
+  {
+    "repoUrl": "https://github.com/example/node-fullstack-project",
+    "rule": "outdatedFramework-global",
+    "expirationDate": "2024-12-31",
+    "reason": "Upgrading dependencies is scheduled for Q4 2024"
+  },
+  {
+    "repoUrl": "https://github.com/example/another-node-project",
+    "rule": "sensitiveLogging-iterative",
+    "expirationDate": "2024-09-30",
+    "reason": "Security audit and logging refactor planned for Q3 2024"
+  }
+]
