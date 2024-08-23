@@ -3,7 +3,7 @@ import { logger } from '../../utils/logger';
 import { loadOperators } from '../../operators';
 import { loadFacts } from '../../facts';
 import { sendTelemetry } from '../../utils/telemetry';
-
+import { isExempt } from '../../utils/exemptionLoader';
 import { SetupEngineParams } from '../../types/typeDefs';
 import { ConfigManager } from '../../utils/configManager';
 
@@ -30,7 +30,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     config.rules.forEach((rule) => {
         try {
             logger.info(`adding rule: ${rule?.name}`);
-            if (ConfigManager.isExempt({ exemptions: config.exemptions, repoUrl, ruleName: rule?.name, logPrefix: executionLogPrefix })) {
+            if (isExempt({ exemptions: config.exemptions, repoUrl, ruleName: rule?.name, logPrefix: executionLogPrefix })) {
                 // clone the rule to avoid modifying the original rule
                 rule = JSON.parse(JSON.stringify(rule));
                 // update the rule event type to 'exempt' if it is exempted
