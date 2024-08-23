@@ -1,3 +1,44 @@
+# [2.8.0](https://github.com/zotoio/x-fidelity/compare/v2.7.0...v2.8.0) (2024-08-23)
+
+
+### Bug Fixes
+
+* Add archetype parameter to loadExemptions function ([0a9d95b](https://github.com/zotoio/x-fidelity/commit/0a9d95b867b03245d65b71b6fe78ec708ac494e4))
+* Add shared secret to exemption loader request ([37479d4](https://github.com/zotoio/x-fidelity/commit/37479d4ea256fde577f6da5e2841b94337a3c7e6))
+* Add test case for using default archetypes when no config sources are provided ([bf90659](https://github.com/zotoio/x-fidelity/commit/bf90659578c07bd15dbdeea7a2177003af550f8f))
+* Change log level from debug to info for fetching remote exemptions ([056b55b](https://github.com/zotoio/x-fidelity/commit/056b55b2b3818d8487db13af95d0237f619fc464))
+* Clone and update exempted rule before adding to engine ([c731b31](https://github.com/zotoio/x-fidelity/commit/c731b311daa0890c6afcac6328dcd1713b1fe4c0))
+* Ensure at least two rules are added to the engine ([8c58418](https://github.com/zotoio/x-fidelity/commit/8c58418577b06b760a0e2b112d8e8c60a6e08f63))
+* Ensure at least two rules are added to the engine for testing purposes ([a6da7aa](https://github.com/zotoio/x-fidelity/commit/a6da7aafc117b759c37a5d939b350bbaa49520f8))
+* Handle errors when loading rules and add default rules ([87216a4](https://github.com/zotoio/x-fidelity/commit/87216a4beb5e51c4a2faaff9841bd1ae8f23b773))
+* Import exemptions object from archetypes module and handle undefined case in loadDefaultExemptions ([c523352](https://github.com/zotoio/x-fidelity/commit/c523352bfe2391022a54fe4cdeadbde81c97aada))
+* Normalize GitHub URL by correctly handling forward slashes ([6ed2b49](https://github.com/zotoio/x-fidelity/commit/6ed2b49b267b2c72941abf017839d9a2920f526e))
+* Normalize GitHub URLs when checking exemptions ([8645ace](https://github.com/zotoio/x-fidelity/commit/8645ace1b06e2b9e5eedbfe06b207129fa3548af))
+* Refactor exemption handling in ConfigManager ([f114d45](https://github.com/zotoio/x-fidelity/commit/f114d458fd73404d3a1060b740c33c3d1a547304))
+* Remove unnecessary rule addition logic ([620d365](https://github.com/zotoio/x-fidelity/commit/620d365c0c9ce19f738fe20866e3d5921f47f130))
+* Update exemptions file path in ConfigManager test ([af72043](https://github.com/zotoio/x-fidelity/commit/af720434a88ac03953d757ca996a16d829d8eab0))
+* Update expectation for mockAddRule in engineSetup.test.ts ([177b39c](https://github.com/zotoio/x-fidelity/commit/177b39c7f7dc6ba82dcbd8487cf726c7c14c0867))
+* Update expectations for `mockAddRule` in `engineSetup.test.ts` ([317acdb](https://github.com/zotoio/x-fidelity/commit/317acdb0ccb3e7d3c9ecd2921f2b5f6240910aeb))
+* Update loadExemptions function calls to match expected parameters ([8f6da9a](https://github.com/zotoio/x-fidelity/commit/8f6da9a2261afde5f1cdc0f256fd8fb405783fb6))
+* Update repository URLs in exemption configurations ([9bbfcb2](https://github.com/zotoio/x-fidelity/commit/9bbfcb2bf9879212034ae7d02644f64b626eb283))
+* Update test case for using default archetypes when no config sources are provided ([ca42766](https://github.com/zotoio/x-fidelity/commit/ca427665c9ee687feb8e290b29382ac41eac2f17))
+* Update test for default archetype config when unable to load local config ([42661f6](https://github.com/zotoio/x-fidelity/commit/42661f601d5f6a57e07e199f5ac15344d8368b1b))
+* Use isExempt function from exemptionLoader ([c34dd13](https://github.com/zotoio/x-fidelity/commit/c34dd139cb8ab18e9d8eb3c5fcf3b0ec0fcb5044))
+
+
+### Features
+
+* add example exemptions JSON files for node-fullstack and java-microservice archetypes ([4e00c9d](https://github.com/zotoio/x-fidelity/commit/4e00c9de25bc828849ce8d48948d504485afb6b5))
+* add exemptions route to config server ([1618737](https://github.com/zotoio/x-fidelity/commit/16187374bbdae1d73283c07edcb592723ca7c716))
+* add remote exemption loading to ExecutionConfig ([d5e2862](https://github.com/zotoio/x-fidelity/commit/d5e28624838dab32b33c99323ff30aee0ce9958b))
+* add telemetry event for allowed exemptions ([94ad81b](https://github.com/zotoio/x-fidelity/commit/94ad81b01424ce3a26f321a2423bce459c58f3f9))
+* add unit tests for exemptions-related features ([f757a67](https://github.com/zotoio/x-fidelity/commit/f757a671e7d75da93f1dcaa94344acbc95125ab7))
+* Add unit tests for normalizeGitHubUrl function ([f322fa2](https://github.com/zotoio/x-fidelity/commit/f322fa2bb44e42d3c3ad64ee75f8215ebf14e482))
+* Enhance normalizeGitHubUrl to support self-hosted GitHub instances ([958837d](https://github.com/zotoio/x-fidelity/commit/958837d51c98b1f66b8aa99b7da4be2b0c10b728))
+* **exemptions:** basic exemptions model ([949cdd3](https://github.com/zotoio/x-fidelity/commit/949cdd363a35b410aa3a7017eb6020c52f5c00c8))
+* **exemptions:** remotely managed exemptions ([1bf485c](https://github.com/zotoio/x-fidelity/commit/1bf485ca370f40bf4fff5ff48a7a0ba1bdd7a3bf))
+* Implement remote, local, and default exemption loading ([6f6c74f](https://github.com/zotoio/x-fidelity/commit/6f6c74f9bb09a2cd8e5465feb41368adb7d5d83e))
+
 # [2.7.0](https://github.com/zotoio/x-fidelity/compare/v2.6.0...v2.7.0) (2024-08-22)
 
 
