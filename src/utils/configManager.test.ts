@@ -82,6 +82,7 @@ jest.mock('./telemetry', () => ({
 
 describe('ConfigManager', () => {
     const mockConfig = {
+        name: 'node-fullstack',
         rules: ['rule1', 'rule2'],
         operators: ['operator1', 'operator2'],
         facts: ['fact1', 'fact2'],
@@ -161,18 +162,17 @@ describe('ConfigManager', () => {
             options.configServer = '';
             options.localConfigPath = '';
             const config = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
-            expect(config.archetype).toEqual(expect.objectContaining({
-                name: 'node-fullstack',
-                rules: expect.any(Array),
-                operators: expect.any(Array),
-                facts: expect.any(Array),
+            expect(config.archetype).toEqual({
+                rules: ['rule1', 'rule2'],
+                operators: ['operator1', 'operator2'],
+                facts: ['fact1', 'fact2'],
                 config: expect.objectContaining({
-                    minimumDependencyVersions: expect.any(Object),
-                    standardStructure: expect.any(Object),
-                    blacklistPatterns: expect.any(Array),
-                    whitelistPatterns: expect.any(Array)
+                    minimumDependencyVersions: {},
+                    standardStructure: {},
+                    blacklistPatterns: [],
+                    whitelistPatterns: []
                 })
-            }));
+            });
         });
 
         it('should use default archetypes when no configServer or localConfigPath is provided', async () => {

@@ -3,7 +3,6 @@ import { logger } from "./logger";
 import { Exemption, IsExemptParams, LoadExemptionsParams } from "../types/typeDefs";
 import { sendTelemetry } from "./telemetry";
 import { exemptions } from "../archetypes";
-import { exemptions } from "../archetypes";
 import path from "path";
 import fs from "fs";
 
@@ -96,5 +95,5 @@ export function isExempt(params: IsExemptParams): boolean {
 
 async function loadDefaultExemptions(params: LoadExemptionsParams): Promise<Exemption[]> {
     const { archetype } = params;
-    return Array.isArray(exemptions[archetype]) ? exemptions[archetype] : [];
+    return archetype && exemptions && Array.isArray(exemptions[archetype]) ? exemptions[archetype] : [];
 }

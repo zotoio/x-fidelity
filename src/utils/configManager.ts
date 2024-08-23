@@ -1,6 +1,6 @@
 import { axiosClient } from "./axiosClient";
 import { logger, setLogPrefix } from "./logger";
-import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig, Exemption, IsExemptParams } from "../types/typeDefs";
+import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig, Exemption } from "../types/typeDefs";
 import { loadExemptions } from "./exemptionLoader";
 import { archetypes } from "../archetypes";
 import { options } from '../core/cli';
@@ -8,13 +8,8 @@ import fs from 'fs';
 import * as path from 'path';
 import { validateArchetype, validateRule } from './jsonSchemas';
 import { loadRules } from '../rules';
-import { sendTelemetry } from './telemetry';
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
-
-export function normalizeGitHubUrl(url: string): string {
-    return url.replace(/^(https?:\/\/)?([^/]+)\//, '').replace(/\.git$/, '');
-}
 
 export class ConfigManager {
     private static configs: { [key: string]: ExecutionConfig } = {};
@@ -35,50 +30,6 @@ export class ConfigManager {
             ConfigManager.configs[archetype] = await ConfigManager.initialize({ archetype, logPrefix });
         }
         return ConfigManager.configs[archetype];
-    }
-
-    public static async loadExemptions(localConfigPath: string): Promise<Exemption[]> {
-        const exemptionsPath = path.join(localConfigPath, 'exemptions.json');
-        let exemptions: Exemption[] = [];
-        try {
-            const exemptionsData = await fs.promises.readFile(exemptionsPath, 'utf-8');
-            exemptions = JSON.parse(exemptionsData);
-            logger.info(`Loaded ${exemptions.length} exemptions`);
-            logger.debug(`Exemptions: ${JSON.stringify(exemptions)}`);
-        } catch (error) {
-            logger.warn(`Failed to load exemptions: ${error}`);
-            exemptions = [];
-        }
-        return exemptions;
-    }
-
-    public static isExempt(params: IsExemptParams): boolean {
-        const { repoUrl, ruleName, exemptions, logPrefix } = params;
-        const now = new Date();
-        const normalizedRepoUrl = normalizeGitHubUrl(repoUrl);
-        const exemption = exemptions.find(exemption => 
-            normalizeGitHubUrl(exemption.repoUrl) === normalizedRepoUrl &&
-            exemption.rule === ruleName &&
-            new Date(exemption.expirationDate) > now
-        );
-        if (exemption) {
-            logger.error(`Exempting rule ${ruleName} for repo ${repoUrl} until ${exemption.expirationDate}`);
-            
-            // Send telemetry event for the allowed exemption
-            sendTelemetry({
-                eventType: 'exemptionAllowed',
-                metadata: {
-                    repoUrl: exemption.repoUrl,
-                    rule: exemption.rule,
-                    expirationDate: exemption.expirationDate,
-                    reason: exemption.reason
-                },
-                timestamp: new Date().toISOString()
-            }, logPrefix);
-            
-            return true;
-        }
-        return false;
     }
 
     private static async initialize(params: InitializeParams): Promise<ExecutionConfig> {
@@ -148,12 +99,8 @@ export class ConfigManager {
             });
 
             // Load exemptions
-            if (configServer) {
-                config.exemptions = await loadExemptions(configServer, logPrefix);
-            } else if (localConfigPath) {
-                config.exemptions = await this.loadExemptions(localConfigPath);
-            }
-
+            config.exemptions = await loadExemptions({ configServer, localConfigPath, logPrefix, archetype });
+            
             return config;
         } catch (error) {
             if (error instanceof Error) {

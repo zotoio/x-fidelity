@@ -63,11 +63,11 @@ export interface Exemption {
     reason: string;
 }
 
-export interface IsExemptParams { 
-    exemptions: Exemption[]; 
-    repoUrl: string; 
-    ruleName: string; 
-    logPrefix: string; 
+export interface IsExemptParams {
+    exemptions: Exemption[];
+    repoUrl: string;
+    ruleName: string;
+    logPrefix: string;
 }
 
 export interface AnalyzeCodebaseParams {
@@ -148,8 +148,8 @@ export interface LoadLocalConfigParams {
     localConfigPath: string;
 }
 
-export interface StartServerParams { 
-    customPort?: string; 
+export interface StartServerParams {
+    customPort?: string;
     executionLogPrefix?: string;
 }
 
@@ -208,5 +208,12 @@ export interface LoadLocalRuleParams {
 export interface LoadLocalConfigRuleParams {
     ruleName: string;
     localConfigPath: string;
+}
+
+export interface LoadExemptionsParams { 
+    configServer: string; 
+    localConfigPath: string; 
+    logPrefix?: string; 
+    archetype: string;
 }
 
