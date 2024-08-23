@@ -6,7 +6,7 @@
     "reason": "Project restructuring planned for Q4 2024"
   },
   {
-    "repoUrl": "https://github.com/example/another-java-project",
+    "repoUrl": "git@github.com:zotoio/x-fidelity.git",
     "rule": "noDatabases-iterative",
     "expirationDate": "2024-11-30",
     "reason": "Database abstraction layer implementation scheduled for November 2024"
