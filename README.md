@@ -48,8 +48,9 @@ x-fidelity is an advanced CLI tool and paired config server designed to perform 
 8. [OpenAI Integration](#openai-integration)
 9. [Hosting Config Servers](#hosting-config-servers)
 10. [Best Practices](#best-practices)
-11. [Contributing](#contributing)
-12. [License](#license)
+11. [Exemptions](#exemptions)
+12. [Contributing](#contributing)
+13. [License](#license)
 
 ## Intent and Purpose
 
@@ -657,6 +658,59 @@ This structure allows you to create custom AI-powered rules that can analyze you
 6. **Team Alignment**: Ensure your team understands and agrees on the rules being enforced.
 7. **Performance**: Be mindful of the performance impact, especially for large codebases.
 8. **Centralized Management**: Use a config server to manage and distribute your archetypes and rules across projects.
+
+## Exemptions
+
+Exemptions in x-fidelity provide a way to temporarily waive specific rules for a given repository. This feature is useful when you need to make exceptions to your standard rules due to specific project requirements or during a transition period.
+
+### How Exemptions Work
+
+1. **Definition**: An exemption is defined for a specific rule and repository URL, with an expiration date and a reason.
+
+2. **Storage**: Exemptions are stored in JSON files, typically named `<archetype>-exemptions.json` (e.g., `node-fullstack-exemptions.json`).
+
+3. **Structure**: Each exemption is an object with the following properties:
+   - `repoUrl`: The URL of the repository where the exemption applies.
+   - `rule`: The name of the rule being exempted.
+   - `expirationDate`: The date when the exemption expires (format: "YYYY-MM-DD").
+   - `reason`: A brief explanation for the exemption.
+
+4. **Application**: When x-fidelity runs, it checks if there's an active exemption for each rule violation before reporting it.
+
+5. **Expiration**: Exemptions automatically expire after the specified date, ensuring that exceptions don't become permanent without review.
+
+### Managing Exemptions
+
+1. **Creating Exemptions**: Add new exemptions to the appropriate exemptions JSON file.
+
+2. **Reviewing Exemptions**: Regularly review active exemptions to ensure they're still necessary.
+
+3. **Removing Exemptions**: Remove expired or unnecessary exemptions from the JSON file.
+
+4. **Centralized Management**: Store exemption files alongside your archetype configurations for easy management and version control.
+
+### Example Exemption
+
+```json
+[
+  {
+    "repoUrl": "https://github.com/example/project",
+    "rule": "outdatedFramework-global",
+    "expirationDate": "2024-12-31",
+    "reason": "Upgrading dependencies is scheduled for Q4 2024"
+  }
+]
+```
+
+### Best Practices for Exemptions
+
+1. **Limited Duration**: Set short-term expiration dates and renew if necessary, rather than setting far-future dates.
+2. **Clear Documentation**: Always provide a clear reason for each exemption.
+3. **Regular Review**: Periodically review all exemptions to ensure they're still required.
+4. **Minimal Use**: Use exemptions sparingly to maintain the integrity of your code standards.
+5. **Team Communication**: Ensure the team is aware of active exemptions and the reasons behind them.
+
+By using exemptions judiciously, you can maintain high code standards while allowing for necessary flexibility in specific situations.
 
 ## Contributing
 
