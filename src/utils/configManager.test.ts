@@ -154,8 +154,20 @@ describe('ConfigManager', () => {
             options.configServer = '';
             options.localConfigPath = '/path/to/local/config';
             (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
-            await ConfigManager.getConfig({ archetype: 'test-archetype' });
+            const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
             expect(logger.error).toHaveBeenCalled();
+            expect(config.archetype).toEqual({
+                name: 'test-archetype',
+                rules: [],
+                operators: [],
+                facts: [],
+                config: {
+                    minimumDependencyVersions: {},
+                    standardStructure: {},
+                    blacklistPatterns: [],
+                    whitelistPatterns: []
+                }
+            });
         });
 
         it('should use default archetypes when no configServer or localConfigPath is provided', async () => {
