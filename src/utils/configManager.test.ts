@@ -188,7 +188,7 @@ describe('ConfigManager', () => {
             (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockExemptions));
             const exemptions = await loadExemptions({ configServer: '', localConfigPath: '/path/to/local/config', archetype: 'test-archetype' });
             expect(exemptions).toEqual(mockExemptions);
-            expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/exemptions.json', 'utf-8');
+            expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/test-archetype-exemptions.json', 'utf-8');
         });
 
         it('should return an empty array if exemptions file is not found', async () => {
