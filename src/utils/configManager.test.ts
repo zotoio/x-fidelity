@@ -186,7 +186,7 @@ describe('ConfigManager', () => {
                 { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2023-12-31', reason: 'Test reason' }
             ];
             (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockExemptions));
-            const exemptions = await loadExemptions('/path/to/local/config');
+            const exemptions = await loadExemptions({ localConfigPath: '/path/to/local/config', archetype: 'test-archetype' });
             expect(exemptions).toEqual(mockExemptions);
             expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/exemptions.json', 'utf-8');
         });
