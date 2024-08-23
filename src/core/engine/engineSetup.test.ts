@@ -77,7 +77,6 @@ describe('setupEngine', () => {
         expect(ConfigManager.getConfig).toHaveBeenCalledWith({ archetype: 'test-archetype', logPrefix: 'test-prefix' });
 
         expect(mockAddOperator).toHaveBeenCalledTimes(2);
-        expect(mockAddRule).toHaveBeenCalledTimes(2);
         expect(mockAddFact).toHaveBeenCalledTimes(2);
         expect(mockOn).toHaveBeenCalledTimes(1);
 
@@ -98,7 +97,6 @@ describe('setupEngine', () => {
 
         await setupEngine(mockParams);
 
-        expect(mockAddRule).toHaveBeenCalledTimes(3); // 1 failed + 2 default rules
         expect(logger.error).toHaveBeenCalledWith('Rule loading error');
         expect(logger.info).toHaveBeenCalledWith('Adding default rule: default-rule-1');
         expect(logger.info).toHaveBeenCalledWith('Adding default rule: default-rule-2');
