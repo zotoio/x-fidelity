@@ -21,6 +21,7 @@ import fs from 'fs';
 import { options } from '../core/cli';
 import { logger } from './logger';
 import { archetypes } from '../archetypes';
+import { sendTelemetry } from './telemetry';
 
 jest.mock('./axiosClient');
 jest.mock('../rules');
@@ -50,6 +51,9 @@ jest.mock('./logger', () => ({
         info: jest.fn(),
         warn: jest.fn()
     }
+}));
+jest.mock('./telemetry', () => ({
+    sendTelemetry: jest.fn()
 }));
 
 describe('ConfigManager', () => {
@@ -149,6 +153,79 @@ describe('ConfigManager', () => {
             expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/java-microservice.json', 'utf8');
             const loadedConfigs = await ConfigManager.getLoadedConfigs();
             expect(loadedConfigs).toEqual(['node-fullstack', 'java-microservice']);
+        });
+    });
+
+    describe('loadExemptions', () => {
+        it('should load exemptions from a local file', async () => {
+            const mockExemptions = [
+                { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2023-12-31', reason: 'Test reason' }
+            ];
+            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockExemptions));
+            const exemptions = await ConfigManager.loadExemptions('/path/to/local/config');
+            expect(exemptions).toEqual(mockExemptions);
+            expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/exemptions.json', 'utf-8');
+        });
+
+        it('should return an empty array if exemptions file is not found', async () => {
+            (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
+            const exemptions = await ConfigManager.loadExemptions('/path/to/local/config');
+            expect(exemptions).toEqual([]);
+            expect(logger.warn).toHaveBeenCalled();
+        });
+    });
+
+    describe('isExempt', () => {
+        const mockExemptions = [
+            { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2099-12-31', reason: 'Test reason' }
+        ];
+
+        it('should return true for an exempted rule', () => {
+            const result = ConfigManager.isExempt({
+                repoUrl: 'https://github.com/example/repo',
+                ruleName: 'test-rule',
+                exemptions: mockExemptions,
+                logPrefix: 'test-prefix'
+            });
+            expect(result).toBe(true);
+            expect(logger.error).toHaveBeenCalled();
+            expect(sendTelemetry).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    eventType: 'exemptionAllowed',
+                    metadata: expect.objectContaining({
+                        repoUrl: 'https://github.com/example/repo',
+                        rule: 'test-rule'
+                    })
+                }),
+                'test-prefix'
+            );
+        });
+
+        it('should return false for a non-exempted rule', () => {
+            const result = ConfigManager.isExempt({
+                repoUrl: 'https://github.com/example/repo',
+                ruleName: 'non-exempted-rule',
+                exemptions: mockExemptions,
+                logPrefix: 'test-prefix'
+            });
+            expect(result).toBe(false);
+            expect(logger.error).not.toHaveBeenCalled();
+            expect(sendTelemetry).not.toHaveBeenCalled();
+        });
+
+        it('should return false for an expired exemption', () => {
+            const expiredExemptions = [
+                { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2000-01-01', reason: 'Expired reason' }
+            ];
+            const result = ConfigManager.isExempt({
+                repoUrl: 'https://github.com/example/repo',
+                ruleName: 'test-rule',
+                exemptions: expiredExemptions,
+                logPrefix: 'test-prefix'
+            });
+            expect(result).toBe(false);
+            expect(logger.error).not.toHaveBeenCalled();
+            expect(sendTelemetry).not.toHaveBeenCalled();
         });
     });
 });
