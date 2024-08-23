@@ -1,4 +1,6 @@
-import { ConfigManager, REPO_GLOBAL_CHECK, normalizeGitHubUrl } from './configManager';
+import { ConfigManager, REPO_GLOBAL_CHECK } from './configManager';
+import { isExempt, normalizeGitHubUrl } from "./exemptionLoader";
+import { loadExemptions } from './exemptionLoader';
 
 jest.mock('../archetypes', () => ({
   archetypes: {
@@ -184,14 +186,14 @@ describe('ConfigManager', () => {
                 { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2023-12-31', reason: 'Test reason' }
             ];
             (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockExemptions));
-            const exemptions = await ConfigManager.loadExemptions('/path/to/local/config');
+            const exemptions = await loadExemptions('/path/to/local/config');
             expect(exemptions).toEqual(mockExemptions);
             expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/exemptions.json', 'utf-8');
         });
 
         it('should return an empty array if exemptions file is not found', async () => {
             (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
-            const exemptions = await ConfigManager.loadExemptions('/path/to/local/config');
+            const exemptions = await loadExemptions('/path/to/local/config');
             expect(exemptions).toEqual([]);
             expect(logger.warn).toHaveBeenCalled();
         });
@@ -203,7 +205,7 @@ describe('ConfigManager', () => {
         ];
 
         it('should return true for an exempted rule', () => {
-            const result = ConfigManager.isExempt({
+            const result = isExempt({
                 repoUrl: 'https://github.com/example/repo',
                 ruleName: 'test-rule',
                 exemptions: mockExemptions,
@@ -224,7 +226,7 @@ describe('ConfigManager', () => {
         });
 
         it('should return false for a non-exempted rule', () => {
-            const result = ConfigManager.isExempt({
+            const result = isExempt({
                 repoUrl: 'https://github.com/example/repo',
                 ruleName: 'non-exempted-rule',
                 exemptions: mockExemptions,
@@ -239,7 +241,7 @@ describe('ConfigManager', () => {
             const expiredExemptions = [
                 { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2000-01-01', reason: 'Expired reason' }
             ];
-            const result = ConfigManager.isExempt({
+            const result = isExempt({
                 repoUrl: 'https://github.com/example/repo',
                 ruleName: 'test-rule',
                 exemptions: expiredExemptions,
