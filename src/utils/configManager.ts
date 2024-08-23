@@ -12,6 +12,10 @@ import { sendTelemetry } from './telemetry';
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
+function normalizeGitHubUrl(url: string): string {
+    return url.replace(/^(https?:\/\/)?(www\.)?github\.com\//, '').replace(/\.git$/, '');
+}
+
 export class ConfigManager {
     private static configs: { [key: string]: ExecutionConfig } = {};
 
@@ -51,8 +55,9 @@ export class ConfigManager {
     public static isExempt(params: IsExemptParams): boolean {
         const { repoUrl, ruleName, exemptions, logPrefix } = params;
         const now = new Date();
+        const normalizedRepoUrl = normalizeGitHubUrl(repoUrl);
         const exemption = exemptions.find(exemption => 
-            exemption.repoUrl === repoUrl &&
+            normalizeGitHubUrl(exemption.repoUrl) === normalizedRepoUrl &&
             exemption.rule === ruleName &&
             new Date(exemption.expirationDate) > now
         );
