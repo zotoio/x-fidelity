@@ -1,3 +1,22 @@
+# [2.10.0](https://github.com/zotoio/x-fidelity/compare/v2.9.0...v2.10.0) (2024-08-24)
+
+
+### Bug Fixes
+
+* Add error logging in fileContains operator ([7a41a2f](https://github.com/zotoio/x-fidelity/commit/7a41a2f8cddfc5f84a8fff87f64be07fed8ee2cd))
+* Correct the logic in the fileContains operator ([9f45231](https://github.com/zotoio/x-fidelity/commit/9f45231805e1b21afe64c8a72b884704ceb58b08))
+* **filecontains:** ensure detailed line numbers are included in results ([3d94716](https://github.com/zotoio/x-fidelity/commit/3d947164d10e42fc76bb68ac92d51db8334b5b6e))
+* Update fileContains operator implementation ([6a11a46](https://github.com/zotoio/x-fidelity/commit/6a11a4600e23f980086472219d355106c188faf7))
+* Update fileContains operator implementation ([f9a8f03](https://github.com/zotoio/x-fidelity/commit/f9a8f0379fa1944b5565e2f644735aa4fc24da3c))
+* Update fileContains test cases to provide second argument ([9d68f43](https://github.com/zotoio/x-fidelity/commit/9d68f432a0348136a19b4b350776518e852a5c6d))
+* Update fileContains test expectations ([767d72f](https://github.com/zotoio/x-fidelity/commit/767d72fe233672682f92612dbd2116eeaf10a0f3))
+
+
+### Features
+
+* Add repoFileAnalysis function to analyze files in a repository ([a100cf3](https://github.com/zotoio/x-fidelity/commit/a100cf384f71028a0a5aae70b0ac666f013f912a))
+* Allow checkPattern param in repoFileAnalysis to be an array of patterns ([896fc2d](https://github.com/zotoio/x-fidelity/commit/896fc2d48294183028cffb48bd9f2604fe9b774b))
+
 # [2.9.0](https://github.com/zotoio/x-fidelity/compare/v2.8.0...v2.9.0) (2024-08-23)
 
 
