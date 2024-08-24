@@ -70,31 +70,33 @@ function isWhitelisted(filePath: string, whitelistPatterns: string[]): boolean {
 async function repoFileAnalysis(params: any, almanac: any) {
     const result: any = {'result': []};
     const fileData: FileData = await almanac.factValue('fileData');
-    const checkPattern: string = params.checkPattern;
+    const checkPatterns: string[] = Array.isArray(params.checkPattern) ? params.checkPattern : [params.checkPattern];
     const fileContent = fileData.fileContent;
     const filePath = fileData.filePath;
 
-    logger.debug(`repoFileAnalysis run for ${checkPattern} on '${filePath}'..`);
+    logger.debug(`repoFileAnalysis run for ${checkPatterns.join(', ')} on '${filePath}'..`);
 
-    if (fileData.fileName === 'REPO_GLOBAL_CHECK' || !checkPattern || !fileContent) {
+    if (fileData.fileName === 'REPO_GLOBAL_CHECK' || checkPatterns.length === 0 || !fileContent) {
         return result;
     }
 
     const analysis: any = [];
-    const regex = new RegExp(checkPattern, 'g');
     const lines = fileContent.split('\n');
     logger.debug(`lines: ${lines.length}`);
     let lineNumber = 0;
     for (const line of lines) {
         lineNumber++;
-        if (regex.test(line)) {
-            logger.debug(`match on line ${lineNumber}`)
-            const match = {
-                'match': checkPattern,
-                'lineNumber': lineNumber,
-                'line': line
-            };
-            analysis.push(match);
+        for (const pattern of checkPatterns) {
+            const regex = new RegExp(pattern, 'g');
+            if (regex.test(line)) {
+                logger.debug(`match on line ${lineNumber} for pattern ${pattern}`)
+                const match = {
+                    'match': pattern,
+                    'lineNumber': lineNumber,
+                    'line': line
+                };
+                analysis.push(match);
+            }
         }
     }
 
