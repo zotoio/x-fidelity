@@ -11,7 +11,7 @@ const fileContains: OperatorDefn = {
                 logger.debug(`fileContains: true`);
                 return true;
             }
-            
+        
         } catch (e) {
             logger.error(`fileContains: ${e}`);
             return false;
