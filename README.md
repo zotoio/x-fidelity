@@ -702,11 +702,49 @@ This operator returns true if any of the patterns in the array are found in the 
 
 ### `outdatedFramework` Operator
 
-The `outdatedFramework` operator checks if the project is using outdated versions of dependencies.
+The `outdatedFramework` operator checks if the project is using outdated versions of dependencies. It compares the installed versions of dependencies against the minimum required versions specified in the archetype configuration.
+
+Key features:
+- Supports both npm and Yarn package managers
+- Handles version ranges and specific versions
+- Checks nested dependencies
+- Returns `true` if any dependency is outdated, triggering a rule failure
+
+Usage example in a rule:
+```json
+{
+    "fact": "repoDependencyAnalysis",
+    "params": {
+        "resultFact": "repoDependencyResults"
+    },
+    "operator": "outdatedFramework",
+    "value": true
+}
+```
 
 ### `nonStandardDirectoryStructure` Operator
 
-The `nonStandardDirectoryStructure` operator verifies if the project follows the standard directory structure defined in the archetype.
+The `nonStandardDirectoryStructure` operator verifies if the project follows the standard directory structure defined in the archetype. It recursively checks the project's directory structure against the specified standard structure.
+
+Key features:
+- Performs a deep comparison of the directory structure
+- Ignores files and focuses only on directory structure
+- Returns `true` if the structure doesn't match, triggering a rule failure
+- Only runs on the special `REPO_GLOBAL_CHECK` file to ensure a single, comprehensive check
+
+Usage example in a rule:
+```json
+{
+    "fact": "fileData",
+    "path": "$.filePath",
+    "operator": "nonStandardDirectoryStructure",
+    "value": {
+        "fact": "standardStructure"
+    }
+}
+```
+
+Both operators play crucial roles in maintaining project consistency and up-to-date dependencies, contributing to the overall quality and maintainability of the codebase.
 
 ### `openaiAnalysisHighSeverity` Operator
 
