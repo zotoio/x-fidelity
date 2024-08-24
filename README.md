@@ -31,10 +31,6 @@ x-fidelity is an advanced CLI tool and paired config server designed to perform 
    ```
    xfidelity .
    ```
-4. For more options:
-   ```
-   xfidelity --help
-   ```
 
 ## Table of Contents
 
