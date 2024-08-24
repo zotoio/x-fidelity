@@ -1,3 +1,12 @@
+# [2.11.0](https://github.com/zotoio/x-fidelity/compare/v2.10.0...v2.11.0) (2024-08-24)
+
+
+### Features
+
+* Add documentation for custom operators in x-fidelity ([d015fff](https://github.com/zotoio/x-fidelity/commit/d015fff73189704486f2a51eb8a235f2c161152d))
+* Add new operators section in README ([a306c4d](https://github.com/zotoio/x-fidelity/commit/a306c4db3b4043e8e8cf6fcd9bb78e2282c82ec9))
+* Update README.md with new features and enhancements ([751b4ed](https://github.com/zotoio/x-fidelity/commit/751b4eddb5abafd7500f52ec403b5a42d7b0c447))
+
 # [2.10.0](https://github.com/zotoio/x-fidelity/compare/v2.9.0...v2.10.0) (2024-08-24)
 
 
