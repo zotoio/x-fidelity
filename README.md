@@ -673,11 +673,11 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
 
 This structure allows you to create custom AI-powered rules that can analyze your codebase for specific patterns, best practices, or potential issues. Remember to follow the naming convention to ensure proper handling of OpenAI rules in the system.
 
-### Custom Operators
+## Custom Operators
 
 x-fidelity includes several custom operators that can be used in your rules. Here's a brief overview of each:
 
-#### `fileContains` Operator
+### `fileContains` Operator
 
 The `fileContains` operator checks if a file contains specific patterns. It supports an array of patterns for flexible content matching.
 
@@ -700,15 +700,15 @@ Usage example:
 
 This operator returns true if any of the patterns in the array are found in the file content.
 
-#### `outdatedFramework` Operator
+### `outdatedFramework` Operator
 
 The `outdatedFramework` operator checks if the project is using outdated versions of dependencies.
 
-#### `nonStandardDirectoryStructure` Operator
+### `nonStandardDirectoryStructure` Operator
 
 The `nonStandardDirectoryStructure` operator verifies if the project follows the standard directory structure defined in the archetype.
 
-#### `openaiAnalysisHighSeverity` Operator
+### `openaiAnalysisHighSeverity` Operator
 
 The `openaiAnalysisHighSeverity` operator is used with OpenAI integration to identify high-severity issues in the AI-generated analysis.
 
