@@ -15,6 +15,7 @@ describe('fileContains', () => {
     it('returns true when the checkString is found in the fileContent', () => {
         const repoFileAnalysis = { result: [{ lineNumber: 1, line: 'Hello, world!' }] };
         expect(fileContains.fn(repoFileAnalysis, true)).toBe(true);
+        expect(logger.debug).toHaveBeenCalledWith('fileContains: processing..');
         expect(logger.debug).toHaveBeenCalledWith('fileContains: true');
     });
 
@@ -41,10 +42,10 @@ describe('fileContains', () => {
         expect(logger.debug).toHaveBeenCalledWith('fileContains: false');
     });
 
-    it('logs an error and returns true if an exception occurs', () => {
+    it('logs an error and returns false if an exception occurs', () => {
         const repoFileAnalysis = { result: null };
-        expect(fileContains.fn(repoFileAnalysis, true)).toBe(true);
+        expect(fileContains.fn(repoFileAnalysis, true)).toBe(false);
         expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('fileContains:'));
-        expect(logger.debug).toHaveBeenCalledWith('fileContains: true');
+        expect(logger.debug).toHaveBeenCalledWith('fileContains: false');
     });
 });
