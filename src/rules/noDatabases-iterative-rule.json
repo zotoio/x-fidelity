@@ -1,12 +1,21 @@
 {
     "name": "noDatabases-iterative",
     "conditions": {
-        "any": [
+        "all": [
             {
                 "fact": "fileData",
-                "path": "$.fileContent",
+                "path": "$.fileName",
+                "operator": "notEqual",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "repoFileAnalysis",
+                "params": {
+                    "checkPattern": [".*oracle.*"],
+                    "resultFact": "fileResultsDB"
+                },
                 "operator": "fileContains",
-                "value": "oracle"
+                "value": true
             }
         ]
     },
@@ -15,8 +24,7 @@
         "params": {
             "message": "code must not directly call databases",
             "details": {
-                "fact": "fileData",
-                "path": "$.filePath"
+                "fact": "fileResults-DB"
             }
         }
     }

@@ -161,13 +161,13 @@ export interface ResultMetadata {
         totalIssues: number;
         warningCount: number;
         fatalityCount: number;
+        exemptCount: number;
         issueDetails: ScanResult[];
         startTime: number;
         finishTime: number;
         durationSeconds: number;
         telemetryData: TelemetryData;
         options: any;
-        [key: string]: any;
     };
 }
 

@@ -1,42 +1,29 @@
 {
     "name": "sensitiveLogging-iterative",
     "conditions": {
-        "any": [
+        "all": [
             {
                 "fact": "fileData",
-                "path": "$.fileContent",
-                "operator": "fileContains",
-                "value": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)"
+                "path": "$.fileName",
+                "operator": "notEqual",
+                "value": "REPO_GLOBAL_CHECK"
             },
             {
-                "fact": "fileData",
-                "path": "$.fileContent",
+                "fact": "repoFileAnalysis",
+                "params": {
+                    "checkPattern": [
+                        "oracle",
+                        "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                        "(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)",
+                        "(password|passphrase)",
+                        "(private[_-]?key|ssh[_-]?key)",
+                        "(oauth[_-]?token|jwt[_-]?token)",
+                        "db[_-]?password"
+                    ],
+                    "resultFact": "fileResults"
+                },
                 "operator": "fileContains",
-                "value": "(password|passphrase)"
-            },
-            {
-                "fact": "fileData",
-                "path": "$.fileContent",
-                "operator": "fileContains",
-                "value": "(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)"
-            },
-            {
-                "fact": "fileData",
-                "path": "$.fileContent",
-                "operator": "fileContains",
-                "value": "(private[_-]?key|ssh[_-]?key)"
-            },
-            {
-                "fact": "fileData",
-                "path": "$.fileContent",
-                "operator": "fileContains",
-                "value": "(oauth[_-]?token|jwt[_-]?token)"
-            },
-            {
-                "fact": "fileData",
-                "path": "$.fileContent",
-                "operator": "fileContains",
-                "value": "db[_-]?password"
+                "value": true
             }
         ]
     },
@@ -45,8 +32,7 @@
         "params": {
             "message": "Potential sensitive data detected. This must not be logged or exposed.",
             "details": {
-                "fact": "fileData",
-                "path": "$.filePath"
+                "fact": "fileResults"
             }
         }
     }

@@ -11,11 +11,10 @@
             {
                 "fact": "repoDependencyAnalysis",
                 "params": {
-                    "prompt": "what are the most important 5 things to fix?",
                     "resultFact": "repoDependencyResults"
                 },
                 "operator": "outdatedFramework",
-                "value": 8
+                "value": true
             }
         ]
     },

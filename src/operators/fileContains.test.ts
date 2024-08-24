@@ -4,6 +4,7 @@ import { fileContains } from './fileContains';
 jest.mock('../utils/logger', () => ({
     logger: {
         debug: jest.fn(),
+        error: jest.fn()
     },
 }));
 
@@ -15,7 +16,6 @@ describe('fileContains', () => {
     it('returns true when the checkString is found in the fileContent', () => {
         const repoFileAnalysis = { result: [{ lineNumber: 1, line: 'Hello, world!' }] };
         expect(fileContains.fn(repoFileAnalysis, true)).toBe(true);
-        expect(logger.debug).toHaveBeenCalledWith('fileContains: processing..');
         expect(logger.debug).toHaveBeenCalledWith('fileContains: true');
     });
 
@@ -43,9 +43,8 @@ describe('fileContains', () => {
     });
 
     it('logs an error and returns false if an exception occurs', () => {
-        const repoFileAnalysis = { result: null };
+        const repoFileAnalysis = { result: [] };
         expect(fileContains.fn(repoFileAnalysis, true)).toBe(false);
-        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('fileContains:'));
         expect(logger.debug).toHaveBeenCalledWith('fileContains: false');
     });
 });

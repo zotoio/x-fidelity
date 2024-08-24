@@ -19,7 +19,7 @@ describe('runEngineOnFiles', () => {
     } as unknown as Engine;
 
     const mockFileData = [
-        { fileName: 'test.ts', filePath: 'src/test.ts', fileContent: 'console.log("test");' },
+        { fileName: 'test.ts', filePath: 'src/test.ts', fileContent: 'logger.log("test");' },
         { fileName: REPO_GLOBAL_CHECK, filePath: REPO_GLOBAL_CHECK, fileContent: REPO_GLOBAL_CHECK },
     ];
 

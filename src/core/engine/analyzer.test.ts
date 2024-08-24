@@ -81,7 +81,7 @@ describe('analyzeCodebase', () => {
 
     it('should analyze the codebase and return results', async () => {
         const mockFileData = [
-            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { filePath: 'src/index.ts', fileContent: 'logger.log("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
@@ -140,7 +140,7 @@ describe('analyzeCodebase', () => {
 
     it('should handle errors during analysis', async () => {
         const mockFileData = [
-            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { filePath: 'src/index.ts', fileContent: 'logger.log("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
@@ -198,7 +198,7 @@ describe('analyzeCodebase', () => {
     it('should handle OpenAI analysis when OpenAI is enabled', async () => {
         (isOpenAIEnabled as jest.Mock).mockReturnValue(true);
         const mockFileData = [
-            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { filePath: 'src/index.ts', fileContent: 'logger.log("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
@@ -235,7 +235,7 @@ describe('analyzeCodebase', () => {
     it('should not add OpenAI facts when OpenAI is not enabled', async () => {
         (isOpenAIEnabled as jest.Mock).mockReturnValue(false);
         const mockFileData = [
-            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { filePath: 'src/index.ts', fileContent: 'logger.log("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
@@ -269,7 +269,7 @@ describe('analyzeCodebase', () => {
 
     it('should handle fatalities', async () => {
         const mockFileData = [
-            { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            { filePath: 'src/index.ts', fileContent: 'logger.log("Hello, world!");' },
             { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
         ];
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];

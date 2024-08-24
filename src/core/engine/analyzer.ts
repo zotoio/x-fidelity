@@ -4,7 +4,7 @@ import { ConfigManager, REPO_GLOBAL_CHECK } from '../../utils/configManager';
 import { ArchetypeConfig, ResultMetadata } from '../../types/typeDefs';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';
-import { collectRepoFileData } from '../../facts/repoFilesystemFacts';
+import { collectRepoFileData, repoFileAnalysis } from '../../facts/repoFilesystemFacts';
 import { getDependencyVersionFacts, repoDependencyAnalysis } from '../../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../../facts/openaiAnalysisFacts';
 import { collectTelemetryData } from './telemetryCollector';
@@ -71,6 +71,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
 
     // add output facts
     engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
+    engine.addFact('repoFileAnalysis', repoFileAnalysis);
 
     const failures = await runEngineOnFiles({
         engine,
@@ -89,6 +90,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
 
     const fatalityCount = countRuleFailures(failures, 'fatality');
     const warningCount = countRuleFailures(failures, 'warning');
+    const exemptCount = countRuleFailures(failures, 'exempt');
 
     const finishTime = new Date().getTime();
 
@@ -100,6 +102,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             totalIssues: totalFailureCount,
             warningCount: warningCount,
             fatalityCount: fatalityCount,
+            exemptCount: exemptCount,
             issueDetails: failures,
             startTime: telemetryData.startTime,
             finishTime: finishTime,
