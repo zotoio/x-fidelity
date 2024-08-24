@@ -303,7 +303,7 @@ x-fidelity uses archetypes to define project-specific configurations. Archetypes
 - Implementation of GitHub webhook to update local config
 - New cache routes: clearcache and viewcache
 - JSON schema validation for archetypes and rules
-- Input validation using Joi for URL parameters and telemetry data
+- Input validation for URL parameters and telemetry data
 - Helmet middleware for improved security headers
 - Rate limiting on the Express server
 - Refactored ConfigManager with static methods and caching
@@ -312,8 +312,33 @@ x-fidelity uses archetypes to define project-specific configurations. Archetypes
 - Shared secret option for telemetry client and server
 - Improved dependency compatibility checks for npm and yarn
 - Enhanced error handling and logging
+- Updated `fileContains` operator to support array of patterns
+- New exemptions feature for temporarily waiving specific rules
+- Improved OpenAI analysis with customizable prompts and severity thresholds
 
 For more detailed information on these features and how to use them, please refer to the respective sections in this README.
+
+### Exemptions
+
+x-fidelity now supports exemptions, allowing you to temporarily waive specific rules for a given repository. This feature is useful when you need to make exceptions to your standard rules due to specific project requirements or during a transition period.
+
+Exemptions are defined in JSON files and include:
+- The repository URL
+- The rule being exempted
+- An expiration date
+- A reason for the exemption
+
+For more details on how to use and manage exemptions, see the [Exemptions](#exemptions) section.
+
+### OpenAI Integration Enhancements
+
+The OpenAI integration has been expanded to allow for more customizable analysis:
+
+- Custom prompts can now be defined in OpenAI-specific rules
+- Severity thresholds can be set for OpenAI analysis results
+- New `openaiAnalysisHighSeverity` operator for fine-grained control over AI-generated insights
+
+For more information on leveraging these new OpenAI features, see the [OpenAI Integration](#openai-integration) section.
 
 ### Archetype Structure
 
@@ -606,7 +631,7 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
 
 ```json
 {
-    "name": "openai-custom-analysis",
+    "name": "openaiCustomAnalysis-global",
     "conditions": {
         "all": [
             {
@@ -630,7 +655,7 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
         "type": "warning",
         "params": {
             "message": "Custom message for the warning",
-            "results": {
+            "details": {
                 "fact": "openaiCustomAnalysisResult"
             }
         }
@@ -639,7 +664,7 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
 ```
 
 3. Customize the rule:
-   - Set a unique `name` for your rule, ensuring it starts with 'openai'.
+   - Set a unique `name` for your rule, ensuring it starts with 'openai' and ends with '-global'.
    - Modify the `prompt` in the `params` section to specify what you want the AI to analyze.
    - Adjust the `value` in the `openaiAnalysisHighSeverity` operator to set the severity threshold (1-10).
    - Customize the `message` in the `event` params to describe the warning.
@@ -647,6 +672,28 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
 4. Add your new rule to the appropriate archetype configuration file.
 
 This structure allows you to create custom AI-powered rules that can analyze your codebase for specific patterns, best practices, or potential issues. Remember to follow the naming convention to ensure proper handling of OpenAI rules in the system.
+
+### Using the `fileContains` Operator
+
+The `fileContains` operator has been updated to support an array of patterns. This allows for more flexible and powerful content matching in your rules. Here's an example of how to use it:
+
+```json
+{
+    "fact": "repoFileAnalysis",
+    "params": {
+        "checkPattern": [
+            "pattern1",
+            "pattern2",
+            "pattern3"
+        ],
+        "resultFact": "fileResults"
+    },
+    "operator": "fileContains",
+    "value": true
+}
+```
+
+In this example, the `fileContains` operator will return true if any of the patterns in the array are found in the file content. This is particularly useful for rules that need to check for multiple related patterns or variations of a pattern.
 
 ## Best Practices
 
