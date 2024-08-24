@@ -4,23 +4,20 @@ import { OperatorDefn } from '../types/typeDefs';
 const fileContains: OperatorDefn = {
     'name': 'fileContains', 
     'fn': (repoFileAnalysis: any) => {
-        let result = false;
-        
         try {
             logger.debug(`fileContains: processing..`);
 
             if (repoFileAnalysis?.result?.length > 0) {
-                logger.error(`fileContains: true`);
+                logger.debug(`fileContains: true`);
                 return true;
             }
             
         } catch (e) {
             logger.error(`fileContains: ${e}`);
-            result = false;
+            return false;
         }
-        logger.debug(`fileContains: ${result}`);
-        return result;
-        
+        logger.debug(`fileContains: false`);
+        return false;
     }
 }
 
