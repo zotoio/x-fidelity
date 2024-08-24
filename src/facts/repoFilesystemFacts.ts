@@ -67,4 +67,49 @@ function isWhitelisted(filePath: string, whitelistPatterns: string[]): boolean {
     return false;
 }
 
-export { collectRepoFileData, parseFile, isBlacklisted, isWhitelisted, FileData }
+async function repoFileAnalysis(params: any, almanac: any) {
+    const result: any = {'result': []};
+    const fileData: FileData = await almanac.factValue('fileData');
+    const checkPattern: string = params.checkPattern;
+    const fileContent = fileData.fileContent;
+    const filePath = fileData.filePath;
+
+    logger.debug(`repoFileAnalysis run for ${checkPattern} on '${filePath}'..`);
+
+    if (fileData.fileName === 'REPO_GLOBAL_CHECK' || !checkPattern || !fileContent) {
+        return result;
+    }
+
+    const analysis: any = [];
+    const regex = new RegExp(checkPattern, 'g');
+    const lines = fileContent.split('\n');
+    logger.debug(`lines: ${lines.length}`);
+    let lineNumber = 0;
+    for (const line of lines) {
+        lineNumber++;
+        if (regex.test(line)) {
+            logger.debug(`match on line ${lineNumber}`)
+            const match = {
+                'match': checkPattern,
+                'lineNumber': lineNumber,
+                'line': line
+            };
+            analysis.push(match);
+        }
+    }
+
+    if (analysis.length > 0) {
+        logger.error(`repoFileAnalysis '${filePath}': \n${JSON.stringify(analysis)}`);
+        
+    }
+
+    result.result = analysis;
+
+    almanac.addRuntimeFact(params.resultFact, result);
+
+    return result;
+
+    // testing match on 'oracle'
+}
+
+export { collectRepoFileData, repoFileAnalysis, parseFile, isBlacklisted, isWhitelisted, FileData }
