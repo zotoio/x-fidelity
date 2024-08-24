@@ -673,10 +673,15 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
 
 This structure allows you to create custom AI-powered rules that can analyze your codebase for specific patterns, best practices, or potential issues. Remember to follow the naming convention to ensure proper handling of OpenAI rules in the system.
 
-### Using the `fileContains` Operator
+### Custom Operators
 
-The `fileContains` operator has been updated to support an array of patterns. This allows for more flexible and powerful content matching in your rules. Here's an example of how to use it:
+x-fidelity includes several custom operators that can be used in your rules. Here's a brief overview of each:
 
+#### `fileContains` Operator
+
+The `fileContains` operator checks if a file contains specific patterns. It supports an array of patterns for flexible content matching.
+
+Usage example:
 ```json
 {
     "fact": "repoFileAnalysis",
@@ -693,7 +698,21 @@ The `fileContains` operator has been updated to support an array of patterns. Th
 }
 ```
 
-In this example, the `fileContains` operator will return true if any of the patterns in the array are found in the file content. This is particularly useful for rules that need to check for multiple related patterns or variations of a pattern.
+This operator returns true if any of the patterns in the array are found in the file content.
+
+#### `outdatedFramework` Operator
+
+The `outdatedFramework` operator checks if the project is using outdated versions of dependencies.
+
+#### `nonStandardDirectoryStructure` Operator
+
+The `nonStandardDirectoryStructure` operator verifies if the project follows the standard directory structure defined in the archetype.
+
+#### `openaiAnalysisHighSeverity` Operator
+
+The `openaiAnalysisHighSeverity` operator is used with OpenAI integration to identify high-severity issues in the AI-generated analysis.
+
+For more detailed information on how to use these operators in your rules, please refer to the specific rule examples in the documentation.
 
 ## Best Practices
 
