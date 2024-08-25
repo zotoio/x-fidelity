@@ -134,6 +134,7 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
         const fullName = parentName ? `${parentName}/${dep.name}` : dep.name;
         if (Object.keys(minVersions).some(key => key === dep.name || `@${key}` === dep.name)) {
             const minVersionKey = Object.keys(minVersions).find(key => key === dep.name || `@${key}` === dep.name);
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             results.push({ dep: fullName, ver: dep.version, min: minVersions[minVersionKey!] });
         }
         if (dep.dependencies) {
@@ -186,6 +187,7 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
 export function semverValid(installed: string, required: string): boolean {
     // Remove potential @namespace from installed version
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const installedVersion = installed.includes('@') ? installed.split('@').pop()! : installed;
     
     if (!required || !installedVersion) {
