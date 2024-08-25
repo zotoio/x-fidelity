@@ -88,8 +88,24 @@ async function repoFileAnalysis(params: any, almanac: any) {
 
     for (const line of lines) {
         if (line.length > 200) {
-            const chunks = line.match(/.{1,200}/g) || [];
-            processedLines.push(...chunks);
+            let startIndex = 0;
+            while (startIndex < line.length) {
+                let endIndex = startIndex + 200;
+                if (endIndex < line.length) {
+                    // Find the nearest space or end of token
+                    while (endIndex > startIndex && !(/\s/.test(line[endIndex]) || /\W/.test(line[endIndex]))) {
+                        endIndex--;
+                    }
+                    // If no suitable break point found, use the full 200 characters
+                    if (endIndex === startIndex) {
+                        endIndex = startIndex + 200;
+                    }
+                } else {
+                    endIndex = line.length;
+                }
+                processedLines.push(line.substring(startIndex, endIndex));
+                startIndex = endIndex;
+            }
             splitOccurred = true;
         } else {
             processedLines.push(line);
