@@ -83,12 +83,10 @@ async function repoFileAnalysis(params: any, almanac: any) {
     const analysis: any = [];
     const lines = fileContent.split('\n');
     logger.debug(`lines: ${lines.length}`);
-    let lineNumber = 0;
     const processedLines: string[] = [];
     let splitOccurred = false;
 
-    for (let line of lines) {
-        lineNumber++;
+    for (const line of lines) {
         if (line.length > 200) {
             const chunks = line.match(/.{1,200}/g) || [];
             processedLines.push(...chunks);
