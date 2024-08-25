@@ -166,7 +166,7 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
         // Check if the installed version satisfies the required version, supporting both ranges and specific versions
         const isValid = semverValid(versionData.ver, versionData.min);
-        if (!isValid) {
+        if (!isValid && semver.valid(versionData.ver)) {
             const dependencyFailure = {
                 'dependency': versionData.dep,
                 'currentVersion': versionData.ver,
