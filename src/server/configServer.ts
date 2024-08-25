@@ -13,7 +13,8 @@ import { archetypeRuleRoute } from './routes/archetypeRuleRoute';
 import { telemetryRoute } from './routes/telemetryRoute';
 import { clearCacheRoute } from './routes/clearCacheRoute';
 import { viewCacheRoute } from './routes/viewCacheRoute';
-import { githubWebhookRoute } from './routes/githubWebhookRoute';
+import { githubWebhookConfigUpdateRoute } from './routes/githubWebhookConfigUpdateRoute';
+import { githubWebhookPullRequestCheckRoute } from './routes/githubWebhookPullRequestCheckRoute';
 import { exemptionsRoute } from './routes/exemptionsRoute';
 import { validateUrlInput } from './middleware/validateUrlInput';
 import { validateTelemetryData } from './middleware/validateTelemetryData';
@@ -62,7 +63,8 @@ app.post('/clearcache', checkSharedSecret, clearCacheRoute);
 app.get('/viewcache', checkSharedSecret, viewCacheRoute);
 app.get('/archetypes/:archetype/exemptions', checkSharedSecret, exemptionsRoute);
 
-app.post('/github-webhook', validateGithubWebhook, githubWebhookRoute);
+app.post('/github-config-update', validateGithubWebhook, githubWebhookConfigUpdateRoute);
+app.post('/github-pull-request-check', validateGithubWebhook, githubWebhookPullRequestCheckRoute);
 
 export function startServer({ customPort, executionLogPrefix }: StartServerParams): any {
     const serverPort = customPort ? parseInt(customPort) : port;

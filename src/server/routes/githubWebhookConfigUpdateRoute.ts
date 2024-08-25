@@ -9,7 +9,7 @@ import { clearCache } from '../cacheManager';
 import { ConfigManager } from '../../utils/configManager';
 import { options } from '../../core/cli';
 
-export async function githubWebhookRoute(req: Request, res: Response) {
+export async function githubWebhookConfigUpdateRoute(req: Request, res: Response) {
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
 
