@@ -64,9 +64,16 @@ function processYarnDependencies(yarnOutput: any): LocalDependencies[] {
             return newDep;
         };
         const extractNameAndVersion = (nameAndVersion: string) => {
+            const lastAtIndex = nameAndVersion.lastIndexOf('@');
+            if (nameAndVersion.startsWith('@') && lastAtIndex > 0) {
+                return {
+                    name: nameAndVersion.substring(0, lastAtIndex),
+                    version: nameAndVersion.substring(lastAtIndex + 1)
+                };
+            }
             const parts = nameAndVersion.split('@');
             return { name: parts[0], version: parts[1] };
-        }
+        };
         yarnOutput.data.trees.forEach((tree: any) => {
             dependencies.push(processDependency(tree));
         });
@@ -125,8 +132,9 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
 
     function walk(dep: LocalDependencies, parentName = '') {
         const fullName = parentName ? `${parentName}/${dep.name}` : dep.name;
-        if (Object.keys(minVersions).includes(dep.name)) {
-            results.push({ dep: fullName, ver: dep.version, min: minVersions[dep.name] });
+        if (Object.keys(minVersions).some(key => key === dep.name || `@${key}` === dep.name)) {
+            const minVersionKey = Object.keys(minVersions).find(key => key === dep.name || `@${key}` === dep.name);
+            results.push({ dep: fullName, ver: dep.version, min: minVersions[minVersionKey!] });
         }
         if (dep.dependencies) {
             dep.dependencies.forEach(childDep => {
@@ -176,9 +184,11 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
     return result;
 }
 
-export function semverValid(required: string, installed: string): boolean {
-
-    if (!required || !installed) {
+export function semverValid(installed: string, required: string): boolean {
+    // Remove potential @namespace from installed version
+    const installedVersion = installed.includes('@') ? installed.split('@').pop()! : installed;
+    
+    if (!required || !installedVersion) {
         return true;
     }
 
@@ -207,4 +217,7 @@ export function semverValid(required: string, installed: string): boolean {
     }
 
     return false;
+}
+export function normalizePackageName(name: string): string {
+    return name.startsWith('@') ? name : `@${name}`;
 }
