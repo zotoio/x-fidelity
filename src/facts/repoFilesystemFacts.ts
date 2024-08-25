@@ -29,12 +29,12 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
         logger.debug(`checking file: ${filePath}`);
         const stats = await fs.promises.lstat(filePath);
         if (stats.isDirectory()) {
-            if (!isBlacklisted(filePath, archetypeConfig.config.blacklistPatterns)) {
+            if (!isBlacklisted(filePath, repoPath, archetypeConfig.config.blacklistPatterns)) {
                 const dirFilesData = await collectRepoFileData(filePath, archetypeConfig);
                 filesData.push(...dirFilesData);
             }    
         } else {
-            if (!isBlacklisted(filePath, archetypeConfig.config.blacklistPatterns) && isWhitelisted(filePath, archetypeConfig.config.whitelistPatterns)) {
+            if (!isBlacklisted(filePath, repoPath, archetypeConfig.config.blacklistPatterns) && isWhitelisted(filePath, repoPath, archetypeConfig.config.whitelistPatterns)) {
                 logger.debug(`adding file: ${filePath}`);
                 const fileData = await parseFile(filePath);
                 filesData.push(fileData);
@@ -45,22 +45,38 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
     return filesData;
 }
 
-function isBlacklisted(filePath: string, blacklistPatterns: string[]): boolean {
+function isBlacklisted(filePath: string, repoPath: string, blacklistPatterns: string[]): boolean {
     logger.debug(`checking blacklist for file: ${filePath}`);
+    const normalizedPath = path.normalize(filePath);
+    const normalizedRepoPath = path.normalize(repoPath);
+    
+    if (!normalizedPath.startsWith(normalizedRepoPath)) {
+        logger.warn(`Potential path traversal attempt detected: ${filePath}`);
+        return true;
+    }
+    
     for (const pattern of blacklistPatterns) {
-        if (new RegExp(pattern).test(filePath)) {
-            logger.debug(`skipping blacklisted file: ${filePath} with pattern: ${pattern}`);
+        if (new RegExp(pattern).test(normalizedPath)) {
+            logger.debug(`skipping blacklisted file: ${normalizedPath} with pattern: ${pattern}`);
             return true;
         }
     }
     return false;
 }
 
-function isWhitelisted(filePath: string, whitelistPatterns: string[]): boolean {
+function isWhitelisted(filePath: string, repoPath: string, whitelistPatterns: string[]): boolean {
     logger.debug(`checking whitelist for file: ${filePath}`);
+    const normalizedPath = path.normalize(filePath);
+    const normalizedRepoPath = path.normalize(repoPath);
+    
+    if (!normalizedPath.startsWith(normalizedRepoPath)) {
+        logger.warn(`Potential path traversal attempt detected: ${filePath}`);
+        return false;
+    }
+    
     for (const pattern of whitelistPatterns) {
-        if (new RegExp(pattern).test(filePath)) {
-            logger.debug(`allowing file: ${filePath} with pattern: ${pattern}`);
+        if (new RegExp(pattern).test(normalizedPath)) {
+            logger.debug(`allowing file: ${normalizedPath} with pattern: ${pattern}`);
             return true;
         }
     }
