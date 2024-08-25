@@ -1,3 +1,17 @@
+# [2.12.0](https://github.com/zotoio/x-fidelity/compare/v2.11.0...v2.12.0) (2024-08-25)
+
+
+### Bug Fixes
+
+* **analysis:** ensure long single-line files are catered for and npm namespaces ([509b4db](https://github.com/zotoio/x-fidelity/commit/509b4db1c3bb3f2cb487e043f5d23689bc8ed42d))
+* Handle [@namespace](https://github.com/namespace) packages in dependency analysis ([b5314ac](https://github.com/zotoio/x-fidelity/commit/b5314ac2b67f1bf241cbad3229c0ce3498bd9175))
+* Refactor repoFileAnalysis function to improve performance ([ae725bb](https://github.com/zotoio/x-fidelity/commit/ae725bbab307008424bb7494444e66eaca684aad))
+
+
+### Features
+
+* Implement file content splitting for analysis ([4d5f049](https://github.com/zotoio/x-fidelity/commit/4d5f04938d7fd78425e79ac74143439be1552879))
+
 # [2.11.0](https://github.com/zotoio/x-fidelity/compare/v2.10.0...v2.11.0) (2024-08-24)
 
 
