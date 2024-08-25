@@ -1,3 +1,10 @@
+## [2.12.1](https://github.com/zotoio/x-fidelity/compare/v2.12.0...v2.12.1) (2024-08-25)
+
+
+### Bug Fixes
+
+* **deps:** reduce noise in dependency checks ([88f3ecb](https://github.com/zotoio/x-fidelity/commit/88f3ecb74a29624ee91594a06900c54a2d9fd7f9))
+
 # [2.12.0](https://github.com/zotoio/x-fidelity/compare/v2.11.0...v2.12.0) (2024-08-25)
 
 
