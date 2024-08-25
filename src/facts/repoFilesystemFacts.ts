@@ -84,16 +84,35 @@ async function repoFileAnalysis(params: any, almanac: any) {
     const lines = fileContent.split('\n');
     logger.debug(`lines: ${lines.length}`);
     let lineNumber = 0;
-    for (const line of lines) {
+    const processedLines: string[] = [];
+    let splitOccurred = false;
+
+    for (let line of lines) {
         lineNumber++;
+        if (line.length > 200) {
+            const chunks = line.match(/.{1,200}/g) || [];
+            processedLines.push(...chunks);
+            splitOccurred = true;
+        } else {
+            processedLines.push(line);
+        }
+    }
+
+    if (lines.length === 1 || splitOccurred) {
+        logger.debug(`File content was split for analysis`);
+    }
+
+    for (let i = 0; i < processedLines.length; i++) {
+        const line = processedLines[i];
         for (const pattern of checkPatterns) {
             const regex = new RegExp(pattern, 'g');
             if (regex.test(line)) {
-                logger.debug(`match on line ${lineNumber} for pattern ${pattern}`)
+                logger.debug(`match on line ${i + 1} for pattern ${pattern}`);
                 const match = {
                     'match': pattern,
-                    'lineNumber': lineNumber,
-                    'line': line
+                    'lineNumber': i + 1,
+                    'line': line,
+                    'splitOccurred': splitOccurred
                 };
                 analysis.push(match);
             }
