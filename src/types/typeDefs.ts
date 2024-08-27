@@ -1,5 +1,5 @@
 import { Engine, OperatorEvaluator } from 'json-rules-engine';
-import { FileData } from '../facts/repoFilesystemFacts';
+import { FileData, isWhitelisted } from '../facts/repoFilesystemFacts';
 
 export type OperatorDefn = {
     name: string,
@@ -217,3 +217,14 @@ export interface LoadExemptionsParams {
     archetype: string;
 }
 
+export interface IsBlacklistedParams { 
+    filePath: string; 
+    repoPath: string; 
+    blacklistPatterns: string[]; 
+}
+
+export interface isWhitelistedParams { 
+    filePath: string; 
+    repoPath: string; 
+    whitelistPatterns: string[]; 
+}
