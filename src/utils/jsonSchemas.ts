@@ -1,6 +1,6 @@
 import Ajv from 'ajv';
 import { logger } from './logger';
-import { ArchetypeConfigSchema, RuleConfig } from '../types/typeDefs';
+import { ArchetypeConfigSchema, RuleConfigSchema } from '../types/typeDefs';
 
 const ajv = new Ajv();
 
@@ -48,9 +48,9 @@ const archetypeSchema: ArchetypeConfigSchema = {
     },
     required: ['rules', 'operators', 'facts', 'config'],
     additionalProperties: false
-};
+}
 
-const ruleSchema: JSONSchemaType<RuleConfig> = {
+const ruleSchema: RuleConfigSchema = {
     type: 'object',
     properties: {
         name: { type: 'string' },
