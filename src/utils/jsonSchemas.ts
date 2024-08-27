@@ -42,13 +42,13 @@ const archetypeSchema: ArchetypeConfigSchema = {
                     minItems: 1
                 }
             },
-            required: ['minimumDependencyVersions', 'standardStructure', 'blacklistPatterns', 'whitelistPatterns'],
+            required: ['minimumDependencyVersions', 'standardStructure', 'blacklistPatterns', 'whitelistPatterns'] as const,
             additionalProperties: false
         }
     },
-    required: ['rules', 'operators', 'facts', 'config'],
+    required: ['rules', 'operators', 'facts', 'config'] as const,
     additionalProperties: false
-}
+} as const;
 
 const ruleSchema: RuleConfigSchema = {
     type: 'object',
