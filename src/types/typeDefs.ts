@@ -1,5 +1,6 @@
 import { Engine, OperatorEvaluator } from 'json-rules-engine';
 import { FileData, isWhitelisted } from '../facts/repoFilesystemFacts';
+import { JSONSchemaType } from 'ajv';
 
 export type OperatorDefn = {
     name: string,
@@ -89,12 +90,15 @@ export interface ArchetypeConfig {
     operators: string[];
     facts: string[];
     config: {
-        minimumDependencyVersions: Record<string, string>;
+        minimumDependencyVersions: Record<string, string>; // This will be validated in the JSON schema
         standardStructure: Record<string, any>;
         blacklistPatterns: string[];
         whitelistPatterns: string[];
     };
 }
+
+// Add a new type for the JSON schema
+export type ArchetypeConfigSchema = JSONSchemaType<ArchetypeConfig>;
 
 export interface RuleConfig {
     name: string;

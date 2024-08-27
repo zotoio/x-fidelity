@@ -1,10 +1,12 @@
-import Ajv, { JSONSchemaType } from 'ajv';
+import Ajv from 'ajv';
 import { logger } from './logger';
-import { ArchetypeConfig, RuleConfig } from '../types/typeDefs';
+import { ArchetypeConfigSchema, RuleConfig } from '../types/typeDefs';
 
 const ajv = new Ajv();
 
-const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
+const semverPattern = '^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$';
+
+const archetypeSchema: ArchetypeConfigSchema = {
     type: 'object',
     properties: {
         name: { type: 'string' },
@@ -16,27 +18,32 @@ const archetypeSchema: JSONSchemaType<ArchetypeConfig> = {
             properties: {
                 minimumDependencyVersions: {
                     type: 'object',
+                    patternProperties: {
+                        "^.*$": { 
+                            type: 'string',
+                            pattern: semverPattern
+                        }
+                    },
                     minProperties: 1,
-                    required: []
+                    additionalProperties: false
                 },
                 standardStructure: {
                     type: 'object',
                     minProperties: 1,
-                    required: []
                 },
                 blacklistPatterns: {
                     type: 'array',
-                    items: { type: 'string'},
+                    items: { type: 'string' },
                     minItems: 1
                 },
                 whitelistPatterns: {
                     type: 'array',
-                    items: { type: 'string'},
+                    items: { type: 'string' },
                     minItems: 1
                 }
             },
             required: ['minimumDependencyVersions', 'standardStructure', 'blacklistPatterns', 'whitelistPatterns'],
-            additionalProperties: true
+            additionalProperties: false
         }
     },
     required: ['rules', 'operators', 'facts', 'config'],
