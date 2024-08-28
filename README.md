@@ -36,17 +36,18 @@ x-fidelity is an advanced CLI tool and paired config server designed to perform 
 
 1. [Intent and Purpose](#intent-and-purpose)
 2. [Key Features](#key-features)
-3. [System Architecture](#system-architecture)
-4. [Installation](#installation)
-5. [Usage](#usage)
-6. [Configuration](#configuration)
-7. [Extending x-fidelity](#extending-x-fidelity)
-8. [OpenAI Integration](#openai-integration)
-9. [Hosting Config Servers](#hosting-config-servers)
-10. [Best Practices](#best-practices)
+3. [Components and entity names to understand](#components-and-entity-names-to-understand)
+4. [System Architecture](#system-architecture)
+5. [Configuring and Extending x-fidelity](#configuring-and-extending-x-fidelity)
+6. [Installation](#installation)
+7. [Usage](#usage)
+8. [Hosting Config Servers](#hosting-config-servers)
+9. [CI Pipeline Integration](#ci-pipeline-integration)
+10. [OpenAI Integration](#openai-integration)
 11. [Exemptions](#exemptions)
-12. [Contributing](#contributing)
-13. [License](#license)
+12. [X-Fi Best Practices](#x-fi-best-practices)
+13. [Contributing](#contributing)
+14. [License](#license)
 
 ## Intent and Purpose
 
