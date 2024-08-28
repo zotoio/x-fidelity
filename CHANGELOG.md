@@ -1,3 +1,10 @@
+## [2.13.1](https://github.com/zotoio/x-fidelity/compare/v2.13.0...v2.13.1) (2024-08-28)
+
+
+### Bug Fixes
+
+* **schema:** relax for fix ([ee5e123](https://github.com/zotoio/x-fidelity/commit/ee5e12350cef95dcdcbe3e4930b1ca6f5a9b4609))
+
 # [2.13.0](https://github.com/zotoio/x-fidelity/compare/v2.12.1...v2.13.0) (2024-08-28)
 
 
