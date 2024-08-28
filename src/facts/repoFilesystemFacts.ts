@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
-import { ArchetypeConfig } from '../types/typeDefs';
+import { ArchetypeConfig, IsBlacklistedParams, isWhitelistedParams } from '../types/typeDefs';
 
 interface FileData {
     fileName: string;
@@ -29,12 +29,12 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
         logger.debug(`checking file: ${filePath}`);
         const stats = await fs.promises.lstat(filePath);
         if (stats.isDirectory()) {
-            if (!isBlacklisted(filePath, repoPath, archetypeConfig.config.blacklistPatterns)) {
+            if (!isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns })) {
                 const dirFilesData = await collectRepoFileData(filePath, archetypeConfig);
                 filesData.push(...dirFilesData);
             }    
         } else {
-            if (!isBlacklisted(filePath, repoPath, archetypeConfig.config.blacklistPatterns) && isWhitelisted(filePath, repoPath, archetypeConfig.config.whitelistPatterns)) {
+            if (!isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns }) && isWhitelisted({ filePath, repoPath, whitelistPatterns: archetypeConfig.config.whitelistPatterns })) {
                 logger.debug(`adding file: ${filePath}`);
                 const fileData = await parseFile(filePath);
                 filesData.push(fileData);
@@ -45,7 +45,7 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
     return filesData;
 }
 
-function isBlacklisted(filePath: string, repoPath: string, blacklistPatterns: string[]): boolean {
+function isBlacklisted({ filePath, repoPath, blacklistPatterns }: IsBlacklistedParams): boolean {
     logger.debug(`checking blacklist for file: ${filePath}`);
     const normalizedPath = path.normalize(filePath);
     const normalizedRepoPath = path.normalize(repoPath);
@@ -64,7 +64,7 @@ function isBlacklisted(filePath: string, repoPath: string, blacklistPatterns: st
     return false;
 }
 
-function isWhitelisted(filePath: string, repoPath: string, whitelistPatterns: string[]): boolean {
+function isWhitelisted({ filePath, repoPath, whitelistPatterns }: isWhitelistedParams): boolean {
     logger.debug(`checking whitelist for file: ${filePath}`);
     const normalizedPath = path.normalize(filePath);
     const normalizedRepoPath = path.normalize(repoPath);

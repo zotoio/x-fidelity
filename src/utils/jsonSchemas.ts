@@ -4,7 +4,33 @@ import { ArchetypeConfigSchema, RuleConfigSchema } from '../types/typeDefs';
 
 const ajv = new Ajv();
 
-const semverPattern = '^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$';
+const semverPattern = 
+    "^(?:" +
+        "(?:\\d+\\.\\d+\\.\\d+" + 
+            "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+            "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+        "|[~^]?\\d+\\.\\d+(?:\\.\\d+)?" + 
+            "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+            "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+            "(?:\\s*-\\s*[~^]?\\d+\\.\\d+(?:\\.\\d+)?" + 
+                "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+                "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+            ")?" +
+        ")" +
+        "(\\s*\\|\\|\\s*" + 
+            "(?:\\d+\\.\\d+\\.\\d+" + 
+                "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+                "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+            "|[~^]?\\d+\\.\\d+(?:\\.\\d+)?" + 
+                "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+                "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+                "(?:\\s*-\\s*[~^]?\\d+\\.\\d+(?:\\.\\d+)?" + 
+                    "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+                    "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
+                ")?" +
+            ")" + 
+        ")*" +
+    ")$";
 
 const archetypeSchema: ArchetypeConfigSchema = {
     type: 'object',
@@ -19,13 +45,14 @@ const archetypeSchema: ArchetypeConfigSchema = {
                 minimumDependencyVersions: {
                     type: 'object',
                     patternProperties: {
-                        "^.*$": { 
+                        '^.*$': { 
                             type: 'string',
                             pattern: semverPattern
                         }
                     },
                     minProperties: 1,
-                    additionalProperties: false
+                    additionalProperties: false,
+                    required: []
                 },
                 standardStructure: {
                     type: 'object',
@@ -43,10 +70,10 @@ const archetypeSchema: ArchetypeConfigSchema = {
                 }
             },
             required: ['minimumDependencyVersions', 'standardStructure', 'blacklistPatterns', 'whitelistPatterns'] as const,
-            additionalProperties: false
+            additionalProperties: true
         }
     },
-    required: ['rules', 'operators', 'facts', 'config'] as const,
+    required: ['name', 'rules', 'operators', 'facts', 'config'] as const,
     additionalProperties: false
 } as const;
 

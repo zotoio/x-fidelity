@@ -7,7 +7,7 @@ const outdatedFramework: OperatorDefn = {
         let result = false;
         
         try {
-            logger.debug(`outdatedFramework: processing ${repoDependencyAnalysis}`);
+            logger.debug(`outdatedFramework: processing ${JSON.stringify(repoDependencyAnalysis)}`);
 
             if (repoDependencyAnalysis?.result?.length > 0) {
                 return true;

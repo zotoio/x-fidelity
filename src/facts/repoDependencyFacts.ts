@@ -186,35 +186,46 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 }
 
 export function semverValid(installed: string, required: string): boolean {
+    
     // Remove potential @namespace from installed version
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const installedVersion = installed.includes('@') ? installed.split('@').pop()! : installed;
-    
-    if (!required || !installedVersion) {
+    installed = installed.includes('@') ? installed.split('@').pop()! : installed;
+
+    if (!installed || !required) {
         return true;
+    }
+
+    // ensure that both inputs are now valid semver or range strings
+    if (!semver.valid(installed) && !semver.validRange(installed)) {
+        logger.error(`semverValid: invalid installed version or range: ${installed}`);
+        return false;
+    }
+    if (!semver.valid(required) && !semver.validRange(required)) {
+        logger.error(`semverValid: invalid required version or range: ${required}`);
+        return false;
     }
 
     // If 'installed' is a single version and 'required' is a range
     if (semver.valid(installed) && semver.validRange(required)) {
-        logger.debug('range vs version');
+        logger.info('range vs version');
         return semver.satisfies(installed, required);
     }
 
     // If 'required' is a single version and 'installed' is a range
     if (semver.valid(required) && semver.validRange(installed)) {
-        logger.debug('version vs range');
+        logger.info('version vs range');
         return semver.satisfies(required, installed);
     }
 
     // If both are single versions, simply compare them
     if (semver.valid(required) && semver.valid(installed)) {
-        logger.debug('version vs version');
+        logger.info('version vs version');
         return semver.gt(installed, required);
     }
 
     // If both are ranges, check if they intersect
     if (semver.validRange(required) && semver.validRange(installed)) {
-        logger.debug('range vs range');
+        logger.info('range vs range');
         return semver.intersects(required, installed);
     }
 

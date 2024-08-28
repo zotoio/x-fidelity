@@ -60,25 +60,29 @@ describe('File operations', () => {
 
     describe('isBlacklisted', () => {
         it('should return true if file path matches any blacklist pattern', () => {
-            const filePath = '/node_modules/index.js';
-            expect(isBlacklisted(filePath, mockArchetypeConfig.config.blacklistPatterns)).toBe(true);
+            const filePath = '/test/repo/node_modules/index.js';
+            const repoPath = '/test/repo';
+            expect(isBlacklisted({ filePath, repoPath, blacklistPatterns: mockArchetypeConfig.config.blacklistPatterns })).toBe(true);
         });
 
         it('should return false if file path does not match any blacklist pattern', () => {
-            const filePath = 'src/index.js';
-            expect(isBlacklisted(filePath, mockArchetypeConfig.config.blacklistPatterns)).toBe(false);
+            const filePath = '/test/repo/src/index.js';
+            const repoPath = '/test/repo';
+            expect(isBlacklisted({ filePath, repoPath, blacklistPatterns: mockArchetypeConfig.config.blacklistPatterns })).toBe(false);
         });
     });
 
     describe('isWhitelisted', () => {
         it('should return true if file path matches any whitelist pattern', () => {
-            const filePath = '/src/index.js';
-            expect(isWhitelisted(filePath, mockArchetypeConfig.config.whitelistPatterns)).toBe(true);
+            const filePath = '/test/repo/src/index.js';
+            const repoPath = '/test/repo';
+            expect(isWhitelisted({ filePath, repoPath, whitelistPatterns: mockArchetypeConfig.config.whitelistPatterns })).toBe(true);
         });
 
         it('should return false if file path does not match any whitelist pattern', () => {
-            const filePath = 'build/index.txt';
-            expect(isWhitelisted(filePath, mockArchetypeConfig.config.whitelistPatterns)).toBe(false);
+            const filePath = '/test/repo/build/index.txt';
+            const repoPath = '/test/repo';
+            expect(isWhitelisted({ filePath, repoPath, whitelistPatterns: mockArchetypeConfig.config.whitelistPatterns })).toBe(false);
         });
     });
 });

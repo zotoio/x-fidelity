@@ -1,5 +1,5 @@
 import { Engine, OperatorEvaluator } from 'json-rules-engine';
-import { FileData, isWhitelisted } from '../facts/repoFilesystemFacts';
+import { FileData } from '../facts/repoFilesystemFacts';
 import { JSONSchemaType } from 'ajv';
 
 export type OperatorDefn = {
@@ -111,6 +111,7 @@ export interface RuleConfig {
         params: Record<string, any>;
     };
 }
+export type RuleConfigSchema = JSONSchemaType<RuleConfig>;
 
 export interface OpenAIAnalysisParams {
     prompt: string;

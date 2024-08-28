@@ -23,7 +23,7 @@ import chokidar from 'chokidar';
 import { handleConfigChange } from './cacheManager';
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
-const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';
+const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 1)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 1)}` : 'not set';
 logger.info(`Shared secret is ${maskedSecret}`);
 
 const app = express();

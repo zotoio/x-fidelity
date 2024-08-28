@@ -25,7 +25,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     logger.info(`=== loading json rules..`);
     const config = await ConfigManager.getConfig({ archetype, logPrefix: executionLogPrefix });
         
-    logger.debug(config.rules);
+    logger.debug(`rules loaded: ${config.rules}`);
 
     const addedRules = new Set();
     config.rules.forEach((rule) => {
@@ -50,20 +50,6 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
             logger.error(e.message);
         }
     });
-
-    if (addedRules.size === 0) {
-        logger.info('No valid rules were added. Adding default rules.');
-        engine.addRule({
-            name: 'default-rule-1',
-            conditions: { all: [] },
-            event: { type: 'warning', params: { message: 'Default rule 1 triggered' } }
-        });
-        engine.addRule({
-            name: 'default-rule-2',
-            conditions: { all: [] },
-            event: { type: 'warning', params: { message: 'Default rule 2 triggered' } }
-        });
-    }
 
     engine.on('success', async ({ type, params }: Event) => {
         if (type === 'warning') {

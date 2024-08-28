@@ -3,6 +3,7 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import { Almanac } from 'json-rules-engine';
 import { LocalDependencies, MinimumDepVersions } from '../types/typeDefs';
+import { semverValid } from './repoDependencyFacts';
 
 jest.mock('child_process');
 jest.mock('fs');
@@ -131,32 +132,82 @@ describe('repoDependencyFacts', () => {
 
     describe('semverValid', () => {
         it('should return true for valid version comparisons', () => {
-            expect(repoDependencyFacts.semverValid('2.0.0', '^1.0.0')).toBe(false);
-            expect(repoDependencyFacts.semverValid('1.5.0', '1.0.0 - 2.0.0')).toBe(true);
-            expect(repoDependencyFacts.semverValid('1.0.0', '1.0.0')).toBe(true);
-            expect(repoDependencyFacts.semverValid('2.0.0', '>=1.0.0')).toBe(true);
+            expect(semverValid('2.0.0', '^1.0.0')).toBe(false);
+            expect(semverValid('1.5.0', '1.0.0 - 2.0.0')).toBe(true);
+            expect(semverValid('1.0.0', '1.0.0')).toBe(true);
+            expect(semverValid('2.0.0', '>=1.0.0')).toBe(true);
         });
-
+    
         it('should return false for invalid version comparisons', () => {
-            expect(repoDependencyFacts.semverValid('1.0.0', '^2.0.0')).toBe(false);
-            expect(repoDependencyFacts.semverValid('3.0.0', '1.0.0 - 2.0.0')).toBe(false);
-            expect(repoDependencyFacts.semverValid('0.9.0', '>=1.0.0')).toBe(false);
+            expect(semverValid('1.0.0', '^2.0.0')).toBe(false);
+            expect(semverValid('3.0.0', '1.0.0 - 2.0.0')).toBe(false);
+            expect(semverValid('0.9.0', '>=1.0.0')).toBe(false);
         });
-
+    
         it('should handle complex version ranges', () => {
-            expect(repoDependencyFacts.semverValid('1.2.3', '1.x || >=2.5.0 || 5.0.0 - 7.2.3')).toBe(true);
-            expect(repoDependencyFacts.semverValid('2.5.0', '1.x || >=2.5.0 || 5.0.0 - 7.2.3')).toBe(true);
-            expect(repoDependencyFacts.semverValid('5.5.5', '1.x || >=2.5.0 || 5.0.0 - 7.2.3')).toBe(true);
-            expect(repoDependencyFacts.semverValid('8.0.0', '1.x || >=9.5.0 || 5.0.0 - 7.2.3')).toBe(false);
+            expect(semverValid('1.2.3', '1.x || >=2.5.0 || 5.0.0 - 7.2.3')).toBe(true);
+            expect(semverValid('2.5.0', '1.x || >=2.5.0 || 5.0.0 - 7.2.3')).toBe(true);
+            expect(semverValid('5.5.5', '1.x || >=2.5.0 || 5.0.0 - 7.2.3')).toBe(true);
+            expect(semverValid('8.0.0', '1.x || >=9.5.0 || 5.0.0 - 7.2.3')).toBe(false);
         });
-
+    
+        it('should handle caret ranges', () => {
+            expect(semverValid('1.2.3', '^1.2.3')).toBe(true);
+            expect(semverValid('1.3.0', '^1.2.3')).toBe(true);
+            expect(semverValid('2.0.0', '^1.2.3')).toBe(false);
+        });
+    
+        it('should handle tilde ranges', () => {
+            expect(semverValid('1.2.3', '~1.2.3')).toBe(true);
+            expect(semverValid('1.2.9', '~1.2.3')).toBe(true);
+            expect(semverValid('1.3.0', '~1.2.3')).toBe(false);
+        });
+    
+        it('should handle x-ranges', () => {
+            expect(semverValid('1.2.3', '1.2.x')).toBe(true);
+            expect(semverValid('1.2.9', '1.2.x')).toBe(true);
+            expect(semverValid('1.3.0', '1.2.x')).toBe(false);
+            expect(semverValid('1.2.3', '1.x')).toBe(true);
+            expect(semverValid('1.3.0', '1.x')).toBe(true);
+            expect(semverValid('2.0.0', '1.x')).toBe(false);
+        });
+    
+        it('should handle star ranges', () => {
+            expect(semverValid('1.2.3', '*')).toBe(true);
+            expect(semverValid('2.0.0', '*')).toBe(true);
+        });
+    
+        it('should handle greater than and less than ranges', () => {
+            expect(semverValid('2.0.0', '>1.2.3')).toBe(true);
+            expect(semverValid('1.2.3', '>1.2.3')).toBe(false);
+            expect(semverValid('1.2.2', '<1.2.3')).toBe(true);
+            expect(semverValid('1.2.3', '<1.2.3')).toBe(false);
+        });
+    
+        it('should handle AND ranges', () => {
+            expect(semverValid('1.2.3', '>1.2.2 <1.2.4')).toBe(true);
+            expect(semverValid('1.2.4', '>1.2.2 <1.2.4')).toBe(false);
+        });
+    
+        it('should handle OR ranges', () => {
+            expect(semverValid('1.2.3', '1.2.3 || 1.2.4')).toBe(true);
+            expect(semverValid('1.2.4', '1.2.3 || 1.2.4')).toBe(true);
+            expect(semverValid('1.2.5', '1.2.3 || 1.2.4')).toBe(false);
+        });
+    
+        it('should handle pre-release versions', () => {
+            expect(semverValid('1.2.3-alpha', '>=1.2.3-alpha')).toBe(true);
+            expect(semverValid('1.2.3-beta', '>=1.2.3-alpha')).toBe(true);
+            expect(semverValid('1.2.2', '>=1.2.3-alpha')).toBe(false);
+        });
+    
         it('should return true for empty strings', () => {
-            expect(repoDependencyFacts.semverValid('', '')).toBe(true);
+            expect(semverValid('', '')).toBe(true);
         });
-
+    
         it('should return false for invalid input', () => {
-            expect(repoDependencyFacts.semverValid('not-a-version', '1.0.0')).toBe(false);
-            expect(repoDependencyFacts.semverValid('1.0.0', 'not-a-range')).toBe(false);
+            expect(semverValid('not-a-version', '1.0.0')).toBe(false);
+            expect(semverValid('1.0.0', 'not-a-range')).toBe(false);
         });
     });
 });

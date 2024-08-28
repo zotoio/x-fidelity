@@ -21,11 +21,12 @@
     ],
     "config": {
         "minimumDependencyVersions": {
-            "@types/react": "^17.0.0",
-            "react": "^17.0.0",
-            "@yarnpkg/lockfile": "^1.2.0",
-            "commander": "^2.0.0",
-            "nodemon": "^3.9.0"
+            "@types/react": ">=18.0.0",
+            "react": "~17.0.0",
+            "@yarnpkg/lockfile": "<1.2.0",
+            "commander": ">=2.0.0 <13.0.0",
+            "nodemon": ">4.9.0",
+            "@colors/colors": "1.7.0 || 1.6.0"
         },
         "standardStructure": {
             "app": {
