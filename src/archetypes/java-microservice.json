@@ -17,7 +17,7 @@
     ],
     "config": {
         "minimumDependencyVersions": {
-            "spring-boot-starter": "^2.5.0",
+            "springbootstarter": ">2.5.0",
             "spring-boot-starter-web": "^2.5.0"
         },
         "standardStructure": {

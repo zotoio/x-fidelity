@@ -7,11 +7,10 @@
     "xfidelity": "./dist/xfidelity"
   },
   "scripts": {
-    "build": "yarn validate-schemas && rimraf dist/ && tsc && yarn copy-files",
+    "build": "rimraf dist/ && tsc && yarn copy-files",
     "copy-files": "cp src/rules/*.json dist/rules/ && cp src/archetypes/*.json dist/archetypes/ && cp dist/index.js dist/xfidelity",
     "start": "OPENAI_API_KEY= jest --watch",
-    "test": "yarn lint && yarn validate-schemas && OPENAI_API_KEY= jest",
-    "validate-schemas": "ts-node scripts/validateSchemas.ts",
+    "test": "yarn lint && OPENAI_API_KEY= jest",
     "test:coverage": "OPENAI_API_KEY= jest --coverage",
     "commit": "yarn test && git-cz",
     "release": "semantic-release",

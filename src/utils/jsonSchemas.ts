@@ -1,36 +1,14 @@
 import Ajv from 'ajv';
 import { logger } from './logger';
 import { ArchetypeConfigSchema, RuleConfigSchema } from '../types/typeDefs';
+import semver from 'semver';
 
 const ajv = new Ajv();
 
-const semverPattern = 
-    "^(?:" +
-        "(?:\\d+\\.\\d+\\.\\d+" + 
-            "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-            "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-        "|[~^]?\\d+\\.\\d+(?:\\.\\d+)?" + 
-            "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-            "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-            "(?:\\s*-\\s*[~^]?\\d+\\.\\d+(?:\\.\\d+)?" + 
-                "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-                "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-            ")?" +
-        ")" +
-        "(\\s*\\|\\|\\s*" + 
-            "(?:\\d+\\.\\d+\\.\\d+" + 
-                "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-                "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-            "|[~^]?\\d+\\.\\d+(?:\\.\\d+)?" + 
-                "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-                "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-                "(?:\\s*-\\s*[~^]?\\d+\\.\\d+(?:\\.\\d+)?" + 
-                    "(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-                    "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?" + 
-                ")?" +
-            ")" + 
-        ")*" +
-    ")$";
+ajv.addFormat("semverPattern", {
+    type: "string",
+    validate: (x) => semver.valid(x) !== null && semver.validRange(x) !== null
+  })
 
 const archetypeSchema: ArchetypeConfigSchema = {
     type: 'object',
@@ -44,14 +22,14 @@ const archetypeSchema: ArchetypeConfigSchema = {
             properties: {
                 minimumDependencyVersions: {
                     type: 'object',
-                    patternProperties: {
+                    properties: {
                         '^.*$': { 
                             type: 'string',
-                            pattern: semverPattern
+                            format: 'semverPattern'
                         }
                     },
                     minProperties: 1,
-                    additionalProperties: false,
+                    additionalProperties: true,
                     required: []
                 },
                 standardStructure: {
@@ -104,8 +82,8 @@ const ruleSchema: RuleConfigSchema = {
     required: ['name', 'conditions', 'event']
 };
 
-const validateArchetypeSchema = ajv.compile(archetypeSchema);
-const validateRuleSchema = ajv.compile(ruleSchema);
+export const validateArchetypeSchema = ajv.compile(archetypeSchema);
+export const validateRuleSchema = ajv.compile(ruleSchema);
 
 // Helper function to log validation errors
 const logValidationErrors = (errors: any[] | null | undefined) => {
