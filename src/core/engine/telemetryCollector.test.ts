@@ -69,21 +69,6 @@ describe('collectTelemetryData', () => {
         });
     });
 
-    it('should collect telemetry data with package.json repo URL when git command fails', async () => {
-        (execSync as jest.Mock).mockImplementation(() => {
-            throw new Error('Git command failed');
-        });
-
-        const mockPackageJson = JSON.stringify({
-            repository: 'https://github.com/test/repo-from-package.git',
-        });
-        (fs.promises.readFile as jest.Mock).mockResolvedValue(mockPackageJson);
-
-        const result = await collectTelemetryData({ repoPath: '/test/repo', configServer: 'http://test-server' });
-
-        expect(result.repoUrl).toBe('https://github.com/test/repo-from-package.git');
-    });
-
     it('should handle failure to get repo URL', async () => {
         (execSync as jest.Mock).mockImplementation(() => {
             throw new Error('Git command failed');

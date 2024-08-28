@@ -73,8 +73,8 @@ export function startServer({ customPort, executionLogPrefix }: StartServerParam
     // Read SSL certificate and key
     try {
         const certPath = process.env.CERT_PATH || __dirname;
-        const privateKey = fs.readFileSync(`${certPath}/private-key.pem`, 'utf8');
-        const certificate = fs.readFileSync(`${certPath}/certificate.pem`, 'utf8');
+        const privateKey = fs.readFileSync(`${certPath}/tls.key`, 'utf8');
+        const certificate = fs.readFileSync(`${certPath}/tls.pem`, 'utf8');
         const credentials = { key: privateKey, cert: certificate };
 
         // Create HTTPS server

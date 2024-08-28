@@ -1,6 +1,6 @@
 # x-fidelity
 
-x-fidelity is an advanced CLI tool and paired config server designed to perform opinionated framework adherence checks within a codebase. It provides a flexible and extensible way to ensure your projects are using specific standards, tools and best practices.
+x-fidelity is an advanced CLI tool and paired config server designed to perform opinionated framework adherence checks within a codebase. It provides a flexible and extensible way to ensure your projects are using specific standards, tools and best practices.  It is based on https://github.com/CacheControl/json-rules-engine a powerful, lightweight rules engine.
 
 ```
 =====================================
@@ -73,6 +73,22 @@ The tool is designed to be highly customizable, allowing teams to define their o
 - **OpenAI Integration**: Leverage AI for advanced code analysis and suggestions.
 - **Extensible Architecture**: Easily add new operators, facts, and rules to suit your needs.
 
+## Components and entity names to understand
+
+- **Archetype**: A predefined configuration template for a specific type of project or technology stack. It defines the rules, operators, facts, and other settings to be applied during analysis.
+
+- **Rule**: A set of conditions and corresponding actions that define a specific check or requirement for the codebase. Rules are used to identify warnings or fatal issues in the codebase.
+
+- **Exemption**: A time-limited waiver for a given git repo for a given rule until a configured expiry date.
+
+- **Operator**: A function that performs a specific comparison or check within a rule. Operators are used to evaluate conditions in rules.
+
+- **Fact**: A piece of information about the codebase or its environment that is collected and used during the analysis process. Facts can include file contents, dependency versions, or other relevant data.
+
+- **Config Server**: A server that hosts and distributes archetype configurations and rules, allowing for centralized management of x-fidelity settings.
+
+- **Telemetry**: Data collected about the usage and performance of x-fidelity, which can be used for improving the tool and understanding its impact.
+
 ## System Architecture
 
 The following diagram illustrates the overall architecture of the x-fidelity system:
@@ -136,6 +152,221 @@ This diagram shows the main components of x-fidelity and how they interact:
 - **External Services**: GitHub for repository interaction and optional OpenAI integration.
 - **Data Sources**: The files and dependencies that x-fidelity analyzes.
 
+## Configuring and Extending x-fidelity
+
+x-fidelity is designed to be highly extensible, and only has demo rules and archetypes until you define your required configurations. You can add custom rules, operators, facts, and archetypes:
+
+1. **Custom Archetypes**: Define new archetypes as JSON files in your local config directory or on your config server.
+2. **Custom Rules**: Add new JSON rule files in the `rules` subdirectory of your local config or on your config server.
+3. **Custom Operators**: TODO: Implement new operators and add them to your x-fidelity fork or plugin.
+4. **Custom Facts**: TODO: Create new fact providers and add them to your x-fidelity fork or plugin.
+ 
+> At minimum you should configure your archetypes and rules using the provided facts and operators.  Facts and Operators are more complex and are not yet easily added without forking, and those provided are intended to be flexible enough for general codebase analysis.
+
+### Defining Archetypes
+Archetypes represent a pattern or template of git repo that you expect to be consistent.  They consist of:
+
+- **rules**: names of rules you have defined to perform either global (repo wide) checks, or checks on each file in a repo.
+- **facts**: data prepared before analysing a repo such as dependency data and file structures.
+- **operators**: these are custom operators, or provided operators that compare facts and return a boolean result.  In x-fi boolean true means a rule failure. 
+- **config**: core configuration related to codebase analysis:
+- minimumDependencyVersions: packages you want to conform to provided semver ranges.
+- standardStructure: expected filesystem directories at high level
+- blacklistPatterns: array of regex applied to filesystem paths to not include in analysis
+- whitelistPatterns: array of regex applied to filesystem paths to include in analysis (after blacklist applied)
+
+Example of a custom archetype JSON file (`my-custom-archetype.json`):
+
+```json
+{
+    "rules": ["myCustomRule-global", "standardRule1-iterative", "standardRule2-iterative"],
+    "operators": ["myCustomOperator", "standardOperator1"],
+    "facts": ["myCustomFact", "standardFact1"],
+    "config": {
+        "minimumDependencyVersions": {
+            "my-framework": ">2.0.0"
+        },
+        "standardStructure": {
+            "src": {
+                "components": null,
+                "utils": null
+            },
+            "tests": null
+        },
+        "blacklistPatterns": [".*\\/\\..*", ".*\\/(dist|build)(\\/.*|$)"],
+        "whitelistPatterns": [".*\\.(ts|tsx|js|jsx)$"]
+    }
+}
+```
+### Defining rules
+Example of a custom rule JSON file (`myCustomRule-iterative.json`) that warns of files containing 'TODO':
+
+```json
+{
+    "name": "myCustomRule-iterative",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileContent",
+                "operator": "fileContains",
+                "value": "TODO"
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "TODO comments should be resolved before committing",
+            "details": {
+                "fact": "fileData",
+                "path": "$.filePath"
+            }
+        }
+    }
+}
+```
+
+Note on rule event types:
+- Events of type "warning" are treated as such and do not cause the tool to return an error code.
+- Events of type "fatality" are strictly enforced and will cause the tool to return an error code 1.
+
+## Included Operators
+
+x-fidelity includes several custom operators that can be used in your rules. Here's a brief overview of each.  Note that the fileName 'REPO_GLOBAL_CHECK' is not an actual file.  Currently it is used to separate global and iterative rules through inclusion and exclusion.
+
+There are a number of basic boolean check operators inherited from the json-rules-engine package that x-fidelity uses:  https://github.com/CacheControl/json-rules-engine/blob/master/docs/rules.md#operators
+
+### `fileContains` Operator
+
+The `fileContains` operator checks if a file contains specific patterns. It supports an array of patterns for flexible content matching.
+
+Usage example:
+```json
+{
+    "name": "noDatabases-iterative",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "notEqual",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "repoFileAnalysis",
+                "params": {
+                    "checkPattern": [".*oracle.*"],
+                    "resultFact": "fileResultsDB"
+                },
+                "operator": "fileContains",
+                "value": true
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "code must not directly call databases",
+            "details": {
+                "fact": "fileResults-DB"
+            }
+        }
+    }
+}
+```
+
+This operator returns true if any of the patterns in the array are found in the file content.
+
+### `outdatedFramework` Operator
+
+The `outdatedFramework` operator checks if the project is using outdated versions of dependencies. It compares the installed versions of dependencies against the minimum required versions specified in the archetype configuration.
+
+Key features:
+- Supports both npm and Yarn package managers
+- Handles version ranges and specific versions
+- Checks nested dependencies
+- Returns `true` if any dependency is outdated, triggering a rule failure event
+
+Usage example in a rule:
+```json
+{
+    "name": "outdatedFramework-global",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "repoDependencyAnalysis",
+                "params": {
+                    "resultFact": "repoDependencyResults"
+                },
+                "operator": "outdatedFramework",
+                "value": true
+            }
+        ]
+    },
+    "event": {
+        "type": "fatality",
+        "params": {
+            "message": "some core framework dependencies have expired!",
+            "details": {
+                "fact": "repoDependencyResults"
+            }
+        }
+    }
+}
+```
+
+### `nonStandardDirectoryStructure` Operator
+
+The `nonStandardDirectoryStructure` operator verifies if the project follows the standard directory structure defined in the archetype. It recursively checks the project's directory structure against the specified standard structure.
+
+Key features:
+- Performs a deep comparison of the directory structure
+- Ignores files and focuses only on directory structure
+- Returns `true` if the structure doesn't match, triggering a rule failure
+- Only runs on the special `REPO_GLOBAL_CHECK` file to ensure a single, comprehensive check
+
+Usage example in a rule:
+```json
+{
+    "name": "nonStandardDirectoryStructure-global",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "fileData",
+                "path": "$.filePath",
+                "operator": "nonStandardDirectoryStructure",
+                "value": {
+                    "fact": "standardStructure"
+                }
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "directory structure does not match the standard.",
+            "details": {
+                "fact": "standardStructure"
+            }
+        }
+    }
+}
+```
+The 'openaiAnalysisHighSeverity' operator will be discussed in the section on the optional OpenAI integration feature.
+
 ## Installation
 
 Install x-fidelity using Node.js 18+ and Yarn:
@@ -198,8 +429,8 @@ xfidelity --mode server --port 9999
 # Use local config and rules
 xfidelity -l /path/to/local/config
 
-# Set custom cache TTL for server mode
-xfidelity --mode server --jsonTTL 30
+# Set custom cache TTL for server mode with local rules
+xfidelity --mode server -l /path/to/local/config --jsonTTL 30
 ```
 
 ### Environment Variables
@@ -221,155 +452,6 @@ export OPENAI_MODEL=gpt-4
 export XFI_LISTEN_PORT=9999
 export XFI_SHARED_SECRET=your_shared_secret_here
 xfidelity -o true
-```
-
-## Docker Support
-
-x-fidelity now includes Docker support for easy deployment and configuration.
-
-### Using Docker Compose
-
-1. Ensure you have Docker and Docker Compose installed on your system.
-2. Create a `docker-compose.yml` file with the following content:
-
-   ```yaml
-   services:
-     x-fidelity-server:
-       build: .
-       ports:
-         - 8888:8888
-       volumes:
-         - ./src:/usr/src/app/src
-         - ../xfi-server/xfi-config:/usr/src/app/config
-       environment:
-         - NODE_ENV=production
-         - XFI_LISTEN_PORT=8888
-         - CERT_PATH=/usr/src/app/certs
-   ```
-
-3. Run the following command to start the x-fidelity server:
-
-   ```
-   docker-compose up --build
-   ```
-
-### Using Dockerfile
-
-If you prefer to use the Dockerfile directly:
-
-1. Build the Docker image:
-
-   ```
-   docker build -t x-fidelity .
-   ```
-
-2. Run the container:
-
-   ```
-   docker run -p 8888:8888 -v /path/to/local/config:/usr/src/app/config x-fidelity
-   ```
-
-The Dockerfile includes the following features:
-- Automatic generation of self-signed SSL certificates for HTTPS support
-- Installation of x-fidelity from npm
-- Configuration of environment variables for port and certificate path
-
-## HTTPS/TLS Support
-
-x-fidelity now generates self-signed SSL certificates automatically when running in Docker. This enables HTTPS support out of the box. 
-
-> Note: When testing the server using the self-signed certificate, you may need to set the following environment variable on x-fidelity clients:
-> ```
-> NODE_TLS_REJECT_UNAUTHORIZED=0
-> ```
-> Use this with caution and only in testing environments.
-
-## Configuration
-
-When using Docker, you can mount your local configuration and source files:
-
-- `/usr/src/app/src`: Mount your local source files here
-- `/usr/src/app/config`: Mount your local x-fidelity configuration files here
-
-x-fidelity uses archetypes to define project-specific configurations. Archetypes are now managed as JSON files, which can be stored locally or on a remote server.
-
-## New Features and Enhancements
-
-- Support for relative and absolute paths in directory and local-config options
-- Implementation of GitHub webhook to update local config
-- New cache routes: clearcache and viewcache
-- JSON schema validation for archetypes and rules
-- Input validation for URL parameters and telemetry data
-- Helmet middleware for improved security headers
-- Rate limiting on the Express server
-- Refactored ConfigManager with static methods and caching
-- Performance test scripts using Artillery
-- Expanded OpenAI Integration with custom rule creation
-- Shared secret option for telemetry client and server
-- Improved dependency compatibility checks for npm and yarn
-- Enhanced error handling and logging
-- Updated `fileContains` operator to support array of patterns
-- New exemptions feature for temporarily waiving specific rules
-- Improved OpenAI analysis with customizable prompts and severity thresholds
-
-For more detailed information on these features and how to use them, please refer to the respective sections in this README.
-
-### Exemptions
-
-x-fidelity now supports exemptions, allowing you to temporarily waive specific rules for a given repository. This feature is useful when you need to make exceptions to your standard rules due to specific project requirements or during a transition period.
-
-Exemptions are defined in JSON files and include:
-- The repository URL
-- The rule being exempted
-- An expiration date
-- A reason for the exemption
-
-For more details on how to use and manage exemptions, see the [Exemptions](#exemptions) section.
-
-### OpenAI Integration Enhancements
-
-The OpenAI integration has been expanded to allow for more customizable analysis:
-
-- Custom prompts can now be defined in OpenAI-specific rules
-- Severity thresholds can be set for OpenAI analysis results
-- New `openaiAnalysisHighSeverity` operator for fine-grained control over AI-generated insights
-
-For more information on leveraging these new OpenAI features, see the [OpenAI Integration](#openai-integration) section.
-
-### Archetype Structure
-
-Archetypes specify:
-
-- Rules to apply
-- Operators to use
-- Facts to gather
-- Dependency version requirements
-- Standard directory structure
-- File patterns to include or exclude
-
-Example archetype JSON structure:
-
-```json
-{
-    "rules": ["rule1", "rule2"],
-    "operators": ["operator1", "operator2"],
-    "facts": ["fact1", "fact2"],
-    "config": {
-        "minimumDependencyVersions": {
-            "dependency1": "^1.0.0",
-            "dependency2": "^2.0.0"
-        },
-        "standardStructure": {
-            "src": {
-                "components": null,
-                "utils": null
-            },
-            "tests": null
-        },
-        "blacklistPatterns": [".*\\/\\..*", ".*\\/(dist|build)(\\/.*|$)"],
-        "whitelistPatterns": [".*\\.(ts|tsx|js|jsx)$"]
-    }
-}
 ```
 
 ### Local Configuration
@@ -416,66 +498,73 @@ x-fidelity allows for centrally managed, hot-updatable custom rulesets that can 
 
 ### Docker Example
 
-Here's a basic Docker setup for hosting an x-fidelity config server:
+x-fidelity server can run in Docker for easy deployment and configuration.  Here is a basic example for local testing.  A full repo example is available here: <todo>
 
-```dockerfile
-# Use an official Node.js runtime as the base image
-FROM node:20
+#### Using Docker Compose
 
-# Set the working directory in the container
-WORKDIR /usr/src/app
+1. Ensure you have Docker and Docker Compose installed on your system.
+2. Create a `docker-compose.yml` file with the following content:
 
-ENV XFI_LISTEN_PORT=8888
-ENV CERT_PATH=/usr/src/app/certs
+   ```yaml
+   services:
+     x-fidelity-server:
+       build: .
+       ports:
+         - 8888:8888
+       volumes:
+         - ./src:/usr/src/app/src
+         - ../xfi-server/xfi-config:/usr/src/app/config
+       environment:
+         - NODE_ENV=production
+         - XFI_LISTEN_PORT=8888
+         - CERT_PATH=/usr/src/app/certs
+   ```
 
-RUN yarn global add x-fidelity
-RUN export PATH="$PATH:$(yarn global bin)"
+3. Run the following command to start the x-fidelity server:
 
-# Install OpenSSL
-RUN apt-get update && apt-get install -y openssl
+   ```
+   docker-compose up --build
+   ```
 
-# Generate self-signed certificate
-RUN openssl req -x509 -newkey rsa:4096 -keyout private-key.pem -out certificate.pem -days 365 -nodes -subj "/CN=localhost"
+#### Using a Dockerfile without compose
 
-# Expose the port the app runs on
-EXPOSE ${XFI_LISTEN_PORT}
+If you prefer to use the Dockerfile directly:
 
-# Copy the certificate and private key to the appropriate location
-RUN mkdir -p $CERT_PATH && \
-    mv private-key.pem certificate.pem $CERT_PATH/
+1. Build the Docker image:
 
-# Define the command to run the app using shell form
-CMD xfidelity --mode server --localConfigPath /usr/src/app/config
-```
+   ```
+   docker build -t x-fidelity .
+   ```
 
-And here's a sample docker-compose.yml file to configure and run the container:
+2. Run the container:
 
-```yaml
-services:
-  x-fidelity-server:
-    build: .
-    ports:
-      - 8888:8888
-    volumes:
-      - ./src:/usr/src/app/src
-      - ../xfi-server/xfi-config:/usr/src/app/config
-    environment:
-      - NODE_ENV=production
-      - XFI_LISTEN_PORT=8888
-      - CERT_PATH=/usr/src/app/certs
+   ```
+   docker run -p 8888:8888 -v /path/to/local/config:/usr/src/app/config x-fidelity
+   ```
 
+The Dockerfile includes the following features:
+- Automatic generation of self-signed SSL certificates for HTTPS support
+- Installation of x-fidelity from npm
+- Configuration of environment variables for port and certificate path
 
-```
+#### HTTPS/TLS Support
 
-Build and run the Docker container:
+x-fidelity generates self-signed SSL certificates automatically when running in Docker. This enables HTTPS support out of the box. 
 
-```sh
-docker-compose up --build
-```
+> Note: When testing the server using the self-signed certificate, you may need to set the following environment variable on x-fidelity clients:
+> ```
+> NODE_TLS_REJECT_UNAUTHORIZED=0
+> ```
+> Use this with caution and only in testing environments.
 
-> If you are testing the server using https/tls using the self-signed cert example in the Dockerfile above, you will need to use this environment variable on xfidelity clients connecting: `NODE_TLS_REJECT_UNAUTHORIZED=0`
+#### Serving local Configuration
 
-### CI Pipeline Integration
+When testing using the Docker examples, you can mount your local configuration and source files:
+
+- `/usr/src/app/src`: Mount your local source files here
+- `/usr/src/app/config`: Mount your local x-fidelity configuration files here
+
+## CI Pipeline Integration
 
 In your CI pipeline (e.g., GitHub Actions, GitLab CI, Jenkins), add a step to run x-fidelity in client mode:
 
@@ -488,75 +577,10 @@ steps:
     run: yarn global add x-fidelity
 
   - name: Run x-fidelity
-    run: xfidelity --configServer http://x-fidelity-server:8888
+    run: xfidelity . --configServer http://x-fidelity-server:8888
 ```
 
 This setup allows you to maintain a centralized set of rules and archetypes that can be easily updated and applied across all your projects.
-
-## Extending x-fidelity
-
-x-fidelity is designed to be highly extensible. You can add custom rules, operators, facts, and archetypes:
-
-1. **Custom Rules**: Add new JSON rule files in the `rules` subdirectory of your local config or on your config server.
-2. **Custom Operators**: Implement new operators and add them to your x-fidelity fork or plugin.
-3. **Custom Facts**: Create new fact providers and add them to your x-fidelity fork or plugin.
-4. **New Archetypes**: Define new archetypes as JSON files in your local config directory or on your config server.
-
-Example of a custom rule JSON file (`myCustomRule.json`):
-
-```json
-{
-    "name": "myCustomRule",
-    "conditions": {
-        "all": [
-            {
-                "fact": "fileData",
-                "path": "$.fileContent",
-                "operator": "fileContains",
-                "value": "TODO:"
-            }
-        ]
-    },
-    "event": {
-        "type": "warning",
-        "params": {
-            "message": "TODO comments should be resolved before committing",
-            "details": {
-                "fact": "fileData",
-                "path": "$.filePath"
-            }
-        }
-    }
-}
-```
-
-Note on rule event types:
-- Events of type "warning" are treated as such and do not cause the tool to return an error code.
-- Events of type "fatality" are strictly enforced and will cause the tool to return an error code 1.
-
-Example of a custom archetype JSON file (`my-custom-archetype.json`):
-
-```json
-{
-    "rules": ["myCustomRule", "standardRule1", "standardRule2"],
-    "operators": ["myCustomOperator", "standardOperator1"],
-    "facts": ["myCustomFact", "standardFact1"],
-    "config": {
-        "minimumDependencyVersions": {
-            "my-framework": "^2.0.0"
-        },
-        "standardStructure": {
-            "src": {
-                "components": null,
-                "utils": null
-            },
-            "tests": null
-        },
-        "blacklistPatterns": [".*\\/\\..*", ".*\\/(dist|build)(\\/.*|$)"],
-        "whitelistPatterns": [".*\\.(ts|tsx|js|jsx)$"]
-    }
-}
-```
 
 ## OpenAI Integration
 
@@ -604,7 +628,7 @@ export OPENAI_API_KEY=your_openai_api_key
 3. Enable OpenAI analysis when running x-fidelity:
 
 ```sh
-xfidelity -o true
+xfidelity . -o true
 ```
 
 You can also set the OpenAI model using an environment variable (optional):
@@ -669,76 +693,7 @@ You can create custom OpenAI rules to leverage AI-powered analysis for specific 
 
 This structure allows you to create custom AI-powered rules that can analyze your codebase for specific patterns, best practices, or potential issues. Remember to follow the naming convention to ensure proper handling of OpenAI rules in the system.
 
-## Custom Operators
 
-x-fidelity includes several custom operators that can be used in your rules. Here's a brief overview of each:
-
-### `fileContains` Operator
-
-The `fileContains` operator checks if a file contains specific patterns. It supports an array of patterns for flexible content matching.
-
-Usage example:
-```json
-{
-    "fact": "repoFileAnalysis",
-    "params": {
-        "checkPattern": [
-            "pattern1",
-            "pattern2",
-            "pattern3"
-        ],
-        "resultFact": "fileResults"
-    },
-    "operator": "fileContains",
-    "value": true
-}
-```
-
-This operator returns true if any of the patterns in the array are found in the file content.
-
-### `outdatedFramework` Operator
-
-The `outdatedFramework` operator checks if the project is using outdated versions of dependencies. It compares the installed versions of dependencies against the minimum required versions specified in the archetype configuration.
-
-Key features:
-- Supports both npm and Yarn package managers
-- Handles version ranges and specific versions
-- Checks nested dependencies
-- Returns `true` if any dependency is outdated, triggering a rule failure
-
-Usage example in a rule:
-```json
-{
-    "fact": "repoDependencyAnalysis",
-    "params": {
-        "resultFact": "repoDependencyResults"
-    },
-    "operator": "outdatedFramework",
-    "value": true
-}
-```
-
-### `nonStandardDirectoryStructure` Operator
-
-The `nonStandardDirectoryStructure` operator verifies if the project follows the standard directory structure defined in the archetype. It recursively checks the project's directory structure against the specified standard structure.
-
-Key features:
-- Performs a deep comparison of the directory structure
-- Ignores files and focuses only on directory structure
-- Returns `true` if the structure doesn't match, triggering a rule failure
-- Only runs on the special `REPO_GLOBAL_CHECK` file to ensure a single, comprehensive check
-
-Usage example in a rule:
-```json
-{
-    "fact": "fileData",
-    "path": "$.filePath",
-    "operator": "nonStandardDirectoryStructure",
-    "value": {
-        "fact": "standardStructure"
-    }
-}
-```
 
 Both operators play crucial roles in maintaining project consistency and up-to-date dependencies, contributing to the overall quality and maintainability of the codebase.
 
@@ -747,17 +702,6 @@ Both operators play crucial roles in maintaining project consistency and up-to-d
 The `openaiAnalysisHighSeverity` operator is used with OpenAI integration to identify high-severity issues in the AI-generated analysis.
 
 For more detailed information on how to use these operators in your rules, please refer to the specific rule examples in the documentation.
-
-## Best Practices
-
-1. **Version Control**: Keep your x-fidelity configurations (archetypes and rules) in version control.
-2. **Continuous Integration**: Integrate x-fidelity checks into your CI/CD pipeline.
-3. **Regular Updates**: Keep your archetypes, rules, and dependencies up to date.
-4. **Documentation**: Document custom rules, operators, and archetypes for your team.
-5. **Gradual Implementation**: When introducing x-fidelity to an existing project, start with basic checks and gradually increase strictness.
-6. **Team Alignment**: Ensure your team understands and agrees on the rules being enforced.
-7. **Performance**: Be mindful of the performance impact, especially for large codebases.
-8. **Centralized Management**: Use a config server to manage and distribute your archetypes and rules across projects.
 
 ## Exemptions
 
@@ -802,7 +746,7 @@ Exemptions in x-fidelity provide a way to temporarily waive specific rules for a
 ]
 ```
 
-### Best Practices for Exemptions
+### Guidance for exemptions
 
 1. **Limited Duration**: Set short-term expiration dates and renew if necessary, rather than setting far-future dates.
 2. **Clear Documentation**: Always provide a clear reason for each exemption.
@@ -812,23 +756,20 @@ Exemptions in x-fidelity provide a way to temporarily waive specific rules for a
 
 By using exemptions judiciously, you can maintain high code standards while allowing for necessary flexibility in specific situations.
 
+## X-Fi Best Practices
+
+1. **Version Control**: Keep your x-fidelity configurations (archetypes and rules) in version control.
+2. **Continuous Integration**: Integrate x-fidelity checks into your CI/CD pipeline.
+3. **Regular Updates**: Keep your archetypes, rules, and dependencies up to date.
+4. **Documentation**: Document custom rules, operators, and archetypes for your team.
+5. **Gradual Implementation**: When introducing x-fidelity to an existing project, start with basic checks and gradually increase strictness.
+6. **Team Alignment**: Ensure your team understands and agrees on the rules being enforced.
+7. **Performance**: Be mindful of the performance impact, especially for large codebases.
+8. **Centralized Management**: Use a config server to manage and distribute your archetypes and rules across projects.
+
 ## Contributing
 
 Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` file for guidelines on how to contribute to this project.
-
-## Glossary
-
-- **Archetype**: A predefined configuration template for a specific type of project or technology stack. It defines the rules, operators, facts, and other settings to be applied during analysis.
-
-- **Rule**: A set of conditions and corresponding actions that define a specific check or requirement for the codebase. Rules are used to identify warnings or fatal issues in the codebase.
-
-- **Operator**: A function that performs a specific comparison or check within a rule. Operators are used to evaluate conditions in rules.
-
-- **Fact**: A piece of information about the codebase or its environment that is collected and used during the analysis process. Facts can include file contents, dependency versions, or other relevant data.
-
-- **Config Server**: A server that hosts and distributes archetype configurations and rules, allowing for centralized management of x-fidelity settings.
-
-- **Telemetry**: Data collected about the usage and performance of x-fidelity, which can be used for improving the tool and understanding its impact.
 
 ## License
 

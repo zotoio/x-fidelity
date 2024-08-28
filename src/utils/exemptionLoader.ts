@@ -58,39 +58,51 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
 
 export function normalizeGitHubUrl(url: string): string {
     // if url only contains one slash, just return it
-    if (url.indexOf('/') === url.lastIndexOf('/')) {
+    if (url?.indexOf('/') === url?.lastIndexOf('/')) {
         return url;
     }
-    return url.replace(/^(https?:\/\/)?([^/]+)\//, '').replace(/\.git$/, '');
+    return url?.replace(/^(https?:\/\/)?([^/]+)\//, '').replace(/\.git$/, '');
 }
 
 export function isExempt(params: IsExemptParams): boolean {
     const { repoUrl, ruleName, exemptions, logPrefix } = params;
-    const now = new Date();
-    const normalizedRepoUrl = normalizeGitHubUrl(repoUrl);
-    const exemption = exemptions.find(exemption =>
-        normalizeGitHubUrl(exemption.repoUrl) === normalizedRepoUrl &&
-        exemption.rule === ruleName &&
-        new Date(exemption.expirationDate) > now
-    );
-    if (exemption) {
-        logger.error(`Exempting rule ${ruleName} for repo ${repoUrl} until ${exemption.expirationDate}`);
+    try {
+        if (!repoUrl) {
+            logger.warn(`
+                Exemptions disabled, as repoUrl and ruleName are required.
+                - Either your git repo does not have a remote origin or the rule name is missing.  
+                - You can check your repo origin exists with 'git config --get remote.origin.url`);
+            return false;
+        }
+        const now = new Date();
+        const normalizedRepoUrl = normalizeGitHubUrl(repoUrl);
+        const exemption = exemptions.find(exemption =>
+            normalizeGitHubUrl(exemption.repoUrl) === normalizedRepoUrl &&
+            exemption.rule === ruleName &&
+            new Date(exemption.expirationDate) > now
+        );
+        if (exemption) {
+            logger.error(`Exempting rule ${ruleName} for repo ${repoUrl} until ${exemption.expirationDate}`);
 
-        // Send telemetry event for the allowed exemption
-        sendTelemetry({
-            eventType: 'exemptionAllowed',
-            metadata: {
-                repoUrl: exemption.repoUrl,
-                rule: exemption.rule,
-                expirationDate: exemption.expirationDate,
-                reason: exemption.reason
-            },
-            timestamp: new Date().toISOString()
-        }, logPrefix);
+            // Send telemetry event for the allowed exemption
+            sendTelemetry({
+                eventType: 'exemptionAllowed',
+                metadata: {
+                    repoUrl: exemption.repoUrl,
+                    rule: exemption.rule,
+                    expirationDate: exemption.expirationDate,
+                    reason: exemption.reason
+                },
+                timestamp: new Date().toISOString()
+            }, logPrefix);
 
-        return true;
-    }
-    return false;
+            return true;
+        }
+        return false;
+    } catch (error) {
+        logger.error(`Error checking exemption: ${error}`);
+        return false;
+    }    
 }
 
 async function loadDefaultExemptions(params: LoadExemptionsParams): Promise<Exemption[]> {
