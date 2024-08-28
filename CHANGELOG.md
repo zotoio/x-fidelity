@@ -1,3 +1,19 @@
+# [2.13.0](https://github.com/zotoio/x-fidelity/compare/v2.12.1...v2.13.0) (2024-08-28)
+
+
+### Bug Fixes
+
+* add readonly constraint to archetypeSchema ([c74d116](https://github.com/zotoio/x-fidelity/commit/c74d1168733795aac523ba8ceb33020f2f41911e))
+* Improve path traversal prevention in repoFilesystemFacts.ts ([f65f595](https://github.com/zotoio/x-fidelity/commit/f65f59532683e7a8e392e8bcd259869b8fe2f006))
+* **schema:** fix schema validation and incorrect default rule code in setupEngine ([0a3c65c](https://github.com/zotoio/x-fidelity/commit/0a3c65ce5d0873ec1b3e679ac343ae91e6c0e463))
+* update import statement for RuleConfigSchema ([a658127](https://github.com/zotoio/x-fidelity/commit/a6581272708bcf77a37040c1fb0a6d0411d29a36))
+
+
+### Features
+
+* Add new types for IsBlacklistedParams and isWhitelistedParams ([2c43c82](https://github.com/zotoio/x-fidelity/commit/2c43c822f5dbeeb8f10fcf157886fe607e451fe3))
+* Update archetype typedef and jsonschema to validate semver strings ([2bba2b1](https://github.com/zotoio/x-fidelity/commit/2bba2b15a66f0937609b04815b029ff181f86ccf))
+
 ## [2.12.1](https://github.com/zotoio/x-fidelity/compare/v2.12.0...v2.12.1) (2024-08-25)
 
 
