@@ -1,3 +1,15 @@
+# [2.14.0](https://github.com/zotoio/x-fidelity/compare/v2.13.1...v2.14.0) (2024-08-29)
+
+
+### Bug Fixes
+
+* **exemptions:** exclude repos that do not have a remote configured ([c49c4c7](https://github.com/zotoio/x-fidelity/commit/c49c4c7284101822395a6f57b28b0cd302e5505e))
+
+
+### Features
+
+* Add exemptions feature to manage rule exceptions ([0a91ad8](https://github.com/zotoio/x-fidelity/commit/0a91ad8153651f971c3e34013233f91a0d960ec8))
+
 ## [2.13.1](https://github.com/zotoio/x-fidelity/compare/v2.13.0...v2.13.1) (2024-08-28)
 
 
