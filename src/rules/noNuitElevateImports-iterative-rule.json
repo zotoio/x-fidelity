@@ -1,0 +1,34 @@
+{
+    "name": "noNuitElevateImports-iterative",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "notEqual",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "repoFileAnalysis",
+                "params": {
+                    "checkPattern": [
+                        "import.*nuit",
+                        "import.*elevate"
+                    ],
+                    "resultFact": "fileResults"
+                },
+                "operator": "fileContains",
+                "value": true
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "File contains imports from both 'nuit' and 'elevate' packages. These should not be used together in the same file.",
+            "details": {
+                "fact": "fileResults"
+            }
+        }
+    }
+}
