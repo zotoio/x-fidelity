@@ -20,7 +20,9 @@
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "perftest": "artillery run src/server/configServer.performance.test.yml",
-    "perftest:cloud": "echo 'expecting env var ARTILLERY_CLOUD_API_KEY from artillery.io' && artillery run src/server/configServer.performance.test.yml --record"
+    "perftest:cloud": "echo 'expecting env var ARTILLERY_CLOUD_API_KEY from artillery.io' && artillery run src/server/configServer.performance.test.yml --record",
+    "bats:install": "cd ./cli-testing && ./installBatsTesting.sh",
+    "bats:test": "cd ./cli-testing && bats *.bats"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
