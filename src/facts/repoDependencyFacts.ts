@@ -8,6 +8,32 @@ import { options } from '../core/cli';
 import fs from 'fs';
 import path from 'path';
 
+function safeStringify(obj: any, indent = 2): string {
+    const cache = new Set();
+    return JSON.stringify(obj, (key, value) => {
+        if (typeof value === 'object' && value !== null) {
+            if (cache.has(value)) {
+                return '[Circular]';
+            }
+            cache.add(value);
+        }
+        return value;
+    }, indent);
+}
+
+function safeClone(obj: any): any {
+    const seen = new WeakSet();
+    return JSON.parse(JSON.stringify(obj, (key, value) => {
+        if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) {
+                return '[Circular]';
+            }
+            seen.add(value);
+        }
+        return value;
+    }));
+}
+
 /**
  * Collects the local dependencies.
  * @returns The local dependencies.
@@ -22,7 +48,7 @@ export function collectLocalDependencies(): LocalDependencies[] {
         logger.error('No yarn.lock or package-lock.json found');
         throw new Error('Unsupported package manager');
     }
-    logger.debug(`collectLocalDependencies: ${JSON.stringify(result)}`);
+    logger.debug(`collectLocalDependencies: ${safeStringify(result)}`);
     return result;
 }
 
@@ -143,11 +169,17 @@ export function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig): Ver
  */
 export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions: MinimumDepVersions): VersionData[] {
     const results: VersionData[] = [];
+    const visited = new Set<string>();
 
-    logger.debug(`depGraph: ${JSON.stringify(depGraph)}`);
+    logger.debug(`depGraph: ${safeStringify(depGraph)}`);
 
     function walk(dep: LocalDependencies, parentName = '') {
         const fullName = parentName ? `${parentName}/${dep.name}` : dep.name;
+        if (visited.has(fullName)) {
+            return; // Skip if already visited to avoid circular references
+        }
+        visited.add(fullName);
+
         if (Object.keys(minVersions).some(key => key === dep.name || `@${key}` === dep.name)) {
             const minVersionKey = Object.keys(minVersions).find(key => key === dep.name || `@${key}` === dep.name);
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -161,7 +193,7 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
     }
 
     depGraph.forEach(dep => walk(dep));
-    logger.debug(JSON.stringify(depGraph))
+    logger.debug(`findPropertiesInTree result: ${safeStringify(results)}`);
     return results;
 }
 
