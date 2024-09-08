@@ -245,5 +245,6 @@ export interface ValidationResult {
 }
 export interface XFIConfig {
   sensitiveFileFalsePositives?: string[];
+  [key: string]: any;  // Allow for additional properties
 }
 
