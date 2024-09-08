@@ -39,7 +39,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     }, executionLogPrefix);
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
-    const fileData: FileData[] = await collectRepoFileData(repoPath, archetypeConfig);
+    const { filesData: fileData, xfiConfig } = await collectRepoFileData(repoPath, archetypeConfig);
 
     // add REPO_GLOBAL_CHECK to fileData, which is the trigger for global checks
     fileData.push({
@@ -72,6 +72,9 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     // add functions for dependency and file analysis
     engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
     engine.addFact('repoFileAnalysis', repoFileAnalysis);
+
+    // add xfiConfig as a fact
+    engine.addFact('xfiConfig', xfiConfig);
 
     const failures = await runEngineOnFiles({
         engine,
