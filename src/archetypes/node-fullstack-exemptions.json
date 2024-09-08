@@ -8,7 +8,7 @@
   {
     "repoUrl": "git@github.com:zotoio/x-fidelity.git",
     "rule": "sensitiveLogging-iterative",
-    "expirationDate": "2025-09-30",
+    "expirationDate": "2023-09-30",
     "reason": "Security audit and logging refactor planned for Q3 2024"
   }
 ]

@@ -2,7 +2,7 @@ import { openaiAnalysis, collectOpenaiAnalysisFacts } from './openaiAnalysisFact
 import { Almanac } from 'json-rules-engine';
 import { OpenAI } from 'openai';
 import { logger } from '../utils/logger';
-import { FileData } from './repoFilesystemFacts';
+import { FileData } from '../types/typeDefs';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
 
 jest.mock('../utils/openaiUtils');

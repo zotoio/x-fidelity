@@ -1,9 +1,5 @@
+import { ValidationResult } from '../types/typeDefs';
 import { logger } from './logger';
-
-interface ValidationResult {
-    isValid: boolean;
-    error?: string;
-}
 
 export function validateInput(input: string | undefined): ValidationResult {
     if (input == null) {

@@ -1,16 +1,7 @@
 import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
-import { ArchetypeConfig, IsBlacklistedParams, isWhitelistedParams } from '../types/typeDefs';
-import { loadXFIConfig } from '../utils/repoXFIConfigLoader';
-
-interface FileData {
-    fileName: string;
-    filePath: string;
-    fileContent: string;
-    fileAst?: any;
-    relativePath?: string;
-}
+import { ArchetypeConfig, FileData, IsBlacklistedParams, isWhitelistedParams } from '../types/typeDefs';
 
 async function parseFile(filePath: string): Promise<FileData> {
     return Promise.resolve({
@@ -88,6 +79,7 @@ function isWhitelisted({ filePath, repoPath, whitelistPatterns }: isWhitelistedP
 async function repoFileAnalysis(params: any, almanac: any) {
     const result: any = {'result': []};
     const fileData: FileData = await almanac.factValue('fileData');
+
     const checkPatterns: string[] = Array.isArray(params.checkPattern) ? params.checkPattern : [params.checkPattern];
     const fileContent = fileData.fileContent;
     const filePath = fileData.filePath;
@@ -96,6 +88,13 @@ async function repoFileAnalysis(params: any, almanac: any) {
 
     if (fileData.fileName === 'REPO_GLOBAL_CHECK' || checkPatterns.length === 0 || !fileContent) {
         return result;
+    }
+
+    //if there is already a resultFact for this file, we need to append
+    const existingResult = almanac.factValue(params.resultFact);
+    if (Object.keys(existingResult).includes('result')) {
+        logger.error(JSON.stringify(existingResult));
+        result.result = existingResult.result;
     }
 
     const analysis: any = [];
@@ -156,7 +155,10 @@ async function repoFileAnalysis(params: any, almanac: any) {
         
     }
 
-    result.result = analysis;
+    //merge the results
+    result.result = result.result.concat(analysis);
+
+    //result.result. = analysis;
 
     almanac.addRuntimeFact(params.resultFact, result);
 

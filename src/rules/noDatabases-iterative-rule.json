@@ -24,7 +24,7 @@
         "params": {
             "message": "code must not directly call databases",
             "details": {
-                "fact": "fileResults-DB"
+                "fact": "fileResultsDB"
             }
         }
     }

@@ -1,17 +1,16 @@
 import { logger } from '../../utils/logger';
-import { FileData } from '../../facts/repoFilesystemFacts';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../../utils/configManager';
 import { ArchetypeConfig, ResultMetadata } from '../../types/typeDefs';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';
 import { collectRepoFileData, repoFileAnalysis } from '../../facts/repoFilesystemFacts';
-import { loadXFIConfig } from '../../utils/repoXFIConfigLoader';
+import { loadRepoXFIConfig } from '../../utils/repoXFIConfigLoader';
 import { getDependencyVersionFacts, repoDependencyAnalysis } from '../../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../../facts/openaiAnalysisFacts';
 import { collectTelemetryData } from './telemetryCollector';
 import { setupEngine } from './engineSetup';
 import { runEngineOnFiles } from './engineRunner';
-import { countRuleFailures } from '../../utils/utils';
+import { countRuleFailures, safeStringify } from '../../utils/utils';
 
 import { AnalyzeCodebaseParams } from '../../types/typeDefs';
 import { options } from '../cli';
@@ -41,7 +40,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
     const fileData = await collectRepoFileData(repoPath, archetypeConfig);
-    const xfiConfig = loadXFIConfig(repoPath);
+    const repoXFIConfig = await loadRepoXFIConfig(repoPath);
 
     // add REPO_GLOBAL_CHECK to fileData, which is the trigger for global checks
     fileData.push({
@@ -76,9 +75,9 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     engine.addFact('repoFileAnalysis', repoFileAnalysis);
 
     // add xfiConfig as a fact
-    engine.addFact('xfiConfig', xfiConfig);
+    engine.addFact('repoXFIConfig', repoXFIConfig);
 
-    logger.debug(`Added xfiConfig as fact: ${JSON.stringify(xfiConfig)}`);
+    logger.info(`Added repoXFIConfig as fact: ${safeStringify(repoXFIConfig)}`);
 
     const failures = await runEngineOnFiles({
         engine,
@@ -105,6 +104,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         XFI_RESULT: {
             archetype,
             telemetryData,
+            repoXFIConfig: repoXFIConfig,
             issueDetails: failures,
             startTime: telemetryData.startTime,
             finishTime: finishTime,

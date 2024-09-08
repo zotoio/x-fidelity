@@ -9,12 +9,12 @@
                 "value": "REPO_GLOBAL_CHECK"
             },
             {
-                "fact": "fileData",
-                "path": "$.xfiConfig.sensitiveFileFalsePositives",
-                "operator": "notContains",
+                "fact": "repoXFIConfig",
+                "path": "$.sensitiveFileFalsePositives",
+                "operator": "doesNotContain",
                 "value": {
                     "fact": "fileData",
-                    "path": "$.relativePath"
+                    "path": "$.filePath"
                 }
             },
             {

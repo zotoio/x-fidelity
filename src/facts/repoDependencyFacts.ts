@@ -3,36 +3,11 @@ import { execSync } from 'child_process';
 import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } from '../types/typeDefs';
 import { Almanac } from 'json-rules-engine';
 import * as semver from 'semver';
-import { FileData } from './repoFilesystemFacts';
+import { FileData } from '../types/typeDefs';
 import { options } from '../core/cli';
 import fs from 'fs';
 import path from 'path';
-
-function safeStringify(obj: any, indent = 2): string {
-    const cache = new Set();
-    return JSON.stringify(obj, (key, value) => {
-        if (typeof value === 'object' && value !== null) {
-            if (cache.has(value)) {
-                return '[Circular]';
-            }
-            cache.add(value);
-        }
-        return value;
-    }, indent);
-}
-
-function safeClone(obj: any): any {
-    const seen = new WeakSet();
-    return JSON.parse(JSON.stringify(obj, (key, value) => {
-        if (typeof value === 'object' && value !== null) {
-            if (seen.has(value)) {
-                return '[Circular]';
-            }
-            seen.add(value);
-        }
-        return value;
-    }));
-}
+import { safeClone, safeStringify } from '../utils/utils';
 
 /**
  * Collects the local dependencies.

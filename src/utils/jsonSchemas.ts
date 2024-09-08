@@ -10,15 +10,15 @@ ajv.addFormat("semverPattern", {
     validate: (x) => semver.valid(x) !== null && semver.validRange(x) !== null
   })
 
-const xfiConfigSchema: RepoXFIConfigSchema = {
+const repoXFIConfigSchema: RepoXFIConfigSchema = {
     type: 'object',
     properties: {
-        sensitiveFileFalsePositives: {
-            type: 'array',
-            items: { type: 'string' }
+        sensitiveFileFalsePositives: { 
+            type: 'array', items: { type: 'string' }, minItems: 0, nullable: true 
         }
     },
-    additionalProperties: false
+    required: [],
+    additionalProperties: true
 };
 
 const archetypeSchema: ArchetypeConfigSchema = {
@@ -95,7 +95,7 @@ const ruleSchema: RuleConfigSchema = {
 
 export const validateArchetypeSchema = ajv.compile(archetypeSchema);
 export const validateRuleSchema = ajv.compile(ruleSchema);
-export const validateXFIConfigSchema = ajv.compile(xfiConfigSchema);
+export const validateXFIConfigSchema = ajv.compile(repoXFIConfigSchema);
 
 // Helper function to log validation errors
 const logValidationErrors = (errors: any[] | null | undefined) => {
@@ -126,7 +126,7 @@ const validateRule = (data: any) => {
 const validateXFIConfig = (data: any) => {
     const isValid = validateXFIConfigSchema(data);
     if (!isValid) {
-        logValidationErrors(validateXFIConfigSchema.errors);
+        logValidationErrors(validateXFIConfigSchema?.errors);
     }
     return isValid;
 };

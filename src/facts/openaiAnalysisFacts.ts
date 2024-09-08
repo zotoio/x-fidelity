@@ -1,6 +1,6 @@
 import { logger } from '../utils/logger';
 import { OpenAI } from 'openai';
-import { FileData } from './repoFilesystemFacts';
+import { FileData } from '../types/typeDefs';
 import { ChatCompletionCreateParams } from 'openai/resources/chat/completions';
 import { Almanac } from 'json-rules-engine';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
