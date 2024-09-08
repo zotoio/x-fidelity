@@ -9,6 +9,15 @@
                 "value": "REPO_GLOBAL_CHECK"
             },
             {
+                "fact": "fileData",
+                "path": "$.xfiConfig.sensitiveFileFalsePositives",
+                "operator": "notContains",
+                "value": {
+                    "fact": "fileData",
+                    "path": "$.relativePath"
+                }
+            },
+            {
                 "fact": "repoFileAnalysis",
                 "params": {
                     "checkPattern": [
@@ -29,7 +38,7 @@
     "event": {
         "type": "warning",
         "params": {
-            "message": "Potential sensitive data detected. This must not be logged or exposed.",
+            "message": "Potential sensitive data detected. This must not be logged or exposed. Note: You can exclude files from this check by adding their relative paths to the 'sensitiveFileFalsePositives' array in .xfi-config.json.",
             "details": {
                 "fact": "fileResults"
             }
