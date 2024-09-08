@@ -1,3 +1,30 @@
+# [2.15.0](https://github.com/zotoio/x-fidelity/compare/v2.14.0...v2.15.0) (2024-09-08)
+
+
+### Bug Fixes
+
+* **execution:** fact functions and cleanup ([8bd2cfa](https://github.com/zotoio/x-fidelity/commit/8bd2cfa8c4ea6a587fdf4259d34e14e09189fc27))
+* Implement more robust error handling and logging ([f391052](https://github.com/zotoio/x-fidelity/commit/f391052b1b3fe8f56bb29deffaf567b2a32ce3d7))
+* Implement safe handling of circular JSON references in repoDependencyFacts.ts ([49d95da](https://github.com/zotoio/x-fidelity/commit/49d95da03f4552de4533a0e86d37d4e168bd038e))
+* **loading:** consistency with archetype ([47f52e4](https://github.com/zotoio/x-fidelity/commit/47f52e477c1e2ca69c49af767e9af5c8b76a7979))
+* Update import statement in repoFilesystemFacts.ts ([903326c](https://github.com/zotoio/x-fidelity/commit/903326cb1dc33da38d5a9fcf7a45f01c4f1f4876))
+
+
+### Features
+
+* Add JSON schema validation for .xfi-config.json file ([a7d0a75](https://github.com/zotoio/x-fidelity/commit/a7d0a755abe18ae07f8c1ef938b0eb2239af968b))
+* Add rule to check for 'nuit' and 'elevate' package imports in the same file ([70d0994](https://github.com/zotoio/x-fidelity/commit/70d09947ff9149da22047a0d2f9dc62448de9fd0))
+* Add support for .xfi-config.json file ([e9b60d3](https://github.com/zotoio/x-fidelity/commit/e9b60d31ac1037d6f40505deff5126f18409c269))
+* Add support for .xfi-config.json file with sensitiveFileFalsePositives ([5eda4f4](https://github.com/zotoio/x-fidelity/commit/5eda4f4df4d5df048d6342e890825064e78b93e0))
+* Add XFIConfig to ResultMetadata and define FileData and ValidationResult types ([ce71d90](https://github.com/zotoio/x-fidelity/commit/ce71d903c5211d1101bf49080a0fc3978b4cdaf2))
+* Centralize loading of .xfi-config.json and add it as a fact ([2cca682](https://github.com/zotoio/x-fidelity/commit/2cca68203f2cd04d6802e25e3647455279d009a2))
+* create 'bats' subdirectory and move BATS-related content ([1cc0bff](https://github.com/zotoio/x-fidelity/commit/1cc0bff7fec4d0d1b4c7ea60dd8fef027bc689f2))
+* improve and modernize the bats test ([586b546](https://github.com/zotoio/x-fidelity/commit/586b546e50de46d5afe4e2dcde34af7fe65bbdb7))
+* Improve repoDependencyAnalysis function ([a5638ca](https://github.com/zotoio/x-fidelity/commit/a5638cad789bc52533862dd91b9a964da785c666))
+* Rename XFIConfig to RepoXFIConfig ([f91574d](https://github.com/zotoio/x-fidelity/commit/f91574d7c9ab4a1e64a9b2b8fb34fb84929a87bd))
+* **repoconfig:** support for local control of false positive sensitive values ([db0b09a](https://github.com/zotoio/x-fidelity/commit/db0b09ae08dea2cc82a26a6a671615033805396b))
+* **testing:** cli blackbox testing ([a634258](https://github.com/zotoio/x-fidelity/commit/a6342584a4a7cdfd630437fd9894a02039d0099d))
+
 # [2.14.0](https://github.com/zotoio/x-fidelity/compare/v2.13.1...v2.14.0) (2024-08-29)
 
 
