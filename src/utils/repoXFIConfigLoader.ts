@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { logger } from './logger';
-import { XFIConfig } from '../types/typeDefs';
+import { RepoXFIConfig } from '../types/typeDefs';
 import Ajv from 'ajv';
 
 const ajv = new Ajv();
@@ -19,14 +19,14 @@ const xfiConfigSchema = {
 
 const validateXFIConfig = ajv.compile(xfiConfigSchema);
 
-export function loadXFIConfig(repoPath: string): XFIConfig {
+export function loadRepoXFIConfig(repoPath: string): RepoXFIConfig {
   try {
     const configPath = path.join(repoPath, '.xfi-config.json');
     const configContent = fs.readFileSync(configPath, 'utf8');
     const parsedConfig = JSON.parse(configContent);
 
     if (validateXFIConfig(parsedConfig)) {
-      return parsedConfig;
+      return parsedConfig as RepoXFIConfig;
     } else {
       logger.error('Invalid .xfi-config.json file:', validateXFIConfig.errors);
       return {};

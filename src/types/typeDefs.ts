@@ -172,7 +172,7 @@ export interface ResultMetadata {
         durationSeconds: number;
         telemetryData: TelemetryData;
         options: any;
-        xfiConfig: any;
+        repoXFIConfig: RepoXFIConfig;
     };
 }
 
@@ -243,7 +243,7 @@ export interface ValidationResult {
     isValid: boolean;
     error?: string;
 }
-export interface XFIConfig {
+export interface RepoXFIConfig {
   sensitiveFileFalsePositives?: string[];
   [key: string]: any;  // Allow for additional properties
 }
