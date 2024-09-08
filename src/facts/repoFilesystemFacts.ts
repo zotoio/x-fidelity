@@ -3,11 +3,28 @@ import fs from 'fs';
 import path from 'path';
 import { ArchetypeConfig, IsBlacklistedParams, isWhitelistedParams } from '../types/typeDefs';
 
+interface XFIConfig {
+  sensitiveFileFalsePositives?: string[];
+}
+
+function readXFIConfig(repoPath: string): XFIConfig {
+  try {
+    const configPath = path.join(repoPath, '.xfi-config.json');
+    const configContent = fs.readFileSync(configPath, 'utf8');
+    return JSON.parse(configContent);
+  } catch (error) {
+    logger.debug('No .xfi-config.json file found or error reading it');
+    return {};
+  }
+}
+
 interface FileData {
     fileName: string;
     filePath: string;
     fileContent: string;
     fileAst?: any;
+    relativePath?: string;
+    xfiConfig?: XFIConfig;
 }
 
 async function parseFile(filePath: string): Promise<FileData> {
@@ -20,6 +37,7 @@ async function parseFile(filePath: string): Promise<FileData> {
 
 async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeConfig): Promise<FileData[]> {
     const filesData: FileData[] = [];
+    const xfiConfig = readXFIConfig(repoPath);
 
     logger.debug(`collectingRepoFileData from: ${repoPath}`);
     const files = fs.readdirSync(repoPath);
@@ -37,9 +55,10 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
             if (!isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns }) && isWhitelisted({ filePath, repoPath, whitelistPatterns: archetypeConfig.config.whitelistPatterns })) {
                 logger.debug(`adding file: ${filePath}`);
                 const fileData = await parseFile(filePath);
+                fileData.relativePath = path.relative(repoPath, filePath);
+                fileData.xfiConfig = xfiConfig;
                 filesData.push(fileData);
             }    
-        
         }    
     }
     return filesData;
