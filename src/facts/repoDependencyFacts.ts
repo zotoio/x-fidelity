@@ -208,8 +208,9 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
     const analysis: any = [];
     const dependencyData: any = await almanac.factValue('dependencyData');
+    const safeDependencyData = safeClone(dependencyData);
 
-    dependencyData.installedDependencyVersions.forEach((versionData: VersionData) => { 
+    safeDependencyData.installedDependencyVersions.forEach((versionData: VersionData) => { 
         logger.debug(`outdatedFramework: checking ${versionData.dep}`);
 
         // Check if the installed version satisfies the required version, supporting both ranges and specific versions
@@ -221,7 +222,7 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
                 'requiredVersion': versionData.min
             };
             
-            logger.error(`dependencyFailure: ${JSON.stringify(dependencyFailure)}`);
+            logger.error(`dependencyFailure: ${safeStringify(dependencyFailure)}`);
             analysis.push(dependencyFailure);
         }
     });
@@ -230,6 +231,7 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
     almanac.addRuntimeFact(params.resultFact, result);
 
+    logger.debug(`repoDependencyAnalysis result: ${safeStringify(result)}`);
     return result;
 }
 
