@@ -2,7 +2,7 @@ import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
 import { ArchetypeConfig, IsBlacklistedParams, isWhitelistedParams } from '../types/typeDefs';
-import { loadXFIConfig } from '../utils/configLoader';
+import { loadXFIConfig } from '../utils/repoXFIConfigLoader';
 
 interface FileData {
     fileName: string;
