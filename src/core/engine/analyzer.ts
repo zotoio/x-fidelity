@@ -5,7 +5,7 @@ import { ArchetypeConfig, ResultMetadata } from '../../types/typeDefs';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';
 import { collectRepoFileData, repoFileAnalysis } from '../../facts/repoFilesystemFacts';
-import { loadXFIConfig } from '../../utils/configLoader';
+import { loadXFIConfig } from '../../utils/repoXFIConfigLoader';
 import { getDependencyVersionFacts, repoDependencyAnalysis } from '../../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../../facts/openaiAnalysisFacts';
 import { collectTelemetryData } from './telemetryCollector';
