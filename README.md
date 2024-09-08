@@ -758,6 +758,42 @@ This structure allows you to create custom AI-powered rules that can analyze you
 7. **Performance**: Be mindful of the performance impact, especially for large codebases.
 8. **Centralized Management**: Use a config server to manage and distribute your archetypes and rules across projects.
 
+## Using .xfi-config.json
+
+The `.xfi-config.json` file allows you to configure x-fidelity behavior specific to your repository. This file should be placed in the root of your project directory.
+
+### Configuration Options
+
+Currently, the `.xfi-config.json` file supports the following options:
+
+1. `sensitiveFileFalsePositives`: An array of file paths that should be excluded from sensitive data checks.
+
+Example `.xfi-config.json`:
+
+```json
+{
+  "sensitiveFileFalsePositives": [
+    "path/to/exclude/file1.js",
+    "path/to/exclude/file2.ts"
+  ]
+}
+```
+
+### How It Works
+
+- When x-fidelity runs, it looks for the `.xfi-config.json` file in your project's root directory.
+- If found, it applies the configurations specified in this file.
+- For `sensitiveFileFalsePositives`, the specified files will be excluded from checks that look for sensitive data, such as API keys or passwords.
+
+### Best Practices
+
+1. **Version Control**: Include `.xfi-config.json` in your version control system to ensure consistency across your team.
+2. **Documentation**: Document any exclusions and the reasons for them in your project documentation.
+3. **Regular Review**: Periodically review your `.xfi-config.json` to ensure the exclusions are still necessary and valid.
+4. **Minimal Use**: Use exclusions sparingly. It's better to fix issues than to exclude them from checks.
+
+Remember, while `.xfi-config.json` allows you to customize x-fidelity's behavior, it should be used judiciously to maintain the integrity of your code quality checks.
+
 ## Contributing
 
 Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` file for guidelines on how to contribute to this project.
