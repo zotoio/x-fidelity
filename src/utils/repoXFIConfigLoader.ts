@@ -2,22 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { logger } from './logger';
 import { RepoXFIConfig } from '../types/typeDefs';
-import Ajv from 'ajv';
-
-const ajv = new Ajv();
-
-const xfiConfigSchema = {
-  type: 'object',
-  properties: {
-    sensitiveFileFalsePositives: {
-      type: 'array',
-      items: { type: 'string' }
-    }
-  },
-  additionalProperties: false
-};
-
-const validateXFIConfig = ajv.compile(xfiConfigSchema);
+import { validateXFIConfig } from './jsonSchemas';
 
 export function loadRepoXFIConfig(repoPath: string): RepoXFIConfig {
   try {
@@ -26,7 +11,7 @@ export function loadRepoXFIConfig(repoPath: string): RepoXFIConfig {
     const parsedConfig = JSON.parse(configContent);
 
     if (validateXFIConfig(parsedConfig)) {
-      return parsedConfig as RepoXFIConfig;
+      return parsedConfig;
     } else {
       logger.error('Invalid .xfi-config.json file:', validateXFIConfig.errors);
       return {};

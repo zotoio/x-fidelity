@@ -1,6 +1,6 @@
 import Ajv from 'ajv';
 import { logger } from './logger';
-import { ArchetypeConfigSchema, RuleConfigSchema } from '../types/typeDefs';
+import { ArchetypeConfigSchema, RuleConfigSchema, RepoXFIConfigSchema } from '../types/typeDefs';
 import semver from 'semver';
 
 const ajv = new Ajv();
@@ -9,6 +9,17 @@ ajv.addFormat("semverPattern", {
     type: "string",
     validate: (x) => semver.valid(x) !== null && semver.validRange(x) !== null
   })
+
+const xfiConfigSchema: RepoXFIConfigSchema = {
+    type: 'object',
+    properties: {
+        sensitiveFileFalsePositives: {
+            type: 'array',
+            items: { type: 'string' }
+        }
+    },
+    additionalProperties: false
+};
 
 const archetypeSchema: ArchetypeConfigSchema = {
     type: 'object',
@@ -84,6 +95,7 @@ const ruleSchema: RuleConfigSchema = {
 
 export const validateArchetypeSchema = ajv.compile(archetypeSchema);
 export const validateRuleSchema = ajv.compile(ruleSchema);
+export const validateXFIConfigSchema = ajv.compile(xfiConfigSchema);
 
 // Helper function to log validation errors
 const logValidationErrors = (errors: any[] | null | undefined) => {
@@ -111,4 +123,12 @@ const validateRule = (data: any) => {
     return isValid;
 };
 
-export { validateArchetype, validateRule };
+const validateXFIConfig = (data: any) => {
+    const isValid = validateXFIConfigSchema(data);
+    if (!isValid) {
+        logValidationErrors(validateXFIConfigSchema.errors);
+    }
+    return isValid;
+};
+
+export { validateArchetype, validateRule, validateXFIConfig };

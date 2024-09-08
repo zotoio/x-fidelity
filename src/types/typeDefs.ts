@@ -248,3 +248,5 @@ export interface RepoXFIConfig {
   [key: string]: any;  // Allow for additional properties
 }
 
+export type RepoXFIConfigSchema = JSONSchemaType<RepoXFIConfig>;
+
