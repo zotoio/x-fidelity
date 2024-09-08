@@ -785,14 +785,15 @@ Example `.xfi-config.json`:
 - If found, it applies the configurations specified in this file.
 - For `sensitiveFileFalsePositives`, the specified files will be excluded from checks that look for sensitive data, such as API keys or passwords.
 
-### Best Practices
+### How to use it
 
 1. **Version Control**: Include `.xfi-config.json` in your version control system to ensure consistency across your team.
-2. **Documentation**: Document any exclusions and the reasons for them in your project documentation.
+2. **Documentation**: Add comments in the listed file explaining why it is a false positive.
 3. **Regular Review**: Periodically review your `.xfi-config.json` to ensure the exclusions are still necessary and valid.
 4. **Minimal Use**: Use exclusions sparingly. It's better to fix issues than to exclude them from checks.
+5. **Feedback**: If the rules being applied are resulting in too many false-postives, speak with the team that manages your central rule config.
 
-Remember, while `.xfi-config.json` allows you to customize x-fidelity's behavior, it should be used judiciously to maintain the integrity of your code quality checks.
+Remember, while `.xfi-config.json` allows you to adjust x-fidelity's behavior in limited ways, it should be used judiciously to maintain the integrity of your code quality checks.
 
 ## Contributing
 
