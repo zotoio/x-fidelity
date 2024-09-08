@@ -3,7 +3,8 @@ import { outdatedFramework } from './outdatedFramework';
 import { fileContains } from './fileContains';
 import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';
 import { openaiAnalysisHighSeverity } from './openaiAnalysisHighSeverity';
-import { isOpenAIEnabled } from '../utils/openaiUtils';
+import { getOpenAIStatus } from '../utils/openaiUtils';
+import { logger } from '../utils/logger';
 
 const allOperators: Record<string, OperatorDefn> = {
     outdatedFramework,
@@ -13,12 +14,32 @@ const allOperators: Record<string, OperatorDefn> = {
 };
 
 async function loadOperators(operatorNames: string[]): Promise<OperatorDefn[]> {
-    return operatorNames
-        .map(name => allOperators[name])
-        .filter(operator => 
-            operator && (!operator?.name.startsWith('openai') || 
-            (isOpenAIEnabled() && operator?.name.startsWith('openai')))
-        );
+    const openAIStatus = getOpenAIStatus();
+    const loadedOperators: OperatorDefn[] = [];
+    const notFoundOperators: string[] = [];
+
+    for (const name of operatorNames) {
+        const operator = allOperators[name];
+        if (operator) {
+            if (operator.name.startsWith('openai')) {
+                if (openAIStatus.isEnabled) {
+                    loadedOperators.push(operator);
+                } else {
+                    logger.warn(`OpenAI operator ${name} not loaded: ${openAIStatus.reason}`);
+                }
+            } else {
+                loadedOperators.push(operator);
+            }
+        } else {
+            notFoundOperators.push(name);
+        }
+    }
+
+    if (notFoundOperators.length > 0) {
+        logger.warn(`The following operators were not found: ${notFoundOperators.join(', ')}`);
+    }
+
+    return loadedOperators;
 }
 
 export { loadOperators };

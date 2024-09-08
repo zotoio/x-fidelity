@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { validateTelemetryData as validateData } from '../../utils/inputValidation';
+import { validateTelemetryData as validateData, logValidationError } from '../../utils/inputValidation';
 
 export function validateTelemetryData(req: Request, res: Response, next: NextFunction) {
-    if (!validateData(req.body)) {
-        return res.status(400).json({ error: 'Invalid telemetry data' });
+    const validationResult = validateData(req.body);
+    if (!validationResult.isValid) {
+        logValidationError('validateTelemetryData', req.body, validationResult.error || 'Unknown error');
+        return res.status(400).json({ error: 'Invalid telemetry data', details: validationResult.error });
     }
     next();
 }

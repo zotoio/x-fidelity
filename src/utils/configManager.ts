@@ -13,6 +13,8 @@ export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
 export class ConfigManager {
     private static configs: { [key: string]: ExecutionConfig } = {};
+    private static MAX_RETRIES = 3;
+    private static RETRY_DELAY = 1000; // 1 second
 
     public static getLoadedConfigs(): string[] {
         return Object.keys(ConfigManager.configs);
@@ -50,22 +52,7 @@ export class ConfigManager {
 
         try {
             if (configServer) {
-                const configUrl = new URL(`/archetypes/${archetype}`, configServer).toString();
-                logger.debug(`Fetching remote archetype config from: ${configUrl}`);
-                const response = await axiosClient.get(configUrl, {
-                    headers: {
-                        'X-Log-Prefix': logPrefix || ''
-                    },
-                    validateStatus: (status) => status === 200
-                });
-                const fetchedConfig = response.data;
-                if (validateArchetype(fetchedConfig)) {
-                    config.archetype = fetchedConfig;
-                    logger.debug(`Remote archetype config fetched successfully ${JSON.stringify(config.archetype)}`);
-                } else {
-                    logger.error(`Invalid remote archetype configuration for ${archetype}`);
-                    throw new Error('Invalid remote archetype configuration');
-                }
+                config.archetype = await this.fetchRemoteConfig(configServer, archetype, logPrefix);
             } else if (localConfigPath) {
                 config.archetype = await ConfigManager.loadLocalConfig({ archetype, localConfigPath });
             } else {
@@ -73,9 +60,6 @@ export class ConfigManager {
             }
 
             if (!config.archetype || Object.keys(config.archetype).length === 0) {
-                logger.error(`No valid configuration found for archetype: ${archetype}.`);
-                logger.error(`Config object: ${JSON.stringify(config)}`);
-                logger.error(`Archetype object: ${JSON.stringify(config.archetype)}`);
                 throw new Error(`No valid configuration found for archetype: ${archetype}`);
             }
 
@@ -103,19 +87,44 @@ export class ConfigManager {
             
             return config;
         } catch (error) {
-            if (error instanceof Error) {
-                logger.error(`Error initializing config: ${error.message}`);
-            } else {
-                logger.error('Error initializing config: Unknown error');
-            }
+            logger.error(`Error initializing config: ${error instanceof Error ? error.message : 'Unknown error'}`);
             throw error;
         }
+    }
+
+    private static async fetchRemoteConfig(configServer: string, archetype: string, logPrefix?: string): Promise<ArchetypeConfig> {
+        const configUrl = new URL(`/archetypes/${archetype}`, configServer).toString();
+        logger.debug(`Fetching remote archetype config from: ${configUrl}`);
+
+        for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
+            try {
+                const response = await axiosClient.get(configUrl, {
+                    headers: {
+                        'X-Log-Prefix': logPrefix || ''
+                    },
+                    validateStatus: (status) => status === 200
+                });
+                const fetchedConfig = response.data;
+                if (validateArchetype(fetchedConfig)) {
+                    logger.debug(`Remote archetype config fetched successfully ${JSON.stringify(fetchedConfig)}`);
+                    return fetchedConfig;
+                } else {
+                    throw new Error('Invalid remote archetype configuration');
+                }
+            } catch (error) {
+                logger.error(`Attempt ${attempt} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                if (attempt === this.MAX_RETRIES) {
+                    throw error;
+                }
+                await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
+            }
+        }
+        throw new Error('Failed to fetch remote config after multiple attempts');
     }
 
     private static async loadLocalConfig(params: LoadLocalConfigParams): Promise<ArchetypeConfig> {
         const { archetype, localConfigPath } = params;
         try {
-            // Validate and sanitize the archetype input
             if (!/^[a-zA-Z0-9-_]+$/.test(archetype)) {
                 throw new Error('Invalid archetype name');
             }
@@ -124,23 +133,14 @@ export class ConfigManager {
             logger.info(`Loading local archetype config from: ${configPath}`);
             const configContent = await fs.promises.readFile(configPath, 'utf8');
             const localConfig = JSON.parse(configContent);
-            return {
-                ...localConfig
-            };
+            if (validateArchetype(localConfig)) {
+                return localConfig;
+            } else {
+                throw new Error('Invalid local archetype configuration');
+            }
         } catch (error: any) {
             logger.error(`Error loading local archetype config: ${error.message}`);
-            return {
-                name: archetype,
-                rules: [],
-                operators: [],
-                facts: [],
-                config: {
-                    minimumDependencyVersions: {},
-                    standardStructure: {},
-                    blacklistPatterns: [],
-                    whitelistPatterns: []
-                }
-            };
+            throw error;
         }
     }
 }
