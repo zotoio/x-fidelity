@@ -22,7 +22,6 @@ async function parseFile(filePath: string): Promise<FileData> {
 
 async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeConfig): Promise<FileData[]> {
     const filesData: FileData[] = [];
-    const xfiConfig = loadXFIConfig(repoPath);
 
     logger.debug(`collectingRepoFileData from: ${repoPath}`);
     const files = fs.readdirSync(repoPath);
@@ -45,7 +44,7 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
             }    
         }    
     }
-    return { filesData, xfiConfig };
+    return filesData;
 }
 
 function isBlacklisted({ filePath, repoPath, blacklistPatterns }: IsBlacklistedParams): boolean {

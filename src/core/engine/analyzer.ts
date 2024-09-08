@@ -5,6 +5,7 @@ import { ArchetypeConfig, ResultMetadata } from '../../types/typeDefs';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';
 import { collectRepoFileData, repoFileAnalysis } from '../../facts/repoFilesystemFacts';
+import { loadXFIConfig } from '../../utils/configLoader';
 import { getDependencyVersionFacts, repoDependencyAnalysis } from '../../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts, openaiAnalysis } from '../../facts/openaiAnalysisFacts';
 import { collectTelemetryData } from './telemetryCollector';
@@ -39,7 +40,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     }, executionLogPrefix);
 
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
-    const { filesData: fileData, xfiConfig } = await collectRepoFileData(repoPath, archetypeConfig);
+    const fileData = await collectRepoFileData(repoPath, archetypeConfig);
+    const xfiConfig = loadXFIConfig(repoPath);
 
     // add REPO_GLOBAL_CHECK to fileData, which is the trigger for global checks
     fileData.push({
@@ -75,6 +77,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
 
     // add xfiConfig as a fact
     engine.addFact('xfiConfig', xfiConfig);
+
+    logger.debug(`Added xfiConfig as fact: ${JSON.stringify(xfiConfig)}`);
 
     const failures = await runEngineOnFiles({
         engine,
