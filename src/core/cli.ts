@@ -90,6 +90,7 @@ mode: ${options.mode}
 port: ${options.mode === 'server' ? options.port : 'n/a'}
 localConfigPath: ${options.localConfigPath ? options.localConfigPath : 'none'}
 jsonTTL: ${options.jsonTTL} minutes
+openaiEnabled: ${options.openaiEnabled}
 for options run: xfidelity --help
 =====================================`);
 
