@@ -1,5 +1,4 @@
 import { Engine, OperatorEvaluator } from 'json-rules-engine';
-import { FileData } from '../facts/repoFilesystemFacts';
 import { JSONSchemaType } from 'ajv';
 
 export type OperatorDefn = {
@@ -173,6 +172,7 @@ export interface ResultMetadata {
         durationSeconds: number;
         telemetryData: TelemetryData;
         options: any;
+        xfiConfig: any;
     };
 }
 
@@ -232,4 +232,18 @@ export interface isWhitelistedParams {
     filePath: string; 
     repoPath: string; 
     whitelistPatterns: string[]; 
+}export interface FileData {
+    fileName: string;
+    filePath: string;
+    fileContent: string;
+    fileAst?: any;
+    relativePath?: string;
 }
+export interface ValidationResult {
+    isValid: boolean;
+    error?: string;
+}
+export interface XFIConfig {
+  sensitiveFileFalsePositives?: string[];
+}
+

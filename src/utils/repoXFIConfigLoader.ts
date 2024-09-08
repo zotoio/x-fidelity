@@ -1,10 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { logger } from './logger';
-
-interface XFIConfig {
-  sensitiveFileFalsePositives?: string[];
-}
+import { XFIConfig } from '../types/typeDefs';
 
 export function loadXFIConfig(repoPath: string): XFIConfig {
   try {
