@@ -228,7 +228,6 @@ describe('analyzeCodebase', () => {
             archetype: 'node-fullstack'
         });
 
-        expect(engineAddFactMock).toHaveBeenCalledWith('repoDependencyAnalysis', expect.any(Function));
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Once for start, once for end
     });
 

@@ -107,5 +107,7 @@ export function isExempt(params: IsExemptParams): boolean {
 
 async function loadDefaultExemptions(params: LoadExemptionsParams): Promise<Exemption[]> {
     const { archetype } = params;
-    return archetype && exemptions && Array.isArray(exemptions[archetype]) ? exemptions[archetype] : [];
+    const result = archetype && exemptions && Array.isArray(exemptions[archetype]) ? exemptions[archetype] : [];
+    logger.debug(`Loaded ${result.length} exemptions`);
+    return result;
 }

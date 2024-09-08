@@ -2,18 +2,14 @@
     "name": "java-microservice",
     "rules": [
         "sensitiveLogging-iterative",
-        "outdatedFramework-global",
-        "noDatabases-iterative",
         "nonStandardDirectoryStructure-global"
     ],
     "operators": [
         "fileContains",
-        "outdatedFramework",
         "nonStandardDirectoryStructure"
     ],
     "facts": [
-        "repoFilesystemFacts",
-        "repoDependencyFacts"
+        "repoFilesystemFacts"
     ],
     "config": {
         "minimumDependencyVersions": {

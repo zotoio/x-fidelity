@@ -32,8 +32,12 @@ function collectYarnDependencies(): LocalDependencies[] {
         const result = JSON.parse(stdout.toString());
         logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
         return processYarnDependencies(result);
-    } catch (e) {
-        logger.error(`Error collecting Yarn dependencies: ${e}`);
+    } catch (e: any) {
+        logger.error(`Error determining yarn dependencies: ${e}`);
+        logger.on('finish', function () {
+            process.exit(1);
+        });    
+        logger.end();
         throw e;
     }
 }
@@ -44,8 +48,15 @@ function collectNpmDependencies(): LocalDependencies[] {
         const result = JSON.parse(stdout.toString());
         logger.debug(`collectNpmDependencies: ${JSON.stringify(result)}`);
         return processNpmDependencies(result);
-    } catch (e) {
-        logger.error(`Error collecting NPM dependencies: ${e}`);
+    } catch (e: any) {
+        logger.error(`Error determining NPM dependencies: ${e}`);
+        logger.on('finish', function () {
+            process.exit(1);
+        });
+        if ((e.message as string).includes('ELSPROBLEMS')) {
+            logger.error('Error determining NPM dependencies: did you forget to run npm install first?');
+        }    
+        logger.end();
         throw e;
     }
 }
@@ -107,11 +118,16 @@ function processNpmDependencies(npmOutput: any): LocalDependencies[] {
  * @returns The installed dependency versions.
  */
 export function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig): VersionData[] {
+    
+    if (!archetypeConfig.facts.includes('repoDependencyFacts')) {
+        logger.warn('getDependencyVersionFacts: dependencyVersionFacts is not enabled for this archetype');
+        return [];
+    }
     const localDependencies = collectLocalDependencies();
     const minimumDependencyVersions = archetypeConfig.config.minimumDependencyVersions;
 
     if (!localDependencies || localDependencies.length === 0) {
-        logger.error('getDependencyVersionFacts: no local dependencies found');
+        logger.warn('getDependencyVersionFacts: no local dependencies found');
         return [];
     }
 

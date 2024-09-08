@@ -70,8 +70,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     }
 
     // add output facts
-    engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
-    engine.addFact('repoFileAnalysis', repoFileAnalysis);
+    //engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
+    //engine.addFact('repoFileAnalysis', repoFileAnalysis);
 
     const failures = await runEngineOnFiles({
         engine,
@@ -97,18 +97,18 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     const resultMetadata: ResultMetadata = {
         XFI_RESULT: {
             archetype,
-            repoPath,
+            telemetryData,
+            issueDetails: failures,
+            startTime: telemetryData.startTime,
+            finishTime: finishTime,
+            durationSeconds: (finishTime - telemetryData.startTime) / 1000,
             fileCount: fileData.length,
             totalIssues: totalFailureCount,
             warningCount: warningCount,
             fatalityCount: fatalityCount,
             exemptCount: exemptCount,
-            issueDetails: failures,
-            startTime: telemetryData.startTime,
-            finishTime: finishTime,
-            durationSeconds: (finishTime - telemetryData.startTime) / 1000,
-            telemetryData,
-            options
+            options,
+            repoPath,
         }
     }
     
