@@ -6,8 +6,7 @@
         "noDatabases-iterative",
         "nonStandardDirectoryStructure-global",
         "openaiAnalysisTop5-global",
-        "openaiAnalysisA11y-global",
-        "noNuitElevateImports-iterative"
+        "openaiAnalysisA11y-global"
     ],
     "operators": [
         "fileContains",

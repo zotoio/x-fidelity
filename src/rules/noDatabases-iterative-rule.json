@@ -11,7 +11,7 @@
             {
                 "fact": "repoFileAnalysis",
                 "params": {
-                    "checkPattern": [".*oracle.*"],
+                    "checkPattern": ["oracle", "mysql", "mssql", "postgres", "sqlite", "mongodb", "cassandra", "redis", "rethinkdb", "neo4j", "couchdb"],
                     "resultFact": "fileResultsDB"
                 },
                 "operator": "fileContains",

@@ -69,9 +69,9 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
     }
 
-    // add output facts
-    //engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
-    //engine.addFact('repoFileAnalysis', repoFileAnalysis);
+    // add functions for dependency and file analysis
+    engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
+    engine.addFact('repoFileAnalysis', repoFileAnalysis);
 
     const failures = await runEngineOnFiles({
         engine,
