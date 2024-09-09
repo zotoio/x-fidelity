@@ -6,12 +6,14 @@ import { semverValid } from './repoDependencyFacts';
 import util from 'util';
 import { exec } from 'child_process';
 
-jest.mock('child_process', () => ({
-    ...jest.requireActual('child_process'),
-    exec: jest.fn().mockReturnValue(jest.fn())
+jest.mock('child_process');
+jest.mock('fs', () => ({
+    ...jest.requireActual('fs'),
+    existsSync: jest.fn(),
+    promises: {
+        readFile: jest.fn(),
+    },
 }));
-
-jest.mock('fs');
 jest.mock('../utils/logger');
 jest.mock('../core/cli', () => ({
     options: {
@@ -33,29 +35,18 @@ describe('repoDependencyFacts', () => {
 
     describe('collectLocalDependencies', () => {
         it('should collect Yarn dependencies when yarn.lock exists', async () => {
-            (fs.existsSync as jest.Mock).mockImplementation((filePath) => filePath.includes('yarn.lock'));
-            (exec as unknown as jest.Mock) = jest.fn().mockImplementation((command, callback) => {
-                callback(null, JSON.stringify({
-                    data: {
-                        trees: [
-                            { name: 'package1@1.0.0', children: [{ name: 'subpackage1@0.1.0' }] },
-                            { name: 'package2@2.0.0' }
-                        ]
-                    }
-                }), '');
+            const mockYarnOutput = JSON.stringify({
+                data: {
+                    trees: [
+                        { name: 'package1@1.0.0', children: [{ name: 'subpackage1@0.1.0' }] },
+                        { name: 'package2@2.0.0' }
+                    ]
+                }
             });
-            const mockExecPromise = jest.fn().mockResolvedValue({
-                stdout: JSON.stringify({
-                    data: {
-                        trees: [
-                            { name: 'package1@1.0.0', children: [{ name: 'subpackage1@0.1.0' }] },
-                            { name: 'package2@2.0.0' }
-                        ]
-                    }
-                }),
-                stderr: ''
-            });
-            (util.promisify as unknown as jest.Mock).mockReturnValue(mockExecPromise);
+            
+            (fs.existsSync as jest.Mock).mockImplementation((path) => path.includes('yarn.lock'));
+            const mockExecPromise = jest.fn().mockResolvedValue({ stdout: mockYarnOutput, stderr: '' });
+            (util.promisify as jest.Mock).mockReturnValue(mockExecPromise);
 
             const result = await repoDependencyFacts.collectLocalDependencies();
 
@@ -63,20 +54,20 @@ describe('repoDependencyFacts', () => {
                 { name: 'package1', version: '1.0.0', dependencies: [{ name: 'subpackage1', version: '0.1.0' }] },
                 { name: 'package2', version: '2.0.0' }
             ]);
+            expect(mockExecPromise).toHaveBeenCalledWith('yarn list --json', expect.any(Object));
         });
 
         it('should collect NPM dependencies when package-lock.json exists', async () => {
-            (fs.existsSync as jest.Mock).mockImplementation((filePath) => filePath.includes('package-lock.json'));
-            const mockExecPromise = jest.fn().mockResolvedValue({
-                stdout: JSON.stringify({
-                    dependencies: {
-                        package1: { version: '1.0.0', dependencies: { subpackage1: { version: '0.1.0' } } },
-                        package2: { version: '2.0.0' }
-                    }
-                }),
-                stderr: ''
+            const mockNpmOutput = JSON.stringify({
+                dependencies: {
+                    package1: { version: '1.0.0', dependencies: { subpackage1: { version: '0.1.0' } } },
+                    package2: { version: '2.0.0' }
+                }
             });
-            (util.promisify as unknown as jest.Mock).mockReturnValue(mockExecPromise);
+
+            (fs.existsSync as jest.Mock).mockImplementation((path) => path.includes('package-lock.json'));
+            const mockExecPromise = jest.fn().mockResolvedValue({ stdout: mockNpmOutput, stderr: '' });
+            (util.promisify as jest.Mock).mockReturnValue(mockExecPromise);
 
             const result = await repoDependencyFacts.collectLocalDependencies();
 
@@ -84,6 +75,7 @@ describe('repoDependencyFacts', () => {
                 { name: 'package1', version: '1.0.0', dependencies: [{ name: 'subpackage1', version: '0.1.0' }] },
                 { name: 'package2', version: '2.0.0' }
             ]);
+            expect(mockExecPromise).toHaveBeenCalledWith('npm ls -a --json', expect.any(Object));
         });
 
         it('should throw an error when no supported lock file is found', async () => {
