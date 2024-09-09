@@ -31,33 +31,29 @@ export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
 }
 
 async function collectYarnDependencies(): Promise<LocalDependencies[]> {
-    let stdout = '';
-    let stderr = '';
     const emptyDeps: LocalDependencies[] = [];
     try {
-        const child = await execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 });
-        stdout = child.stdout;
-        stderr = child.stderr;
+        const { stdout, stderr } = await execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 });
 
         if (stderr) {
             logger.error(`Error determining yarn dependencies: ${stderr}`);
             return emptyDeps;
-        } else {
-            try {
-                const result = JSON.parse(stdout);
-                logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
-                return processYarnDependencies(result);
-            } catch (e) {
-                logger.error(`Error parsing yarn dependencies: ${e}`);
-                return emptyDeps;
-            }
+        }
+
+        try {
+            const result = JSON.parse(stdout);
+            logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
+            return processYarnDependencies(result);
+        } catch (e) {
+            logger.error(`Error parsing yarn dependencies: ${e}`);
+            return emptyDeps;
         }
     } catch (e: any) {
         logger.error(`Error determining yarn dependencies: ${e}`);
         if (e.message?.includes('ELSPROBLEMS')) {
             logger.error('Error determining yarn dependencies: did you forget to run yarn install first?');
         }
-        throw new Error(String(e));
+        return emptyDeps;
     }
 }
 
