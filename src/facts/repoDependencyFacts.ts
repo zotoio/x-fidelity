@@ -9,8 +9,9 @@ import fs from 'fs';
 import path from 'path';
 import { safeClone, safeStringify } from '../utils/utils';
 import util from 'util';
+import { exec } from 'child_process';
 
-const execPromise  = util.promisify(exec);
+const execPromise = util.promisify(exec);
 
 /**
  * Collects the local dependencies.

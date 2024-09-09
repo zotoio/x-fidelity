@@ -4,6 +4,7 @@ import { Almanac } from 'json-rules-engine';
 import { LocalDependencies, MinimumDepVersions } from '../types/typeDefs';
 import { semverValid } from './repoDependencyFacts';
 import util from 'util';
+import { exec } from 'child_process';
 
 jest.mock('child_process');
 jest.mock('fs');
@@ -15,7 +16,7 @@ jest.mock('../core/cli', () => ({
 }));
 jest.mock('util', () => ({
     ...jest.requireActual('util'),
-    promisify: jest.fn()
+    promisify: jest.fn().mockReturnValue(jest.fn())
 }));
 
 // Add this line to increase the timeout for all tests in this file
@@ -40,7 +41,7 @@ describe('repoDependencyFacts', () => {
                 }),
                 stderr: ''
             });
-            (util.promisify as unknown as jest.Mock).mockReturnValue(mockExecPromise);
+            (util.promisify as jest.Mock).mockReturnValue(mockExecPromise);
 
             const result = await repoDependencyFacts.collectLocalDependencies();
 
