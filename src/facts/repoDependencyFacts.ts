@@ -1,5 +1,5 @@
 import { logger } from '../utils/logger';
-import { spawn } from 'child_process';
+import { exec } from 'child_process';
 import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } from '../types/typeDefs';
 import { Almanac } from 'json-rules-engine';
 import * as semver from 'semver';
@@ -8,6 +8,9 @@ import { options } from '../core/cli';
 import fs from 'fs';
 import path from 'path';
 import { safeClone, safeStringify } from '../utils/utils';
+import util from 'util';
+
+const execPromise  = util.promisify(exec);
 
 /**
  * Collects the local dependencies.
@@ -27,40 +30,38 @@ export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
     return result;
 }
 
-function collectYarnDependencies(): Promise<LocalDependencies[]> {
-    return new Promise((resolve, reject) => {
-        const child = spawn('yarn', ['list', '--json'], { cwd: options.dir });
-        let stdout = '';
-        let stderr = '';
+async function collectYarnDependencies(): Promise<LocalDependencies[]> {
+    let stdout = '';
+    let stderr = '';
+    const emptyDeps: LocalDependencies[] = [];
+    return execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 }).then((child) => {
+        return new Promise((resolve, reject) => {
+            stdout = child?.stdout;
+            stderr = child?.stderr;
 
-        if (child?.stdout) {
-            child.stdout.on('data', (data) => {
-                stdout += data.toString();
-            });
-        }
-
-        if (child.stderr) {
-            child.stderr.on('data', (data) => {
-                stderr += data.toString();
-            });
-        }
-
-        child.on('close', (code) => {
-            if (code !== 0) {
+            if (stderr) {
                 logger.error(`Error determining yarn dependencies: ${stderr}`);
-                reject(new Error(stderr));
+                reject(emptyDeps);
             } else {
                 try {
                     const result = JSON.parse(stdout);
                     logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
-                    resolve(processYarnDependencies(result));
+                    resolve(processYarnDependencies(result) as LocalDependencies[]);
                 } catch (e) {
                     logger.error(`Error parsing yarn dependencies: ${e}`);
-                    reject(e);
+                    reject(emptyDeps);
                 }
             }
+
         });
-    });
+    }).catch((e) => {
+        logger.error(`Error determining yarn dependencies: ${e}`);
+        if (stderr.includes('ELSPROBLEMS')) {
+            logger.error('Error determining yarn dependencies: did you forget to run yarn install first?');
+        }
+        throw new Error(e);
+    }); 
+    
 }
 
 function collectNpmDependencies(): Promise<LocalDependencies[]> {
@@ -69,15 +70,15 @@ function collectNpmDependencies(): Promise<LocalDependencies[]> {
         let stdout = '';
         let stderr = '';
 
-        child.stdout.on('data', (data) => {
+        child?.stdout?.on('data', (data) => {
             stdout += data.toString();
         });
 
-        child.stderr.on('data', (data) => {
+        child?.stderr?.on('data', (data) => {
             stderr += data.toString();
         });
 
-        child.on('close', (code) => {
+        child?.on('close', (code) => {
             if (code !== 0) {
                 logger.error(`Error determining NPM dependencies: ${stderr}`);
                 if (stderr.includes('ELSPROBLEMS')) {
