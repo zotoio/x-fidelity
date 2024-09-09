@@ -6,7 +6,11 @@ import { semverValid } from './repoDependencyFacts';
 import util from 'util';
 import { exec } from 'child_process';
 
-jest.mock('child_process');
+jest.mock('child_process', () => ({
+    ...jest.requireActual('child_process'),
+    exec: jest.fn().mockReturnValue(jest.fn())
+}));
+
 jest.mock('fs');
 jest.mock('../utils/logger');
 jest.mock('../core/cli', () => ({
@@ -41,7 +45,7 @@ describe('repoDependencyFacts', () => {
                 }),
                 stderr: ''
             });
-            (util.promisify as unknown as jest.Mock).mockReturnValue(mockExecPromise);
+            (util.promisify as jest.Mock).mockReturnValue(mockExecPromise);
 
             const result = await repoDependencyFacts.collectLocalDependencies();
 
