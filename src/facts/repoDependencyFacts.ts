@@ -61,39 +61,35 @@ async function collectYarnDependencies(): Promise<LocalDependencies[]> {
     }
 }
 
-function collectNpmDependencies(): Promise<LocalDependencies[]> {
-    return new Promise((resolve, reject) => {
-        const child = spawn('npm', ['ls', '-a', '--json'], { cwd: options.dir });
-        let stdout = '';
-        let stderr = '';
+async function collectNpmDependencies(): Promise<LocalDependencies[]> {
+    let stdout = '';
+    let stderr = '';
+    const emptyDeps: LocalDependencies[] = [];
+    try {
+        const child = await execPromise('npm ls -a --json', { cwd: options.dir, maxBuffer: 10485760 });
+        stdout = child.stdout;
+        stderr = child.stderr;
 
-        child?.stdout?.on('data', (data) => {
-            stdout += data.toString();
-        });
-
-        child?.stderr?.on('data', (data) => {
-            stderr += data.toString();
-        });
-
-        child?.on('close', (code) => {
-            if (code !== 0) {
-                logger.error(`Error determining NPM dependencies: ${stderr}`);
-                if (stderr.includes('ELSPROBLEMS')) {
-                    logger.error('Error determining NPM dependencies: did you forget to run npm install first?');
-                }
-                reject(new Error(stderr));
-            } else {
-                try {
-                    const result = JSON.parse(stdout);
-                    logger.debug(`collectNpmDependencies: ${JSON.stringify(result)}`);
-                    resolve(processNpmDependencies(result));
-                } catch (e) {
-                    logger.error(`Error parsing NPM dependencies: ${e}`);
-                    reject(e);
-                }
+        if (stderr) {
+            logger.error(`Error determining NPM dependencies: ${stderr}`);
+            return emptyDeps;
+        } else {
+            try {
+                const result = JSON.parse(stdout);
+                logger.debug(`collectNpmDependencies: ${JSON.stringify(result)}`);
+                return processNpmDependencies(result);
+            } catch (e) {
+                logger.error(`Error parsing NPM dependencies: ${e}`);
+                return emptyDeps;
             }
-        });
-    });
+        }
+    } catch (e) {
+        logger.error(`Error determining NPM dependencies: ${e}`);
+        if (stderr.includes('ELSPROBLEMS')) {
+            logger.error('Error determining NPM dependencies: did you forget to run npm install first?');
+        }
+        throw new Error(String(e));
+    }
 }
 
 function processYarnDependencies(yarnOutput: any): LocalDependencies[] {
