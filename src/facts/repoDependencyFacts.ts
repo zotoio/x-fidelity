@@ -1,5 +1,5 @@
 import { logger } from '../utils/logger';
-import { execSync } from 'child_process';
+import { spawn } from 'child_process';
 import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } from '../types/typeDefs';
 import { Almanac } from 'json-rules-engine';
 import * as semver from 'semver';
@@ -13,12 +13,12 @@ import { safeClone, safeStringify } from '../utils/utils';
  * Collects the local dependencies.
  * @returns The local dependencies.
  */
-export function collectLocalDependencies(): LocalDependencies[] {
+export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
     let result: LocalDependencies[] = [];
     if (fs.existsSync(path.join(options.dir, 'yarn.lock'))) {
-        result = collectYarnDependencies();
+        result = await collectYarnDependencies();
     } else if (fs.existsSync(path.join(options.dir, 'package-lock.json'))) {
-        result = collectNpmDependencies();
+        result = await collectNpmDependencies();
     } else {
         logger.error('No yarn.lock or package-lock.json found');
         throw new Error('Unsupported package manager');
@@ -27,39 +27,71 @@ export function collectLocalDependencies(): LocalDependencies[] {
     return result;
 }
 
-function collectYarnDependencies(): LocalDependencies[] {
-    try {
-        const stdout = execSync(`yarn list --json --cwd ${options.dir}`);
-        const result = JSON.parse(stdout.toString());
-        logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
-        return processYarnDependencies(result);
-    } catch (e: any) {
-        logger.error(`Error determining yarn dependencies: ${e}`);
-        logger.on('finish', function () {
-            process.exit(1);
-        });    
-        logger.end();
-        throw e;
-    }
+function collectYarnDependencies(): Promise<LocalDependencies[]> {
+    return new Promise((resolve, reject) => {
+        const child = spawn('yarn', ['list', '--json'], { cwd: options.dir });
+        let stdout = '';
+        let stderr = '';
+
+        child.stdout.on('data', (data) => {
+            stdout += data.toString();
+        });
+
+        child.stderr.on('data', (data) => {
+            stderr += data.toString();
+        });
+
+        child.on('close', (code) => {
+            if (code !== 0) {
+                logger.error(`Error determining yarn dependencies: ${stderr}`);
+                reject(new Error(stderr));
+            } else {
+                try {
+                    const result = JSON.parse(stdout);
+                    logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
+                    resolve(processYarnDependencies(result));
+                } catch (e) {
+                    logger.error(`Error parsing yarn dependencies: ${e}`);
+                    reject(e);
+                }
+            }
+        });
+    });
 }
 
-function collectNpmDependencies(): LocalDependencies[] {
-    try {
-        const stdout = execSync(`npm ls -a --json --prefix ${options.dir}`);
-        const result = JSON.parse(stdout.toString());
-        logger.debug(`collectNpmDependencies: ${JSON.stringify(result)}`);
-        return processNpmDependencies(result);
-    } catch (e: any) {
-        logger.error(`Error determining NPM dependencies: ${e}`);
-        logger.on('finish', function () {
-            process.exit(1);
+function collectNpmDependencies(): Promise<LocalDependencies[]> {
+    return new Promise((resolve, reject) => {
+        const child = spawn('npm', ['ls', '-a', '--json'], { cwd: options.dir });
+        let stdout = '';
+        let stderr = '';
+
+        child.stdout.on('data', (data) => {
+            stdout += data.toString();
         });
-        if ((e.message as string).includes('ELSPROBLEMS')) {
-            logger.error('Error determining NPM dependencies: did you forget to run npm install first?');
-        }    
-        logger.end();
-        throw e;
-    }
+
+        child.stderr.on('data', (data) => {
+            stderr += data.toString();
+        });
+
+        child.on('close', (code) => {
+            if (code !== 0) {
+                logger.error(`Error determining NPM dependencies: ${stderr}`);
+                if (stderr.includes('ELSPROBLEMS')) {
+                    logger.error('Error determining NPM dependencies: did you forget to run npm install first?');
+                }
+                reject(new Error(stderr));
+            } else {
+                try {
+                    const result = JSON.parse(stdout);
+                    logger.debug(`collectNpmDependencies: ${JSON.stringify(result)}`);
+                    resolve(processNpmDependencies(result));
+                } catch (e) {
+                    logger.error(`Error parsing NPM dependencies: ${e}`);
+                    reject(e);
+                }
+            }
+        });
+    });
 }
 
 function processYarnDependencies(yarnOutput: any): LocalDependencies[] {
@@ -118,13 +150,13 @@ function processNpmDependencies(npmOutput: any): LocalDependencies[] {
  * @param archetypeConfig The archetype configuration.
  * @returns The installed dependency versions.
  */
-export function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig): VersionData[] {
+export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig): Promise<VersionData[]> {
     
     if (!archetypeConfig.facts.includes('repoDependencyFacts')) {
         logger.warn('getDependencyVersionFacts: dependencyVersionFacts is not enabled for this archetype');
         return [];
     }
-    const localDependencies = collectLocalDependencies();
+    const localDependencies = await collectLocalDependencies();
     const minimumDependencyVersions = archetypeConfig.config.minimumDependencyVersions;
 
     if (!localDependencies || localDependencies.length === 0) {
