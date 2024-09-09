@@ -34,6 +34,16 @@ describe('repoDependencyFacts', () => {
     describe('collectLocalDependencies', () => {
         it('should collect Yarn dependencies when yarn.lock exists', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => filePath.includes('yarn.lock'));
+            (exec as unknown as jest.Mock) = jest.fn().mockImplementation((command, callback) => {
+                callback(null, JSON.stringify({
+                    data: {
+                        trees: [
+                            { name: 'package1@1.0.0', children: [{ name: 'subpackage1@0.1.0' }] },
+                            { name: 'package2@2.0.0' }
+                        ]
+                    }
+                }), '');
+            });
             const mockExecPromise = jest.fn().mockResolvedValue({
                 stdout: JSON.stringify({
                     data: {
