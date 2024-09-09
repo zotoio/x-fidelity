@@ -1,5 +1,4 @@
 import * as repoDependencyFacts from './repoDependencyFacts';
-import { execSync } from 'child_process';
 import fs from 'fs';
 import { Almanac } from 'json-rules-engine';
 import { LocalDependencies, MinimumDepVersions } from '../types/typeDefs';
@@ -150,7 +149,7 @@ describe('repoDependencyFacts', () => {
                 .mockResolvedValueOnce({
                     installedDependencyVersions: [
                         { dep: 'package1', ver: '1.0.0', min: '^2.0.0' },
-                        { dep: 'package2', ver: '2.0.0', min: '^1.0.0' }
+                        { dep: 'package2', ver: '2.0.0', min: '>1.0.0' }
                     ]
                 });
 
@@ -167,7 +166,7 @@ describe('repoDependencyFacts', () => {
 
     describe('semverValid', () => {
         it('should return true for valid version comparisons', () => {
-            expect(semverValid('2.0.0', '^1.0.0')).toBe(true);
+            expect(semverValid('2.0.0', '>1.0.0')).toBe(true);
             expect(semverValid('1.5.0', '1.0.0 - 2.0.0')).toBe(true);
             expect(semverValid('1.0.0', '1.0.0')).toBe(true);
             expect(semverValid('2.0.0', '>=1.0.0')).toBe(true);
