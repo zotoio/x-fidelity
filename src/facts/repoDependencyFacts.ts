@@ -34,34 +34,31 @@ async function collectYarnDependencies(): Promise<LocalDependencies[]> {
     let stdout = '';
     let stderr = '';
     const emptyDeps: LocalDependencies[] = [];
-    return execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 }).then((child) => {
-        return new Promise((resolve, reject) => {
-            stdout = child?.stdout;
-            stderr = child?.stderr;
+    try {
+        const child = await execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 });
+        stdout = child.stdout;
+        stderr = child.stderr;
 
-            if (stderr) {
-                logger.error(`Error determining yarn dependencies: ${stderr}`);
-                reject(emptyDeps);
-            } else {
-                try {
-                    const result = JSON.parse(stdout);
-                    logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
-                    resolve(processYarnDependencies(result) as LocalDependencies[]);
-                } catch (e) {
-                    logger.error(`Error parsing yarn dependencies: ${e}`);
-                    reject(emptyDeps);
-                }
+        if (stderr) {
+            logger.error(`Error determining yarn dependencies: ${stderr}`);
+            return emptyDeps;
+        } else {
+            try {
+                const result = JSON.parse(stdout);
+                logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
+                return processYarnDependencies(result);
+            } catch (e) {
+                logger.error(`Error parsing yarn dependencies: ${e}`);
+                return emptyDeps;
             }
-
-        });
-    }).catch((e) => {
+        }
+    } catch (e) {
         logger.error(`Error determining yarn dependencies: ${e}`);
         if (stderr.includes('ELSPROBLEMS')) {
             logger.error('Error determining yarn dependencies: did you forget to run yarn install first?');
         }
-        throw new Error(e);
-    }); 
-    
+        throw new Error(String(e));
+    }
 }
 
 function collectNpmDependencies(): Promise<LocalDependencies[]> {
