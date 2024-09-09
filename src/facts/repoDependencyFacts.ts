@@ -52,9 +52,9 @@ async function collectYarnDependencies(): Promise<LocalDependencies[]> {
                 return emptyDeps;
             }
         }
-    } catch (e) {
+    } catch (e: any) {
         logger.error(`Error determining yarn dependencies: ${e}`);
-        if (stderr.includes('ELSPROBLEMS')) {
+        if (e.message?.includes('ELSPROBLEMS')) {
             logger.error('Error determining yarn dependencies: did you forget to run yarn install first?');
         }
         throw new Error(String(e));
@@ -83,9 +83,9 @@ async function collectNpmDependencies(): Promise<LocalDependencies[]> {
                 return emptyDeps;
             }
         }
-    } catch (e) {
+    } catch (e: any) {
         logger.error(`Error determining NPM dependencies: ${e}`);
-        if (stderr.includes('ELSPROBLEMS')) {
+        if (e.message?.includes('ELSPROBLEMS')) {
             logger.error('Error determining NPM dependencies: did you forget to run npm install first?');
         }
         throw new Error(String(e));
