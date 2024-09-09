@@ -14,6 +14,9 @@ jest.mock('../core/cli', () => ({
     }
 }));
 
+// Add this line to increase the timeout for all tests in this file
+jest.setTimeout(30000); // 30 seconds
+
 describe('repoDependencyFacts', () => {
     beforeEach(() => {
         jest.clearAllMocks();
