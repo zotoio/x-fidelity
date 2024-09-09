@@ -45,7 +45,7 @@ describe('repoDependencyFacts', () => {
                 }),
                 stderr: ''
             });
-            (util.promisify as jest.Mock).mockReturnValue(mockExecPromise);
+            (util.promisify as unknown as jest.Mock).mockReturnValue(mockExecPromise);
 
             const result = await repoDependencyFacts.collectLocalDependencies();
 
