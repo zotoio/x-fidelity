@@ -33,13 +33,17 @@ function collectYarnDependencies(): Promise<LocalDependencies[]> {
         let stdout = '';
         let stderr = '';
 
-        child.stdout.on('data', (data) => {
-            stdout += data.toString();
-        });
+        if (child?.stdout) {
+            child.stdout.on('data', (data) => {
+                stdout += data.toString();
+            });
+        }
 
-        child.stderr.on('data', (data) => {
-            stderr += data.toString();
-        });
+        if (child.stderr) {
+            child.stderr.on('data', (data) => {
+                stderr += data.toString();
+            });
+        }
 
         child.on('close', (code) => {
             if (code !== 0) {
