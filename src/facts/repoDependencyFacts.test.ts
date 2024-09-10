@@ -4,7 +4,6 @@ import { Almanac } from 'json-rules-engine';
 import { LocalDependencies, MinimumDepVersions } from '../types/typeDefs';
 import { semverValid } from './repoDependencyFacts';
 import util from 'util';
-import { exec } from 'child_process';
 
 jest.mock('child_process');
 jest.mock('fs', () => ({
@@ -46,7 +45,7 @@ describe('repoDependencyFacts', () => {
             
             (fs.existsSync as jest.Mock).mockImplementation((path) => path.includes('yarn.lock'));
             const mockExecPromise = jest.fn().mockResolvedValue({ stdout: mockYarnOutput, stderr: '' });
-            (util.promisify as jest.Mock).mockReturnValue(mockExecPromise);
+            (util.promisify as unknown as jest.Mock).mockReturnValue(mockExecPromise);
 
             const result = await repoDependencyFacts.collectLocalDependencies();
 
@@ -67,7 +66,7 @@ describe('repoDependencyFacts', () => {
 
             (fs.existsSync as jest.Mock).mockImplementation((path) => path.includes('package-lock.json'));
             const mockExecPromise = jest.fn().mockResolvedValue({ stdout: mockNpmOutput, stderr: '' });
-            (util.promisify as jest.Mock).mockReturnValue(mockExecPromise);
+            (util.promisify as unknown as jest.Mock).mockReturnValue(mockExecPromise);
 
             const result = await repoDependencyFacts.collectLocalDependencies();
 
