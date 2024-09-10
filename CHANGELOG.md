@@ -1,3 +1,40 @@
+# [2.16.0](https://github.com/zotoio/x-fidelity/compare/v2.15.0...v2.16.0) (2024-09-10)
+
+
+### Bug Fixes
+
+* Add null checks for child.stdout and child.stderr in collectYarnDependencies function ([cd3f271](https://github.com/zotoio/x-fidelity/commit/cd3f2714ed20dbed7f13c559110cc6721a237380))
+* add type assertion to resolve TypeScript error ([aeb4c52](https://github.com/zotoio/x-fidelity/commit/aeb4c525c4a9e30a702ffcfb4b64f6a5a40a7bf3))
+* cast util.promisify to unknown before mocking ([f8c5069](https://github.com/zotoio/x-fidelity/commit/f8c5069757fcbcbb3e391262812713dd1f3522f2))
+* collect Yarn dependencies when yarn.lock exists ([48c50d1](https://github.com/zotoio/x-fidelity/commit/48c50d19d6d2ea422f41eab3b317e8e2071e11db))
+* Collect Yarn dependencies when yarn.lock exists ([2e159f0](https://github.com/zotoio/x-fidelity/commit/2e159f0aa93aad2097c2038a940c1f814a990de6))
+* Handle error types in dependency collection functions ([1711cb1](https://github.com/zotoio/x-fidelity/commit/1711cb153c07fcf8706e9a16431eda9ee4873f8e))
+* increase Jest timeout for repoDependencyFacts.test.ts ([05185d9](https://github.com/zotoio/x-fidelity/commit/05185d9664bc5e69abd78772c8781308360b4b59))
+* Mock child_process.exec to return a mock function ([ebba176](https://github.com/zotoio/x-fidelity/commit/ebba17659553f8f9e69fdc53b6cbdd1cab808412))
+* **promisechain:** avoid skipped files ([0cdf825](https://github.com/zotoio/x-fidelity/commit/0cdf825a100900ac545795fb24099778af656653))
+* Refactor runEngineOnFiles to use synchronous approach ([77c259e](https://github.com/zotoio/x-fidelity/commit/77c259ea3097b0fac50371acb2605285adc706c5))
+* resolve TypeScript error in repoDependencyFacts.test.ts ([075e884](https://github.com/zotoio/x-fidelity/commit/075e884f32547c4b2f1beed730675449c57b26aa))
+* resolve TypeScript error in repoDependencyFacts.test.ts ([6c4870e](https://github.com/zotoio/x-fidelity/commit/6c4870e766c18010566b474ff998d0eb084df364))
+* Resolve TypeScript errors in repoDependencyFacts.test.ts ([bd47c66](https://github.com/zotoio/x-fidelity/commit/bd47c66c44443b0f485dd83fa345411fb16c85a1))
+* update analyzer.test.ts to use expect.any(Number) for fileCount, totalIssues, and warningCount ([66bbd47](https://github.com/zotoio/x-fidelity/commit/66bbd47381694454a4016c5b6f610c4065c7c80e))
+* update minimum dependency version comparison ([3373646](https://github.com/zotoio/x-fidelity/commit/3373646a9d2ff52a545dad44241191a952705ce2))
+* Update mocking of util.promisify and fs.existsSync in repoDependencyFacts.test.ts ([fa81048](https://github.com/zotoio/x-fidelity/commit/fa81048ff7707c0def5a15d43ea34a36b202a725))
+* Update mocking of util.promisify in repoDependencyFacts.test.ts ([8e6a18d](https://github.com/zotoio/x-fidelity/commit/8e6a18d0cb31c049bd0b923f88b655d891dbe712))
+* Update repoDependencyFacts to fix test issues ([8d4bfc1](https://github.com/zotoio/x-fidelity/commit/8d4bfc1b9ef45ef64f9df33e2fe82ac0001d93bf))
+* Update runEngineOnFiles function to handle asynchronous engine.run() call ([01ec5b0](https://github.com/zotoio/x-fidelity/commit/01ec5b0ed7a662c615000860374bc94c50e499bc))
+* Update test expectations for `analyzeCodebase` ([524f0d3](https://github.com/zotoio/x-fidelity/commit/524f0d35e8d26a808189f5e5cbb6ce1b7c525244))
+* Update test expectations for error handling in analyzer ([a986892](https://github.com/zotoio/x-fidelity/commit/a986892cf19303458fa2096dfeb58a705de3f242))
+* Update test expectations for handling errors during analysis ([6a9c1b9](https://github.com/zotoio/x-fidelity/commit/6a9c1b9ac28696696c63d7e1a5c0a076856ac2d7))
+* update unit tests for loading npm and yarn dependencies ([4faf703](https://github.com/zotoio/x-fidelity/commit/4faf703aac483f8a75d81f38545a371d91bb31d3))
+* Use `exec` instead of `spawn` for collecting yarn dependencies ([b6bd17c](https://github.com/zotoio/x-fidelity/commit/b6bd17c74fee135b68a3d3fbb7ef6ee0750bf519))
+
+
+### Features
+
+* Replace execSync with spawned child process for dependency collection ([bd4b38e](https://github.com/zotoio/x-fidelity/commit/bd4b38e5f8dfb5b47c0fe2f07701ac38a16d78b2))
+* Update analyzer.test.ts with more precise expectations ([7376191](https://github.com/zotoio/x-fidelity/commit/7376191ecc18f0ac1367ad13b68e52c085c832c5))
+* update repoDependencyFacts tests to match implementation ([9514c3a](https://github.com/zotoio/x-fidelity/commit/9514c3a97e1c85bac7aa070c1efae8c0e5625073))
+
 # [2.15.0](https://github.com/zotoio/x-fidelity/compare/v2.14.0...v2.15.0) (2024-09-08)
 
 
