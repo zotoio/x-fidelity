@@ -123,9 +123,9 @@ describe('analyzeCodebase', () => {
             XFI_RESULT: expect.objectContaining({
                 archetype: 'node-fullstack',
                 repoPath: 'mockRepoPath',
-                fileCount: expect.any(Number),
-                totalIssues: expect.any(Number),
-                warningCount: expect.any(Number),
+                fileCount: 3,
+                totalIssues: 3,
+                warningCount: 0,
                 fatalityCount: 0,
                 exemptCount: 0,
                 issueDetails: expect.arrayContaining([
@@ -145,9 +145,26 @@ describe('analyzeCodebase', () => {
                 durationSeconds: expect.any(Number),
                 finishTime: expect.any(Number),
                 startTime: expect.any(Number),
-                options: expect.any(Object),
-                telemetryData: expect.any(Object),
-                repoXFIConfig: expect.any(Object)
+                options: expect.objectContaining({
+                    archetype: 'node-fullstack',
+                    configServer: '',
+                    dir: 'mockDir',
+                    localConfigPath: '',
+                    mode: 'cli',
+                    openaiEnabled: true,
+                    port: '8888',
+                    telemetryCollector: '',
+                }),
+                telemetryData: expect.objectContaining({
+                    configServer: 'none',
+                    hostInfo: expect.any(Object),
+                    repoUrl: '',
+                    startTime: expect.any(Number),
+                    userInfo: expect.any(Object),
+                }),
+                repoXFIConfig: expect.objectContaining({
+                    sensitiveFileFalsePositives: expect.any(Array),
+                })
             })
         });
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Once for start, once for end
