@@ -9,7 +9,6 @@ import fs from 'fs';
 import path from 'path';
 import { safeClone, safeStringify } from '../utils/utils';
 import util from 'util';
-import { exec } from 'child_process';
 
 const execPromise = util.promisify(exec);
 
@@ -59,34 +58,31 @@ async function collectYarnDependencies(): Promise<LocalDependencies[]> {
 }
 
 async function collectNpmDependencies(): Promise<LocalDependencies[]> {
-    let stdout = '';
-    let stderr = '';
     const emptyDeps: LocalDependencies[] = [];
     try {
-        const child = await execPromise('npm ls -a --json', { cwd: options.dir, maxBuffer: 10485760 });
-        stdout = child.stdout;
-        stderr = child.stderr;
+        const { stdout, stderr } =  await execPromise('npm ls -a --json', { cwd: options.dir, maxBuffer: 10485760 });
 
         if (stderr) {
-            logger.error(`Error determining NPM dependencies: ${stderr}`);
+            logger.error(`Error determining npm dependencies: ${stderr}`);
             return emptyDeps;
-        } else {
-            try {
-                const result = JSON.parse(stdout);
-                logger.debug(`collectNpmDependencies: ${JSON.stringify(result)}`);
-                return processNpmDependencies(result);
-            } catch (e) {
-                logger.error(`Error parsing NPM dependencies: ${e}`);
-                return emptyDeps;
-            }
+        }
+
+        try {
+            const result = JSON.parse(stdout);
+            logger.debug(`collectNpmDependencies: ${JSON.stringify(result)}`);
+            return processNpmDependencies(result);
+        } catch (e) {
+            logger.error(`Error parsing npm dependencies: ${e}`);
+            return emptyDeps;
         }
     } catch (e: any) {
-        logger.error(`Error determining NPM dependencies: ${e}`);
+        logger.error(`Error determining npm dependencies: ${e}`);
         if (e.message?.includes('ELSPROBLEMS')) {
-            logger.error('Error determining NPM dependencies: did you forget to run npm install first?');
+            logger.error('Error determining npm dependencies: did you forget to run npm install first?');
         }
-        throw new Error(String(e));
+        return emptyDeps;
     }
+
 }
 
 function processYarnDependencies(yarnOutput: any): LocalDependencies[] {
@@ -259,25 +255,25 @@ export function semverValid(installed: string, required: string): boolean {
 
     // If 'installed' is a single version and 'required' is a range
     if (semver.valid(installed) && semver.validRange(required)) {
-        logger.info('range vs version');
+        logger.debug('range vs version');
         return semver.satisfies(installed, required);
     }
 
     // If 'required' is a single version and 'installed' is a range
     if (semver.valid(required) && semver.validRange(installed)) {
-        logger.info('version vs range');
+        logger.debug('version vs range');
         return semver.satisfies(required, installed);
     }
 
     // If both are single versions, simply compare them
     if (semver.valid(required) && semver.valid(installed)) {
-        logger.info('version vs version');
+        logger.debug('version vs version');
         return semver.gt(installed, required);
     }
 
     // If both are ranges, check if they intersect
     if (semver.validRange(required) && semver.validRange(installed)) {
-        logger.info('range vs range');
+        logger.debug('range vs range');
         return semver.intersects(required, installed);
     }
 

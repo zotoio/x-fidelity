@@ -4,6 +4,9 @@ import { logger } from './logger';
 import { RepoXFIConfig } from '../types/typeDefs';
 import { validateXFIConfig } from './jsonSchemas';
 
+const defaultXFIConfig: RepoXFIConfig = {
+  sensitiveFileFalsePositives: []};
+
 export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig> {
   try {
     const configPath = path.join(repoPath, '.xfi-config.json');
@@ -23,11 +26,11 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
 
       return parsedConfig;
     } else {
-      logger.warn('Ignoring invalid .xfi-config.json file');
-      return {file: 'invalid'};
+      logger.warn(`Ignoring invalid .xfi-config.json file, returing default config: ${JSON.stringify(defaultXFIConfig)}`);
+      return defaultXFIConfig;
     }
   } catch (error) {
-    logger.warn('No .xfi-config.json file found.');
-    return {file: 'not found'};
+    logger.warn(`No .xfi-config.json file found, returing default config: ${JSON.stringify(defaultXFIConfig)}`);
+    return defaultXFIConfig;
   }
 }
