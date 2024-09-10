@@ -1,4 +1,3 @@
-import { EngineResult, RuleResult } from 'json-rules-engine';
 import { ScanResult, RuleFailure } from '../../types/typeDefs';
 import { logger } from '../../utils/logger';
 import { REPO_GLOBAL_CHECK } from '../../utils/configManager';
