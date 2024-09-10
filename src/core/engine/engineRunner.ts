@@ -5,7 +5,7 @@ import { REPO_GLOBAL_CHECK } from '../../utils/configManager';
 
 import { RunEngineOnFilesParams } from '../../types/typeDefs';
 
-export function runEngineOnFiles(params: RunEngineOnFilesParams): ScanResult[] {
+export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<ScanResult[]> {
     const { engine, fileData, installedDependencyVersions, minimumDependencyVersions, standardStructure } = params;
     const msg = `\n==========================\nRUNNING FILE CHECKS..\n==========================`;
     logger.info(msg);
@@ -30,7 +30,7 @@ export function runEngineOnFiles(params: RunEngineOnFilesParams): ScanResult[] {
         const fileFailures: RuleFailure[] = [];
 
         try {
-            const { results }: EngineResult = engine.run(facts);
+            const { results } = await engine.run(facts);
             for (const result of results) {
                 logger.debug(JSON.stringify(result));
                 if (result.result) {
