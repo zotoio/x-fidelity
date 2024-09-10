@@ -5,12 +5,13 @@ import { REPO_GLOBAL_CHECK } from '../../utils/configManager';
 
 import { RunEngineOnFilesParams } from '../../types/typeDefs';
 
-export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<ScanResult[]> {
+export function runEngineOnFiles(params: RunEngineOnFilesParams): ScanResult[] {
     const { engine, fileData, installedDependencyVersions, minimumDependencyVersions, standardStructure } = params;
     const msg = `\n==========================\nRUNNING FILE CHECKS..\n==========================`;
     logger.info(msg);
     const failures: ScanResult[] = [];
-    const enginePromises = fileData.map(async (file) => {
+
+    for (const file of fileData) {
         if (file.fileName === REPO_GLOBAL_CHECK) {
             const msg = `\n==========================\nRUNNING GLOBAL REPO CHECKS..\n==========================`;
             logger.info(msg);
@@ -29,8 +30,8 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
         const fileFailures: RuleFailure[] = [];
 
         try {
-            const { results }: EngineResult = await engine.run(facts);
-            results.forEach((result: RuleResult) => {
+            const { results }: EngineResult = engine.run(facts);
+            for (const result of results) {
                 logger.debug(JSON.stringify(result));
                 if (result.result) {
                     fileFailures.push({
@@ -39,16 +40,23 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         details: result.event?.params
                     });
                 }
-            });
+            }
 
             if (fileFailures.length > 0) {
                 failures.push({ filePath: file.filePath, errors: fileFailures });
             }
         } catch (e) {
-            logger.error(e);
+            logger.error(`Error processing file ${file.filePath}: ${e}`);
+            failures.push({ 
+                filePath: file.filePath, 
+                errors: [{ 
+                    ruleFailure: 'ProcessingError', 
+                    level: 'error', 
+                    details: { message: `Error processing file: ${e}` } 
+                }] 
+            });
         }
-    });
+    }
 
-    await Promise.all(enginePromises);
     return failures;
 }
