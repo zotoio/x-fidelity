@@ -21,7 +21,7 @@ jest.mock('../core/cli', () => ({
 }));
 jest.mock('util', () => ({
     ...jest.requireActual('util'),
-    promisify: jest.fn().mockReturnValue(jest.fn())
+    promisify: jest.fn().mockImplementation((fn) => fn),
 }));
 
 // Add this line to increase the timeout for all tests in this file
@@ -45,7 +45,7 @@ describe('repoDependencyFacts', () => {
             
             (fs.existsSync as jest.Mock).mockImplementation((path) => path.includes('yarn.lock'));
             const mockExecPromise = jest.fn().mockResolvedValue({ stdout: mockYarnOutput, stderr: '' });
-            (util.promisify as unknown as jest.Mock).mockReturnValue(mockExecPromise);
+            (util.promisify as jest.Mock).mockReturnValue(mockExecPromise);
 
             const result = await repoDependencyFacts.collectLocalDependencies();
 
@@ -66,7 +66,7 @@ describe('repoDependencyFacts', () => {
 
             (fs.existsSync as jest.Mock).mockImplementation((path) => path.includes('package-lock.json'));
             const mockExecPromise = jest.fn().mockResolvedValue({ stdout: mockNpmOutput, stderr: '' });
-            (util.promisify as unknown as jest.Mock).mockReturnValue(mockExecPromise);
+            (util.promisify as jest.Mock).mockReturnValue(mockExecPromise);
 
             const result = await repoDependencyFacts.collectLocalDependencies();
 
