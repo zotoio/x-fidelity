@@ -200,15 +200,32 @@ describe('analyzeCodebase', () => {
                 archetype: 'node-fullstack',
                 repoPath: 'mockRepoPath',
                 fileCount: 3,
-                totalIssues: 0,
+                totalIssues: 3,
                 warningCount: 0,
                 fatalityCount: 0,
-                issueDetails: [],
+                exemptCount: 0,
+                issueDetails: expect.arrayContaining([
+                    expect.objectContaining({
+                        filePath: expect.any(String),
+                        errors: expect.arrayContaining([
+                            expect.objectContaining({
+                                ruleFailure: 'ProcessingError',
+                                level: 'error',
+                                details: expect.objectContaining({
+                                    message: expect.stringContaining('Error processing file: Error: mock error')
+                                })
+                            })
+                        ])
+                    })
+                ]),
                 durationSeconds: expect.any(Number),
                 finishTime: expect.any(Number),
                 startTime: expect.any(Number),
                 options: expect.any(Object),
                 telemetryData: expect.any(Object),
+                repoXFIConfig: expect.objectContaining({
+                    sensitiveFileFalsePositives: expect.any(Array)
+                })
             })
         });
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Once for start, once for end
