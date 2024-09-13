@@ -1,3 +1,10 @@
+## [2.16.2](https://github.com/zotoio/x-fidelity/compare/v2.16.1...v2.16.2) (2024-09-13)
+
+
+### Bug Fixes
+
+* **errors:** directory structure base fix, and some logic issues in error handling ([e89d783](https://github.com/zotoio/x-fidelity/commit/e89d7837dcfa370863519a57d88f2c5c567509a5))
+
 ## [2.16.1](https://github.com/zotoio/x-fidelity/compare/v2.16.0...v2.16.1) (2024-09-13)
 
 
