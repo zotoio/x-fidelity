@@ -3,6 +3,7 @@ import { logger } from '../utils/logger';
 import path from 'path';
 import fs from 'fs';
 import { REPO_GLOBAL_CHECK } from '../utils/configManager';
+import { options } from '../core/cli';
 
 const nonStandardDirectoryStructure: OperatorDefn = {
     'name': 'nonStandardDirectoryStructure',
@@ -13,7 +14,7 @@ const nonStandardDirectoryStructure: OperatorDefn = {
 
         logger.debug(`running global directory structure analysis..`);
 
-        const repoPath = path.dirname(filePath);
+        const repoPath = path.dirname(options.dir);
         let result = false;
 
         // check the directory structure of the repo against the standard structure

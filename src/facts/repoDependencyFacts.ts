@@ -19,67 +19,57 @@ const execPromise = util.promisify(exec);
 export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
     let result: LocalDependencies[] = [];
     if (fs.existsSync(path.join(options.dir, 'yarn.lock'))) {
-        result = await collectYarnDependencies();
+        result = await collectNodeDependencies('yarn');
     } else if (fs.existsSync(path.join(options.dir, 'package-lock.json'))) {
-        result = await collectNpmDependencies();
+        result = await collectNodeDependencies('npm');
     } else {
+        logger.on('finish', function () {
+            process.exit(1);
+        });
         logger.error('No yarn.lock or package-lock.json found');
+        logger.end();
         throw new Error('Unsupported package manager');
     }
     logger.debug(`collectLocalDependencies: ${safeStringify(result)}`);
     return result;
 }
 
-async function collectYarnDependencies(): Promise<LocalDependencies[]> {
+async function collectNodeDependencies(packageManager: string): Promise<LocalDependencies[]>  {
     const emptyDeps: LocalDependencies[] = [];
     try {
-        const { stdout, stderr } = await execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 });
+        
+        const { stdout, stderr } = packageManager === 'npm' ? 
+            await execPromise('npm ls -a --json', { cwd: options.dir, maxBuffer: 10485760 }) :
+            await execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 })
 
-        if (stderr) {
-            logger.error(`Error determining yarn dependencies: ${stderr}`);
-            return emptyDeps;
+        if (stderr?.includes('"error"')) {
+            logger.error(`Error determining ${packageManager} dependencies: ${stderr}`);
+            throw new Error(stderr);
         }
 
         try {
             const result = JSON.parse(stdout);
-            logger.debug(`collectYarnDependencies: ${JSON.stringify(result)}`);
-            return processYarnDependencies(result);
+            logger.debug(`collectNodeDependencies ${packageManager}: ${JSON.stringify(result)}`);
+            return packageManager === 'npm' ? 
+            processNpmDependencies(result) :
+            processYarnDependencies(result)
+
         } catch (e) {
-            logger.error(`Error parsing yarn dependencies: ${e}`);
-            return emptyDeps;
+            logger.error(`Error parsing ${packageManager} dependencies: ${e}`);
+            throw new Error(stderr);
         }
     } catch (e: any) {
-        logger.error(`Error determining yarn dependencies: ${e}`);
+        logger.on('finish', function () {
+            process.exit(1);
+        });
+        let message = `Error determining ${packageManager} dependencies: ${e}`;
+
         if (e.message?.includes('ELSPROBLEMS')) {
-            logger.error('Error determining yarn dependencies: did you forget to run yarn install first?');
+            message += `
+            Error determining ${packageManager} dependencies: did you forget to run '${packageManager} install' first?`;
         }
-        return emptyDeps;
-    }
-}
-
-async function collectNpmDependencies(): Promise<LocalDependencies[]> {
-    const emptyDeps: LocalDependencies[] = [];
-    try {
-        const { stdout, stderr } =  await execPromise('npm ls -a --json', { cwd: options.dir, maxBuffer: 10485760 });
-
-        if (stderr) {
-            logger.error(`Error determining npm dependencies: ${stderr}`);
-            return emptyDeps;
-        }
-
-        try {
-            const result = JSON.parse(stdout);
-            logger.debug(`collectNpmDependencies: ${JSON.stringify(result)}`);
-            return processNpmDependencies(result);
-        } catch (e) {
-            logger.error(`Error parsing npm dependencies: ${e}`);
-            return emptyDeps;
-        }
-    } catch (e: any) {
-        logger.error(`Error determining npm dependencies: ${e}`);
-        if (e.message?.includes('ELSPROBLEMS')) {
-            logger.error('Error determining npm dependencies: did you forget to run npm install first?');
-        }
+        logger.error(message);
+        logger.end();
         return emptyDeps;
     }
 

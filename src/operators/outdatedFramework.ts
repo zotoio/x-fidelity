@@ -6,20 +6,13 @@ const outdatedFramework: OperatorDefn = {
     'fn': (repoDependencyAnalysis: any) => {
         let result = false;
         
-        try {
-            logger.debug(`outdatedFramework: processing ${JSON.stringify(repoDependencyAnalysis)}`);
+        logger.debug(`outdatedFramework: processing ${JSON.stringify(repoDependencyAnalysis)}`);
 
-            if (repoDependencyAnalysis?.result?.length > 0) {
-                return true;
-            }
-            
-        } catch (e) {
-            logger.error(`outdatedFramework: ${e}`);
+        if (repoDependencyAnalysis?.result?.length > 0) {
             result = true;
         }
-        logger.debug(`outdatedFramework: ${result}`);
-        return result;
         
+        return result;
     }
 }
 
