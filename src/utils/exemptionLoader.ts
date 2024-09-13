@@ -44,7 +44,7 @@ export async function loadRemoteExemptions(params: LoadExemptionsParams): Promis
 export async function loadLocalExemptions(params: LoadExemptionsParams): Promise<Exemption[]> {
     const { localConfigPath, archetype } = params;
     const normalizedLocalConfigPath = path.normalize(localConfigPath);
-    const normalizedArchetype = path.normalize(archetype).replace(/^(\.\.[\/\\])+/, '');
+    const normalizedArchetype = path.normalize(archetype).replace(/^(\.\.[/\\])+/, '');
     const exemptionsPath = path.join(normalizedLocalConfigPath, `${normalizedArchetype}-exemptions.json`);
 
     if (!isPathInside(exemptionsPath, normalizedLocalConfigPath)) {
