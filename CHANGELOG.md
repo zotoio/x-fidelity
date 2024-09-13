@@ -1,3 +1,13 @@
+## [2.16.3](https://github.com/zotoio/x-fidelity/compare/v2.16.2...v2.16.3) (2024-09-13)
+
+
+### Bug Fixes
+
+* **error:** dir structure check ([801c2ba](https://github.com/zotoio/x-fidelity/commit/801c2baef278ed5c0f452d54cd9b62bcc56edb4f))
+* **exemption:** loader issue ([4690f99](https://github.com/zotoio/x-fidelity/commit/4690f99f5b128184dbdb3200c250e0dd089e7785))
+* Resolve TypeScript error in isPathInside function ([62544f2](https://github.com/zotoio/x-fidelity/commit/62544f2586641bc7262bb5962cfa6f4f2ecc0b7a))
+* Validate input used to build paths ([7a17db4](https://github.com/zotoio/x-fidelity/commit/7a17db46dee4e9d530b0f9d6349256544cce05f4))
+
 ## [2.16.2](https://github.com/zotoio/x-fidelity/compare/v2.16.1...v2.16.2) (2024-09-13)
 
 
