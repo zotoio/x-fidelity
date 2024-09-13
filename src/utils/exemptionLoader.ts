@@ -5,6 +5,7 @@ import { sendTelemetry } from "./telemetry";
 import { exemptions } from "../archetypes";
 import path from "path";
 import fs from "fs";
+import { isPathInside } from "./pathUtils";
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 
@@ -42,7 +43,15 @@ export async function loadRemoteExemptions(params: LoadExemptionsParams): Promis
 
 export async function loadLocalExemptions(params: LoadExemptionsParams): Promise<Exemption[]> {
     const { localConfigPath, archetype } = params;
-    const exemptionsPath = path.join(localConfigPath, `${archetype}-exemptions.json`);
+    const normalizedLocalConfigPath = path.normalize(localConfigPath);
+    const normalizedArchetype = path.normalize(archetype).replace(/^(\.\.[\/\\])+/, '');
+    const exemptionsPath = path.join(normalizedLocalConfigPath, `${normalizedArchetype}-exemptions.json`);
+
+    if (!isPathInside(exemptionsPath, normalizedLocalConfigPath)) {
+        logger.error(`Invalid path: ${exemptionsPath} is outside of ${normalizedLocalConfigPath}`);
+        return [];
+    }
+
     let exemptions: Exemption[] = [];
     try {
         const exemptionsData = await fs.promises.readFile(exemptionsPath, 'utf-8');
