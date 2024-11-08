@@ -811,4 +811,4 @@ Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` f
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the MIT License.. See the `LICENSE` file for details.
