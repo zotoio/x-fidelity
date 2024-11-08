@@ -1,3 +1,10 @@
+## [2.16.5](https://github.com/zotoio/x-fidelity/compare/v2.16.4...v2.16.5) (2024-11-08)
+
+
+### Bug Fixes
+
+* **deps:** force resolution - version bump ([9ea4801](https://github.com/zotoio/x-fidelity/commit/9ea4801f24e80b61dc89d835ceea765a478eb6ee))
+
 ## [2.16.4](https://github.com/zotoio/x-fidelity/compare/v2.16.3...v2.16.4) (2024-11-07)
 
 
