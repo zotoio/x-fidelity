@@ -87,6 +87,9 @@
     "winston": "^3.13.0",
     "yarn": "^1.22.21"
   },
+  "resolutions": {
+    "jsonpath-plus": "^10.1.0"
+  },
   "peerDependencies": {
     "artillery": "^2.0.0-31"
   },

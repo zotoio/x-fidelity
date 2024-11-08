@@ -33,7 +33,9 @@ class LRUCache {
     set(key: string, value: any, ttl: number): void {
         if (this.cache.size >= this.maxSize) {
             const oldestKey = this.cache.keys().next().value;
-            this.cache.delete(oldestKey);
+            if (oldestKey !== undefined) {
+                this.cache.delete(oldestKey);
+            }
         }
         this.cache.set(key, new CacheItem(value, Date.now() + ttl));
     }
