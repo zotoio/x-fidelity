@@ -1,3 +1,10 @@
+## [2.16.6](https://github.com/zotoio/x-fidelity/compare/v2.16.5...v2.16.6) (2024-11-11)
+
+
+### Bug Fixes
+
+* **snyk:** resolutions not respected when running license check ([492879d](https://github.com/zotoio/x-fidelity/commit/492879defa36e83d13c800ff4109c29e681cf0e9))
+
 ## [2.16.5](https://github.com/zotoio/x-fidelity/compare/v2.16.4...v2.16.5) (2024-11-08)
 
 
