@@ -77,7 +77,7 @@
     "express": "^4.21.1",
     "express-rate-limit": "^7.4.0",
     "helmet": "^7.1.0",
-    "json-rules-engine": "^6.5.0",
+    "json-rules-engine": "^7.0.0",
     "lodash": "^4.17.21",
     "nodemon": "^3.0.2",
     "openai": "^4.19.0",
@@ -86,9 +86,6 @@
     "semver": "^7.6.2",
     "winston": "^3.13.0",
     "yarn": "^1.22.21"
-  },
-  "resolutions": {
-    "jsonpath-plus": "^10.1.0"
   },
   "peerDependencies": {
     "artillery": "^2.0.0-31"
