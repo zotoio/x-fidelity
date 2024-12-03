@@ -43,26 +43,55 @@ export async function loadRemoteExemptions(params: LoadExemptionsParams): Promis
 
 export async function loadLocalExemptions(params: LoadExemptionsParams): Promise<Exemption[]> {
     const { localConfigPath, archetype } = params;
-    const normalizedLocalConfigPath = path.normalize(localConfigPath);
-    const normalizedArchetype = path.normalize(archetype).replace(/^(\.\.[/\\])+/, '');
-    const exemptionsPath = path.join(normalizedLocalConfigPath, `${normalizedArchetype}-exemptions.json`);
+    const exemptions: Exemption[] = [];
+    const expectedSuffix = `-${archetype}-exemptions.json`;
 
-    if (!isPathInside(exemptionsPath, normalizedLocalConfigPath)) {
-        logger.error(`Invalid path: ${exemptionsPath} is outside of ${normalizedLocalConfigPath}`);
-        return [];
-    }
-
-    let exemptions: Exemption[] = [];
     try {
-        const exemptionsData = await fs.promises.readFile(exemptionsPath, 'utf-8');
-        exemptions = JSON.parse(exemptionsData);
-        logger.info(`Loaded ${exemptions.length} exemptions`);
+        // First try loading from legacy single file
+        const legacyExemptionsPath = path.join(localConfigPath, `${archetype}-exemptions.json`);
+        if (fs.existsSync(legacyExemptionsPath)) {
+            const legacyExemptionsData = await fs.promises.readFile(legacyExemptionsPath, 'utf-8');
+            const legacyExemptions = JSON.parse(legacyExemptionsData);
+            exemptions.push(...legacyExemptions);
+            logger.info(`Loaded ${legacyExemptions.length} exemptions from legacy file`);
+        }
+
+        // Then load from directory of exemption files
+        const exemptionsDirPath = path.join(localConfigPath, `${archetype}-exemptions`);
+        if (fs.existsSync(exemptionsDirPath)) {
+            const files = await fs.promises.readdir(exemptionsDirPath);
+            for (const file of files) {
+                if (file.endsWith(expectedSuffix)) {
+                    const filePath = path.join(exemptionsDirPath, file);
+                    if (!isPathInside(filePath, exemptionsDirPath)) {
+                        logger.error(`Invalid path: ${filePath} is outside of ${exemptionsDirPath}`);
+                        continue;
+                    }
+                    try {
+                        const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+                        const fileExemptions = JSON.parse(fileContent);
+                        if (Array.isArray(fileExemptions)) {
+                            exemptions.push(...fileExemptions);
+                            logger.info(`Loaded ${fileExemptions.length} exemptions from ${file}`);
+                        } else {
+                            logger.warn(`Invalid exemptions format in ${file}: expected array`);
+                        }
+                    } catch (error) {
+                        logger.error(`Error processing exemption file ${file}: ${error}`);
+                    }
+                } else {
+                    logger.warn(`Skipping file ${file} as it doesn't match the required pattern *${expectedSuffix}`);
+                }
+            }
+        }
+
+        logger.info(`Loaded ${exemptions.length} total exemptions for archetype ${archetype}`);
         logger.debug(`Exemptions: ${JSON.stringify(exemptions)}`);
+        return exemptions;
     } catch (error) {
         logger.warn(`Failed to load exemptions: ${error}`);
-        exemptions = [];
+        return [];
     }
-    return exemptions;
 }
 
 export function normalizeGitHubUrl(url: string): string {
