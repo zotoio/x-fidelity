@@ -1,6 +1,6 @@
 {
   "name": "x-fidelity",
-  "version": "2.16.6",
+  "version": "2.16.7",
   "description": "cli for opinionated framework adherence checks",
   "main": "dist/xfidelity",
   "bin": {
@@ -17,8 +17,8 @@
     "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
     "build-run": "yarn build && node . --dir . | jq -R -r '. as $line | try fromjson catch $line'",
     "start-server": "ts-node src/index.ts --mode server",
-    "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix",
+    "lint": "eslint . ",
+    "lint:fix": "eslint . --fix",
     "perftest": "artillery run src/server/configServer.performance.test.yml",
     "perftest:cloud": "echo 'expecting env var ARTILLERY_CLOUD_API_KEY from artillery.io' && artillery run src/server/configServer.performance.test.yml --record",
     "bats:install": "cd ./cli-testing && ./installBatsTesting.sh",
@@ -56,14 +56,14 @@
     "conventional-changelog-cli": "^5.0.0",
     "conventional-recommended-bump": "^10.0.0",
     "cz-conventional-changelog": "^3.3.0",
-    "eslint": "^8.38.0",
+    "eslint": "^9.15.0",
     "jest": "^29.7.0",
     "rimraf": "^6.0.1",
     "semantic-release": "^24.0.0",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.4.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.6.3"
   },
   "dependencies": {
     "@types/body-parser": "^1.19.5",
