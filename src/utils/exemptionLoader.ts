@@ -115,6 +115,11 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
 export function normalizeGitHubUrl(url: string): string {
     if (!url) return '';
     
+    // If already in org/repo format, return as-is
+    if (/^[^/]+\/[^/]+$/.test(url)) {
+        return url;
+    }
+    
     // Handle SSH format (git@github.com:org/repo.git)
     if (url.startsWith('git@')) {
         const match = url.match(/:([^/]+\/[^.]+)(?:\.git)?$/);
