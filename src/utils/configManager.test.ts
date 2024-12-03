@@ -53,11 +53,11 @@ jest.mock('./jsonSchemas', () => ({
   validateArchetype: jest.fn().mockReturnValue(true)
 }));
 jest.mock('fs', () => ({
-    ...jest.requireActual('fs'),
     promises: {
-      lstat: jest.fn(),
-      readFile: jest.fn(),
+        readFile: jest.fn(),
+        readdir: jest.fn(),
     },
+    existsSync: jest.fn(),
     readFileSync: jest.fn(),
     readdirSync: jest.fn(),
 }));
