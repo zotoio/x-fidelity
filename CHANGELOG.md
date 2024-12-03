@@ -1,3 +1,10 @@
+## [2.17.1](https://github.com/zotoio/x-fidelity/compare/v2.17.0...v2.17.1) (2024-12-03)
+
+
+### Bug Fixes
+
+* **docs:** include docs on new exemption dir ([feedcfa](https://github.com/zotoio/x-fidelity/commit/feedcfa4dd6ceae32910038018e282a519c2df86))
+
 # [2.17.0](https://github.com/zotoio/x-fidelity/compare/v2.16.9...v2.17.0) (2024-12-03)
 
 
