@@ -114,23 +114,31 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
 
 export function normalizeGitHubUrl(url: string): string {
     if (!url) return '';
-    
-    // If already in org/repo format, return as-is
-    if (/^[^/]+\/[^/]+$/.test(url)) {
-        return url;
-    }
-    
-    // Handle SSH format (git@github.com:org/repo.git)
+
+    let hostname = 'github.com';
+    let orgRepo;
+
+    // Already in SSH format
     if (url.startsWith('git@')) {
-        return url.replace(/^git@github\.com:/, '')
-                 .replace(/\.git$/, '');
+        return url.endsWith('.git') ? url : `${url}.git`;
     }
     
-    // Remove protocol and domain
-    url = url.replace(/^(https?:\/\/)?([^/]+)\//, '');
+    // Handle HTTPS format
+    if (url.startsWith('http')) {
+        const match = url.match(/^https?:\/\/([^\/]+)\/([^\/]+\/[^\/]+?)(?:\.git)?$/);
+        if (match) {
+            hostname = match[1];
+            orgRepo = match[2];
+            return `git@${hostname}:${orgRepo}.git`;
+        }
+    }
     
-    // Remove .git suffix if present
-    return url.replace(/\.git$/, '');
+    // Handle org/repo format
+    if (/^[^\/]+\/[^\/]+$/.test(url)) {
+        return `git@${hostname}:${url}.git`;
+    }
+
+    throw new Error(`Invalid GitHub URL format: ${url}`);
 }
 
 export function isExempt(params: IsExemptParams): boolean {

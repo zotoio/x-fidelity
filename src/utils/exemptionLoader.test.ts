@@ -22,11 +22,31 @@ jest.mock('./logger', () => ({
 }));
 
 describe('normalizeGitHubUrl', () => {
-    it('should handle various GitHub URL formats', () => {
+    it('should normalize URLs to SSH format', () => {
+        // SSH format should be preserved
+        expect(normalizeGitHubUrl('git@github.com:org/repo.git')).toBe('git@github.com:org/repo.git');
+        expect(normalizeGitHubUrl('git@github.com:org/repo')).toBe('git@github.com:org/repo.git');
+        
+        // HTTPS format should be converted to SSH
         expect(normalizeGitHubUrl('https://github.com/org/repo')).toBe('git@github.com:org/repo.git');
         expect(normalizeGitHubUrl('https://github.com/org/repo.git')).toBe('git@github.com:org/repo.git');
-        expect(normalizeGitHubUrl('git@github.com:org/repo.git')).toBe('git@github.com:org/repo.git');
+        
+        // Bare org/repo should be converted to SSH
         expect(normalizeGitHubUrl('org/repo')).toBe('git@github.com:org/repo.git');
+    });
+
+    it('should preserve custom GitHub hostnames', () => {
+        expect(normalizeGitHubUrl('git@custom-github.com:org/repo.git')).toBe('git@custom-github.com:org/repo.git');
+        expect(normalizeGitHubUrl('https://custom-github.com/org/repo')).toBe('git@custom-github.com:org/repo.git');
+    });
+
+    it('should handle empty strings', () => {
+        expect(normalizeGitHubUrl('')).toBe('');
+    });
+
+    it('should throw error for invalid formats', () => {
+        expect(() => normalizeGitHubUrl('invalid/format/repo')).toThrow('Invalid GitHub URL format');
+        expect(() => normalizeGitHubUrl('http://github.com/invalid')).toThrow('Invalid GitHub URL format');
     });
 });
 
