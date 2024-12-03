@@ -124,14 +124,14 @@ export function normalizeGitHubUrl(url: string): string {
     if (url.startsWith('git@')) {
         const match = url.match(/:([^/]+\/[^/]+)(?:\.git)?$/);
         if (match) {
-            return match[1];
+            return match[1].replace(/\.git$/, '');
         }
     }
     
     // Remove protocol and domain
     url = url.replace(/^(https?:\/\/)?([^/]+)\//, '');
     
-    // Remove .git suffix
+    // Remove .git suffix if present
     return url.replace(/\.git$/, '');
 }
 
