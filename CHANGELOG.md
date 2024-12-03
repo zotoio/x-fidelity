@@ -1,3 +1,29 @@
+# [2.17.0](https://github.com/zotoio/x-fidelity/compare/v2.16.9...v2.17.0) (2024-12-03)
+
+
+### Bug Fixes
+
+* add missing function imports in exemptionLoader test ([f57be34](https://github.com/zotoio/x-fidelity/commit/f57be34b4ce54030f25af510c8d0fc372d9d1f8f))
+* add missing localConfigPath parameter in exemption loader tests ([5e40ddf](https://github.com/zotoio/x-fidelity/commit/5e40ddfde0ec26d00ba2a568aaee5c90ca379a35))
+* add readFileSync to fs mock in exemptionLoader test ([685e6c7](https://github.com/zotoio/x-fidelity/commit/685e6c73d8f1ea0d94cbebe6bd6e7d0cf6dd6c8d))
+* improve exemption loading and URL normalization ([6c4db5c](https://github.com/zotoio/x-fidelity/commit/6c4db5cb2d0081fc2ecd166d0f073e31495385e6))
+* improve pre-release version handling in semver comparisons ([10414a5](https://github.com/zotoio/x-fidelity/commit/10414a5645deef67ee5657f05cf9cccf62cb97c8))
+* improve semver comparison for pre-release versions ([967cb03](https://github.com/zotoio/x-fidelity/commit/967cb0343c6a82c3213d3ed271148a9d9491fbd2))
+* improve SSH URL normalization in GitHub URL parser ([b348b40](https://github.com/zotoio/x-fidelity/commit/b348b40d411c275088285f3f6506ca219eb44f9a))
+* preserve URLs already in org/repo format in normalizeGitHubUrl ([322f89f](https://github.com/zotoio/x-fidelity/commit/322f89f0628f19917d26472b1c7ec80d12e0bca4))
+* simplify SSH URL regex pattern in GitHub URL normalization ([67b0798](https://github.com/zotoio/x-fidelity/commit/67b0798fc76092e20cd2e1aee2dfe6668d1d952f))
+* update fs import and exemption loader tests ([99261b8](https://github.com/zotoio/x-fidelity/commit/99261b8f5f32131a9ec6035ab476a7a977c347e5))
+* update fs mock to include existsSync for tests ([b7e587c](https://github.com/zotoio/x-fidelity/commit/b7e587c401690b6c0c049bfd744b130da9970d59))
+* update regex pattern for SSH GitHub URL normalization ([3b2bb64](https://github.com/zotoio/x-fidelity/commit/3b2bb6445c68fd52ec4a03cc1b15f9152fc2a2b8))
+* update test to call loadLocalExemptions instead of loadExemptions ([c8b5fa3](https://github.com/zotoio/x-fidelity/commit/c8b5fa365b3c23f9e4b51a2c5e757684600a3512))
+* update test to match exact warning message format ([517c301](https://github.com/zotoio/x-fidelity/commit/517c3010f49fdd1cd49d8ae76b2c5ad57b0bcd0a))
+
+
+### Features
+
+* **exemptions:** support directories of json files and fix alpha comparison of semver in outdated ([1303392](https://github.com/zotoio/x-fidelity/commit/1303392986600b545910cac17685e950f2f52383))
+* support multiple exemption files in archetype-specific directories ([74a413e](https://github.com/zotoio/x-fidelity/commit/74a413ebc50a35bc697d60057ced18b6f9559b96))
+
 ## [2.16.9](https://github.com/zotoio/x-fidelity/compare/v2.16.8...v2.16.9) (2024-12-03)
 
 
