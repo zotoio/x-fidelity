@@ -9,6 +9,7 @@ jest.mock('fs', () => ({
         readdir: jest.fn(),
     },
     existsSync: jest.fn(),
+    readFileSync: jest.fn(),
 }));
 
 jest.mock('./logger', () => ({
