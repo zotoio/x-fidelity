@@ -32,12 +32,18 @@ export async function loadRemoteExemptions(params: LoadExemptionsParams): Promis
             }
         });
         const fetchedExemptions = response.data;
-        if (Array.isArray(fetchedExemptions)) {
-            logger.info(`Remote exemptions fetched successfully ${JSON.stringify(fetchedExemptions)}`);
-            return fetchedExemptions;
+        if (!Array.isArray(fetchedExemptions)) {
+            logger.warn('Invalid exemptions format received from server: expected array');
+            return [];
         }
-        logger.warn('Invalid exemptions format received from server');
-        return [];
+        const validExemptions = fetchedExemptions.filter(ex => 
+            ex && typeof ex === 'object' &&
+            typeof ex.repoUrl === 'string' &&
+            typeof ex.rule === 'string' &&
+            typeof ex.expirationDate === 'string'
+        );
+        logger.info(`Remote exemptions fetched successfully: ${validExemptions.length} valid exemptions`);
+        return validExemptions;
     } catch (error) {
         logger.error(`Error loading remote exemptions: ${error}`);
         return [];
@@ -75,12 +81,18 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
                     try {
                         const fileContent = await fs.promises.readFile(filePath, 'utf-8');
                         const fileExemptions = JSON.parse(fileContent);
-                        if (Array.isArray(fileExemptions)) {
-                            exemptions.push(...fileExemptions);
-                            logger.info(`Loaded ${fileExemptions.length} exemptions from ${file}`);
-                        } else {
+                        if (!Array.isArray(fileExemptions)) {
                             logger.warn(`Invalid exemptions format in ${file}: expected array`);
+                            continue;
                         }
+                        const validExemptions = fileExemptions.filter(ex => 
+                            ex && typeof ex === 'object' && 
+                            typeof ex.repoUrl === 'string' &&
+                            typeof ex.rule === 'string' &&
+                            typeof ex.expirationDate === 'string'
+                        );
+                        exemptions.push(...validExemptions);
+                        logger.info(`Loaded ${validExemptions.length} valid exemptions from ${file}`);
                     } catch (error) {
                         logger.error(`Error processing exemption file ${file}: ${error}`);
                     }
@@ -103,9 +115,10 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
 export function normalizeGitHubUrl(url: string): string {
     if (!url) return '';
     
-    // Handle SSH format
-    if (url.includes('@')) {
-        url = url.split(':')[1] || url;
+    // Handle SSH format (git@github.com:org/repo.git)
+    if (url.startsWith('git@')) {
+        const match = url.match(/:([^/]+\/[^.]+)(?:\.git)?$/);
+        return match ? match[1] : url;
     }
     
     // Remove protocol and domain
