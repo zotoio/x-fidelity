@@ -19,25 +19,32 @@ jest.mock('../archetypes', () => ({
 }));
 
 describe('normalizeGitHubUrl', () => {
-  it('should normalize to git@ format with .git suffix', () => {
-    expect(normalizeGitHubUrl('https://github.com/user/repo.git')).toBe('git@github.com:user/repo.git');
-    expect(normalizeGitHubUrl('http://github.com/user/repo')).toBe('git@github.com:user/repo.git');
-    expect(normalizeGitHubUrl('github.com/user/repo.git')).toBe('git@github.com:user/repo.git');
-  });
+    it('should normalize URLs to SSH format', () => {
+        // SSH format should be preserved
+        expect(normalizeGitHubUrl('git@github.com:org/repo.git')).toBe('git@github.com:org/repo.git');
+        expect(normalizeGitHubUrl('git@github.com:org/repo')).toBe('git@github.com:org/repo.git');
+        
+        // HTTPS format should be converted to SSH
+        expect(normalizeGitHubUrl('https://github.com/org/repo')).toBe('git@github.com:org/repo.git');
+        expect(normalizeGitHubUrl('https://github.com/org/repo.git')).toBe('git@github.com:org/repo.git');
+        
+        // Bare org/repo should be converted to SSH
+        expect(normalizeGitHubUrl('org/repo')).toBe('git@github.com:org/repo.git');
+    });
 
-  it('should handle URLs without protocol or .git suffix', () => {
-    expect(normalizeGitHubUrl('github.com/user/repo')).toBe('git@github.com:user/repo.git');
-    expect(normalizeGitHubUrl('user/repo')).toBe('git@github.com:user/repo.git');
-  });
+    it('should preserve custom GitHub hostnames', () => {
+        expect(normalizeGitHubUrl('git@custom-github.com:org/repo.git')).toBe('git@custom-github.com:org/repo.git');
+        expect(normalizeGitHubUrl('https://custom-github.com/org/repo')).toBe('git@custom-github.com:org/repo.git');
+    });
 
-  it('should preserve custom GitHub hostnames', () => {
-    expect(normalizeGitHubUrl('https://custom-github.com/user/repo.git')).toBe('git@custom-github.com:user/repo.git');
-    expect(normalizeGitHubUrl('http://github.mycompany.com/user/repo')).toBe('git@github.mycompany.com:user/repo.git');
-  });
+    it('should handle empty strings', () => {
+        expect(normalizeGitHubUrl('')).toBe('');
+    });
 
-  it('should handle empty strings', () => {
-    expect(normalizeGitHubUrl('')).toBe('');
-  });
+    it('should throw error for invalid formats', () => {
+        expect(() => normalizeGitHubUrl('invalid/format/repo')).toThrow('Invalid GitHub URL format');
+        expect(() => normalizeGitHubUrl('http://github.com/invalid')).toThrow('Invalid GitHub URL format');
+    });
 });
 import { axiosClient } from './axiosClient';
 import { validateArchetype } from './jsonSchemas';
