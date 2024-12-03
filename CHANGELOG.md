@@ -1,3 +1,10 @@
+## [2.16.7](https://github.com/zotoio/x-fidelity/compare/v2.16.6...v2.16.7) (2024-12-03)
+
+
+### Bug Fixes
+
+* **build:** upgrade eslint ([fe58362](https://github.com/zotoio/x-fidelity/commit/fe5836208f4507d7078ed023ac5d1467be663e36))
+
 ## [2.16.6](https://github.com/zotoio/x-fidelity/compare/v2.16.5...v2.16.6) (2024-11-11)
 
 
