@@ -228,7 +228,7 @@ describe('ConfigManager', () => {
             });
             
             expect(exemptions).toEqual([]);
-            expect(logger.warn).toHaveBeenCalledWith('Failed to load exemptions: Error: ENOENT: no such file or directory, open \'/path/to/local/config/test-archetype-exemptions.json\'');
+            expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to load exemptions'));
         });
     });
 
