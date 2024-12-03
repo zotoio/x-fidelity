@@ -1,0 +1,31 @@
+{
+    "name": "openaiAnalysisTop5-global",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "openaiAnalysis",
+                "params": {
+                    "prompt": "what are the most important 5 things to fix?",
+                    "resultFact": "openaiAnalysisTop5"
+                },
+                "operator": "openaiAnalysisHighSeverity",
+                "value": 8
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "OpenAI analysis failed for the provided prompt.",
+            "details": {
+                "fact": "openaiAnalysisTop5"
+            }
+        }
+    }
+}

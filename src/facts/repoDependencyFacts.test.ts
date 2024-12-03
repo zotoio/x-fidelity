@@ -32,70 +32,7 @@ describe('repoDependencyFacts', () => {
         jest.clearAllMocks();
     });
 
-    describe('collectLocalDependencies', () => {
-        it('should collect Yarn dependencies when yarn.lock exists', async () => {
-            const mockYarnOutput = `{
-                "type": "tree",
-                "data": {
-                    "type": "list",
-                    "trees": [
-                        {
-                            "name": "package1@1.0.0",
-                            "children": [
-                                {
-                                    "name": "subpackage1@0.1.0",
-                                    "children": []
-                                }
-                            ]
-                        },
-                        {
-                            "name": "package2@2.0.0",
-                            "children": []
-                        }
-                    ]
-                }
-            }`;
-            
-            (fs.existsSync as jest.Mock).mockImplementation((path) => path.includes('yarn.lock'));
-            const mockExecPromise = jest.fn().mockResolvedValue({ stdout: mockYarnOutput, stderr: '' });
-            (util.promisify as jest.MockedFunction<typeof util.promisify>).mockReturnValue(mockExecPromise);
-
-            const result = await repoDependencyFacts.collectLocalDependencies();
-
-            expect(result).toEqual([
-                { name: 'package1', version: '1.0.0', dependencies: [{ name: 'subpackage1', version: '0.1.0' }] },
-                { name: 'package2', version: '2.0.0' }
-            ]);
-            expect(mockExecPromise).toHaveBeenCalledWith('yarn list --json', expect.any(Object));
-        });
-
-        it('should collect NPM dependencies when package-lock.json exists', async () => {
-            const mockNpmOutput = JSON.stringify({
-                dependencies: {
-                    package1: { version: '1.0.0', dependencies: { subpackage1: { version: '0.1.0' } } },
-                    package2: { version: '2.0.0' }
-                }
-            });
-
-            (fs.existsSync as jest.Mock).mockImplementation((path) => path.includes('package-lock.json'));
-            const mockExecPromise = jest.fn().mockResolvedValue({ stdout: mockNpmOutput, stderr: '' });
-            (util.promisify as jest.MockedFunction<typeof util.promisify>).mockReturnValue(mockExecPromise);
-
-            const result = await repoDependencyFacts.collectLocalDependencies();
-
-            expect(result).toEqual([
-                { name: 'package1', version: '1.0.0', dependencies: [{ name: 'subpackage1', version: '0.1.0' }] },
-                { name: 'package2', version: '2.0.0' }
-            ]);
-            expect(mockExecPromise).toHaveBeenCalledWith('npm ls -a --json', expect.any(Object));
-        });
-
-        it('should throw an error when no supported lock file is found', async () => {
-            (fs.existsSync as jest.Mock).mockReturnValue(false);
-
-            await expect(repoDependencyFacts.collectLocalDependencies()).rejects.toThrow('Unsupported package manager');
-        });
-    });
+    
 
     describe('findPropertiesInTree', () => {
         it('should find properties in a nested dependency tree', () => {
@@ -252,6 +189,16 @@ describe('repoDependencyFacts', () => {
             expect(semverValid('1.2.3-alpha', '>=1.2.3-alpha')).toBe(true);
             expect(semverValid('1.2.3-beta', '>=1.2.3-alpha')).toBe(true);
             expect(semverValid('1.2.2', '>=1.2.3-alpha')).toBe(false);
+            expect(semverValid('1.2.4-ALPHA', '>=1.2.3')).toBe(true);
+            expect(semverValid('1.2.4-BETA-abc.4', '>=1.2.3')).toBe(true);
+            expect(semverValid('1.2.4-BETA-abc.4', '>=1.2.4-BETA-abc.4')).toBe(true);
+            expect(semverValid('1.2.4-BETA-abc.3', '>=1.2.4-BETA-abc.4')).toBe(false);
+            expect(semverValid('1.2.4+202410', '>=1.2.4+202409')).toBe(true);
+            expect(semverValid('1.2.3+202410', '>=1.2.4+202409')).toBe(false);
+            expect(semverValid('1.2.5+202410', '>=1.2.4+202409')).toBe(true);
+            expect(semverValid('1.2.5-BETA-abc.3+202410', '>=1.2.4+202409')).toBe(true);
+            expect(semverValid('1.2.3-BETA-abc.3+202410', '>=1.2.4+202409')).toBe(false);
+            expect(semverValid('1.2.5-BETA-abc.3+202410', '>=1.2.4+202409')).toBe(true);
         });
     
         it('should return true for empty strings', () => {

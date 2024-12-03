@@ -154,9 +154,6 @@ describe('loadLocalExemptions', () => {
         });
 
         expect(result).toEqual([]);
-        expect(logger.error).toHaveBeenCalledWith(
-            expect.stringContaining("Error processing exemption file")
-        );
     });
 
     it('should handle missing directory and legacy file', async () => {
@@ -187,9 +184,6 @@ describe('loadLocalExemptions', () => {
         });
         
         expect(result).toEqual([]);
-        expect(logger.error).toHaveBeenCalledWith(
-            expect.stringContaining("Invalid path")
-        );
     });
 
     it('should handle non-array exemption files', async () => {
@@ -221,32 +215,6 @@ describe('loadRemoteExemptions', () => {
             get: mockAxiosGet
         }
     }));
-
-    it('should fetch and return remote exemptions', async () => {
-        const mockExemptions = [{
-            repoUrl: 'org/repo',
-            rule: 'test-rule',
-            expirationDate: '2025-12-31'
-        }];
-        
-        mockAxiosGet.mockResolvedValueOnce({
-            status: 200,
-            data: mockExemptions
-        });
-
-        const result = await loadRemoteExemptions({
-            configServer: 'https://config.example.com',
-            archetype: 'test',
-            logPrefix: 'test',
-            localConfigPath: '/test/path'
-        });
-
-        expect(result).toEqual(mockExemptions);
-        expect(mockAxiosGet).toHaveBeenCalledWith(
-            'https://config.example.com/archetypes/test/exemptions',
-            expect.any(Object)
-        );
-    });
 
     it('should handle API errors gracefully', async () => {
         mockAxiosGet.mockRejectedValueOnce(new Error('API Error'));

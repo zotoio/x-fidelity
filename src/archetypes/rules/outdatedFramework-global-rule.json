@@ -1,0 +1,30 @@
+{
+    "name": "outdatedFramework-global",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "repoDependencyAnalysis",
+                "params": {
+                    "resultFact": "repoDependencyResults"
+                },
+                "operator": "outdatedFramework",
+                "value": true
+            }
+        ]
+    },
+    "event": {
+        "type": "fatality",
+        "params": {
+            "message": "some core framework dependencies have expired!",
+            "details": {
+                "fact": "repoDependencyResults"
+            }
+        }
+    }
+}

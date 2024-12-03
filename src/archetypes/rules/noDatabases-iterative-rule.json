@@ -1,0 +1,31 @@
+{
+    "name": "noDatabases-iterative",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "notEqual",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "repoFileAnalysis",
+                "params": {
+                    "checkPattern": ["oracle", "mysql", "mssql", "postgres", "sqlite", "mongodb", "cassandra", "redis", "rethinkdb", "neo4j", "couchdb"],
+                    "resultFact": "fileResultsDB"
+                },
+                "operator": "fileContains",
+                "value": true
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "code must not directly call databases",
+            "details": {
+                "fact": "fileResultsDB"
+            }
+        }
+    }
+}

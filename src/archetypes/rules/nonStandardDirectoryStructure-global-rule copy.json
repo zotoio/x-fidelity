@@ -1,0 +1,30 @@
+{
+    "name": "nonStandardDirectoryStructure-global",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "fileData",
+                "path": "$.filePath",
+                "operator": "nonStandardDirectoryStructure",
+                "value": {
+                    "fact": "standardStructure"
+                }
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "directory structure does not match the standard.",
+            "details": {
+                "fact": "standardStructure"
+            }
+        }
+    }
+}

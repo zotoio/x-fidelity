@@ -1,0 +1,15 @@
+[
+    {
+      "repoUrl": "git@github.com:zotoio/x-fidelity.git",
+      "rule": "outdatedFramework-global",
+      "expirationDate": "2023-12-31",
+      "reason": "Upgrading dependencies is scheduled for Q4 2024"
+    },
+    {
+      "repoUrl": "git@github.com:zotoio/x-fidelity.git",
+      "rule": "sensitiveLogging-iterative",
+      "expirationDate": "2023-09-30",
+      "reason": "Security audit and logging refactor planned for Q3 2024"
+    }
+  ]
+  
