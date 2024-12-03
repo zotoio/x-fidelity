@@ -221,14 +221,14 @@ describe('ConfigManager', () => {
             (fs.existsSync as jest.Mock).mockReturnValue(false);
             (fs.promises.readdir as jest.Mock).mockResolvedValue([]);
             
-            const exemptions = await loadExemptions({ 
+            const exemptions = await loadLocalExemptions({ 
                 configServer: '', 
                 localConfigPath: '/path/to/local/config', 
                 archetype: 'test-archetype' 
             });
             
             expect(exemptions).toEqual([]);
-            expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to load exemptions: '));
+            expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to load exemptions'));
         });
     });
 
