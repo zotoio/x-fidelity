@@ -1,5 +1,5 @@
 import { ConfigManager, REPO_GLOBAL_CHECK } from './configManager';
-import { isExempt, normalizeGitHubUrl } from "./exemptionLoader";
+import { isExempt, loadLocalExemptions, normalizeGitHubUrl } from "./exemptionLoader";
 import { loadExemptions } from './exemptionLoader';
 
 jest.mock('../archetypes', () => ({
@@ -228,7 +228,7 @@ describe('ConfigManager', () => {
             });
             
             expect(exemptions).toEqual([]);
-            expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to load exemptions'));
+            expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No exemption files found for archetype test-archetype'));
         });
     });
 

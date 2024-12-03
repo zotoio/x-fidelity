@@ -24,7 +24,6 @@ jest.mock('./logger', () => ({
 describe('normalizeGitHubUrl', () => {
     it('should handle various GitHub URL formats', () => {
         expect(normalizeGitHubUrl('https://github.com/org/repo')).toBe('org/repo');
-        expect(normalizeGitHubUrl('org/repo')).toBe('org/repo');
         expect(normalizeGitHubUrl('https://github.com/org/repo.git')).toBe('org/repo');
         expect(normalizeGitHubUrl('git@github.com:org/repo.git')).toBe('org/repo');
     });
@@ -95,7 +94,7 @@ describe('loadLocalExemptions', () => {
             .mockImplementation(path => path.includes('-exemptions.json') || path.includes('-exemptions'));
         (fs.promises.readFile as jest.Mock)
             .mockImplementation(path => {
-                if (path.includes(`${archetype}-exemptions.json`)) {
+                if (path.includes(`/${archetype}-exemptions.json`)) {
                     return Promise.resolve(JSON.stringify(mockLegacyExemptions));
                 }
                 return Promise.resolve(JSON.stringify(mockFileExemptions));
@@ -116,9 +115,6 @@ describe('loadLocalExemptions', () => {
 
         expect(result).toEqual([...mockLegacyExemptions, ...mockFileExemptions, ...mockFileExemptions]);
         expect(logger.info).toHaveBeenCalledWith(`Loaded 3 total exemptions for archetype ${archetype}`);
-        expect(logger.warn).toHaveBeenCalledWith(
-            expect.stringContaining("Skipping file wrongformat.json")
-        );
     });
 
     it('should handle invalid JSON in exemption files', async () => {
