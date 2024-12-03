@@ -19,20 +19,20 @@ jest.mock('../archetypes', () => ({
 }));
 
 describe('normalizeGitHubUrl', () => {
-  it('should remove protocol and .git suffix', () => {
-    expect(normalizeGitHubUrl('https://github.com/user/repo.git')).toBe('user/repo');
-    expect(normalizeGitHubUrl('http://github.com/user/repo')).toBe('user/repo');
-    expect(normalizeGitHubUrl('github.com/user/repo.git')).toBe('user/repo');
+  it('should normalize to git@ format with .git suffix', () => {
+    expect(normalizeGitHubUrl('https://github.com/user/repo.git')).toBe('git@github.com:user/repo.git');
+    expect(normalizeGitHubUrl('http://github.com/user/repo')).toBe('git@github.com:user/repo.git');
+    expect(normalizeGitHubUrl('github.com/user/repo.git')).toBe('git@github.com:user/repo.git');
   });
 
   it('should handle URLs without protocol or .git suffix', () => {
-    expect(normalizeGitHubUrl('github.com/user/repo')).toBe('user/repo');
-    expect(normalizeGitHubUrl('user/repo')).toBe('user/repo');
+    expect(normalizeGitHubUrl('github.com/user/repo')).toBe('git@github.com:user/repo.git');
+    expect(normalizeGitHubUrl('user/repo')).toBe('git@github.com:user/repo.git');
   });
 
-  it('should handle custom GitHub hostnames', () => {
-    expect(normalizeGitHubUrl('https://custom-github.com/user/repo.git')).toBe('user/repo');
-    expect(normalizeGitHubUrl('http://github.mycompany.com/user/repo')).toBe('user/repo');
+  it('should preserve custom GitHub hostnames', () => {
+    expect(normalizeGitHubUrl('https://custom-github.com/user/repo.git')).toBe('git@custom-github.com:user/repo.git');
+    expect(normalizeGitHubUrl('http://github.mycompany.com/user/repo')).toBe('git@github.mycompany.com:user/repo.git');
   });
 
   it('should handle empty strings', () => {
