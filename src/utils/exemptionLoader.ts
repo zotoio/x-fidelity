@@ -28,13 +28,16 @@ export async function loadRemoteExemptions(params: LoadExemptionsParams): Promis
         const response = await axiosClient.get(exemptionsUrl, {
             headers: {
                 'X-Log-Prefix': logPrefix || '',
-                'X-Shared-Secret': SHARED_SECRET || ''
-            },
-            validateStatus: (status) => status === 200
+                'X-Shared-Secret': process.env.XFI_SHARED_SECRET || ''
+            }
         });
         const fetchedExemptions = response.data;
-        logger.info(`Remote exemptions fetched successfully ${JSON.stringify(fetchedExemptions)}`);
-        return fetchedExemptions;
+        if (Array.isArray(fetchedExemptions)) {
+            logger.info(`Remote exemptions fetched successfully ${JSON.stringify(fetchedExemptions)}`);
+            return fetchedExemptions;
+        }
+        logger.warn('Invalid exemptions format received from server');
+        return [];
     } catch (error) {
         logger.error(`Error loading remote exemptions: ${error}`);
         return [];
@@ -47,16 +50,18 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
     const expectedSuffix = `-${archetype}-exemptions.json`;
 
     try {
-        // First try loading from legacy single file
+        // Load from legacy file
         const legacyExemptionsPath = path.join(localConfigPath, `${archetype}-exemptions.json`);
         if (fs.existsSync(legacyExemptionsPath)) {
             const legacyExemptionsData = await fs.promises.readFile(legacyExemptionsPath, 'utf-8');
             const legacyExemptions = JSON.parse(legacyExemptionsData);
-            exemptions.push(...legacyExemptions);
-            logger.info(`Loaded ${legacyExemptions.length} exemptions from legacy file`);
+            if (Array.isArray(legacyExemptions)) {
+                exemptions.push(...legacyExemptions);
+                logger.info(`Loaded ${legacyExemptions.length} exemptions from legacy file`);
+            }
         }
 
-        // Then load from directory of exemption files
+        // Load from exemptions directory
         const exemptionsDirPath = path.join(localConfigPath, `${archetype}-exemptions`);
         if (fs.existsSync(exemptionsDirPath)) {
             const files = await fs.promises.readdir(exemptionsDirPath);
@@ -79,14 +84,15 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
                     } catch (error) {
                         logger.error(`Error processing exemption file ${file}: ${error}`);
                     }
-                } else {
-                    logger.warn(`Skipping file ${file} as it doesn't match the required pattern *${expectedSuffix}`);
                 }
             }
         }
 
+        if (!fs.existsSync(legacyExemptionsPath) && !fs.existsSync(exemptionsDirPath)) {
+            logger.warn(`No exemption files found for archetype ${archetype}`);
+        }
+
         logger.info(`Loaded ${exemptions.length} total exemptions for archetype ${archetype}`);
-        logger.debug(`Exemptions: ${JSON.stringify(exemptions)}`);
         return exemptions;
     } catch (error) {
         logger.warn(`Failed to load exemptions: ${error}`);
@@ -95,11 +101,18 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
 }
 
 export function normalizeGitHubUrl(url: string): string {
-    // if url only contains one slash, just return it
-    if (url?.indexOf('/') === url?.lastIndexOf('/')) {
-        return url;
+    if (!url) return '';
+    
+    // Handle SSH format
+    if (url.includes('@')) {
+        url = url.split(':')[1] || url;
     }
-    return url?.replace(/^(https?:\/\/)?([^/]+)\//, '').replace(/\.git$/, '');
+    
+    // Remove protocol and domain
+    url = url.replace(/^(https?:\/\/)?([^/]+)\//, '');
+    
+    // Remove .git suffix
+    return url.replace(/\.git$/, '');
 }
 
 export function isExempt(params: IsExemptParams): boolean {
