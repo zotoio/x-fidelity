@@ -4760,7 +4760,7 @@ json-parse-even-better-errors@^4.0.0:
   resolved "https://registry.yarnpkg.com/json-parse-even-better-errors/-/json-parse-even-better-errors-4.0.0.tgz#d3f67bd5925e81d3e31aa466acc821c8375cec43"
   integrity sha512-lR4MXjGNgkJc7tkQ97kb2nuEMnNCyU//XYVH0MKTGcXEiSudQ5MKGKen3C5QubYy0vmq+JGitUg92uuywGEwIA==
 
-json-rules-engine@^7.0.0:
+json-rules-engine@^7.2.1:
   version "7.2.1"
   resolved "https://registry.yarnpkg.com/json-rules-engine/-/json-rules-engine-7.2.1.tgz#c72a189684c9c40c74b683eba30a1557236b57b2"
   integrity sha512-WcAlEsFbUwnu2K++50QMpnujIn4icEBNZIMydqA6CbwE/0Dtjsq6BSEKiQlQlXirLaCXGqvXFQPCIkAWJhBZCg==
