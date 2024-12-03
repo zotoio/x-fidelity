@@ -220,7 +220,8 @@ describe('loadRemoteExemptions', () => {
         const result = await loadRemoteExemptions({
             configServer: 'https://config.example.com',
             archetype: 'test',
-            logPrefix: 'test'
+            logPrefix: 'test',
+            localConfigPath: '/test/path'
         });
 
         expect(result).toEqual(mockExemptions);
@@ -236,7 +237,8 @@ describe('loadRemoteExemptions', () => {
         const result = await loadRemoteExemptions({
             configServer: 'https://config.example.com',
             archetype: 'test',
-            logPrefix: 'test'
+            logPrefix: 'test',
+            localConfigPath: '/test/path'
         });
 
         expect(result).toEqual([]);
