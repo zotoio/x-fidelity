@@ -23,9 +23,10 @@ jest.mock('./logger', () => ({
 
 describe('normalizeGitHubUrl', () => {
     it('should handle various GitHub URL formats', () => {
-        expect(normalizeGitHubUrl('https://github.com/org/repo')).toBe('org/repo');
-        expect(normalizeGitHubUrl('https://github.com/org/repo.git')).toBe('org/repo');
-        expect(normalizeGitHubUrl('git@github.com:org/repo.git')).toBe('org/repo');
+        expect(normalizeGitHubUrl('https://github.com/org/repo')).toBe('git@github.com:org/repo.git');
+        expect(normalizeGitHubUrl('https://github.com/org/repo.git')).toBe('git@github.com:org/repo.git');
+        expect(normalizeGitHubUrl('git@github.com:org/repo.git')).toBe('git@github.com:org/repo.git');
+        expect(normalizeGitHubUrl('org/repo')).toBe('git@github.com:org/repo.git');
     });
 });
 
