@@ -583,7 +583,7 @@ Exemptions in x-fidelity provide a way to temporarily waive specific rules for a
 
 1. **Definition**: An exemption is defined for a specific rule and repository URL, with an expiration date and a reason.
 
-2. **Storage**: Exemptions are stored in JSON files, typically named `<archetype>-exemptions.json` (e.g., `node-fullstack-exemptions.json`).
+2. **Storage**: Exemptions are stored in JSON files, typically named `<archetype>-exemptions.json` (e.g., `node-fullstack-exemptions.json`).  NEW a directory named <archetype>-exemptions can be created in the config dir and each json file matching `*-<archetype>-exemptions.json`will also be included.
 
 3. **Structure**: Each exemption is an object with the following properties:
    - `repoUrl`: The URL of the repository where the exemption applies.
