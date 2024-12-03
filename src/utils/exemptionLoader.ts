@@ -122,7 +122,7 @@ export function normalizeGitHubUrl(url: string): string {
     
     // Handle SSH format (git@github.com:org/repo.git)
     if (url.startsWith('git@')) {
-        const match = url.match(/:([^/]+\/[^/]+)(?:\.git)?$/);
+        const match = url.match(/:([^/]+\/[^/]+)/);
         if (match) {
             return match[1].replace(/\.git$/, '');
         }
