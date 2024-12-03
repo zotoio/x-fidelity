@@ -1,5 +1,5 @@
 import { ArchetypeConfig, Exemption } from '../types/typeDefs';
-import fs from 'fs';
+import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../utils/logger';
 

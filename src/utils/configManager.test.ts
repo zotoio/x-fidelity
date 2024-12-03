@@ -198,21 +198,37 @@ describe('ConfigManager', () => {
     });
 
     describe('loadExemptions', () => {
-        it('should load exemptions from a local file', async () => {
-            const mockExemptions = [
+        it('should load exemptions from legacy file and directory', async () => {
+            const mockLegacyExemptions = [
                 { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2023-12-31', reason: 'Test reason' }
             ];
-            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockExemptions));
-            const exemptions = await loadExemptions({ configServer: '', localConfigPath: '/path/to/local/config', archetype: 'test-archetype' });
-            expect(exemptions).toEqual(mockExemptions);
+            (fs.existsSync as jest.Mock).mockImplementation(path => 
+                path.includes('-exemptions.json') || path.includes('-exemptions'));
+            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockLegacyExemptions));
+            (fs.promises.readdir as jest.Mock).mockResolvedValue([]);
+
+            const exemptions = await loadExemptions({ 
+                configServer: '', 
+                localConfigPath: '/path/to/local/config', 
+                archetype: 'test-archetype' 
+            });
+            
+            expect(exemptions).toEqual(mockLegacyExemptions);
             expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/test-archetype-exemptions.json', 'utf-8');
         });
 
-        it('should return an empty array if exemptions file is not found', async () => {
-            (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
-            const exemptions = await loadExemptions({ configServer: '', localConfigPath: '/path/to/local/config', archetype: 'test-archetype' });
+        it('should return an empty array if no exemption files are found', async () => {
+            (fs.existsSync as jest.Mock).mockReturnValue(false);
+            (fs.promises.readdir as jest.Mock).mockResolvedValue([]);
+            
+            const exemptions = await loadExemptions({ 
+                configServer: '', 
+                localConfigPath: '/path/to/local/config', 
+                archetype: 'test-archetype' 
+            });
+            
             expect(exemptions).toEqual([]);
-            expect(logger.warn).toHaveBeenCalled();
+            expect(logger.warn).toHaveBeenCalledWith('Failed to load exemptions: Error: ENOENT: no such file or directory, open \'/path/to/local/config/test-archetype-exemptions.json\'');
         });
     });
 
