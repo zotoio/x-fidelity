@@ -228,7 +228,7 @@ describe('ConfigManager', () => {
             });
             
             expect(exemptions).toEqual([]);
-            expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to load exemptions'));
+            expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to load exemptions: '));
         });
     });
 
