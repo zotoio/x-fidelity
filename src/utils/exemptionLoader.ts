@@ -122,8 +122,10 @@ export function normalizeGitHubUrl(url: string): string {
     
     // Handle SSH format (git@github.com:org/repo.git)
     if (url.startsWith('git@')) {
-        const match = url.match(/:([^/]+\/[^.]+)(?:\.git)?$/);
-        return match ? match[1] : url;
+        const match = url.match(/:([^/]+\/[^/]+)(?:\.git)?$/);
+        if (match) {
+            return match[1];
+        }
     }
     
     // Remove protocol and domain
