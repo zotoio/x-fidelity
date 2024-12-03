@@ -246,19 +246,28 @@ export function semverValid(installed: string, required: string): boolean {
     // If 'installed' is a single version and 'required' is a range
     if (semver.valid(installed) && semver.validRange(required)) {
         logger.debug('range vs version');
+        // For pre-release versions, we need to include them explicitly in the comparison
+        if (semver.prerelease(installed)) {
+            return semver.gte(installed, semver.minVersion(required) || '0.0.0');
+        }
         return semver.satisfies(installed, required);
     }
 
     // If 'required' is a single version and 'installed' is a range
     if (semver.valid(required) && semver.validRange(installed)) {
         logger.debug('version vs range');
+        // For pre-release versions in the requirement, include them in the comparison
+        if (semver.prerelease(required)) {
+            return semver.lte(required, semver.maxVersion(installed) || '0.0.0');
+        }
         return semver.satisfies(required, installed);
     }
 
     // If both are single versions, simply compare them
     if (semver.valid(required) && semver.valid(installed)) {
         logger.debug('version vs version');
-        return semver.gt(installed, required);
+        // For pre-release versions, use semver.gte to include pre-releases in comparison
+        return semver.gte(installed, required);
     }
 
     // If both are ranges, check if they intersect
