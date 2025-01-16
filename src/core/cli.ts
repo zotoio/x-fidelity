@@ -28,6 +28,7 @@ program
     .option("-p, --port <port>", "The port to run the server on", "8888")
     .option("-l, --localConfigPath <path>", "Path to local archetype config and rules")
     .option("-j, --jsonTTL <minutes>", "Set the server json cache TTL in minutes", "10")
+    .option("-e, --extensions <file>", "Path to extensions file")
     .version(version, "-v, --version", "Output the version number of xfidelity")
     .helpOption("-h, --help", "Display help for command")
     .argument('[directory]', 'code directory to analyze');
@@ -91,6 +92,7 @@ port: ${options.mode === 'server' ? options.port : 'n/a'}
 localConfigPath: ${options.localConfigPath ? options.localConfigPath : 'none'}
 jsonTTL: ${options.jsonTTL} minutes
 openaiEnabled: ${options.openaiEnabled}
+extensions: ${options.extensions ? options.extensions : 'none'}
 for options run: xfidelity --help
 =====================================`);
 
