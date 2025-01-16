@@ -1,4 +1,5 @@
 import { XFiPlugin, PluginRegistry } from '../types/pluginTypes';
+import { OperatorDefn } from '../types/typeDefs';
 import { logger } from '../utils/logger';
 
 class XFiPluginRegistry implements PluginRegistry {
