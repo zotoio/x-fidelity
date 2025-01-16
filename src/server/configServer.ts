@@ -84,6 +84,24 @@ export function startServer({ customPort, executionLogPrefix }: StartServerParam
             logger.info(`xfidelity server is running on https://localhost:${serverPort}`);
         });
 
+        // Load extensions if specified
+        if (options.extensions) {
+            try {
+                const extensionPath = path.resolve(process.cwd(), options.extensions);
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
+                const extension = require(extensionPath);
+                if (extension.default) {
+                    pluginRegistry.registerPlugin(extension.default);
+                } else {
+                    pluginRegistry.registerPlugin(extension);
+                }
+                logger.info(`Loaded extensions from ${extensionPath}`);
+            } catch (error) {
+                logger.error(`Failed to load extensions from ${options.extensions}: ${error}`);
+                if (process.env.NODE_ENV !== 'test') process.exit(1);
+            }
+        }
+
         // Set up file watcher for local config path
         if (options.localConfigPath) {
             const watcher = chokidar.watch(options.localConfigPath, {

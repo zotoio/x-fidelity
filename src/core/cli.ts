@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { version } from "../../package.json";
 import { validateInput } from '../utils/inputValidation';
+import { pluginRegistry } from '../core/pluginRegistry';
 
 // Ensure logger is initialized
 if (!logger || typeof logger.info !== 'function') {

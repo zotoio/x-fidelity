@@ -805,6 +805,58 @@ Example `.xfi-config.json`:
 
 Remember, while `.xfi-config.json` allows you to adjust x-fidelity's behavior in limited ways, it should be used judiciously to maintain the integrity of your code quality checks.
 
+### Using Extensions
+
+x-fidelity supports custom extensions through plugins. To use an extension:
+
+1. Install the extension package:
+```bash
+npm install my-xfi-extension
+```
+
+2. Create an extensions file (e.g., extensions.js):
+```javascript
+const myExtension = require('my-xfi-extension');
+module.exports = myExtension;
+```
+
+3. Run x-fidelity with the extensions file:
+```bash
+xfidelity -e ./extensions.js
+```
+
+### Creating Extensions
+
+You can create custom extensions by implementing the XFiPlugin interface:
+
+```typescript
+interface XFiPlugin {
+  name: string;
+  version: string;
+  facts?: {
+    name: string;
+    fn: Function;
+  }[];
+  operators?: OperatorDefn[];
+}
+```
+
+Example extension:
+```javascript
+module.exports = {
+  name: 'my-extension',
+  version: '1.0.0',
+  facts: [{
+    name: 'myCustomFact',
+    fn: async () => ({ result: 'custom data' })
+  }],
+  operators: [{
+    name: 'myCustomOperator',
+    fn: (factValue, expectedValue) => factValue === expectedValue
+  }]
+};
+```
+
 ## Contributing
 
 Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` file for guidelines on how to contribute to this project.
