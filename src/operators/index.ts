@@ -5,12 +5,16 @@ import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';
 import { openaiAnalysisHighSeverity } from './openaiAnalysisHighSeverity';
 import { getOpenAIStatus } from '../utils/openaiUtils';
 import { logger } from '../utils/logger';
+import { pluginRegistry } from '../core/pluginRegistry';
 
 const allOperators: Record<string, OperatorDefn> = {
     outdatedFramework,
     fileContains,
     nonStandardDirectoryStructure,
-    openaiAnalysisHighSeverity
+    openaiAnalysisHighSeverity,
+    ...Object.fromEntries(
+      pluginRegistry.getPluginOperators().map(op => [op.name, op])
+    )
 };
 
 async function loadOperators(operatorNames: string[]): Promise<OperatorDefn[]> {
