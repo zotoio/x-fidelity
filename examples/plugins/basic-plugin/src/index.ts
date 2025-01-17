@@ -1,4 +1,6 @@
 import { XFiPlugin, OperatorDefn, FactDefn } from 'x-fidelity';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const customOperator: OperatorDefn = {
   name: 'customContains',
@@ -19,32 +21,17 @@ const customFact: FactDefn = {
   }
 };
 
+// Load sample rules from the rules directory
+const sampleRules = fs.readdirSync(path.join(__dirname, 'rules'))
+  .filter(file => file.endsWith('-rule.json'))
+  .map(file => JSON.parse(fs.readFileSync(path.join(__dirname, 'rules', file), 'utf8')));
+
 const plugin: XFiPlugin = {
   name: 'xfi-basic-plugin',
   version: '1.0.0',
   operators: [customOperator],
   facts: [customFact],
-  sampleRules: [{
-    name: 'custom-check',
-    conditions: {
-      all: [
-        {
-          fact: 'customFileInfo',
-          operator: 'customContains',
-          value: 'TODO'
-        }
-      ]
-    },
-    event: {
-      type: 'warning',
-      params: {
-        message: 'Found TODO in file',
-        details: {
-          fact: 'customFileInfo'
-        }
-      }
-    }
-  }]
+  sampleRules
 };
 
 export default plugin;
