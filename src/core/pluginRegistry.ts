@@ -1,5 +1,5 @@
 import { XFiPlugin, PluginRegistry } from '../types/pluginTypes';
-import { OperatorDefn } from '../types/typeDefs';
+import { OperatorDefn, FactDefn } from '../types/typeDefs';
 import { logger } from '../utils/logger';
 
 class XFiPluginRegistry implements PluginRegistry {
@@ -20,10 +20,10 @@ class XFiPluginRegistry implements PluginRegistry {
     this.plugins.push(plugin);
   }
 
-  public getPluginFacts(): { name: string; fn: (params: any, almanac: any) => Promise<any>; }[] {
+  public getPluginFacts(): FactDefn[] {
     return this.plugins.reduce((facts, plugin) => {
       return facts.concat(plugin.facts || []);
-    }, [] as { name: string; fn: (params: any, almanac: any) => Promise<any>; }[]);
+    }, [] as FactDefn[]);
   }
 
   public getPluginOperators(): OperatorDefn[] {

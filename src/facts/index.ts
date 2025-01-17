@@ -2,7 +2,7 @@ import { collectRepoFileData } from './repoFilesystemFacts';
 import { getDependencyVersionFacts } from './repoDependencyFacts';
 import { openaiAnalysis } from './openaiAnalysisFacts';
 import { pluginRegistry } from '../core/pluginRegistry';
-
+import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { FactDefn } from '../types/typeDefs';
 
 const allFacts: Record<string, FactDefn> = {
@@ -33,4 +33,3 @@ async function loadFacts(factNames: string[]): Promise<FactDefn[]> {
 }
 
 export { loadFacts };
-import { isOpenAIEnabled } from '../utils/openaiUtils';
