@@ -26,6 +26,9 @@ describe('samplePlugin', () => {
   });
 
   it('should execute custom fact', async () => {
+    const mockAlmanac = {
+      factValue: jest.fn()
+    };
     const customFact = samplePlugin.facts![0];
     const result = await customFact.fn({}, mockAlmanac);
     expect(result).toEqual({ result: 'custom fact data' });
