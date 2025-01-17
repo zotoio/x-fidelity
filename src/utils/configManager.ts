@@ -1,6 +1,7 @@
 import { axiosClient } from "./axiosClient";
 import { logger, setLogPrefix } from "./logger";
 import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig, Exemption } from "../types/typeDefs";
+import { pluginRegistry } from '../core/pluginRegistry';
 import { loadExemptions } from "./exemptionLoader";
 import { archetypes } from "../archetypes";
 import { options } from '../core/cli';
@@ -34,12 +35,33 @@ export class ConfigManager {
         return ConfigManager.configs[archetype];
     }
 
+    public static async loadPlugins(extensionsPath?: string): Promise<void> {
+        if (extensionsPath) {
+            try {
+                const resolvedPath = path.resolve(process.cwd(), extensionsPath);
+                const extension = require(resolvedPath);
+                if (extension.default) {
+                    pluginRegistry.registerPlugin(extension.default);
+                } else {
+                    pluginRegistry.registerPlugin(extension);
+                }
+                logger.info(`Loaded extensions from ${resolvedPath}`);
+            } catch (error) {
+                logger.error(`Failed to load extensions from ${extensionsPath}: ${error}`);
+                if (process.env.NODE_ENV !== 'test') process.exit(1);
+            }
+        }
+    }
+
     private static async initialize(params: InitializeParams): Promise<ExecutionConfig> {
         const { archetype, logPrefix } = params;
         const configServer = options.configServer;
         const localConfigPath = options.localConfigPath;
 
         if (logPrefix) setLogPrefix(logPrefix);
+        
+        // Load plugins during initialization
+        await this.loadPlugins(options.extensions);
         logger.info(`Initializing config manager for archetype: ${archetype}`);
         logger.debug(`Initialize params: ${JSON.stringify(params)}`);
 
