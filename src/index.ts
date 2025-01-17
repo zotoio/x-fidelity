@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { generateLogPrefix, logger, setLogPrefix } from './utils/logger';
+import path from 'path';
 import json from 'prettyjson';
 import { options } from "./core/cli";
 import { analyzeCodebase } from "./core/engine/analyzer";
@@ -34,6 +35,23 @@ logger.debug(`startup options: ${JSON.stringify(options)}`);
 
 export async function main() {
     try {
+        // Load extensions if specified
+        if (options.extensions) {
+            try {
+                const extensionPath = path.resolve(process.cwd(), options.extensions);
+                const extension = require(extensionPath);
+                if (extension.default) {
+                    pluginRegistry.registerPlugin(extension.default);
+                } else {
+                    pluginRegistry.registerPlugin(extension);
+                }
+                logger.info(`Loaded extensions from ${extensionPath}`);
+            } catch (error) {
+                logger.error(`Failed to load extensions from ${options.extensions}: ${error}`);
+                if (process.env.NODE_ENV !== 'test') process.exit(1);
+            }
+        }
+
         if (options.mode === 'server') {
             await startServer({ customPort: options.port, executionLogPrefix });
         } else {
