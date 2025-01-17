@@ -1,5 +1,4 @@
-import { XFiPlugin } from 'x-fidelity/dist/types/pluginTypes';
-import { OperatorDefn } from 'x-fidelity/dist/types/typeDefs';
+import { XFiPlugin, OperatorDefn, FactDefn } from 'x-fidelity';
 
 const customOperator: OperatorDefn = {
   name: 'customContains',
@@ -8,7 +7,7 @@ const customOperator: OperatorDefn = {
   }
 };
 
-const customFact = {
+const customFact: FactDefn = {
   name: 'customFileInfo',
   fn: async (params: any, almanac: any) => {
     const fileData = await almanac.factValue('fileData');
