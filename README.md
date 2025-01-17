@@ -807,23 +807,19 @@ Remember, while `.xfi-config.json` allows you to adjust x-fidelity's behavior in
 
 ### Using Extensions
 
-x-fidelity supports custom extensions through plugins. To use an extension:
+x-fidelity supports custom extensions through npm modules. To use extensions:
 
-1. Install the extension package:
+1. Install the extension packages:
 ```bash
-npm install my-xfi-extension
+npm install xfi-basic-plugin xfi-another-plugin
 ```
 
-2. Create an extensions file (e.g., extensions.js):
-```javascript
-const myExtension = require('my-xfi-extension');
-module.exports = myExtension;
-```
-
-3. Run x-fidelity with the extensions file:
+2. Run x-fidelity with the extensions:
 ```bash
-xfidelity -e ./extensions.js
+xfidelity -e xfi-basic-plugin xfi-another-plugin
 ```
+
+Multiple extensions can be specified by separating them with spaces.
 
 ### Creating Extensions
 

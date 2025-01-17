@@ -1,7 +1,2 @@
-const basicPlugin = require('../dist');
-const { pluginRegistry } = require('x-fidelity');
-
-// Register the plugin
-pluginRegistry.registerPlugin(basicPlugin);
-
-// Now the custom operator and fact are available in your rules
+// This file is no longer needed - extensions are loaded directly via CLI:
+// xfidelity -e xfi-basic-plugin xfi-another-plugin

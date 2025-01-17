@@ -35,20 +35,22 @@ export class ConfigManager {
         return ConfigManager.configs[archetype];
     }
 
-    public static async loadPlugins(extensionsPath?: string): Promise<void> {
-        if (extensionsPath) {
-            try {
-                const resolvedPath = path.resolve(process.cwd(), extensionsPath);
-                const extension = require(resolvedPath);
-                if (extension.default) {
-                    pluginRegistry.registerPlugin(extension.default);
-                } else {
-                    pluginRegistry.registerPlugin(extension);
+    public static async loadPlugins(extensions?: string[]): Promise<void> {
+        if (extensions && extensions.length > 0) {
+            for (const moduleName of extensions) {
+                try {
+                    logger.info(`Loading extension module: ${moduleName}`);
+                    const extension = require(moduleName);
+                    if (extension.default) {
+                        pluginRegistry.registerPlugin(extension.default);
+                    } else {
+                        pluginRegistry.registerPlugin(extension);
+                    }
+                    logger.info(`Successfully loaded extension: ${moduleName}`);
+                } catch (error) {
+                    logger.error(`Failed to load extension ${moduleName}: ${error}`);
+                    if (process.env.NODE_ENV !== 'test') process.exit(1);
                 }
-                logger.info(`Loaded extensions from ${resolvedPath}`);
-            } catch (error) {
-                logger.error(`Failed to load extensions from ${extensionsPath}: ${error}`);
-                if (process.env.NODE_ENV !== 'test') process.exit(1);
             }
         }
     }

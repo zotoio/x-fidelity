@@ -29,7 +29,7 @@ program
     .option("-p, --port <port>", "The port to run the server on", "8888")
     .option("-l, --localConfigPath <path>", "Path to local archetype config and rules")
     .option("-j, --jsonTTL <minutes>", "Set the server json cache TTL in minutes", "10")
-    .option("-e, --extensions <file>", "Path to extensions file")
+    .option("-e, --extensions <modules...>", "Space-separated list of npm module names to load as extensions")
     .version(version, "-v, --version", "Output the version number of xfidelity")
     .helpOption("-h, --help", "Display help for command")
     .argument('[directory]', 'code directory to analyze');
