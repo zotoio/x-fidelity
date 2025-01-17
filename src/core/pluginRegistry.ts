@@ -17,6 +17,12 @@ class XFiPluginRegistry implements PluginRegistry {
 
   public registerPlugin(plugin: XFiPlugin): void {
     logger.info(`Registering plugin: ${plugin.name} v${plugin.version}`);
+    if (plugin.facts) {
+      logger.info(`Plugin ${plugin.name} provides ${plugin.facts.length} facts: ${plugin.facts.map(f => f.name).join(', ')}`);
+    }
+    if (plugin.operators) {
+      logger.info(`Plugin ${plugin.name} provides ${plugin.operators.length} operators: ${plugin.operators.map(o => o.name).join(', ')}`);
+    }
     this.plugins.push(plugin);
   }
 

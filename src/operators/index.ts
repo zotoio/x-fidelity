@@ -19,8 +19,11 @@ const allOperators: Record<string, OperatorDefn> = {
 
 async function loadOperators(operatorNames: string[]): Promise<OperatorDefn[]> {
     const openAIStatus = getOpenAIStatus();
+    logger.info(`Loading operators: ${operatorNames.join(', ')}`);
     const loadedOperators: OperatorDefn[] = [];
     const notFoundOperators: string[] = [];
+    const pluginOperators = pluginRegistry.getPluginOperators();
+    logger.info(`Found ${pluginOperators.length} plugin operators available`);
 
     for (const name of operatorNames) {
         const operator = allOperators[name];

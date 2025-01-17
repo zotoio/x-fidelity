@@ -24,12 +24,31 @@ const allFacts: Record<string, FactDefn> = {
 };
 
 async function loadFacts(factNames: string[]): Promise<FactDefn[]> {
+    logger.info(`Loading facts: ${factNames.join(', ')}`);
+    const pluginFacts = pluginRegistry.getPluginFacts();
+    logger.info(`Found ${pluginFacts.length} plugin facts available`);
+    
     return factNames
-        .map(name => allFacts[name])
-        .filter(fact => 
-            fact && (!fact.name.startsWith('openai') || 
-            (isOpenAIEnabled() && fact.name.startsWith('openai')))
-        );
+        .map(name => {
+            const fact = allFacts[name];
+            if (!fact) {
+                logger.warn(`Fact not found: ${name}`);
+            } else {
+                logger.debug(`Loaded fact: ${name}`);
+            }
+            return fact;
+        })
+        .filter(fact => {
+            if (!fact) return false;
+            if (fact.name.startsWith('openai')) {
+                const enabled = isOpenAIEnabled();
+                if (!enabled) {
+                    logger.warn(`OpenAI fact ${fact.name} not loaded: OpenAI integration disabled`);
+                }
+                return enabled;
+            }
+            return true;
+        });
 }
 
 export { loadFacts };
