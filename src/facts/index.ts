@@ -6,32 +6,33 @@ import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { FactDefn } from '../types/typeDefs';
 import { logger } from '../utils/logger';
 
-const allFacts: Record<string, FactDefn> = {
-    repoFilesystemFacts: { 
-        name: 'fileData', 
-        fn: collectRepoFileData 
-    },
-    repoDependencyFacts: { 
-        name: 'dependencyData', 
-        fn: getDependencyVersionFacts 
-    },
-    openaiAnalysisFacts: { 
-        name: 'openaiAnalysis', 
-        fn: openaiAnalysis 
-    },
-    ...Object.fromEntries(
-        pluginRegistry.getPluginFacts().map(fact => [fact.name, fact])
-    )
-};
-
 async function loadFacts(factNames: string[]): Promise<FactDefn[]> {
+    // Get the latest facts including plugins
+    const allAvailableFacts: Record<string, FactDefn> = {
+        repoFilesystemFacts: { 
+            name: 'fileData', 
+            fn: collectRepoFileData 
+        },
+        repoDependencyFacts: { 
+            name: 'dependencyData', 
+            fn: getDependencyVersionFacts 
+        },
+        openaiAnalysisFacts: { 
+            name: 'openaiAnalysis', 
+            fn: openaiAnalysis 
+        },
+        ...Object.fromEntries(
+            pluginRegistry.getPluginFacts().map(fact => [fact.name, fact])
+        )
+    };
+
     logger.info(`Loading facts: ${factNames.join(', ')}`);
     const pluginFacts = pluginRegistry.getPluginFacts();
     logger.info(`Found ${pluginFacts.length} plugin facts available`);
     
     return factNames
         .map(name => {
-            const fact = allFacts[name];
+            const fact = allAvailableFacts[name];
             if (!fact) {
                 logger.warn(`Fact not found: ${name}`);
             } else {
