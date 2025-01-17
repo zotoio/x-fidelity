@@ -9,7 +9,7 @@ import { pluginRegistry } from '../core/pluginRegistry';
 
 async function loadOperators(operatorNames: string[]): Promise<OperatorDefn[]> {
     // Get the latest plugin operators
-    const allAvailableOperators = {
+    const allAvailableOperators: Record<string, OperatorDefn> = {
         outdatedFramework,
         fileContains,
         nonStandardDirectoryStructure,
