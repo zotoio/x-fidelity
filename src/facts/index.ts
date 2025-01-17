@@ -4,6 +4,7 @@ import { openaiAnalysis } from './openaiAnalysisFacts';
 import { pluginRegistry } from '../core/pluginRegistry';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { FactDefn } from '../types/typeDefs';
+import { logger } from '../utils/logger';
 
 const allFacts: Record<string, FactDefn> = {
     repoFilesystemFacts: { 
