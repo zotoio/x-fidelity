@@ -20,7 +20,7 @@ class XFiPluginRegistry implements PluginRegistry {
     this.plugins.push(plugin);
   }
 
-  public getPluginFacts(): { name: string; fn: Function; }[] {
+  public getPluginFacts(): { name: string; fn: (params: any, almanac: any) => Promise<any>; }[] {
     return this.plugins.reduce((facts, plugin) => {
       return facts.concat(plugin.facts || []);
     }, [] as { name: string; fn: Function; }[]);
