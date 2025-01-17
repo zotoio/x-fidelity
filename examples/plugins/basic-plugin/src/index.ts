@@ -23,7 +23,28 @@ const basicPlugin: XFiPlugin = {
   name: 'basic-plugin',
   version: '1.0.0',
   operators: [customOperator],
-  facts: [customFact]
+  facts: [customFact],
+  sampleRules: [{
+    name: 'custom-check',
+    conditions: {
+      all: [
+        {
+          fact: 'customFileInfo',
+          operator: 'customContains',
+          value: 'TODO'
+        }
+      ]
+    },
+    event: {
+      type: 'warning',
+      params: {
+        message: 'Found TODO in file',
+        details: {
+          fact: 'customFileInfo'
+        }
+      }
+    }
+  }]
 };
 
 export default basicPlugin;

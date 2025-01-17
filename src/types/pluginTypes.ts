@@ -5,6 +5,7 @@ export interface XFiPlugin {
   version: string;
   facts?: FactDefn[];
   operators?: OperatorDefn[];
+  sampleRules?: RuleConfig[];  // Add sample rules array
 }
 
 export interface PluginRegistry {
