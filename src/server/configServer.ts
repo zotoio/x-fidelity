@@ -1,7 +1,9 @@
 import express from 'express';
 import https from 'https';
 import fs from 'fs';
+import path from 'path';
 import { logger, setLogPrefix } from '../utils/logger';
+import { pluginRegistry } from '../core/pluginRegistry';
 import { expressLogger } from './expressLogger'
 import { options } from '../core/cli';
 import helmet from 'helmet';
