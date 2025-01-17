@@ -4,8 +4,11 @@ import * as path from 'path';
 
 const customOperator: OperatorDefn = {
   name: 'customContains',
-  fn: (fileContent: string, searchString: string) => {
-    return fileContent.includes(searchString);
+  fn: (repoFileAnalysis: any, searchString: string) => {
+    if (!repoFileAnalysis?.result || !Array.isArray(repoFileAnalysis.result)) {
+      return false;
+    }
+    return repoFileAnalysis.result.length > 0;
   }
 };
 
