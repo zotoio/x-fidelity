@@ -19,8 +19,8 @@ const customFact: FactDefn = {
   }
 };
 
-const basicPlugin: XFiPlugin = {
-  name: 'basic-plugin',
+const plugin: XFiPlugin = {
+  name: 'xfi-basic-plugin',
   version: '1.0.0',
   operators: [customOperator],
   facts: [customFact],
@@ -47,4 +47,4 @@ const basicPlugin: XFiPlugin = {
   }]
 };
 
-export default basicPlugin;
+export default plugin;
