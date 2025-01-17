@@ -3,18 +3,27 @@ import { getDependencyVersionFacts } from './repoDependencyFacts';
 import { openaiAnalysis } from './openaiAnalysisFacts';
 import { pluginRegistry } from '../core/pluginRegistry';
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-const allFacts: Record<string, { name: string, fn: Function }> = {
-    repoFilesystemFacts: { name: 'fileData', fn: collectRepoFileData },
-    repoDependencyFacts: { name: 'dependencyData', fn: getDependencyVersionFacts },
-    openaiAnalysisFacts: { name: 'openaiAnalysis', fn: openaiAnalysis },
+import { FactDefn } from '../types/typeDefs';
+
+const allFacts: Record<string, FactDefn> = {
+    repoFilesystemFacts: { 
+        name: 'fileData', 
+        fn: collectRepoFileData 
+    },
+    repoDependencyFacts: { 
+        name: 'dependencyData', 
+        fn: getDependencyVersionFacts 
+    },
+    openaiAnalysisFacts: { 
+        name: 'openaiAnalysis', 
+        fn: openaiAnalysis 
+    },
     ...Object.fromEntries(
-      pluginRegistry.getPluginFacts().map(fact => [fact.name, fact])
+        pluginRegistry.getPluginFacts().map(fact => [fact.name, fact])
     )
 };
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-async function loadFacts(factNames: string[]): Promise<{ name: string, fn: Function }[]> {
+async function loadFacts(factNames: string[]): Promise<FactDefn[]> {
     return factNames
         .map(name => allFacts[name])
         .filter(fact => 

@@ -1,17 +1,14 @@
-import { OperatorDefn } from './typeDefs';
+import { OperatorDefn, FactDefn } from './typeDefs';
 
 export interface XFiPlugin {
   name: string;
   version: string;
-  facts?: {
-    name: string;
-    fn: Function;
-  }[];
+  facts?: FactDefn[];
   operators?: OperatorDefn[];
 }
 
 export interface PluginRegistry {
   registerPlugin: (plugin: XFiPlugin) => void;
-  getPluginFacts: () => { name: string; fn: Function; }[];
+  getPluginFacts: () => FactDefn[];
   getPluginOperators: () => OperatorDefn[];
 }

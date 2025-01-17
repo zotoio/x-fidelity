@@ -5,6 +5,11 @@ export type OperatorDefn = {
     name: string,
     fn: OperatorEvaluator<any, any>
 }
+
+export type FactDefn = {
+    name: string,
+    fn: (params: any, almanac: any) => Promise<any>
+}
 export interface ScanResult {
     filePath: string;
     errors: RuleFailure[];
