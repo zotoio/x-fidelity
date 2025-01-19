@@ -58,7 +58,7 @@ export async function main() {
                     });
                     logger.error(`\n${json.render(resultMetadata.XFI_RESULT)}\n\n`);
                     logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
-                    logger.end();
+                    //logger.end();
                 } else {
                     logger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
                     logger.warn(`\n${json.render(resultMetadata.XFI_RESULT)}\n\n`);
