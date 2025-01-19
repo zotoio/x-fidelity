@@ -7,10 +7,11 @@
   "bin": {
     "xfidelity": "./dist/xfidelity"
   },
+  "module": "./dist/exports.js",
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "default": "./dist/exports.js"
+      "default": "./dist/xfidelity"
     }
   },
   "scripts": {
