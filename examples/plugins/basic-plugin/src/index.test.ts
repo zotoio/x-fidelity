@@ -5,7 +5,7 @@ jest.mock('axios');
 
 describe('basicPlugin', () => {
   it('should have correct structure', () => {
-    expect(basicPlugin.name).toBe('xfi-external-api-plugin');
+    expect(basicPlugin.name).toBe('xfi-example-plugin');
     expect(basicPlugin.version).toBe('1.0.0');
     expect(basicPlugin.operators).toHaveLength(1);
     expect(basicPlugin.facts).toHaveLength(1);

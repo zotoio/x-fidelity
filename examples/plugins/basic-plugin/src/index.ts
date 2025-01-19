@@ -97,7 +97,7 @@ const sampleRules = [{
 }];
 
 const plugin: XFiPlugin = {
-  name: 'xfi-external-api-plugin',
+  name: 'xfi-example-plugin',
   version: '1.0.0',
   operators: [regexExtractOperator],
   facts: [externalCallFact],

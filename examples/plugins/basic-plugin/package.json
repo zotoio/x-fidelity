@@ -1,7 +1,7 @@
 {
-  "name": "xfi-basic-plugin",
+  "name": "xfi-example-plugin",
   "version": "1.0.0",
-  "description": "Example basic plugin for x-fidelity",
+  "description": "Example plugin for x-fidelity demonstrating external API integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
