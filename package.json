@@ -12,6 +12,14 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "default": "./dist/xfidelity"
+    },
+    "./logger": {
+      "types": "./dist/types/utils/logger.d.ts",
+      "default": "./dist/utils/logger.js"
+    },
+    "./axios": {
+      "types": "./dist/types/utils/axiosClient.d.ts",
+      "default": "./dist/utils/axiosClient.js"
     }
   },
   "scripts": {
