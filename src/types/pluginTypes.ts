@@ -1,4 +1,4 @@
-import { OperatorDefn, FactDefn } from './typeDefs';
+import { OperatorDefn, FactDefn, RuleConfig } from './typeDefs';
 
 export interface XFiPlugin {
   name: string;
