@@ -1,59 +1,70 @@
-# X-Fidelity Basic Plugin Example
+# X-Fidelity External API Plugin
 
-This is a basic example plugin for x-fidelity that demonstrates how to create custom operators and facts.
+This plugin enables x-fidelity to extract values from files using regex and validate them against external APIs.
 
 ## Installation
 
 ```bash
-npm install xfi-basic-plugin
+npm install xfi-external-api-plugin
 ```
 
 ## Usage
 
-1. Create an extensions file (e.g., `xfi-extensions.js`):
-
-```javascript
-const basicPlugin = require('xfi-basic-plugin');
-module.exports = basicPlugin;
-```
-
-2. Run x-fidelity with the plugin:
+Run x-fidelity with the plugin:
 
 ```bash
-xfidelity -e ./xfi-extensions.js
+xfidelity -e xfi-external-api-plugin
 ```
 
 ## Features
 
-### Custom Operator: customContains
+### Regex Extract Operator
 
-A simple operator that checks if a string contains a substring.
+Extracts values from files using configurable regex patterns.
 
-### Custom Fact: customFileInfo
+### External API Call Fact
 
-Provides additional file information including:
-- File name
-- Content size
-- Timestamp
+Makes HTTP calls to external APIs with extracted values for validation.
 
-## Example Rule
+### Sample Rule
 
 ```json
 {
-  "name": "custom-check",
+  "name": "externalApiCheck-iterative",
   "conditions": {
     "all": [
       {
-        "fact": "customFileInfo",
-        "operator": "customContains",
-        "value": "TODO"
+        "fact": "repoFileAnalysis",
+        "params": {
+          "checkPattern": "version:\\s*['\"]([^'\"]+)['\"]",
+          "resultFact": "versionMatch"
+        },
+        "operator": "regexExtract",
+        "value": true
+      },
+      {
+        "fact": "externalApiCall",
+        "params": {
+          "regex": "version:\\s*['\"]([^'\"]+)['\"]",
+          "url": "https://api.example.com/validate-version",
+          "method": "POST",
+          "includeValue": true,
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "operator": "equal",
+        "value": { "success": true }
       }
     ]
   },
   "event": {
     "type": "warning",
     "params": {
-      "message": "Found TODO in file"
+      "message": "External API validation failed",
+      "details": {
+        "fact": "externalApiCall"
+      }
     }
   }
 }
@@ -70,3 +81,12 @@ npm run build
 ```bash
 npm test
 ```
+
+## Configuration
+
+The external API call fact supports:
+
+- HTTP methods: GET, POST, PUT, DELETE
+- Custom headers
+- Request timeout
+- Including extracted value in request body
