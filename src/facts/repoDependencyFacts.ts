@@ -59,18 +59,13 @@ async function collectNodeDependencies(packageManager: string): Promise<LocalDep
             throw new Error(stderr);
         }
     } catch (e: any) {
-        logger.on('finish', function () {
-            process.exit(1);
-        });
         let message = `Error determining ${packageManager} dependencies: ${e}`;
 
         if (e.message?.includes('ELSPROBLEMS')) {
-            message += `
-            Error determining ${packageManager} dependencies: did you forget to run '${packageManager} install' first?`;
+            message += `\nError determining ${packageManager} dependencies: did you forget to run '${packageManager} install' first?`;
         }
         logger.error(message);
-        logger.end();
-        return emptyDeps;
+        throw new Error(message);
     }
 
 }
