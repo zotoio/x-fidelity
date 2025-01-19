@@ -5,7 +5,7 @@ import * as path from 'path';
 
 const regexExtractOperator: OperatorDefn = {
   name: 'regexExtract',
-  fn: async (repoFileAnalysis: any, pattern: string) => {
+  fn: (repoFileAnalysis: any, pattern: string) => {
     if (!repoFileAnalysis?.result || !Array.isArray(repoFileAnalysis.result)) {
       return false;
     }
@@ -48,7 +48,7 @@ const externalCallFact: FactDefn = {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       };
     }
