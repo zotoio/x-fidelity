@@ -1,3 +1,4 @@
+import { execSync } from 'child_process';
 import { axiosClient } from "./axiosClient";
 import { logger, setLogPrefix } from "./logger";
 import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig, Exemption } from "../types/typeDefs";
@@ -40,8 +41,18 @@ export class ConfigManager {
         if (extensions && extensions.length > 0) {
             for (const moduleName of extensions) {
                 try {
-                    logger.info(`Loading extension module: ${moduleName}`);
-                    const extension = await import(`${cwd()}/node_modules/${moduleName}`);
+                    // First try loading from local node_modules
+                    logger.info(`Attempting to load extension module from local node_modules: ${moduleName}`);
+                    let extension;
+                    try {
+                        extension = await import(path.join(process.cwd(), 'node_modules', moduleName));
+                    } catch (localError) {
+                        logger.info(`Extension not found in local node_modules, trying global install: ${moduleName}`);
+                        // If local fails, try loading from global modules
+                        const globalNodeModules = execSync('npm root -g').toString().trim();
+                        extension = await import(path.join(globalNodeModules, moduleName));
+                    }
+
                     if (extension.default) {
                         pluginRegistry.registerPlugin(extension.default);
                     } else {
@@ -49,7 +60,7 @@ export class ConfigManager {
                     }
                     logger.info(`Successfully loaded extension: ${moduleName}`);
                 } catch (error) {
-                    logger.error(`Failed to load extension ${moduleName}: ${error}`);
+                    logger.error(`Failed to load extension ${moduleName} from both local and global locations: ${error}`);
                     if (process.env.NODE_ENV !== 'test') process.exit(1);
                 }
             }
