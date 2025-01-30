@@ -9,6 +9,7 @@ import fs from 'fs';
 import * as path from 'path';
 import { validateArchetype, validateRule } from './jsonSchemas';
 import { loadRules } from '../rules';
+import { cwd } from "process";
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
@@ -40,7 +41,7 @@ export class ConfigManager {
             for (const moduleName of extensions) {
                 try {
                     logger.info(`Loading extension module: ${moduleName}`);
-                    const extension = require(moduleName);
+                    const extension = await import(`${cwd()}/node_modules/${moduleName}`);
                     if (extension.default) {
                         pluginRegistry.registerPlugin(extension.default);
                     } else {
