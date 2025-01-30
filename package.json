@@ -7,21 +7,14 @@
   "bin": {
     "xfidelity": "./dist/xfidelity"
   },
-  "module": "./dist/exports.js",
+  "module": "dist/xfidelity.js",
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "default": "./dist/xfidelity"
+      "import": "./dist/exports.js",
+      "require": "./dist/exports.js"
     },
-    "./logger": {
-      "types": "./dist/types/utils/logger.d.ts",
-      "default": "./dist/utils/logger.js"
-    },
-    "./axios": {
-      "types": "./dist/types/utils/axiosClient.d.ts",
-      "default": "./dist/utils/axiosClient.js"
-    }
-  },
+    "./*": "./dist/*"
+    },  
   "scripts": {
     "build": "rimraf dist/ && tsc && yarn copy-files",
     "copy-files": "cp src/rules/*.json dist/rules/ && cp src/archetypes/*.json dist/archetypes/ && cp dist/index.js dist/xfidelity",
