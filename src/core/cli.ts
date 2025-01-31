@@ -8,13 +8,13 @@ import { pluginRegistry } from '../core/pluginRegistry';
 
 // Ensure logger is initialized
 if (!logger || typeof logger.info !== 'function') {
-    console.error('Logger is not properly initialized');
+    console.error({ msg: 'Logger is not properly initialized' });
     // Instead of exiting, we'll create a fallback logger
     const fallbackLogger = {
-        info: console.log,
-        error: console.error,
-        warn: console.warn,
-        debug: console.debug
+        info: (obj: unknown) => console.log(JSON.stringify(obj)),
+        error: (obj: unknown) => console.error(JSON.stringify(obj)),
+        warn: (obj: unknown) => console.warn(JSON.stringify(obj)), 
+        debug: (obj: unknown) => console.debug(JSON.stringify(obj))
     };
     (global as any).logger = fallbackLogger;
 }
@@ -71,7 +71,7 @@ if (options.localConfigPath && (!fs.existsSync(options.localConfigPath) || !vali
     if (process.env.NODE_ENV !== 'test') process.exit(1);
 }
 
-const banner = (`
+const bannerArt = `
 =====================================
  __    __          ________  ______ 
 | ##  | ##        | ######## \\######
@@ -81,23 +81,22 @@ const banner = (`
 |  ## \\##\\        | ##       _| ##_ 
 | ##  | ##        | ##      |   ## \\
  \\##   \\##         \\##       \\######
-                               
--------------------------------------
-${new Date().toString().slice(0, 24)}
-version: ${version}
-archetype: ${options.archetype}
-directory: ${options.dir}
-configServer: ${options.configServer ? options.configServer : 'none'}
-mode: ${options.mode}
-port: ${options.mode === 'server' ? options.port : 'n/a'}
-localConfigPath: ${options.localConfigPath ? options.localConfigPath : 'none'}
-jsonTTL: ${options.jsonTTL} minutes
-openaiEnabled: ${options.openaiEnabled}
-extensions: ${options.extensions ? options.extensions : 'none'}
-for options run: xfidelity --help
-=====================================`);
+`;
 
-logger.info(banner);
+logger.info({
+    banner: bannerArt,
+    startTime: new Date().toString().slice(0, 24),
+    version,
+    archetype: options.archetype,
+    directory: options.dir,
+    configServer: options.configServer ? options.configServer : 'none',
+    mode: options.mode,
+    port: options.mode === 'server' ? options.port : 'n/a', 
+    localConfigPath: options.localConfigPath ? options.localConfigPath : 'none',
+    jsonTTL: `${options.jsonTTL} minutes`,
+    openaiEnabled: options.openaiEnabled,
+    extensions: options.extensions ? options.extensions : 'none'
+}, 'X-Fidelity Startup');
 
 // print help if no arguments are passed
 if (program.options.length === 0) program.help();

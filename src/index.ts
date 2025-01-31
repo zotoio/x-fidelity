@@ -31,7 +31,7 @@ const outcomeMessage = (message: string) => `\n
 ${message}
 ==========================================================================`;
 
-logger.debug(`startup options: ${JSON.stringify(options)}`);
+logger.debug({ options }, 'Startup options');
 
 export async function main() {
     try {
