@@ -5,30 +5,34 @@ import pinoHttp from 'pino-http';
 import { IncomingMessage, ServerResponse } from 'http';
 import { Logger } from 'pino';
 
-const pinoMiddleware = pinoHttp({
+import type { Options } from 'pino-http';
+
+const pinoOptions: Options = {
     logger,
     autoLogging: true,
-    customLogLevel: (_req: IncomingMessage, res: ServerResponse, err: Error) => {
+    customLogLevel: (req, res, err) => {
         if (res.statusCode >= 400 && res.statusCode < 500) return 'warn';
         if (res.statusCode >= 500 || err) return 'error';
         return 'info';
     },
-    reqCustomProps: (req: IncomingMessage) => ({
+    customProps: (req) => ({
         prefix: req.headers['x-log-prefix'] || ''
     }),
     serializers: {
-        req: (request: IncomingMessage) => {
+        req: (request) => {
             const { method, url, headers } = request;
             return maskSensitiveData({ method, url, headers });
         },
-        res: (response: ServerResponse) => {
+        res: (response) => {
             return maskSensitiveData({
                 headers: (response as any).getHeaders?.() || {},
                 statusCode: response.statusCode || 500
             });
         }
     }
-});
+};
+
+const pinoMiddleware = pinoHttp(pinoOptions);
 
 export const expressLogger = (req: Request, res: Response, next: NextFunction) => {
     resetLogPrefix();

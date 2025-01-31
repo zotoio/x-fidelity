@@ -1,8 +1,10 @@
 import { Logger } from 'pino';
 import { OperatorDefn, FactDefn, RuleConfig } from './typeDefs';
 
-export interface XFiLogger extends Logger {
-    child(bindings: Record<string, unknown>): Logger;
+import type { Logger as PinoLogger, LoggerOptions } from 'pino';
+
+export interface XFiLogger extends Omit<PinoLogger, 'child'> {
+    child(bindings: Record<string, unknown>): PinoLogger;
 }
 
 export interface XFiPlugin {
