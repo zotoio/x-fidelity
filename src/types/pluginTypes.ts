@@ -7,16 +7,30 @@ export interface XFiLogger extends Omit<PinoLogger, 'child'> {
     child(bindings: Record<string, unknown>): PinoLogger;
 }
 
+export interface PluginError {
+  message: string;
+  level: 'warning' | 'error' | 'fatality';
+  details?: any;
+}
+
+export interface PluginResult {
+  success: boolean;
+  data: any;
+  error?: PluginError;
+}
+
 export interface XFiPlugin {
   name: string;
   version: string;
   facts?: FactDefn[];
   operators?: OperatorDefn[];
-  sampleRules?: RuleConfig[];  // Add sample rules array
+  sampleRules?: RuleConfig[];
+  onError?: (error: Error) => PluginError;
 }
 
 export interface PluginRegistry {
   registerPlugin: (plugin: XFiPlugin) => void;
   getPluginFacts: () => FactDefn[];
   getPluginOperators: () => OperatorDefn[];
+  executePluginFunction: (pluginName: string, functionName: string, ...args: any[]) => PluginResult;
 }
