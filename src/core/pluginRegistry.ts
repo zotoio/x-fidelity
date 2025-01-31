@@ -62,7 +62,7 @@ class XFiPluginRegistry implements PluginRegistry {
       }
 
       // Cast args to a tuple type to allow spreading
-      const result = func.call(plugin, ...args as [...any[]]);
+      const result = func.call(plugin, ...(args as unknown[]));
       return { success: true, data: result };
 
     } catch (error) {
