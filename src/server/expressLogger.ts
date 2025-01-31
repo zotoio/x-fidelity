@@ -2,30 +2,30 @@ import { Request, Response, NextFunction } from 'express';
 import { logger, resetLogPrefix, setLogPrefix } from '../utils/logger';
 import { maskSensitiveData } from '../utils/maskSensitiveData';
 import pinoHttp from 'pino-http';
+import { IncomingMessage, ServerResponse } from 'http';
+import { Logger } from 'pino';
 
 const pinoMiddleware = pinoHttp({
     logger,
-    customProps: (_req) => ({
-        prefix: _req.headers['x-log-prefix'] || ''
+    reqCustomProps: (req: IncomingMessage) => ({
+        prefix: req.headers['x-log-prefix'] || ''
     }),
-    customLogLevel: (req, res) => {
-        const status = res.statusCode || 500;
-        if (status >= 400 && status < 500) return 'warn';
-        if (status >= 500) return 'error';
+    customLogLevel: (_req: IncomingMessage, res: ServerResponse) => {
+        if (res.statusCode >= 400 && res.statusCode < 500) return 'warn';
+        if (res.statusCode >= 500) return 'error';
         return 'info';
     },
     serializers: {
-        req: (request) => {
-            const { method, url, headers, body } = request;
-            return maskSensitiveData({ method, url, headers, body });
+        req: (request: IncomingMessage) => {
+            const { method, url, headers } = request;
+            return maskSensitiveData({ method, url, headers });
         },
-        res: (response) => {
+        res: (response: ServerResponse) => {
             return maskSensitiveData({
-                headers: response.getHeaders?.() || {},
+                headers: (response as any).getHeaders?.() || {},
                 statusCode: response.statusCode || 500
             });
-        },
-        err: pino.stdSerializers.err
+        }
     }
 });
 
