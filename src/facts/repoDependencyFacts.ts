@@ -68,7 +68,11 @@ async function collectNodeDependencies(packageManager: string): Promise<LocalDep
         if (e.message?.includes('ELSPROBLEMS')) {
             message += `\nError determining ${packageManager} dependencies: did you forget to run '${packageManager} install' first?`;
         }
-        logger.error(message);
+        logger.error({
+            err: e,
+            packageManager,
+            type: 'dependency-error'
+        }, 'Error determining dependencies');
         throw new Error(message);
     }
 
