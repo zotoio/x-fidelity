@@ -7,25 +7,29 @@ import { Logger } from 'pino';
 
 const pinoMiddleware = pinoHttp({
     logger,
-    reqCustomProps: (req: IncomingMessage) => ({
-        prefix: req.headers['x-log-prefix'] || ''
-    }),
-    customLogLevel: (_req: IncomingMessage, res: ServerResponse) => {
+    autoLogging: true,
+    customLogLevel: function (req, res, err) {
         if (res.statusCode >= 400 && res.statusCode < 500) return 'warn';
-        if (res.statusCode >= 500) return 'error';
+        if (res.statusCode >= 500 || err) return 'error';
         return 'info';
     },
+    customProps: function (req) {
+        return {
+            prefix: req.headers['x-log-prefix'] || ''
+        };
+    },
     serializers: {
-        req: (request: IncomingMessage) => {
+        req(request) {
             const { method, url, headers } = request;
             return maskSensitiveData({ method, url, headers });
         },
-        res: (response: ServerResponse) => {
+        res(response) {
             return maskSensitiveData({
                 headers: (response as any).getHeaders?.() || {},
                 statusCode: response.statusCode || 500
             });
-        }
+        },
+        err: pinoHttp.stdSerializers.err
     }
 });
 
