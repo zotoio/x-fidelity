@@ -43,6 +43,11 @@ export const validateTelemetryData = (data: any): ValidationResult => {
 };
 
 export function logValidationError(functionName: string, input: any, error: string): void {
-    logger.warn(`Validation error in ${functionName}: ${error}. Input: ${JSON.stringify(input)}`);
+    logger.warn({
+        msg: 'Validation error occurred',
+        function: functionName,
+        error,
+        input: JSON.stringify(input)
+    });
 }
 
