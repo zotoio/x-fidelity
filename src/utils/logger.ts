@@ -30,24 +30,49 @@ export function getLogPrefix(): string {
 // Initialize logger function that will create the singleton if it doesn't exist
 function initializeLogger(): pino.Logger {
     if (!loggerInstance) {
+        const fileTransport = pino.destination({
+            dest: 'x-fidelity.log',
+            sync: false,
+            mkdir: true
+        });
+
+        const prettyTransport = pino.transport({
+            target: 'pino-pretty',
+            options: {
+                colorize: true,
+                translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
+                ignore: 'pid,hostname',
+                messageFormat: '{prefix} {msg}',
+                singleLine: true,
+                errorProps: '*'
+            }
+        });
+
         loggerInstance = pino({
             level: process.env.NODE_ENV === 'test' ? 'silent' : 'info',
-            transport: {
-                target: 'pino-pretty',
-                options: {
-                    colorize: true,
-                    translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
-                    ignore: 'pid,hostname',
-                    messageFormat: '{prefix} {msg}',
-                }
-            },
             base: {
-                prefix: logPrefix
+                prefix: logPrefix,
+                env: process.env.NODE_ENV || 'development'
+            },
+            timestamp: pino.stdTimeFunctions.isoTime,
+            formatters: {
+                level: (label) => ({ level: label }),
+                bindings: (bindings) => bindings,
+                log: (object) => ({
+                    ...object,
+                    host: process.env.HOSTNAME || 'unknown'
+                })
+            },
+            serializers: {
+                err: pino.stdSerializers.err,
+                error: pino.stdSerializers.err,
+                req: pino.stdSerializers.req,
+                res: pino.stdSerializers.res
             }
-        }, pino.destination({
-            dest: 'x-fidelity.log', // Write to file
-            sync: false // Asynchronous logging
-        }));
+        }, pino.multistream([
+            { stream: fileTransport },
+            { stream: prettyTransport }
+        ]));
     }
     return loggerInstance;
 }
