@@ -16,7 +16,7 @@ const pinoOptions: Options = {
         if (res.statusCode >= 500) return 'error';
         return 'info';
     },
-    reqCustomProps: (req: IncomingMessage) => ({
+    customProps: (req: IncomingMessage) => ({
         prefix: req.headers['x-log-prefix'] || ''
     }),
     serializers: {
