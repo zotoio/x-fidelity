@@ -16,17 +16,22 @@ class XFiPluginRegistry implements PluginRegistry {
   }
 
   public registerPlugin(plugin: XFiPlugin): void {
-    logger.info(`Registering plugin: ${plugin.name} v${plugin.version}`);
-    if (plugin.facts) {
-      logger.info(`Plugin ${plugin.name} provides ${plugin.facts.length} facts: ${plugin.facts.map(f => f.name).join(', ')}`);
-    }
-    if (plugin.operators) {
-      logger.info(`Plugin ${plugin.name} provides ${plugin.operators.length} operators: ${plugin.operators.map(o => o.name).join(', ')}`);
-    }
+    logger.info({
+      plugin: {
+        name: plugin.name,
+        version: plugin.version,
+        factCount: plugin.facts?.length || 0,
+        operatorCount: plugin.operators?.length || 0,
+        facts: plugin.facts?.map(f => f.name),
+        operators: plugin.operators?.map(o => o.name),
+        sampleRuleCount: plugin.sampleRules?.length || 0
+      },
+      operation: 'register-plugin'
+    }, 'Registering plugin');
+
     if (plugin.sampleRules) {
-      logger.info(`Plugin ${plugin.name} contains ${plugin.sampleRules.length} sample rules.`);
       plugin.sampleRules.forEach(rule => {
-        logger.debug(`- ${rule.name}: ${JSON.stringify(rule, null, 2)}`);
+        logger.debug({ rule, operation: 'register-plugin-rule' }, 'Registering plugin sample rule');
       });
     }
     this.plugins.push(plugin);

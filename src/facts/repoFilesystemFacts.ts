@@ -14,7 +14,10 @@ async function parseFile(filePath: string): Promise<FileData> {
 async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeConfig): Promise<FileData[]> {
     const filesData: FileData[] = [];
 
-    logger.debug({ repoPath }, 'Collecting repo file data');
+    logger.debug({ 
+        repoPath,
+        operation: 'collect-files'
+    }, 'Collecting repo file data');
     const files = fs.readdirSync(repoPath);
 
     for (const file of files) {
