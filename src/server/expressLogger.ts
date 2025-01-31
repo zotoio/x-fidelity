@@ -10,12 +10,13 @@ import type { Options } from 'pino-http';
 const pinoOptions: Options = {
     logger,
     autoLogging: true,
-    customLogLevel: (req, res, err) => {
-        if (res.statusCode >= 400 && res.statusCode < 500) return 'warn';
-        if (res.statusCode >= 500 || err) return 'error';
+    customLogLevel: (_res: ServerResponse, error: Error) => {
+        if (error) return 'error';
+        if (_res.statusCode >= 400 && _res.statusCode < 500) return 'warn';
+        if (_res.statusCode >= 500) return 'error';
         return 'info';
     },
-    customProps: (req) => ({
+    reqCustomProps: (req: IncomingMessage) => ({
         prefix: req.headers['x-log-prefix'] || ''
     }),
     serializers: {
