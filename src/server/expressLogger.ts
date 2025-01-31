@@ -1,21 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger, resetLogPrefix, setLogPrefix } from '../utils/logger';
 import { maskSensitiveData } from '../utils/maskSensitiveData';
-import pino from 'pino-http';
+import pinoHttp from 'pino-http';
 
-const pinoHttp = pino({
+const pinoMiddleware = pinoHttp({
     logger,
-    customProps: (req) => {
+    customProps: (req: Request) => {
         return {
             prefix: req.headers['x-log-prefix'] || ''
         };
     },
     serializers: {
-        req: (req) => {
+        req: (req: Request) => {
             const { method, url, headers, body } = req;
             return maskSensitiveData({ method, url, headers, body });
         },
-        res: (res) => {
+        res: (res: Response) => {
             return maskSensitiveData({
                 headers: res.getHeaders(),
                 statusCode: res.statusCode
@@ -34,12 +34,12 @@ export const expressLogger = (req: Request, res: Response, next: NextFunction) =
 
     const child = logger.child({ 
         req: {
-            id: req.id,
             method: req.method,
-            url: req.url
+            url: req.url,
+            requestId: req.headers['x-request-id'] || ''
         }
     });
     
-    pinoHttp({ logger: child })(req, res);
+    pinoMiddleware(req, res);
     next();
 };
