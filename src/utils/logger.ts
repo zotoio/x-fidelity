@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
-import { createLogger, format, transports, Logger } from 'winston';
+import pino from 'pino';
 
 // Create a singleton logger instance
-let loggerInstance: Logger | null = null;
+let loggerInstance: pino.Logger | null = null;
 let logPrefix: string = generateLogPrefix();
 
 export function generateLogPrefix(): string {
@@ -11,10 +11,16 @@ export function generateLogPrefix(): string {
 
 export function resetLogPrefix(): void {
     logPrefix = generateLogPrefix();
+    if (loggerInstance) {
+        loggerInstance = loggerInstance.child({ prefix: logPrefix });
+    }
 }
 
 export function setLogPrefix(prefix: string): void {
     logPrefix = prefix;
+    if (loggerInstance) {
+        loggerInstance = loggerInstance.child({ prefix: logPrefix });
+    }
 }
 
 export function getLogPrefix(): string {
@@ -22,46 +28,32 @@ export function getLogPrefix(): string {
 }   
 
 // Initialize logger function that will create the singleton if it doesn't exist
-function initializeLogger(): Logger {
+function initializeLogger(): pino.Logger {
     if (!loggerInstance) {
-        loggerInstance = createLogger({
-            format: format.combine(
-                format.timestamp({
-                    format: 'YYYY-MM-DD HH:mm:ss.SSS ZZ'
-                }),
-                format.errors({ stack: true }),
-                format.splat(),
-                format.json(),
-                format.prettyPrint(),
-                format.printf(({ level, message, timestamp }) => {
-                    return `${timestamp} [${level}]:[${logPrefix}] ${message}`;
-                })
-            ),
-            transports: [
-                new transports.File({ 
-                    filename: 'x-fidelity.log', 
-                    level: 'debug', 
-                    handleExceptions: true 
-                }),
-                new transports.Console({
-                    silent: process.env.NODE_ENV === 'test',
-                    level: 'info',
-                    handleExceptions: true,
-                    format: format.combine(
-                        format.colorize(),
-                        format.printf(({ level, message, timestamp }) => {
-                            return `${timestamp} [${level}]:[${logPrefix}] ${message}`;
-                        })
-                    )
-                })
-            ]
-        });
+        loggerInstance = pino({
+            level: process.env.NODE_ENV === 'test' ? 'silent' : 'info',
+            transport: {
+                target: 'pino-pretty',
+                options: {
+                    colorize: true,
+                    translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
+                    ignore: 'pid,hostname',
+                    messageFormat: '{prefix} {msg}',
+                }
+            },
+            base: {
+                prefix: logPrefix
+            }
+        }, pino.destination({
+            dest: 'x-fidelity.log', // Write to file
+            sync: false // Asynchronous logging
+        }));
     }
     return loggerInstance;
 }
 
 // Export the logger getter function
-export function getLogger(): Logger {
+export function getLogger(): pino.Logger {
     return initializeLogger();
 }
 

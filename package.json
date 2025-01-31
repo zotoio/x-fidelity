@@ -93,7 +93,8 @@
     "ora": "^8.0.1",
     "prettyjson": "^1.2.5",
     "semver": "^7.6.2",
-    "winston": "^3.13.0",
+    "pino": "^8.0.0",
+    "pino-pretty": "^10.0.0",
     "yarn": "^1.22.21"
   },
   "peerDependencies": {
