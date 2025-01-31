@@ -2,7 +2,13 @@ import { Logger } from 'pino';
 import { OperatorDefn, FactDefn, RuleConfig } from './typeDefs';
 
 export interface XFiLogger extends Logger {
-    // Add any custom methods if needed
+    child(bindings: Record<string, unknown>): XFiLogger;
+    fatal(obj: unknown, msg?: string, ...args: unknown[]): void;
+    error(obj: unknown, msg?: string, ...args: unknown[]): void;
+    warn(obj: unknown, msg?: string, ...args: unknown[]): void;
+    info(obj: unknown, msg?: string, ...args: unknown[]): void;
+    debug(obj: unknown, msg?: string, ...args: unknown[]): void;
+    trace(obj: unknown, msg?: string, ...args: unknown[]): void;
 }
 
 export interface XFiPlugin {
