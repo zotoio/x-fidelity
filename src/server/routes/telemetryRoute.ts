@@ -8,7 +8,10 @@ export function telemetryRoute(req: Request, res: Response) {
     if (!validateTelemetryData(req.body)) {
         return res.status(400).json({ error: 'Invalid telemetry data' });
     }
-    logger.debug(`accepting telemetry data: ${JSON.stringify(req.body)}`);
+    logger.debug({ 
+        telemetryData: req.body,
+        type: 'telemetry-received'
+    }, 'Accepting telemetry data');
     // Here you can process and store the telemetry data as needed
     res.status(200).json({ message: 'telemetry data received successfully' });
 }
