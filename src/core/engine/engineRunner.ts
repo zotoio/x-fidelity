@@ -52,7 +52,11 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 
                 // If rule is configured as fatal or has event type fatality, treat error as fatal
                 if (rule?.errorBehavior === 'fatal' || rule?.event?.type === 'fatality') {
-                    logger.error(`Fatal error in rule ${failedRuleName}: ${e}`);
+                    logger.error({ 
+                        err: e,
+                        rule: failedRuleName,
+                        type: 'fatal'
+                    }, 'Rule execution failed');
                     fileFailures.push({
                         ruleFailure: failedRuleName,
                         level: 'fatality',

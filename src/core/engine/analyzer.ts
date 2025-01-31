@@ -77,7 +77,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     // add xfiConfig as a fact
     engine.addFact('repoXFIConfig', repoXFIConfig);
 
-    logger.info(`Added repoXFIConfig as fact: ${safeStringify(repoXFIConfig)}`);
+    logger.info({ repoXFIConfig }, 'Added repoXFIConfig as fact');
 
     const failures = await runEngineOnFiles({
         engine,

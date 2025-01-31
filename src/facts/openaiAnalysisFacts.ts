@@ -50,8 +50,10 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
             ]
         };
 
-        logger.debug(payload);
-        logger.debug(`running global openaiAnalysis with prompt variant: ${params.prompt}..`);
+        logger.debug({ 
+            payload,
+            prompt: params.prompt
+        }, 'Running OpenAI analysis');
         const response: OpenAI.Chat.Completions.ChatCompletion = await openai.chat.completions.create(payload);
         logger.debug(response);
 

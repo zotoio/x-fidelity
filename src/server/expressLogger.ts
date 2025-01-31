@@ -32,6 +32,14 @@ export const expressLogger = (req: Request, res: Response, next: NextFunction) =
         setLogPrefix(requestLogPrefix);
     }
 
-    pinoHttp(req, res);
+    const child = logger.child({ 
+        req: {
+            id: req.id,
+            method: req.method,
+            url: req.url
+        }
+    });
+    
+    pinoHttp({ logger: child })(req, res);
     next();
 };

@@ -154,7 +154,7 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
     const results: VersionData[] = [];
     const visited = new Set<string>();
 
-    logger.debug(`depGraph: ${safeStringify(depGraph)}`);
+    logger.debug({ depGraph }, 'Processing dependency graph');
 
     function walk(dep: LocalDependencies, parentName = '') {
         const fullName = parentName ? `${parentName}/${dep.name}` : dep.name;

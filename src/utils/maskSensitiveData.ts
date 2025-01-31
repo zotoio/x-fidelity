@@ -19,7 +19,7 @@ export function maskSensitiveData(obj: any): any {
         }
     }
 
-    logger.debug(`Masked sensitive data: ${JSON.stringify(maskedObj)}`);
+    logger.debug({ maskedData: maskedObj }, 'Masked sensitive data');
 
     return maskedObj;
 }
