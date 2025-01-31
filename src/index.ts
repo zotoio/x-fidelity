@@ -51,6 +51,16 @@ export async function main() {
                 logger.warn(`WARNING: lo-fi attributes detected in codebase. ${resultMetadata.XFI_RESULT.warningCount} are warnings, ${resultMetadata.XFI_RESULT.fatalityCount} are fatal.`);
                 logger.warn(JSON.stringify(resultMetadata));
 
+                if (resultMetadata.XFI_RESULT.errorCount > 0) {
+                    logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
+                    logger.on('finish', function () {
+                        process.exit(1);
+                    });
+                    logger.error(`\n${json.render(resultMetadata.XFI_RESULT)}\n\n`);
+                    logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
+                    logger.end();
+                }
+
                 if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
                     logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
                     logger.on('finish', function () {
@@ -58,7 +68,7 @@ export async function main() {
                     });
                     logger.error(`\n${json.render(resultMetadata.XFI_RESULT)}\n\n`);
                     logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
-                    //logger.end();
+                    logger.end();
                 } else {
                     logger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
                     logger.warn(`\n${json.render(resultMetadata.XFI_RESULT)}\n\n`);
@@ -76,6 +86,12 @@ export async function main() {
         
     }
 }
+
+export * from './utils/axiosClient';
+export * from './utils/configManager';
+export * from './utils/logger';
+export * from './core/engine/analyzer';
+export * from './types';
 
 if (require.main === module) {
     main();
