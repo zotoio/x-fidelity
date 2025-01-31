@@ -43,7 +43,11 @@ async function collectNodeDependencies(packageManager: string): Promise<LocalDep
             await execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 })
 
         if (stderr?.includes('"error"')) {
-            logger.error(`Error determining ${packageManager} dependencies: ${stderr}`);
+            logger.error({
+                err: stderr,
+                packageManager,
+                type: 'dependency-error'
+            }, 'Error determining dependencies');
             throw new Error(stderr);
         }
 
