@@ -97,6 +97,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     const fatalityCount = countRuleFailures(failures, 'fatality');
     const warningCount = countRuleFailures(failures, 'warning');
     const exemptCount = countRuleFailures(failures, 'exempt');
+    const errorCount = countRuleFailures(failures, 'error');
 
     const finishTime = new Date().getTime();
 
@@ -113,6 +114,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             totalIssues: totalFailureCount,
             warningCount: warningCount,
             fatalityCount: fatalityCount,
+            errorCount: errorCount,
             exemptCount: exemptCount,
             options,
             repoPath,
