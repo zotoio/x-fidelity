@@ -1,4 +1,9 @@
+import { Logger } from 'pino';
 import { OperatorDefn, FactDefn, RuleConfig } from './typeDefs';
+
+export interface XFiLogger extends Logger {
+    // Add any custom methods if needed
+}
 
 export interface XFiPlugin {
   name: string;
