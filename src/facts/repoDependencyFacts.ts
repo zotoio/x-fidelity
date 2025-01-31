@@ -46,7 +46,8 @@ async function collectNodeDependencies(packageManager: string): Promise<LocalDep
             logger.error({
                 err: stderr,
                 packageManager,
-                type: 'dependency-error'
+                type: 'dependency-error',
+                operation: 'collect-dependencies'
             }, 'Error determining dependencies');
             throw new Error(stderr);
         }
