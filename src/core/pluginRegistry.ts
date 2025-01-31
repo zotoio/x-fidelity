@@ -61,7 +61,7 @@ class XFiPluginRegistry implements PluginRegistry {
         throw new Error(`Function ${functionName} not found in plugin ${pluginName}`);
       }
 
-      const result = func.apply(plugin, args);
+      const result = func.call(plugin, ...args);
       return { success: true, data: result };
 
     } catch (error) {
