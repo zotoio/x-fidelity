@@ -55,7 +55,11 @@ async function collectNodeDependencies(packageManager: string): Promise<LocalDep
             processYarnDependencies(result)
 
         } catch (e) {
-            logger.error(`Error parsing ${packageManager} dependencies: ${e}`);
+            logger.error({
+                err: e,
+                packageManager,
+                type: 'parse-error'
+            }, 'Error parsing dependencies');
             throw new Error(stderr);
         }
     } catch (e: any) {

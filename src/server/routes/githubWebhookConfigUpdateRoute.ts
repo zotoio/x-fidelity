@@ -17,12 +17,18 @@ export async function githubWebhookConfigUpdateRoute(req: Request, res: Response
     const githubSecret = process.env.GITHUB_WEBHOOK_SECRET;
 
     if (!githubSecret) {
-        logger.error('GitHub webhook secret is not set');
+        logger.error({
+            type: 'webhook-config',
+            error: 'missing-secret'
+        }, 'GitHub webhook secret is not set');
         return res.status(500).send('Server is not configured for webhooks');
     }
 
     if (!signature) {
-        logger.error('No X-Hub-Signature-256 found on request');
+        logger.error({
+            type: 'webhook-config',
+            error: 'missing-signature'
+        }, 'No X-Hub-Signature-256 found on request');
         return res.status(400).send('No X-Hub-Signature-256 found on request');
     }
 
