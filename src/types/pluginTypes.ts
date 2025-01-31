@@ -3,13 +3,15 @@ import { OperatorDefn, FactDefn, RuleConfig } from './typeDefs';
 
 export interface XFiLogger extends Logger {
     child(bindings: Record<string, unknown>): Logger;
-    fatal(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
-    error(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
-    warn(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
-    info(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
-    debug(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
-    trace(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
+    fatal: LogFn;
+    error: LogFn;
+    warn: LogFn;
+    info: LogFn;
+    debug: LogFn;
+    trace: LogFn;
 }
+
+type LogFn = (obj: unknown, msg?: string, ...args: unknown[]) => void;
 
 export interface XFiPlugin {
   name: string;

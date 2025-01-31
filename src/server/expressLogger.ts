@@ -5,7 +5,7 @@ import pinoHttp from 'pino-http';
 
 const pinoMiddleware = pinoHttp({
     logger,
-    customProps: (req: Request) => {
+    reqCustomProps: (req: Request) => {
         return {
             prefix: req.headers['x-log-prefix'] || ''
         };
@@ -21,6 +21,11 @@ const pinoMiddleware = pinoHttp({
                 statusCode: res.statusCode
             });
         }
+    },
+    customLogLevel: (_req, res) => {
+        if (res.statusCode >= 400 && res.statusCode < 500) return 'warn'
+        if (res.statusCode >= 500) return 'error'
+        return 'info'
     }
 });
 

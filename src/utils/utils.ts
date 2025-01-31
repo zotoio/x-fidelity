@@ -11,7 +11,8 @@ export const countRuleFailures = (scanResults: ScanResult[], level?: string): nu
 import { logger } from './logger';
 
 export function safeStringify(obj: any): string {
-    return logger.debug({ obj }, 'Serializing object').obj;
+    logger.debug({ obj }, 'Serializing object');
+    return JSON.stringify(obj, null, 2);
 }
 
 export function safeClone(obj: any): any {

@@ -22,7 +22,7 @@ export async function sendTelemetry(event: TelemetryEvent, logPrefix: string): P
             }
         });
         logger.debug({ 
-            telemetryData: req.body,
+            telemetryData: event,
             type: 'telemetry-received'
         }, 'Accepting telemetry data');
     } catch (error) {

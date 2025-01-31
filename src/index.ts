@@ -53,22 +53,16 @@ export async function main() {
 
                 if (resultMetadata.XFI_RESULT.errorCount > 0) {
                     logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
-                    logger.on('finish', function () {
-                        process.exit(1);
-                    });
                     logger.error(`\n${json.render(resultMetadata.XFI_RESULT)}\n\n`);
                     logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
-                    logger.end();
+                    process.exit(1);
                 }
 
                 if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
                     logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
-                    logger.on('finish', function () {
-                        process.exit(1);
-                    });
                     logger.error(`\n${json.render(resultMetadata.XFI_RESULT)}\n\n`);
                     logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
-                    logger.end();
+                    process.exit(1);
                 } else {
                     logger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
                     logger.warn(`\n${json.render(resultMetadata.XFI_RESULT)}\n\n`);
