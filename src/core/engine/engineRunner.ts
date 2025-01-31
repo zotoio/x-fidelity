@@ -45,15 +45,36 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 failures.push({ filePath: file.filePath, errors: fileFailures });
             }
         } catch (e) {
-            logger.error(`Error processing file ${file.filePath}: ${e}`);
-            failures.push({ 
-                filePath: file.filePath, 
-                errors: [{ 
+            // Get the rule that caused the error
+            const failedRuleName = (e as any)?.rule?.name;
+            if (failedRuleName) {
+                const rule = (engine as any).rules.find((r: any) => r.name === failedRuleName);
+                
+                // If rule is configured as fatal or has event type fatality, treat error as fatal
+                if (rule?.errorBehavior === 'fatal' || rule?.event?.type === 'fatality') {
+                    logger.error(`Fatal error in rule ${failedRuleName}: ${e}`);
+                    fileFailures.push({
+                        ruleFailure: failedRuleName,
+                        level: 'fatality',
+                        details: {
+                            message: `Rule execution failed: ${e}`,
+                            originalError: e
+                        }
+                    });
+                } else {
+                    logger.warn(`Non-fatal error in rule ${failedRuleName}: ${e}`);
+                }
+            } else {
+                logger.error(`Error processing file ${file.filePath}: ${e}`);
+                fileFailures.push({ 
                     ruleFailure: 'ProcessingError', 
                     level: 'error', 
                     details: { message: `Error processing file: ${e}` } 
-                }] 
-            });
+                });
+            }
+            if (fileFailures.length > 0) {
+                failures.push({ filePath: file.filePath, errors: fileFailures });
+            }
         }
     }
 

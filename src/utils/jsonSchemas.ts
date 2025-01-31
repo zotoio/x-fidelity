@@ -88,6 +88,11 @@ const ruleSchema: RuleConfigSchema = {
                 params: { type: 'object' }
             },
             required: ['type', 'params']
+        },
+        errorBehavior: {
+            type: 'string',
+            enum: ['swallow', 'fatal'],
+            nullable: true
         }
     },
     required: ['name', 'conditions', 'event']
