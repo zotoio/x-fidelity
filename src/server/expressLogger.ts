@@ -5,27 +5,27 @@ import pinoHttp from 'pino-http';
 
 const pinoMiddleware = pinoHttp({
     logger,
-    reqCustomProps: (req: Request) => {
-        return {
-            prefix: req.headers['x-log-prefix'] || ''
-        };
+    customProps: (_req) => ({
+        prefix: _req.headers['x-log-prefix'] || ''
+    }),
+    customLogLevel: (req, res) => {
+        const status = res.statusCode || 500;
+        if (status >= 400 && status < 500) return 'warn';
+        if (status >= 500) return 'error';
+        return 'info';
     },
     serializers: {
-        req: (req: Request) => {
-            const { method, url, headers, body } = req;
+        req: (request) => {
+            const { method, url, headers, body } = request;
             return maskSensitiveData({ method, url, headers, body });
         },
-        res: (res: Response) => {
+        res: (response) => {
             return maskSensitiveData({
-                headers: res.getHeaders(),
-                statusCode: res.statusCode
+                headers: response.getHeaders?.() || {},
+                statusCode: response.statusCode || 500
             });
-        }
-    },
-    customLogLevel: (_req, res) => {
-        if (res.statusCode >= 400 && res.statusCode < 500) return 'warn'
-        if (res.statusCode >= 500) return 'error'
-        return 'info'
+        },
+        err: pino.stdSerializers.err
     }
 });
 
