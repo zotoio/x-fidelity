@@ -21,7 +21,10 @@ export async function sendTelemetry(event: TelemetryEvent, logPrefix: string): P
                 'X-Shared-Secret': SHARED_SECRET
             }
         });
-        logger.debug(`Telemetry sent: ${JSON.stringify(event)}`);
+        logger.debug({ 
+            telemetryData: req.body,
+            type: 'telemetry-received'
+        }, 'Accepting telemetry data');
     } catch (error) {
         if (isAxiosError(error)) {
             logger.debug(`Failed to send telemetry: ${error.message}`);
