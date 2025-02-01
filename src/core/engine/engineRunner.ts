@@ -1,4 +1,4 @@
-import { ScanResult, RuleFailure } from '../../types/typeDefs';
+import { ScanResult, RuleFailure, ErrorLevel } from '../../types/typeDefs';
 import { logger } from '../../utils/logger';
 import { REPO_GLOBAL_CHECK } from '../../utils/configManager';
 import { executeErrorAction } from './errorActionExecutor';
