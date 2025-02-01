@@ -64,7 +64,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 if (rule?.onError?.action) {
                     try {
                         const actionResult = await executeErrorAction(rule.onError.action, {
-                            error: e,
+                            error: e instanceof Error ? e : new Error(String(e)),
                             rule: failedRuleName,
                             level: errorLevel,
                             params: rule.onError.params || {},

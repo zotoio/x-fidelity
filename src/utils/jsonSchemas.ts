@@ -93,6 +93,15 @@ const ruleSchema: RuleConfigSchema = {
             type: 'string',
             enum: ['swallow', 'fatal'],
             nullable: true
+        },
+        onError: {
+            type: 'object',
+            properties: {
+                action: { type: 'string' },
+                params: { type: 'object', nullable: true }
+            },
+            required: ['action'],
+            nullable: true
         }
     },
     required: ['name', 'conditions', 'event']
