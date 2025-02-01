@@ -41,68 +41,76 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                     });
                 }
             }
-
-            if (fileFailures.length > 0) {
-                failures.push({ filePath: file.filePath, errors: fileFailures });
-            }
         } catch (e) {
-            // Get the rule that caused the error
-            const failedRuleName = (e as any)?.rule?.name;
-            if (failedRuleName) {
-                const rule = (engine as any).rules.find((r: any) => r.name === failedRuleName);
-                const errorLevel = rule?.errorBehavior === 'fatal' || rule?.event?.type === 'fatality' 
-                    ? 'fatality' 
-                    : 'error';
-                
-                logger.error({ 
-                    err: e,
-                    rule: failedRuleName,
-                    type: errorLevel
-                }, 'Rule execution failed');
+            const error = e as Error;
+            const failedRuleName = (error as any)?.rule?.name;
+            const rule = failedRuleName ? (engine as any).rules.find((r: any) => r.name === failedRuleName) : null;
 
-                // Execute error action if specified
-                if (rule?.onError?.action) {
-                    try {
-                        const actionResult = await executeErrorAction(rule.onError.action, {
-                            error: e instanceof Error ? e : new Error(String(e)),
-                            rule: failedRuleName,
-                            level: errorLevel,
-                            params: rule.onError.params || {},
-                            file: file
-                        });
-                        logger.warn({ 
-                            rule: failedRuleName,
-                            action: rule.onError.action,
-                            result: actionResult 
-                        }, 'Error action executed');
-                    } catch (actionError) {
-                        logger.error({ 
-                            rule: failedRuleName,
-                            err: actionError,
-                            action: rule.onError.action
-                        }, 'Error executing error action');
-                    }
+            // Determine error source and level
+            let errorSource = 'unknown';
+            let errorLevel = 'error';
+            
+            if ((error as any)?.isOperatorError) {
+                errorSource = 'operator';
+                errorLevel = rule?.errorBehavior === 'fatal' ? 'fatality' : 'error';
+            } else if ((error as any)?.isFactError) {
+                errorSource = 'fact';
+                errorLevel = rule?.errorBehavior === 'fatal' ? 'fatality' : 'error';
+            } else if ((error as any)?.isPluginError) {
+                errorSource = 'plugin';
+                errorLevel = (error as any)?.level || 'error';
+            } else if (failedRuleName) {
+                errorSource = 'rule';
+                errorLevel = rule?.errorBehavior === 'fatal' || rule?.event?.type === 'fatality' ? 'fatality' : 'error';
+            }
+
+            logger.error({ 
+                err: error,
+                rule: failedRuleName,
+                source: errorSource,
+                type: errorLevel,
+                file: file.filePath
+            }, 'Execution error occurred');
+
+            // Execute error action if specified
+            if (rule?.onError?.action) {
+                try {
+                    const actionResult = await executeErrorAction(rule.onError.action, {
+                        error: error,
+                        rule: failedRuleName,
+                        level: errorLevel,
+                        source: errorSource,
+                        params: rule.onError.params || {},
+                        file: file
+                    });
+                    logger.warn({ 
+                        rule: failedRuleName,
+                        action: rule.onError.action,
+                        result: actionResult 
+                    }, 'Error action executed');
+                } catch (actionError) {
+                    logger.error({ 
+                        rule: failedRuleName,
+                        err: actionError,
+                        action: rule.onError.action
+                    }, 'Error executing error action');
                 }
+            }
 
-                fileFailures.push({
-                    ruleFailure: failedRuleName,
-                    level: errorLevel,
-                    details: {
-                        message: `Rule execution failed: ${e}`,
-                        originalError: e
-                    }
-                });
-            } else {
-                logger.error(`Error processing file ${file.filePath}: ${e}`);
-                fileFailures.push({ 
-                    ruleFailure: 'ProcessingError', 
-                    level: 'error', 
-                    details: { message: `Error processing file: ${e}` } 
-                });
-            }
-            if (fileFailures.length > 0) {
-                failures.push({ filePath: file.filePath, errors: fileFailures });
-            }
+            fileFailures.push({
+                ruleFailure: failedRuleName || 'ExecutionError',
+                level: errorLevel,
+                details: {
+                    message: `${errorSource} execution failed: ${error.message}`,
+                    source: errorSource,
+                    originalError: error,
+                    stack: error.stack
+                }
+            });
+        }
+
+        if (fileFailures.length > 0) {
+            failures.push({ filePath: file.filePath, errors: fileFailures });
         }
     }
 

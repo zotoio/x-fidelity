@@ -19,7 +19,13 @@ export interface ScanResult {
 export interface RuleFailure {
     ruleFailure: string;
     level: string | undefined;
-    details: Record<string, any> | undefined;
+    details: {
+        message: string;
+        source?: 'operator' | 'fact' | 'plugin' | 'rule' | 'unknown';
+        originalError?: Error;
+        stack?: string;
+        [key: string]: any;
+    } | undefined;
 }
 
 export interface VersionData {
