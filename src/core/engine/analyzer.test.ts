@@ -203,16 +203,20 @@ describe('analyzeCodebase', () => {
                 totalIssues: 3,
                 warningCount: 0,
                 fatalityCount: 0,
+                errorCount: 3,
                 exemptCount: 0,
                 issueDetails: expect.arrayContaining([
                     expect.objectContaining({
                         filePath: expect.any(String),
                         errors: expect.arrayContaining([
                             expect.objectContaining({
-                                ruleFailure: 'ProcessingError',
+                                ruleFailure: 'ExecutionError',
                                 level: 'error',
                                 details: expect.objectContaining({
-                                    message: expect.stringContaining('Error processing file: Error: mock error')
+                                    message: expect.stringContaining('unknown execution failed: mock error'),
+                                    source: 'unknown',
+                                    originalError: expect.any(Error),
+                                    stack: expect.any(String)
                                 })
                             })
                         ])
