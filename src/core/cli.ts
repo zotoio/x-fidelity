@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import { version } from "../../package.json";
 import { validateInput } from '../utils/inputValidation';
-import { pluginRegistry } from '../core/pluginRegistry';
+import json from 'prettyjson';
 
 // Ensure logger is initialized
 if (!logger || typeof logger.info !== 'function') {
@@ -71,7 +71,7 @@ if (options.localConfigPath && (!fs.existsSync(options.localConfigPath) || !vali
     if (process.env.NODE_ENV !== 'test') process.exit(1);
 }
 
-const bannerArt = `
+const bannerArt = `\n
 =====================================
  __    __          ________  ______ 
 | ##  | ##        | ######## \\######
@@ -81,10 +81,12 @@ const bannerArt = `
 |  ## \\##\\        | ##       _| ##_ 
 | ##  | ##        | ##      |   ## \\
  \\##   \\##         \\##       \\######
+------------------------------------- 
 `;
 
-logger.info({
-    banner: bannerArt,
+logger.info(bannerArt);
+
+logger.info(`\n${json.render({
     startTime: new Date().toString().slice(0, 24),
     version,
     archetype: options.archetype,
@@ -96,7 +98,9 @@ logger.info({
     jsonTTL: `${options.jsonTTL} minutes`,
     openaiEnabled: options.openaiEnabled,
     extensions: options.extensions ? options.extensions : 'none'
-}, 'X-Fidelity Startup');
+})}
+-------------------------------------
+`);
 
 // print help if no arguments are passed
 if (program.options.length === 0) program.help();

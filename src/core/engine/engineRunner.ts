@@ -70,12 +70,14 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                             params: rule.onError.params || {},
                             file: file
                         });
-                        logger.info({ 
+                        logger.warn({ 
+                            rule: failedRuleName,
                             action: rule.onError.action,
                             result: actionResult 
                         }, 'Error action executed');
                     } catch (actionError) {
                         logger.error({ 
+                            rule: failedRuleName,
                             err: actionError,
                             action: rule.onError.action
                         }, 'Error executing error action');

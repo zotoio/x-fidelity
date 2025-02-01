@@ -2,6 +2,7 @@ import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
 import { ArchetypeConfig, FileData, IsBlacklistedParams, isWhitelistedParams } from '../types/typeDefs';
+import { maskSensitiveData } from '../utils/maskSensitiveData';
 
 async function parseFile(filePath: string): Promise<FileData> {
     return Promise.resolve({
@@ -133,7 +134,7 @@ async function repoFileAnalysis(params: any, almanac: any) {
     }
 
     if (lines.length === 1 || splitOccurred) {
-        logger.debug({ splitOccurred }, 'File content was processed for analysis');
+        logger.trace({ splitOccurred }, 'File content was processed for analysis');
     }
 
     for (let i = 0; i < processedLines.length; i++) {
@@ -145,8 +146,7 @@ async function repoFileAnalysis(params: any, almanac: any) {
                 const match = {
                     'match': pattern,
                     'lineNumber': i + 1,
-                    'line': line,
-                    'splitOccurred': splitOccurred
+                    'line': maskSensitiveData(line)
                 };
                 analysis.push(match);
             }
@@ -154,7 +154,7 @@ async function repoFileAnalysis(params: any, almanac: any) {
     }
 
     if (analysis.length > 0) {
-        logger.error({ filePath, analysis }, 'Found issues in file analysis');
+        logger.warn({ filePath, analysis }, 'Found issues in file analysis');
         
     }
 

@@ -1,5 +1,6 @@
 import { Engine, OperatorEvaluator } from 'json-rules-engine';
 import { JSONSchemaType } from 'ajv';
+import type { Logger as PinoLogger } from 'pino';
 
 export type OperatorDefn = {
     name: string,
@@ -260,4 +261,13 @@ export interface RepoXFIConfig {
 }
 
 export type RepoXFIConfigSchema = JSONSchemaType<RepoXFIConfig>;
+export interface XFiLogger extends Omit<PinoLogger, 'child'> {
+  child(bindings: Record<string, unknown>): XFiLogger;
+  fatal(obj: unknown, msg?: string, ...args: unknown[]): void;
+  error(obj: unknown, msg?: string, ...args: unknown[]): void;
+  warn(obj: unknown, msg?: string, ...args: unknown[]): void;
+  info(obj: unknown, msg?: string, ...args: unknown[]): void;
+  debug(obj: unknown, msg?: string, ...args: unknown[]): void;
+  trace(obj: unknown, msg?: string, ...args: unknown[]): void;
+}
 

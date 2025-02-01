@@ -49,7 +49,7 @@ export class ConfigManager {
                     } catch (localError) {
                         logger.info(`Extension not found in local node_modules, trying global install: ${moduleName}`);
                         // If local fails, try loading from global modules
-                        const globalNodeModules = execSync('npm root -g').toString().trim();
+                        const globalNodeModules = path.join(execSync('yarn global dir').toString().trim(), 'node_modules');
                         extension = await import(path.join(globalNodeModules, moduleName));
                     }
 
