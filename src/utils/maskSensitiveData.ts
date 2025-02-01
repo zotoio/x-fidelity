@@ -18,9 +18,19 @@ const sensitivePatterns = [
     /bearer/gi
 ];
 
-export function maskSensitiveData(obj: any): any {
+function maskValue(value: string): string {
+    if (value.length <= 8) return '****';
+    const visibleStart = value.slice(0, 4);
+    const visibleEnd = value.slice(-4);
+    return `${visibleStart}****${visibleEnd}`;
+}
 
-    if (typeof obj == 'string' && obj !== null) {
+export function maskSensitiveData(obj: any): any {
+    // Handle string input directly
+    if (typeof obj === 'string') {
+        if (sensitivePatterns.some(pattern => pattern.test(obj))) {
+            return maskValue(obj);
+        }
         return obj;
     }
 
@@ -34,11 +44,13 @@ export function maskSensitiveData(obj: any): any {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
             // Check if key matches any sensitive pattern
             if (sensitivePatterns.some(pattern => pattern.test(key))) {
-                maskedObj[key] = '********';
+                maskedObj[key] = typeof obj[key] === 'string' ? 
+                    maskValue(obj[key]) : 
+                    maskValue(JSON.stringify(obj[key]));
             } else if (typeof obj[key] === 'string' && 
                       sensitivePatterns.some(pattern => pattern.test(obj[key]))) {
                 // Also check string values for sensitive patterns
-                maskedObj[key] = '********';
+                maskedObj[key] = maskValue(obj[key]);
             } else if (typeof obj[key] === 'object' && obj[key] !== null) {
                 maskedObj[key] = maskSensitiveData(obj[key]);
             } else {
