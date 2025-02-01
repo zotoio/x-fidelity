@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import pino from 'pino';
-import { XFiLogger } from '../types/pluginTypes';
+import { XFiLogger } from '../types/typeDefs';
 
 // Create a singleton logger instance
 let loggerInstance: pino.Logger | null = null;
