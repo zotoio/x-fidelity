@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import pino from 'pino';
+import { XFiLogger } from '../types/pluginTypes';
 
 // Create a singleton logger instance
 let loggerInstance: pino.Logger | null = null;
@@ -28,7 +29,7 @@ export function getLogPrefix(): string {
 }   
 
 // Initialize logger function that will create the singleton if it doesn't exist
-function initializeLogger(): pino.Logger {
+function initializeLogger(): XFiLogger {
     if (!loggerInstance) {
         const fileTransport = pino.destination({
             dest: 'x-fidelity.log',
@@ -73,12 +74,12 @@ function initializeLogger(): pino.Logger {
 }
 
 // Export the logger getter function
-export function getLogger(): pino.Logger {
+export function getLogger(): XFiLogger {
     return initializeLogger();
 }
 
 // For backward compatibility, also export the logger instance directly
-export const logger = getLogger();
+export const logger: XFiLogger = getLogger();
 
 // Add a way to reset the logger (mainly for testing)
 export function resetLogger(): void {

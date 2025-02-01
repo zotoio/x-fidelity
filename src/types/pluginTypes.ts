@@ -4,7 +4,13 @@ import { OperatorDefn, FactDefn, RuleConfig } from './typeDefs';
 import type { Logger as PinoLogger, LoggerOptions } from 'pino';
 
 export interface XFiLogger extends Omit<PinoLogger, 'child'> {
-    child(bindings: Record<string, unknown>): PinoLogger;
+    child(bindings: Record<string, unknown>): XFiLogger;
+    fatal(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
+    error(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
+    warn(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
+    info(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
+    debug(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
+    trace(obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
 }
 
 export interface PluginError {
