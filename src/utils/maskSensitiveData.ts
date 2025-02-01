@@ -21,26 +21,29 @@ const sensitivePatterns = [
 function maskValue(value: string, matchStart?: number, matchLength?: number): string {
     if (!value) return '';
     
-    // If no specific match position provided, mask the middle portion
+    // If no specific match position provided, mask intermittently
     if (matchStart === undefined || matchLength === undefined) {
-        if (value.length <= 8) return '*'.repeat(value.length);
-        const visibleChars = Math.floor(value.length * 0.3); // Show 30% of chars
-        const startVisible = Math.floor(visibleChars / 2);
-        const endVisible = visibleChars - startVisible;
-        return value.slice(0, startVisible) + 
-               '*'.repeat(value.length - visibleChars) + 
-               value.slice(-endVisible);
+        if (value.length <= 4) return '*'.repeat(value.length);
+        
+        // Show first and last 2 chars, mask rest intermittently
+        const result = value.split('').map((char, i) => {
+            if (i < 2 || i >= value.length - 2) return char;
+            // Mask every other character in the middle
+            return i % 2 === 0 ? '*' : char;
+        });
+        return result.join('');
     }
 
-    // Mask only the matched portion
+    // For matched portions, mask intermittently
     const beforeMatch = value.slice(0, matchStart);
     const match = value.slice(matchStart, matchStart + matchLength);
     const afterMatch = value.slice(matchStart + matchLength);
     
-    // For matched portion, show first and last character if long enough
-    const maskedMatch = match.length <= 2 ? 
-        '*'.repeat(match.length) :
-        match[0] + '*'.repeat(match.length - 2) + match[match.length - 1];
+    // Mask matched portion with intermittent pattern
+    const maskedMatch = match.split('').map((char, i) => {
+        if (i < 2 || i >= match.length - 2) return char;
+        return i % 2 === 0 ? '*' : char;
+    }).join('');
     
     return beforeMatch + maskedMatch + afterMatch;
 }
