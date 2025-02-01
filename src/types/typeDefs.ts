@@ -169,6 +169,7 @@ export interface ResultMetadata {
         fileCount: number;
         totalIssues: number;
         warningCount: number;
+        errorCount: number;
         fatalityCount: number;
         exemptCount: number;
         issueDetails: ScanResult[];
