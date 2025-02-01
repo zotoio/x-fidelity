@@ -37,7 +37,10 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                     fileFailures.push({
                         ruleFailure: result.name,
                         level: result.event?.type,
-                        details: result.event?.params
+                        details: {
+                            message: result.event?.params?.message || 'Rule failure detected',
+                            ...result.event?.params
+                        }
                     });
                 }
             }
@@ -79,7 +82,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         error: error,
                         rule: failedRuleName,
                         level: errorLevel,
-                        source: errorSource,
+                        errorSource,
                         params: rule.onError.params || {},
                         file: file
                     });
@@ -102,7 +105,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 level: errorLevel,
                 details: {
                     message: `${errorSource} execution failed: ${error.message}`,
-                    source: errorSource,
+                    source: errorSource as "operator" | "fact" | "plugin" | "rule" | "unknown",
                     originalError: error,
                     stack: error.stack
                 }
