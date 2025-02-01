@@ -31,22 +31,22 @@ function maskValue(value: string, matchStart?: number, matchLength?: number): st
         ? value.slice(matchStart, matchStart + matchLength)
         : value;
     
-    // Keep first 4 and last 4 chars visible, mask the middle
-    if (valueToMask.length > 12) {
+    // Keep first 6 and last 6 chars visible, mask the middle
+    if (valueToMask.length > 16) {
         return matchStart !== undefined && matchLength !== undefined
             ? value.slice(0, matchStart) + 
-              valueToMask.slice(0, 4) + '***' + valueToMask.slice(-4) + 
+              valueToMask.slice(0, 6) + '***' + valueToMask.slice(-6) + 
               value.slice(matchStart + matchLength)
-            : valueToMask.slice(0, 4) + '***' + valueToMask.slice(-4);
+            : valueToMask.slice(0, 6) + '***' + valueToMask.slice(-6);
     }
     
-    // For shorter strings, keep first 2 and last 2 visible
-    if (valueToMask.length > 6) {
+    // For shorter strings, keep first 3 and last 3 visible
+    if (valueToMask.length > 8) {
         return matchStart !== undefined && matchLength !== undefined
             ? value.slice(0, matchStart) + 
-              valueToMask.slice(0, 2) + '**' + valueToMask.slice(-2) + 
+              valueToMask.slice(0, 3) + '**' + valueToMask.slice(-3) + 
               value.slice(matchStart + matchLength)
-            : valueToMask.slice(0, 2) + '**' + valueToMask.slice(-2);
+            : valueToMask.slice(0, 3) + '**' + valueToMask.slice(-3);
     }
     
     // For very short matches, mask the middle character(s)
