@@ -57,10 +57,11 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 // Handle plugin errors with their specified level
                 errorSource = 'plugin';
                 errorLevel = (error as any).pluginError.level;
-                error = new Error((error as any).pluginError.message);
+                const pluginError = new Error((error as any).pluginError.message);
                 if ((error as any).pluginError.details) {
-                    (error as any).details = (error as any).pluginError.details;
+                    (pluginError as any).details = (error as any).pluginError.details;
                 }
+                error = pluginError;
             } else if ((error as any)?.isOperatorError) {
                 errorSource = 'operator';
                 errorLevel = rule?.errorBehavior === 'fatal' ? 'fatality' : 'error';
