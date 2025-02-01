@@ -114,6 +114,11 @@ export interface RuleConfig {
         type: string;
         params: Record<string, any>;
     };
+    errorBehavior?: 'swallow' | 'fatal';
+    onError?: {
+        action: string;  // Name of function to execute
+        params?: Record<string, any>;  // Parameters for the action
+    };
 }
 export type RuleConfigSchema = JSONSchemaType<RuleConfig>;
 

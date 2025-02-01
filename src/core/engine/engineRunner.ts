@@ -1,6 +1,7 @@
 import { ScanResult, RuleFailure } from '../../types/typeDefs';
 import { logger } from '../../utils/logger';
 import { REPO_GLOBAL_CHECK } from '../../utils/configManager';
+import { executeErrorAction } from './errorActionExecutor';
 
 import { RunEngineOnFilesParams } from '../../types/typeDefs';
 
@@ -49,25 +50,46 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
             const failedRuleName = (e as any)?.rule?.name;
             if (failedRuleName) {
                 const rule = (engine as any).rules.find((r: any) => r.name === failedRuleName);
+                const errorLevel = rule?.errorBehavior === 'fatal' || rule?.event?.type === 'fatality' 
+                    ? 'fatality' 
+                    : 'error';
                 
-                // If rule is configured as fatal or has event type fatality, treat error as fatal
-                if (rule?.errorBehavior === 'fatal' || rule?.event?.type === 'fatality') {
-                    logger.error({ 
-                        err: e,
-                        rule: failedRuleName,
-                        type: 'fatal'
-                    }, 'Rule execution failed');
-                    fileFailures.push({
-                        ruleFailure: failedRuleName,
-                        level: 'fatality',
-                        details: {
-                            message: `Rule execution failed: ${e}`,
-                            originalError: e
-                        }
-                    });
-                } else {
-                    logger.warn(`Non-fatal error in rule ${failedRuleName}: ${e}`);
+                logger.error({ 
+                    err: e,
+                    rule: failedRuleName,
+                    type: errorLevel
+                }, 'Rule execution failed');
+
+                // Execute error action if specified
+                if (rule?.onError?.action) {
+                    try {
+                        const actionResult = await executeErrorAction(rule.onError.action, {
+                            error: e,
+                            rule: failedRuleName,
+                            level: errorLevel,
+                            params: rule.onError.params || {},
+                            file: file
+                        });
+                        logger.info({ 
+                            action: rule.onError.action,
+                            result: actionResult 
+                        }, 'Error action executed');
+                    } catch (actionError) {
+                        logger.error({ 
+                            err: actionError,
+                            action: rule.onError.action
+                        }, 'Error executing error action');
+                    }
                 }
+
+                fileFailures.push({
+                    ruleFailure: failedRuleName,
+                    level: errorLevel,
+                    details: {
+                        message: `Rule execution failed: ${e}`,
+                        originalError: e
+                    }
+                });
             } else {
                 logger.error(`Error processing file ${file.filePath}: ${e}`);
                 fileFailures.push({ 
