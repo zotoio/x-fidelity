@@ -5,6 +5,7 @@ interface ErrorActionParams {
     error: Error;
     rule: string;
     level: string;
+    source?: "operator" | "fact" | "plugin" | "rule" | "unknown";
     params: Record<string, any>;
     file: any;
 }
