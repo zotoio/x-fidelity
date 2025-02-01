@@ -33,7 +33,7 @@ function maskValue(value: string, matchStart?: number, matchLength?: number): st
     
     // Keep first 4 and last 4 chars visible, mask the middle
     if (valueToMask.length > 12) {
-        return matchStart !== undefined
+        return matchStart !== undefined && matchLength !== undefined
             ? value.slice(0, matchStart) + 
               valueToMask.slice(0, 4) + '***' + valueToMask.slice(-4) + 
               value.slice(matchStart + matchLength)
@@ -42,7 +42,7 @@ function maskValue(value: string, matchStart?: number, matchLength?: number): st
     
     // For shorter strings, keep first 2 and last 2 visible
     if (valueToMask.length > 6) {
-        return matchStart !== undefined
+        return matchStart !== undefined && matchLength !== undefined
             ? value.slice(0, matchStart) + 
               valueToMask.slice(0, 2) + '**' + valueToMask.slice(-2) + 
               value.slice(matchStart + matchLength)
@@ -52,7 +52,7 @@ function maskValue(value: string, matchStart?: number, matchLength?: number): st
     // For very short matches, mask the middle character(s)
     const midPoint = Math.floor(valueToMask.length / 2);
     const maskLength = Math.max(1, valueToMask.length - 4);
-    return matchStart !== undefined
+    return matchStart !== undefined && matchLength !== undefined
         ? value.slice(0, matchStart) + 
           valueToMask.slice(0, midPoint) + '*'.repeat(maskLength) + valueToMask.slice(-midPoint) + 
           value.slice(matchStart + matchLength)
