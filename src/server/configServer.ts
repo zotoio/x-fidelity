@@ -105,7 +105,10 @@ export function startServer({ customPort, executionLogPrefix }: StartServerParam
         return server;
 
     } catch (error) {
-        logger.warn('failed to start server with tls, falling back to http:', error);
+        logger.warn({ 
+            error: error instanceof Error ? error.message : String(error),
+            message: 'Failed to start server with TLS, falling back to HTTP'
+        });
         const server = app.listen(serverPort, () => {
             logger.info(`xfidelity server is running on http://localhost:${serverPort}`);
         });
