@@ -50,17 +50,12 @@ function initializeLogger(): pino.Logger {
 
         loggerInstance = pino({
             level: process.env.NODE_ENV === 'test' ? 'silent' : 'info',
-            base: {
-                prefix: logPrefix,
-                env: process.env.NODE_ENV || 'development'
-            },
             timestamp: pino.stdTimeFunctions.isoTime,
             formatters: {
                 level: (label) => ({ level: label }),
                 bindings: (bindings) => bindings,
                 log: (object) => ({
-                    ...object,
-                    host: process.env.HOSTNAME || 'unknown'
+                    ...object
                 })
             },
             serializers: {
