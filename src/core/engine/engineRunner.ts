@@ -61,7 +61,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 if ((error as any).pluginError.details) {
                     (pluginError as any).details = (error as any).pluginError.details;
                 }
-                error = pluginError;
+                const handledError = pluginError;
             } else if ((error as any)?.isOperatorError) {
                 errorSource = 'operator';
                 errorLevel = rule?.errorBehavior === 'fatal' ? 'fatality' : 'error';
@@ -74,7 +74,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
             }
 
             logger.error({ 
-                err: error,
+                err: handledError || error,
                 rule: failedRuleName,
                 source: errorSource,
                 type: errorLevel,
@@ -110,10 +110,10 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 ruleFailure: failedRuleName || 'ExecutionError',
                 level: errorLevel,
                 details: {
-                    message: `${errorSource} execution failed: ${error.message}`,
+                    message: `${errorSource} execution failed: ${(handledError || error).message}`,
                     source: errorSource as "operator" | "fact" | "plugin" | "rule" | "unknown",
-                    originalError: error,
-                    stack: error.stack
+                    originalError: handledError || error,
+                    stack: (handledError || error).stack
                 }
             });
         }
