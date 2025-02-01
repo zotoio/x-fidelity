@@ -19,6 +19,11 @@ const sensitivePatterns = [
 ];
 
 export function maskSensitiveData(obj: any): any {
+
+    if (typeof obj == 'string' && obj !== null) {
+        return obj;
+    }
+
     if (typeof obj !== 'object' || obj === null) {
         return obj;
     }
