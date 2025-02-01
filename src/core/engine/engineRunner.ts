@@ -82,7 +82,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         error: error,
                         rule: failedRuleName,
                         level: errorLevel,
-                        source: errorSource,
+                        source: errorSource as "operator" | "fact" | "plugin" | "rule" | "unknown",
                         params: rule.onError.params || {},
                         file: file
                     });
