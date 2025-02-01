@@ -36,7 +36,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 if (result.result) {
                     fileFailures.push({
                         ruleFailure: result.name,
-                        level: result.event?.type,
+                        level: result.event?.type as ErrorLevel,
                         details: {
                             message: result.event?.params?.message || 'Rule failure detected',
                             ...result.event?.params
@@ -118,7 +118,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
 
             fileFailures.push({
                 ruleFailure: failedRuleName || 'ExecutionError',
-                level: errorLevel,
+                level: errorLevel as ErrorLevel,
                 details: {
                     message: `${errorSource} execution failed: ${(handledError || error).message}`,
                     source: errorSource as "operator" | "fact" | "plugin" | "rule" | "unknown",
