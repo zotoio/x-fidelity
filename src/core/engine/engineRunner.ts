@@ -74,6 +74,15 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 errorLevel = rule?.errorBehavior === 'fatal' || rule?.event?.type === 'fatality' ? 'fatality' : 'error';
             }
 
+            let handledError: Error | undefined;
+            if ((error as any)?.pluginError) {
+                const pluginError = new Error((error as any).pluginError.message);
+                if ((error as any).pluginError.details) {
+                    (pluginError as any).details = (error as any).pluginError.details;
+                }
+                handledError = pluginError;
+            }
+
             logger.error({ 
                 err: handledError || error,
                 rule: failedRuleName,
