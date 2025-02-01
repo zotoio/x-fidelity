@@ -53,15 +53,20 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
             let errorSource = 'unknown';
             let errorLevel = 'error';
             
-            if ((error as any)?.isOperatorError) {
+            if ((error as any)?.pluginError) {
+                // Handle plugin errors with their specified level
+                errorSource = 'plugin';
+                errorLevel = (error as any).pluginError.level;
+                error = new Error((error as any).pluginError.message);
+                if ((error as any).pluginError.details) {
+                    (error as any).details = (error as any).pluginError.details;
+                }
+            } else if ((error as any)?.isOperatorError) {
                 errorSource = 'operator';
                 errorLevel = rule?.errorBehavior === 'fatal' ? 'fatality' : 'error';
             } else if ((error as any)?.isFactError) {
-                errorSource = 'fact';
+                errorSource = 'fact'; 
                 errorLevel = rule?.errorBehavior === 'fatal' ? 'fatality' : 'error';
-            } else if ((error as any)?.isPluginError) {
-                errorSource = 'plugin';
-                errorLevel = (error as any)?.level || 'error';
             } else if (failedRuleName) {
                 errorSource = 'rule';
                 errorLevel = rule?.errorBehavior === 'fatal' || rule?.event?.type === 'fatality' ? 'fatality' : 'error';

@@ -85,16 +85,16 @@ class XFiPluginRegistry implements PluginRegistry {
         };
       }
 
-      // For unhandled errors, return error result to be handled by rule's errorBehavior
-      return {
-        success: false,
-        error: {
-          message: `Plugin ${pluginName} execution failed: ${error}`,
-          level: 'fatality', // Default to fatality for unhandled errors
-          details: error instanceof Error ? error.stack : undefined
-        },
-        data: null
+      // For unhandled errors, throw an error with plugin error details
+      const pluginError = {
+        message: `Plugin ${pluginName} execution failed: ${error}`,
+        level: 'fatality', // Default to fatality for unhandled errors
+        details: error instanceof Error ? error.stack : undefined
       };
+
+      const wrappedError = new Error(pluginError.message);
+      (wrappedError as any).pluginError = pluginError;
+      throw wrappedError;
     }
   }
 }
