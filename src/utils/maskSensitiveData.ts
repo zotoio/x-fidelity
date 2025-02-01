@@ -21,31 +21,42 @@ const sensitivePatterns = [
 function maskValue(value: string, matchStart?: number, matchLength?: number): string {
     if (!value) return '';
     
-    // If no specific match position provided, mask intermittently
-    if (matchStart === undefined || matchLength === undefined) {
-        if (value.length <= 4) return '*'.repeat(value.length);
-        
-        // Show first and last 2 chars, mask rest intermittently
-        const result = value.split('').map((char, i) => {
-            if (i < 2 || i >= value.length - 2) return char;
-            // Mask every other character in the middle
-            return i % 2 === 0 ? '*' : char;
-        });
-        return result.join('');
+    // For very short values, mask completely
+    if (value.length <= 4) {
+        return '*'.repeat(value.length);
     }
-
-    // For matched portions, mask intermittently
-    const beforeMatch = value.slice(0, matchStart);
-    const match = value.slice(matchStart, matchStart + matchLength);
-    const afterMatch = value.slice(matchStart + matchLength);
     
-    // Mask matched portion with intermittent pattern
-    const maskedMatch = match.split('').map((char, i) => {
-        if (i < 2 || i >= match.length - 2) return char;
-        return i % 2 === 0 ? '*' : char;
-    }).join('');
+    // For matched portions or full string masking
+    const valueToMask = matchStart !== undefined && matchLength !== undefined 
+        ? value.slice(matchStart, matchStart + matchLength)
+        : value;
     
-    return beforeMatch + maskedMatch + afterMatch;
+    // Keep first 4 and last 4 chars visible, mask the middle
+    if (valueToMask.length > 12) {
+        return matchStart !== undefined
+            ? value.slice(0, matchStart) + 
+              valueToMask.slice(0, 4) + '***' + valueToMask.slice(-4) + 
+              value.slice(matchStart + matchLength)
+            : valueToMask.slice(0, 4) + '***' + valueToMask.slice(-4);
+    }
+    
+    // For shorter strings, keep first 2 and last 2 visible
+    if (valueToMask.length > 6) {
+        return matchStart !== undefined
+            ? value.slice(0, matchStart) + 
+              valueToMask.slice(0, 2) + '**' + valueToMask.slice(-2) + 
+              value.slice(matchStart + matchLength)
+            : valueToMask.slice(0, 2) + '**' + valueToMask.slice(-2);
+    }
+    
+    // For very short matches, mask the middle character(s)
+    const midPoint = Math.floor(valueToMask.length / 2);
+    const maskLength = Math.max(1, valueToMask.length - 4);
+    return matchStart !== undefined
+        ? value.slice(0, matchStart) + 
+          valueToMask.slice(0, midPoint) + '*'.repeat(maskLength) + valueToMask.slice(-midPoint) + 
+          value.slice(matchStart + matchLength)
+        : valueToMask.slice(0, midPoint) + '*'.repeat(maskLength) + valueToMask.slice(-midPoint);
 }
 
 export function maskSensitiveData(obj: any): any {
