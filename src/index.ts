@@ -3,6 +3,7 @@ import { generateLogPrefix, logger, setLogPrefix } from './utils/logger';
 import path from 'path';
 import json from 'prettyjson';
 import { options } from "./core/cli";
+import { scanEnvForSensitiveData } from './utils/envScanner';
 import { analyzeCodebase } from "./core/engine/analyzer";
 import { startServer } from './server/configServer';
 import { sendTelemetry } from './utils/telemetry';
@@ -32,6 +33,7 @@ ${message}
 ==========================================================================`;
 
 logger.debug({ options }, 'Startup options');
+scanEnvForSensitiveData();
 
 export async function main() {
     try {

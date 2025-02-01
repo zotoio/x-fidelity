@@ -62,8 +62,26 @@ function initializeLogger(): XFiLogger {
             serializers: {
                 err: pino.stdSerializers.err,
                 error: pino.stdSerializers.err,
-                req: pino.stdSerializers.req,
-                res: pino.stdSerializers.res
+                req: (req) => maskSensitiveData(pino.stdSerializers.req(req)),
+                res: (res) => maskSensitiveData(pino.stdSerializers.res(res)),
+                '*': (obj) => maskSensitiveData(obj)
+            },
+            redact: {
+                paths: [
+                    'password',
+                    'apiKey',
+                    'authorization',
+                    'cookie',
+                    'req.headers.authorization',
+                    'req.headers.cookie',
+                    'req.body.password',
+                    'res.headers["set-cookie"]',
+                    '*.password',
+                    '*.apiKey',
+                    '*.secret',
+                    '*.token'
+                ],
+                censor: '********'
             }
         }, pino.multistream([
             { stream: fileTransport },
