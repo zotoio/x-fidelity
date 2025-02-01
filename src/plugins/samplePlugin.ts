@@ -1,4 +1,4 @@
-import { XFiPlugin } from '../types/pluginTypes';
+import { XFiPlugin } from '../types/typeDefs';
 
 const samplePlugin: XFiPlugin = {
   name: 'sample-plugin',

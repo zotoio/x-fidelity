@@ -1,4 +1,4 @@
-import { XFiPlugin, PluginRegistry, PluginResult, PluginError } from '../types/pluginTypes';
+import { XFiPlugin, PluginRegistry, PluginResult, PluginError } from '../types/typeDefs';
 import { OperatorDefn, FactDefn } from '../types/typeDefs';
 import { logger } from '../utils/logger';
 

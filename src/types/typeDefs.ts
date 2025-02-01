@@ -267,6 +267,36 @@ export interface RepoXFIConfig {
 }
 
 export type RepoXFIConfigSchema = JSONSchemaType<RepoXFIConfig>;
+export type ErrorLevel = 'warning' | 'error' | 'fatality' | 'exempt';
+
+export interface PluginError {
+  message: string;
+  level: ErrorLevel;
+  details?: any;
+}
+
+export interface PluginResult {
+  success: boolean;
+  data: any;
+  error?: PluginError;
+}
+
+export interface XFiPlugin {
+  name: string;
+  version: string;
+  facts?: FactDefn[];
+  operators?: OperatorDefn[];
+  sampleRules?: RuleConfig[];
+  onError?: (error: Error) => PluginError;
+}
+
+export interface PluginRegistry {
+  registerPlugin: (plugin: XFiPlugin) => void;
+  getPluginFacts: () => FactDefn[];
+  getPluginOperators: () => OperatorDefn[];
+  executePluginFunction: (pluginName: string, functionName: string, ...args: any[]) => PluginResult;
+}
+
 export interface XFiLogger extends Omit<PinoLogger, 'child'> {
   child(bindings: Record<string, unknown>): XFiLogger;
   fatal(obj: unknown, msg?: string, ...args: unknown[]): void;
