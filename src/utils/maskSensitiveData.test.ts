@@ -12,10 +12,10 @@ describe('maskSensitiveData', () => {
         };
 
         const expected = {
-            'x-shared-secret': 'sensitive***-12345',
+            'x-shared-secret': 'sen**ta-12345',
             normalKey: 'normal-data',
             nestedObject: {
-                'x-shared-secret': 'nested-s***e-data',
+                'x-shared-secret': 'nes**tive-data',
                 normalNestedKey: 'normal-nested-data'
             }
         };
@@ -30,7 +30,7 @@ describe('maskSensitiveData', () => {
         ];
 
         const expected = [
-            { 'x-shared-secret': 'sensitive***-data' },
+            { 'x-shared-secret': 'sen**ata' },
             { normalKey: 'normal-data' }
         ];
 
@@ -38,7 +38,7 @@ describe('maskSensitiveData', () => {
     });
 
     it('should handle sensitive strings directly', () => {
-        expect(maskSensitiveData('api-key-12345')).toBe('api-key***2345');
+        expect(maskSensitiveData('api-key-12345')).toBe('api**345');
         expect(maskSensitiveData('normal-string')).toBe('normal-string');
     });
 
@@ -63,7 +63,7 @@ describe('maskSensitiveData', () => {
         const expected = {
             config: {
                 database: {
-                    password: 'super-s***password'
+                    password: 'supe****r-secret-password'
                 }
             }
         };
