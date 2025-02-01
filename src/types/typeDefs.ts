@@ -16,9 +16,11 @@ export interface ScanResult {
     errors: RuleFailure[];
 }
 
+export type ErrorLevel = 'warning' | 'error' | 'fatality' | 'exempt';
+
 export interface RuleFailure {
     ruleFailure: string;
-    level: string | undefined;
+    level: ErrorLevel | undefined;
     details: {
         message: string;
         source?: 'operator' | 'fact' | 'plugin' | 'rule' | 'unknown';
