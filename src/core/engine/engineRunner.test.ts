@@ -19,8 +19,18 @@ describe('runEngineOnFiles', () => {
     beforeEach(() => {
         mockEngine = {
             run: jest.fn().mockImplementation(() => Promise.resolve({ results: [] })),
+            removeAllListeners: jest.fn(),
+            addRule: jest.fn(),
+            removeRule: jest.fn(),
+            updateRule: jest.fn(),
+            setCondition: jest.fn(),
+            addOperator: jest.fn(),
+            addFact: jest.fn(),
+            on: jest.fn(),
+            stop: jest.fn(),
+            removeListener: jest.fn(),
             removeAllListeners: jest.fn()
-        } as Engine & { removeAllListeners: jest.Mock };
+        } as unknown as Engine & { removeAllListeners: jest.Mock };
 
         jest.clearAllMocks();
     });
