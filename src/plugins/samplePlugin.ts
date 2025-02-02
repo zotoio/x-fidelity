@@ -1,24 +1,12 @@
 import { XFiPlugin } from '../types/typeDefs';
+import { customOperator } from './operators/customOperator';
+import { customFact } from './facts/customFact';
 
 const samplePlugin: XFiPlugin = {
-  name: 'sample-plugin',
-  version: '1.0.0',
-  facts: [
-    {
-      name: 'customFact',
-      fn: async () => {
-        return { result: 'custom fact data' };
-      }
-    }
-  ],
-  operators: [
-    {
-      name: 'customOperator',
-      fn: (factValue: any, expectedValue: any) => {
-        return factValue === expectedValue;
-      }
-    }
-  ]
+    name: 'sample-plugin',
+    version: '1.0.0',
+    facts: [customFact],
+    operators: [customOperator]
 };
 
 export default samplePlugin;
