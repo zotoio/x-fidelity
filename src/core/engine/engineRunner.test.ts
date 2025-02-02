@@ -19,7 +19,6 @@ describe('runEngineOnFiles', () => {
     beforeEach(() => {
         mockEngine = {
             run: jest.fn().mockImplementation(() => Promise.resolve({ results: [] })),
-            removeAllListeners: jest.fn(),
             addRule: jest.fn(),
             removeRule: jest.fn(),
             updateRule: jest.fn(),
