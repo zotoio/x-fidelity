@@ -52,17 +52,16 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
             // Determine error source and level
             let errorSource = 'unknown';
             let errorLevel = 'error';
+            let handledError: Error | undefined;
             
             if ((error as any)?.pluginError) {
                 // Handle plugin errors with their specified level
                 errorSource = 'plugin';
-                errorLevel = (error as any).pluginError.level;
-                let handledError: Error | undefined;
-                const pluginError = new Error((error as any).pluginError.message);
+                errorLevel = (error as any).pluginError.level || rule?.errorBehavior === 'fatal' ? 'fatality' : 'error';
+                handledError = new Error((error as any).pluginError.message);
                 if ((error as any).pluginError.details) {
-                    (pluginError as any).details = (error as any).pluginError.details;
+                    (handledError as any).details = (error as any).pluginError.details;
                 }
-                handledError = pluginError;
             } else if ((error as any)?.isOperatorError || (error as any)?.operator) {
                 errorSource = 'operator';
                 errorLevel = rule?.errorBehavior === 'fatal' ? 'fatality' : 'error';
@@ -74,21 +73,13 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 errorLevel = rule?.errorBehavior === 'fatal' || rule?.event?.type === 'fatality' ? 'fatality' : 'error';
             }
 
-            let handledError: Error | undefined;
-            if ((error as any)?.pluginError) {
-                const pluginError = new Error((error as any).pluginError.message);
-                if ((error as any).pluginError.details) {
-                    (pluginError as any).details = (error as any).pluginError.details;
-                }
-                handledError = pluginError;
-            }
-
             logger.error({ 
                 err: handledError || error,
                 rule: failedRuleName,
                 source: errorSource,
                 type: errorLevel,
-                file: file.filePath
+                file: file.filePath,
+                details: (error as any)?.pluginError?.details || error.message
             }, 'Execution error occurred');
 
             // Execute error action if specified
@@ -123,7 +114,8 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                     message: `${errorSource} execution failed: ${(handledError || error).message}`,
                     source: errorSource as "operator" | "fact" | "plugin" | "rule" | "unknown",
                     originalError: handledError || error,
-                    stack: (handledError || error).stack
+                    stack: (handledError || error).stack,
+                    details: (error as any)?.pluginError?.details
                 }
             });
         }
