@@ -14,11 +14,11 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 describe('runEngineOnFiles', () => {
-    let mockEngine: Engine;
+    let mockEngine: Engine & { removeAllListeners?: () => void };
 
     afterEach(() => {
         // Clean up engine instance after each test
-        if (mockEngine) {
+        if (mockEngine?.removeAllListeners) {
             mockEngine.removeAllListeners();
         }
     });
@@ -28,6 +28,7 @@ describe('runEngineOnFiles', () => {
             run: jest.fn().mockImplementation(() => Promise.resolve({ results: [] })),
             removeAllListeners: jest.fn()
         } as unknown as Engine;
+    });
 
     const mockFileData = [
         { fileName: 'test.ts', filePath: 'src/test.ts', fileContent: 'logger.log("test");' },

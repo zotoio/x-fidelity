@@ -14,11 +14,11 @@ jest.mock('../../utils/configManager');
 jest.mock('../../utils/logger');
 
 describe('setupEngine', () => {
-    let engine: Engine;
+    let engine: Engine & { removeAllListeners?: () => void };
 
     afterEach(() => {
         // Clean up engine instance after each test
-        if (engine) {
+        if (engine?.removeAllListeners) {
             engine.removeAllListeners();
         }
     });
