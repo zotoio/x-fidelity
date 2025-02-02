@@ -51,7 +51,7 @@ describe('runEngineOnFiles', () => {
     it('should run engine on all files', async () => {
         (mockEngine.run as jest.Mock).mockResolvedValue({ results: [] });
 
-        await runEngineOnFiles(mockParams);
+        await runEngineOnFiles(getMockParams());
 
         expect(mockEngine.run).toHaveBeenCalledTimes(2);
         expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('RUNNING FILE CHECKS..'));

@@ -1,7 +1,15 @@
 import { logger } from '../src/utils/logger';
 
 // jest.setup.ts
+import { EventEmitter } from 'events';
+
+// Increase the default max listeners
+EventEmitter.defaultMaxListeners = 20;
+
 beforeAll(() => {
+  // Set max listeners for process
+  process.setMaxListeners(20);
+  
   jest.spyOn(process, 'exit').mockImplementation((code?: string | number | null | undefined): never => {
     logger.info({ 
         code,
@@ -14,4 +22,7 @@ beforeAll(() => {
 
 afterAll(() => {
   (process.exit as unknown as jest.Mock).mockRestore();
+  // Reset max listeners to default
+  process.setMaxListeners(10);
+  EventEmitter.defaultMaxListeners = 10;
 });
