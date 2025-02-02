@@ -14,21 +14,19 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 describe('runEngineOnFiles', () => {
-    let mockEngine: (Engine & { removeAllListeners?: () => void }) | undefined;
+    let mockEngine: Engine;
 
     beforeEach(() => {
         mockEngine = {
             run: jest.fn().mockImplementation(() => Promise.resolve({ results: [] })),
             removeAllListeners: jest.fn()
         } as unknown as Engine;
+
+        jest.clearAllMocks();
     });
 
     afterEach(() => {
-        // Clean up engine instance after each test
-        if (mockEngine?.removeAllListeners) {
-            mockEngine.removeAllListeners();
-        }
-        mockEngine = undefined;
+        (mockEngine.removeAllListeners as jest.Mock)();
     });
 
     const mockFileData = [
@@ -36,17 +34,13 @@ describe('runEngineOnFiles', () => {
         { fileName: REPO_GLOBAL_CHECK, filePath: REPO_GLOBAL_CHECK, fileContent: REPO_GLOBAL_CHECK },
     ];
 
-    const mockParams = {
+    const getMockParams = () => ({
         engine: mockEngine,
         fileData: mockFileData,
         installedDependencyVersions: {},
         minimumDependencyVersions: {},
         standardStructure: {},
         repoUrl: 'https://github.com/mock/repo',
-    };
-
-    beforeEach(() => {
-        jest.clearAllMocks();
     });
 
     it('should run engine on all files', async () => {
@@ -62,7 +56,7 @@ describe('runEngineOnFiles', () => {
     it('should handle engine failures', async () => {
         (mockEngine.run as jest.Mock).mockRejectedValue(new Error('Engine failure'));
 
-        await runEngineOnFiles(mockParams);
+        await runEngineOnFiles(getMockParams());
 
         expect(mockEngine.run).toHaveBeenCalledTimes(2);
         expect(logger.error).toHaveBeenCalledTimes(2);
@@ -75,7 +69,7 @@ describe('runEngineOnFiles', () => {
             ],
         });
 
-        const result = await runEngineOnFiles(mockParams);
+        const result = await runEngineOnFiles(getMockParams());
 
         expect(result).toHaveLength(2);
         expect(result[0].errors).toHaveLength(1);
