@@ -41,16 +41,24 @@ export class ConfigManager {
         if (extensions && extensions.length > 0) {
             for (const moduleName of extensions) {
                 try {
-                    // First try loading from local node_modules
-                    logger.info(`Attempting to load extension module from local node_modules: ${moduleName}`);
                     let extension;
+                    
+                    // First try loading from local src/plugins directory
+                    logger.info(`Attempting to load extension module from local src/plugins: ${moduleName}`);
                     try {
-                        extension = await import(path.join(process.cwd(), 'node_modules', moduleName));
-                    } catch (localError) {
-                        logger.info(`Extension not found in local node_modules, trying global install: ${moduleName}`);
-                        // If local fails, try loading from global modules
-                        const globalNodeModules = path.join(execSync('yarn global dir').toString().trim(), 'node_modules');
-                        extension = await import(path.join(globalNodeModules, moduleName));
+                        extension = await import(path.join(process.cwd(), 'src', 'plugins', moduleName));
+                    } catch (srcError) {
+                        logger.info(`Extension not found in src/plugins, trying local node_modules: ${moduleName}`);
+                        
+                        // If src/plugins fails, try loading from local node_modules
+                        try {
+                            extension = await import(path.join(process.cwd(), 'node_modules', moduleName));
+                        } catch (localError) {
+                            logger.info(`Extension not found in local node_modules, trying global install: ${moduleName}`);
+                            // If local fails, try loading from global modules
+                            const globalNodeModules = path.join(execSync('yarn global dir').toString().trim(), 'node_modules');
+                            extension = await import(path.join(globalNodeModules, moduleName));
+                        }
                     }
 
                     if (extension.default) {
@@ -60,7 +68,7 @@ export class ConfigManager {
                     }
                     logger.info(`Successfully loaded extension: ${moduleName}`);
                 } catch (error) {
-                    logger.error(`Failed to load extension ${moduleName} from both local and global locations: ${error}`);
+                    logger.error(`Failed to load extension ${moduleName} from all locations: ${error}`);
                     if (process.env.NODE_ENV !== 'test') process.exit(1);
                 }
             }
