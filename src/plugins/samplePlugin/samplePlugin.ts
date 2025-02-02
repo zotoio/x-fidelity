@@ -1,4 +1,4 @@
-import { XFiPlugin } from '../types/typeDefs';
+import { XFiPlugin } from '../../types/typeDefs';
 import { customOperator } from './operators/customOperator';
 import { customFact } from './facts/customFact';
 

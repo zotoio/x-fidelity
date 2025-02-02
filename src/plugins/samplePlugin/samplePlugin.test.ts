@@ -1,7 +1,7 @@
-import samplePlugin from './samplePlugin/index';
-import { pluginRegistry } from '../core/pluginRegistry';
-import { customFact } from './samplePlugin/facts/customFact';
-import { customOperator } from './samplePlugin/operators/customOperator';
+import samplePlugin from './samplePlugin';
+import { pluginRegistry } from '../../core/pluginRegistry';
+import { customFact } from './facts/customFact';
+import { customOperator } from './operators/customOperator';
 
 describe('samplePlugin', () => {
   beforeEach(() => {

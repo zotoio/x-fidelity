@@ -23,17 +23,11 @@ class XFiPluginRegistry implements PluginRegistry {
         factCount: plugin.facts?.length || 0,
         operatorCount: plugin.operators?.length || 0,
         facts: plugin.facts?.map(f => f.name),
-        operators: plugin.operators?.map(o => o.name),
-        sampleRuleCount: plugin.sampleRules?.length || 0
+        operators: plugin.operators?.map(o => o.name)
       },
       operation: 'register-plugin'
     }, 'Registering plugin');
 
-    if (plugin.sampleRules) {
-      plugin.sampleRules.forEach(rule => {
-        logger.debug({ rule, operation: 'register-plugin-rule' }, 'Registering plugin sample rule');
-      });
-    }
     this.plugins.push(plugin);
   }
 

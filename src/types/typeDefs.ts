@@ -286,7 +286,6 @@ export interface XFiPlugin {
   version: string;
   facts?: FactDefn[];
   operators?: OperatorDefn[];
-  sampleRules?: RuleConfig[];
   onError?: (error: Error) => PluginError;
 }
 
