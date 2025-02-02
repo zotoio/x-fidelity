@@ -14,19 +14,19 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 describe('runEngineOnFiles', () => {
-    let mockEngine: Engine;
+    let mockEngine: Engine & { removeAllListeners: jest.Mock };
 
     beforeEach(() => {
         mockEngine = {
             run: jest.fn().mockImplementation(() => Promise.resolve({ results: [] })),
             removeAllListeners: jest.fn()
-        } as unknown as Engine;
+        } as Engine & { removeAllListeners: jest.Mock };
 
         jest.clearAllMocks();
     });
 
     afterEach(() => {
-        (mockEngine.removeAllListeners as jest.Mock)();
+        mockEngine.removeAllListeners();
     });
 
     const mockFileData = [
