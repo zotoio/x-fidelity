@@ -63,7 +63,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                     (pluginError as any).details = (error as any).pluginError.details;
                 }
                 handledError = pluginError;
-            } else if ((error as any)?.isOperatorError) {
+            } else if ((error as any)?.isOperatorError || (error as any)?.operator) {
                 errorSource = 'operator';
                 errorLevel = rule?.errorBehavior === 'fatal' ? 'fatality' : 'error';
             } else if ((error as any)?.isFactError) {
