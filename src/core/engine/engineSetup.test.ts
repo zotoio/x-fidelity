@@ -14,6 +14,15 @@ jest.mock('../../utils/configManager');
 jest.mock('../../utils/logger');
 
 describe('setupEngine', () => {
+    let engine: Engine;
+
+    afterEach(() => {
+        // Clean up engine instance after each test
+        if (engine) {
+            engine.removeAllListeners();
+        }
+    });
+
     const mockArchetypeConfig = {
         name: 'test-archetype',
         rules: ['rule1', 'rule2'],
