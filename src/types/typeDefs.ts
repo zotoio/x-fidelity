@@ -296,13 +296,20 @@ export interface PluginRegistry {
   executePluginFunction: (pluginName: string, functionName: string, ...args: any[]) => PluginResult;
 }
 
-export interface XFiLogger extends Omit<PinoLogger, 'child'> {
-  child(bindings: Record<string, unknown>): XFiLogger;
-  fatal(obj: unknown, msg?: string, ...args: unknown[]): void;
-  error(obj: unknown, msg?: string, ...args: unknown[]): void;
-  warn(obj: unknown, msg?: string, ...args: unknown[]): void;
-  info(obj: unknown, msg?: string, ...args: unknown[]): void;
-  debug(obj: unknown, msg?: string, ...args: unknown[]): void;
-  trace(obj: unknown, msg?: string, ...args: unknown[]): void;
+export interface XFiLogger extends PinoLogger {
+    child(bindings: Record<string, unknown>): XFiLogger;
+    fatal(obj: unknown, msg?: string, ...args: unknown[]): void;
+    error(obj: unknown, msg?: string, ...args: unknown[]): void;
+    warn(obj: unknown, msg?: string, ...args: unknown[]): void;
+    info(obj: unknown, msg?: string, ...args: unknown[]): void;
+    debug(obj: unknown, msg?: string, ...args: unknown[]): void;
+    trace(obj: unknown, msg?: string, ...args: unknown[]): void;
+    redact?: string[] | Record<string, any>;
+    serializers?: Record<string, (value: any) => any>;
+    formatters?: {
+        level?: (label: string) => object;
+        bindings?: (bindings: Record<string, any>) => object;
+        log?: (object: object) => object;
+    };
 }
 

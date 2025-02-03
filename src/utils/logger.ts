@@ -44,7 +44,7 @@ function initializeLogger(): XFiLogger {
                 colorize: true,
                 translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
                 ignore: 'pid,hostname',
-                messageFormat: '{prefix} {msg}',
+                messageFormat: '{prefix} - {msg}',
                 singleLine: true,
                 errorProps: '*'
             }
