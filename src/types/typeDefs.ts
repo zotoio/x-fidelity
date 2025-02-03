@@ -296,7 +296,7 @@ export interface PluginRegistry {
   executePluginFunction: (pluginName: string, functionName: string, ...args: any[]) => PluginResult;
 }
 
-export interface XFiLogger extends PinoLogger {
+export interface XFiLogger {
     child(bindings: Record<string, unknown>): XFiLogger;
     fatal(obj: unknown, msg?: string, ...args: unknown[]): void;
     error(obj: unknown, msg?: string, ...args: unknown[]): void;
@@ -304,6 +304,7 @@ export interface XFiLogger extends PinoLogger {
     info(obj: unknown, msg?: string, ...args: unknown[]): void;
     debug(obj: unknown, msg?: string, ...args: unknown[]): void;
     trace(obj: unknown, msg?: string, ...args: unknown[]): void;
+    level: string;
     redact?: string[] | Record<string, any>;
     serializers?: Record<string, (value: any) => any>;
     formatters?: {
@@ -311,5 +312,6 @@ export interface XFiLogger extends PinoLogger {
         bindings?: (bindings: Record<string, any>) => object;
         log?: (object: object) => object;
     };
+    [key: string]: any;
 }
 
