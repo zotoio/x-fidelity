@@ -63,8 +63,16 @@ export class ConfigManager {
                     }
 
                     if (extension.default) {
+                        // Handle ES modules
+                        logger.debug(`Registering ES module plugin: ${moduleName}`);
                         pluginRegistry.registerPlugin(extension.default);
+                    } else if (extension.plugin) {
+                        // Handle CommonJS modules that export { plugin }
+                        logger.debug(`Registering CommonJS module plugin: ${moduleName}`);
+                        pluginRegistry.registerPlugin(extension.plugin);
                     } else {
+                        // Handle direct exports
+                        logger.debug(`Registering direct export plugin: ${moduleName}`);
                         pluginRegistry.registerPlugin(extension);
                     }
                     logger.info(`Successfully loaded extension: ${moduleName}`);

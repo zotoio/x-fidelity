@@ -16,17 +16,47 @@ class XFiPluginRegistry implements PluginRegistry {
   }
 
   public registerPlugin(plugin: XFiPlugin): void {
+    // Validate plugin structure
+    if (!plugin.name || !plugin.version) {
+        logger.error('Invalid plugin format - missing name or version');
+        throw new Error('Invalid plugin format - missing name or version');
+    }
+
+    // Enhanced logging
     logger.info({
-      plugin: {
-        name: plugin.name,
-        version: plugin.version,
-        factCount: plugin.facts?.length || 0,
-        operatorCount: plugin.operators?.length || 0,
-        facts: plugin.facts?.map(f => f.name),
-        operators: plugin.operators?.map(o => o.name)
-      },
-      operation: 'register-plugin'
-    }, 'Registering plugin');
+        plugin: {
+            name: plugin.name,
+            version: plugin.version,
+            factCount: plugin.facts?.length || 0,
+            operatorCount: plugin.operators?.length || 0,
+            facts: plugin.facts?.map(f => ({
+                name: f.name,
+                type: typeof f.fn
+            })),
+            operators: plugin.operators?.map(o => ({
+                name: o.name,
+                type: typeof o.fn
+            }))
+        },
+        operation: 'register-plugin'
+    }, `Registering plugin: ${plugin.name}`);
+
+    // Validate facts and operators
+    if (plugin.facts) {
+        plugin.facts.forEach(fact => {
+            if (!fact.name || typeof fact.fn !== 'function') {
+                logger.warn(`Invalid fact in plugin ${plugin.name}: ${fact.name}`);
+            }
+        });
+    }
+
+    if (plugin.operators) {
+        plugin.operators.forEach(operator => {
+            if (!operator.name || typeof operator.fn !== 'function') {
+                logger.warn(`Invalid operator in plugin ${plugin.name}: ${operator.name}`);
+            }
+        });
+    }
 
     this.plugins.push(plugin);
   }
