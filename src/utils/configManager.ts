@@ -43,21 +43,22 @@ export class ConfigManager {
                 try {
                     let extension;
                     
-                    // First try loading from local src/plugins directory
-                    logger.info(`Attempting to load extension module from sample plugins: ${moduleName}`);
+                    // 1. First try loading from global modules
+                    logger.info(`Attempting to load extension module from global modules: ${moduleName}`);
                     try {
-                        extension = await import(path.join(__dirname, '..', 'plugins', moduleName));
-                    } catch (srcError) {
-                        logger.info(`Extension not found in ../plugins dir, trying local node_modules: ${moduleName}`);
+                        const globalNodeModules = path.join(execSync('yarn global dir').toString().trim(), 'node_modules');
+                        extension = await import(path.join(globalNodeModules, moduleName));
+                    } catch (globalError) {
+                        logger.info(`Extension not found in global modules, trying local node_modules: ${moduleName}`);
                         
-                        // If ../plugins fails, try loading from local node_modules
+                        // 2. If global fails, try loading from local node_modules
                         try {
                             extension = await import(path.join(process.cwd(), 'node_modules', moduleName));
                         } catch (localError) {
-                            logger.info(`Extension not found in local node_modules, trying global install: ${moduleName}`);
-                            // If local fails, try loading from global modules - in general this is the expected location
-                            const globalNodeModules = path.join(execSync('yarn global dir').toString().trim(), 'node_modules');
-                            extension = await import(path.join(globalNodeModules, moduleName));
+                            logger.info(`Extension not found in local node_modules, trying sample plugins: ${moduleName}`);
+                            
+                            // 3. If local fails, try loading from sample plugins directory
+                            extension = await import(path.join(__dirname, '..', 'plugins', moduleName));
                         }
                     }
 
