@@ -44,18 +44,18 @@ export class ConfigManager {
                     let extension;
                     
                     // First try loading from local src/plugins directory
-                    logger.info(`Attempting to load extension module from local src/plugins: ${moduleName}`);
+                    logger.info(`Attempting to load extension module from sample plugins: ${moduleName}`);
                     try {
-                        extension = await import(path.join(process.cwd(), 'src', 'plugins', moduleName));
+                        extension = await import(path.join(__dirname, '..', 'plugins', moduleName));
                     } catch (srcError) {
-                        logger.info(`Extension not found in src/plugins, trying local node_modules: ${moduleName}`);
+                        logger.info(`Extension not found in ../plugins dir, trying local node_modules: ${moduleName}`);
                         
-                        // If src/plugins fails, try loading from local node_modules
+                        // If ../plugins fails, try loading from local node_modules
                         try {
                             extension = await import(path.join(process.cwd(), 'node_modules', moduleName));
                         } catch (localError) {
                             logger.info(`Extension not found in local node_modules, trying global install: ${moduleName}`);
-                            // If local fails, try loading from global modules
+                            // If local fails, try loading from global modules - in general this is the expected location
                             const globalNodeModules = path.join(execSync('yarn global dir').toString().trim(), 'node_modules');
                             extension = await import(path.join(globalNodeModules, moduleName));
                         }
