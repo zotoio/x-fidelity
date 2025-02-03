@@ -2,6 +2,83 @@ import { randomUUID } from 'crypto';
 import pino from 'pino';
 import { XFiLogger } from '../types/typeDefs';
 import { maskSensitiveData } from './maskSensitiveData';
+import 'source-map-support/register';
+
+interface ErrorLocation {
+    file?: string;
+    line?: number;
+    column?: number;
+    function?: string;
+    method?: string;
+}
+
+function extractErrorLocation(error: Error): ErrorLocation {
+    try {
+        const stackLines = error.stack?.split('\n');
+        if (!stackLines || stackLines.length < 2) return {};
+
+        const callerFrame = stackLines.find(line => 
+            !line.includes('node_modules') && 
+            !line.includes('internal/') &&
+            !line.includes('/logger.ts')
+        ) || stackLines[1];
+
+        const match = callerFrame.match(/at (?:(.+?)\s+\()?(?:(.+?):(\d+):(\d+))\)?/);
+        if (!match) return {};
+
+        const [, functionName, file, line, column] = match;
+        
+        let method, func;
+        if (functionName) {
+            const methodMatch = functionName.match(/(.+?)\.(.+)/);
+            if (methodMatch) {
+                [, method, func] = methodMatch;
+            } else {
+                func = functionName;
+            }
+        }
+
+        return {
+            file: file,
+            line: parseInt(line),
+            column: parseInt(column),
+            function: func,
+            method: method
+        };
+    } catch {
+        return {};
+    }
+}
+
+function enhanceError(obj: any): any {
+    if (!obj) return obj;
+
+    if (obj instanceof Error) {
+        const location = extractErrorLocation(obj);
+        return {
+            message: obj.message,
+            name: obj.name,
+            stack: obj.stack,
+            ...location
+        };
+    }
+
+    if (typeof obj === 'object') {
+        const enhanced = { ...obj };
+        
+        for (const key in enhanced) {
+            if (enhanced[key] instanceof Error) {
+                enhanced[key] = enhanceError(enhanced[key]);
+            } else if (key === 'err' || key === 'error') {
+                enhanced[key] = enhanceError(enhanced[key]);
+            }
+        }
+        
+        return enhanced;
+    }
+
+    return obj;
+}
 
 // Create a singleton logger instance
 let loggerInstance: pino.Logger | null = null;
@@ -56,14 +133,17 @@ function initializeLogger(): XFiLogger {
             formatters: {
                 level: (label) => ({ level: label }),
                 bindings: (bindings) => bindings,
-                log: (object) => ({
-                    prefix: logPrefix,
-                    ...object
-                })
+                log: (object) => {
+                    const enhanced = enhanceError(object);
+                    return {
+                        prefix: logPrefix,
+                        ...enhanced
+                    };
+                }
             },
             serializers: {
-                err: pino.stdSerializers.err,
-                error: pino.stdSerializers.err,
+                err: (err) => enhanceError(err),
+                error: (err) => enhanceError(err),
                 req: (req) => maskSensitiveData(pino.stdSerializers.req(req)),
                 res: (res) => maskSensitiveData(pino.stdSerializers.res(res)),
                 '*': (obj) => maskSensitiveData(obj)
