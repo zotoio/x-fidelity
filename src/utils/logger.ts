@@ -21,7 +21,15 @@ export function resetLogPrefix(): void {
 export function setLogPrefix(prefix: string): void {
     logPrefix = prefix;
     if (loggerInstance) {
-        loggerInstance = loggerInstance.child({ prefix: logPrefix });
+        loggerInstance = loggerInstance.child({
+            prefix: logPrefix
+        }, {
+            // Preserve parent logger options
+            level: loggerInstance.level,
+            redact: loggerInstance.redact,
+            serializers: loggerInstance.serializers,
+            formatters: loggerInstance.formatters
+        });
     }
 }
 
@@ -44,19 +52,20 @@ function initializeLogger(): XFiLogger {
                 colorize: true,
                 translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
                 ignore: 'pid,hostname',
-                messageFormat: '{prefix} {msg}',
+                messageFormat: '{prefix} - {msg}',
                 singleLine: true,
                 errorProps: '*'
             }
         });
 
-        loggerInstance = pino({
+        const baseLogger = pino({
             level: process.env.XFI_LOG_LEVEL || (process.env.NODE_ENV === 'test' ? 'silent' : 'info'),
             timestamp: pino.stdTimeFunctions.isoTime,
             formatters: {
                 level: (label) => ({ level: label }),
                 bindings: (bindings) => bindings,
                 log: (object) => ({
+                    prefix: logPrefix,
                     ...object
                 })
             },
@@ -88,6 +97,8 @@ function initializeLogger(): XFiLogger {
             { stream: fileTransport },
             { stream: prettyTransport }
         ]));
+
+        loggerInstance = baseLogger;
     }
     return loggerInstance;
 }
