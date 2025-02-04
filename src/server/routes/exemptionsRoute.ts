@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { logger, setLogPrefix } from '../../utils/logger';
-import { ConfigManager } from '../../utils/configManager';
+import { ConfigManager } from '../../core/configManager';
 
 export async function exemptionsRoute(req: Request, res: Response) {
     const archetype = req.params.archetype;

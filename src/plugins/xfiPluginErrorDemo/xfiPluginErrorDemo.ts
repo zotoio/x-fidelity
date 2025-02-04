@@ -2,8 +2,8 @@ import { XFiPlugin, PluginError } from '../../types/typeDefs';
 import { errorDemoOperator } from './operators/errorDemoOperator';
 import { errorDemoFact } from './facts/errorDemoFact';
 
-const errorDemoPlugin: XFiPlugin = {
-    name: 'error-demo-plugin',
+const plugin: XFiPlugin = {
+    name: 'xfiPluginErrorDemo',
     version: '1.0.0',
     facts: [errorDemoFact],
     operators: [errorDemoOperator],
@@ -12,10 +12,9 @@ const errorDemoPlugin: XFiPlugin = {
         level: 'error',
         details: {
             source: 'plugin',
-            originalError: error,
-            stack: error.stack
+            originalError: error
         }
     })
 };
 
-export default errorDemoPlugin;
+export { plugin };

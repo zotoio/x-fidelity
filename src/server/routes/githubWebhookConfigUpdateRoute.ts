@@ -6,7 +6,7 @@ import { URL } from 'url';
 import path from 'path';
 import fs from 'fs';
 import { clearCache } from '../cacheManager';
-import { ConfigManager } from '../../utils/configManager';
+import { ConfigManager } from '../../core/configManager';
 import { options } from '../../core/cli';
 
 export async function githubWebhookConfigUpdateRoute(req: Request, res: Response) {

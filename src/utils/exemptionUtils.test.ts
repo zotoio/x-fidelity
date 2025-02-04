@@ -1,4 +1,4 @@
-import { loadLocalExemptions, loadRemoteExemptions, normalizeGitHubUrl, isExempt } from './exemptionLoader';
+import { loadLocalExemptions, loadRemoteExemptions, normalizeGitHubUrl, isExempt } from './exemptionUtils';
 import fs from 'fs';
 import path from 'path';
 import { logger } from './logger';

@@ -19,15 +19,17 @@ if (!logger || typeof logger.info !== 'function') {
     (global as any).logger = fallbackLogger;
 }
 
+export const DEMO_CONFIG_PATH = path.resolve(__dirname, '../demoConfig');
+
 program
     .option("-d, --dir <directory>", "code directory to analyze. equivalent of directory argument")
     .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
-    .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules")
+    .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules. This takes precedence over localConfigPath.")
     .option("-o, --openaiEnabled <boolean>", "Enable OpenAI analysis", false)
     .option("-t, --telemetryCollector <telemetryCollector>", "The URL telemetry data will be sent to for usage analysis")
     .option("-m, --mode <mode>", "Run mode: 'client' or 'server'", "client")
     .option("-p, --port <port>", "The port to run the server on", "8888")
-    .option("-l, --localConfigPath <path>", "Path to local archetype config and rules")
+    .option("-l, --localConfigPath <path>", "Path to local archetype config and rules", DEMO_CONFIG_PATH)
     .option("-j, --jsonTTL <minutes>", "Set the server json cache TTL in minutes", "10")
     .option("-e, --extensions <modules...>", "Space-separated list of npm module names to load as extensions")
     .version(version, "-v, --version", "Output the version number of xfidelity")

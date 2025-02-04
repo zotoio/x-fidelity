@@ -1,5 +1,5 @@
 import { logger } from '../../utils/logger';
-import { ConfigManager, REPO_GLOBAL_CHECK } from '../../utils/configManager';
+import { ConfigManager, REPO_GLOBAL_CHECK } from '../configManager';
 import { ArchetypeConfig, ResultMetadata } from '../../types/typeDefs';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';

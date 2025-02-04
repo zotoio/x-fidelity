@@ -2,7 +2,7 @@ import { OperatorDefn } from '../types/typeDefs';
 import { logger } from '../utils/logger';
 import path from 'path';
 import fs from 'fs';
-import { REPO_GLOBAL_CHECK } from '../utils/configManager';
+import { REPO_GLOBAL_CHECK } from '../core/configManager';
 import { options } from '../core/cli';
 
 const nonStandardDirectoryStructure: OperatorDefn = {

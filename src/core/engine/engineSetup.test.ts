@@ -3,14 +3,14 @@ import { Engine } from 'json-rules-engine';
 import { loadOperators } from '../../operators';
 import { loadFacts } from '../../facts';
 import { sendTelemetry } from '../../utils/telemetry';
-import { ConfigManager } from '../../utils/configManager';
+import { ConfigManager } from '../configManager';
 import { logger } from '../../utils/logger';
 
 jest.mock('json-rules-engine');
 jest.mock('../../operators');
 jest.mock('../../facts');
 jest.mock('../../utils/telemetry');
-jest.mock('../../utils/configManager');
+jest.mock('../configManager');
 jest.mock('../../utils/logger');
 
 describe('setupEngine', () => {

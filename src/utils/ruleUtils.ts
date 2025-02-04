@@ -1,9 +1,9 @@
-import { logger } from '../utils/logger';
+import { logger } from './logger';
 import fs from 'fs';
 import path from 'path';
-import { axiosClient } from '../utils/axiosClient';
-import { isOpenAIEnabled } from '../utils/openaiUtils';
-import { validateRule } from '../utils/jsonSchemas';
+import { axiosClient } from './axiosClient';
+import { isOpenAIEnabled } from './openaiUtils';
+import { validateRule } from './jsonSchemas';
 import { LoadLocalConfigRuleParams, LoadLocalRuleParams, LoadRemoteRuleParams, LoadRulesParams, RuleConfig } from '../types/typeDefs';
 
 async function loadRules(params: LoadRulesParams): Promise<RuleConfig[]> {
@@ -19,7 +19,7 @@ async function loadRules(params: LoadRulesParams): Promise<RuleConfig[]> {
         } else if (localConfigPath) {
             rule = await loadLocalConfigRule({ ruleName, localConfigPath });
         } else {
-            rule = await loadDefaultRule({ ruleName });
+            rule = null;
         }
 
         if (rule) {

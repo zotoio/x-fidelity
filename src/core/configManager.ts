@@ -1,16 +1,14 @@
 import { execSync } from 'child_process';
-import { axiosClient } from "./axiosClient";
-import { logger, setLogPrefix } from "./logger";
+import { axiosClient } from "../utils/axiosClient";
+import { logger, setLogPrefix } from "../utils/logger";
 import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig, Exemption } from "../types/typeDefs";
-import { pluginRegistry } from '../core/pluginRegistry';
-import { loadExemptions } from "./exemptionLoader";
-import { archetypes } from "../archetypes";
-import { options } from '../core/cli';
+import { pluginRegistry } from './pluginRegistry';
+import { loadExemptions } from "../utils/exemptionUtils";
+import { options } from './cli';
 import fs from 'fs';
 import * as path from 'path';
-import { validateArchetype, validateRule } from './jsonSchemas';
-import { loadRules } from '../rules';
-import { cwd } from "process";
+import { validateArchetype, validateRule } from '../utils/jsonSchemas';
+import { loadRules } from '../utils/ruleUtils';
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
@@ -108,9 +106,7 @@ export class ConfigManager {
                 config.archetype = await this.fetchRemoteConfig(configServer, archetype, logPrefix);
             } else if (localConfigPath) {
                 config.archetype = await ConfigManager.loadLocalConfig({ archetype, localConfigPath });
-            } else {
-                config.archetype = archetypes[archetype];
-            }
+            } 
 
             if (!config.archetype || Object.keys(config.archetype).length === 0) {
                 throw new Error(`No valid configuration found for archetype: ${archetype}`);

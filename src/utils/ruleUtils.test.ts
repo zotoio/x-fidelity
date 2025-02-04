@@ -1,16 +1,16 @@
-import { loadRules } from './index';
-import { axiosClient } from '../utils/axiosClient';
+import { loadRules } from './ruleUtils';
+import { axiosClient } from './axiosClient';
 import fs from 'fs';
 import path from 'path';
-import { logger } from '../utils/logger';
-import { isOpenAIEnabled } from '../utils/openaiUtils';
+import { logger } from './logger';
+import { isOpenAIEnabled } from './openaiUtils';
 
-jest.mock('../utils/openaiUtils');
-jest.mock('../utils/jsonSchemas', () => ({
+jest.mock('./openaiUtils');
+jest.mock('./jsonSchemas', () => ({
   validateRule: jest.fn().mockReturnValue(true)
 }));
 
-jest.mock('../utils/axiosClient');
+jest.mock('./axiosClient');
 jest.mock('fs', () => ({
     //...jest.requireActual('fs'),
     promises: {
@@ -21,7 +21,7 @@ jest.mock('fs', () => ({
     readdirSync: jest.fn(),
   }));
 jest.mock('path');
-jest.mock('../utils/logger', () => ({
+jest.mock('./logger', () => ({
     logger: {
         debug: jest.fn(),
         error: jest.fn(),
@@ -41,7 +41,7 @@ describe('loadRules', () => {
         mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/testRule-rule.json');
 
-        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'] });
+        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'], localConfigPath: '/path' });
 
         expect(result).toEqual([JSON.parse(mockRuleContent)]);
         expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/testRule-rule.json', 'utf8');
@@ -94,7 +94,7 @@ describe('loadRules', () => {
         mockedFsPromises.readFile.mockResolvedValue(mockRuleContent);
         (path.join as jest.Mock).mockReturnValue('/path/to/openaiRule-rule.json');
 
-        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['openaiRule'] });
+        const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['openaiRule'], localConfigPath: '/path' });
 
         expect(result).toEqual([JSON.parse(mockRuleContent)]);
     });

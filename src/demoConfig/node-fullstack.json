@@ -6,18 +6,24 @@
         "noDatabases-iterative",
         "nonStandardDirectoryStructure-global",
         "openaiAnalysisTop5-global",
-        "openaiAnalysisA11y-global"
+        "openaiAnalysisA11y-global",
+        "error-demo",
+        "custom"
     ],
     "operators": [
         "fileContains",
         "outdatedFramework",
         "nonStandardDirectoryStructure",
-        "openaiAnalysisHighSeverity"
+        "openaiAnalysisHighSeverity",
+        "customOperator",
+        "errorDemoOperator"
     ],
     "facts": [
         "repoFilesystemFacts",
         "repoDependencyFacts",
-        "openaiAnalysisFacts"
+        "openaiAnalysisFacts",
+        "customFact",
+        "errorDemoFact"
     ],
     "config": {
         "minimumDependencyVersions": {

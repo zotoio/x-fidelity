@@ -3,7 +3,7 @@ import { RuleProperties } from 'json-rules-engine';
 import { logger, setLogPrefix } from '../../utils/logger';
 import { validateUrlInput } from '../../utils/inputValidation';
 import { getRuleListCache, setRuleListCache } from '../cacheManager';
-import { ConfigManager } from '../../utils/configManager';
+import { ConfigManager } from '../../core/configManager';
 import { options } from '../../core/cli';
 
 const DEFAULT_TTL = parseInt(options.jsonTTL) * 60 * 1000; // Convert CLI option to milliseconds

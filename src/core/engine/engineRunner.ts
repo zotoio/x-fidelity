@@ -1,6 +1,6 @@
 import { ScanResult, RuleFailure, ErrorLevel } from '../../types/typeDefs';
 import { logger } from '../../utils/logger';
-import { REPO_GLOBAL_CHECK } from '../../utils/configManager';
+import { REPO_GLOBAL_CHECK } from '../configManager';
 import { executeErrorAction } from './errorActionExecutor';
 
 import { RunEngineOnFilesParams } from '../../types/typeDefs';
@@ -113,7 +113,6 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 details: {
                     message: `${errorSource} execution failed: ${(handledError || error).message}`,
                     source: errorSource as "operator" | "fact" | "plugin" | "rule" | "unknown",
-                    originalError: handledError || error,
                     stack: (handledError || error).stack,
                     details: (error as any)?.pluginError?.details
                 }

@@ -1,22 +1,6 @@
 import { ConfigManager, REPO_GLOBAL_CHECK } from './configManager';
-import { isExempt, loadLocalExemptions, normalizeGitHubUrl } from "./exemptionLoader";
-import { loadExemptions } from './exemptionLoader';
-
-jest.mock('../archetypes', () => ({
-  archetypes: {
-    'node-fullstack': {
-      rules: ['rule1', 'rule2'],
-      operators: ['operator1', 'operator2'],
-      facts: ['fact1', 'fact2'],
-      config: {
-        minimumDependencyVersions: {},
-        standardStructure: {},
-        blacklistPatterns: [],
-        whitelistPatterns: []
-      }
-    }
-  }
-}));
+import { isExempt, loadLocalExemptions, normalizeGitHubUrl } from "../utils/exemptionUtils";
+import { loadExemptions } from '../utils/exemptionUtils';
 
 describe('normalizeGitHubUrl', () => {
     it('should normalize URLs to SSH format', () => {
@@ -46,17 +30,16 @@ describe('normalizeGitHubUrl', () => {
         expect(() => normalizeGitHubUrl('http://github.com/invalid')).toThrow('Invalid GitHub URL format');
     });
 });
-import { axiosClient } from './axiosClient';
-import { validateArchetype } from './jsonSchemas';
+import { axiosClient } from '../utils/axiosClient';
+import { validateArchetype } from '../utils/jsonSchemas';
 import fs from 'fs';
-import { options } from '../core/cli';
-import { logger } from './logger';
-import { archetypes } from '../archetypes';
-import { sendTelemetry } from './telemetry';
+import { DEMO_CONFIG_PATH, options } from './cli';
+import { logger } from '../utils/logger';
+import { sendTelemetry } from '../utils/telemetry';
 
-jest.mock('./axiosClient');
-jest.mock('../rules');
-jest.mock('./jsonSchemas', () => ({
+jest.mock('../utils/axiosClient');
+jest.mock('../utils/ruleUtils');
+jest.mock('../utils/jsonSchemas', () => ({
   validateArchetype: jest.fn().mockReturnValue(true)
 }));
 jest.mock('fs', () => ({
@@ -75,7 +58,7 @@ jest.mock('../core/cli', () => ({
         archetype: 'node-fullstack'
     }
 }));
-jest.mock('./logger', () => ({
+jest.mock('../utils/logger', () => ({
     logger: {
         debug: jest.fn(),
         error: jest.fn(),
@@ -83,7 +66,7 @@ jest.mock('./logger', () => ({
         warn: jest.fn()
     }
 }));
-jest.mock('./telemetry', () => ({
+jest.mock('../utils/telemetry', () => ({
     sendTelemetry: jest.fn()
 }));
 
@@ -158,36 +141,6 @@ describe('ConfigManager', () => {
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
         });
 
-        it('should use default archetypes when no configServer or localConfigPath is provided', async () => {
-            options.configServer = '';
-            options.localConfigPath = '';
-            const config = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
-            expect(config.archetype).toEqual(archetypes['node-fullstack']);
-        });
-
-        it('should use default archetypes when no configServer or localConfigPath is provided', async () => {
-            options.configServer = '';
-            options.localConfigPath = '';
-            const config = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
-            expect(config.archetype).toEqual({
-                rules: ['rule1', 'rule2'],
-                operators: ['operator1', 'operator2'],
-                facts: ['fact1', 'fact2'],
-                config: expect.objectContaining({
-                    minimumDependencyVersions: {},
-                    standardStructure: {},
-                    blacklistPatterns: [],
-                    whitelistPatterns: []
-                })
-            });
-        });
-
-        it('should use default archetypes when no configServer or localConfigPath is provided', async () => {
-            options.configServer = '';
-            options.localConfigPath = '';
-            const config = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
-            expect(config.archetype).toEqual(expect.objectContaining(archetypes['node-fullstack']));
-        });
     });
 
     describe('getLoadedConfigs', () => {

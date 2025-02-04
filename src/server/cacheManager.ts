@@ -1,4 +1,4 @@
-import { ConfigManager } from '../utils/configManager';
+import { ConfigManager } from '../core/configManager';
 import { logger } from '../utils/logger';
 
 const MAX_CACHE_SIZE = 1000; // Maximum number of items in the cache

@@ -1,0 +1,27 @@
+{
+    "name": "custom-rule",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "customFact",
+                "operator": "customOperator",
+                "value": "custom fact data"
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "Custom rule detected matching data",
+            "details": {
+                "fact": "customFact"
+            }
+        }
+    }
+}

@@ -1,7 +1,7 @@
 import { runEngineOnFiles } from './engineRunner';
 import { Engine } from 'json-rules-engine';
 import { logger } from '../../utils/logger';
-import { REPO_GLOBAL_CHECK } from '../../utils/configManager';
+import { REPO_GLOBAL_CHECK } from '../configManager';
 
 jest.mock('json-rules-engine');
 jest.mock('../../utils/logger', () => ({

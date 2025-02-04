@@ -81,7 +81,7 @@ export async function main() {
 }
 
 export * from './utils/axiosClient';
-export * from './utils/configManager';
+export * from './core/configManager';
 export * from './utils/logger';
 export * from './core/engine/analyzer';
 export * from './types';
