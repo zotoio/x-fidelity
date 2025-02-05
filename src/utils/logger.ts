@@ -121,9 +121,3 @@ export function setLogLevel(level: string): void {
     }
 }
 
-export function setLogLevel(level: string): void {
-    if (loggerInstance) {
-        loggerInstance.level = level;
-    }
-}
-
