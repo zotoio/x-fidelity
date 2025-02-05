@@ -7,6 +7,7 @@ export const regexExtractFact: FactDefn = {
         try {
             const fileData = await almanac.factValue('fileData');
             if (!fileData?.fileContent) {
+                logger.debug('No file content available');
                 return { result: [] };
             }
 
