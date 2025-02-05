@@ -51,9 +51,7 @@ function initializeLogger(): XFiLogger {
         });
 
         // Add debug log at initialization
-        if (process.env.XFI_LOG_LEVEL) {
-            console.log('XFI_LOG_LEVEL:', process.env.XFI_LOG_LEVEL);
-        }
+        console.log('XFI_LOG_LEVEL:', process.env.XFI_LOG_LEVEL || 'not set');
 
         const loggerOptions: pino.LoggerOptions = {
             level: process.env.XFI_LOG_LEVEL || 
@@ -115,6 +113,12 @@ export const logger: XFiLogger = getLogger();
 // Add a way to reset the logger (mainly for testing)
 export function resetLogger(): void {
     loggerInstance = null;
+}
+
+export function setLogLevel(level: string): void {
+    if (loggerInstance) {
+        loggerInstance.level = level;
+    }
 }
 
 export function setLogLevel(level: string): void {
