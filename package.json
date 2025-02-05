@@ -24,7 +24,7 @@
     "commit": "yarn test && git-cz",
     "release": "semantic-release",
     "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
-    "build-run": "yarn build && node . --dir . --extensions xfiPluginSimpleExample xfiPluginErrorDemo | jq -R -r '. as $line | try fromjson catch $line'",
+    "build-run": "yarn build && node . --dir . --extensions xfiPluginRemoteStringValidator | jq -R -r '. as $line | try fromjson catch $line'",
     "start-server": "ts-node src/index.ts --mode server",
     "lint": "eslint . ",
     "lint:fix": "eslint . --fix",

@@ -1,0 +1,35 @@
+{                                                                                                                                    
+     "name": "invalidSystemIdConfigured",                                                                                              
+     "conditions": {                                                                                                                  
+         "all": [  
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "testMatch.json"
+            },                                                                                                                   
+            {                                                                                                                        
+                "fact": "remoteSubstringValidation",                                                                                          
+                "params": {                                                                                                          
+                    "pattern": "\"systemId\":[\\s]*\"([a-z]*)\"",                                                              
+                    "flags": "gi",
+                    "resultFact": "remoteCheckResultFact"                                                                                                    
+                },                                                                                                                   
+                "operator": "invalidRemoteValidation",                                                                            
+                "value": {                                                                                                          
+                    "errors": 0,                                                                                      
+                    "exclude": ["def", "ghi"]                                                                                                                
+                }                                                                                                                    
+            }                                                                                                                        
+         ]                                                                                                                            
+     },                                                                                                                               
+     "event": {                                                                                                                       
+         "type": "warning",                                                                                                           
+         "params": {                                                                                                                  
+             "message": "One or more of the extracted strings failed remote validation.",                                                                            
+             "details": {                                                                                                             
+                 "fact": "remoteCheckResultFact"                                                                                           
+             }                                                                                                                        
+         }                                                                                                                            
+     }                                                                                                                                
+ }    

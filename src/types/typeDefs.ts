@@ -1,6 +1,5 @@
 import { Engine, OperatorEvaluator } from 'json-rules-engine';
 import { JSONSchemaType } from 'ajv';
-import type { Logger as PinoLogger, LoggerOptions } from 'pino';
 
 export type OperatorDefn = {
     name: string,
