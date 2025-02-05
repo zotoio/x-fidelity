@@ -55,7 +55,7 @@ function initializeLogger(): XFiLogger {
 
         const loggerOptions: pino.LoggerOptions = {
             level: process.env.XFI_LOG_LEVEL || 
-                  (process.env.NODE_ENV === 'test' && !process.env.XFI_LOG_LEVEL ? 'silent' : 'info'),
+                  (process.env.NODE_ENV === 'test' ? 'silent' : 'info'),
             timestamp: pino.stdTimeFunctions.isoTime,
             formatters: {
                 level: (label) => ({ level: label }),
