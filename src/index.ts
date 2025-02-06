@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { generateLogPrefix, logger, setLogPrefix } from './utils/logger';
+import { logger, getLogPrefix, setLogLevel } from './utils/logger';
 import json from 'prettyjson';
 import { options } from "./core/cli";
 import { analyzeCodebase } from "./core/engine/analyzer";
@@ -7,8 +7,7 @@ import { startServer } from './server/configServer';
 import { sendTelemetry } from './utils/telemetry';
 import { ResultMetadata } from './types/typeDefs';
 
-const executionLogPrefix = generateLogPrefix();
-setLogPrefix(executionLogPrefix);
+const executionLogPrefix = getLogPrefix();
 
 // Function to handle errors and send telemetry
 const handleError = async (error: Error) => {
