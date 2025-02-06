@@ -3,11 +3,13 @@ import pino from 'pino';
 import { maskSensitiveData } from './maskSensitiveData';
 
 // Create a singleton logger instance
-let loggerInstance: pino.Logger | undefined;;
+let loggerInstance: pino.Logger | undefined;
 let loglevel = process.env.XFI_LOG_LEVEL || 
                   (process.env.NODE_ENV === 'test' ? 'silent' : 'info');
 
-let logPrefix: string = generateLogPrefix();
+// Initialize logger immediately
+const logPrefix: string = generateLogPrefix();
+initializeLogger();
 
 export function generateLogPrefix(): string {
     return randomUUID().substring(0, 8);

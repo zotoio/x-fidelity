@@ -154,7 +154,7 @@ describe('setupEngine', () => {
         await setupEngine(mockParams);
 
         expect(mockAddFact).toHaveBeenCalledTimes(1);
-        expect(mockAddFact).toHaveBeenCalledWith('fact1', expect.any(Function));
+        expect(mockAddFact).toHaveBeenCalledWith('fact1', expect.any(Function), { priority: 1 });
         expect(mockAddFact).not.toHaveBeenCalledWith('openaiAnalysis', expect.any(Function));
     });
 
@@ -176,7 +176,7 @@ describe('setupEngine', () => {
         await setupEngine(mockParams);
 
         expect(mockAddFact).toHaveBeenCalledTimes(2);
-        expect(mockAddFact).toHaveBeenCalledWith('fact1', expect.any(Function));
-        expect(mockAddFact).toHaveBeenCalledWith('openaiAnalysis', expect.any(Function));
+        expect(mockAddFact).toHaveBeenCalledWith('fact1', expect.any(Function), { priority: 1 });
+        expect(mockAddFact).toHaveBeenCalledWith('openaiAnalysis', expect.any(Function), { priority: 1 });
     });
 });

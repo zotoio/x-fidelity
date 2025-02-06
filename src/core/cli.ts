@@ -6,9 +6,6 @@ import { version } from "../../package.json";
 import { validateInput } from '../utils/inputValidation';
 import json from 'prettyjson';
 
-const loglevel = process.env.XFI_LOG_LEVEL || 
-                  (process.env.NODE_ENV === 'test' ? 'silent' : 'info');
-setLogLevel(loglevel);
 const executionLogPrefix = generateLogPrefix();
 setLogPrefix(executionLogPrefix);
 
