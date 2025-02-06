@@ -8,7 +8,7 @@ let loglevel = process.env.XFI_LOG_LEVEL ||
                   (process.env.NODE_ENV === 'test' ? 'silent' : 'info');
 
 // Initialize logger immediately
-const logPrefix: string = generateLogPrefix();
+let logPrefix: string = generateLogPrefix();
 initializeLogger();
 
 export function generateLogPrefix(): string {
