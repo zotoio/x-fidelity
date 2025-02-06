@@ -1,10 +1,16 @@
-import { logger } from '../utils/logger';
+import { generateLogPrefix, logger, setLogLevel, setLogPrefix } from '../utils/logger';
 import { program } from "commander";
 import path from "path";
 import fs from "fs";
 import { version } from "../../package.json";
 import { validateInput } from '../utils/inputValidation';
 import json from 'prettyjson';
+
+const loglevel = process.env.XFI_LOG_LEVEL || 
+                  (process.env.NODE_ENV === 'test' ? 'silent' : 'info');
+setLogLevel(loglevel);
+const executionLogPrefix = generateLogPrefix();
+setLogPrefix(executionLogPrefix);
 
 // Ensure logger is initialized
 if (!logger || typeof logger.info !== 'function') {

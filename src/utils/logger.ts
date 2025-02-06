@@ -1,10 +1,12 @@
 import { randomUUID } from 'crypto';
 import pino from 'pino';
-import { XFiLogger } from '../types/typeDefs';
 import { maskSensitiveData } from './maskSensitiveData';
 
 // Create a singleton logger instance
-let loggerInstance: pino.Logger | null = null;
+let loggerInstance: pino.Logger | undefined;;
+let loglevel = process.env.XFI_LOG_LEVEL || 
+                  (process.env.NODE_ENV === 'test' ? 'silent' : 'info');
+
 let logPrefix: string = generateLogPrefix();
 
 export function generateLogPrefix(): string {
@@ -30,8 +32,8 @@ export function getLogPrefix(): string {
 }   
 
 // Initialize logger function that will create the singleton if it doesn't exist
-function initializeLogger(): XFiLogger {
-    if (!loggerInstance) {
+function initializeLogger(force?: boolean): pino.Logger {
+    if (!loggerInstance || force) {
         const fileTransport = pino.destination({
             dest: 'x-fidelity.log',
             sync: false,
@@ -41,6 +43,7 @@ function initializeLogger(): XFiLogger {
         const prettyTransport = pino.transport({
             target: 'pino-pretty',
             options: {
+                loglevel: loglevel,
                 colorize: true,
                 translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
                 ignore: 'pid,hostname',
@@ -50,13 +53,9 @@ function initializeLogger(): XFiLogger {
             }
         });
 
-        // Add debug log at initialization
-        console.log('XFI_LOG_LEVEL:', process.env.XFI_LOG_LEVEL || 'not set');
-
         const loggerOptions: pino.LoggerOptions = {
-            level: process.env.XFI_LOG_LEVEL || 
-                  (process.env.NODE_ENV === 'test' ? 'silent' : 'info'),
             timestamp: pino.stdTimeFunctions.isoTime,
+            level: 'info',
             formatters: {
                 level: (label) => ({ level: label }),
                 bindings: (bindings) => bindings,
@@ -94,8 +93,8 @@ function initializeLogger(): XFiLogger {
         loggerInstance = pino(
             loggerOptions,
             pino.multistream([
-                { stream: fileTransport },
-                { stream: prettyTransport }
+                { level: loglevel, stream: fileTransport },
+                { level: loglevel, stream: prettyTransport }
             ])
         );
     }
@@ -103,16 +102,17 @@ function initializeLogger(): XFiLogger {
 }
 
 // Export the logger getter function
-export function getLogger(): XFiLogger {
-    return initializeLogger();
+export function getLogger(): pino.Logger {
+    const logger = initializeLogger();
+    return logger;
 }
 
 // For backward compatibility, also export the logger instance directly
-export const logger: XFiLogger = getLogger();
+export const logger: pino.Logger = getLogger();
 
 // Add a way to reset the logger (mainly for testing)
 export function resetLogger(): void {
-    loggerInstance = null;
+    loggerInstance = initializeLogger(true);;
 }
 
 export function setLogLevel(level: string): void {
