@@ -40,33 +40,6 @@ export function resetLogPrefix(): void {
     }
 }
 
-export function setLogLevel(level: string): void {
-    if (loggerInstance) {
-        loggerInstance.level = level;
-    }
-}
-
-export function generateLogPrefix(): string {
-    return randomUUID().substring(0, 8);
-}
-
-export function resetLogPrefix(): void {
-    logPrefix = generateLogPrefix();
-    if (loggerInstance) {
-        loggerInstance = loggerInstance.child({ prefix: logPrefix });
-    }
-}
-
-export function setLogPrefix(prefix: string): void {
-    logPrefix = prefix;
-    if (loggerInstance) {
-        loggerInstance = loggerInstance.child({ prefix: logPrefix });
-    }
-}
-
-export function getLogPrefix(): string {
-    return logPrefix;
-}   
 
 // Initialize logger function that will create the singleton if it doesn't exist
 function initializeLogger(force?: boolean): pino.Logger {
