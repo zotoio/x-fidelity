@@ -6,10 +6,45 @@ import { maskSensitiveData } from './maskSensitiveData';
 let loggerInstance: pino.Logger | undefined;
 let loglevel = process.env.XFI_LOG_LEVEL || 
                   (process.env.NODE_ENV === 'test' ? 'silent' : 'info');
+let logPrefix: string;
 
-// Initialize logger immediately
-let logPrefix: string = generateLogPrefix();
-initializeLogger();
+// Initialize logger and prefix immediately
+function initialize() {
+    logPrefix = generateLogPrefix();
+    initializeLogger();
+}
+
+// Run initialization
+initialize();
+
+// Export functions first, before they're used
+export function generateLogPrefix(): string {
+    return randomUUID().substring(0, 8);
+}
+
+export function getLogPrefix(): string {
+    return logPrefix;
+}
+
+export function setLogPrefix(prefix: string): void {
+    logPrefix = prefix;
+    if (loggerInstance) {
+        loggerInstance = loggerInstance.child({ prefix: logPrefix });
+    }
+}
+
+export function resetLogPrefix(): void {
+    logPrefix = generateLogPrefix();
+    if (loggerInstance) {
+        loggerInstance = loggerInstance.child({ prefix: logPrefix });
+    }
+}
+
+export function setLogLevel(level: string): void {
+    if (loggerInstance) {
+        loggerInstance.level = level;
+    }
+}
 
 export function generateLogPrefix(): string {
     return randomUUID().substring(0, 8);

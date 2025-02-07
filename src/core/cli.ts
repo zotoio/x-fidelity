@@ -1,13 +1,10 @@
-import { generateLogPrefix, logger, setLogLevel, setLogPrefix } from '../utils/logger';
+import { logger } from '../utils/logger';
 import { program } from "commander";
 import path from "path";
 import fs from "fs";
 import { version } from "../../package.json";
 import { validateInput } from '../utils/inputValidation';
 import json from 'prettyjson';
-
-const executionLogPrefix = generateLogPrefix();
-setLogPrefix(executionLogPrefix);
 
 // Ensure logger is initialized
 if (!logger || typeof logger.info !== 'function') {
