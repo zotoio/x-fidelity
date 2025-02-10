@@ -14,7 +14,7 @@
       "require": "./dist/index.js"
     },
     "./*": "./dist/*"
-    },  
+  },
   "scripts": {
     "build": "rimraf dist/ && tsc && yarn copy-files",
     "copy-files": "cp -rf src/demoConfig dist/ && cp dist/index.js dist/xfidelity",
@@ -59,8 +59,8 @@
     "@types/semver": "^7.5.8",
     "@types/supertest": "^6.0.2",
     "@types/winston": "^2.4.4",
-    "@typescript-eslint/eslint-plugin": "^5.59.0",
-    "@typescript-eslint/parser": "^5.59.0",
+    "@typescript-eslint/eslint-plugin": "^8.23.0",
+    "@typescript-eslint/parser": "^8.23.0",
     "commitizen": "^4.3.0",
     "conventional-changelog-cli": "^5.0.0",
     "conventional-recommended-bump": "^10.0.0",
@@ -87,14 +87,15 @@
     "express-rate-limit": "^7.4.0",
     "helmet": "^8.0.0",
     "json-rules-engine": "^7.2.1",
+    "jsonpath-plus": "^10.2.0",
     "lodash": "^4.17.21",
     "nodemon": "^3.0.2",
     "openai": "^4.19.0",
     "ora": "^8.0.1",
-    "prettyjson": "^1.2.5",
-    "semver": "^7.6.2",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
+    "prettyjson": "^1.2.5",
+    "semver": "^7.6.2",
     "yarn": "^1.22.21"
   },
   "peerDependencies": {

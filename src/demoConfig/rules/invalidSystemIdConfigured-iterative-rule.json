@@ -22,8 +22,7 @@
                         "body": {
                             "systemId": "#MATCH#"
                         },
-                        "responseJsonPath": "$.data.systemId",
-                        "responseJsonPathValue": "isValid"
+                        "checkJsonPath": "$.validSystems[?(@.id == '#MATCH#')]"
                     },
                     "resultFact": "remoteCheckResultFact"                                                                                                    
                 },                                                                                                                   

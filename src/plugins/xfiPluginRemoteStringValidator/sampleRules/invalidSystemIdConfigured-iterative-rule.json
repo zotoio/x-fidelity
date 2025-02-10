@@ -13,7 +13,7 @@
                 "params": {                                                                                                          
                     "pattern": "\"systemId\":[\\s]*\"([a-z]*)\"",                                                              
                     "flags": "gi",
-                    "validationOptions": {
+                    "validationParams": {
                         "url": "http://localhost:4200/systemIdValidator",
                         "method": "POST",
                         "headers": {
@@ -22,20 +22,17 @@
                         "body": {
                             "systemId": "#MATCH#"
                         },
-                        "responsePath": "$.data.systemId",
-                        "responsePathValue": "isValid"
+                        "checkJsonPath": "$.validSystems[?(@.id == '#MATCH#')]"
                     },
                     "resultFact": "remoteCheckResultFact"                                                                                                    
                 },                                                                                                                   
                 "operator": "invalidRemoteValidation",                                                                            
-                "value": {                                                                                                          
-                    "exclude": ["def", "ghi"]                                                                                                                
-                }                                                                                                                    
+                "value": true                                                                                                                   
             }                                                                                                                        
          ]                                                                                                                            
      },                                                                                                                               
      "event": {                                                                                                                       
-         "type": "warning",                                                                                                           
+         "type": "fatality",                                                                                                           
          "params": {                                                                                                                  
              "message": "One or more of the extracted strings failed remote validation.",                                                                            
              "details": {                                                                                                             

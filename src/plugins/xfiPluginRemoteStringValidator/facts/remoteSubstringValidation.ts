@@ -2,6 +2,7 @@ import { AxiosResponse } from 'axios';
 import { FactDefn, FileData } from '../../../types/typeDefs';
 import { axiosClient } from '../../../utils/axiosClient';
 import { logger } from '../../../utils/logger';
+import { JSONPath as jp } from 'jsonpath-plus'; 
 
 export const remoteSubstringValidation: FactDefn = {
     name: 'remoteSubstringValidation',
@@ -43,14 +44,15 @@ export const remoteSubstringValidation: FactDefn = {
                         method: params.validationParams.method || 'GET',
                         headers: params.validationParams.headers || {},
                         body: params.validationParams.body || {},
-                        responseJsonPath: params.validationParams.responseJsonPath || '',
-                        responseJsonPathValue: params.validationParams.responseJsonPathValue || ''
+                        checkJsonPath: params.validationParams.checkJsonPath || ''
                     };
 
-                    const validationResult = await validateMatch(validationParams);
+                    const interpolatedValidationParams = JSON.parse(JSON.stringify(validationParams).replace(/#MATCH#/g, match.value));
+
+                    const validationResult = await validateMatch(interpolatedValidationParams);
 
                     if (!validationResult.isValid) {
-                        results.push({match, validationParams, validationResult});
+                        results.push({match, interpolatedValidationParams, validationResult});
                     }
                 }        
             }
@@ -82,8 +84,7 @@ interface RemoteValidationParams {
     method: string;
     headers: object;
     body: object;
-    responseJsonPath: string;
-    responseJsonPathValue: string;
+    checkJsonPath: string;
 }
 
 interface RemoteValidationResult {
@@ -92,7 +93,7 @@ interface RemoteValidationResult {
 }
 
 export async function validateMatch(params: RemoteValidationParams): Promise<RemoteValidationResult> {
-    const { value, url, method, headers, body, responseJsonPath, responseJsonPathValue } = params;
+    const { value, url, method, headers, body, checkJsonPath } = params;
 
     logger.debug({
         params,
@@ -100,6 +101,7 @@ export async function validateMatch(params: RemoteValidationParams): Promise<Rem
 
     let response: AxiosResponse<any, any>;
     let validatorUrl = url.replace('#MATCH#', value);
+    let validationResult: RemoteValidationResult  = { isValid: false };
 
     try {
         if (method.toUpperCase() === 'POST') {
@@ -115,23 +117,32 @@ export async function validateMatch(params: RemoteValidationParams): Promise<Rem
         logger.debug({
             params,
             response
-        }, 'Validation request complete');
+        }, 'Remote validation request complete');
 
         if (response.status !== 200) {
             throw new Error(`invalid status code: ${response.status}`);
         }
 
-        if (responseJsonPath) {
-            const jsonPathValue = response.data[responseJsonPath];
-            if (jsonPathValue !== responseJsonPathValue) {
-                throw new Error(`invalid response value: ${jsonPathValue}`);
-            }
+        const idToCheck = value;
+        const validationJsonPath = checkJsonPath.replace('#MATCH#', idToCheck);
+            
+        let jsonpathResult;
+        if (response) {
+            jsonpathResult = jp({ path: validationJsonPath, json: response.data });
+        }
+        
+        if (jsonpathResult?.length === 0) {
+            validationResult = {
+                isValid: false,
+                reason: `jsonPath check failed: ${{response, validationJsonPath}}}`
+            };
+        } else {
+            validationResult = {
+                isValid: true
+            };
         }
 
-        return {
-            isValid: response.data.isValid === true,
-            reason: response.data.reason
-        };
+        return validationResult;
 
     } catch (error: any) {
         
@@ -139,11 +150,11 @@ export async function validateMatch(params: RemoteValidationParams): Promise<Rem
             error,
             value,
             params
-        }, 'Validation request failed');
+        }, 'Remote validation request failed');
 
         return {
             isValid: false,
-            reason: error instanceof Error ? error.message : 'Unknown error occurred'
+            reason: error instanceof Error ? error.message : 'Remote validation request failed: Unknown error occurred'
         };
     }
 }

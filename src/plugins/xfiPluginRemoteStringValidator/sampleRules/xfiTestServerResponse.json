@@ -1,0 +1,12 @@
+{
+    "validSystems": [
+        {
+            "id": "abc",
+            "name": "System ABC"
+        },
+        {
+            "id": "def",
+            "name": "System DEF"
+        }
+    ]
+}
