@@ -32,7 +32,12 @@ const nonStandardDirectoryStructure: OperatorDefn = {
                     logger.debug(`Missing or invalid directory: ${newPath}`);
                     return true;
                 } else {
-                    result = checkStructure(newPath, structure[key]);
+                    if (structure[key] !== null) {
+                        const subResult = checkStructure(newPath, structure[key]);
+                        if (subResult) {
+                            return true;
+                        }
+                    }
                 }
             }
             return result;
