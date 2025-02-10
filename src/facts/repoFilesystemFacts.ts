@@ -81,8 +81,8 @@ function isBlacklisted({ filePath, repoPath, blacklistPatterns }: IsBlacklistedP
 
 function isWhitelisted({ filePath, repoPath, whitelistPatterns }: isWhitelistedParams): boolean {
     logger.debug({ filePath }, 'Checking file against whitelist patterns');
-    const normalizedPath = path.normalize(filePath);
-    const normalizedRepoPath = path.normalize(repoPath);
+    const normalizedPath = path.resolve(filePath);
+    const normalizedRepoPath = path.resolve(repoPath);
     
     if (!normalizedPath.startsWith(normalizedRepoPath)) {
         logger.warn(`Potential path traversal attempt detected: ${filePath}`);
