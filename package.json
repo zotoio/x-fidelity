@@ -26,6 +26,7 @@
     "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
     "build-run": "yarn build && node . --dir . --extensions xfiPluginRemoteStringValidator | jq -R -r '. as $line | try fromjson catch $line'",
     "start-server": "ts-node src/index.ts --mode server",
+    "start-test-server": "node -e \"require('http').createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(require('fs').readFileSync('src/plugins/xfiPluginRemoteStringValidator/sampleRules/xfiTestServerResponse.json')); }).listen(4200, () => console.log('Test server running on port 4200'));\"",
     "lint": "eslint . ",
     "lint:fix": "eslint . --fix",
     "perftest": "artillery run src/server/configServer.performance.test.yml",
