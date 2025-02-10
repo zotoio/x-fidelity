@@ -10,7 +10,7 @@ import { REPO_GLOBAL_CHECK } from '../core/configManager';
 jest.mock('fs');
 jest.mock('path');
 const mockedPath = jest.requireMock('path');
-mockedPath.resolve.mockImplementation((...args) => args.join('/'));
+mockedPath.resolve.mockImplementation((...args: string[]) => args.join('/'));
 
 describe('nonStandardDirectoryStructure', () => {
     const mockedFs = fs as jest.Mocked<typeof fs>;
