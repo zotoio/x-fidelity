@@ -19,6 +19,7 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
         repoPath,
         operation: 'collect-files'
     }, 'Collecting repo file data');
+    const visitedPaths = new Set();
     const files = fs.readdirSync(repoPath);
 
     for (const file of files) {
@@ -29,8 +30,13 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
             logger.warn(`Path traversal attempt detected: ${realFilePath}`);
             continue;
         }
+        if (visitedPaths.has(realFilePath)) {
+            logger.debug(`Already processed symlink target: ${realFilePath}`);
+            continue;
+        }
+        visitedPaths.add(realFilePath);
         logger.debug({ filePath }, 'Checking file');
-        const stats = await fs.promises.lstat(filePath);
+        const stats = await fs.promises.stat(filePath);
         if (stats.isDirectory()) {
             if (!isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns })) {
                 const dirFilesData = await collectRepoFileData(filePath, archetypeConfig);
