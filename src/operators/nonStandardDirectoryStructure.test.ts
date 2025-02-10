@@ -11,6 +11,15 @@ jest.mock('fs');
 jest.mock('path');
 const mockedPath = jest.requireMock('path');
 mockedPath.resolve.mockImplementation((...args: string[]) => args.join('/'));
+mockedPath.relative.mockImplementation((from: string, to: string) => {
+    // If "to" starts with "from", return the remainder; otherwise, return a string that starts with '..'
+    if (to.startsWith(from)) {
+        const rel = to.slice(from.length);
+        // If the result is empty, then they are the same directory, so return '.'
+        return rel === '' ? '.' : rel;
+    }
+    return '..' + to;
+});
 
 describe('nonStandardDirectoryStructure', () => {
     const mockedFs = fs as jest.Mocked<typeof fs>;
