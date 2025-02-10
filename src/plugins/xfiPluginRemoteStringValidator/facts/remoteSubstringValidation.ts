@@ -1,3 +1,4 @@
+import { AxiosResponse } from 'axios';
 import { FactDefn, FileData } from '../../../types/typeDefs';
 import { axiosClient } from '../../../utils/axiosClient';
 import { logger } from '../../../utils/logger';
@@ -19,7 +20,7 @@ export const remoteSubstringValidation: FactDefn = {
                 return { result: [] };
             }
 
-            const regex = new RegExp(params.pattern, params.flags || 'g');
+            const regex = new RegExp(params.pattern, params.flags || 'gi');
             const matches = [...fileData.fileContent.matchAll(regex)];
 
             const matchInfo = matches.map(match => ({
@@ -31,16 +32,19 @@ export const remoteSubstringValidation: FactDefn = {
             logger.debug({
                 filePath: fileData.filePath,
                 pattern: params.pattern,
-                matchCount: matchInfo.length
+                matchInfo
             }, 'Regex extraction complete');
 
             if (matchInfo.length > 0) {
                 for (const match of matchInfo) {
-                    const validationParams: ValidationParams = {
+                    const validationParams: RemoteValidationParams = {
+                        url: params.validationParams.url,
                         value: match.value,
-                        endpoint: params.validationEndpoint,
-                        validationType: params.validationType,
-                        options: params.validationOptions
+                        method: params.validationParams.method || 'GET',
+                        headers: params.validationParams.headers || {},
+                        body: params.validationParams.body || {},
+                        responseJsonPath: params.validationParams.responseJsonPath || '',
+                        responseJsonPathValue: params.validationParams.responseJsonPathValue || ''
                     };
 
                     const validationResult = await validateMatch(validationParams);
@@ -54,7 +58,7 @@ export const remoteSubstringValidation: FactDefn = {
             logger.debug({
                 filePath: fileData.filePath,
                 pattern: params.pattern,
-                matchCount: results.length
+                matchInfo
             }, 'Remote validation complete');
 
             almanac.addRuntimeFact(params.resultFact, results);
@@ -67,44 +71,62 @@ export const remoteSubstringValidation: FactDefn = {
                 pattern: params.pattern,
                 filePath: fileData?.filePath
             }, 'Error in remote validation');
-            return { result: [] };
+            return { result: error };
         }
     }
 };
 
-interface ValidationParams {
+interface RemoteValidationParams {
     value: string;
-    endpoint: string;
-    validationType: string;
-    options?: Record<string, any>;
+    url: string;
+    method: string;
+    headers: object;
+    body: object;
+    responseJsonPath: string;
+    responseJsonPathValue: string;
 }
 
-interface ValidationResult {
+interface RemoteValidationResult {
     isValid: boolean;
     reason?: string;
 }
 
-export async function validateMatch(params: ValidationParams): Promise<ValidationResult> {
-    const { value, endpoint, validationType, options = {} } = params;
+export async function validateMatch(params: RemoteValidationParams): Promise<RemoteValidationResult> {
+    const { value, url, method, headers, body, responseJsonPath, responseJsonPathValue } = params;
+
+    logger.debug({
+        params,
+    }, 'making validation request');
+
+    let response: AxiosResponse<any, any>;
+    let validatorUrl = url.replace('#MATCH#', value);
 
     try {
-        const response = await axiosClient.post(endpoint, {
-            value,
-            type: validationType,
-            options
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Validation-Type': validationType
-            },
-            timeout: 5000
-        });
+        if (method.toUpperCase() === 'POST') {
+            response = await axiosClient.post(validatorUrl, body, { headers });
+
+        } else if (method.toUpperCase() === 'GET') {
+            response = await axiosClient.get(validatorUrl, { headers });
+
+        } else {
+            throw new Error(`invalid method: ${method}`);
+        }
 
         logger.debug({
-            value,
-            validationType,
-            response: response.data
+            params,
+            response
         }, 'Validation request complete');
+
+        if (response.status !== 200) {
+            throw new Error(`invalid status code: ${response.status}`);
+        }
+
+        if (responseJsonPath) {
+            const jsonPathValue = response.data[responseJsonPath];
+            if (jsonPathValue !== responseJsonPathValue) {
+                throw new Error(`invalid response value: ${jsonPathValue}`);
+            }
+        }
 
         return {
             isValid: response.data.isValid === true,
@@ -112,11 +134,11 @@ export async function validateMatch(params: ValidationParams): Promise<Validatio
         };
 
     } catch (error: any) {
-        throw error
+        
         logger.error({
             error,
             value,
-            validationType
+            params
         }, 'Validation request failed');
 
         return {

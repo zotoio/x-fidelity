@@ -11,7 +11,8 @@ async function loadFacts(factNames: string[]): Promise<FactDefn[]> {
     const allAvailableFacts: Record<string, FactDefn> = {
         repoFilesystemFacts: { 
             name: 'fileData', 
-            fn: collectRepoFileData 
+            fn: collectRepoFileData,
+            priority: 100 
         },
         repoDependencyFacts: { 
             name: 'dependencyData', 

@@ -9,6 +9,7 @@ export type OperatorDefn = {
 export type FactDefn = {
     name: string,
     fn: (params: any, almanac: any) => Promise<any>
+    priority?: number
 }
 export interface ScanResult {
     filePath: string;
@@ -293,24 +294,5 @@ export interface PluginRegistry {
   getPluginFacts: () => FactDefn[];
   getPluginOperators: () => OperatorDefn[];
   executePluginFunction: (pluginName: string, functionName: string, ...args: any[]) => PluginResult;
-}
-
-export interface XFiLogger {
-    child(bindings: Record<string, unknown>): XFiLogger;
-    fatal(obj: unknown, msg?: string, ...args: unknown[]): void;
-    error(obj: unknown, msg?: string, ...args: unknown[]): void;
-    warn(obj: unknown, msg?: string, ...args: unknown[]): void;
-    info(obj: unknown, msg?: string, ...args: unknown[]): void;
-    debug(obj: unknown, msg?: string, ...args: unknown[]): void;
-    trace(obj: unknown, msg?: string, ...args: unknown[]): void;
-    level: string;
-    redact?: string[] | Record<string, any>;
-    serializers?: Record<string, (value: any) => any>;
-    formatters?: {
-        level?: (label: string) => object;
-        bindings?: (bindings: Record<string, any>) => object;
-        log?: (object: object) => object;
-    };
-    [key: string]: any;
 }
 

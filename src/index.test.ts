@@ -15,6 +15,9 @@ jest.mock('./utils/logger', () => ({
     debug: jest.fn(),
   },
   setLogPrefix: jest.fn(),
+  setLogLevel: jest.fn(),
+  getLogPrefix: jest.fn().mockReturnValue('mockLogPrefix'),
+  initializeLogger: jest.fn(),
   generateLogPrefix: jest.fn().mockReturnValue('mockLogPrefix'),
 }));
 jest.mock('./core/cli', () => ({

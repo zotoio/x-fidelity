@@ -1,13 +1,15 @@
 #!/usr/bin/env node
-import { logger, generateLogPrefix } from './utils/logger';
+import { logger, initializeLogger, getLogPrefix, setLogLevel } from './utils/logger';
+initializeLogger()
+const executionLogPrefix = getLogPrefix();
+setLogLevel(process.env.XFI_LOG_LEVEL || 'info');
+
 import json from 'prettyjson';
 import { options } from "./core/cli";
 import { analyzeCodebase } from "./core/engine/analyzer";
 import { startServer } from './server/configServer';
 import { sendTelemetry } from './utils/telemetry';
 import { ResultMetadata } from './types/typeDefs';
-
-const executionLogPrefix = generateLogPrefix();
 
 // Function to handle errors and send telemetry
 const handleError = async (error: Error) => {

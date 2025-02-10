@@ -43,7 +43,8 @@
             ".*\\/(dist|coverage|build|node_modules)(\\/.*|$)"
         ],
         "whitelistPatterns": [
-            ".*\\.(ts|tsx|js|jsx|md|json|yaml|yml)$"
+            ".*\\.(ts|tsx|js|jsx)$",
+            ".*\\/xfiTestMatch\\.json$"
         ]
     }
 }

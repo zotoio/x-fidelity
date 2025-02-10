@@ -6,18 +6,29 @@
                 "fact": "fileData",
                 "path": "$.fileName",
                 "operator": "equal",
-                "value": "testMatch.json"
+                "value": "xfiTestMatch.json"
             },                                                                                                                   
             {                                                                                                                        
                 "fact": "remoteSubstringValidation",                                                                                          
                 "params": {                                                                                                          
                     "pattern": "\"systemId\":[\\s]*\"([a-z]*)\"",                                                              
                     "flags": "gi",
+                    "validationOptions": {
+                        "url": "http://localhost:4200/systemIdValidator",
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": {
+                            "systemId": "#MATCH#"
+                        },
+                        "responsePath": "$.data.systemId",
+                        "responsePathValue": "isValid"
+                    },
                     "resultFact": "remoteCheckResultFact"                                                                                                    
                 },                                                                                                                   
                 "operator": "invalidRemoteValidation",                                                                            
                 "value": {                                                                                                          
-                    "errors": 0,                                                                                      
                     "exclude": ["def", "ghi"]                                                                                                                
                 }                                                                                                                    
             }                                                                                                                        

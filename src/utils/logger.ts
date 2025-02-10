@@ -9,13 +9,10 @@ let loglevel = process.env.XFI_LOG_LEVEL ||
 let logPrefix: string;
 
 // Initialize logger and prefix immediately
-function initialize() {
+export function initializeLogger() {
     logPrefix = generateLogPrefix();
-    initializeLogger();
+    return getLogger();
 }
-
-// Run initialization
-initialize();
 
 // Export functions first, before they're used
 export function generateLogPrefix(): string {
@@ -42,7 +39,7 @@ export function resetLogPrefix(): void {
 
 
 // Initialize logger function that will create the singleton if it doesn't exist
-function initializeLogger(force?: boolean): pino.Logger {
+function getLogger(force?: boolean): pino.Logger {
     if (!loggerInstance || force) {
         const fileTransport = pino.destination({
             dest: 'x-fidelity.log',
@@ -111,18 +108,12 @@ function initializeLogger(force?: boolean): pino.Logger {
     return loggerInstance;
 }
 
-// Export the logger getter function
-export function getLogger(): pino.Logger {
-    const logger = initializeLogger();
-    return logger;
-}
-
 // For backward compatibility, also export the logger instance directly
 export const logger: pino.Logger = getLogger();
 
 // Add a way to reset the logger (mainly for testing)
 export function resetLogger(): void {
-    loggerInstance = initializeLogger(true);;
+    loggerInstance = getLogger(true);;
 }
 
 export function setLogLevel(level: string): void {

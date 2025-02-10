@@ -1,4 +1,5 @@
 import { ScanResult } from "../types/typeDefs";
+import { logger } from './logger';
 
 export const countRuleFailures = (scanResults: ScanResult[], level?: string): number => {
     return scanResults.reduce((total, scanResult) => {
@@ -8,10 +9,9 @@ export const countRuleFailures = (scanResults: ScanResult[], level?: string): nu
         return total + filteredErrors.length;
     }, 0);
 }
-import { logger } from './logger';
 
 export function safeStringify(obj: any): string {
-    logger.debug({ obj }, 'Serializing object');
+    logger.trace({ obj }, 'safeStringify object');
     return JSON.stringify(obj, null, 2);
 }
 

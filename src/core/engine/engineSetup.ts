@@ -96,7 +96,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     facts.forEach((fact) => {
         if (!fact?.name?.includes('openai') || (process.env.OPENAI_API_KEY && fact?.name?.includes('openai'))) {
             logger.info(`adding fact: ${fact.name}`);
-            engine.addFact(fact.name, fact.fn);
+            engine.addFact(fact.name, fact.fn, { priority: fact.priority || 1 });
         }
     });
 

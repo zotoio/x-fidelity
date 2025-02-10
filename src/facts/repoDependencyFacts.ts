@@ -27,7 +27,7 @@ export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
         process.exit(1);
         throw new Error('Unsupported package manager');
     }
-    logger.debug(`collectLocalDependencies: ${safeStringify(result)}`);
+    logger.trace(`collectLocalDependencies: ${safeStringify(result)}`);
     return result;
 }
 
@@ -51,7 +51,7 @@ async function collectNodeDependencies(packageManager: string): Promise<LocalDep
 
         try {
             const result = JSON.parse(stdout);
-            logger.debug(`collectNodeDependencies ${packageManager}: ${JSON.stringify(result)}`);
+            logger.trace(`collectNodeDependencies ${packageManager}: ${JSON.stringify(result)}`);
             return packageManager === 'npm' ? 
             processNpmDependencies(result) :
             processYarnDependencies(result)
@@ -164,7 +164,7 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
     const results: VersionData[] = [];
     const visited = new Set<string>();
 
-    logger.debug({ depGraph }, 'Processing dependency graph');
+    logger.trace({ depGraph }, 'Processing dependency graph');
 
     function walk(dep: LocalDependencies, parentName = '') {
         const fullName = parentName ? `${parentName}/${dep.name}` : dep.name;

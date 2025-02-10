@@ -4,7 +4,7 @@ import path from 'path';
 import { axiosClient } from './axiosClient';
 import { isOpenAIEnabled } from './openaiUtils';
 import { validateRule } from './jsonSchemas';
-import { LoadLocalConfigRuleParams, LoadLocalRuleParams, LoadRemoteRuleParams, LoadRulesParams, RuleConfig } from '../types/typeDefs';
+import { LoadLocalConfigRuleParams, LoadRemoteRuleParams, LoadRulesParams, RuleConfig } from '../types/typeDefs';
 
 async function loadRules(params: LoadRulesParams): Promise<RuleConfig[]> {
     const { archetype, ruleNames, configServer, logPrefix, localConfigPath } = params;
@@ -56,26 +56,6 @@ async function loadRemoteRule(params: LoadRemoteRuleParams): Promise<RuleConfig 
         logger.error(JSON.stringify(error));
         throw error;
     }
-}
-
-async function loadDefaultRule(params: LoadLocalRuleParams): Promise<RuleConfig | null> {
-    const { ruleName } = params;
-    const fileName = `${ruleName}-rule.json`;
-    const filePath = path.join(__dirname, fileName);
-    let result = null
-
-    if (!fileName.startsWith('openai') || (isOpenAIEnabled() && fileName.startsWith('openai'))) {
-        try {
-            logger.info(`loading default rule file: ${filePath}`);
-            const fileContent = await fs.promises.readFile(filePath, 'utf8');
-            result = JSON.parse(fileContent);
-        } catch (error) {
-            logger.error(`Error loading default rule file: ${fileName}`);
-            logger.error(JSON.stringify(error));
-            throw error;
-        }
-    }
-    return result;
 }
 
 async function loadLocalConfigRule(params: LoadLocalConfigRuleParams): Promise<RuleConfig | null> {

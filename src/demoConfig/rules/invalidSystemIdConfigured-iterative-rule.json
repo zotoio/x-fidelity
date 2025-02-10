@@ -6,25 +6,34 @@
                 "fact": "fileData",
                 "path": "$.fileName",
                 "operator": "equal",
-                "value": "testMatch.json"
+                "value": "xfiTestMatch.json"
             },                                                                                                                   
             {                                                                                                                        
                 "fact": "remoteSubstringValidation",                                                                                          
                 "params": {                                                                                                          
                     "pattern": "\"systemId\":[\\s]*\"([a-z]*)\"",                                                              
                     "flags": "gi",
+                    "validationParams": {
+                        "url": "http://localhost:4200/systemIdValidator",
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": {
+                            "systemId": "#MATCH#"
+                        },
+                        "responseJsonPath": "$.data.systemId",
+                        "responseJsonPathValue": "isValid"
+                    },
                     "resultFact": "remoteCheckResultFact"                                                                                                    
                 },                                                                                                                   
                 "operator": "invalidRemoteValidation",                                                                            
-                "value": {                                                                                                          
-                    "errors": 0,                                                                                      
-                    "exclude": ["def", "ghi"]                                                                                                                
-                }                                                                                                                    
+                "value": true                                                                                                                   
             }                                                                                                                        
          ]                                                                                                                            
      },                                                                                                                               
      "event": {                                                                                                                       
-         "type": "warning",                                                                                                           
+         "type": "fatality",                                                                                                           
          "params": {                                                                                                                  
              "message": "One or more of the extracted strings failed remote validation.",                                                                            
              "details": {                                                                                                             
