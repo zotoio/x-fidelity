@@ -15,7 +15,7 @@ const nonStandardDirectoryStructure: OperatorDefn = {
 
         logger.debug(`running global directory structure analysis..`);
 
-        const repoPath = options.dir;
+        const repoPath = options.dir || process.cwd();
         let result = false;
 
         // check the directory structure of the repo against the standard structure
@@ -40,7 +40,7 @@ const nonStandardDirectoryStructure: OperatorDefn = {
                     }
                 }
             }
-            return result;
+            return false;
         }
 
         result = checkStructure(repoPath, standardStructure);

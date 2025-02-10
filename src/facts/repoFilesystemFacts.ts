@@ -42,7 +42,8 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
         }
         visitedPaths.add(realFilePath);
         logger.debug({ filePath }, 'Checking file');
-        const stats = await fs.promises.stat(filePath);
+        const statFn = fs.promises.stat || fs.promises.lstat;
+        const stats = await statFn(filePath);
         if (stats.isDirectory()) {
             if (!isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns })) {
                 const dirFilesData = await collectRepoFileData(filePath, archetypeConfig);
