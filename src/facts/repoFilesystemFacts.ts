@@ -25,7 +25,13 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
     for (const file of files) {
         const baseDir = path.resolve(repoPath);
         const filePath = path.resolve(baseDir, file);
-        const realFilePath = fs.realpathSync(filePath);
+        let realFilePath;
+        try {
+            realFilePath = fs.realpathSync(filePath);
+        } catch (err) {
+            logger.warn(`Skipping file due to error resolving real path: ${filePath}. Error: ${err}`);
+            continue;
+        }
         if (!realFilePath.startsWith(baseDir)) {
             logger.warn(`Path traversal attempt detected: ${realFilePath}`);
             continue;

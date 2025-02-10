@@ -2,6 +2,7 @@ import { OperatorDefn } from '../types/typeDefs';
 import { logger } from '../utils/logger';
 import path from 'path';
 import fs from 'fs';
+import { isPathInside } from '../utils/pathUtils';
 import { REPO_GLOBAL_CHECK } from '../core/configManager';
 import { options } from '../core/cli';
 

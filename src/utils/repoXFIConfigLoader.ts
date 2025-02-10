@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { isPathInside } from './pathUtils';
 import { logger } from './logger';
 import { RepoXFIConfig } from '../types/typeDefs';
 import { validateXFIConfig } from './jsonSchemas';
