@@ -1,6 +1,9 @@
 import path from 'path';
 import fs from 'fs';
 import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';
+import { options } from '../core/cli';
+// Set the repo base directory for tests so that options.dir is defined.
+options.dir = '/repo';
 import { Stats } from 'fs';
 import { REPO_GLOBAL_CHECK } from '../core/configManager';
 
