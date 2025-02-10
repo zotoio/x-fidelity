@@ -20,7 +20,11 @@ const nonStandardDirectoryStructure: OperatorDefn = {
         // check the directory structure of the repo against the standard structure
         function checkStructure(currentPath: string, structure: any): boolean {
             for (const key in structure) {
-                const newPath = path.join(currentPath, key);
+                const newPath = path.resolve(currentPath, key);
+                if (!isPathInside(newPath, repoPath)) { 
+                    logger.warn(`Resolved path ${newPath} is outside allowed directory ${repoPath}`);
+                    return true;
+                }
                 
                 logger.debug(`checking ${newPath}`);
                 if (!fs.existsSync(newPath) || !fs.lstatSync(newPath).isDirectory()) {

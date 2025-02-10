@@ -22,7 +22,13 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
     const files = fs.readdirSync(repoPath);
 
     for (const file of files) {
-        const filePath = path.join(repoPath, file);
+        const baseDir = path.resolve(repoPath);
+        const filePath = path.resolve(baseDir, file);
+        const realFilePath = fs.realpathSync(filePath);
+        if (!realFilePath.startsWith(baseDir)) {
+            logger.warn(`Path traversal attempt detected: ${realFilePath}`);
+            continue;
+        }
         logger.debug({ filePath }, 'Checking file');
         const stats = await fs.promises.lstat(filePath);
         if (stats.isDirectory()) {
@@ -44,8 +50,8 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
 
 function isBlacklisted({ filePath, repoPath, blacklistPatterns }: IsBlacklistedParams): boolean {
     logger.debug({ filePath }, 'Checking file against blacklist patterns');
-    const normalizedPath = path.normalize(filePath);
-    const normalizedRepoPath = path.normalize(repoPath);
+    const normalizedPath = path.resolve(filePath);
+    const normalizedRepoPath = path.resolve(repoPath);
     
     if (!normalizedPath.startsWith(normalizedRepoPath)) {
         logger.warn(`Potential path traversal attempt detected: ${filePath}`);

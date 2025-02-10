@@ -56,7 +56,8 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
 
     try {
         // Load from legacy file
-        const legacyExemptionsPath = path.join(localConfigPath, `${archetype}-exemptions.json`);
+        const baseConfigPath = path.resolve(localConfigPath);
+        const legacyExemptionsPath = path.resolve(baseConfigPath, `${archetype}-exemptions.json`);
         if (fs.existsSync(legacyExemptionsPath)) {
             const legacyExemptionsData = await fs.promises.readFile(legacyExemptionsPath, 'utf-8');
             const legacyExemptions = JSON.parse(legacyExemptionsData);
@@ -67,7 +68,7 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
         }
 
         // Load from exemptions directory
-        const exemptionsDirPath = path.join(localConfigPath, `${archetype}-exemptions`);
+        const exemptionsDirPath = path.resolve(baseConfigPath, `${archetype}-exemptions`);
         if (fs.existsSync(exemptionsDirPath)) {
             const files = await fs.promises.readdir(exemptionsDirPath);
             for (const file of files) {
