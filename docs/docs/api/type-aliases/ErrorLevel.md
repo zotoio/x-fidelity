@@ -2,4 +2,4 @@
 
 > **ErrorLevel**: `"warning"` \| `"error"` \| `"fatality"` \| `"exempt"`
 
-Defined in: [src/types/typeDefs.ts:270](https://github.com/zotoio/x-fidelity/blob/f39ce89f1db3ea0cfe6f222cf6cc7fcd78a94dca/src/types/typeDefs.ts#L270)
+Defined in: [../../src/types/typeDefs.ts:270](https://github.com/zotoio/x-fidelity/blob/749b04f14475849294420145101445f325608e85/src/types/typeDefs.ts#L270)

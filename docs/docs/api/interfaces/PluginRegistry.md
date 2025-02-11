@@ -1,6 +1,6 @@
 # Interface: PluginRegistry
 
-Defined in: [src/types/typeDefs.ts:292](https://github.com/zotoio/x-fidelity/blob/f39ce89f1db3ea0cfe6f222cf6cc7fcd78a94dca/src/types/typeDefs.ts#L292)
+Defined in: [../../src/types/typeDefs.ts:292](https://github.com/zotoio/x-fidelity/blob/749b04f14475849294420145101445f325608e85/src/types/typeDefs.ts#L292)
 
 ## Properties
 
@@ -8,7 +8,7 @@ Defined in: [src/types/typeDefs.ts:292](https://github.com/zotoio/x-fidelity/blo
 
 > **executePluginFunction**: (`pluginName`, `functionName`, ...`args`) => [`PluginResult`](PluginResult.md)
 
-Defined in: [src/types/typeDefs.ts:296](https://github.com/zotoio/x-fidelity/blob/f39ce89f1db3ea0cfe6f222cf6cc7fcd78a94dca/src/types/typeDefs.ts#L296)
+Defined in: [../../src/types/typeDefs.ts:296](https://github.com/zotoio/x-fidelity/blob/749b04f14475849294420145101445f325608e85/src/types/typeDefs.ts#L296)
 
 #### Parameters
 
@@ -34,7 +34,7 @@ Defined in: [src/types/typeDefs.ts:296](https://github.com/zotoio/x-fidelity/blo
 
 > **getPluginFacts**: () => [`FactDefn`](../type-aliases/FactDefn.md)[]
 
-Defined in: [src/types/typeDefs.ts:294](https://github.com/zotoio/x-fidelity/blob/f39ce89f1db3ea0cfe6f222cf6cc7fcd78a94dca/src/types/typeDefs.ts#L294)
+Defined in: [../../src/types/typeDefs.ts:294](https://github.com/zotoio/x-fidelity/blob/749b04f14475849294420145101445f325608e85/src/types/typeDefs.ts#L294)
 
 #### Returns
 
@@ -46,7 +46,7 @@ Defined in: [src/types/typeDefs.ts:294](https://github.com/zotoio/x-fidelity/blo
 
 > **getPluginOperators**: () => [`OperatorDefn`](../type-aliases/OperatorDefn.md)[]
 
-Defined in: [src/types/typeDefs.ts:295](https://github.com/zotoio/x-fidelity/blob/f39ce89f1db3ea0cfe6f222cf6cc7fcd78a94dca/src/types/typeDefs.ts#L295)
+Defined in: [../../src/types/typeDefs.ts:295](https://github.com/zotoio/x-fidelity/blob/749b04f14475849294420145101445f325608e85/src/types/typeDefs.ts#L295)
 
 #### Returns
 
@@ -58,7 +58,7 @@ Defined in: [src/types/typeDefs.ts:295](https://github.com/zotoio/x-fidelity/blo
 
 > **registerPlugin**: (`plugin`) => `void`
 
-Defined in: [src/types/typeDefs.ts:293](https://github.com/zotoio/x-fidelity/blob/f39ce89f1db3ea0cfe6f222cf6cc7fcd78a94dca/src/types/typeDefs.ts#L293)
+Defined in: [../../src/types/typeDefs.ts:293](https://github.com/zotoio/x-fidelity/blob/749b04f14475849294420145101445f325608e85/src/types/typeDefs.ts#L293)
 
 #### Parameters
 

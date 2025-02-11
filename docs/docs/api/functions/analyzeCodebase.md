@@ -2,7 +2,7 @@
 
 > **analyzeCodebase**(`params`): `Promise`\<[`ResultMetadata`](../interfaces/ResultMetadata.md)\>
 
-Defined in: [src/core/engine/analyzer.ts:18](https://github.com/zotoio/x-fidelity/blob/f39ce89f1db3ea0cfe6f222cf6cc7fcd78a94dca/src/core/engine/analyzer.ts#L18)
+Defined in: [../../src/core/engine/analyzer.ts:18](https://github.com/zotoio/x-fidelity/blob/749b04f14475849294420145101445f325608e85/src/core/engine/analyzer.ts#L18)
 
 ## Parameters
 
