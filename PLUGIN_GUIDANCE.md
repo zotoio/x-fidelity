@@ -72,3 +72,27 @@ After creating your plugin, install it (locally or globally) and reference it us
 - **Name Conflicts**: If multiple plugins expose facts or operators under the same name, loading order may affect which one is used.
 
 For any further questions, consult the x‑fidelity documentation or reach out to the maintainers.
+
+## Local Development and Testing
+
+### Testing Locally with Yarn Link
+
+To test your plugin locally without publishing it to npm, you can use `yarn link`. In your plugin’s development directory, run:
+```bash
+yarn link
+```
+Then, in your x‑fidelity project directory, run:
+```bash
+yarn link <plugin-module-name>
+```
+Replace `<plugin-module-name>` with your plugin's package name. This will create a symlink so that any changes you make to your plugin are immediately available to x‑fidelity.
+
+### Important Imports for Plugin Integration
+
+For seamless integration with x‑fidelity, ensure your plugin imports the key types and utilities. For example:
+```javascript
+import { XFiPlugin } from 'x-fidelity/types/typeDefs';
+import { logger } from 'x-fidelity/utils/logger';
+import { safeClone, safeStringify } from 'x-fidelity/utils/utils';
+```
+These imports ensure that your plugin can interoperate correctly with x‑fidelity’s API, logging, and utility functions.
