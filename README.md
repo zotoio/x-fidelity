@@ -42,6 +42,7 @@ x-fidelity is an advanced CLI tool and paired config server designed to perform 
    - [Defining Archetypes](#defining-archetypes)
    - [Defining rules](#defining-rules)
    - [Included Operators](#included-operators)
+   - [External Plugin Extensions](#external-plugin-extensions)
 6. [Installation](#installation)
 7. [Usage](#usage)
    - [Basic Usage](#basic-usage)
