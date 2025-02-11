@@ -82,7 +82,7 @@ The tool is designed to be highly customizable, allowing teams to define their o
 - **Content Analysis**: Search for specific patterns or strings within your codebase.
 - **Remote Configuration**: Fetch configurations from a remote server for centralized management.
 - **OpenAI Integration**: Leverage AI for advanced code analysis and suggestions.
-- **Extensible Architecture**: Easily add new operators, facts, and rules to suit your needs.
+- **Extensible Architecture**: Easily add new operators, facts, rules, and external plugin extensions to suit your needs.
 
 ## Components and entity names to understand
 
@@ -420,7 +420,8 @@ Options:
   -m, --mode [mode]                              Run mode: 'client' or 'server' (default: "client")
   -p, --port [port]                              The port to run the server on (default: "8888")
   -l, --localConfigPath [path]                   Path to local archetype config and rules
-  -j, --jsonTTL [minutes]                        Set the server json cache TTL in minutes (default: "10")
+  -j, --jsonTTL [minutes]                        Set the server JSON cache TTL in minutes (default: "10")
+  -e, --extensions <modules...>                  Space-separated list of npm module names to load as external plugin extensions
   -v, --version                                  Output the version number of xfidelity
   -h, --help                                     Display help for command
 ```
@@ -852,6 +853,24 @@ module.exports = {
   }]
 };
 ```
+
+### External Plugin Extensions
+
+x-fidelity now supports external plugin extensions that allow you to extend its core functionality without modifying the main codebase. These plugins conform to the XFiPlugin interface and can be loaded at runtime.
+
+**How to use external plugin extensions:**
+1. Install the extension package(s) via npm. For example, run:
+   ```bash
+   npm install xfi-basic-plugin xfi-another-plugin
+   ```
+2. Start x-fidelity and pass the extension names using the `-e` or `--extensions` option:
+   ```bash
+   xfidelity /path/to/project -e xfi-basic-plugin xfi-another-plugin
+   ```
+   
+You can specify multiple plugins, separated by spaces.
+
+For more details on creating your own plugin extensions, please refer to the [Plugin Documentation](#) (update the link as needed).
 
 ## Contributing
 
