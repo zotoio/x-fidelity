@@ -32,7 +32,8 @@
     "perftest": "artillery run src/server/configServer.performance.test.yml",
     "perftest:cloud": "echo 'expecting env var ARTILLERY_CLOUD_API_KEY from artillery.io' && artillery run src/server/configServer.performance.test.yml --record",
     "bats:install": "cd ./cli-testing && ./installBatsTesting.sh",
-    "bats:test": "cd ./cli-testing && bats *.bats"
+    "bats:test": "cd ./cli-testing && bats *.bats",
+    "docs:api": "typedoc --theme docusaurus --out docs/docs/api ./src/"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
@@ -73,7 +74,8 @@
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.4.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "typedoc": "^0.27.7"
   },
   "dependencies": {
     "@types/body-parser": "^1.19.5",

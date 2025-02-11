@@ -19,7 +19,19 @@ if (!logger || typeof logger.info !== 'function') {
     (global as any).logger = fallbackLogger;
 }
 
+logger.info('CLI initialized');
+
 export const DEMO_CONFIG_PATH = path.resolve(__dirname, '../demoConfig');
+
+// we are overiding the default behavior of commander to exit 
+// the process due to https://github.com/pinojs/pino/issues/871
+program.exitOverride((e) => {
+    try {
+        process.exit(0);
+    } catch (error) {
+        //swallow
+    }
+});
 
 program
     .option("-d, --dir <directory>", "code directory to analyze. equivalent of directory argument")
@@ -42,8 +54,7 @@ program.parse(process.argv);
 
 // If no options or args are provided, display the help message
 if (process.argv.length === 2 && program.args.length === 0) {
-    // dont exit in tests
-    if (process.env.NODE_ENV !== 'test') program.help();
+    program.help();
 }
 
 // Resolve paths
