@@ -12,7 +12,7 @@ x‑fidelity supports plugins that conform to the `XFiPlugin` interface. Plugins
 
 - To install an external plugin globally, run:
   ```bash
-  npm install -g <plugin-module-name>
+  yarn add <plugin-module-name>
   ```
 - Global plugins are available system‑wide; ensure that your global node_modules directory is in your module resolution path.
 
@@ -20,7 +20,7 @@ x‑fidelity supports plugins that conform to the `XFiPlugin` interface. Plugins
 
 - To install an external plugin locally in your project, run:
   ```bash
-  npm install <plugin-module-name>
+  yarn add <plugin-module-name>
   ```
 - Local plugins are stored in your project’s `node_modules` directory. x‑fidelity will check local installations first.
 
@@ -77,7 +77,7 @@ For any further questions, consult the x‑fidelity documentation or reach out t
 
 ### Testing Locally with Yarn Link
 
-To test your plugin locally without publishing it to npm, you can use `yarn link`. In your plugin’s development directory, run:
+To test your plugin locally without publishing it to an npm repo, you can use `yarn link`. In your plugin’s development directory, run:
 ```bash
 yarn link
 ```
