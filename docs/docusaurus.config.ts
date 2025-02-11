@@ -39,6 +39,7 @@ const config: Config = {
       {
         entryPoints: ['../src/index.ts'],
         tsconfig: '../tsconfig.json',
+        routeBasePath: 'api',
       },
     ],
   ],
