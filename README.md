@@ -871,7 +871,7 @@ x-fidelity now supports external plugin extensions that allow you to extend its 
    
 You can specify multiple plugins, separated by spaces.
 
-For more details on creating your own plugin extensions, please refer to the [Plugin Documentation](#) (update the link as needed).
+For more details on creating your own plugin extensions, please refer to the [PLUGIN_GUIDANCE.md](PLUGIN_GUIDANCE.md) file.
 
 ## Contributing
 
