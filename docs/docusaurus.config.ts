@@ -39,7 +39,7 @@ const config: Config = {
       {
         entryPoints: ['../src/index.ts'],
         tsconfig: '../tsconfig.json',
-        routeBasePath: 'api',
+        basePath: 'api',
       },
     ],
   ],
@@ -49,7 +49,7 @@ const config: Config = {
       'classic',
       {
         docs: {
-          sidebarPath: './sidebars.ts',
+          //sidebarPath: './sidebars.ts',
         },
         theme: {
           customCss: './src/css/custom.css',
