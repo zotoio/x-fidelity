@@ -96,3 +96,58 @@ import { logger } from 'x-fidelity/utils/logger';
 import { safeClone, safeStringify } from 'x-fidelity/utils/utils';
 ```
 These imports ensure that your plugin can interoperate correctly with x‑fidelity’s API, logging, and utility functions.
+
+## Sample Plugin Rules and Unit Tests
+
+In addition to creating your plugin, you can create sample rules that exercise your plugin's functionality. These sample rules serve both as documentation and as a basis for unit tests to ensure your plugin operates as expected.
+
+### Creating Sample Rules
+
+For example, if your plugin defines a fact named `customFact` and an operator named `customOperator`, you can create a sample rule JSON file:
+```json
+{
+  "name": "custom-plugin-rule",
+  "conditions": {
+    "all": [
+      {
+        "fact": "customFact",
+        "operator": "customOperator",
+        "value": "custom fact data"
+      }
+    ]
+  },
+  "event": {
+    "type": "warning",
+    "params": {
+      "message": "Plugin fact and operator validated successfully"
+    }
+  }
+}
+```
+Place this sample rule file in your local configuration rules directory (e.g., `rules/`), so that x‑fidelity can pick it up during analysis.
+
+### Writing Unit Tests
+
+Complement your sample rule with unit tests to validate your plugin behavior. For example, using Jest you might create a test file such as `custom-plugin-rule.test.ts` with the following content:
+```typescript
+import { customFact } from 'xfiPluginSimpleExample/facts/customFact';
+import { customOperator } from 'xfiPluginSimpleExample/operators/customOperator';
+
+describe('Custom Plugin Rule', () => {
+  it('should trigger when the custom fact produces expected data', async () => {
+    const factResult = await customFact.fn();
+    expect(factResult).toEqual({ result: 'custom fact data' });
+    
+    const operatorResult = customOperator.fn(factResult.result, 'custom fact data');
+    expect(operatorResult).toBe(true);
+  });
+});
+```
+Include these tests in your plugin’s test suite and run them via:
+```bash
+yarn test
+```
+
+### Final Notes
+
+These sample rules and unit tests not only serve as documentation for plugin usage but also help ensure that any future changes do not break your plugin's functionality.
