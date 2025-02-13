@@ -25,9 +25,9 @@ export const DEMO_CONFIG_PATH = path.resolve(__dirname, '../demoConfig');
 
 // we are overiding the default behavior of commander to exit 
 // the process due to https://github.com/pinojs/pino/issues/871
-program.exitOverride((e) => {
+program.exitOverride(() => {
     try {
-        process.exit(0);
+        if (process.env.NODE_ENV !== 'test') process.exit(0);
     } catch (error) {
         //swallow
     }
@@ -54,7 +54,7 @@ program.parse(process.argv);
 
 // If no options or args are provided, display the help message
 if (process.argv.length === 2 && program.args.length === 0) {
-    program.help();
+    if (process.env.NODE_ENV !== 'test') program.help();
 }
 
 // Resolve paths

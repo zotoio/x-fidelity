@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import pino from 'pino';
 import { maskSensitiveData } from './maskSensitiveData';
 
-// Create a singleton logger instance
+// Initialize variables
 let loggerInstance: pino.Logger | undefined;
 let loglevel = process.env.XFI_LOG_LEVEL || 
                   (process.env.NODE_ENV === 'test' ? 'silent' : 'info');
@@ -14,20 +14,8 @@ export function initializeLogger() {
     return getLogger();
 }
 
-// Export functions first, before they're used
 export function generateLogPrefix(): string {
     return randomUUID().substring(0, 8);
-}
-
-export function getLogPrefix(): string {
-    return logPrefix;
-}
-
-export function setLogPrefix(prefix: string): void {
-    logPrefix = prefix;
-    if (loggerInstance) {
-        loggerInstance = loggerInstance.child({ prefix: logPrefix });
-    }
 }
 
 export function resetLogPrefix(): void {
@@ -37,6 +25,16 @@ export function resetLogPrefix(): void {
     }
 }
 
+export function setLogPrefix(prefix: string): void {
+    logPrefix = prefix;
+    if (loggerInstance) {
+        loggerInstance = loggerInstance.child({ prefix: logPrefix });
+    }
+}
+
+export function getLogPrefix(): string {
+    return logPrefix;
+}   
 
 // Initialize logger function that will create the singleton if it doesn't exist
 function getLogger(force?: boolean): pino.Logger {
@@ -113,7 +111,7 @@ export const logger: pino.Logger = getLogger();
 
 // Add a way to reset the logger (mainly for testing)
 export function resetLogger(): void {
-    loggerInstance = getLogger(true);;
+    loggerInstance = getLogger(true);
 }
 
 export function setLogLevel(level: string): void {
