@@ -26,6 +26,16 @@ export const DEMO_CONFIG_PATH = path.resolve(__dirname, '../demoConfig');
 // we are overiding the default behavior of commander to exit 
 // the process due to https://github.com/pinojs/pino/issues/871
 program
+  .command('test')
+  .description('Run test command as the default action for backwards-compatibility')
+  .action(async () => {
+    // Replace the following with your actual test command implementation
+    const { runTests } = await import('../commands/test');
+    await runTests();
+    process.exit(0);
+  });
+
+program
   .command('validate')
   .description('Validate archetype configuration including exemptions, rules, facts, and operators')
   .action(async () => {
@@ -61,8 +71,8 @@ const options = program.opts();
 program.parse(process.argv);
 
 // If no options or args are provided, display the help message
-if (process.argv.length === 2 && program.args.length === 0) {
-    if (process.env.NODE_ENV !== 'test') program.help();
+if (process.argv.length < 3) {
+  process.argv.push('test');
 }
 
 // Resolve paths
