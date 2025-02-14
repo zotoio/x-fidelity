@@ -25,6 +25,14 @@ export const DEMO_CONFIG_PATH = path.resolve(__dirname, '../demoConfig');
 
 // we are overiding the default behavior of commander to exit 
 // the process due to https://github.com/pinojs/pino/issues/871
+program
+  .command('validate')
+  .description('Validate archetype configuration including exemptions, rules, facts, and operators')
+  .action(async () => {
+    const { validateArchetypeConfig } = await import('../commands/validate');
+    await validateArchetypeConfig();
+  });
+
 program.exitOverride(() => {
     try {
         if (process.env.NODE_ENV !== 'test') process.exit(0);
