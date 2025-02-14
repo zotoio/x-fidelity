@@ -4717,9 +4717,9 @@ json-parse-even-better-errors@^4.0.0:
   integrity sha512-lR4MXjGNgkJc7tkQ97kb2nuEMnNCyU//XYVH0MKTGcXEiSudQ5MKGKen3C5QubYy0vmq+JGitUg92uuywGEwIA==
 
 json-rules-engine@^7.2.1:
-  version "7.2.1"
-  resolved "https://registry.yarnpkg.com/json-rules-engine/-/json-rules-engine-7.2.1.tgz#c72a189684c9c40c74b683eba30a1557236b57b2"
-  integrity sha512-WcAlEsFbUwnu2K++50QMpnujIn4icEBNZIMydqA6CbwE/0Dtjsq6BSEKiQlQlXirLaCXGqvXFQPCIkAWJhBZCg==
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/json-rules-engine/-/json-rules-engine-7.3.0.tgz#d55f13e171511cd44bb00b2609e30b995d3334f9"
+  integrity sha512-Ng8Nq9sXID2h92gk3gTCB6bYK6GvQOPgxHLOIl6dEL+PE4+jvTltSOKtfYkVScTR2wL/+ts5gaQqoBFl0zK4/g==
   dependencies:
     clone "^2.1.2"
     eventemitter2 "^6.4.4"
