@@ -6,6 +6,7 @@ import { loadFacts } from '../facts';
 import { loadOperators } from '../operators';
 import { loadExemptions } from '../utils/exemptionUtils';
 import { logger } from '../utils/logger';
+import { RuleConfig } from '../types';
 
 export async function validateArchetypeConfig(): Promise<void> {
   const archetype = options.archetype;
@@ -47,7 +48,7 @@ export async function validateArchetypeConfig(): Promise<void> {
       // Optionally run validateRule() on each loaded rule for additional checks
       for (const rule of rules) {
         if (!validateRule(rule)) {
-          logger.error(`Rule ${rule.name} failed validation.`);
+          logger.error(`Rule ${(rule as RuleConfig).name} failed validation.`);
           process.exit(1);
         }
       }
