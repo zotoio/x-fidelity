@@ -42,6 +42,8 @@ To create your own plugin, implement the `XFiPlugin` interface. At a minimum, ex
 - **operators**: (optional) An array of operator definitions.
 - **onError**: (optional) A function to handle errors encountered in plugin processing.
 
+For example, the new Remote String Validation plugin (`xfiPluginRemoteStringValidator`) implements a fact (`remoteSubstringValidation`) and an operator (`invalidRemoteValidation`). See the sample rule `invalidSystemIdConfigured-iterative-rule.json` for usage details.
+
 Example:
 ```javascript
 // my-plugin.js
@@ -102,6 +104,8 @@ These imports ensure that your plugin can interoperate correctly with x‑fideli
 In addition to creating your plugin, you can create sample rules that exercise your plugin's functionality. These sample rules serve both as documentation and as a basis for unit tests to ensure your plugin operates as expected.
 
 ### Creating Sample Rules
+
+Optionally, include unit tests for your custom facts and operators, as shown in our sample tests.
 
 For example, if your plugin defines a fact named `customFact` and an operator named `customOperator`, you can create a sample rule JSON file:
 ```json

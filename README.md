@@ -53,6 +53,7 @@ x-fidelity is an advanced CLI tool and paired config server designed to perform 
 8. [Hosting Config Servers](#hosting-config-servers)
    - [Docker Example](#docker-example)
 9. [Exemptions](#exemptions)
+10. [GitHub Webhook Endpoints](#github-webhook-endpoints)
 10. [CI Pipeline Integration](#ci-pipeline-integration)
 11. [OpenAI Integration](#openai-integration)
 12. [X-Fi Best Practices](#x-fi-best-practices)
@@ -84,6 +85,8 @@ The tool is designed to be highly customizable, allowing teams to define their o
 - **Remote Configuration**: Fetch configurations from a remote server for centralized management.
 - **OpenAI Integration**: Leverage AI for advanced code analysis and suggestions.
 - **Extensible Architecture**: Easily add new operators, facts, rules, and external plugin extensions to suit your needs.
+- **Enhanced Remote Validation:** Support for remote string validation via the `invalidRemoteValidation` operator. This operator allows x‑fidelity to send extracted string values to an external API (with interpolated parameters such as "#MATCH#") to validate them. (See the sample rule `invalidSystemIdConfigured-iterative-rule.json` in the demo config.)
+- **GitHub Webhook Integration:** The config server now exposes endpoints (e.g. `/github-config-update` and `/github-pull-request-check`) that let you trigger configuration reloads and validation checks automatically when a GitHub event (push or pull request) occurs.
 
 ## Components and entity names to understand
 
@@ -91,7 +94,7 @@ The tool is designed to be highly customizable, allowing teams to define their o
 
 - **Rule**: A set of conditions and corresponding actions that define a specific check or requirement for the codebase. Rules are used to identify warnings or fatal issues in the codebase.
 
-- **Exemption**: A time-limited waiver for a given git repo for a given rule until a configured expiry date.
+- **Exemption**: A time-limited waiver for a given git repo for a given rule until a configured expiry date. Exemptions can now be provided either as a single JSON file (e.g. `[archetype]-exemptions.json`) or by placing one or more JSON files in a directory named `[archetype]-exemptions`. Any file in that directory that matches the naming pattern will be merged into the effective exemptions.
 
 - **Operator**: A function that performs a specific comparison or check within a rule. Operators are used to evaluate conditions in rules.
 
@@ -161,7 +164,9 @@ This diagram shows the main components of x-fidelity and how they interact:
 - **Client Environments**: Where x-fidelity is used (CI systems or local development).
 - **x-fidelity Core**: The main components of the system, including the analysis engine, CLI interface, and configuration manager.
 - **x-fidelity Infrastructure**: Servers for configuration and telemetry.
-- **External Services**: GitHub for repository interaction and optional OpenAI integration.
+- **External Services**: GitHub for repository interaction and optional OpenAI integration. Includes GitHub Webhooks for triggering config refresh.
+- **Remote Validation**: Within the plugins outlined under “Extensions”.
+- **Enhanced Telemetry**: Flows from both client and server to the Telemetry Server.
 - **Data Sources**: The files and dependencies that x-fidelity analyzes.
 
 ## Configuring and Extending x-fidelity
@@ -377,6 +382,8 @@ Usage example in a rule:
     }
 }
 ```
+- **invalidRemoteValidation:** This operator is provided by the xfiPluginRemoteStringValidator plugin. It validates extracted string data by sending a request to a remote endpoint (using customizable HTTP method, headers, and a JSON body where “#MATCH#” is interpolated) and uses a JSONPath check on the response to decide if the value is valid.
+
 The 'openaiAnalysisHighSeverity' operator will be discussed in the section on the optional OpenAI integration feature.
 
 ## Installation
@@ -401,6 +408,12 @@ xfidelity
 ```
 
 ### Advanced Usage
+
+### Telemetry & Monitoring
+
+- Telemetry data is sent to a configurable endpoint via the `-t`/`--telemetryCollector` option.
+- Analysis start, analysis end (including error events) are issued via telemetry, with optional shared secret headers.
+- The CLI and config server now include built-in logging and telemetry support.
 
 Use command-line options for more control:
 
@@ -490,6 +503,13 @@ xfidelity -c https://config-server.example.com
 ```
 
 The remote server is also the xfidelity cli configured in server mode to serve archetype and rule configurations.
+
+## GitHub Webhook Endpoints
+
+The config server now supports GitHub webhook endpoints for real‑time updates:
+- **`/github-config-update`** – triggered on push events to clear the cache and refresh local configurations.
+- **`/github-pull-request-check`** – reserved for future pull-request–related validations.
+These endpoints require validation via secret headers and are configured via the `GITHUB_WEBHOOK_SECRET` environment variable.
 
 ## Hosting Config Servers
 
@@ -808,6 +828,12 @@ Example `.xfi-config.json`:
 Remember, while `.xfi-config.json` allows you to adjust x-fidelity's behavior in limited ways, it should be used judiciously to maintain the integrity of your code quality checks.
 
 ### Using Extensions
+
+New extensions are available:
+- *Remote String Validation Plugin:* (module: `xfiPluginRemoteStringValidator`) adds remote validation functionality via the `remoteSubstringValidation` fact and the `invalidRemoteValidation` operator.
+- *Sample Custom Plugin:* (module: `xfiPluginSimpleExample`) shows how to add custom facts and operators.
+
+To load these plugins, pass their module names via the `-e` (or `--extensions`) CLI option.
 
 x-fidelity supports custom extensions through npm modules. To use extensions:
 
