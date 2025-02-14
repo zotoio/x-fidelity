@@ -25,24 +25,6 @@ export const DEMO_CONFIG_PATH = path.resolve(__dirname, '../demoConfig');
 
 // we are overiding the default behavior of commander to exit 
 // the process due to https://github.com/pinojs/pino/issues/871
-program
-  .command('test')
-  .description('Run test command as the default action for backwards-compatibility')
-  .action(async () => {
-    // Replace the following with your actual test command implementation
-    const { runTests } = await import('../commands/test');
-    await runTests();
-    process.exit(0);
-  });
-
-program
-  .command('validate')
-  .description('Validate archetype configuration including exemptions, rules, facts, and operators')
-  .action(async () => {
-    const { validateArchetypeConfig } = await import('../commands/validate');
-    await validateArchetypeConfig();
-  });
-
 program.exitOverride(() => {
     try {
         if (process.env.NODE_ENV !== 'test') process.exit(0);
@@ -62,6 +44,7 @@ program
     .option("-l, --localConfigPath <path>", "Path to local archetype config and rules", DEMO_CONFIG_PATH)
     .option("-j, --jsonTTL <minutes>", "Set the server json cache TTL in minutes", "10")
     .option("-e, --extensions <modules...>", "Space-separated list of npm module names to load as extensions")
+    .option("-x, --examine <archetype>", "Examine the archetype configuration and rules")
     .version(version, "-v, --version", "Output the version number of xfidelity")
     .helpOption("-h, --help", "Display help for command")
     .argument('[directory]', 'code directory to analyze');
@@ -70,36 +53,36 @@ const options = program.opts();
 
 program.parse(process.argv);
 
-// If no options or args are provided, display the help message
-if (process.argv.length < 3) {
-  process.argv.push('test');
-}
-
 // Resolve paths
-if (process.env.NODE_ENV === 'test' || options.mode === 'server') options.dir = '.';
 const resolvePath = (inputPath: string) => {
     const resolvedPath = path?.resolve(process.cwd(), inputPath);
+    if (!fs.existsSync(resolvedPath)) {
+        throw new Error(`Path does not exist: ${resolvedPath}`);
+    }
     if (!validateInput(resolvedPath)) {
-        logger.warn(`Potential malicious input detected: ${inputPath}`);
-        return null;
+        throw new Error(`Potential malicious input detected: ${inputPath}`);
     }
     return resolvedPath;
 };
-options.dir = program.args.length == 1 ? resolvePath(program.args[0]) : resolvePath(options.dir);
-if (options.localConfigPath) {
-    options.localConfigPath = resolvePath(options.localConfigPath);
+
+if (program.args.length === 0) {
+    if (process.env.NODE_ENV === 'test' || options.mode === 'server') options.dir = '.';
+    if (!options.dir && process.env.NODE_ENV !== 'test') program.help({ error: false });
 }
 
-// if dir does not exist or is invalid, exit
-if (!options.dir || !fs.existsSync(options.dir)) {
-    logger.error(`Target directory ${options.dir} does not exist or is invalid`);
-    if (process.env.NODE_ENV !== 'test') process.exit(1);
+if (process.env.NODE_ENV === 'test' || options.mode === 'server') options.dir = '.';
+try {    
+    options.dir = program.args.length == 1 && program.args[0] !== undefined ? resolvePath(program.args[0]) : options.dir && resolvePath(options.dir);
+} catch (error) {
+    if (process.env.NODE_ENV !== 'test') program.error(`Error resolving repo path to analyse: ${error}`)
 }
 
-// if localConfig path does not exist or is invalid, exit
-if (options.localConfigPath && (!fs.existsSync(options.localConfigPath) || !validateInput(options.localConfigPath))) {
-    logger.error(`LocalConfigPath ${options.localConfigPath} does not exist or is invalid`);
-    if (process.env.NODE_ENV !== 'test') process.exit(1);
+try {
+    if (options.localConfigPath) {
+        options.localConfigPath = resolvePath(options.localConfigPath);
+    }
+} catch (error) {
+    if (process.env.NODE_ENV !== 'test') program.error(`LocalConfigPath does not exist or is invalid: ${error}`);
 }
 
 const bannerArt = `\n
@@ -118,8 +101,8 @@ const bannerArt = `\n
 logger.info(bannerArt);
 
 logger.info(`\n${json.render({
-    startTime: new Date().toString().slice(0, 24),
     version,
+    startTime: new Date().toString().slice(0, 24),
     archetype: options.archetype,
     directory: options.dir,
     configServer: options.configServer ? options.configServer : 'none',

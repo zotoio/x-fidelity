@@ -1,5 +1,5 @@
-import { ConfigManager } from '../core/configManager';
-import { options } from '../core/cli';
+import { ConfigManager } from './configManager';
+import { options } from './cli';
 import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 import { loadRules } from '../utils/ruleUtils';
 import { loadFacts } from '../facts';
@@ -10,6 +10,7 @@ import { RuleConfig } from '../types';
 
 export async function validateArchetypeConfig(): Promise<void> {
   const archetype = options.archetype;
+  let errorCount = 0;
   try {
     // Load the archetype configuration
     const config = await ConfigManager.getConfig({ archetype });
@@ -17,8 +18,8 @@ export async function validateArchetypeConfig(): Promise<void> {
 
     // 1. Validate the archetype JSON schema
     if (!validateArchetype(archetypeConfig)) {
+      errorCount++;
       logger.error('Archetype configuration failed schema validation.');
-      process.exit(1);
     } else {
       logger.info('Archetype configuration schema validation passed.');
     }
@@ -29,7 +30,7 @@ export async function validateArchetypeConfig(): Promise<void> {
       localConfigPath: options.localConfigPath || '',
       archetype,
     });
-    logger.info(`Loaded ${exemptions.length} exemption(s).`);
+    logger.info(`Checked ${exemptions.length} exemption(s).`);
 
     // 3. Load and validate all referenced rules
     const rules = await loadRules({
@@ -40,49 +41,63 @@ export async function validateArchetypeConfig(): Promise<void> {
       logPrefix: '',
     });
     if (rules.length !== archetypeConfig.rules.length) {
+      errorCount++;
       logger.error(
         `Expected ${archetypeConfig.rules.length} rule(s) but loaded ${rules.length}.`
       );
-      process.exit(1);
+      
     } else {
       // Optionally run validateRule() on each loaded rule for additional checks
       for (const rule of rules) {
         if (!validateRule(rule)) {
+          errorCount++;
           logger.error(`Rule ${(rule as RuleConfig).name} failed validation.`);
-          process.exit(1);
         }
       }
-      logger.info('All rules loaded and validated successfully.');
+      logger.info('All configured rules checked.');
     }
 
     // 4. Load and validate facts
     const facts = await loadFacts(archetypeConfig.facts);
     if (facts.length !== archetypeConfig.facts.length) {
+      errorCount++;
       logger.error(
         `Expected ${archetypeConfig.facts.length} fact(s) but loaded ${facts.length}.`
       );
-      process.exit(1);
     } else {
-      logger.info('All facts loaded successfully.');
+      logger.info('All  facts checked.');
     }
 
     // 5. Load and validate operators
     const operators = await loadOperators(archetypeConfig.operators);
     if (operators.length !== archetypeConfig.operators.length) {
+      errorCount++;
       logger.error(
         `Expected ${archetypeConfig.operators.length} operator(s) but loaded ${operators.length}.`
       );
-      process.exit(1);
     } else {
       logger.info('All operators loaded successfully.');
     }
 
     logger.info(
-      'Archetype configuration, exemptions, rules, facts, and operators validated successfully.'
+      'Archetype configuration, exemptions, rules, facts, and operator checks completed.'
     );
-    process.exit(0);
   } catch (error) {
-    logger.error(`Error during validation: ${error}`);
+    logger.error(`Unexpected error during validation: ${error}`);
+    errorCount++;
+  }
+  
+  if (errorCount > 0) {
+    logger.error(`
+\n=================================================
+ FAILED: ${errorCount} CONFIG VALIDATION CHECKS.
+=================================================\n`);
     process.exit(1);
+  } else {
+    logger.info(`
+\n===============================================
+ SUCCESS: ALL CONFIG VALIDATION CHECKS PASSED!
+===============================================\n`);
+    process.exit(0);
   }
 }
