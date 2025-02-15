@@ -1,4 +1,5 @@
-import { axiosClient, isAxiosError } from './axiosClient';
+let axiosClient: any;
+let isAxiosError: any;
 import axios from 'axios';
 
 jest.mock('axios', () => ({
@@ -10,6 +11,13 @@ jest.mock('axios', () => ({
     delete: jest.fn(),
   })),
 }));
+
+beforeEach(() => {
+  jest.resetModules();
+  const mod = require('./axiosClient');
+  axiosClient = mod.axiosClient;
+  isAxiosError = mod.isAxiosError;
+});
 
 describe('axiosClient', () => {
     beforeEach(() => {
@@ -45,7 +53,7 @@ describe('axiosClient', () => {
 
     it('should identify axios errors', () => {
         const error = new Error('test error');
-        expect(isAxiosError(error)).toBe(false);
-        expect(isAxiosError({ isAxiosError: true })).toBe(true);
+        expect(axiosClient.isAxiosError(error)).toBe(false);
+        expect(axiosClient.isAxiosError({ isAxiosError: true })).toBe(true);
     });
 });
