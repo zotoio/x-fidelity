@@ -3,17 +3,27 @@ import { Engine } from 'json-rules-engine';
 import { loadOperators } from '../../operators';
 import { loadFacts } from '../../facts';
 import { sendTelemetry } from '../../utils/telemetry';
-import { ConfigManager } from '../../utils/configManager';
+import { ConfigManager } from '../configManager';
 import { logger } from '../../utils/logger';
 
 jest.mock('json-rules-engine');
 jest.mock('../../operators');
 jest.mock('../../facts');
 jest.mock('../../utils/telemetry');
-jest.mock('../../utils/configManager');
+jest.mock('../configManager');
 jest.mock('../../utils/logger');
 
 describe('setupEngine', () => {
+    let engine: Engine & { removeAllListeners?: () => void } | undefined;
+
+    afterEach(() => {
+        // Clean up engine instance after each test
+        if (engine?.removeAllListeners) {
+            engine.removeAllListeners();
+        }
+        engine = undefined;
+    });
+
     const mockArchetypeConfig = {
         name: 'test-archetype',
         rules: ['rule1', 'rule2'],
@@ -144,7 +154,7 @@ describe('setupEngine', () => {
         await setupEngine(mockParams);
 
         expect(mockAddFact).toHaveBeenCalledTimes(1);
-        expect(mockAddFact).toHaveBeenCalledWith('fact1', expect.any(Function));
+        expect(mockAddFact).toHaveBeenCalledWith('fact1', expect.any(Function), { priority: 1 });
         expect(mockAddFact).not.toHaveBeenCalledWith('openaiAnalysis', expect.any(Function));
     });
 
@@ -166,7 +176,7 @@ describe('setupEngine', () => {
         await setupEngine(mockParams);
 
         expect(mockAddFact).toHaveBeenCalledTimes(2);
-        expect(mockAddFact).toHaveBeenCalledWith('fact1', expect.any(Function));
-        expect(mockAddFact).toHaveBeenCalledWith('openaiAnalysis', expect.any(Function));
+        expect(mockAddFact).toHaveBeenCalledWith('fact1', expect.any(Function), { priority: 1 });
+        expect(mockAddFact).toHaveBeenCalledWith('openaiAnalysis', expect.any(Function), { priority: 1 });
     });
 });

@@ -5,21 +5,28 @@ import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';
 import { openaiAnalysisHighSeverity } from './openaiAnalysisHighSeverity';
 import { getOpenAIStatus } from '../utils/openaiUtils';
 import { logger } from '../utils/logger';
-
-const allOperators: Record<string, OperatorDefn> = {
-    outdatedFramework,
-    fileContains,
-    nonStandardDirectoryStructure,
-    openaiAnalysisHighSeverity
-};
+import { pluginRegistry } from '../core/pluginRegistry';
 
 async function loadOperators(operatorNames: string[]): Promise<OperatorDefn[]> {
+    // Get the latest plugin operators
+    const allAvailableOperators: Record<string, OperatorDefn> = {
+        outdatedFramework,
+        fileContains,
+        nonStandardDirectoryStructure,
+        openaiAnalysisHighSeverity,
+        ...Object.fromEntries(
+            pluginRegistry.getPluginOperators().map(op => [op.name, op])
+        )
+    };
     const openAIStatus = getOpenAIStatus();
+    logger.info(`Loading operators: ${operatorNames.join(', ')}`);
     const loadedOperators: OperatorDefn[] = [];
     const notFoundOperators: string[] = [];
+    const pluginOperators = pluginRegistry.getPluginOperators();
+    logger.info(`Found ${pluginOperators.length} plugin operators available`);
 
     for (const name of operatorNames) {
-        const operator = allOperators[name];
+        const operator = allAvailableOperators[name];
         if (operator) {
             if (operator.name.startsWith('openai')) {
                 if (openAIStatus.isEnabled) {

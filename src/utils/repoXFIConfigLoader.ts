@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { isPathInside } from './pathUtils';
 import { logger } from './logger';
 import { RepoXFIConfig } from '../types/typeDefs';
 import { validateXFIConfig } from './jsonSchemas';
@@ -9,7 +10,11 @@ const defaultXFIConfig: RepoXFIConfig = {
 
 export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig> {
   try {
-    const configPath = path.join(repoPath, '.xfi-config.json');
+    const baseRepo = path.resolve(repoPath);
+    const configPath = path.resolve(baseRepo, '.xfi-config.json');
+    if (!isPathInside(configPath, baseRepo)) {
+        throw new Error('Resolved config path is outside allowed directory');
+    }
     const configContent = await fs.promises.readFile(configPath, 'utf8');
     const parsedConfig = JSON.parse(configContent);
 

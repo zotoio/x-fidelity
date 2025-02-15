@@ -1,5 +1,5 @@
 import { logger } from '../../utils/logger';
-import { ConfigManager, REPO_GLOBAL_CHECK } from '../../utils/configManager';
+import { ConfigManager, REPO_GLOBAL_CHECK } from '../configManager';
 import { ArchetypeConfig, ResultMetadata } from '../../types/typeDefs';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';
@@ -77,7 +77,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     // add xfiConfig as a fact
     engine.addFact('repoXFIConfig', repoXFIConfig);
 
-    logger.info(`Added repoXFIConfig as fact: ${safeStringify(repoXFIConfig)}`);
+    logger.info({ repoXFIConfig }, 'Added repoXFIConfig as fact');
 
     const failures = await runEngineOnFiles({
         engine,
@@ -97,6 +97,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     const fatalityCount = countRuleFailures(failures, 'fatality');
     const warningCount = countRuleFailures(failures, 'warning');
     const exemptCount = countRuleFailures(failures, 'exempt');
+    const errorCount = countRuleFailures(failures, 'error');
 
     const finishTime = new Date().getTime();
 
@@ -113,6 +114,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             totalIssues: totalFailureCount,
             warningCount: warningCount,
             fatalityCount: fatalityCount,
+            errorCount: errorCount,
             exemptCount: exemptCount,
             options,
             repoPath,

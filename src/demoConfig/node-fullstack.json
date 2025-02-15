@@ -6,18 +6,21 @@
         "noDatabases-iterative",
         "nonStandardDirectoryStructure-global",
         "openaiAnalysisTop5-global",
-        "openaiAnalysisA11y-global"
+        "openaiAnalysisA11y-global",
+        "invalidSystemIdConfigured-iterative"
     ],
     "operators": [
         "fileContains",
         "outdatedFramework",
         "nonStandardDirectoryStructure",
-        "openaiAnalysisHighSeverity"
+        "openaiAnalysisHighSeverity",
+        "invalidRemoteValidation"
     ],
     "facts": [
         "repoFilesystemFacts",
         "repoDependencyFacts",
-        "openaiAnalysisFacts"
+        "openaiAnalysisFacts",
+        "remoteSubstringValidation"
     ],
     "config": {
         "minimumDependencyVersions": {
@@ -40,7 +43,8 @@
             ".*\\/(dist|coverage|build|node_modules)(\\/.*|$)"
         ],
         "whitelistPatterns": [
-            ".*\\.(ts|tsx|js|jsx|md)$"
+            ".*\\.(ts|tsx|js|jsx)$",
+            ".*\\/xfiTestMatch\\.json$"
         ]
     }
 }

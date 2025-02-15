@@ -14,6 +14,7 @@ We welcome contributions to x-fidelity! This document provides guidelines for co
 1. Make your changes in your feature branch.
 2. Add or update tests as necessary.
 3. Ensure all tests pass by running `yarn test`.
+4. When modifying documentation to cover new functionality (such as remote validation, GitHub webhook integration, enhanced telemetry, or new plugins), please update both the README and PLUGIN_GUIDANCE accordingly.
 4. Ensure the code lints properly by running `yarn lint`.
 
 ## Commit Messages

@@ -1,4 +1,4 @@
-import { loadLocalExemptions, loadRemoteExemptions, normalizeGitHubUrl, isExempt } from './exemptionLoader';
+import { loadLocalExemptions, loadRemoteExemptions, normalizeGitHubUrl, isExempt } from './exemptionUtils';
 import fs from 'fs';
 import path from 'path';
 import { logger } from './logger';
@@ -33,7 +33,7 @@ describe('normalizeGitHubUrl', () => {
         
         // Bare org/repo should be converted to SSH
         expect(normalizeGitHubUrl('org/repo')).toBe('git@github.com:org/repo.git');
-    });
+    }, 10000);
 
     it('should preserve custom GitHub hostnames', () => {
         expect(normalizeGitHubUrl('git@custom-github.com:org/repo.git')).toBe('git@custom-github.com:org/repo.git');

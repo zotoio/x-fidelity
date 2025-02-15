@@ -1,13 +1,14 @@
-import { axiosClient } from "./axiosClient";
-import { logger, setLogPrefix } from "./logger";
+import { execSync } from 'child_process';
+import { axiosClient } from "../utils/axiosClient";
+import { logger, setLogPrefix } from "../utils/logger";
 import { ArchetypeConfig, ExecutionConfig, GetConfigParams, InitializeParams, LoadLocalConfigParams, RuleConfig, Exemption } from "../types/typeDefs";
-import { loadExemptions } from "./exemptionLoader";
-import { archetypes } from "../archetypes";
-import { options } from '../core/cli';
+import { pluginRegistry } from './pluginRegistry';
+import { loadExemptions } from "../utils/exemptionUtils";
+import { options } from './cli';
 import fs from 'fs';
 import * as path from 'path';
-import { validateArchetype, validateRule } from './jsonSchemas';
-import { loadRules } from '../rules';
+import { validateArchetype, validateRule } from '../utils/jsonSchemas';
+import { loadRules } from '../utils/ruleUtils';
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
@@ -34,12 +35,62 @@ export class ConfigManager {
         return ConfigManager.configs[archetype];
     }
 
+    public static async loadPlugins(extensions?: string[]): Promise<void> {
+        if (extensions && extensions.length > 0) {
+            for (const moduleName of extensions) {
+                try {
+                    let extension;
+                    
+                    // 1. First try loading from global modules
+                    logger.info(`Attempting to load extension module from global modules: ${moduleName}`);
+                    try {
+                        const globalNodeModules = path.join(execSync('yarn global dir').toString().trim(), 'node_modules');
+                        extension = await import(path.join(globalNodeModules, moduleName));
+                    } catch (globalError) {
+                        logger.info(`Extension not found in global modules, trying local node_modules: ${moduleName}`);
+                        
+                        // 2. If global fails, try loading from local node_modules
+                        try {
+                            extension = await import(path.join(process.cwd(), 'node_modules', moduleName));
+                        } catch (localError) {
+                            logger.info(`Extension not found in local node_modules, trying sample plugins: ${moduleName}`);
+                            
+                            // 3. If local fails, try loading from sample plugins directory
+                            extension = await import(path.join(__dirname, '..', 'plugins', moduleName));
+                        }
+                    }
+
+                    if (extension.default) {
+                        // Handle ES modules
+                        logger.debug(`Registering ES module plugin: ${moduleName}`);
+                        pluginRegistry.registerPlugin(extension.default);
+                    } else if (extension.plugin) {
+                        // Handle CommonJS modules that export { plugin }
+                        logger.debug(`Registering CommonJS module plugin: ${moduleName}`);
+                        pluginRegistry.registerPlugin(extension.plugin);
+                    } else {
+                        // Handle direct exports
+                        logger.debug(`Registering direct export plugin: ${moduleName}`);
+                        pluginRegistry.registerPlugin(extension);
+                    }
+                    logger.info(`Successfully loaded extension: ${moduleName}`);
+                } catch (error) {
+                    logger.error(`Failed to load extension ${moduleName} from all locations: ${error}`);
+                    if (process.env.NODE_ENV !== 'test') process.exit(1);
+                }
+            }
+        }
+    }
+
     private static async initialize(params: InitializeParams): Promise<ExecutionConfig> {
         const { archetype, logPrefix } = params;
         const configServer = options.configServer;
         const localConfigPath = options.localConfigPath;
 
         if (logPrefix) setLogPrefix(logPrefix);
+        
+        // Load plugins during initialization
+        await this.loadPlugins(options.extensions);
         logger.info(`Initializing config manager for archetype: ${archetype}`);
         logger.debug(`Initialize params: ${JSON.stringify(params)}`);
 
@@ -55,9 +106,7 @@ export class ConfigManager {
                 config.archetype = await this.fetchRemoteConfig(configServer, archetype, logPrefix);
             } else if (localConfigPath) {
                 config.archetype = await ConfigManager.loadLocalConfig({ archetype, localConfigPath });
-            } else {
-                config.archetype = archetypes[archetype];
-            }
+            } 
 
             if (!config.archetype || Object.keys(config.archetype).length === 0) {
                 throw new Error(`No valid configuration found for archetype: ${archetype}`);

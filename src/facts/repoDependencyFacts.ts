@@ -23,14 +23,11 @@ export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
     } else if (fs.existsSync(path.join(options.dir, 'package-lock.json'))) {
         result = await collectNodeDependencies('npm');
     } else {
-        logger.on('finish', function () {
-            process.exit(1);
-        });
         logger.error('No yarn.lock or package-lock.json found');
-        logger.end();
+        process.exit(1);
         throw new Error('Unsupported package manager');
     }
-    logger.debug(`collectLocalDependencies: ${safeStringify(result)}`);
+    logger.trace(`collectLocalDependencies: ${safeStringify(result)}`);
     return result;
 }
 
@@ -43,34 +40,42 @@ async function collectNodeDependencies(packageManager: string): Promise<LocalDep
             await execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 })
 
         if (stderr?.includes('"error"')) {
-            logger.error(`Error determining ${packageManager} dependencies: ${stderr}`);
+            logger.error({
+                err: stderr,
+                packageManager,
+                type: 'dependency-error',
+                operation: 'collect-dependencies'
+            }, 'Error determining dependencies');
             throw new Error(stderr);
         }
 
         try {
             const result = JSON.parse(stdout);
-            logger.debug(`collectNodeDependencies ${packageManager}: ${JSON.stringify(result)}`);
+            logger.trace(`collectNodeDependencies ${packageManager}: ${JSON.stringify(result)}`);
             return packageManager === 'npm' ? 
             processNpmDependencies(result) :
             processYarnDependencies(result)
 
         } catch (e) {
-            logger.error(`Error parsing ${packageManager} dependencies: ${e}`);
+            logger.error({
+                err: e,
+                packageManager,
+                type: 'parse-error'
+            }, 'Error parsing dependencies');
             throw new Error(stderr);
         }
     } catch (e: any) {
-        logger.on('finish', function () {
-            process.exit(1);
-        });
         let message = `Error determining ${packageManager} dependencies: ${e}`;
 
         if (e.message?.includes('ELSPROBLEMS')) {
-            message += `
-            Error determining ${packageManager} dependencies: did you forget to run '${packageManager} install' first?`;
+            message += `\nError determining ${packageManager} dependencies: did you forget to run '${packageManager} install' first?`;
         }
-        logger.error(message);
-        logger.end();
-        return emptyDeps;
+        logger.error({
+            err: e,
+            packageManager,
+            type: 'dependency-error'
+        }, 'Error determining dependencies');
+        throw new Error(message);
     }
 
 }
@@ -159,7 +164,7 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
     const results: VersionData[] = [];
     const visited = new Set<string>();
 
-    logger.debug(`depGraph: ${safeStringify(depGraph)}`);
+    logger.trace({ depGraph }, 'Processing dependency graph');
 
     function walk(dep: LocalDependencies, parentName = '') {
         const fullName = parentName ? `${parentName}/${dep.name}` : dep.name;

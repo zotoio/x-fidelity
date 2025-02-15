@@ -3,10 +3,10 @@ import { Engine } from 'json-rules-engine';
 import { collectRepoFileData } from '../../facts/repoFilesystemFacts';
 import { getDependencyVersionFacts } from '../../facts/repoDependencyFacts';
 import { collectOpenaiAnalysisFacts } from '../../facts/openaiAnalysisFacts';
-import { loadRules } from '../../rules';
+import { loadRules } from '../../utils/ruleUtils';
 import { loadOperators } from '../../operators';
 import { loadFacts } from '../../facts';
-import { ConfigManager } from '../../utils/configManager';
+import { ConfigManager } from '../configManager';
 import { sendTelemetry } from '../../utils/telemetry';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { generateLogPrefix } from '../../utils/logger';
@@ -29,30 +29,15 @@ jest.mock('json-rules-engine');
 jest.mock('../../facts/repoFilesystemFacts');
 jest.mock('../../facts/repoDependencyFacts');
 jest.mock('../../facts/openaiAnalysisFacts');
-jest.mock('../../rules');
 jest.mock('../../operators');
 jest.mock('../../facts');
+jest.mock('../../utils/ruleUtils');
 jest.mock('../../utils/logger', () => ({
     ...jest.requireActual('../../utils/logger'),
     generateLogPrefix: jest.fn().mockReturnValue('mockLogPrefix')
 }));
-jest.mock('../../utils/configManager');
+jest.mock('../configManager');
 jest.mock('../../utils/telemetry');
-jest.mock('../../archetypes', () => ({
-    archetypes: {
-        'node-fullstack': {
-            rules: ['mockRule'],
-            operators: ['mockOperator'],
-            facts: ['mockFact'],
-            config: {
-                minimumDependencyVersions: {},
-                standardStructure: {},
-                blacklistPatterns: [],
-                whitelistPatterns: []
-            }
-        }
-    }
-}));
 
 describe('analyzeCodebase', () => {
     beforeEach(() => {
@@ -74,9 +59,9 @@ describe('analyzeCodebase', () => {
             cliOptions: {}
         });
         // eslint-disable-next-line @typescript-eslint/no-empty-function
-        jest.spyOn(console, 'log').mockImplementation(() => {});
+        jest.spyOn(console, 'log').mockImplementation(() => { });
         // eslint-disable-next-line @typescript-eslint/no-empty-function
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(console, 'error').mockImplementation(() => { });
     });
 
     it('should analyze the codebase and return results', async () => {
@@ -203,16 +188,19 @@ describe('analyzeCodebase', () => {
                 totalIssues: 3,
                 warningCount: 0,
                 fatalityCount: 0,
+                errorCount: 3,
                 exemptCount: 0,
                 issueDetails: expect.arrayContaining([
                     expect.objectContaining({
                         filePath: expect.any(String),
                         errors: expect.arrayContaining([
                             expect.objectContaining({
-                                ruleFailure: 'ProcessingError',
+                                ruleFailure: 'ExecutionError',
                                 level: 'error',
                                 details: expect.objectContaining({
-                                    message: expect.stringContaining('Error processing file: Error: mock error')
+                                    message: expect.stringContaining('unknown execution failed: mock error'),
+                                    source: 'unknown',
+                                    stack: expect.any(String)
                                 })
                             })
                         ])
@@ -240,7 +228,7 @@ describe('analyzeCodebase', () => {
         const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
         const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
         const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
-        const mockFacts = [{ name: 'openaiAnalysis', fn: jest.fn() }, { name: 'openaiSystemPrompt', fn: 'mock openai system prompt'} ];
+        const mockFacts = [{ name: 'openaiAnalysis', fn: jest.fn() }, { name: 'openaiSystemPrompt', fn: 'mock openai system prompt' }];
 
         (collectRepoFileData as jest.Mock).mockResolvedValue(mockFileData);
         (getDependencyVersionFacts as jest.Mock).mockResolvedValue(mockDependencyData);
@@ -319,8 +307,8 @@ describe('analyzeCodebase', () => {
         (loadFacts as jest.Mock).mockResolvedValue(mockFacts);
         (collectOpenaiAnalysisFacts as jest.Mock).mockResolvedValue('mock openai system prompt');
 
-        const engineRunMock = jest.fn().mockResolvedValue({ 
-            results: [{ result: true, event: { type: 'fatality', params: { level: 'fatality' } } }] 
+        const engineRunMock = jest.fn().mockResolvedValue({
+            results: [{ result: true, event: { type: 'fatality', params: { level: 'fatality' } } }]
         });
         (Engine as jest.Mock).mockImplementation(() => ({
             addOperator: jest.fn(),

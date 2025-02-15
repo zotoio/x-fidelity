@@ -1,4 +1,4 @@
-import { ConfigManager } from '../utils/configManager';
+import { ConfigManager } from '../core/configManager';
 import { logger } from '../utils/logger';
 
 const MAX_CACHE_SIZE = 1000; // Maximum number of items in the cache
@@ -57,17 +57,17 @@ const cache = new LRUCache(MAX_CACHE_SIZE);
 const ruleListCache = new LRUCache(MAX_CACHE_SIZE);
 
 export function getCachedData(key: string): any | null {
-    logger.debug(`Checking cache for key: ${key}`);
+    logger.debug({ key, operation: 'cache-check' }, 'Checking cache');
     return cache.get(key);
 }
 
 export function setCachedData(key: string, data: any, ttl: number = DEFAULT_TTL): void {
-    logger.debug(`Setting cache for key: ${key}`);
+    logger.debug({ key, operation: 'cache-set' }, 'Setting cache');
     cache.set(key, data, ttl);
 }
 
 export function clearCache(): void {
-    logger.debug('Clearing cache');
+    logger.debug({ operation: 'cache-clear' }, 'Clearing cache');
     cache.clear();
     ruleListCache.clear();
 }

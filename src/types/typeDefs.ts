@@ -5,6 +5,12 @@ export type OperatorDefn = {
     name: string,
     fn: OperatorEvaluator<any, any>
 }
+
+export type FactDefn = {
+    name: string,
+    fn: (params: any, almanac: any) => Promise<any>
+    priority?: number
+}
 export interface ScanResult {
     filePath: string;
     errors: RuleFailure[];
@@ -12,8 +18,14 @@ export interface ScanResult {
 
 export interface RuleFailure {
     ruleFailure: string;
-    level: string | undefined;
-    details: Record<string, any> | undefined;
+    level: ErrorLevel | undefined;
+    details: {
+        message: string;
+        source?: 'operator' | 'fact' | 'plugin' | 'rule' | 'unknown';
+        originalError?: Error;
+        stack?: string;
+        [key: string]: any;
+    } | undefined;
 }
 
 export interface VersionData {
@@ -109,6 +121,11 @@ export interface RuleConfig {
         type: string;
         params: Record<string, any>;
     };
+    errorBehavior?: 'swallow' | 'fatal';
+    onError?: {
+        action: string;  // Name of function to execute
+        params?: Record<string, any>;  // Parameters for the action
+    };
 }
 export type RuleConfigSchema = JSONSchemaType<RuleConfig>;
 
@@ -164,6 +181,7 @@ export interface ResultMetadata {
         fileCount: number;
         totalIssues: number;
         warningCount: number;
+        errorCount: number;
         fatalityCount: number;
         exemptCount: number;
         issueDetails: ScanResult[];
@@ -194,7 +212,9 @@ export interface TelemetryData {
         shell: string | null;
     };
     startTime: number;
-}export interface LoadRulesParams {
+}
+
+export interface LoadRulesParams {
     archetype: string;
     ruleNames: string[];
     configServer?: string;
@@ -207,9 +227,11 @@ export interface LoadRemoteRuleParams {
     ruleName: string;
     logPrefix?: string;
 }
+
 export interface LoadLocalRuleParams {
     ruleName: string;
 }
+
 export interface LoadLocalConfigRuleParams {
     ruleName: string;
     localConfigPath: string;
@@ -232,21 +254,74 @@ export interface isWhitelistedParams {
     filePath: string; 
     repoPath: string; 
     whitelistPatterns: string[]; 
-}export interface FileData {
+}
+
+export interface FileData {
     fileName: string;
     filePath: string;
     fileContent: string;
     fileAst?: any;
     relativePath?: string;
 }
+
 export interface ValidationResult {
     isValid: boolean;
     error?: string;
 }
+
 export interface RepoXFIConfig {
   sensitiveFileFalsePositives?: string[];
   [key: string]: any;  // Allow for additional properties
 }
 
 export type RepoXFIConfigSchema = JSONSchemaType<RepoXFIConfig>;
+export type ErrorLevel = 'warning' | 'error' | 'fatality' | 'exempt';
 
+export interface PluginError {
+  message: string;
+  level: ErrorLevel;
+  details?: any;
+}
+
+export interface PluginResult {
+  success: boolean;
+  data: any;
+  error?: PluginError;
+}
+
+export interface XFiPlugin {
+  name: string;
+  version: string;
+  facts?: FactDefn[];
+  operators?: OperatorDefn[];
+  onError?: (error: Error) => PluginError;
+}
+
+export interface PluginRegistry {
+  registerPlugin: (plugin: XFiPlugin) => void;
+  getPluginFacts: () => FactDefn[];
+  getPluginOperators: () => OperatorDefn[];
+  executePluginFunction: (pluginName: string, functionName: string, ...args: any[]) => PluginResult;
+}
+
+export interface AiSuggestionCodeSnippet {
+  filePath: string;
+  lineNumber: number;
+  before: string;
+  after: string;
+}
+  
+export interface AiSuggestion {
+  issue: string;
+  severity: number;
+  description: string;
+  filePaths: string[];
+  suggestion: string;
+  codeSnippets: AiSuggestionCodeSnippet[];
+}
+
+export interface AiSuggestions {
+  issues: AiSuggestion[];
+}
+
+export type AiSuggestionsSchema = JSONSchemaType<AiSuggestions>;

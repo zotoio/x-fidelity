@@ -2,27 +2,39 @@
   "name": "x-fidelity",
   "version": "2.17.2",
   "description": "cli for opinionated framework adherence checks",
-  "main": "dist/xfidelity",
+  "main": "dist/index",
+  "types": "dist/index.d.ts",
   "bin": {
     "xfidelity": "./dist/xfidelity"
   },
+  "module": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./*": "./dist/*"
+  },
   "scripts": {
     "build": "rimraf dist/ && tsc && yarn copy-files",
-    "copy-files": "cp src/rules/*.json dist/rules/ && cp src/archetypes/*.json dist/archetypes/ && cp dist/index.js dist/xfidelity",
-    "start": "OPENAI_API_KEY= jest --watch",
-    "test": "yarn lint && OPENAI_API_KEY= jest",
-    "test:coverage": "OPENAI_API_KEY= jest --coverage",
+    "copy-files": "cp -rf src/demoConfig dist/ && cp dist/index.js dist/xfidelity",
+    "start": "NODE_ENV=test OPENAI_API_KEY= jest --watch",
+    "test": "NODE_ENV=test yarn lint && NODE_ENV=test OPENAI_API_KEY= jest",
+    "test:coverage": "NODE_ENV=test OPENAI_API_KEY= jest --coverage",
     "commit": "yarn test && git-cz",
     "release": "semantic-release",
     "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
-    "build-run": "yarn build && node . --dir . | jq -R -r '. as $line | try fromjson catch $line'",
+    "build-run": "yarn build && node . --dir . --extensions xfiPluginRemoteStringValidator | jq -R -r '. as $line | try fromjson catch $line' ",
+    "build-run-with-stubs": "yarn build && yarn start-test-server && node . --dir . --extensions xfiPluginRemoteStringValidator | jq -R -r '. as $line | try fromjson catch $line' && kill-port 4200",
     "start-server": "ts-node src/index.ts --mode server",
+    "start-test-server": "node -e \"require('http').createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(require('fs').readFileSync('src/plugins/xfiPluginRemoteStringValidator/sampleRules/xfiTestServerResponse.json')); }).listen(4200, () => console.log('Test server running on port 4200'));\" &",
     "lint": "eslint . ",
     "lint:fix": "eslint . --fix",
     "perftest": "artillery run src/server/configServer.performance.test.yml",
     "perftest:cloud": "echo 'expecting env var ARTILLERY_CLOUD_API_KEY from artillery.io' && artillery run src/server/configServer.performance.test.yml --record",
     "bats:install": "cd ./cli-testing && ./installBatsTesting.sh",
-    "bats:test": "cd ./cli-testing && bats *.bats"
+    "bats:test": "cd ./cli-testing && bats *.bats",
+    "validate-demo-config": "yarn build && node . --dir . -x node-fullstack -e xfiPluginRemoteStringValidator -o true"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
@@ -50,8 +62,8 @@
     "@types/semver": "^7.5.8",
     "@types/supertest": "^6.0.2",
     "@types/winston": "^2.4.4",
-    "@typescript-eslint/eslint-plugin": "^5.59.0",
-    "@typescript-eslint/parser": "^5.59.0",
+    "@typescript-eslint/eslint-plugin": "^8.23.0",
+    "@typescript-eslint/parser": "^8.23.0",
     "commitizen": "^4.3.0",
     "conventional-changelog-cli": "^5.0.0",
     "conventional-recommended-bump": "^10.0.0",
@@ -78,17 +90,20 @@
     "express-rate-limit": "^7.4.0",
     "helmet": "^8.0.0",
     "json-rules-engine": "^7.2.1",
+    "jsonpath-plus": "^10.2.0",
+    "kill-port": "^2.0.1",
     "lodash": "^4.17.21",
     "nodemon": "^3.0.2",
     "openai": "^4.19.0",
     "ora": "^8.0.1",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
     "prettyjson": "^1.2.5",
     "semver": "^7.6.2",
-    "winston": "^3.13.0",
     "yarn": "^1.22.21"
   },
   "peerDependencies": {
-    "artillery": "^2.0.0-31"
+    "artillery": "^2.0.15"
   },
   "config": {
     "commitizen": {

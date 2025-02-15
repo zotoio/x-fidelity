@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { logger, setLogPrefix } from '../../utils/logger';
 import { validateUrlInput } from '../../utils/inputValidation';
 import { getCachedData, setCachedData } from '../cacheManager';
-import { ConfigManager } from '../../utils/configManager';
+import { ConfigManager } from '../../core/configManager';
 import { validateArchetype } from '../../utils/jsonSchemas';
 
 export async function archetypeRoute(req: Request, res: Response) {

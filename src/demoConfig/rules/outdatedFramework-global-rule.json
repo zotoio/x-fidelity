@@ -26,5 +26,13 @@
                 "fact": "repoDependencyResults"
             }
         }
+    },
+    "errorBehavior": "fatal",
+    "onError": {
+        "action": "sendNotification",
+        "params": {
+            "channel": "security-alerts",
+            "priority": "high"
+        }
     }
 }

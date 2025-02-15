@@ -5,6 +5,7 @@ jest.mock('../utils/logger', () => ({
     logger: {
         error: jest.fn(),
         debug: jest.fn(),
+        info: jest.fn(),
     },
 }));
 
@@ -27,6 +28,7 @@ describe('openaiAnalysisHighSeverity', () => {
 
     it('should return true if high severity issues are found', () => {
         const openaiAnalysis = {
+            prompt: "test prompt",
             result: [
                 { severity: 9 },
                 { severity: 10 }
@@ -34,18 +36,19 @@ describe('openaiAnalysisHighSeverity', () => {
         };
         const result = openaiAnalysisHighSeverity.fn(openaiAnalysis, 8);
         expect(result).toEqual(true);
-        expect(logger.error).toHaveBeenCalledWith('openai: high severity issues found');
+        expect(logger.error).toHaveBeenCalledWith('openaiAnalysisHighSeverity: : "test prompt" high severity issues found');
     });
 
     it('should use default severity threshold if not provided', () => {
         const openaiAnalysis = {
+            prompt: "default prompt",
             result: [
                 { severity: 9 }
             ]
         };
         const result = openaiAnalysisHighSeverity.fn(openaiAnalysis, null);
         expect(result).toEqual(true);
-        expect(logger.error).toHaveBeenCalledWith('openai: high severity issues found');
+        expect(logger.error).toHaveBeenCalledWith('openaiAnalysisHighSeverity: : "default prompt" high severity issues found');
     });
 
     it('should handle empty result array', () => {
@@ -77,6 +80,7 @@ describe('openaiAnalysisHighSeverity', () => {
 
     it('should handle mixed valid and invalid severity values', () => {
         const openaiAnalysis = {
+            prompt: "mixed prompt",
             result: [
                 { severity: 5 },
                 { severity: 'high' },
@@ -85,11 +89,12 @@ describe('openaiAnalysisHighSeverity', () => {
         };
         const result = openaiAnalysisHighSeverity.fn(openaiAnalysis, 8);
         expect(result).toBe(true);
-        expect(logger.error).toHaveBeenCalledWith('openai: high severity issues found');
+        expect(logger.error).toHaveBeenCalledWith('openaiAnalysisHighSeverity: : "mixed prompt" high severity issues found');
     });
 
     it('should use default severity threshold when not provided', () => {
         const openaiAnalysis = {
+            prompt: "default threshold",
             result: [
                 { severity: 7 },
                 { severity: 8 }
@@ -97,6 +102,6 @@ describe('openaiAnalysisHighSeverity', () => {
         };
         const result = openaiAnalysisHighSeverity.fn(openaiAnalysis, null);
         expect(result).toBe(true);
-        expect(logger.error).toHaveBeenCalledWith('openai: high severity issues found');
+        expect(logger.error).toHaveBeenCalledWith('openaiAnalysisHighSeverity: : "default threshold" high severity issues found');
     });
 });

@@ -2,12 +2,11 @@ import { axiosClient } from "./axiosClient";
 import { logger } from "./logger";
 import { Exemption, IsExemptParams, LoadExemptionsParams } from "../types/typeDefs";
 import { sendTelemetry } from "./telemetry";
-import { exemptions } from "../archetypes";
 import path from "path";
 import fs from "fs";
 import { isPathInside } from "./pathUtils";
 
-const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
+const XFI_SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 
 export async function loadExemptions(params: LoadExemptionsParams): Promise<Exemption[]> {
     const { configServer, localConfigPath } = params;
@@ -16,8 +15,8 @@ export async function loadExemptions(params: LoadExemptionsParams): Promise<Exem
     } else if (localConfigPath) {
         return await loadLocalExemptions(params);
     } else {
-        return await loadDefaultExemptions(params);
-    }
+        return [];
+    }    
 }
 
 export async function loadRemoteExemptions(params: LoadExemptionsParams): Promise<Exemption[]> {
@@ -28,7 +27,7 @@ export async function loadRemoteExemptions(params: LoadExemptionsParams): Promis
         const response = await axiosClient.get(exemptionsUrl, {
             headers: {
                 'X-Log-Prefix': logPrefix || '',
-                'X-Shared-Secret': process.env.XFI_SHARED_SECRET || ''
+                'X-Shared-Secret': XFI_SHARED_SECRET || ''
             }
         });
         const fetchedExemptions = response.data;
@@ -57,7 +56,8 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
 
     try {
         // Load from legacy file
-        const legacyExemptionsPath = path.join(localConfigPath, `${archetype}-exemptions.json`);
+        const baseConfigPath = path.resolve(localConfigPath);
+        const legacyExemptionsPath = path.resolve(baseConfigPath, `${archetype}-exemptions.json`);
         if (fs.existsSync(legacyExemptionsPath)) {
             const legacyExemptionsData = await fs.promises.readFile(legacyExemptionsPath, 'utf-8');
             const legacyExemptions = JSON.parse(legacyExemptionsData);
@@ -68,7 +68,7 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
         }
 
         // Load from exemptions directory
-        const exemptionsDirPath = path.join(localConfigPath, `${archetype}-exemptions`);
+        const exemptionsDirPath = path.resolve(baseConfigPath, `${archetype}-exemptions`);
         if (fs.existsSync(exemptionsDirPath)) {
             const files = await fs.promises.readdir(exemptionsDirPath);
             for (const file of files) {
@@ -182,9 +182,3 @@ export function isExempt(params: IsExemptParams): boolean {
     }    
 }
 
-async function loadDefaultExemptions(params: LoadExemptionsParams): Promise<Exemption[]> {
-    const { archetype } = params;
-    const result = archetype && exemptions && Array.isArray(exemptions[archetype]) ? exemptions[archetype] : [];
-    logger.debug(`Loaded ${result.length} exemptions`);
-    return result;
-}

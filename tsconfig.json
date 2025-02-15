@@ -6,6 +6,13 @@
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
-  }
+    "resolveJsonModule": true,
+    "declaration": true,
+    "types": [
+      "node",
+      "jest",
+      "pino"
+    ]
+  },
+  "include": ["src/**/*.ts"]
 }

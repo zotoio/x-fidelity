@@ -3,9 +3,9 @@ import { logger } from '../../utils/logger';
 import { loadOperators } from '../../operators';
 import { loadFacts } from '../../facts';
 import { sendTelemetry } from '../../utils/telemetry';
-import { isExempt } from '../../utils/exemptionLoader';
+import { isExempt } from '../../utils/exemptionUtils';
 import { SetupEngineParams } from '../../types/typeDefs';
-import { ConfigManager } from '../../utils/configManager';
+import { ConfigManager } from '../configManager';
 
 export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     const { archetypeConfig, archetype, executionLogPrefix, repoUrl } = params;
@@ -96,7 +96,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     facts.forEach((fact) => {
         if (!fact?.name?.includes('openai') || (process.env.OPENAI_API_KEY && fact?.name?.includes('openai'))) {
             logger.info(`adding fact: ${fact.name}`);
-            engine.addFact(fact.name, fact.fn);
+            engine.addFact(fact.name, fact.fn, { priority: fact.priority || 1 });
         }
     });
 
