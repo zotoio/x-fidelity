@@ -212,7 +212,9 @@ export interface TelemetryData {
         shell: string | null;
     };
     startTime: number;
-}export interface LoadRulesParams {
+}
+
+export interface LoadRulesParams {
     archetype: string;
     ruleNames: string[];
     configServer?: string;
@@ -225,9 +227,11 @@ export interface LoadRemoteRuleParams {
     ruleName: string;
     logPrefix?: string;
 }
+
 export interface LoadLocalRuleParams {
     ruleName: string;
 }
+
 export interface LoadLocalConfigRuleParams {
     ruleName: string;
     localConfigPath: string;
@@ -250,17 +254,21 @@ export interface isWhitelistedParams {
     filePath: string; 
     repoPath: string; 
     whitelistPatterns: string[]; 
-}export interface FileData {
+}
+
+export interface FileData {
     fileName: string;
     filePath: string;
     fileContent: string;
     fileAst?: any;
     relativePath?: string;
 }
+
 export interface ValidationResult {
     isValid: boolean;
     error?: string;
 }
+
 export interface RepoXFIConfig {
   sensitiveFileFalsePositives?: string[];
   [key: string]: any;  // Allow for additional properties
@@ -296,3 +304,24 @@ export interface PluginRegistry {
   executePluginFunction: (pluginName: string, functionName: string, ...args: any[]) => PluginResult;
 }
 
+export interface AiSuggestionCodeSnippet {
+  filePath: string;
+  lineNumber: number;
+  before: string;
+  after: string;
+}
+  
+export interface AiSuggestion {
+  issue: string;
+  severity: number;
+  description: string;
+  filePaths: string[];
+  suggestion: string;
+  codeSnippets: AiSuggestionCodeSnippet[];
+}
+
+export interface AiSuggestions {
+  issues: AiSuggestion[];
+}
+
+export type AiSuggestionsSchema = JSONSchemaType<AiSuggestions>;

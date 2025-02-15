@@ -4,6 +4,8 @@ import { FileData } from '../types/typeDefs';
 import { ChatCompletionCreateParams } from 'openai/resources/chat/completions';
 import { Almanac } from 'json-rules-engine';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
+import { aiSuggestionsSchema } from '../utils/jsonSchemas';
+import { ResponseFormatJSONSchema } from 'openai/resources';
 
 let openai: OpenAI | undefined;
 if (isOpenAIEnabled()) {
@@ -15,7 +17,7 @@ if (isOpenAIEnabled()) {
 
 const openaiAnalysis = async function (params: any, almanac: Almanac) {
     let result: object = {'result': []};
-    const model = process.env.OPENAI_MODEL || 'gpt-4o';
+    const model = process.env.OPENAI_MODEL || 'o3-mini';
     
     try {
         if (!openai) {
@@ -29,13 +31,19 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
             return result;
         }
 
+        const responseFormat: ResponseFormatJSONSchema.JSONSchema = {
+            name: 'aiSuggestions', 
+            schema: aiSuggestionsSchema
+        };
+
         const payload: ChatCompletionCreateParams = {
             model,
+            reasoning_effort: 'high',
             messages: [
                 { role: 'system', content: openaiSystemPrompt },
                 { role: 'user', content: `${params.prompt} 
                     IMPORTANT Guidelines:
-                    1. respond with each suggestion as an object in an array that can be parsed. 
+                    1. respond with each suggestion as a valid JSON object in an array that can be parsed. 
                     2. each object should have the following fields:
                         - issue: The type of issue identified.
                         - severity: value between 1 and 10 where 1 is low and 10 is high.
@@ -47,22 +55,28 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
                             - lineNumber of the issue 
                             - before and after code snippet lines
                     3. do not include strings or markdown around the array.` }
-            ]
+            ],
+            response_format: { type: "json_schema", json_schema: responseFormat }
         };
 
         logger.debug({ 
             payload,
+            payloadLength: JSON.stringify(payload).length,
             prompt: params.prompt
-        }, 'Running OpenAI analysis');
+        }, `Running OpenAI analysis for prompt "${params.prompt}"`);
+
         const response: OpenAI.Chat.Completions.ChatCompletion = await openai.chat.completions.create(payload);
-        logger.debug(response);
+        logger.debug(response, `OpenAI response for prompt "${params.prompt}"`);
+
+        logger.info(`openaiAnalysis: prompt: "${params.prompt}" OpenAI usage: ${JSON.stringify(response.usage)}`);
 
         if (!response.choices[0].message.content) {
             throw new Error('OpenAI response is empty');
         }
 
         const analysis = {
-            'result': JSON.parse(response.choices[0].message.content)
+            'prompt': params.prompt,
+            'result': JSON.parse(response.choices[0].message.content).issues
         };
 
         almanac.addRuntimeFact(params.resultFact, analysis);
@@ -98,10 +112,11 @@ const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
     const systemPrompt = `You are an expert software engineer with extensive experience in 
         software development, code analysis, and problem-solving. You have a deep understanding 
         of various programming languages, frameworks, and best practices. Your task is to analyze 
-        the provided codebase, offer insights, suggest improvements, and answer any questions 
-        related to software engineering.
+        the provided codebase, offer insights, suggest improvements, and identify any code or techniques may 
+        not be aligned with best practice patterns for security, performance and any more general priciples 
+        such as separation of concerns.
 
-        A codebase is described by an array of json objects. Each file in the codebase is represented 
+        The codebase is provided as an array of valid json objects. Each file in the codebase is represented 
         as an object in the array with the following fields:
 
         fileName: The name of the file.
@@ -113,7 +128,8 @@ const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
         
         ${JSON.stringify(formattedFileData, null)}
         
-        Based on the provided codebase and your expertise in software engineering: 
+        Based on the provided codebase and your expertise in software engineering, order your suggestions by 
+        importance or severity decending and provide a detailed explanation for each suggestion. 
         `;
 
         logger.debug(`systemPrompt: ${systemPrompt}`);

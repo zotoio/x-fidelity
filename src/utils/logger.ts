@@ -116,7 +116,7 @@ export function resetLogger(): void {
 
 export function setLogLevel(level: string): void {
     if (loggerInstance) {
-        loggerInstance.level = level;
+        loggerInstance.level = level.toLowerCase();
     }
 }
 
