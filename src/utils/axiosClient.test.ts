@@ -13,7 +13,10 @@ describe('axiosClient', () => {
             .mockRejectedValueOnce({ response: { status: 429 }, config: {} })
             .mockResolvedValue({ data: 'success' });
 
-        (axios as any).create.mockReturnValue({ get: mockGet });
+        (axios as any).create.mockReturnValue({ 
+          interceptors: { response: { use: jest.fn() } },
+          get: mockGet 
+        });
 
         const response = await axiosClient.get('/test-url');
         expect(response.data).toBe('success');
@@ -23,7 +26,10 @@ describe('axiosClient', () => {
     it('should not retry on non-429 status code', async () => {
         const mockGet = jest.fn().mockRejectedValue({ response: { status: 500 }, config: {} });
 
-        (axios as any).create.mockReturnValue({ get: mockGet });
+        (axios as any).create.mockReturnValue({
+          interceptors: { response: { use: jest.fn() } },
+          get: mockGet 
+        });
 
         await expect(axiosClient.get('/test-url')).rejects.toThrow();
         expect(mockGet).toHaveBeenCalledTimes(1);
