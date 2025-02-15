@@ -18,8 +18,8 @@ describe('axiosClient', () => {
 
     it('should retry on 429 status code', async () => {
         const mockGet = jest.fn()
-            .mockRejectedValueOnce({ response: { status: 429 }, config: {} })
-            .mockResolvedValue({ data: 'success' });
+            .mockImplementationOnce(() => Promise.reject({ response: { status: 429 }, config: {} }))
+            .mockImplementationOnce(() => Promise.resolve({ data: 'success' }));
 
         (axios as any).create.mockReturnValue({ 
           interceptors: { response: { use: jest.fn() } },
