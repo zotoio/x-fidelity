@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/zotoio/x-fidelity/compare/v3.0.0...v3.0.1) (2025-02-15)
+
+
+### Bug Fixes
+
+* package.json & yarn.lock to reduce vulnerabilities ([5dd70a3](https://github.com/zotoio/x-fidelity/commit/5dd70a3363b212d85147dbd18f56e0eaefcc1897))
+
 # [3.0.0](https://github.com/zotoio/x-fidelity/compare/v2.17.2...v3.0.0) (2025-02-15)
 
 
