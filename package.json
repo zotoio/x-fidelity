@@ -103,7 +103,7 @@
     "yarn": "^1.22.21"
   },
   "peerDependencies": {
-    "artillery": "^2.0.0-31"
+    "artillery": "^2.0.15"
   },
   "config": {
     "commitizen": {
