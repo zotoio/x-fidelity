@@ -1,3 +1,13 @@
+## [3.0.3](https://github.com/zotoio/x-fidelity/compare/v3.0.2...v3.0.3) (2025-02-18)
+
+
+### Bug Fixes
+
+* **error handling:** deal with unexpected errors globally ensuring async ops finish ([2292d4d](https://github.com/zotoio/x-fidelity/commit/2292d4d09ef75a419778d3df77381a1353217361))
+* improve error handling and telemetry logging ([f7fa9ca](https://github.com/zotoio/x-fidelity/commit/f7fa9ca6b63bcf75ebab8dbc710eb78fc718cefe))
+* normalize event type casing in telemetry test ([9b791f9](https://github.com/zotoio/x-fidelity/commit/9b791f969816f29efa6138b9f95235c6614a3ac7))
+* standardize event type casing to lowercase in error handling ([0416cca](https://github.com/zotoio/x-fidelity/commit/0416ccae4f796ee1a3404f65545a00d67e26bbc7))
+
 ## [3.0.2](https://github.com/zotoio/x-fidelity/compare/v3.0.1...v3.0.2) (2025-02-15)
 
 
