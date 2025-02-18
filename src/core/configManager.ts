@@ -30,7 +30,10 @@ export class ConfigManager {
     public static async getConfig(params: GetConfigParams): Promise<ExecutionConfig> {
         const { archetype = options.archetype, logPrefix } = params;
         if (!ConfigManager.configs[archetype]) {
-            ConfigManager.configs[archetype] = await ConfigManager.initialize({ archetype, logPrefix });
+            ConfigManager.configs[archetype] = await ConfigManager.initialize({ archetype, logPrefix }).catch(error => {
+                logger.error(error, `Error initializing config for archetype: ${archetype}`);
+                throw error;
+            });
         }
         return ConfigManager.configs[archetype];
     }
@@ -76,7 +79,7 @@ export class ConfigManager {
                     logger.info(`Successfully loaded extension: ${moduleName}`);
                 } catch (error) {
                     logger.error(`Failed to load extension ${moduleName} from all locations: ${error}`);
-                    if (process.env.NODE_ENV !== 'test') process.exit(1);
+                    throw new Error(`Failed to load extension ${moduleName} from all locations: ${error}`);
                 }
             }
         }
@@ -90,7 +93,10 @@ export class ConfigManager {
         if (logPrefix) setLogPrefix(logPrefix);
         
         // Load plugins during initialization
-        await this.loadPlugins(options.extensions);
+        await this.loadPlugins(options.extensions).catch(error => {
+            logger.error(error, `Error loading plugins`);
+            throw error;
+        });
         logger.info(`Initializing config manager for archetype: ${archetype}`);
         logger.debug(`Initialize params: ${JSON.stringify(params)}`);
 
