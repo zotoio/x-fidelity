@@ -14,7 +14,7 @@ import { ResultMetadata } from './types/typeDefs';
 // Function to handle errors and send telemetry
 const handleError = async (error: Error) => {
     await sendTelemetry({
-        eventType: 'Execution failure',
+        eventType: 'execution failure',
         metadata: {
             archetype: options.archetype,
             repoPath: options.dir,

@@ -147,7 +147,7 @@ describe('index', () => {
 
     expect(sendTelemetry).toHaveBeenCalledWith(
       expect.objectContaining({
-        eventType: 'execution failure',
+        eventType: 'Execution failure',
         metadata: expect.objectContaining({
           errorMessage: 'Test error'
         })
