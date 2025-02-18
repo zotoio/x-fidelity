@@ -14,7 +14,7 @@ import { ResultMetadata } from './types/typeDefs';
 // Function to handle errors and send telemetry
 const handleError = async (error: Error) => {
     await sendTelemetry({
-        eventType: 'execution failure',
+        eventType: 'Execution failure',
         metadata: {
             archetype: options.archetype,
             repoPath: options.dir,
@@ -23,7 +23,7 @@ const handleError = async (error: Error) => {
         },
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
-    logger.error(JSON.stringify(error));
+    logger.error(error, 'Execution failure');
 };
 
 const outcomeMessage = (message: string) => `\n
@@ -81,8 +81,14 @@ export async function main() {
             }
         }    
     } catch (e: any) {
-        await handleError(e);
-        
+        await handleError(e).then(() => {
+            // give some time async ops to finish if not handled directly
+            if (process.env.NODE_ENV !== 'test') {
+                setTimeout(() => {
+                    process.exit(1);
+                }, 3000);
+            }
+        });    
     }
 }
 
