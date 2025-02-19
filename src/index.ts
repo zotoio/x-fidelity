@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 import { logger, initializeLogger, getLogPrefix, setLogLevel } from './utils/logger';
-initializeLogger()
+import { options, initCLI } from "./core/cli";
+if (require.main === module) {
+    initializeLogger()
+    setLogLevel(process.env.XFI_LOG_LEVEL || 'info');
+    initCLI();
+}
+
 const executionLogPrefix = getLogPrefix();
-setLogLevel(process.env.XFI_LOG_LEVEL || 'info');
 
 import json from 'prettyjson';
-import { options } from "./core/cli";
 import { analyzeCodebase } from "./core/engine/analyzer";
 import { startServer } from './server/configServer';
 import { sendTelemetry } from './utils/telemetry';

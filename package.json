@@ -17,7 +17,7 @@
   },
   "scripts": {
     "build": "rimraf dist/ && tsc && yarn copy-files",
-    "copy-files": "cp -rf src/demoConfig dist/ && cp dist/index.js dist/xfidelity",
+    "copy-files": "cp -rf src/demoConfig dist/ && cp dist/index.js dist/xfidelity && chmod 755 dist/xfidelity",
     "start": "NODE_ENV=test OPENAI_API_KEY= jest --watch",
     "test": "NODE_ENV=test yarn lint && NODE_ENV=test OPENAI_API_KEY= jest",
     "test:coverage": "NODE_ENV=test OPENAI_API_KEY= jest --coverage",
