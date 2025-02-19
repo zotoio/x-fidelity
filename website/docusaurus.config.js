@@ -108,8 +108,8 @@ module.exports = {
       copyright: `Copyright © ${new Date().getFullYear()} x-fidelity. Built with Docusaurus.`,
     },
     prism: {
-      theme: require('prism-react-renderer/themes/github'),
-      darkTheme: require('prism-react-renderer/themes/dracula'),
+      theme: require('prism-react-renderer').themes.github,
+      darkTheme: require('prism-react-renderer').themes.dracula,
     },
   },
 };
