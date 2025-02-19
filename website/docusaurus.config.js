@@ -35,7 +35,12 @@ module.exports = {
       {
         entryPoints: ['../src/types/typeDefs.ts'],
         tsconfig: '../tsconfig.json',
-        routeBasePath: 'api',
+        out: 'api',
+        sidebar: {
+          fullNames: true,
+          position: 0,
+          fullInheritance: true
+        }
       },
     ],
   ],
