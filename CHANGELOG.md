@@ -1,3 +1,10 @@
+## [3.0.4](https://github.com/zotoio/x-fidelity/compare/v3.0.3...v3.0.4) (2025-02-19)
+
+
+### Bug Fixes
+
+* **plugins:** ensure logger instance reused and fix entrypoint logic ([c21ad6e](https://github.com/zotoio/x-fidelity/commit/c21ad6e764e18f7910170ed970492208fe4197e8))
+
 ## [3.0.3](https://github.com/zotoio/x-fidelity/compare/v3.0.2...v3.0.3) (2025-02-18)
 
 
