@@ -18,10 +18,6 @@ module.exports = {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/zotoio/x-fidelity/edit/main/website/',
         },
-        blog: {
-          showReadingTime: true,
-          editUrl: 'https://github.com/zotoio/x-fidelity/edit/main/website/blog/',
-        },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
@@ -50,7 +46,7 @@ module.exports = {
       title: 'x-fidelity',
       logo: {
         alt: 'x-fidelity Logo',
-        src: 'img/logo.svg',
+        src: 'img/logo.png',
       },
       items: [
         {
@@ -60,13 +56,8 @@ module.exports = {
           label: 'Documentation',
         },
         {
-          to: '/api',
+          to: '/docs/api/modules',
           label: 'API',
-          position: 'left'
-        },
-        {
-          to: '/blog',
-          label: 'Blog',
           position: 'left'
         },
         {
@@ -78,38 +69,7 @@ module.exports = {
     },
     footer: {
       style: 'dark',
-      links: [
-        {
-          title: 'Docs',
-          items: [
-            {
-              label: 'Getting Started',
-              to: '/docs/getting-started',
-            },
-            {
-              label: 'Configuration',
-              to: '/docs/configuration',
-            },
-            {
-              label: 'Plugins',
-              to: '/docs/plugins',
-            },
-          ],
-        },
-        {
-          title: 'Community',
-          items: [
-            {
-              label: 'GitHub Discussions',
-              href: 'https://github.com/zotoio/x-fidelity/discussions',
-            },
-            {
-              label: 'Issues',
-              href: 'https://github.com/zotoio/x-fidelity/issues',
-            },
-          ],
-        },
-      ],
+      
       copyright: `Copyright © ${new Date().getFullYear()} x-fidelity. Built with Docusaurus.`,
     },
     prism: {
