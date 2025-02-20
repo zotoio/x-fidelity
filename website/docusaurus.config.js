@@ -69,7 +69,7 @@ module.exports = {
     footer: {
       style: 'dark',
       
-      copyright: `Copyright © ${new Date().getFullYear()} x-fidelity. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} x-fidelity. Built with Docusaurus and https://aider.chat`,
     },
     prism: {
       theme: require('prism-react-renderer').themes.github,
