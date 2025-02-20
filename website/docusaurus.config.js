@@ -35,8 +35,19 @@ module.exports = {
         sidebar: {
           fullNames: true,
           position: 0,
-          fullInheritance: true
-        }
+          fullInheritance: true,
+          categoryLabel: 'API'
+        },
+        watch: process.env.TYPEDOC_WATCH,
+        readme: 'none',
+        excludeExternals: true,
+        excludePrivate: true,
+        excludeProtected: true,
+        excludeInternal: true,
+        includeVersion: true,
+        disableSources: false,
+        cleanOutputDir: true,
+        plugin: ['typedoc-plugin-markdown']
       },
     ],
   ],
