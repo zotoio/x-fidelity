@@ -46,7 +46,8 @@ module.exports = {
       title: 'x-fidelity',
       logo: {
         alt: 'x-fidelity Logo',
-        src: 'img/logo.png',
+        src: 'img/x-fi.png',
+        srcDark: 'img/x-fi.png',
       },
       items: [
         {

@@ -39,7 +39,8 @@ export default function Home(): JSX.Element {
       description="Advanced framework adherence checker for maintaining code quality and consistency">
       <HomepageHeader />
       <main>
-        <div className="container margin-vert--lg">
+        <div className="container margin-vert--lg text--center">
+          <img src="img/x-fi.png" alt="x-fidelity Logo" className={styles.homepageLogo} />
           <div className="row">
             <div className="col col--8 col--offset-2">
               <h2>What is x-fidelity?</h2>
