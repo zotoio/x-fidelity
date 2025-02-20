@@ -19,12 +19,6 @@ function HomepageHeader() {
             to="/docs/getting-started">
             Get Started
           </Link>
-          <Link
-            className="button button--secondary button--lg"
-            to="/docs/api/"
-            style={{ marginLeft: '1rem' }}>
-            API Reference
-          </Link>
         </div>
       </div>
     </header>

@@ -25,32 +25,7 @@ module.exports = {
     ],
   ],
 
-  plugins: [
-    [
-      'docusaurus-plugin-typedoc',
-      {
-        entryPoints: ['../src/types/typeDefs.ts'],
-        tsconfig: '../tsconfig.json',
-        out: 'api',
-        sidebar: {
-          fullNames: true,
-          position: 0,
-          fullInheritance: true,
-          categoryLabel: 'API'
-        },
-        watch: process.env.TYPEDOC_WATCH,
-        readme: 'none',
-        excludeExternals: true,
-        excludePrivate: true,
-        excludeProtected: true,
-        excludeInternal: true,
-        includeVersion: true,
-        disableSources: false,
-        cleanOutputDir: true,
-        plugin: ['typedoc-plugin-markdown']
-      },
-    ],
-  ],
+  plugins: [],
 
   themeConfig: {
     navbar: {
@@ -66,11 +41,6 @@ module.exports = {
           docId: 'getting-started',
           position: 'left',
           label: 'Documentation',
-        },
-        {
-          to: '/docs/api/',
-          label: 'API',
-          position: 'left'
         },
         {
           href: 'https://github.com/zotoio/x-fidelity',
