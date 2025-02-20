@@ -19,6 +19,21 @@ For persistent access, add the PATH line to your `~/.bashrc` or `~/.zshrc` file.
 
 ## Basic Usage
 
+Here's how x-fidelity works:
+
+```mermaid
+flowchart TD
+    A[Project Directory] --> B[x-fidelity]
+    B --> C{Config Type}
+    C -->|Local| D[.xfi.json]
+    C -->|Remote| E[Config Server]
+    D --> F[Analysis]
+    E --> F
+    F --> G[Results]
+    G --> H[Issues Found]
+    G --> I[All Clear]
+```
+
 1. Run x-fidelity in your project directory:
 
 ```bash
