@@ -35,6 +35,11 @@ module.exports = {
   plugins: [],
 
   themeConfig: {
+    colorMode: {
+      defaultMode: 'dark',
+      disableSwitch: false,
+      respectPrefersColorScheme: true,
+    },
     navbar: {
       title: 'x-fidelity',
       logo: {
