@@ -24,3 +24,9 @@
   height: auto;
   margin-bottom: 2rem;
 }
+
+.featureList {
+  text-align: left;
+  display: inline-block;
+  margin: 0 auto;
+}

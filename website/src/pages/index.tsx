@@ -49,7 +49,7 @@ export default function Home(): JSX.Element {
                 opinionated framework adherence checks within a codebase. It helps teams maintain 
                 code quality and consistency by:
               </p>
-              <ul>
+              <ul className={styles.featureList}>
                 <li>Enforcing custom coding standards and best practices</li>
                 <li>Ensuring consistent project structure across repositories</li>
                 <li>Maintaining up-to-date dependencies</li>
