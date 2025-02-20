@@ -46,7 +46,7 @@ module.exports = {
           href: 'https://github.com/zotoio/x-fidelity',
           label: 'GitHub',
           position: 'right',
-        },
+        }
       ],
     },
     footer: {
