@@ -5,7 +5,7 @@ module.exports = {
   baseUrl: '/x-fidelity/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/x-fi.png',
   organizationName: 'zotoio',
   projectName: 'x-fidelity',
   trailingSlash: false,
