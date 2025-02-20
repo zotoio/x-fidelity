@@ -94,11 +94,12 @@ Options:
   -c, --configServer <configServer>       config server URL
   -o, --openaiEnabled <boolean>           enable OpenAI analysis
   -t, --telemetryCollector <url>          telemetry collector URL
-  -m, --mode <mode>                       'client' or 'server' (default: "client")
+  -m, --mode <mode>                       'client' or 'server' (default: "client") 
   -p, --port <port>                       server port (default: "8888")
   -l, --localConfigPath <path>            path to local config
   -j, --jsonTTL <minutes>                 server cache TTL (default: "10")
   -e, --extensions <modules...>           space-separated plugin modules
+  -x, --examine                           validate archetype config only
   -v, --version                           output version number
   -h, --help                              display help
 ```

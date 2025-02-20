@@ -436,6 +436,7 @@ Options:
   -l, --localConfigPath [path]                   Path to local archetype config and rules
   -j, --jsonTTL [minutes]                        Set the server JSON cache TTL in minutes (default: "10")
   -e, --extensions <modules...>                  Space-separated list of npm module names to load as external plugin extensions
+  -x, --examine                                  Validate archetype config only
   -v, --version                                  Output the version number of xfidelity
   -h, --help                                     Display help for command
 ```
