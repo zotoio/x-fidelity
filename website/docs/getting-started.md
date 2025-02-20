@@ -22,17 +22,56 @@ For persistent access, add the PATH line to your `~/.bashrc` or `~/.zshrc` file.
 Here's how x-fidelity works:
 
 ```mermaid
-flowchart TD
-    A[Project Directory] --> B[x-fidelity]
-    B --> C{Config Type}
-    C -->|Local| D[.xfi.json]
-    C -->|Remote| E[Config Server]
-    D --> F[Analysis]
-    E --> F
-    F --> G[Results]
-    G --> H[Issues Found]
-    G --> I[All Clear]
+graph TD
+    subgraph "Client Environments"
+        CI[CI Environment]
+        Local[Local Development]
+    end
+
+    subgraph "x-fidelity Core"
+        Engine[Analysis Engine]
+        CLI[CLI Interface]
+        ConfigMgr[Config Manager]
+    end
+
+    subgraph "x-fidelity Infrastructure"
+        CS[Config Server]
+        TS[Telemetry Server]
+    end
+
+    subgraph "External Services"
+        GH[GitHub]
+        OAI[OpenAI API]
+    end
+
+    subgraph "Data Sources"
+        Files[Repository Files]
+        Deps[Dependencies]
+    end
+
+    CI -->|Use| Engine
+    Local -->|Use| Engine
+    CI -->|Use| CLI
+    Local -->|Use| CLI
+
+    CLI -->|Initialize| ConfigMgr
+    Engine -->|Use| ConfigMgr
+
+    ConfigMgr -->|Fetch config| CS
+    Engine -->|Send telemetry| TS
+
+    Engine -->|Analyze| Files
+    Engine -->|Check| Deps
+
+    CS -->|Optional: Fetch rules| GH
+    TS -->|Optional: Store data| GH
+
+    Engine -.->|Optional: AI analysis| OAI
+
+    classDef optional stroke-dasharray: 5 5
+    class OAI optional
 ```
+
 
 1. Run x-fidelity in your project directory:
 
