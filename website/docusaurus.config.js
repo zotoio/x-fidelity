@@ -68,7 +68,7 @@ module.exports = {
           label: 'Documentation',
         },
         {
-          to: '/docs/api/modules',
+          to: '/docs/api/',
           label: 'API',
           position: 'left'
         },
