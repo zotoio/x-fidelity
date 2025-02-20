@@ -85,6 +85,6 @@ xfidelity . -e plugin1 plugin2
 
 ## Next Steps
 
-- Learn about [Archetypes](archetypes)
-- Configure [Rules](rules)
-- Set up [Remote Configuration](remote-config)
+- Learn about [Archetypes](./archetypes)
+- Configure [Rules](./rules)
+- Set up [Remote Configuration](./remote-config)
