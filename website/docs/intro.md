@@ -82,4 +82,4 @@ export PATH="$PATH:$(yarn global bin)"
 xfidelity .
 ```
 
-For more detailed information about getting started with x-fidelity, check out our [Getting Started](getting-started) guide.
+For more detailed information about getting started with x-fidelity, check out our [Getting Started](docs/getting-started) guide.
