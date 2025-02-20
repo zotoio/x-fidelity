@@ -50,6 +50,11 @@ module.exports = {
           label: 'Documentation',
         },
         {
+          to: '/docs/getting-started',
+          position: 'left',
+          label: 'Getting Started',
+        },
+        {
           href: 'https://github.com/zotoio/x-fidelity',
           label: 'GitHub',
           position: 'right',
