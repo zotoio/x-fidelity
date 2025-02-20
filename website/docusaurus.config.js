@@ -63,7 +63,7 @@ module.exports = {
       items: [
         {
           type: 'doc',
-          docId: 'getting-started',
+          docId: 'intro',
           position: 'left',
           label: 'Documentation',
         },
