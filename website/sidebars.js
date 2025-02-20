@@ -1,10 +1,8 @@
 module.exports = {
   docs: [
-    {
-      type: 'category',
-      label: 'Introduction',
-      items: ['intro', 'getting-started', 'key-concepts'],
-    },
+    'intro',
+    'getting-started',
+    'key-concepts',
     {
       type: 'category',
       label: 'Core Features',

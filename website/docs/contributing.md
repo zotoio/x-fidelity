@@ -85,4 +85,4 @@ Releases are automated via GitHub Actions:
 - Start a discussion
 - Join our community
 
-See the [Code of Conduct](/CODE_OF_CONDUCT) for community guidelines.
+See the [Code of Conduct](https://github.com/zotoio/x-fidelity/blob/main/CODE_OF_CONDUCT.md) for community guidelines.
