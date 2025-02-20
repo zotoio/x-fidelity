@@ -8,13 +8,12 @@ x-fidelity supports local configuration for development and testing purposes. Th
 
 ## Directory Structure
 
-Your local configuration directory should follow this structure:
+Your local configuration directory should follow this structure with archetypes in the root:
 
 ```
 config/
-├── archetypes/
-│   ├── node-fullstack.json
-│   └── java-microservice.json
+├── node-fullstack.json
+│   java-microservice.json
 ├── rules/
 │   ├── sensitiveLogging-iterative.json
 │   └── outdatedFramework-global.json

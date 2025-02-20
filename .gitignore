@@ -153,3 +153,5 @@ package-lock.json
 .aider.*
 .vscode/
 *.swp
+
+build/
