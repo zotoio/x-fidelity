@@ -1,3 +1,15 @@
+# [3.2.0](https://github.com/zotoio/x-fidelity/compare/v3.1.1...v3.2.0) (2025-02-20)
+
+
+### Bug Fixes
+
+* **docs:** release ([633d0ff](https://github.com/zotoio/x-fidelity/commit/633d0ff966aabc4a433929cbd1cb4e66843b8450))
+
+
+### Features
+
+* set dark mode as default theme with color mode preferences ([ed6d6ec](https://github.com/zotoio/x-fidelity/commit/ed6d6ece77acf56acf36aaafe4ee0eeb2e043107))
+
 ## [3.1.1](https://github.com/zotoio/x-fidelity/compare/v3.1.0...v3.1.1) (2025-02-20)
 
 
