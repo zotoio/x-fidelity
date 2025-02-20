@@ -16,6 +16,8 @@ x-fidelity is an advanced CLI tool and paired config server designed to perform 
 -------------------------------------
 ```
 
+**NEW beta genai docs: https://zotoio.github.io/x-fidelity/**
+
 ## Quick Start
 
 1. Install x-fidelity:
