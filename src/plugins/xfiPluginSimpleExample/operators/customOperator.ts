@@ -11,6 +11,13 @@ export const customOperator: OperatorDefn = {
         try {
             logger.debug('Executing customOperator', { factValue, expectedValue });
             
+            // Special case: if both values are null or both are undefined, they're equal
+            if ((factValue === null && expectedValue === null) || 
+                (factValue === undefined && expectedValue === undefined)) {
+                return true;
+            }
+
+            // If only one value is null/undefined but not both, they're not equal
             if (factValue === undefined || factValue === null) {
                 logger.warn('customOperator received undefined/null factValue');
                 return false;
