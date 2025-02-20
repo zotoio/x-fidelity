@@ -1,3 +1,13 @@
+## [3.1.1](https://github.com/zotoio/x-fidelity/compare/v3.1.0...v3.1.1) (2025-02-20)
+
+
+### Bug Fixes
+
+* add getting-started link to navbar with correct path ([48300a7](https://github.com/zotoio/x-fidelity/commit/48300a7e78f454fdc24d6d9013eff0bd22d9fc86))
+* docgen fix ([6e657fb](https://github.com/zotoio/x-fidelity/commit/6e657fbbb8b98013c1ce479c365ed7d205a88d57))
+* update broken documentation links and sidebar structure ([e8a83ae](https://github.com/zotoio/x-fidelity/commit/e8a83ae12ee17fa74533df254dcb6908c462c52b))
+* update navbar link to point to intro page instead of getting-started ([a0b997e](https://github.com/zotoio/x-fidelity/commit/a0b997ecce49d66a57860a9f081dd65d9bc91bfb))
+
 # [3.1.0](https://github.com/zotoio/x-fidelity/compare/v3.0.4...v3.1.0) (2025-02-20)
 
 
