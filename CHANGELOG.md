@@ -1,3 +1,32 @@
+# [3.1.0](https://github.com/zotoio/x-fidelity/compare/v3.0.4...v3.1.0) (2025-02-20)
+
+
+### Bug Fixes
+
+* add missing typedoc dependency for documentation generation ([1152c4d](https://github.com/zotoio/x-fidelity/commit/1152c4d71829ea642dd68d671102433bc9e0ce03))
+* correct broken documentation links ([b48b474](https://github.com/zotoio/x-fidelity/commit/b48b47406fac82ac5f6f0775927b1b99cbdd5d5f))
+* correct broken documentation links in website files ([ed17172](https://github.com/zotoio/x-fidelity/commit/ed171720020e610e2c27b0a953adabcc43037511))
+* correct docId path in navbar configuration ([00985cc](https://github.com/zotoio/x-fidelity/commit/00985cc10cc42e0e016d4459ef3bf54931e10959))
+* **docs and minor fixes:** docusaurus site beta ([935dd1f](https://github.com/zotoio/x-fidelity/commit/935dd1f2a9125ef6c9e1bda86a6401a20e87d020))
+* handle null and undefined equality in customOperator ([9ed96e4](https://github.com/zotoio/x-fidelity/commit/9ed96e4ae46899943c9515e36622627f00aac32d))
+* update broken documentation links and references ([8de8ecc](https://github.com/zotoio/x-fidelity/commit/8de8ecc8aea5b5e5412a34daf72c281e5f9340b4))
+* update favicon path to use x-fi.png logo ([161c8f7](https://github.com/zotoio/x-fidelity/commit/161c8f786fd8139628f37165f96b7cff6b021db7))
+* update prism theme import syntax for compatibility ([e6b6380](https://github.com/zotoio/x-fidelity/commit/e6b638053d55272613f6f715d4c2e87dac535b62))
+* update relative paths in documentation links ([f3eca1f](https://github.com/zotoio/x-fidelity/commit/f3eca1fc1be53caeb5e506a4c8f42b372f81e1b2))
+* update TypeDoc plugin configuration and dependencies ([078a799](https://github.com/zotoio/x-fidelity/commit/078a799fe283666a4c6384199f8a1b2420621604))
+
+
+### Features
+
+* add homepage features component and styles ([8a7a601](https://github.com/zotoio/x-fidelity/commit/8a7a6017834c78f52079bd0f7d471047080c0f28))
+* add initial Docusaurus documentation setup ([3c553e1](https://github.com/zotoio/x-fidelity/commit/3c553e1f0b55601b5f1568bd707a621f509b9d41))
+* add initial Docusaurus website configuration files ([b6c8e02](https://github.com/zotoio/x-fidelity/commit/b6c8e02cac1465cb988f67e2bb2eba3e0cb04fb0))
+* add landing page with features overview and API reference link ([af8c760](https://github.com/zotoio/x-fidelity/commit/af8c760c7b04e454310cc3f43524c3987d3713b6))
+* add landing page with project description and API reference link ([08c6232](https://github.com/zotoio/x-fidelity/commit/08c6232a3a45448d9fe22aabb5f23764e81b53bd))
+* add Mermaid diagram support to documentation ([3894a43](https://github.com/zotoio/x-fidelity/commit/3894a438446d73d55b5d7efee2744d4452020f17))
+* enhance TypeDoc plugin configuration for complete API docs ([124b845](https://github.com/zotoio/x-fidelity/commit/124b84539dc31cb5c9a8ca9d12795434d98de8d2))
+* update logo display in navbar and homepage ([f880c1f](https://github.com/zotoio/x-fidelity/commit/f880c1fc3463221aa7670f110447a7391fd39a70))
+
 ## [3.0.4](https://github.com/zotoio/x-fidelity/compare/v3.0.3...v3.0.4) (2025-02-19)
 
 
