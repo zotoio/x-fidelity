@@ -1,25 +1,48 @@
-import { OperatorDefn } from '../../../types/typeDefs';
+import { FileData, OperatorDefn } from '../../../types/typeDefs';
 import { logger } from '../../../utils/logger';
+import { repoDir } from '../../../core/configManager';
+import path from 'path';
+import e from 'express';
 
 export const missingRequiredFiles: OperatorDefn = {
     name: 'missingRequiredFiles',
-    fn: (fileData: any, requiredFiles: string[]) => {
+    fn: (globalFileData: FileData[], requiredFiles: string[]) => {
+        
+        logger.info('Executing missingRequiredFiles check', { requiredFiles });
         try {
-            logger.debug('Executing missingRequiredFiles check', { requiredFiles });
             
-            if (!Array.isArray(fileData) || !Array.isArray(requiredFiles)) {
-                logger.error('Invalid input: fileData and requiredFiles must be arrays');
-                return false;
+            if (!Array.isArray(globalFileData) || !Array.isArray(requiredFiles)) {
+                logger.error('Invalid input: globalFileData and requiredFiles must be arrays');
+                return true;
             }
 
             // Get all file paths from the fileData fact
-            const existingFiles = new Set(fileData.map((file: any) => file.fileName));
+            const repoFiles = new Set(globalFileData.map((file: FileData) => {
+                logger.trace(`${file.filePath} added to missingRequiredFiles check set`);
+                return file.filePath
+            }));
             
+            // get the repo dir for the current repo as prefix
+            const repoDirPrefix = repoDir();
+            logger.info(`Repo dir prefix: ${repoDirPrefix }`);
+
             // Find which required files are missing
-            const missingFiles = requiredFiles.filter(file => !existingFiles.has(file));
+            const missingFiles = requiredFiles.filter(file => {
+                let pathCheck = path.join(repoDirPrefix, file);
+                if (!pathCheck.startsWith(repoDirPrefix)) {
+                    throw new Error(`Potential malicious input detected: ${file}`);
+                }
+                let result = !repoFiles.has(pathCheck);
+                if (result) {
+                    logger.error(`Required file: ${ pathCheck } is missing`);
+                } else {
+                    logger.info(`Required file: ${ pathCheck } is present`);
+                }
+                return result;
+            });
 
             if (missingFiles.length > 0) {
-                logger.error('Missing required files:', { missingFiles });
+                logger.error(`Missing required files: ${ JSON.stringify(missingFiles) }`);
                 return true;
             }
 
@@ -27,7 +50,7 @@ export const missingRequiredFiles: OperatorDefn = {
             return false;
         } catch (error) {
             logger.error(`Error in missingRequiredFiles: ${error}`);
-            return false;
+            return true;
         }
     }
 };
