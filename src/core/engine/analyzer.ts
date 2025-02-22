@@ -73,7 +73,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     // add functions for dependency and file analysis
     engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
     engine.addFact('repoFileAnalysis', repoFileAnalysis);
-    engine.addFact('globalFileMetadata', { fileData, operatorResults: {} }, { priority: 50 });
+    engine.addFact('globalFileMetadata', fileData, { priority: 50 });
 
     logger.trace(fileData, 'Added globalFileData as fact');
 

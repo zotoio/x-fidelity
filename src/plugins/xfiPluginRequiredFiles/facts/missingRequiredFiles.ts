@@ -12,19 +12,19 @@ export const missingRequiredFiles: FactDefn = {
             // Get the required files from params
             const requiredFiles = params.requiredFiles;
             if (!Array.isArray(requiredFiles)) {
-                throw new Error('Required files parameter must be an array');
+                return { result: ['Required files parameter must be an array'] };
             }
 
             // Get globalFileData from almanac
-            const globalFileData: FileData[] = await almanac.factValue('globalFileData');
-            if (!Array.isArray(globalFileData?.fileData)) {
-                throw new Error('Invalid globalFileData');
+            const globalFileMetadata: FileData[] = await almanac.factValue('globalFileMetadata');
+            if (!Array.isArray(globalFileMetadata)) {
+                return { result: ['Invalid globalFileData'] };
             }
 
             logger.info('Executing missingRequiredFiles check', { requiredFiles });
 
             // Get all file paths from the fileData fact
-            const repoFiles = new Set(globalFileData.fileData.map((file: FileData) => {
+            const repoFiles = new Set(globalFileMetadata.map((file: FileData) => {
                 logger.trace(`${file.filePath} added to missingRequiredFiles check set`);
                 return file.filePath;
             }));
@@ -37,7 +37,8 @@ export const missingRequiredFiles: FactDefn = {
             const missingFiles = requiredFiles.filter(file => {
                 let pathCheck = path.join(repoDirPrefix, file);
                 if (!pathCheck.startsWith(repoDirPrefix)) {
-                    throw new Error(`Potential malicious input detected: ${file}`);
+                    logger.error(`Potential malicious input detected: ${file}`);
+                    return true;
                 }
                 let result = !repoFiles.has(pathCheck);
                 if (result) {
@@ -62,7 +63,7 @@ export const missingRequiredFiles: FactDefn = {
 
         } catch (error) {
             logger.error(`Error in missingRequiredFiles: ${error}`);
-            throw error;
+            return result;
         }
     }
 };

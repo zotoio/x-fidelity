@@ -9,13 +9,17 @@
                 "value": "REPO_GLOBAL_CHECK"
             },
             {
-                "fact": "globalFileData",
+                "fact": "missingRequiredFiles",
+                "params": {
+                    "requiredFiles": [
+                        "/README.md",
+                        "../../src/\\core//cli&.ts",
+                        "missingRequiredFiles-testing.js"
+                    ],
+                    "resultFact": "missingRequiredFilesResult"
+                },
                 "operator": "missingRequiredFiles",
-                "value": [
-                    "/README.md",
-                    "../../src/\\core//cli&.ts",
-                    "missingRequiredFiles-testing.js"
-                ]
+                "value": true
             }
         ]
     },
@@ -23,11 +27,9 @@
         "type": "fatality",
         "params": {
             "message": "Required files are missing from the repository",
-            "details": [
-                "/README.md",
-                "../../src/\\core//cli&.ts",
-                "missingRequiredFiles-testing.js"
-            ]
+            "details": {
+                "fact": "missingRequiredFilesResult"
+            }
         }
     }
 }

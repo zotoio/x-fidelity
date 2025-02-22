@@ -22,7 +22,8 @@
         "repoFilesystemFacts",
         "repoDependencyFacts",
         "openaiAnalysisFacts",
-        "remoteSubstringValidation"
+        "remoteSubstringValidation",
+        "missingRequiredFiles"
     ],
     "config": {
         "minimumDependencyVersions": {
