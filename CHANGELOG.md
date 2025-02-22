@@ -1,3 +1,17 @@
+# [3.3.0](https://github.com/zotoio/x-fidelity/compare/v3.2.0...v3.3.0) (2025-02-22)
+
+
+### Bug Fixes
+
+* add required compareValue parameter to missingRequiredFiles operator ([65ea1b6](https://github.com/zotoio/x-fidelity/commit/65ea1b6ad93f50357eeb17929d52d1b3ee7c39cc))
+
+
+### Features
+
+* add missingRequiredFiles operator to plugin and update rule ([c9a8f79](https://github.com/zotoio/x-fidelity/commit/c9a8f79bc9d2d5db61f953ca22563442c276b659))
+* add required files plugin with configurable path checks ([3561c04](https://github.com/zotoio/x-fidelity/commit/3561c04a90add046c18b9a1e998dc94c24776ed0))
+* Enhance missingRequiredFiles operator with path validation and logging ([962cf38](https://github.com/zotoio/x-fidelity/commit/962cf387bcd8dfbb16d62ec842d11153602b967c))
+
 # [3.2.0](https://github.com/zotoio/x-fidelity/compare/v3.1.1...v3.2.0) (2025-02-20)
 
 
