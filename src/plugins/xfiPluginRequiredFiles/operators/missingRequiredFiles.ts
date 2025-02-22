@@ -3,42 +3,20 @@ import { logger } from '../../../utils/logger';
 
 export const missingRequiredFiles: OperatorDefn = {
     name: 'missingRequiredFiles',
-    fn: (fileData: any, requiredFiles: string[]) => {
-        logger.info('Executing missingRequiredFiles check', { requiredFiles });
+    fn: (factValue: any) => {
+        try {
+            logger.debug('missingRequiredFiles: processing..');
 
-        if (!Array.isArray(fileData) || !Array.isArray(requiredFiles)) {
-            logger.error('Invalid input: globalFileData and requiredFiles must be arrays');
-            return true;
-        }
-
-        // Get all file paths from the fileData fact
-        const repoFiles = new Set(fileData.map((file: any) => {
-            logger.trace(`${file.filePath} added to missingRequiredFiles check set`);
-            return file.filePath;
-        }));
-
-        // get the repo dir for the current repo as prefix
-        const repoDirPrefix = 'TEST_DIR';
-        logger.info(`Repo dir prefix: ${repoDirPrefix}`);
-
-        // Find which required files are missing
-        const missingFiles = requiredFiles.filter(file => {
-            let pathCheck = `${repoDirPrefix}/${file}`;
-            let result = !repoFiles.has(pathCheck);
-            if (result) {
-                logger.error(`Required file: ${pathCheck} is missing`);
-            } else {
-                logger.info(`Required file: ${pathCheck} is present`);
+            if (factValue?.result?.length > 0) {
+                logger.debug('missingRequiredFiles: true');
+                return true;
             }
-            return result;
-        });
 
-        if (missingFiles.length > 0) {
-            logger.error(`Missing required files: ${JSON.stringify(missingFiles)}`);
-            return true;
+            logger.debug('missingRequiredFiles: false');
+            return false;
+        } catch (e) {
+            logger.error(`missingRequiredFiles: ${e}`);
+            return false;
         }
-
-        logger.debug('All required files present');
-        return false;
     }
 };
