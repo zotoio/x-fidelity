@@ -23,11 +23,7 @@ describe('missingRequiredFiles', () => {
         const result = missingRequiredFiles.fn(fileData, requiredFiles);
         
         expect(result).toBe(true);
-        expect(logger.error).toHaveBeenCalledWith('Missing required files:', 
-            expect.objectContaining({
-                missingFiles: ['file3.txt']
-            })
-        );
+        expect(logger.error).toHaveBeenCalledWith('Missing required files:', '["file3.txt"]');
     });
 
     it('should return false when all required files exist', () => {
