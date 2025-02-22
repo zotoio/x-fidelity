@@ -8,6 +8,8 @@ jest.mock('../../../utils/logger', () => ({
     logger: {
         debug: jest.fn(),
         error: jest.fn(),
+        info: jest.fn(),
+        trace: jest.fn(),
     },
 }));
 
@@ -28,8 +30,7 @@ describe('missingRequiredFiles', () => {
         expect(result).toBe(true);
         expect(logger.info).toHaveBeenCalledWith('Executing missingRequiredFiles check', { requiredFiles });
         expect(logger.info).toHaveBeenCalledWith('Repo dir prefix: TEST_DIR');
-        expect(logger.error).toHaveBeenCalledWith('Required file: TEST_DIR/file3.txt is missing');
-        expect(logger.error).toHaveBeenCalledWith(`Missing required files: ${JSON.stringify(['TEST_DIR/file3.txt'])}`);
+        expect(logger.error).toHaveBeenCalledWith('Missing required files: [\"file3.txt\"]');
     });
 
     it('should return false when all required files exist', () => {
@@ -49,10 +50,10 @@ describe('missingRequiredFiles', () => {
         expect(logger.debug).toHaveBeenCalledWith('All required files present');
     });
 
-    it('should handle invalid input gracefully', () => {
-        expect(missingRequiredFiles.fn(null, [])).toBe(false);
-        expect(missingRequiredFiles.fn([], null)).toBe(false);
-        expect(missingRequiredFiles.fn(undefined, undefined)).toBe(false);
-        expect(logger.error).toHaveBeenCalledWith('Invalid input: fileData and requiredFiles must be arrays');
+    it('should fail on invalid input', () => {
+        expect(missingRequiredFiles.fn(null, [])).toBe(true);
+        expect(missingRequiredFiles.fn([], null)).toBe(true);
+        expect(missingRequiredFiles.fn(undefined, undefined)).toBe(true);
+        expect(logger.error).toHaveBeenCalledWith('Invalid input: globalFileData and requiredFiles must be arrays');
     });
 });

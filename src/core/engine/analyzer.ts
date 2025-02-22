@@ -73,7 +73,9 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     // add functions for dependency and file analysis
     engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
     engine.addFact('repoFileAnalysis', repoFileAnalysis);
-    engine.addFact('globalFileData', fileData);
+    engine.addFact('globalFileMetadata', { fileData, operatorResults: {} }, { priority: 50 });
+
+    logger.trace(fileData, 'Added globalFileData as fact');
 
     // add xfiConfig as a fact
     engine.addFact('repoXFIConfig', repoXFIConfig);

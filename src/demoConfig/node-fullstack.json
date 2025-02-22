@@ -7,14 +7,16 @@
         "nonStandardDirectoryStructure-global",
         "openaiAnalysisTop5-global",
         "openaiAnalysisA11y-global",
-        "invalidSystemIdConfigured-iterative"
+        "invalidSystemIdConfigured-iterative",
+        "missingRequiredFiles-global"
     ],
     "operators": [
         "fileContains",
         "outdatedFramework",
         "nonStandardDirectoryStructure",
         "openaiAnalysisHighSeverity",
-        "invalidRemoteValidation"
+        "invalidRemoteValidation",
+        "missingRequiredFiles"
     ],
     "facts": [
         "repoFilesystemFacts",
@@ -44,7 +46,8 @@
         ],
         "whitelistPatterns": [
             ".*\\.(ts|tsx|js|jsx)$",
-            ".*\\/xfiTestMatch\\.json$"
+            ".*\\/xfiTestMatch\\.json$",
+            ".*\\/README\\.md$"
         ]
     }
 }

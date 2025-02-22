@@ -12,10 +12,16 @@ import { loadRules } from '../utils/ruleUtils';
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
+export function repoDir() {
+    return options.dir;
+}
+
 export class ConfigManager {
     private static configs: { [key: string]: ExecutionConfig } = {};
     private static MAX_RETRIES = 3;
     private static RETRY_DELAY = 1000; // 1 second
+
+    
 
     public static getLoadedConfigs(): string[] {
         return Object.keys(ConfigManager.configs);

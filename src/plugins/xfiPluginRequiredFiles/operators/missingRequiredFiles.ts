@@ -2,7 +2,6 @@ import { FileData, OperatorDefn } from '../../../types/typeDefs';
 import { logger } from '../../../utils/logger';
 import { repoDir } from '../../../core/configManager';
 import path from 'path';
-import e from 'express';
 
 export const missingRequiredFiles: OperatorDefn = {
     name: 'missingRequiredFiles',
@@ -19,7 +18,7 @@ export const missingRequiredFiles: OperatorDefn = {
             // Get all file paths from the fileData fact
             const repoFiles = new Set(globalFileData.map((file: FileData) => {
                 logger.trace(`${file.filePath} added to missingRequiredFiles check set`);
-                return file.filePath
+                return file.filePath;
             }));
             
             // get the repo dir for the current repo as prefix
@@ -43,6 +42,9 @@ export const missingRequiredFiles: OperatorDefn = {
 
             if (missingFiles.length > 0) {
                 logger.error(`Missing required files: ${ JSON.stringify(missingFiles) }`);
+                globalFileData.forEach((file: FileData) => {
+                    logger.trace(`File: ${file.fileName} at path: ${file.filePath}`);
+                });
                 return true;
             }
 

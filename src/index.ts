@@ -96,10 +96,8 @@ export async function main() {
     }
 }
 
-export * from './utils/axiosClient';
-export * from './core/configManager';
+export { repoDir } from './core/configManager';
 export * from './utils/logger';
-export * from './core/engine/analyzer';
 export * from './types';
 
 if (require.main === module) {
