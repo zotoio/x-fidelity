@@ -1,0 +1,31 @@
+{
+    "name": "missingRequiredFiles-global",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "globalFileData",
+                "operator": "missingRequiredFiles",
+                "value": [
+                    "README.md",
+                    "package.json",
+                    "LICENSE"
+                ]
+            }
+        ]
+    },
+    "event": {
+        "type": "fatality",
+        "params": {
+            "message": "Required files are missing from the repository",
+            "details": {
+                "fact": "globalFileData"
+            }
+        }
+    }
+}
