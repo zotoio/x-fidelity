@@ -18,7 +18,7 @@
                     ],
                     "resultFact": "missingRequiredFilesResult"
                 },
-                "operator": "fileContains",
+                "operator": "missingRequiredFiles",
                 "value": true
             }
         ]
