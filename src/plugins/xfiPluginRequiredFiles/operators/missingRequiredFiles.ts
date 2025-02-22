@@ -3,20 +3,20 @@ import { logger } from '../../../utils/logger';
 
 export const missingRequiredFiles: OperatorDefn = {
     name: 'missingRequiredFiles',
-    fn: (factValue: any) => {
+    fn: (factValue: any, compareValue: boolean) => {
         try {
             logger.debug('missingRequiredFiles: processing..');
 
             if (factValue?.result?.length > 0) {
                 logger.debug('missingRequiredFiles: true');
-                return true;
+                return compareValue;
             }
 
             logger.debug('missingRequiredFiles: false');
-            return false;
+            return !compareValue;
         } catch (e) {
             logger.error(`missingRequiredFiles: ${e}`);
-            return false;
+            return !compareValue;
         }
     }
 };

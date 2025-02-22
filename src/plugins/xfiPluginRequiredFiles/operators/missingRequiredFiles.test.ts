@@ -17,7 +17,7 @@ describe('missingRequiredFiles', () => {
         const factValue = {
             result: [{ file: 'missing.txt' }]
         };
-        const result = missingRequiredFiles.fn(factValue);
+        const result = missingRequiredFiles.fn(factValue, true);
         expect(result).toBe(true);
         expect(logger.debug).toHaveBeenCalledWith('missingRequiredFiles: true');
     });
@@ -26,20 +26,20 @@ describe('missingRequiredFiles', () => {
         const factValue = {
             result: []
         };
-        const result = missingRequiredFiles.fn(factValue);
+        const result = missingRequiredFiles.fn(factValue, true);
         expect(result).toBe(false);
         expect(logger.debug).toHaveBeenCalledWith('missingRequiredFiles: false');
     });
 
     it('should handle undefined input gracefully', () => {
-        const result = missingRequiredFiles.fn(undefined);
+        const result = missingRequiredFiles.fn(undefined, true);
         expect(result).toBe(false);
         expect(logger.debug).toHaveBeenCalledWith('missingRequiredFiles: false');
     });
 
     it('should handle errors gracefully', () => {
         const factValue = null;
-        const result = missingRequiredFiles.fn(factValue);
+        const result = missingRequiredFiles.fn(factValue, true);
         expect(result).toBe(false);
         expect(logger.debug).toHaveBeenCalledWith('missingRequiredFiles: false');
     });
