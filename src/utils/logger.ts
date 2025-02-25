@@ -6,7 +6,7 @@ import { maskSensitiveData } from './maskSensitiveData';
 let loggerInstance: pino.Logger | undefined;
 let loglevel = process.env.XFI_LOG_LEVEL || 
                   (process.env.NODE_ENV === 'test' ? 'silent' : 'info');
-let logPrefix: string;
+let logPrefix: string = generateLogPrefix();
 
 // Initialize logger and prefix immediately
 export function initializeLogger() {
@@ -20,16 +20,16 @@ export function generateLogPrefix(): string {
 
 export function resetLogPrefix(): void {
     logPrefix = generateLogPrefix();
-    if (loggerInstance) {
-        loggerInstance = loggerInstance.child({ prefix: logPrefix });
-    }
+    // if (loggerInstance) {
+    //     loggerInstance = loggerInstance.child({ prefix: logPrefix });
+    // }
 }
 
 export function setLogPrefix(prefix: string): void {
     logPrefix = prefix;
-    if (loggerInstance) {
-        loggerInstance = loggerInstance.child({ prefix: logPrefix });
-    }
+    // if (loggerInstance) {
+    //     loggerInstance = loggerInstance.child({ prefix: logPrefix });
+    // }
 }
 
 export function getLogPrefix(): string {
@@ -41,7 +41,7 @@ function getLogger(force?: boolean): pino.Logger {
     if (!loggerInstance || force) {
         const fileTransport = pino.destination({
             dest: 'x-fidelity.log',
-            sync: false,
+            sync: true,
             mkdir: true
         });
 
@@ -49,10 +49,11 @@ function getLogger(force?: boolean): pino.Logger {
             target: 'pino-pretty',
             options: {
                 loglevel: loglevel,
+                sync: true,
                 colorize: true,
                 translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
                 ignore: 'pid,hostname',
-                messageFormat: '{prefix} - {msg}',
+                //messageFormat: '{prefix} - {msg}',
                 singleLine: true,
                 errorProps: '*'
             }
@@ -60,12 +61,13 @@ function getLogger(force?: boolean): pino.Logger {
 
         const loggerOptions: pino.LoggerOptions = {
             timestamp: pino.stdTimeFunctions.isoTime,
+            msgPrefix: `${logPrefix} - `,
             level: 'info',
             formatters: {
                 level: (label) => ({ level: label }),
                 bindings: (bindings) => bindings,
                 log: (object) => ({
-                    prefix: logPrefix,
+                    //prefix: logPrefix,
                     ...object
                 })
             },
@@ -98,7 +100,7 @@ function getLogger(force?: boolean): pino.Logger {
         loggerInstance = pino(
             loggerOptions,
             pino.multistream([
-                { level: loglevel, stream: fileTransport },
+                //{ level: loglevel, stream: fileTransport },
                 { level: loglevel, stream: prettyTransport }
             ])
         );

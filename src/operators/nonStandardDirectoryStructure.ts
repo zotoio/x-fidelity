@@ -13,7 +13,7 @@ const nonStandardDirectoryStructure: OperatorDefn = {
             return false;
         }
 
-        logger.debug(`running global directory structure analysis..`);
+        logger.info(`running global directory structure analysis..`);
 
         const repoPath = options.dir || process.cwd();
         let result = false;

@@ -144,7 +144,8 @@ export interface BasicTelemetryMetadata {
     repoPath: string;
     telemetryData?: TelemetryData;
     errorMessage?: string;
-    options?: any
+    options?: any;
+    errorStack?: string;
 }
 
 export interface ExemptionTelemetryMetadata {
@@ -191,6 +192,8 @@ export interface ResultMetadata {
         telemetryData: TelemetryData;
         options: any;
         repoXFIConfig: RepoXFIConfig;
+        memoryUsage: any;
+        repoUrl: string;
     };
 }
 

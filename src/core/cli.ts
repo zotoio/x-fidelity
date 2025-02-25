@@ -11,6 +11,19 @@ export const options = program.opts();
 
 export function initCLI() {
 
+    const bannerArt = `\n
+=====================================
+ __    __          ________  ______ 
+| ##  | ##        | ######## \\######
+ \\##\\/  ## ______ | ##__      | ##  
+  >##  ## |      \\| ##  \\     | ##  
+ /  ####\\  \\######| ######    | ##  
+|  ## \\##\\        | ##       _| ##_ 
+| ##  | ##        | ##      |   ## \\
+ \\##   \\##         \\##       \\######
+------------------------------------- 
+`;
+
     // Ensure logger is initialized
     if (!logger || typeof logger.info !== 'function') {
         console.error({ msg: 'Logger is not properly initialized' });
@@ -37,7 +50,7 @@ export function initCLI() {
     });
 
     program
-        .option("-d, --dir <directory>", "code directory to analyze. equivalent of directory argument")
+        .option("-d, --dir <directory>", "local git repo directory path to analyze. equivalent of directory argument")
         .option("-a, --archetype <archetype>", "The archetype to use for analysis", "node-fullstack")
         .option("-c, --configServer <configServer>", "The config server URL for fetching remote archetype configurations and rules. This takes precedence over localConfigPath.")
         .option("-o, --openaiEnabled <boolean>", "Enable OpenAI analysis", false)
@@ -50,8 +63,11 @@ export function initCLI() {
         .option("-x, --examine <archetype>", "Examine the archetype configuration and rules")
         .version(version, "-v, --version", "Output the version number of xfidelity")
         .helpOption("-h, --help", "Display help for command")
-        .argument('[directory]', 'code directory to analyze');
-
+        .summary("CLI for analyzing codebases for architectural fidelity")
+        .usage("[directory] [options]")
+        .argument('[directory]', 'local git repo directory path to analyze')
+        .addHelpText('before', bannerArt)
+        .addHelpText('after', '-------------------------------------');
     
 
     program.parse(process.argv);
@@ -88,18 +104,18 @@ export function initCLI() {
         if (process.env.NODE_ENV !== 'test') program.error(`LocalConfigPath does not exist or is invalid: ${error}`);
     }
 
-const bannerArt = `\n
-=====================================
- __    __          ________  ______ 
-| ##  | ##        | ######## \\######
- \\##\\/  ## ______ | ##__      | ##  
-  >##  ## |      \\| ##  \\     | ##  
- /  ####\\  \\######| ######    | ##  
-|  ## \\##\\        | ##       _| ##_ 
-| ##  | ##        | ##      |   ## \\
- \\##   \\##         \\##       \\######
-------------------------------------- 
-`;
+// const bannerArt = `\n
+// =====================================
+//  __    __          ________  ______ 
+// | ##  | ##        | ######## \\######
+//  \\##\\/  ## ______ | ##__      | ##  
+//   >##  ## |      \\| ##  \\     | ##  
+//  /  ####\\  \\######| ######    | ##  
+// |  ## \\##\\        | ##       _| ##_ 
+// | ##  | ##        | ##      |   ## \\
+//  \\##   \\##         \\##       \\######
+// ------------------------------------- 
+// `;
 
     logger.info(bannerArt);
 

@@ -103,11 +103,15 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     const errorCount = countRuleFailures(failures, 'error');
 
     const finishTime = new Date().getTime();
+    const memoryUsage = process.memoryUsage();
+
+    logger.info('Assemblying result metadata..');
 
     const resultMetadata: ResultMetadata = {
         XFI_RESULT: {
             archetype,
             telemetryData,
+            memoryUsage,
             repoXFIConfig: repoXFIConfig,
             issueDetails: failures,
             startTime: telemetryData.startTime,
@@ -121,6 +125,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             exemptCount: exemptCount,
             options,
             repoPath,
+            repoUrl
         }
     }
     

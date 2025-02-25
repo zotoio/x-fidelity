@@ -25,7 +25,6 @@ export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
     } else {
         logger.error('No yarn.lock or package-lock.json found');
         process.exit(1);
-        throw new Error('Unsupported package manager');
     }
     logger.trace(`collectLocalDependencies: ${safeStringify(result)}`);
     return result;

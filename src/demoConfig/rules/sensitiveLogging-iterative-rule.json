@@ -26,7 +26,8 @@
                         "(password|passphrase)",
                         "(private[_-]?key|ssh[_-]?key)",
                         "(oauth[_-]?token|jwt[_-]?token)",
-                        "db[_-]?password"
+                        "db[_-]?password",
+                        "(import)"
                     ],
                     "resultFact": "fileResults"
                 },

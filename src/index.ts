@@ -23,7 +23,8 @@ const handleError = async (error: Error) => {
             archetype: options.archetype,
             repoPath: options.dir,
             options,
-            errorMessage: error.message
+            errorMessage: error.message,
+            errorStack: error.stack
         },
         timestamp: new Date().toISOString()
     }, executionLogPrefix);
@@ -54,37 +55,41 @@ export async function main() {
                     executionLogPrefix
                 });
 
+                const resultString = JSON.stringify(resultMetadata);
+                const prettyResult = json.render(resultMetadata.XFI_RESULT);
+
                 // if results are found, there were issues found in the codebase
                 if (resultMetadata.XFI_RESULT.totalIssues > 0) {
                     logger.warn(`WARNING: lo-fi attributes detected in codebase. ${resultMetadata.XFI_RESULT.warningCount} are warnings, ${resultMetadata.XFI_RESULT.fatalityCount} are fatal.`);
-                    logger.warn(JSON.stringify(resultMetadata));
+                    logger.warn(resultString);
 
                     if (resultMetadata.XFI_RESULT.errorCount > 0) {
                         logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
-                        logger.error(`\n${json.render(resultMetadata.XFI_RESULT)}\n\n`);
+                        logger.error(`\n${prettyResult}\n\n`);
                         logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
                         process.exit(1);
                     }
 
                     if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
                         logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
-                        logger.error(`\n${json.render(resultMetadata.XFI_RESULT)}\n\n`);
+                        logger.error(`\n${prettyResult}\n\n`);
                         logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
                         process.exit(1);
                     } else {
                         logger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
-                        logger.warn(`\n${json.render(resultMetadata.XFI_RESULT)}\n\n`);
+                        logger.warn(`\n${prettyResult}\n\n`);
                         logger.warn(outcomeMessage('No fatal errors were found, however please review the above warnings.'));
                     }
                 } else {
                     logger.info(outcomeMessage('SUCCESS! hi-fi codebase detected.'));
-                    logger.info(JSON.stringify(resultMetadata));
-                    logger.info(`\n${json.render(resultMetadata)}\n\n`);
+                    logger.info(resultString);
+                    logger.info(`\n${prettyResult}\n\n`);
                     logger.info(outcomeMessage('SUCCESS! hi-fi codebase detected.'));
                 }
             }
         }    
     } catch (e: any) {
+        logger.error(e, `Error during execution ${JSON.stringify(e.message)} \n ${e.stack}`);
         await handleError(e).then(() => {
             // give some time async ops to finish if not handled directly
             if (process.env.NODE_ENV !== 'test') {
