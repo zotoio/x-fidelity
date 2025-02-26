@@ -20,16 +20,10 @@ export function generateLogPrefix(): string {
 
 export function resetLogPrefix(): void {
     logPrefix = generateLogPrefix();
-    // if (loggerInstance) {
-    //     loggerInstance = loggerInstance.child({ prefix: logPrefix });
-    // }
 }
 
 export function setLogPrefix(prefix: string): void {
     logPrefix = prefix;
-    // if (loggerInstance) {
-    //     loggerInstance = loggerInstance.child({ prefix: logPrefix });
-    // }
 }
 
 export function getLogPrefix(): string {
@@ -38,7 +32,7 @@ export function getLogPrefix(): string {
 
 // Initialize logger function that will create the singleton if it doesn't exist
 function getLogger(force?: boolean): pino.Logger {
-    if (!loggerInstance || !!force) {
+    if (!loggerInstance || force) {
         const fileTransport = pino.destination({
             dest: 'x-fidelity.log',
             sync: false,
