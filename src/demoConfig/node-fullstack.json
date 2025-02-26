@@ -8,7 +8,8 @@
         "openaiAnalysisTop5-global",
         "openaiAnalysisA11y-global",
         "invalidSystemIdConfigured-iterative",
-        "missingRequiredFiles-global"
+        "missingRequiredFiles-global",
+        "regexMatch-example-iterative"
     ],
     "operators": [
         "fileContains",
@@ -16,7 +17,8 @@
         "nonStandardDirectoryStructure",
         "openaiAnalysisHighSeverity",
         "invalidRemoteValidation",
-        "missingRequiredFiles"
+        "missingRequiredFiles",
+        "regexMatch"
     ],
     "facts": [
         "repoFilesystemFacts",

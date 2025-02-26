@@ -4,24 +4,24 @@
         "all": [
             {
                 "fact": "fileData",
-                "path": "$.fileName",
+                "path": "$.filePath",
                 "operator": "regexMatch",
-                "value": "^package\\.json$"
+                "value": ".*/facts/.*"
             },
             {
                 "fact": "fileData",
                 "path": "$.fileContent",
                 "operator": "regexMatch",
-                "value": "\"dependencies\":\\s*\\{[^}]*\"express\""
+                "value": "OpenAI"
             }
         ]
     },
     "event": {
         "type": "warning",
         "params": {
-            "message": "Express dependency detected in package.json",
+            "message": "I'm seeing a pattern here..",
             "details": {
-                "suggestion": "Consider using a more lightweight alternative for simple applications"
+                "suggestion": "wake up and smell the coffee"
             }
         }
     }
