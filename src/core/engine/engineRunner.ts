@@ -10,13 +10,15 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
     const msg = `\n==========================\nRUNNING FILE CHECKS..\n==========================`;
     logger.info(msg);
     const failures: ScanResult[] = [];
+    const fileCount = fileData.length;
 
-    for (const file of fileData) {
+    for (let i=0; i < fileCount; i++) {
+        const file = fileData[i]
         if (file.fileName === REPO_GLOBAL_CHECK) {
             const msg = `\n==========================\nRUNNING GLOBAL REPO CHECKS..\n==========================`;
             logger.info(msg);
         } else {
-            const msg = `analysing ${file.filePath} ...`
+            const msg = `analysing (${i+1} of ${fileCount-1}) ${file.filePath} ...`
             logger.info(msg);
         }
         const facts = {

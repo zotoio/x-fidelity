@@ -95,7 +95,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     logger.info(finishMsg);
 
     const totalFailureCount = countRuleFailures(failures);
-    logger.info(`${fileData.length} files analyzed. ${totalFailureCount} rule failures.`);
+    logger.info(`${fileData.length -1} files analyzed. ${totalFailureCount} rule failures.`);
 
     const fatalityCount = countRuleFailures(failures, 'fatality');
     const warningCount = countRuleFailures(failures, 'warning');
@@ -117,7 +117,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             startTime: telemetryData.startTime,
             finishTime: finishTime,
             durationSeconds: (finishTime - telemetryData.startTime) / 1000,
-            fileCount: fileData.length,
+            fileCount: fileData.length -1,
             totalIssues: totalFailureCount,
             warningCount: warningCount,
             fatalityCount: fatalityCount,

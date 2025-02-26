@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-import { logger, initializeLogger, getLogPrefix, setLogLevel } from './utils/logger';
+import { logger, getLogPrefix, setLogLevel } from './utils/logger';
 import { options, initCLI } from "./core/cli";
 if (require.main === module) {
-    initializeLogger()
     setLogLevel(process.env.XFI_LOG_LEVEL || 'info');
     initCLI();
 }
@@ -93,9 +92,9 @@ export async function main() {
         await handleError(e).then(() => {
             // give some time async ops to finish if not handled directly
             if (process.env.NODE_ENV !== 'test') {
-                setTimeout(() => {
+                setTimeout(() => { //todo fix this
                     process.exit(1);
-                }, 3000);
+                },  3000);
             }
         });    
     }

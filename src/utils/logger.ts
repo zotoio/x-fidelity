@@ -38,10 +38,10 @@ export function getLogPrefix(): string {
 
 // Initialize logger function that will create the singleton if it doesn't exist
 function getLogger(force?: boolean): pino.Logger {
-    if (!loggerInstance || force) {
+    if (!loggerInstance || !!force) {
         const fileTransport = pino.destination({
             dest: 'x-fidelity.log',
-            sync: true,
+            sync: false,
             mkdir: true
         });
 
@@ -49,11 +49,10 @@ function getLogger(force?: boolean): pino.Logger {
             target: 'pino-pretty',
             options: {
                 loglevel: loglevel,
-                sync: true,
+                sync: false,
                 colorize: true,
                 translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
                 ignore: 'pid,hostname',
-                //messageFormat: '{prefix} - {msg}',
                 singleLine: true,
                 errorProps: '*'
             }
@@ -67,7 +66,6 @@ function getLogger(force?: boolean): pino.Logger {
                 level: (label) => ({ level: label }),
                 bindings: (bindings) => bindings,
                 log: (object) => ({
-                    //prefix: logPrefix,
                     ...object
                 })
             },
@@ -100,7 +98,7 @@ function getLogger(force?: boolean): pino.Logger {
         loggerInstance = pino(
             loggerOptions,
             pino.multistream([
-                //{ level: loglevel, stream: fileTransport },
+                { level: loglevel, stream: fileTransport },
                 { level: loglevel, stream: prettyTransport }
             ])
         );
