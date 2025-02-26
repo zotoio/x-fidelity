@@ -1,3 +1,10 @@
+## [3.3.1](https://github.com/zotoio/x-fidelity/compare/v3.3.0...v3.3.1) (2025-02-26)
+
+
+### Bug Fixes
+
+* **engine:** node 18 ([6c3e157](https://github.com/zotoio/x-fidelity/commit/6c3e157d0873dbd6148c568f213ee7ad997744bd))
+
 # [3.3.0](https://github.com/zotoio/x-fidelity/compare/v3.2.0...v3.3.0) (2025-02-22)
 
 
