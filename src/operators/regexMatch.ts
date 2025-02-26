@@ -29,7 +29,7 @@ const regexMatch: OperatorDefn = {
             let pattern = regexPattern;
             
             // Check if the pattern is in /pattern/flags format
-            const regexFormatMatch = /^\/(.+)\/([gimuy]*)$/.exec(regexPattern);
+            const regexFormatMatch = /^\/(.+)\/([gimsuyd]*)$/.exec(regexPattern);
             if (regexFormatMatch) {
                 pattern = regexFormatMatch[1];
                 flags = regexFormatMatch[2];
