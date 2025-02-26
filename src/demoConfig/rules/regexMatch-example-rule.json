@@ -1,0 +1,28 @@
+{
+    "name": "regexMatch-example",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "regexMatch",
+                "value": "^package\\.json$"
+            },
+            {
+                "fact": "fileData",
+                "path": "$.fileContent",
+                "operator": "regexMatch",
+                "value": "\"dependencies\":\\s*\\{[^}]*\"express\""
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "Express dependency detected in package.json",
+            "details": {
+                "suggestion": "Consider using a more lightweight alternative for simple applications"
+            }
+        }
+    }
+}
