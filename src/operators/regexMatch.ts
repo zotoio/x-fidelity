@@ -33,6 +33,7 @@ const regexMatch: OperatorDefn = {
             if (regexFormatMatch) {
                 pattern = regexFormatMatch[1];
                 flags = regexFormatMatch[2];
+                logger.debug(`regexMatch: extracted pattern "${pattern}" with flags "${flags}"`);
             }
 
             const regex = new RegExp(pattern, flags);

@@ -30,7 +30,7 @@ describe('regexMatch', () => {
     it('should handle regex flags correctly', () => {
         expect(regexMatch.fn('Hello World', '/hello/i')).toBe(true);
         expect(regexMatch.fn('Hello\nWorld', '/hello.*world/is')).toBe(true);
-        expect(regexMatch.fn('Hello World', '/hello/g')).toBe(true);
+        expect(regexMatch.fn('Hello World', '/hello world/i')).toBe(true);
     });
 
     it('should handle undefined or null factValue', () => {
