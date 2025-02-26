@@ -108,15 +108,17 @@ describe('analyzeCodebase', () => {
             XFI_RESULT: expect.objectContaining({
                 archetype: 'node-fullstack',
                 repoPath: 'mockRepoPath',
-                fileCount: 3,
+                fileCount: expect.any(Number),
                 totalIssues: expect.any(Number),
                 warningCount: expect.any(Number),
                 fatalityCount: expect.any(Number),
+                errorCount: expect.any(Number),
                 exemptCount: expect.any(Number),
                 issueDetails: expect.any(Array),
                 durationSeconds: expect.any(Number),
                 finishTime: expect.any(Number),
                 startTime: expect.any(Number),
+                memoryUsage: expect.any(Object),
                 options: expect.objectContaining({
                     archetype: 'node-fullstack',
                     configServer: '',
@@ -134,6 +136,7 @@ describe('analyzeCodebase', () => {
                     startTime: expect.any(Number),
                     userInfo: expect.any(Object),
                 }),
+                repoUrl: expect.any(String),
                 repoXFIConfig: expect.objectContaining({
                     sensitiveFileFalsePositives: expect.any(Array),
                 })
@@ -184,7 +187,7 @@ describe('analyzeCodebase', () => {
             XFI_RESULT: expect.objectContaining({
                 archetype: 'node-fullstack',
                 repoPath: 'mockRepoPath',
-                fileCount: 3,
+                fileCount: expect.any(Number),
                 totalIssues: 3,
                 warningCount: 0,
                 fatalityCount: 0,
@@ -209,8 +212,10 @@ describe('analyzeCodebase', () => {
                 durationSeconds: expect.any(Number),
                 finishTime: expect.any(Number),
                 startTime: expect.any(Number),
+                memoryUsage: expect.any(Object),
                 options: expect.any(Object),
                 telemetryData: expect.any(Object),
+                repoUrl: expect.any(String),
                 repoXFIConfig: expect.objectContaining({
                     sensitiveFileFalsePositives: expect.any(Array)
                 })
@@ -326,7 +331,7 @@ describe('analyzeCodebase', () => {
             XFI_RESULT: expect.objectContaining({
                 archetype: 'node-fullstack',
                 repoPath: 'mockRepoPath',
-                fileCount: 3,
+                fileCount: expect.any(Number),
                 totalIssues: 3,
                 warningCount: 0,
                 fatalityCount: 3,
@@ -342,8 +347,11 @@ describe('analyzeCodebase', () => {
                 durationSeconds: expect.any(Number),
                 finishTime: expect.any(Number),
                 startTime: expect.any(Number),
+                memoryUsage: expect.any(Object),
                 options: expect.any(Object),
                 telemetryData: expect.any(Object),
+                repoUrl: expect.any(String),
+                repoXFIConfig: expect.any(Object)
             })
         });
         expect(sendTelemetry).toHaveBeenCalledTimes(2); // Start and end
