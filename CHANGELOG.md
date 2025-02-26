@@ -1,3 +1,17 @@
+# [3.4.0](https://github.com/zotoio/x-fidelity/compare/v3.3.1...v3.4.0) (2025-02-26)
+
+
+### Bug Fixes
+
+* add support for all modern regex flags in pattern matching ([847a320](https://github.com/zotoio/x-fidelity/commit/847a32068b68db66c1a9d84090bae4bc918f36d0))
+* correct regex test case to use case-insensitive flag ([96d906c](https://github.com/zotoio/x-fidelity/commit/96d906c23833f482d649df866ca36f28f609bbd6))
+
+
+### Features
+
+* add regex pattern matching operator with tests ([8ac216f](https://github.com/zotoio/x-fidelity/commit/8ac216f222a28367eba971f0f187fad4173167b3))
+* **operators:** add regexMatch general purpose operator ([8270696](https://github.com/zotoio/x-fidelity/commit/82706966e9a52c089848f785007f415e614b67da))
+
 ## [3.3.1](https://github.com/zotoio/x-fidelity/compare/v3.3.0...v3.3.1) (2025-02-26)
 
 
