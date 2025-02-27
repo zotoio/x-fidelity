@@ -100,6 +100,7 @@ export interface ArchetypeConfig {
     rules: string[];
     operators: string[];
     facts: string[];
+    plugins?: string[];  // New optional field for archetype-specified plugins
     config: {
         minimumDependencyVersions: Record<string, string>; // This will be validated in the JSON schema
         standardStructure: Record<string, any>;

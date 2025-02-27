@@ -98,11 +98,6 @@ export class ConfigManager {
 
         if (logPrefix) setLogPrefix(logPrefix);
         
-        // Load plugins during initialization
-        await this.loadPlugins(options.extensions).catch(error => {
-            logger.error(error, `Error loading plugins`);
-            throw error;
-        });
         logger.info(`Initializing config manager for archetype: ${archetype}`);
         logger.debug(`Initialize params: ${JSON.stringify(params)}`);
 
@@ -122,6 +117,21 @@ export class ConfigManager {
 
             if (!config.archetype || Object.keys(config.archetype).length === 0) {
                 throw new Error(`No valid configuration found for archetype: ${archetype}`);
+            }
+            
+            // Load CLI-specified plugins first
+            await this.loadPlugins(options.extensions).catch(error => {
+                logger.error(error, `Error loading CLI-specified plugins`);
+                throw error;
+            });
+            
+            // Load archetype-specified plugins
+            if (config.archetype.plugins && config.archetype.plugins.length > 0) {
+                logger.info(`Loading plugins specified by archetype: ${config.archetype.plugins.join(', ')}`);
+                await this.loadPlugins(config.archetype.plugins).catch(error => {
+                    logger.error(error, `Error loading archetype-specified plugins`);
+                    throw error;
+                });
             }
 
             // Load all RuleConfig for the archetype

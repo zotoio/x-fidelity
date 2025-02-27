@@ -36,6 +36,7 @@ const archetypeSchema: ArchetypeConfigSchema = {
         rules: { type: "array", items: { type: "string" }, minItems: 1 },
         operators: { type: "array", items: { type: "string" }, minItems: 1 },
         facts: { type: "array", items: { type: "string" }, minItems: 1 },
+        plugins: { type: "array", items: { type: "string" }, minItems: 0 },  // New field for plugins
         config: {
             type: "object",
             properties: {

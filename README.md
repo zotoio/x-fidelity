@@ -179,6 +179,7 @@ x-fidelity is designed to be highly extensible, and only has demo rules and arch
 2. **Custom Rules**: Add new JSON rule files in the `rules` subdirectory of your local config or on your config server.
 3. **Custom Operators**: TODO: Implement new operators and add them to your x-fidelity fork or plugin.
 4. **Custom Facts**: TODO: Create new fact providers and add them to your x-fidelity fork or plugin.
+5. **Plugins**: Specify plugins in your archetype configuration or via the CLI to extend functionality.
  
 > At minimum you should configure your archetypes and rules using the provided facts and operators.  Facts and Operators are more complex and are not yet easily added without forking, and those provided are intended to be flexible enough for general codebase analysis.
 
@@ -188,6 +189,7 @@ Archetypes represent a pattern or template of git repo that you expect to be con
 - **rules**: names of rules you have defined to perform either global (repo wide) checks, or checks on each file in a repo.
 - **facts**: data prepared before analysing a repo such as dependency data and file structures.
 - **operators**: these are custom operators, or provided operators that compare facts and return a boolean result.  In x-fi boolean true means a rule failure. 
+- **plugins**: names of plugins to load when using this archetype. These extend the functionality with custom facts and operators.
 - **config**: core configuration related to codebase analysis:
 - minimumDependencyVersions: packages you want to conform to provided semver ranges.
 - standardStructure: expected filesystem directories at high level
@@ -201,6 +203,7 @@ Example of a custom archetype JSON file (`my-custom-archetype.json`):
     "rules": ["myCustomRule-global", "standardRule1-iterative", "standardRule2-iterative"],
     "operators": ["myCustomOperator", "standardOperator1"],
     "facts": ["myCustomFact", "standardFact1"],
+    "plugins": ["xfiPluginRequiredFiles", "myCustomPlugin"],
     "config": {
         "minimumDependencyVersions": {
             "my-framework": ">2.0.0"
@@ -836,7 +839,10 @@ New extensions are available:
 - *Remote String Validation Plugin:* (module: `xfiPluginRemoteStringValidator`) adds remote validation functionality via the `remoteSubstringValidation` fact and the `invalidRemoteValidation` operator.
 - *Sample Custom Plugin:* (module: `xfiPluginSimpleExample`) shows how to add custom facts and operators.
 
-To load these plugins, pass their module names via the `-e` (or `--extensions`) CLI option.
+There are two ways to load plugins:
+
+1. **Via CLI option**: Pass plugin module names via the `-e` (or `--extensions`) CLI option.
+2. **Via archetype configuration**: Specify plugins in the `plugins` array of your archetype JSON file.
 
 x-fidelity supports custom extensions through npm modules. To use extensions:
 
@@ -851,6 +857,17 @@ xfidelity -e xfi-basic-plugin xfi-another-plugin
 ```
 
 Multiple extensions can be specified by separating them with spaces.
+
+Alternatively, specify plugins in your archetype configuration:
+```json
+{
+    "name": "my-archetype",
+    "plugins": ["xfi-basic-plugin", "xfi-another-plugin"],
+    // other archetype properties...
+}
+```
+
+Plugins specified in both the CLI and the archetype will be loaded, with CLI-specified plugins loaded first.
 
 ### Creating Extensions
 

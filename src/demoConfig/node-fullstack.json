@@ -27,6 +27,10 @@
         "remoteSubstringValidation",
         "missingRequiredFiles"
     ],
+    "plugins": [
+        "xfiPluginRequiredFiles",
+        "xfiPluginRemoteStringValidator"
+    ],
     "config": {
         "minimumDependencyVersions": {
             "@types/react": ">=18.0.0",
