@@ -12,7 +12,16 @@ const globalPatternCount: OperatorDefn = {
                 return false;
             }
             
-            // Extract the patterns from the analysis result
+            // Check if we have new pattern totals
+            if (analysisResult.summary.newPatternsTotal !== undefined) {
+                const newTotal = analysisResult.summary.newPatternsTotal;
+                logger.info(`globalPatternCount: new patterns total: ${newTotal}, threshold: ${threshold}`);
+                
+                // Compare count with threshold
+                return newTotal >= threshold;
+            }
+            
+            // Fallback to original behavior for backward compatibility
             const patterns = Object.keys(analysisResult.matchCounts);
             if (patterns.length < 1) {
                 logger.debug('globalPatternCount: no patterns found in analysis');

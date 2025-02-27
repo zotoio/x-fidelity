@@ -25,7 +25,7 @@ async function loadFacts(factNames: string[]): Promise<FactDefn[]> {
         },
         globalFileAnalysisFacts: {
             name: 'globalFileAnalysis',
-            fn: globalFileAnalysis,
+            fn: globalFileAnalysis.fn,
             priority: 50 // Set priority to run after globalFileMetadata
         },
         ...Object.fromEntries(

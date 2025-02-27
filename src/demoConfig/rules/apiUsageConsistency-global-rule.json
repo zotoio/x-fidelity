@@ -11,9 +11,13 @@
             {
                 "fact": "globalFileAnalysis",
                 "params": {
-                    "patterns": [
+                    "newPatterns": [
                         "newApiMethod\\(",
-                        "legacyApiMethod\\("
+                        "modernApiCall\\("
+                    ],
+                    "legacyPatterns": [
+                        "legacyApiMethod\\(",
+                        "deprecatedApiCall\\("
                     ],
                     "fileFilter": "\\.(ts|js)$",
                     "resultFact": "apiUsageAnalysis"

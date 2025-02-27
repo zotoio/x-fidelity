@@ -16,11 +16,18 @@ export const globalFileAnalysis: FactDefn = {
             }
 
             // Extract parameters
-            const patterns = Array.isArray(params.patterns) ? params.patterns : [params.patterns];
+            const newPatterns = Array.isArray(params.newPatterns) ? params.newPatterns : (params.newPatterns ? [params.newPatterns] : []);
+            const legacyPatterns = Array.isArray(params.legacyPatterns) ? params.legacyPatterns : (params.legacyPatterns ? [params.legacyPatterns] : []);
+            // For backward compatibility
+            const patterns = Array.isArray(params.patterns) ? params.patterns : (params.patterns ? [params.patterns] : []);
+            
             const fileFilter = params.fileFilter || '.*';
             const fileFilterRegex = new RegExp(fileFilter);
             
-            logger.info(`Running global file analysis with ${patterns.length} patterns across ${globalFileMetadata.length} files`);
+            // Combine all patterns for processing
+            const allPatterns = [...newPatterns, ...legacyPatterns, ...patterns];
+            
+            logger.info(`Running global file analysis with ${newPatterns.length} new patterns, ${legacyPatterns.length} legacy patterns, and ${patterns.length} regular patterns across ${globalFileMetadata.length} files`);
             
             // Filter files based on fileFilter parameter
             const filteredFiles = globalFileMetadata.filter(file => 
@@ -30,7 +37,7 @@ export const globalFileAnalysis: FactDefn = {
             logger.info(`Analyzing ${filteredFiles.length} files after filtering`);
             
             // Initialize match counts for each pattern
-            patterns.forEach((pattern: string) => {
+            allPatterns.forEach((pattern: string) => {
                 result.matchCounts[pattern] = 0;
                 result.fileMatches[pattern] = [];
             });
@@ -43,7 +50,7 @@ export const globalFileAnalysis: FactDefn = {
                 const lines = fileContent.split('\n');
                 
                 // Check each pattern against the file
-                for (const pattern of patterns) {
+                for (const pattern of allPatterns) {
                     const regex = new RegExp(pattern, 'g');
                     let fileMatches = 0;
                     const matchDetails = [];
@@ -74,11 +81,25 @@ export const globalFileAnalysis: FactDefn = {
                 }
             }
             
+            // Calculate totals for new and legacy patterns
+            const newPatternsTotal = newPatterns.reduce((sum: number, pattern: string) => sum + (result.matchCounts[pattern] || 0), 0);
+            const legacyPatternsTotal = legacyPatterns.reduce((sum: number, pattern: string) => sum + (result.matchCounts[pattern] || 0), 0);
+            
             // Add summary to result
             result.summary = {
                 totalFiles: filteredFiles.length,
                 totalMatches: Object.values(result.matchCounts).reduce((sum: number, count: unknown) => sum + (count as number), 0),
-                patternCounts: result.matchCounts
+                patternCounts: result.matchCounts,
+                newPatternCounts: newPatterns.reduce((counts: Record<string, number>, pattern: string) => {
+                    counts[pattern] = result.matchCounts[pattern] || 0;
+                    return counts;
+                }, {}),
+                legacyPatternCounts: legacyPatterns.reduce((counts: Record<string, number>, pattern: string) => {
+                    counts[pattern] = result.matchCounts[pattern] || 0;
+                    return counts;
+                }, {}),
+                newPatternsTotal: newPatternsTotal,
+                legacyPatternsTotal: legacyPatternsTotal
             };
             
             // Add the result to the almanac

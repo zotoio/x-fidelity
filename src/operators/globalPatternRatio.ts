@@ -12,7 +12,29 @@ const globalPatternRatio: OperatorDefn = {
                 return false;
             }
             
-            // Extract the patterns from the analysis result
+            // Check if we have new and legacy pattern totals
+            if (analysisResult.summary.newPatternsTotal !== undefined && 
+                analysisResult.summary.legacyPatternsTotal !== undefined) {
+                
+                const newTotal = analysisResult.summary.newPatternsTotal;
+                const legacyTotal = analysisResult.summary.legacyPatternsTotal;
+                const total = newTotal + legacyTotal;
+                
+                // Avoid division by zero
+                if (total === 0) {
+                    logger.debug('globalPatternRatio: no pattern matches found');
+                    return false;
+                }
+                
+                // Calculate ratio of new patterns to total patterns
+                const ratio = newTotal / total;
+                logger.info(`globalPatternRatio: ${newTotal}/(${newTotal}+${legacyTotal}) = ${ratio}, threshold: ${threshold}`);
+                
+                // Compare ratio with threshold
+                return ratio >= threshold;
+            }
+            
+            // Fallback to original behavior for backward compatibility
             const patterns = Object.keys(analysisResult.matchCounts);
             if (patterns.length < 2) {
                 logger.debug('globalPatternRatio: need at least 2 patterns to calculate ratio');
