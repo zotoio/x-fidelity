@@ -102,6 +102,53 @@ Features:
 - AI-powered analysis
 - Custom prompt support
 
+### `globalPatternRatio`
+
+Evaluates the ratio of new API patterns to legacy patterns across the codebase.
+
+```json
+{
+    "fact": "globalFileAnalysis",
+    "params": {
+        "newPatterns": ["newApiMethod\\("],
+        "legacyPatterns": ["legacyApiMethod\\("],
+        "fileFilter": "\\.(ts|js)$",
+        "resultFact": "apiMigrationAnalysis"
+    },
+    "operator": "globalPatternRatio",
+    "value": 0.8
+}
+```
+
+Features:
+- Measures adoption of new APIs
+- Tracks deprecation of legacy code
+- Configurable threshold
+- Supports multiple patterns
+
+### `globalPatternCount`
+
+Checks if a pattern appears at least a certain number of times across the codebase.
+
+```json
+{
+    "fact": "globalFileAnalysis",
+    "params": {
+        "newPatterns": ["requiredMethod\\("],
+        "fileFilter": "\\.(ts|js)$",
+        "resultFact": "requiredMethodAnalysis"
+    },
+    "operator": "globalPatternCount",
+    "value": 10
+}
+```
+
+Features:
+- Ensures minimum usage of required patterns
+- Supports multiple patterns
+- Configurable threshold
+- Detailed match information
+
 ### `invalidRemoteValidation`
 
 Validates extracted strings against remote endpoints.

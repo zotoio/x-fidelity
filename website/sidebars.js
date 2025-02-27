@@ -13,6 +13,7 @@ module.exports = {
         'facts',
         'exemptions',
         'openai-integration',
+        'library-migration-tracking',
       ],
     },
     {

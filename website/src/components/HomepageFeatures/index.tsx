@@ -36,11 +36,11 @@ const FeatureList: FeatureItem[] = [
     ),
   },
   {
-    title: 'Remote Configuration',
+    title: 'Library Migration Tracking',
     description: (
       <>
-        Centrally manage configurations and rules. Use the config server for consistent 
-        standards across teams and projects.
+        Track adoption of new APIs and deprecation of legacy code. Measure migration progress 
+        with statistical analysis across your entire codebase.
       </>
     ),
   },

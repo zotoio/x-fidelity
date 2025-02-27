@@ -77,6 +77,7 @@ Built-in facts include:
 - File system information
 - Dependency versions
 - OpenAI analysis results
+- Global file pattern analysis
 
 ## Operators
 

@@ -82,6 +82,31 @@ Example usage in a rule:
 }
 ```
 
+### `globalFileAnalysisFacts`
+
+Analyzes patterns across multiple files to track API migrations and library upgrades.
+
+Features:
+- Separate tracking of new and legacy patterns
+- File filtering by extension or path
+- Detailed match information
+- Statistical analysis of adoption rates
+
+Example usage in a rule:
+```json
+{
+    "fact": "globalFileAnalysis",
+    "params": {
+        "newPatterns": ["newApiMethod\\(", "modernApiCall\\("],
+        "legacyPatterns": ["legacyApiMethod\\(", "deprecatedApiCall\\("],
+        "fileFilter": "\\.(ts|js)$",
+        "resultFact": "apiMigrationAnalysis"
+    },
+    "operator": "globalPatternRatio",
+    "value": 0.8
+}
+```
+
 ### `remoteSubstringValidation`
 
 Validates extracted strings against remote endpoints.
