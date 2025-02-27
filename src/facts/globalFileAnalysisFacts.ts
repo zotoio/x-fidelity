@@ -30,7 +30,7 @@ export const globalFileAnalysis: FactDefn = {
             logger.info(`Analyzing ${filteredFiles.length} files after filtering`);
             
             // Initialize match counts for each pattern
-            patterns.forEach(pattern => {
+            patterns.forEach((pattern: string) => {
                 result.matchCounts[pattern] = 0;
                 result.fileMatches[pattern] = [];
             });
@@ -77,7 +77,7 @@ export const globalFileAnalysis: FactDefn = {
             // Add summary to result
             result.summary = {
                 totalFiles: filteredFiles.length,
-                totalMatches: Object.values(result.matchCounts).reduce((sum: number, count: number) => sum + count, 0),
+                totalMatches: Object.values(result.matchCounts).reduce((sum: number, count: unknown) => sum + (count as number), 0),
                 patternCounts: result.matchCounts
             };
             
