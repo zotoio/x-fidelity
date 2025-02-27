@@ -21,7 +21,7 @@
                     "resultFact": "apiUsageAnalysis"
                 },
                 "operator": "globalPatternRatio",
-                "value": 0.3
+                "value": 0.6
             }
         ]
     },
