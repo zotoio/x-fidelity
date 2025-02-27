@@ -40,7 +40,7 @@ const FeatureList: FeatureItem[] = [
     description: (
       <>
         Track adoption of new APIs and deprecation of legacy code. Measure migration progress 
-        with statistical analysis across your entire codebase.
+        with statistical analysis and visualize adoption rates across teams.
       </>
     ),
   },

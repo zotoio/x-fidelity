@@ -57,6 +57,13 @@ module.exports = {
       ],
     },
     {
+      type: 'category',
+      label: 'Examples',
+      items: [
+        'examples/migration-dashboard',
+      ],
+    },
+    {
       type: 'doc',
       id: 'contributing',
     },

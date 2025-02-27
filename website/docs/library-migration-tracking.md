@@ -167,13 +167,111 @@ The `globalFileAnalysis` fact provides detailed information about:
 
 This helps developers identify exactly where changes are needed.
 
-### Integration with CI/CD
+### Setting Up Migration Dashboards
+
+Create dashboards to visualize migration progress:
+
+1. **Configure telemetry collection**:
+   ```bash
+   xfidelity . -t https://telemetry.example.com
+   ```
+
+2. **Add custom metadata to track progress over time**:
+   ```json
+   "event": {
+       "type": "warning",
+       "params": {
+           "message": "Migration in progress",
+           "metadata": {
+               "migrationId": "react-hooks-migration",
+               "currentRatio": {
+                   "fact": "apiMigrationAnalysis.summary.newPatternsTotal"
+               },
+               "totalPatterns": {
+                   "fact": "apiMigrationAnalysis.summary.totalMatches"
+               }
+           }
+       }
+   }
+   ```
+
+3. **Visualize progress** using tools like Grafana or custom dashboards
+
+### Automated Migration Tools
+
+Combine x-fidelity with code modification tools:
+
+1. **Identify targets**:
+   ```bash
+   # Export list of files needing migration
+   xfidelity . --export-results migration-targets.json
+   ```
+
+2. **Generate migration scripts**:
+   ```bash
+   # Create migration script based on results
+   node generate-migration.js --input migration-targets.json
+   ```
+
+3. **Apply changes and verify**:
+   ```bash
+   # Apply changes
+   node apply-migration.js
+   
+   # Verify changes
+   xfidelity . --verify-migration
+   ```
+
+## Integration with CI/CD
 
 Add these checks to your CI/CD pipeline to:
 - Track migration progress over time
 - Prevent regression to legacy patterns
 - Ensure consistent adoption across teams
 - Provide visibility to management
+
+### GitHub Actions Example
+
+```yaml
+name: Library Migration Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  migration-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install x-fidelity
+        run: yarn global add x-fidelity
+      - name: Check migration progress
+        run: |
+          xfidelity . -a migration-tracking
+          # Extract progress metrics for PR comment
+          node .github/scripts/extract-migration-metrics.js
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const metrics = JSON.parse(fs.readFileSync('migration-metrics.json', 'utf8'));
+            const progressBar = createProgressBar(metrics.ratio);
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Migration Progress\n${progressBar}\n**Current ratio:** ${metrics.ratio * 100}%\n**Target:** 80%`
+            });
+```
 
 ## Best Practices
 
@@ -182,6 +280,8 @@ Add these checks to your CI/CD pipeline to:
 3. **Provide migration guides**: Create documentation on how to update from legacy to new patterns
 4. **Monitor progress**: Regularly review the analysis results to track adoption
 5. **Celebrate milestones**: Acknowledge teams when they reach migration targets
+6. **Automate where possible**: Create tools to assist with repetitive migration tasks
+7. **Set realistic timelines**: Base deadlines on codebase size and complexity
 
 ## Next Steps
 

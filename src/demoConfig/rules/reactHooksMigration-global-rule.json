@@ -1,0 +1,56 @@
+{
+    "name": "reactHooksMigration-global",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "globalFileAnalysis",
+                "params": {
+                    "newPatterns": [
+                        "useState\\(",
+                        "useEffect\\(",
+                        "useContext\\(",
+                        "useReducer\\(",
+                        "useCallback\\(",
+                        "useMemo\\(",
+                        "useRef\\(",
+                        "const\\s+\\w+\\s*=\\s*\\(\\)\\s*=>\\s*{"
+                    ],
+                    "legacyPatterns": [
+                        "extends\\s+React\\.Component",
+                        "componentDidMount\\(",
+                        "componentDidUpdate\\(",
+                        "componentWillUnmount\\(",
+                        "this\\.setState\\("
+                    ],
+                    "fileFilter": "\\.(jsx|tsx)$",
+                    "resultFact": "reactHooksMigrationAnalysis"
+                },
+                "operator": "globalPatternRatio",
+                "value": 0.7
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "React Hooks migration is in progress. At least 70% of components should use hooks instead of class components.",
+            "details": {
+                "fact": "reactHooksMigrationAnalysis",
+                "migrationId": "react-hooks-migration",
+                "targetRatio": 0.7,
+                "recommendations": [
+                    "Focus on migrating class components with complex lifecycle methods first",
+                    "Use the useEffect hook to replace componentDidMount, componentDidUpdate, and componentWillUnmount",
+                    "Replace this.setState with useState for simpler state management",
+                    "Consider using useContext for components that consume context"
+                ]
+            }
+        }
+    }
+}
