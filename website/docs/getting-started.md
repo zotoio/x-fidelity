@@ -50,6 +50,10 @@ Options:
   -h, --help                              display help
 ```
 
+**Note:** Plugins can be loaded in two ways:
+1. Via the `-e` option (CLI-specified plugins)
+2. Via the `plugins` array in your archetype configuration
+
 ## Environment Variables
 
 - `OPENAI_API_KEY`: Your OpenAI API key

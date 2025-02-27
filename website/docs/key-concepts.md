@@ -22,6 +22,7 @@ Example archetype:
     "rules": ["outdatedFramework-global", "sensitiveLogging-iterative"],
     "operators": ["fileContains", "outdatedFramework"],
     "facts": ["repoFilesystemFacts", "repoDependencyFacts"],
+    "plugins": ["xfiPluginRequiredFiles", "xfiPluginRemoteStringValidator"],
     "config": {
         "minimumDependencyVersions": {
             "react": ">=17.0.0"

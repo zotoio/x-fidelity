@@ -34,6 +34,10 @@ An archetype defines:
         "repoFilesystemFacts",
         "repoDependencyFacts"
     ],
+    "plugins": [
+        "xfiPluginRequiredFiles",
+        "xfiPluginRemoteStringValidator"
+    ],
     "config": {
         "minimumDependencyVersions": {
             "react": ">=17.0.0",

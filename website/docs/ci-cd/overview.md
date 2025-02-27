@@ -75,6 +75,18 @@ Specify a custom archetype:
 xfidelity . --archetype java-microservice
 ```
 
+### Plugin Loading
+
+Plugins can be loaded in two ways:
+
+1. **Via CLI option**:
+```bash
+xfidelity . -e xfi-plugin-name another-plugin
+```
+
+2. **Via archetype configuration**:
+Plugins specified in the archetype's `plugins` array will be loaded automatically.
+
 ## Exit Codes
 
 x-fidelity uses these exit codes:

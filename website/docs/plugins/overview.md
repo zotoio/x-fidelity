@@ -70,15 +70,36 @@ Example usage:
 
 ## Using Plugins
 
-1. Install plugin packages:
-```bash
-yarn add xfi-plugin-name
-```
+There are two ways to use plugins with x-fidelity:
 
-2. Enable plugins when running x-fidelity:
+### 1. Via CLI Option
+
+Install plugin packages and enable them when running x-fidelity:
 ```bash
+# Install plugins
+yarn add xfi-plugin-name
+
+# Enable plugins via CLI
 xfidelity . -e xfi-plugin-name another-plugin
 ```
+
+### 2. Via Archetype Configuration
+
+Specify plugins directly in your archetype configuration:
+```json
+{
+    "name": "my-archetype",
+    "plugins": [
+        "xfi-plugin-name",
+        "another-plugin"
+    ],
+    // other archetype properties...
+}
+```
+
+When using an archetype with specified plugins, x-fidelity will automatically load them without requiring the `-e` flag.
+
+**Note:** If you specify plugins both in the archetype and via CLI, all plugins will be loaded, with CLI-specified plugins loaded first.
 
 ## Plugin Features
 
