@@ -14,6 +14,7 @@ An archetype defines:
 - Minimum dependency versions
 - File patterns to analyze
 - Custom operators and facts to use
+- Plugins to load
 
 ## Archetype Structure
 
