@@ -187,6 +187,7 @@ async function repoFileAnalysis(params: any, almanac: any) {
     return result;
 
     // testing match on 'oracle'
+    // testing match on 'declare'
 }
 
 export { collectRepoFileData, repoFileAnalysis, parseFile, isBlacklisted, isWhitelisted, FileData }

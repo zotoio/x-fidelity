@@ -9,7 +9,7 @@
         "openaiAnalysisA11y-global",
         "invalidSystemIdConfigured-iterative",
         "missingRequiredFiles-global",
-        "regexMatch-example-iterative"
+        "factDoesNotAddResultToAlmanac-iterative"
     ],
     "operators": [
         "fileContains",

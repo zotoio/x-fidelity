@@ -1,0 +1,33 @@
+{
+    "name": "factDoesNotAddResultToAlmanac-iterative",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.filePath",
+                "operator": "regexMatch",
+                "value": "^.*\\/facts\\/(?!.*\\.test).*\\.ts$"
+            },
+            {
+                "not": {
+                    "fact": "repoFileAnalysis",
+                    "params": {
+                        "checkPattern": [
+                            "almanac\\.addRuntimeFact\\(params\\.resultFact"
+                        ],
+                        "resultFact": "factAlmanacResults"
+                    },
+                    "operator": "fileContains",
+                    "value": true
+                }
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "xfi facts should always add results to the almanac so that details can be reported.",
+            "details": "eg. almanac.addRuntimeFact(params.resultFact, result)"
+        }
+    }
+}
