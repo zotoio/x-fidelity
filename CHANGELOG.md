@@ -1,3 +1,15 @@
+# [3.5.0](https://github.com/zotoio/x-fidelity/compare/v3.4.0...v3.5.0) (2025-02-27)
+
+
+### Bug Fixes
+
+* **regexmatch:** give better examples of iterative and negative matches ([3a4f211](https://github.com/zotoio/x-fidelity/commit/3a4f21157119a0677b29ebc211716526d8a762d0))
+
+
+### Features
+
+* add plugin support to archetype configuration ([9e0a02b](https://github.com/zotoio/x-fidelity/commit/9e0a02be24fb812ca056157a0c3f1c7b8699b7f2))
+
 # [3.4.0](https://github.com/zotoio/x-fidelity/compare/v3.3.1...v3.4.0) (2025-02-26)
 
 

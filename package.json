@@ -1,6 +1,6 @@
 {
   "name": "x-fidelity",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "description": "cli for opinionated framework adherence checks",
   "main": "dist/index",
   "types": "dist/index.d.ts",
