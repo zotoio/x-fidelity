@@ -1,3 +1,17 @@
+# [3.6.0](https://github.com/zotoio/x-fidelity/compare/v3.5.0...v3.6.0) (2025-02-27)
+
+
+### Bug Fixes
+
+* add type annotations to fix TypeScript errors in globalFileAnalysis ([588c814](https://github.com/zotoio/x-fidelity/commit/588c8140a348a4959e62c027bdadbd625a11dc51))
+
+
+### Features
+
+* add global file analysis with pattern matching and ratio operators ([ab456df](https://github.com/zotoio/x-fidelity/commit/ab456df857efa82fd4f394f474b0b6f85b1fc91e))
+* add support for new and legacy pattern analysis ([6702ea0](https://github.com/zotoio/x-fidelity/commit/6702ea081cff3fbc2abceed35e4aee073ff02b56))
+* **targeting:** facts and operators to support rules applied to specific codebase matches ([231cb9a](https://github.com/zotoio/x-fidelity/commit/231cb9adedac8dc18666058925af835b68fe60e3))
+
 # [3.5.0](https://github.com/zotoio/x-fidelity/compare/v3.4.0...v3.5.0) (2025-02-27)
 
 
