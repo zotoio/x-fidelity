@@ -1,3 +1,10 @@
+# [3.7.0](https://github.com/zotoio/x-fidelity/compare/v3.6.0...v3.7.0) (2025-02-27)
+
+
+### Features
+
+* **file scope:** example of checking new react feature adoption ([c3b58ba](https://github.com/zotoio/x-fidelity/commit/c3b58ba887bc36182bc6ff7646e76256e301425a))
+
 # [3.6.0](https://github.com/zotoio/x-fidelity/compare/v3.5.0...v3.6.0) (2025-02-27)
 
 
