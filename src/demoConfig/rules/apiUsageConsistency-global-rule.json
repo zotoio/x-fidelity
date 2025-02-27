@@ -1,0 +1,35 @@
+{
+    "name": "apiUsageConsistency-global",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "globalFileAnalysis",
+                "params": {
+                    "patterns": [
+                        "newApiMethod\\(",
+                        "legacyApiMethod\\("
+                    ],
+                    "fileFilter": "\\.(ts|js)$",
+                    "resultFact": "apiUsageAnalysis"
+                },
+                "operator": "globalPatternRatio",
+                "value": 0.8
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "The codebase is not consistently using the new API methods. At least 80% of API calls should use the new methods.",
+            "details": {
+                "fact": "apiUsageAnalysis"
+            }
+        }
+    }
+}

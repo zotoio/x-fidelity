@@ -1,6 +1,7 @@
 import { collectRepoFileData } from './repoFilesystemFacts';
 import { getDependencyVersionFacts } from './repoDependencyFacts';
 import { openaiAnalysis } from './openaiAnalysisFacts';
+import { globalFileAnalysis } from './globalFileAnalysisFacts';
 import { pluginRegistry } from '../core/pluginRegistry';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { FactDefn } from '../types/typeDefs';
@@ -21,6 +22,11 @@ async function loadFacts(factNames: string[]): Promise<FactDefn[]> {
         openaiAnalysisFacts: { 
             name: 'openaiAnalysis', 
             fn: openaiAnalysis 
+        },
+        globalFileAnalysisFacts: {
+            name: 'globalFileAnalysis',
+            fn: globalFileAnalysis,
+            priority: 50 // Set priority to run after globalFileMetadata
         },
         ...Object.fromEntries(
             pluginRegistry.getPluginFacts().map(fact => [fact.name, fact])

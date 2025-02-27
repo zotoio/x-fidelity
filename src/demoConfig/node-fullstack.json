@@ -9,7 +9,8 @@
         "openaiAnalysisA11y-global",
         "invalidSystemIdConfigured-iterative",
         "missingRequiredFiles-global",
-        "factDoesNotAddResultToAlmanac-iterative"
+        "factDoesNotAddResultToAlmanac-iterative",
+        "apiUsageConsistency-global"
     ],
     "operators": [
         "fileContains",
@@ -18,14 +19,17 @@
         "openaiAnalysisHighSeverity",
         "invalidRemoteValidation",
         "missingRequiredFiles",
-        "regexMatch"
+        "regexMatch",
+        "globalPatternRatio",
+        "globalPatternCount"
     ],
     "facts": [
         "repoFilesystemFacts",
         "repoDependencyFacts",
         "openaiAnalysisFacts",
         "remoteSubstringValidation",
-        "missingRequiredFiles"
+        "missingRequiredFiles",
+        "globalFileAnalysisFacts"
     ],
     "plugins": [
         "xfiPluginRequiredFiles",

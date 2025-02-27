@@ -4,6 +4,8 @@ import { fileContains } from './fileContains';
 import { nonStandardDirectoryStructure } from './nonStandardDirectoryStructure';
 import { openaiAnalysisHighSeverity } from './openaiAnalysisHighSeverity';
 import { regexMatch } from './regexMatch';
+import { globalPatternRatio } from './globalPatternRatio';
+import { globalPatternCount } from './globalPatternCount';
 import { getOpenAIStatus } from '../utils/openaiUtils';
 import { logger } from '../utils/logger';
 import { pluginRegistry } from '../core/pluginRegistry';
@@ -16,6 +18,8 @@ async function loadOperators(operatorNames: string[]): Promise<OperatorDefn[]> {
         nonStandardDirectoryStructure,
         openaiAnalysisHighSeverity,
         regexMatch,
+        globalPatternRatio,
+        globalPatternCount,
         ...Object.fromEntries(
             pluginRegistry.getPluginOperators().map(op => [op.name, op])
         )
