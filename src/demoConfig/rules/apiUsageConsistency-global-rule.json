@@ -12,18 +12,16 @@
                 "fact": "globalFileAnalysis",
                 "params": {
                     "newPatterns": [
-                        "newApiMethod\\(",
-                        "modernApiCall\\("
+                        "logger\\.info\\("
                     ],
                     "legacyPatterns": [
-                        "legacyApiMethod\\(",
-                        "deprecatedApiCall\\("
+                        "logger\\.debug\\("
                     ],
-                    "fileFilter": "\\.(ts|js)$",
+                    "fileFilter": ".*\\.(ts|js)$",
                     "resultFact": "apiUsageAnalysis"
                 },
                 "operator": "globalPatternRatio",
-                "value": 0.8
+                "value": 0.3
             }
         ]
     },
