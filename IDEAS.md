@@ -1,12 +1,18 @@
 # Innovative Check Types for Codebase Standardization
 
-## Original Prompt
+## aider.chat Claude 3.7 Sonnet Prompt
 
 ```bash
-/architect what are some other unusual check types we could add that are not covered by linting, security, sonarqube or similar tools. Remember the goal is to encourage teams to follow patterns that simplify codebases from internal company SDKs frameworks, with important rules enforced. Have a think about 50 examples that are both simple to understand, and help improve productivity. Use an innovative mindset and consider react microfrontends using GraphQL as well as microservices using GraphQL and others using standard REST.
+/architect what are some other unusual check types we could add that are not 
+covered by linting, security, sonarqube or similar tools. Remember the goal 
+is to encourage teams to follow patterns that simplify codebases from internal 
+company SDKs frameworks, with important rules enforced. Have a think about 
+50 examples that are both simple to understand, and help improve productivity. 
+Use an innovative mindset and consider react microfrontends using GraphQL 
+as well as microservices using GraphQL and others using standard REST.
 ```
 
-## 50 Innovative Check Types
+## Response: 50 Innovative Check Types
 
 These innovative check types could be added to the X-Fidelity tool to encourage teams to follow patterns that simplify codebases and improve productivity. These go beyond what typical linting, security, or SonarQube tools cover.
 
