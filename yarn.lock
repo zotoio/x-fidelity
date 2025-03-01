@@ -1461,10 +1461,12 @@
   dependencies:
     ora "*"
 
-"@types/parse-json@^4.0.2":
-  version "4.0.2"
-  resolved "https://registry.yarnpkg.com/@types/parse-json/-/parse-json-4.0.2.tgz#5950e50960793055845e956c427fc2b0d70c5239"
-  integrity sha512-dISoDXWWQwUquiKsyZ4Ng+HX2KsPL7LyHKHQwgGFEA3IaKac4Obd+h2a/a6waisAoepJlBcx9paWqjA8/HVjCw==
+"@types/parse-json@^7.0.0":
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/@types/parse-json/-/parse-json-7.0.0.tgz#15fd60633f7598d4145256b7fcf23cf892e4b9e3"
+  integrity sha512-9+fI0h3lJpUhQCstbug7hnYgEc22rDZV1WIFVpOvp6/zlOWXk0IBfwUvQDoO5zgB6lZxjucjmQcgWT0ehPrEmA==
+  dependencies:
+    parse-json "*"
 
 "@types/prettyjson@^0.0.33":
   version "0.0.33"
@@ -5974,6 +5976,15 @@ parse-conflict-json@^4.0.0:
     just-diff "^6.0.0"
     just-diff-apply "^5.2.0"
 
+parse-json@*, parse-json@^8.0.0:
+  version "8.1.0"
+  resolved "https://registry.yarnpkg.com/parse-json/-/parse-json-8.1.0.tgz#91cdc7728004e955af9cb734de5684733b24a717"
+  integrity sha512-rum1bPifK5SSar35Z6EKZuYPJx85pkNaFrxBK3mwdfSJ1/WKbYrjoW/zTPSjRRamfmVX1ACBIdFAO0VRErW/EA==
+  dependencies:
+    "@babel/code-frame" "^7.22.13"
+    index-to-position "^0.1.2"
+    type-fest "^4.7.1"
+
 parse-json@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/parse-json/-/parse-json-4.0.0.tgz#be35f5425be1f7f6c747184f98a788cb99477ee0"
@@ -5991,15 +6002,6 @@ parse-json@^5.2.0:
     error-ex "^1.3.1"
     json-parse-even-better-errors "^2.3.0"
     lines-and-columns "^1.1.6"
-
-parse-json@^8.0.0:
-  version "8.1.0"
-  resolved "https://registry.yarnpkg.com/parse-json/-/parse-json-8.1.0.tgz#91cdc7728004e955af9cb734de5684733b24a717"
-  integrity sha512-rum1bPifK5SSar35Z6EKZuYPJx85pkNaFrxBK3mwdfSJ1/WKbYrjoW/zTPSjRRamfmVX1ACBIdFAO0VRErW/EA==
-  dependencies:
-    "@babel/code-frame" "^7.22.13"
-    index-to-position "^0.1.2"
-    type-fest "^4.7.1"
 
 parse-ms@^4.0.0:
   version "4.0.0"
