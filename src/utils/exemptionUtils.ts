@@ -5,6 +5,7 @@ import { sendTelemetry } from "./telemetry";
 import path from "path";
 import fs from "fs";
 import { isPathInside } from "./pathUtils";
+import sanitize from "sanitize-filename";
 
 const XFI_SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 
@@ -51,13 +52,14 @@ export async function loadRemoteExemptions(params: LoadExemptionsParams): Promis
 
 export async function loadLocalExemptions(params: LoadExemptionsParams): Promise<Exemption[]> {
     const { localConfigPath, archetype } = params;
+    const sanitizedArchetype = sanitize(archetype);
     const exemptions: Exemption[] = [];
-    const expectedSuffix = `-${archetype}-exemptions.json`;
+    const expectedSuffix = `-${sanitizedArchetype}-exemptions.json`;
 
     try {
         // Load from legacy file
         const baseConfigPath = path.resolve(localConfigPath);
-        const legacyExemptionsPath = path.resolve(baseConfigPath, `${archetype}-exemptions.json`);
+        const legacyExemptionsPath = path.resolve(baseConfigPath, `${sanitizedArchetype}-exemptions.json`);
         if (fs.existsSync(legacyExemptionsPath)) {
             const legacyExemptionsData = await fs.promises.readFile(legacyExemptionsPath, 'utf-8');
             const legacyExemptions = JSON.parse(legacyExemptionsData);
@@ -68,7 +70,7 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
         }
 
         // Load from exemptions directory
-        const exemptionsDirPath = path.resolve(baseConfigPath, `${archetype}-exemptions`);
+        const exemptionsDirPath = path.resolve(baseConfigPath, `${sanitizedArchetype}-exemptions`);
         if (fs.existsSync(exemptionsDirPath)) {
             const files = await fs.promises.readdir(exemptionsDirPath);
             for (const file of files) {
@@ -101,10 +103,10 @@ export async function loadLocalExemptions(params: LoadExemptionsParams): Promise
         }
 
         if (!fs.existsSync(legacyExemptionsPath) && !fs.existsSync(exemptionsDirPath)) {
-            logger.warn(`No exemption files found for archetype ${archetype}`);
+            logger.warn(`No exemption files found for archetype ${sanitizedArchetype}`);
         }
 
-        logger.info(`Loaded ${exemptions.length} total exemptions for archetype ${archetype}`);
+        logger.info(`Loaded ${exemptions.length} total exemptions for archetype ${sanitizedArchetype}`);
         return exemptions;
     } catch (error) {
         logger.warn(`Failed to load exemptions: ${error}`);

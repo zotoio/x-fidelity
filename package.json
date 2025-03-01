@@ -100,7 +100,8 @@
     "pino-pretty": "^13.0.0",
     "prettyjson": "^1.2.5",
     "semver": "^7.6.2",
-    "yarn": "^1.22.21"
+    "yarn": "^1.22.21",
+    "sanitize-filename": "^1.6.3"
   },
   "peerDependencies": {
     "artillery": "^2.0.15"
