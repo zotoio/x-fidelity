@@ -36,7 +36,7 @@ describe('globalFileAnalysis', () => {
         const params = {
             patterns: ['newApiMethod\\(', 'legacyApiMethod\\('],
             fileFilter: '\\.ts$',
-            resultFact: 'apiUsageAnalysis'
+            resultFact: 'sdkUsageAnalysis'
         };
 
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
@@ -44,7 +44,7 @@ describe('globalFileAnalysis', () => {
         expect(result.summary.totalFiles).toBe(2);
         expect(result.matchCounts['newApiMethod\\(']).toBe(3);
         expect(result.matchCounts['legacyApiMethod\\(']).toBe(1);
-        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('apiUsageAnalysis', expect.any(Object));
+        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('sdkUsageAnalysis', expect.any(Object));
     });
 
     it('should handle errors gracefully', async () => {
@@ -56,7 +56,7 @@ describe('globalFileAnalysis', () => {
         const params = {
             patterns: ['newApiMethod\\('],
             fileFilter: '\\.ts$',
-            resultFact: 'apiUsageAnalysis'
+            resultFact: 'sdkUsageAnalysis'
         };
 
         const result = await globalFileAnalysis.fn(params, mockAlmanac);

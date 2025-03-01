@@ -1,5 +1,5 @@
 {
-    "name": "apiUsageConsistency-global",
+    "name": "newSdkFeatureNotAdoped-global",
     "conditions": {
         "all": [
             {
@@ -18,7 +18,7 @@
                         "logger\\.debug\\("
                     ],
                     "fileFilter": ".*\\.(ts|js)$",
-                    "resultFact": "apiUsageAnalysis"
+                    "resultFact": "sdkUsageAnalysis"
                 },
                 "operator": "globalPatternRatio",
                 "value": 0.6
@@ -28,9 +28,9 @@
     "event": {
         "type": "warning",
         "params": {
-            "message": "The codebase is not consistently using the new API methods. At least 80% of API calls should use the new methods.",
+            "message": "The codebase does not appear to be using some important new SDK features.",
             "details": {
-                "fact": "apiUsageAnalysis"
+                "fact": "sdkUsageAnalysis"
             }
         }
     }
