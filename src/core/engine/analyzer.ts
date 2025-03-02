@@ -99,7 +99,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 };
                 engine.addRule(ruleProperties);
             } else {
-                logger.warn(`Invalid custom rule in repo config: ${rule.name}`);
+                // Use optional chaining to safely access rule.name
+                logger.warn(`Invalid custom rule in repo config: ${rule?.name || 'unnamed rule'}`);
             }
         }
     }
