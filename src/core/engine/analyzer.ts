@@ -12,6 +12,7 @@ import { setupEngine } from './engineSetup';
 import { runEngineOnFiles } from './engineRunner';
 import { countRuleFailures, safeStringify } from '../../utils/utils';
 import { validateRule } from '../../utils/jsonSchemas';
+import { pluginRegistry } from '../pluginRegistry';
 
 import { AnalyzeCodebaseParams } from '../../types/typeDefs';
 import { options } from '../cli';
@@ -85,6 +86,29 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         localConfigPath,
         repoUrl
     });
+
+    // Add plugin facts and operators directly to the engine
+    if (repoXFIConfig.additionalFacts) {
+        const pluginFacts = pluginRegistry.getPluginFacts();
+        for (const factName of repoXFIConfig.additionalFacts) {
+            const fact = pluginFacts.find(f => f.name === factName);
+            if (fact) {
+                logger.info(`Adding custom fact to engine: ${fact.name}`);
+                engine.addFact(fact.name, fact.fn, { priority: fact.priority || 1 });
+            }
+        }
+    }
+
+    if (repoXFIConfig.additionalOperators) {
+        const pluginOperators = pluginRegistry.getPluginOperators();
+        for (const operatorName of repoXFIConfig.additionalOperators) {
+            const operator = pluginOperators.find(o => o.name === operatorName);
+            if (operator) {
+                logger.info(`Adding custom operator to engine: ${operator.name}`);
+                engine.addOperator(operator.name, operator.fn);
+            }
+        }
+    }
 
     // Load additional rules from repo config
     if (repoXFIConfig.additionalRules && repoXFIConfig.additionalRules.length > 0) {
