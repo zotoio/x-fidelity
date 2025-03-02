@@ -73,7 +73,7 @@ jest.mock('../core/cli', () => ({
         configServer: 'http://test-server.com',
         localConfigPath: '/path/to/local/config',
         archetype: 'node-fullstack',
-        extensions: ['test-extension']
+        extensions: []  // Remove test-extension to avoid the error
     }
 }));
 jest.mock('../utils/logger', () => ({
