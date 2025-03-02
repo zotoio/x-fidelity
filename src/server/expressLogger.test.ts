@@ -37,7 +37,7 @@ describe('expressLogger', () => {
         mockResponse = {
             statusCode: 200,
             getHeaders: jest.fn().mockReturnValue({ 'content-type': 'application/json' }),
-            send: jest.fn().mockImplementation(function(body) { return this; })
+            send: jest.fn().mockImplementation(function(this: any, body) { return this; })
         };
         
         mockNext = jest.fn();

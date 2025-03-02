@@ -87,7 +87,7 @@ describe('archetypeRoute', () => {
     (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
       archetype: archetypeConfig
     });
-    (validateArchetype as jest.Mock).mockReturnValue(true);
+    (validateArchetype as jest.MockedFunction<typeof validateArchetype>).mockReturnValue(true);
     
     await archetypeRoute(mockRequest, mockResponse);
     
@@ -107,7 +107,7 @@ describe('archetypeRoute', () => {
     (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
       archetype: { name: 'test-archetype' }
     });
-    (validateArchetype as jest.Mock).mockReturnValue(false);
+    (validateArchetype as jest.MockedFunction<typeof validateArchetype>).mockReturnValue(false);
     
     await archetypeRoute(mockRequest, mockResponse);
     
