@@ -283,7 +283,7 @@ describe('ConfigManager', () => {
                 .mockReturnValueOnce(false);
         
             // Create a new instance to trigger the validation
-            const config = await ConfigManager.initialize({ archetype: 'test-archetype' });
+            const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
         
             expect(config.rules.length).toBe(1);
             expect(config.rules[0].name).toBe('rule1');
