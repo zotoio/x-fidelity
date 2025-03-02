@@ -40,7 +40,7 @@ import { axiosClient } from '../utils/axiosClient';
 import * as jsonSchemas from '../utils/jsonSchemas';
 import fs from 'fs';
 import { DEMO_CONFIG_PATH, options } from './cli';
-import { logger } from '../utils/logger';
+import { logger, setLogPrefix } from '../utils/logger';
 import { sendTelemetry } from '../utils/telemetry';
 import { execSync } from 'child_process';
 import { pluginRegistry } from './pluginRegistry';
