@@ -17,8 +17,10 @@ jest.mock('express', () => {
     })
   };
   const mockExpress = jest.fn(() => mockApp);
-  mockExpress.json = jest.fn().mockReturnValue(jest.fn());
-  return mockExpress;
+  return {
+    ...mockExpress,
+    json: jest.fn().mockReturnValue(jest.fn())
+  };
 });
 
 jest.mock('https', () => ({
