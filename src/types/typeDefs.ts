@@ -303,6 +303,7 @@ export interface XFiPlugin {
   facts?: FactDefn[];
   operators?: OperatorDefn[];
   onError?: (error: Error) => PluginError;
+  [key: string]: any; // Allow for additional properties
 }
 
 export interface PluginRegistry {
