@@ -8,7 +8,8 @@ export function checkSharedSecret(req: Request, res: Response, next: NextFunctio
     const clientSecret = req.headers['x-shared-secret'];
     if (SHARED_SECRET && clientSecret !== SHARED_SECRET) {
         logger.error(`Unauthorized access attempt with incorrect shared secret: ${maskedSecret}`);
-        return res.status(403).json({ error: 'Unauthorized' });
+        res.status(403).json({ error: 'Unauthorized' });
+        return;
     }
     next();
 }
