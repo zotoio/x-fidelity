@@ -1,3 +1,10 @@
+## [3.8.1](https://github.com/zotoio/x-fidelity/compare/v3.8.0...v3.8.1) (2025-03-02)
+
+
+### Bug Fixes
+
+* **commitzen:** fix glob compatibilty issue ([73a7058](https://github.com/zotoio/x-fidelity/commit/73a7058e82d5853ceff3d3e5e3e48a03180f077d))
+
 # [3.8.0](https://github.com/zotoio/x-fidelity/compare/v3.7.1...v3.8.0) (2025-03-02)
 
 
