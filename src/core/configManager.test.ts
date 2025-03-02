@@ -286,8 +286,11 @@ describe('ConfigManager', () => {
                 }
             };
             
+            // Reset validateRule mock to ensure consistent behavior
+            (validateRule as jest.Mock).mockReset();
+            
             // Mock validateRule to return true for the first rule and false for the second
-            validateRule
+            (validateRule as jest.Mock)
                 .mockReturnValueOnce(true)
                 .mockReturnValueOnce(false);
             
@@ -379,9 +382,11 @@ describe('ConfigManager', () => {
             // Create a mock ES module plugin
             const mockPlugin = { default: { name: 'test-plugin', version: '1.0.0' } };
         
-            // Mock the import function
-            const mockImport = jest.fn().mockResolvedValue(mockPlugin);
-            jest.spyOn(ConfigManager as any, 'dynamicImport').mockImplementation(mockImport);
+            // Store the original dynamicImport function
+            const originalDynamicImport = ConfigManager.dynamicImport;
+            
+            // Replace with our mock implementation
+            ConfigManager.dynamicImport = jest.fn().mockResolvedValue(mockPlugin);
         
             // Mock process.env.NODE_ENV to not be 'test' for this specific test
             const originalNodeEnv = process.env.NODE_ENV;
@@ -393,7 +398,7 @@ describe('ConfigManager', () => {
             await ConfigManager.loadPlugins(['mock-plugin']);
         
             // Restore the original import and NODE_ENV
-            (ConfigManager as any).dynamicImport = jest.requireActual('../utils/utils').dynamicImport;
+            ConfigManager.dynamicImport = originalDynamicImport;
             process.env.NODE_ENV = originalNodeEnv;
         });
 
@@ -401,9 +406,11 @@ describe('ConfigManager', () => {
             // Create a mock direct export plugin
             const mockPlugin = { name: 'test-plugin', version: '1.0.0' };
         
-            // Mock the import function
-            const mockImport = jest.fn().mockResolvedValue(mockPlugin);
-            jest.spyOn(ConfigManager as any, 'dynamicImport').mockImplementation(mockImport);
+            // Store the original dynamicImport function
+            const originalDynamicImport = ConfigManager.dynamicImport;
+            
+            // Replace with our mock implementation
+            ConfigManager.dynamicImport = jest.fn().mockResolvedValue(mockPlugin);
         
             // Mock process.env.NODE_ENV to not be 'test' for this specific test
             const originalNodeEnv = process.env.NODE_ENV;
@@ -415,7 +422,7 @@ describe('ConfigManager', () => {
             await ConfigManager.loadPlugins(['mock-plugin']);
         
             // Restore the original import and NODE_ENV
-            (ConfigManager as any).dynamicImport = jest.requireActual('../utils/utils').dynamicImport;
+            ConfigManager.dynamicImport = originalDynamicImport;
             process.env.NODE_ENV = originalNodeEnv;
         });
 
@@ -432,6 +439,9 @@ describe('ConfigManager', () => {
             // Mock process.env.NODE_ENV to not be 'test' for this specific test
             const originalNodeEnv = process.env.NODE_ENV;
             process.env.NODE_ENV = 'development';
+            
+            // Mock logger.error to ensure it's called
+            (logger.error as jest.Mock).mockClear();
         
             // Define a custom fail function since it's not available in the test context
             const customFail = (message: string) => {
@@ -443,7 +453,14 @@ describe('ConfigManager', () => {
                 customFail('Should have thrown an error');
             } catch (error) {
                 expect((error as Error).message).toContain('Failed to load extension mock-plugin from all locations');
-                expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to load extension mock-plugin'));
+                
+                // Verify logger.error was called with the expected message
+                expect(logger.error).toHaveBeenCalled();
+                const errorCalls = (logger.error as jest.Mock).mock.calls;
+                const hasExpectedErrorMessage = errorCalls.some(call => 
+                    typeof call[0] === 'string' && call[0].includes('Failed to load extension mock-plugin')
+                );
+                expect(hasExpectedErrorMessage).toBe(true);
             }
         
             // Restore the original import and NODE_ENV
