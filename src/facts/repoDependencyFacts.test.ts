@@ -96,7 +96,7 @@ describe('repoDependencyFacts', () => {
                     ]
                 }
             ]);
-            expect(execSync).toHaveBeenCalledWith('yarn list --json', expect.any(Object));
+            expect(mockExecSync).toHaveBeenCalledWith('yarn list --json', expect.any(Object));
         });
         
         it('should collect dependencies from package-lock.json', async () => {
@@ -130,7 +130,7 @@ describe('repoDependencyFacts', () => {
                     ]
                 }
             ]);
-            expect(execSync).toHaveBeenCalledWith('npm ls -a --json', expect.any(Object));
+            expect(mockExecSync).toHaveBeenCalledWith('npm ls -a --json', expect.any(Object));
         });
         
         it('should handle errors when no lock files are found', async () => {
