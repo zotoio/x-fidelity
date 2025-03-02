@@ -7,6 +7,7 @@ import chokidar from 'chokidar';
 import { options } from '../core/cli';
 
 jest.mock('express', () => {
+  const mockJson = jest.fn().mockReturnValue(jest.fn());
   const mockApp = {
     use: jest.fn().mockReturnThis(),
     get: jest.fn().mockReturnThis(),
@@ -17,7 +18,7 @@ jest.mock('express', () => {
     })
   };
   const mockExpress = jest.fn(() => mockApp);
-  mockExpress.json = jest.fn().mockReturnValue(jest.fn());
+  mockExpress.json = mockJson;
   return mockExpress;
 });
 
