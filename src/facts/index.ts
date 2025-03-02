@@ -33,7 +33,7 @@ async function loadFacts(factNames: string[]): Promise<FactDefn[]> {
         )
     };
 
-    logger.info(`Loading facts: ${factNames.join(', ')}`);
+    logger.info(`Loading facts: ${factNames.join(',')}`);
     const pluginFacts = pluginRegistry.getPluginFacts();
     logger.info(`Found ${pluginFacts.length} plugin facts available`);
     
