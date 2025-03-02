@@ -174,12 +174,22 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
 
         if (Object.keys(minVersions).some(key => key === dep.name || `@${key}` === dep.name)) {
             const minVersionKey = Object.keys(minVersions).find(key => key === dep.name || `@${key}` === dep.name);
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            results.push({ dep: fullName, ver: dep.version, min: minVersions[minVersionKey!] });
+            if (minVersionKey) {
+                // Use optional chaining and nullish coalescing to avoid errors
+                results.push({ 
+                    dep: fullName, 
+                    ver: dep.version, 
+                    min: minVersions[minVersionKey] 
+                });
+            }
         }
         if (dep.dependencies) {
             dep.dependencies.forEach(childDep => {
-                walk(childDep, fullName);
+                // Avoid circular references by checking the full path
+                const childFullName = `${fullName}/${childDep.name}`;
+                if (!visited.has(childFullName)) {
+                    walk(childDep, fullName);
+                }
             });
         }
     }
@@ -190,40 +200,49 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
 }
 
 export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
-
     const result: any = {'result': []};
-    const fileData: FileData = await almanac.factValue('fileData');
+    
+    try {
+        const fileData: FileData = await almanac.factValue('fileData');
 
-    if (fileData.fileName !== 'REPO_GLOBAL_CHECK') {
-        return result;
-    }
-
-    const analysis: any = [];
-    const dependencyData: any = await almanac.factValue('dependencyData');
-    const safeDependencyData = safeClone(dependencyData);
-
-    safeDependencyData.installedDependencyVersions.forEach((versionData: VersionData) => { 
-        logger.debug(`outdatedFramework: checking ${versionData.dep}`);
-
-        // Check if the installed version satisfies the required version, supporting both ranges and specific versions
-        const isValid = semverValid(versionData.ver, versionData.min);
-        if (!isValid && semver.valid(versionData.ver)) {
-            const dependencyFailure = {
-                'dependency': versionData.dep,
-                'currentVersion': versionData.ver,
-                'requiredVersion': versionData.min
-            };
-            
-            logger.error(`dependencyFailure: ${safeStringify(dependencyFailure)}`);
-            analysis.push(dependencyFailure);
+        if (fileData.fileName !== 'REPO_GLOBAL_CHECK') {
+            return result;
         }
-    });
 
-    result.result = analysis;
+        const analysis: any = [];
+        const dependencyData: any = await almanac.factValue('dependencyData');
+        const safeDependencyData = safeClone(dependencyData);
 
-    almanac.addRuntimeFact(params.resultFact, result);
+        safeDependencyData.installedDependencyVersions.forEach((versionData: VersionData) => { 
+            logger.debug(`outdatedFramework: checking ${versionData.dep}`);
 
-    logger.debug(`repoDependencyAnalysis result: ${safeStringify(result)}`);
+            try {
+                // Check if the installed version satisfies the required version, supporting both ranges and specific versions
+                const isValid = semverValid(versionData.ver, versionData.min);
+                if (!isValid && semver.valid(versionData.ver)) {
+                    const dependencyFailure = {
+                        'dependency': versionData.dep,
+                        'currentVersion': versionData.ver,
+                        'requiredVersion': versionData.min
+                    };
+                    
+                    logger.error(`dependencyFailure: ${safeStringify(dependencyFailure)}`);
+                    analysis.push(dependencyFailure);
+                }
+            } catch (error) {
+                logger.error(`Error validating dependency ${versionData.dep}: ${error}`);
+            }
+        });
+
+        result.result = analysis;
+
+        almanac.addRuntimeFact(params.resultFact, result);
+
+        logger.debug(`repoDependencyAnalysis result: ${safeStringify(result)}`);
+    } catch (error) {
+        logger.error(`Error in repoDependencyAnalysis: ${error}`);
+    }
+    
     return result;
 }
 
