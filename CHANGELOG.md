@@ -1,3 +1,22 @@
+# [3.9.0](https://github.com/zotoio/x-fidelity/compare/v3.8.1...v3.9.0) (2025-03-02)
+
+
+### Bug Fixes
+
+* add optional chaining for rule name access in analyzer ([d0c4b02](https://github.com/zotoio/x-fidelity/commit/d0c4b02c83bf77cade8e7310fe14ad0b10dd00c1))
+* add type assertion to resolve schema type compatibility issue ([76f7618](https://github.com/zotoio/x-fidelity/commit/76f761869a85d09eb18a047010e6409475c766fc))
+* **demo:** minor logic and test fix ([3b03804](https://github.com/zotoio/x-fidelity/commit/3b0380465dcc75355941f5e1818187f9b448ef6c))
+* register plugin facts and operators before loading custom rules ([5ab7667](https://github.com/zotoio/x-fidelity/commit/5ab76675c7387a78bb43cb8bd959362a89e16ae9))
+* resolve TypeScript error by casting rule to any type ([eba8fd1](https://github.com/zotoio/x-fidelity/commit/eba8fd1b968d64ec867ebeca76a92a2764321a08))
+* resolve TypeScript errors in schema validation and rule handling ([8f3dd6f](https://github.com/zotoio/x-fidelity/commit/8f3dd6ffca0956a30a4b17794e1b2e0cdee178c0))
+* update custom rule filename and enhance fact almanac handling ([8d11d55](https://github.com/zotoio/x-fidelity/commit/8d11d55c930e4389185905449dc6561958386317))
+
+
+### Features
+
+* Add custom rule configuration with example plugin and operators ([7e54510](https://github.com/zotoio/x-fidelity/commit/7e54510d9ef25249d70f3e4691f9aae203bf2489))
+* add support for custom rules and plugins in .xfi-config.json ([6206802](https://github.com/zotoio/x-fidelity/commit/62068028636b2da1a7f25df503be6bbb7c8dfdb3))
+
 ## [3.8.1](https://github.com/zotoio/x-fidelity/compare/v3.8.0...v3.8.1) (2025-03-02)
 
 
