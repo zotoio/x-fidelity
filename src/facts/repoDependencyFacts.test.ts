@@ -7,7 +7,7 @@ import * as util from 'util';
 import { logger } from '../utils/logger';
 import { execSync } from 'child_process';
 
-// Define mockExecSync before using it in the mock
+// Create mock function first
 const mockExecSync = jest.fn().mockImplementation(() => {
     return Buffer.from(JSON.stringify({
         data: {
@@ -23,6 +23,7 @@ const mockExecSync = jest.fn().mockImplementation(() => {
     }));
 });
 
+// Then use it in the mock
 jest.mock('child_process', () => ({
     execSync: mockExecSync
 }));
