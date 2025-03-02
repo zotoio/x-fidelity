@@ -190,8 +190,6 @@ describe('XFiPluginRegistry', () => {
       const plugin: XFiPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
-        name: 'test-plugin',
-        version: '1.0.0',
         testFunction: mockFn as unknown as any,
       };
 
@@ -237,8 +235,6 @@ describe('XFiPluginRegistry', () => {
       const plugin: XFiPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
-        name: 'test-plugin',
-        version: '1.0.0',
         testFunction: mockFn as unknown as any,
         onError: mockErrorHandler,
       };
@@ -268,8 +264,6 @@ describe('XFiPluginRegistry', () => {
       });
       
       const plugin: XFiPlugin = {
-        name: 'test-plugin',
-        version: '1.0.0',
         name: 'test-plugin',
         version: '1.0.0',
         testFunction: mockFn as unknown as any,
