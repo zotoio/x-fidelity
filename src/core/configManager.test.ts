@@ -81,8 +81,7 @@ jest.mock('../utils/logger', () => ({
         debug: jest.fn(),
         error: jest.fn(),
         info: jest.fn(),
-        warn: jest.fn(),
-        setLogPrefix: jest.fn()
+        warn: jest.fn()
     },
     setLogPrefix: jest.fn()
 }));
@@ -239,7 +238,7 @@ describe('ConfigManager', () => {
         it('should set logPrefix when provided', async () => {
             (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
             await ConfigManager.getConfig({ archetype: 'test-archetype', logPrefix: 'test-prefix' });
-            expect(logger.setLogPrefix).toHaveBeenCalledWith('test-prefix');
+            expect(setLogPrefix).toHaveBeenCalledWith('test-prefix');
         });
     });
 
