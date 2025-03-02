@@ -287,10 +287,10 @@ describe('ConfigManager', () => {
             };
             
             // Reset validateRule mock to ensure consistent behavior
-            (validateRule as jest.Mock).mockReset();
+            (validateRule as unknown as jest.Mock).mockReset();
             
             // Mock validateRule to return true for the first rule and false for the second
-            (validateRule as jest.Mock)
+            (validateRule as unknown as jest.Mock)
                 .mockReturnValueOnce(true)
                 .mockReturnValueOnce(false);
             
