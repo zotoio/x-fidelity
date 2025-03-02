@@ -136,6 +136,6 @@ export function initCLI() {
     `);
 
     // print help if no arguments are passed
-    if (program.options.length === 0) program.help();
+    if (program.opts && Object.keys(program.opts()).length === 0) program.help();
 }
 
