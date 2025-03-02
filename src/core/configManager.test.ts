@@ -249,8 +249,8 @@ describe('ConfigManager', () => {
                 'test-archetype': {
                     archetype: mockConfig,
                     rules: [
-                        { name: 'rule1', conditions: {}, event: {} },
-                        { name: 'rule2', conditions: {}, event: {} }
+                        { name: 'rule1', conditions: {}, event: { type: 'test', params: {} } },
+                        { name: 'rule2', conditions: {}, event: { type: 'test', params: {} } }
                     ],
                     cliOptions: {},
                     exemptions: []
@@ -269,8 +269,8 @@ describe('ConfigManager', () => {
                 'test-archetype': {
                     archetype: mockConfig,
                     rules: [
-                        { name: 'rule1', conditions: {}, event: {} },
-                        { name: 'invalidRule', conditions: {}, event: {} }
+                        { name: 'rule1', conditions: {}, event: { type: 'test', params: {} } },
+                        { name: 'invalidRule', conditions: {}, event: { type: 'test', params: {} } }
                     ],
                     cliOptions: {},
                     exemptions: []
