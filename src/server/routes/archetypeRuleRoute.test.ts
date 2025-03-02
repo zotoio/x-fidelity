@@ -87,7 +87,7 @@ describe('archetypeRuleRoute', () => {
       archetype: { rules: ['test-rule'] },
       rules: [ruleConfig]
     });
-    (validateRule as jest.Mock).mockReturnValue(true);
+    (validateRule as jest.MockedFunction<typeof validateRule>).mockReturnValue(true);
     
     await archetypeRuleRoute(mockRequest, mockResponse);
     
@@ -122,7 +122,7 @@ describe('archetypeRuleRoute', () => {
       archetype: { rules: ['test-rule'] },
       rules: [{ name: 'test-rule' }]
     });
-    (validateRule as jest.Mock).mockReturnValue(false);
+    (validateRule as jest.MockedFunction<typeof validateRule>).mockReturnValue(false);
     
     await archetypeRuleRoute(mockRequest, mockResponse);
     
