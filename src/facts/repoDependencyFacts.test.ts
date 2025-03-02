@@ -39,7 +39,7 @@ jest.mock('util', () => ({
     ...jest.requireActual('util'),
     promisify: jest.fn().mockImplementation((fn) => {
         // Return a function that properly handles the exec function
-        return (...args) => {
+        return (...args: any[]) => {
             try {
                 // Call the original function and wrap the result in a Promise
                 const result = fn(...args);
