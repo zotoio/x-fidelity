@@ -9,7 +9,7 @@ export function checkSharedSecret(req: Request, res: Response, next: NextFunctio
     if (SHARED_SECRET && clientSecret !== SHARED_SECRET) {
         logger.error(`Unauthorized access attempt with incorrect shared secret: ${maskedSecret}`);
         res.status(403).json({ error: 'Unauthorized' });
-        return;
+        return; // This return statement prevents next() from being called
     }
     next();
 }
