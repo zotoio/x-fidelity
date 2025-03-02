@@ -37,7 +37,7 @@ describe('normalizeGitHubUrl', () => {
     });
 });
 import { axiosClient } from '../utils/axiosClient';
-import { validateArchetype, validateRule } from '../utils/jsonSchemas';
+import * as jsonSchemas from '../utils/jsonSchemas';
 import fs from 'fs';
 import { DEMO_CONFIG_PATH, options } from './cli';
 import { logger } from '../utils/logger';
@@ -52,6 +52,10 @@ jest.mock('../utils/jsonSchemas', () => ({
   validateArchetype: jest.fn().mockReturnValue(true),
   validateRule: jest.fn().mockReturnValue(true)
 }));
+
+// Properly type the mocked functions
+const validateArchetype = jsonSchemas.validateArchetype as jest.MockedFunction<typeof jsonSchemas.validateArchetype>;
+const validateRule = jsonSchemas.validateRule as jest.MockedFunction<typeof jsonSchemas.validateRule>;
 jest.mock('fs', () => ({
     promises: {
         readFile: jest.fn(),
@@ -77,7 +81,8 @@ jest.mock('../utils/logger', () => ({
         debug: jest.fn(),
         error: jest.fn(),
         info: jest.fn(),
-        warn: jest.fn()
+        warn: jest.fn(),
+        setLogPrefix: jest.fn()
     },
     setLogPrefix: jest.fn()
 }));
@@ -170,7 +175,7 @@ describe('ConfigManager', () => {
 
         it('should throw an error when local config is invalid', async () => {
             options.configServer = '';
-            (validateArchetype as jest.Mock).mockReturnValueOnce(false);
+            validateArchetype.mockReturnValueOnce(false);
             (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid local archetype configuration');
             expect(logger.error).toHaveBeenCalled();
@@ -222,7 +227,7 @@ describe('ConfigManager', () => {
                 { name: 'rule1', conditions: {}, event: {} },
                 { name: 'invalidRule', conditions: {}, event: {} }
             ]);
-            (validateRule as jest.Mock)
+            validateRule
                 .mockReturnValueOnce(true)
                 .mockReturnValueOnce(false);
             const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
@@ -338,7 +343,7 @@ describe('ConfigManager', () => {
 
         it('should throw error when remote config is invalid', async () => {
             (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
-            (validateArchetype as jest.Mock).mockReturnValueOnce(false);
+            validateArchetype.mockReturnValueOnce(false);
             
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid remote archetype configuration');
         });
