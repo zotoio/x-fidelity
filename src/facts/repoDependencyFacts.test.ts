@@ -6,26 +6,30 @@ import { semverValid, normalizePackageName, collectLocalDependencies, getDepende
 import * as util from 'util';
 import { logger } from '../utils/logger';
 
-// Create the mock execSync function first
-const mockExecSync = jest.fn().mockImplementation(() => {
-    return Buffer.from(JSON.stringify({
-        data: {
-            trees: [
-                {
-                    name: 'package1@1.0.0',
-                    children: [
-                        { name: 'dependency1@0.1.0' }
-                    ]
-                }
-            ]
-        }
-    }));
+// First, create the mock directly in the jest.mock call
+jest.mock('child_process', () => {
+    const mockExecSync = jest.fn().mockImplementation(() => {
+        return Buffer.from(JSON.stringify({
+            data: {
+                trees: [
+                    {
+                        name: 'package1@1.0.0',
+                        children: [
+                            { name: 'dependency1@0.1.0' }
+                        ]
+                    }
+                ]
+            }
+        }));
+    });
+    
+    return {
+        execSync: mockExecSync
+    };
 });
 
-// Then use it in the mock
-jest.mock('child_process', () => ({
-    execSync: mockExecSync
-}));
+// Then get a reference to the mock for use in tests
+const mockExecSync = jest.requireMock('child_process').execSync;
 jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
     existsSync: jest.fn(),
