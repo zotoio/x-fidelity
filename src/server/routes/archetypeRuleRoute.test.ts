@@ -29,7 +29,7 @@ jest.mock('../../core/configManager', () => ({
 }));
 
 jest.mock('../../utils/jsonSchemas', () => ({
-  validateRule: jest.fn()
+  validateRule: jest.fn().mockReturnValue(true)
 }));
 
 describe('archetypeRuleRoute', () => {
