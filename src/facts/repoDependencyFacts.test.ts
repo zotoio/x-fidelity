@@ -40,6 +40,25 @@ jest.mock('util', () => ({
     })
 }));
 
+// Mock execSync to return valid JSON by default
+const mockExecSync = jest.fn().mockImplementation(() => {
+    return Buffer.from(JSON.stringify({
+        data: {
+            trees: [
+                {
+                    name: 'package1@1.0.0',
+                    children: [
+                        { name: 'dependency1@0.1.0' }
+                    ]
+                }
+            ]
+        }
+    }));
+});
+jest.mock('child_process', () => ({
+    execSync: mockExecSync
+}));
+
 // Add this line to increase the timeout for all tests in this file
 jest.setTimeout(30000); // 30 seconds
 
@@ -67,7 +86,7 @@ describe('repoDependencyFacts', () => {
                 }
             };
             
-            (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
+            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
             
             const result = await collectLocalDependencies();
             
@@ -101,7 +120,7 @@ describe('repoDependencyFacts', () => {
                 }
             };
             
-            (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockNpmOutput)));
+            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockNpmOutput)));
             
             const result = await collectLocalDependencies();
             
@@ -120,8 +139,21 @@ describe('repoDependencyFacts', () => {
         it('should handle errors when no lock files are found', async () => {
             (fs.existsSync as jest.Mock).mockReturnValue(false);
             
-            await expect(collectLocalDependencies()).rejects.toThrow('No yarn.lock or package-lock.json found');
-            expect(logger.error).toHaveBeenCalled();
+            // Mock process.exit to prevent test from exiting
+            const originalExit = process.exit;
+            process.exit = jest.fn() as any;
+            
+            try {
+                await collectLocalDependencies();
+                // If we get here, the function didn't throw, which is a failure
+                expect(true).toBe(false); // This will fail the test
+            } catch (error) {
+                expect(error.message).toContain('No yarn.lock or package-lock.json found');
+                expect(logger.error).toHaveBeenCalled();
+            } finally {
+                // Restore process.exit
+                process.exit = originalExit;
+            }
         });
         
         it('should handle npm command errors', async () => {
@@ -129,7 +161,7 @@ describe('repoDependencyFacts', () => {
                 return !path.includes('yarn.lock') && path.includes('package-lock.json');
             });
             
-            (execSync as jest.Mock).mockImplementation(() => {
+            mockExecSync.mockImplementation(() => {
                 throw new Error('ELSPROBLEMS');
             });
             
@@ -142,7 +174,7 @@ describe('repoDependencyFacts', () => {
                 return path.includes('yarn.lock');
             });
             
-            (execSync as jest.Mock).mockImplementation(() => {
+            mockExecSync.mockImplementation(() => {
                 throw new Error('Command failed');
             });
             
@@ -155,7 +187,7 @@ describe('repoDependencyFacts', () => {
                 return path.includes('yarn.lock');
             });
             
-            (execSync as jest.Mock).mockReturnValue(Buffer.from('Invalid JSON'));
+            mockExecSync.mockReturnValue(Buffer.from('Invalid JSON'));
             
             await expect(collectLocalDependencies()).rejects.toThrow();
             expect(logger.error).toHaveBeenCalled();
