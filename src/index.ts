@@ -88,15 +88,14 @@ export async function main() {
             }
         }    
     } catch (e: any) {
-        logger.error(e, `Error during execution ${JSON.stringify(e.message)} \n ${e.stack}`);
-        await handleError(e).then(() => {
-            // give some time async ops to finish if not handled directly
-            if (process.env.NODE_ENV !== 'test') {
-                setTimeout(() => { //todo fix this
-                    process.exit(1);
-                },  3000);
-            }
-        });    
+        // Use pino.final to flush any buffered logs before exit
+        const finalLogger = pino.final(logger);
+        finalLogger.error(e, `Error during execution: ${e.message}\n${e.stack}`);
+        await handleError(e);
+        // Allow flush time (or consider using finalLogger as a callback) before exit:
+        if (process.env.NODE_ENV !== 'test') {
+            setTimeout(() => process.exit(1), 3000);
+        }
     }
 }
 

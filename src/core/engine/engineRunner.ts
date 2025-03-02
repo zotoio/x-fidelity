@@ -76,13 +76,15 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
             }
 
             logger.error({ 
+                index: i,
+                file: file.filePath,
                 err: handledError || error,
                 rule: failedRuleName,
                 source: errorSource,
                 type: errorLevel,
-                file: file.filePath,
+                stack: (handledError || error).stack,
                 details: (error as any)?.pluginError?.details || error.message
-            }, 'Execution error occurred');
+            }, `Execution error occurred at file ${file.filePath} (${i + 1} of ${fileCount})`);
 
             // Execute error action if specified
             if (rule?.onError?.action) {
