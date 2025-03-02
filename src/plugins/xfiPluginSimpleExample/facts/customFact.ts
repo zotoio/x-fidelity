@@ -7,10 +7,17 @@ import { logger } from '../../../utils/logger';
  */
 export const customFact: FactDefn = {
     name: 'customFact',
-    fn: async (params) => {
+    fn: async (params, almanac) => {
         try {
             logger.debug('Executing customFact');
-            return { result: 'custom fact data' };
+            const result = { result: 'custom fact data' };
+            
+            // Add the result to the almanac if resultFact is provided
+            if (params && params.resultFact) {
+                almanac.addRuntimeFact(params.resultFact, result);
+            }
+            
+            return result;
         } catch (error) {
             logger.error(`Error in customFact: ${error}`);
             throw error;

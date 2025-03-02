@@ -11,7 +11,7 @@
                         "fact": "fileData",
                         "path": "$.fileName",
                         "operator": "equal",
-                        "value": "xfiTestMatch.json"
+                        "value": "REPO_GLOBAL_CHECK"
                     },
                     {
                         "fact": "customFact",
