@@ -1,5 +1,5 @@
 import { logger } from '../utils/logger';
-import { exec } from 'child_process';
+import { exec, execSync } from 'child_process';
 import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } from '../types/typeDefs';
 import { Almanac } from 'json-rules-engine';
 import * as semver from 'semver';
@@ -10,6 +10,7 @@ import path from 'path';
 import { safeClone, safeStringify } from '../utils/utils';
 import util from 'util';
 
+// Create a properly typed promisified exec function
 const execPromise = util.promisify(exec);
 
 /**
@@ -33,10 +34,29 @@ export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
 async function collectNodeDependencies(packageManager: string): Promise<LocalDependencies[]>  {
     const emptyDeps: LocalDependencies[] = [];
     try {
+        let stdout: string;
+        let stderr: string = '';
         
-        const { stdout, stderr } = packageManager === 'npm' ? 
-            await execPromise('npm ls -a --json', { cwd: options.dir, maxBuffer: 10485760 }) :
-            await execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 })
+        try {
+            // Use execSync as a fallback if execPromise fails
+            if (packageManager === 'npm') {
+                const result = await execPromise('npm ls -a --json', { cwd: options.dir, maxBuffer: 10485760 });
+                stdout = result.stdout;
+                stderr = result.stderr;
+            } else {
+                const result = await execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 });
+                stdout = result.stdout;
+                stderr = result.stderr;
+            }
+        } catch (execError) {
+            // If promisified exec fails, fall back to execSync
+            logger.warn(`Falling back to execSync for ${packageManager} dependencies`);
+            const output = execSync(
+                packageManager === 'npm' ? 'npm ls -a --json' : 'yarn list --json', 
+                { cwd: options.dir, maxBuffer: 10485760 }
+            );
+            stdout = output.toString();
+        }
 
         if (stderr?.includes('"error"')) {
             logger.error({
@@ -61,7 +81,7 @@ async function collectNodeDependencies(packageManager: string): Promise<LocalDep
                 packageManager,
                 type: 'parse-error'
             }, 'Error parsing dependencies');
-            throw new Error(stderr);
+            throw new Error(`Error parsing ${packageManager} dependencies`);
         }
     } catch (e: any) {
         let message = `Error determining ${packageManager} dependencies: ${e}`;
@@ -76,7 +96,6 @@ async function collectNodeDependencies(packageManager: string): Promise<LocalDep
         }, 'Error determining dependencies');
         throw new Error(message);
     }
-
 }
 
 function processYarnDependencies(yarnOutput: any): LocalDependencies[] {

@@ -35,21 +35,27 @@ jest.mock('../core/cli', () => ({
         dir: '/mock/dir'
     }
 }));
-jest.mock('util', () => ({
-    ...jest.requireActual('util'),
-    promisify: jest.fn().mockImplementation((fn) => {
-        // Return a function that properly handles the exec function
-        return (...args: any[]) => {
-            try {
-                // Call the original function and wrap the result in a Promise
-                const result = fn(...args);
-                return Promise.resolve({ stdout: result.toString(), stderr: '' });
-            } catch (error) {
-                return Promise.reject(error);
-            }
-        };
-    })
-}));
+jest.mock('util', () => {
+    const originalUtil = jest.requireActual('util');
+    return {
+        ...originalUtil,
+        promisify: jest.fn().mockImplementation((fn) => {
+            // Return a properly typed function that matches exec's signature
+            return jest.fn().mockImplementation((...args) => {
+                try {
+                    // For tests, we'll just return what mockExecSync returns
+                    const result = mockExecSync(...args);
+                    return Promise.resolve({ 
+                        stdout: result.toString(), 
+                        stderr: '' 
+                    });
+                } catch (error) {
+                    return Promise.reject(error);
+                }
+            });
+        })
+    };
+});
 
 // Add this line to increase the timeout for all tests in this file
 jest.setTimeout(30000); // 30 seconds
