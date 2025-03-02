@@ -1,5 +1,38 @@
 {
     "sensitiveFileFalsePositives": [
         "/src/facts/repoFilesystemFacts.ts"
-    ]
+    ],
+    "additionalRules": [
+        {
+            "name": "custom-rule",
+            "conditions": {
+                "all": [
+                    {
+                        "fact": "fileData",
+                        "path": "$.fileName",
+                        "operator": "equal",
+                        "value": "xfiTestMatch.json"
+                    },
+                    {
+                        "fact": "customFact",
+                        "operator": "customOperator",
+                        "value": "custom fact data"
+                    }
+                ]
+            },
+            "event": {
+                "type": "warning",
+                "params": {
+                    "message": "Custom rule detected matching data",
+                    "details": {
+                        "fact": "customFact"
+                    }
+                }
+            }
+        }
+        
+    ],
+    "additionalFacts": ["customFact"],
+    "additionalOperators": ["customOperator"],
+    "additionalPlugins": ["xfiPluginSimpleExample"]
 }
