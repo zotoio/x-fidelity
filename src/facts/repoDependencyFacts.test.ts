@@ -7,8 +7,24 @@ import * as util from 'util';
 import { logger } from '../utils/logger';
 import { execSync } from 'child_process';
 
+// Define mockExecSync before using it in the mock
+const mockExecSync = jest.fn().mockImplementation(() => {
+    return Buffer.from(JSON.stringify({
+        data: {
+            trees: [
+                {
+                    name: 'package1@1.0.0',
+                    children: [
+                        { name: 'dependency1@0.1.0' }
+                    ]
+                }
+            ]
+        }
+    }));
+});
+
 jest.mock('child_process', () => ({
-    execSync: jest.fn()
+    execSync: mockExecSync
 }));
 jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
@@ -38,25 +54,6 @@ jest.mock('util', () => ({
         // Return a function that returns a promise
         return (...args: any[]) => Promise.resolve(fn(...args));
     })
-}));
-
-// Mock execSync to return valid JSON by default
-const mockExecSync = jest.fn().mockImplementation(() => {
-    return Buffer.from(JSON.stringify({
-        data: {
-            trees: [
-                {
-                    name: 'package1@1.0.0',
-                    children: [
-                        { name: 'dependency1@0.1.0' }
-                    ]
-                }
-            ]
-        }
-    }));
-});
-jest.mock('child_process', () => ({
-    execSync: mockExecSync
 }));
 
 // Add this line to increase the timeout for all tests in this file
