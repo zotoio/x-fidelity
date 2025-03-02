@@ -34,7 +34,7 @@ describe('validateConfig', () => {
   
   beforeEach(() => {
     jest.clearAllMocks();
-    mockExit = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
+    mockExit = jest.spyOn(process, 'exit').mockImplementation((code?: string | number | null | undefined) => {
       return undefined as never;
     });
     
@@ -58,8 +58,8 @@ describe('validateConfig', () => {
       ]
     });
     
-    (validateArchetype as jest.Mock).mockReturnValue(true);
-    (validateRule as jest.Mock).mockReturnValue(true);
+    (validateArchetype as unknown as jest.Mock).mockReturnValue(true);
+    (validateRule as unknown as jest.Mock).mockReturnValue(true);
     (loadExemptions as jest.Mock).mockResolvedValue([{ repoUrl: 'test', rule: 'test', expirationDate: '2099-01-01', reason: 'test' }]);
     (loadRules as jest.Mock).mockResolvedValue([
       { name: 'rule1', conditions: {}, event: {} },
@@ -93,7 +93,7 @@ describe('validateConfig', () => {
   });
 
   it('should exit with code 1 when archetype validation fails', async () => {
-    (validateArchetype as jest.Mock).mockReturnValue(false);
+    (validateArchetype as unknown as jest.Mock).mockReturnValue(false);
     
     await validateArchetypeConfig();
     
@@ -113,7 +113,7 @@ describe('validateConfig', () => {
   });
 
   it('should exit with code 1 when rule validation fails', async () => {
-    (validateRule as jest.Mock).mockReturnValueOnce(true).mockReturnValueOnce(false);
+    (validateRule as unknown as jest.Mock).mockReturnValueOnce(true).mockReturnValueOnce(false);
     
     await validateArchetypeConfig();
     
@@ -153,7 +153,7 @@ describe('validateConfig', () => {
   });
 
   it('should handle multiple validation failures', async () => {
-    (validateArchetype as jest.Mock).mockReturnValue(false);
+    (validateArchetype as unknown as jest.Mock).mockReturnValue(false);
     (loadFacts as jest.Mock).mockResolvedValue([{ name: 'fact1', fn: jest.fn() }]);
     (loadOperators as jest.Mock).mockResolvedValue([{ name: 'operator1', fn: jest.fn() }]);
     
