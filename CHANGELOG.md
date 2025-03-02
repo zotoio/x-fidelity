@@ -1,3 +1,15 @@
+# [3.8.0](https://github.com/zotoio/x-fidelity/compare/v3.7.1...v3.8.0) (2025-03-02)
+
+
+### Features
+
+* enhance error logging with file context and flush logs before exit ([ebdffb4](https://github.com/zotoio/x-fidelity/commit/ebdffb475b6529355660949092bb9e045ad359a3))
+
+
+### Performance Improvements
+
+* **analysis:** fix performance issue for very large codebases ([067ab7e](https://github.com/zotoio/x-fidelity/commit/067ab7e5d10fc1c45d44bb936f808e477ed85303))
+
 ## [3.7.1](https://github.com/zotoio/x-fidelity/compare/v3.7.0...v3.7.1) (2025-03-01)
 
 
