@@ -148,7 +148,7 @@ describe('repoDependencyFacts', () => {
                 // If we get here, the function didn't throw, which is a failure
                 expect(true).toBe(false); // This will fail the test
             } catch (error) {
-                expect(error.message).toContain('No yarn.lock or package-lock.json found');
+                expect((error as Error).message).toContain('No yarn.lock or package-lock.json found');
                 expect(logger.error).toHaveBeenCalled();
             } finally {
                 // Restore process.exit
