@@ -802,9 +802,13 @@ The `.xfi-config.json` file allows you to configure x-fidelity behavior specific
 
 ### Configuration Options
 
-Currently, the `.xfi-config.json` file supports the following options:
+The `.xfi-config.json` file supports the following options:
 
 1. `sensitiveFileFalsePositives`: An array of file paths that should be excluded from sensitive data checks.
+2. `additionalPlugins`: An array of plugin module names to load for this repository.
+3. `additionalFacts`: An array of fact names to add to the archetype's facts.
+4. `additionalOperators`: An array of operator names to add to the archetype's operators.
+5. `additionalRules`: An array of custom rule definitions to add to the archetype's rules.
 
 Example `.xfi-config.json`:
 
@@ -813,6 +817,44 @@ Example `.xfi-config.json`:
   "sensitiveFileFalsePositives": [
     "path/to/exclude/file1.js",
     "path/to/exclude/file2.ts"
+  ],
+  "additionalPlugins": [
+    "xfiPluginSimpleExample"
+  ],
+  "additionalFacts": [
+    "customFact"
+  ],
+  "additionalOperators": [
+    "customOperator"
+  ],
+  "additionalRules": [
+    {
+      "name": "custom-rule",
+      "conditions": {
+        "all": [
+          {
+            "fact": "fileData",
+            "path": "$.fileName",
+            "operator": "equal",
+            "value": "REPO_GLOBAL_CHECK"
+          },
+          {
+            "fact": "customFact",
+            "operator": "customOperator",
+            "value": "custom fact data"
+          }
+        ]
+      },
+      "event": {
+        "type": "warning",
+        "params": {
+          "message": "Custom rule detected matching data",
+          "details": {
+            "fact": "customFact"
+          }
+        }
+      }
+    }
   ]
 }
 ```
@@ -822,16 +864,19 @@ Example `.xfi-config.json`:
 - When x-fidelity runs, it looks for the `.xfi-config.json` file in your project's root directory.
 - If found, it applies the configurations specified in this file.
 - For `sensitiveFileFalsePositives`, the specified files will be excluded from checks that look for sensitive data, such as API keys or passwords.
+- For `additionalPlugins`, the specified plugins will be loaded, making their facts and operators available.
+- For `additionalFacts` and `additionalOperators`, the specified facts and operators will be added to the archetype's facts and operators.
+- For `additionalRules`, the specified rules will be added to the archetype's rules.
 
 ### How to use it
 
 1. **Version Control**: Include `.xfi-config.json` in your version control system to ensure consistency across your team.
-2. **Documentation**: Add comments in the listed file explaining why it is a false positive.
-3. **Regular Review**: Periodically review your `.xfi-config.json` to ensure the exclusions are still necessary and valid.
-4. **Minimal Use**: Use exclusions sparingly. It's better to fix issues than to exclude them from checks.
-5. **Feedback**: If the rules being applied are resulting in too many false-postives, speak with the team that manages your central rule config.
+2. **Documentation**: Add comments in the listed file explaining why it is a false positive or why custom rules are needed.
+3. **Regular Review**: Periodically review your `.xfi-config.json` to ensure the configurations are still necessary and valid.
+4. **Minimal Use**: Use exclusions and custom rules sparingly. It's better to fix issues than to exclude them from checks.
+5. **Feedback**: If the rules being applied are resulting in too many false-positives, speak with the team that manages your central rule config.
 
-Remember, while `.xfi-config.json` allows you to adjust x-fidelity's behavior in limited ways, it should be used judiciously to maintain the integrity of your code quality checks.
+Remember, while `.xfi-config.json` allows you to adjust x-fidelity's behavior, it should be used judiciously to maintain the integrity of your code quality checks.
 
 ### Using Extensions
 
