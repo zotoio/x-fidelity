@@ -46,7 +46,8 @@ export class ConfigManager {
     }
 
     // Helper method for dynamic imports (makes testing easier)
-    public static async dynamicImport(modulePath: string): Promise<any> {
+    // This needs to be accessible for testing
+    static dynamicImport = async (modulePath: string): Promise<any> => {
         return import(modulePath);
     }
 
