@@ -114,11 +114,11 @@ async function repoFileAnalysis(params: any, almanac: any) {
     }
 
     //if there is already a resultFact for this file, we need to append
-    const existingResult = almanac.factValue(params.resultFact);
-    if (Object.keys(existingResult).includes('result')) {
-        logger.error(JSON.stringify(existingResult));
-        result.result = existingResult.result;
-    }
+    // const existingResult = almanac.factValue(params.resultFact);
+    // if (Object.keys(existingResult).includes('result')) {
+    //     logger.error(JSON.stringify(existingResult));
+    //     result.result = existingResult.result;
+    // }
 
     const analysis: any = [];
     const lines = fileContent.split('\n');
@@ -172,13 +172,18 @@ async function repoFileAnalysis(params: any, almanac: any) {
         }
     }
 
-    if (analysis.length > 0) {
+    const resultLength = result.result.length;
+    const analysisLength = analysis.length;
+    if (analysisLength > 0) {
         logger.warn({ filePath, analysis }, 'Found issues in file analysis');
-        
-    }
 
-    //merge the results
-    result.result = result.result.concat(analysis);
+        //preallocate the array to the correct length
+        result.result.length = resultLength + analysisLength;
+        for (let i = 0; i < analysisLength; i++) {
+            const fileAnalysis = analysis[i];
+            result.result[resultLength + i] = fileAnalysis[i];
+        }  
+    }
 
     //result.result. = analysis;
 
