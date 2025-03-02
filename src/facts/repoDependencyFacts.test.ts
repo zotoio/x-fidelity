@@ -38,11 +38,12 @@ jest.mock('../core/cli', () => ({
 jest.mock('util', () => ({
     ...jest.requireActual('util'),
     promisify: jest.fn().mockImplementation((fn) => {
-        // Return a function that returns a promise
-        return (...args: any[]) => {
+        // Return a function that properly handles the exec function
+        return (...args) => {
             try {
+                // Call the original function and wrap the result in a Promise
                 const result = fn(...args);
-                return Promise.resolve(result);
+                return Promise.resolve({ stdout: result.toString(), stderr: '' });
             } catch (error) {
                 return Promise.reject(error);
             }
