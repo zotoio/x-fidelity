@@ -16,7 +16,7 @@ jest.mock('fs', () => ({
     readdirSync: jest.fn(),
     lstatSync: jest.fn(),
     statSync: jest.fn(),
-    realpathSync: jest.fn(),
+    realpathSync: jest.fn().mockImplementation(path => path),
   }));
 jest.mock('../utils/logger', () => ({
     logger: {
@@ -82,7 +82,7 @@ describe('File operations', () => {
         it('should return file data for files in the repository', async () => {
             const repoPath = 'mock/repo';
             (fs.readdirSync as jest.Mock).mockReturnValue(['file1.js', 'file2.tsx', 'file3.txt']);
-            (fs.realpathSync as jest.Mock).mockImplementation(path => path);
+            // fs.realpathSync is already mocked in the jest.mock setup
             
             const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
             mockedFsPromises.stat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
@@ -98,7 +98,7 @@ describe('File operations', () => {
             (fs.readdirSync as jest.Mock)
                 .mockReturnValueOnce(['dir1', 'file1.js'])
                 .mockReturnValueOnce(['file2.js', 'file3.txt']);
-            (fs.realpathSync as jest.Mock).mockImplementation(path => path);
+            // fs.realpathSync is already mocked in the jest.mock setup
             
             const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
             mockedFsPromises.stat.mockResolvedValueOnce({ isDirectory: () => true } as fs.Stats)
@@ -115,7 +115,7 @@ describe('File operations', () => {
         it('should handle symlinks correctly', async () => {
             const repoPath = 'mock/repo';
             (fs.readdirSync as jest.Mock).mockReturnValue(['symlink.js', 'file1.js']);
-            (fs.realpathSync as jest.Mock)
+            jest.mocked(fs.realpathSync)
                 .mockImplementationOnce(path => path + '_real')
                 .mockImplementationOnce(path => path);
             
@@ -130,7 +130,7 @@ describe('File operations', () => {
         it('should handle errors when resolving real paths', async () => {
             const repoPath = 'mock/repo';
             (fs.readdirSync as jest.Mock).mockReturnValue(['broken-symlink.js']);
-            (fs.realpathSync as jest.Mock).mockImplementation(() => {
+            jest.mocked(fs.realpathSync).mockImplementation(() => {
                 throw new Error('Cannot resolve symlink');
             });
             
@@ -144,7 +144,7 @@ describe('File operations', () => {
         it('should detect path traversal attempts', async () => {
             const repoPath = 'mock/repo';
             (fs.readdirSync as jest.Mock).mockReturnValue(['suspicious.js']);
-            (fs.realpathSync as jest.Mock).mockReturnValue('/etc/passwd');
+            jest.mocked(fs.realpathSync).mockReturnValue('/etc/passwd');
             
             const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
             mockedFsPromises.stat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
@@ -157,7 +157,7 @@ describe('File operations', () => {
         it('should skip blacklisted directories', async () => {
             const repoPath = 'mock/repo';
             (fs.readdirSync as jest.Mock).mockReturnValue(['node_modules', 'src']);
-            (fs.realpathSync as jest.Mock).mockImplementation(path => path);
+            // fs.realpathSync is already mocked in the jest.mock setup
             
             const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
             mockedFsPromises.stat.mockResolvedValueOnce({ isDirectory: () => true } as fs.Stats)
