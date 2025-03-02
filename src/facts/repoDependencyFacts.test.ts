@@ -34,7 +34,10 @@ jest.mock('../core/cli', () => ({
 }));
 jest.mock('util', () => ({
     ...jest.requireActual('util'),
-    promisify: jest.fn().mockImplementation((fn) => fn)
+    promisify: jest.fn().mockImplementation((fn) => {
+        // Return a function that returns a promise
+        return (...args: any[]) => Promise.resolve(fn(...args));
+    })
 }));
 
 // Add this line to increase the timeout for all tests in this file
