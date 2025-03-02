@@ -17,7 +17,7 @@ jest.mock('express', () => {
       return { on: jest.fn() };
     })
   };
-  const mockExpress = jest.fn(() => mockApp);
+  const mockExpress = jest.fn(() => mockApp) as jest.Mock & { json: jest.Mock };
   mockExpress.json = mockJson;
   return mockExpress;
 });
