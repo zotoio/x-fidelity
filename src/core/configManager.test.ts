@@ -422,7 +422,12 @@ describe('ConfigManager', () => {
         it('should handle errors when loading plugins', async () => {
             // Mock the import function to throw an error
             const mockImport = jest.fn().mockRejectedValue(new Error('Plugin load error'));
-            jest.spyOn(ConfigManager as any, 'dynamicImport').mockImplementation(mockImport);
+            
+            // Store the original dynamicImport function
+            const originalDynamicImport = ConfigManager.dynamicImport;
+            
+            // Replace the dynamicImport function with our mock
+            ConfigManager.dynamicImport = mockImport;
         
             // Mock process.env.NODE_ENV to not be 'test' for this specific test
             const originalNodeEnv = process.env.NODE_ENV;
@@ -442,7 +447,7 @@ describe('ConfigManager', () => {
             }
         
             // Restore the original import and NODE_ENV
-            (ConfigManager as any).dynamicImport = jest.requireActual('../utils/utils').dynamicImport;
+            ConfigManager.dynamicImport = originalDynamicImport;
             process.env.NODE_ENV = originalNodeEnv;
         });
 
