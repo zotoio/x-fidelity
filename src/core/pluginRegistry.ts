@@ -2,7 +2,7 @@ import { XFiPlugin, PluginRegistry, PluginResult, PluginError } from '../types/t
 import { OperatorDefn, FactDefn } from '../types/typeDefs';
 import { logger } from '../utils/logger';
 
-class XFiPluginRegistry implements PluginRegistry {
+export class XFiPluginRegistry implements PluginRegistry {
   private static instance: XFiPluginRegistry;
   private plugins: XFiPlugin[] = [];
 
