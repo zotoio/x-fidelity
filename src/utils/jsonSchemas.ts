@@ -52,7 +52,7 @@ const repoXFIConfigSchema = {
     },
     required: [],
     additionalProperties: true,
-} as RepoXFIConfigSchema;
+} as unknown as RepoXFIConfigSchema;
 
 const archetypeSchema: ArchetypeConfigSchema = {
     type: "object",
