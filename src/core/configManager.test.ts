@@ -367,7 +367,7 @@ describe('ConfigManager', () => {
                 await ConfigManager.getConfig({ archetype: 'test-archetype' });
                 fail('Should have thrown an error');
             } catch (error) {
-                expect(error.message).toContain('Network error');
+                expect((error as Error).message).toContain('Network error');
             }
         
             // MAX_RETRIES is 3
@@ -386,7 +386,7 @@ describe('ConfigManager', () => {
                 await ConfigManager.getConfig({ archetype: 'test-archetype' });
                 fail('Should have thrown an error');
             } catch (error) {
-                expect(error.message).toContain('Invalid remote archetype configuration');
+                expect((error as Error).message).toContain('Invalid remote archetype configuration');
             }
         });
     });
