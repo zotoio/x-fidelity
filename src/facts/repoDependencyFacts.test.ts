@@ -7,26 +7,26 @@ import * as util from 'util';
 import { logger } from '../utils/logger';
 import { execSync } from 'child_process';
 
-// Create mock function first
-const mockExecSync = jest.fn().mockImplementation(() => {
-    return Buffer.from(JSON.stringify({
-        data: {
-            trees: [
-                {
-                    name: 'package1@1.0.0',
-                    children: [
-                        { name: 'dependency1@0.1.0' }
-                    ]
-                }
-            ]
-        }
-    }));
-});
-
-// Then use it in the mock
+// Create the mock directly in the jest.mock call
 jest.mock('child_process', () => ({
-    execSync: mockExecSync
+    execSync: jest.fn().mockImplementation(() => {
+        return Buffer.from(JSON.stringify({
+            data: {
+                trees: [
+                    {
+                        name: 'package1@1.0.0',
+                        children: [
+                            { name: 'dependency1@0.1.0' }
+                        ]
+                    }
+                ]
+            }
+        }));
+    })
 }));
+
+// Get a reference to the mock for use in tests
+const mockExecSync = require('child_process').execSync as jest.Mock;
 jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
     existsSync: jest.fn(),
