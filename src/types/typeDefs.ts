@@ -275,6 +275,10 @@ export interface ValidationResult {
 
 export interface RepoXFIConfig {
   sensitiveFileFalsePositives?: string[];
+  additionalRules?: RuleConfig[];
+  additionalFacts?: string[];
+  additionalOperators?: string[];
+  additionalPlugins?: string[];
   [key: string]: any;  // Allow for additional properties
 }
 

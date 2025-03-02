@@ -78,4 +78,18 @@ async function loadLocalConfigRule(params: LoadLocalConfigRuleParams): Promise<R
     return result;
 }
 
-export { loadRules };
+export function validateCustomRules(rules: any[]): RuleConfig[] {
+  const validRules: RuleConfig[] = [];
+  
+  for (const rule of rules) {
+    if (validateRule(rule)) {
+      validRules.push(rule);
+    } else {
+      logger.error(`Invalid custom rule: ${rule.name || 'unnamed'}`);
+    }
+  }
+  
+  return validRules;
+}
+
+export { loadRules, validateCustomRules };

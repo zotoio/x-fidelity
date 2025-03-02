@@ -3,7 +3,7 @@ import path from 'path';
 import { isPathInside } from './pathUtils';
 import { logger } from './logger';
 import { RepoXFIConfig } from '../types/typeDefs';
-import { validateXFIConfig } from './jsonSchemas';
+import { validateXFIConfig, validateRule } from './jsonSchemas';
 
 const defaultXFIConfig: RepoXFIConfig = {
   sensitiveFileFalsePositives: []};
@@ -27,6 +27,17 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
           filePath = path.join(repoPath, filePath);
           return filePath;
         });
+      }
+
+      // Validate additional rules if present
+      if (parsedConfig.additionalRules && Array.isArray(parsedConfig.additionalRules)) {
+        for (let i = 0; i < parsedConfig.additionalRules.length; i++) {
+          if (!validateRule(parsedConfig.additionalRules[i])) {
+            logger.warn(`Invalid rule at index ${i} in .xfi-config.json, removing it`);
+            parsedConfig.additionalRules.splice(i, 1);
+            i--;
+          }
+        }
       }
 
       return parsedConfig;

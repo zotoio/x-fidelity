@@ -41,6 +41,27 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     const installedDependencyVersions = await getDependencyVersionFacts(archetypeConfig);
     const fileData = await collectRepoFileData(repoPath, archetypeConfig);
     const repoXFIConfig = await loadRepoXFIConfig(repoPath);
+    
+    // Load additional plugins from repo config
+    if (repoXFIConfig.additionalPlugins && repoXFIConfig.additionalPlugins.length > 0) {
+        logger.info(`Loading additional plugins from repo config: ${repoXFIConfig.additionalPlugins.join(', ')}`);
+        try {
+            await ConfigManager.loadPlugins(repoXFIConfig.additionalPlugins);
+        } catch (error) {
+            logger.warn(`Error loading additional plugins from repo config: ${error}`);
+        }
+    }
+    
+    // Merge additional components into archetype config
+    if (repoXFIConfig.additionalFacts) {
+        archetypeConfig.facts = [...new Set([...archetypeConfig.facts, ...repoXFIConfig.additionalFacts])];
+        logger.info(`Added additional facts from repo config: ${repoXFIConfig.additionalFacts.join(', ')}`);
+    }
+    
+    if (repoXFIConfig.additionalOperators) {
+        archetypeConfig.operators = [...new Set([...archetypeConfig.operators, ...repoXFIConfig.additionalOperators])];
+        logger.info(`Added additional operators from repo config: ${repoXFIConfig.additionalOperators.join(', ')}`);
+    }
 
     // add REPO_GLOBAL_CHECK to fileData, which is the trigger for global checks
     fileData.push({
@@ -63,6 +84,19 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         localConfigPath,
         repoUrl
     });
+
+    // Load additional rules from repo config
+    if (repoXFIConfig.additionalRules && repoXFIConfig.additionalRules.length > 0) {
+        logger.info(`Loading additional rules from repo config: ${repoXFIConfig.additionalRules.length} rules`);
+        for (const rule of repoXFIConfig.additionalRules) {
+            if (validateRule(rule)) {
+                logger.info(`Adding custom rule from repo config: ${rule.name}`);
+                engine.addRule(rule);
+            } else {
+                logger.warn(`Invalid custom rule in repo config: ${rule.name}`);
+            }
+        }
+    }
 
     if (isOpenAIEnabled() && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
         logger.info(`adding additional openai facts to engine..`);
