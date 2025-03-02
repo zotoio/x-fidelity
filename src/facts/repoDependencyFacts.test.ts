@@ -1,19 +1,32 @@
 import * as repoDependencyFacts from './repoDependencyFacts';
 import fs from 'fs';
 import { Almanac } from 'json-rules-engine';
-import { LocalDependencies, MinimumDepVersions } from '../types/typeDefs';
-import { semverValid } from './repoDependencyFacts';
+import { LocalDependencies, MinimumDepVersions, VersionData } from '../types/typeDefs';
+import { semverValid, normalizePackageName, collectLocalDependencies, getDependencyVersionFacts } from './repoDependencyFacts';
 import * as util from 'util';
+import { logger } from '../utils/logger';
+import { execSync } from 'child_process';
 
-jest.mock('child_process');
+jest.mock('child_process', () => ({
+    execSync: jest.fn()
+}));
 jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
     existsSync: jest.fn(),
     promises: {
         readFile: jest.fn(),
     },
+    readFileSync: jest.fn(),
 }));
-jest.mock('../utils/logger');
+jest.mock('../utils/logger', () => ({
+    logger: {
+        debug: jest.fn(),
+        error: jest.fn(),
+        info: jest.fn(),
+        warn: jest.fn(),
+        trace: jest.fn()
+    }
+}));
 jest.mock('../core/cli', () => ({
     options: {
         dir: '/mock/dir'
@@ -21,7 +34,7 @@ jest.mock('../core/cli', () => ({
 }));
 jest.mock('util', () => ({
     ...jest.requireActual('util'),
-    promisify: jest.fn()
+    promisify: jest.fn().mockImplementation((fn) => fn)
 }));
 
 // Add this line to increase the timeout for all tests in this file
@@ -32,7 +45,177 @@ describe('repoDependencyFacts', () => {
         jest.clearAllMocks();
     });
 
-    
+    describe('collectLocalDependencies', () => {
+        it('should collect dependencies from yarn.lock', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((path) => {
+                return path.includes('yarn.lock');
+            });
+            
+            const mockYarnOutput = {
+                data: {
+                    trees: [
+                        {
+                            name: 'package1@1.0.0',
+                            children: [
+                                { name: 'dependency1@0.1.0' }
+                            ]
+                        }
+                    ]
+                }
+            };
+            
+            (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
+            
+            const result = await collectLocalDependencies();
+            
+            expect(result).toEqual([
+                {
+                    name: 'package1',
+                    version: '1.0.0',
+                    dependencies: [
+                        { name: 'dependency1', version: '0.1.0' }
+                    ]
+                }
+            ]);
+            expect(execSync).toHaveBeenCalledWith('yarn list --json', expect.any(Object));
+        });
+        
+        it('should collect dependencies from package-lock.json', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((path) => {
+                return !path.includes('yarn.lock') && path.includes('package-lock.json');
+            });
+            
+            const mockNpmOutput = {
+                dependencies: {
+                    'package1': {
+                        version: '1.0.0',
+                        dependencies: {
+                            'dependency1': {
+                                version: '0.1.0'
+                            }
+                        }
+                    }
+                }
+            };
+            
+            (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockNpmOutput)));
+            
+            const result = await collectLocalDependencies();
+            
+            expect(result).toEqual([
+                {
+                    name: 'package1',
+                    version: '1.0.0',
+                    dependencies: [
+                        { name: 'dependency1', version: '0.1.0' }
+                    ]
+                }
+            ]);
+            expect(execSync).toHaveBeenCalledWith('npm ls -a --json', expect.any(Object));
+        });
+        
+        it('should handle errors when no lock files are found', async () => {
+            (fs.existsSync as jest.Mock).mockReturnValue(false);
+            
+            await expect(collectLocalDependencies()).rejects.toThrow('No yarn.lock or package-lock.json found');
+            expect(logger.error).toHaveBeenCalled();
+        });
+        
+        it('should handle npm command errors', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((path) => {
+                return !path.includes('yarn.lock') && path.includes('package-lock.json');
+            });
+            
+            (execSync as jest.Mock).mockImplementation(() => {
+                throw new Error('ELSPROBLEMS');
+            });
+            
+            await expect(collectLocalDependencies()).rejects.toThrow(/Error determining npm dependencies/);
+            expect(logger.error).toHaveBeenCalled();
+        });
+        
+        it('should handle yarn command errors', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((path) => {
+                return path.includes('yarn.lock');
+            });
+            
+            (execSync as jest.Mock).mockImplementation(() => {
+                throw new Error('Command failed');
+            });
+            
+            await expect(collectLocalDependencies()).rejects.toThrow(/Error determining yarn dependencies/);
+            expect(logger.error).toHaveBeenCalled();
+        });
+        
+        it('should handle JSON parsing errors', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((path) => {
+                return path.includes('yarn.lock');
+            });
+            
+            (execSync as jest.Mock).mockReturnValue(Buffer.from('Invalid JSON'));
+            
+            await expect(collectLocalDependencies()).rejects.toThrow();
+            expect(logger.error).toHaveBeenCalled();
+        });
+    });
+
+    describe('getDependencyVersionFacts', () => {
+        it('should return dependency version facts', async () => {
+            const mockArchetypeConfig = {
+                facts: ['repoDependencyFacts'],
+                config: {
+                    minimumDependencyVersions: {
+                        'package1': '^1.0.0'
+                    }
+                }
+            };
+            
+            const mockLocalDependencies = [
+                {
+                    name: 'package1',
+                    version: '1.0.0'
+                }
+            ];
+            
+            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies').mockResolvedValue(mockLocalDependencies);
+            
+            const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
+            
+            expect(result).toEqual([
+                { dep: 'package1', ver: '1.0.0', min: '^1.0.0' }
+            ]);
+        });
+        
+        it('should return empty array when repoDependencyFacts is not enabled', async () => {
+            const mockArchetypeConfig = {
+                facts: ['otherFact'],
+                config: {
+                    minimumDependencyVersions: {}
+                }
+            };
+            
+            const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
+            
+            expect(result).toEqual([]);
+            expect(logger.warn).toHaveBeenCalled();
+        });
+        
+        it('should return empty array when no local dependencies are found', async () => {
+            const mockArchetypeConfig = {
+                facts: ['repoDependencyFacts'],
+                config: {
+                    minimumDependencyVersions: {}
+                }
+            };
+            
+            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies').mockResolvedValue([]);
+            
+            const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
+            
+            expect(result).toEqual([]);
+            expect(logger.warn).toHaveBeenCalled();
+        });
+    });
 
     describe('findPropertiesInTree', () => {
         it('should find properties in a nested dependency tree', () => {
@@ -83,6 +266,55 @@ describe('repoDependencyFacts', () => {
 
             expect(result).toEqual([]);
         });
+        
+        it('should handle circular dependencies', () => {
+            // Create a circular dependency structure
+            const child: LocalDependencies = {
+                name: 'child',
+                version: '1.0.0'
+            };
+            
+            const parent: LocalDependencies = {
+                name: 'parent',
+                version: '1.0.0',
+                dependencies: [child]
+            };
+            
+            // Create the circular reference
+            child.dependencies = [parent];
+            
+            const depGraph: LocalDependencies[] = [parent];
+            
+            const minVersions: MinimumDepVersions = {
+                'child': '^1.0.0',
+                'parent': '^1.0.0'
+            };
+            
+            const result = repoDependencyFacts.findPropertiesInTree(depGraph, minVersions);
+            
+            // Should find both dependencies without infinite recursion
+            expect(result).toEqual([
+                { dep: 'parent', ver: '1.0.0', min: '^1.0.0' },
+                { dep: 'parent/child', ver: '1.0.0', min: '^1.0.0' }
+            ]);
+        });
+        
+        it('should handle namespaced packages', () => {
+            const depGraph: LocalDependencies[] = [
+                { name: '@scope/package', version: '1.0.0' }
+            ];
+            
+            const minVersions: MinimumDepVersions = {
+                '@scope/package': '^1.0.0',
+                'scope/package': '^1.0.0'  // Should match both formats
+            };
+            
+            const result = repoDependencyFacts.findPropertiesInTree(depGraph, minVersions);
+            
+            expect(result).toEqual([
+                { dep: '@scope/package', ver: '1.0.0', min: '^1.0.0' }
+            ]);
+        });
     });
 
     describe('repoDependencyAnalysis', () => {
@@ -117,6 +349,43 @@ describe('repoDependencyFacts', () => {
                 ]
             });
             expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', expect.any(Object));
+        });
+        
+        it('should handle errors during analysis', async () => {
+            (mockAlmanac.factValue as jest.Mock)
+                .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' })
+                .mockRejectedValueOnce(new Error('Failed to get dependency data'));
+                
+            const result = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testResult' }, mockAlmanac);
+            
+            expect(result).toEqual({ result: [] });
+            expect(logger.error).toHaveBeenCalled();
+        });
+        
+        it('should handle invalid semver versions', async () => {
+            (mockAlmanac.factValue as jest.Mock)
+                .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' })
+                .mockResolvedValueOnce({
+                    installedDependencyVersions: [
+                        { dep: 'package1', ver: 'not-a-version', min: '^2.0.0' },
+                        { dep: 'package2', ver: '2.0.0', min: 'not-a-range' }
+                    ]
+                });
+                
+            const result = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testResult' }, mockAlmanac);
+            
+            expect(result.result).toEqual([]);
+            expect(logger.error).toHaveBeenCalled();
+        });
+    });
+
+    describe('normalizePackageName', () => {
+        it('should add @ prefix to non-namespaced packages', () => {
+            expect(normalizePackageName('package')).toBe('@package');
+        });
+        
+        it('should not modify already namespaced packages', () => {
+            expect(normalizePackageName('@scope/package')).toBe('@scope/package');
         });
     });
 
@@ -208,6 +477,16 @@ describe('repoDependencyFacts', () => {
         it('should return false for invalid input', () => {
             expect(semverValid('not-a-version', '1.0.0')).toBe(false);
             expect(semverValid('1.0.0', 'not-a-range')).toBe(false);
+        });
+        
+        it('should handle logging for invalid inputs', () => {
+            semverValid('invalid-version', '^1.0.0');
+            expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('invalid installed version'));
+            
+            jest.clearAllMocks();
+            
+            semverValid('1.0.0', 'invalid-range');
+            expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('invalid required version'));
         });
     });
 });
