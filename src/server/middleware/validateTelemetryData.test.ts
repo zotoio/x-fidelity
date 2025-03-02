@@ -72,7 +72,7 @@ describe('validateTelemetryData middleware', () => {
     );
     expect(mockResponse.json).toHaveBeenCalledWith({
       error: 'Invalid telemetry data',
-      details: expect.any(String)
+      details: 'Unknown error'
     });
   });
 });
