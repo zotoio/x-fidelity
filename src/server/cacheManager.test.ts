@@ -1,8 +1,21 @@
-import { getCachedData, setCachedData, clearCache, getCacheContent } from './cacheManager';
+import { getCachedData, setCachedData, clearCache, getCacheContent, getRuleListCache, setRuleListCache, handleConfigChange } from './cacheManager';
+import { ConfigManager } from '../core/configManager';
+import { logger } from '../utils/logger';
+
+jest.mock('../core/configManager');
+jest.mock('../utils/logger', () => ({
+    logger: {
+        debug: jest.fn(),
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn()
+    }
+}));
 
 describe('Cache Manager', () => {
     beforeEach(() => {
         clearCache();
+        jest.clearAllMocks();
     });
 
     it('should cache and retrieve data', () => {
@@ -27,5 +40,44 @@ describe('Cache Manager', () => {
         setCachedData('testKey', 'testData');
         const content = getCacheContent();
         expect(content.cache).toHaveProperty('testKey', 'testData');
+    });
+
+    it('should cache and retrieve rule list data', () => {
+        const mockRules = [{ name: 'rule1' }, { name: 'rule2' }];
+        setRuleListCache('testArchetype', mockRules);
+        const data = getRuleListCache('testArchetype');
+        expect(data).toEqual(mockRules);
+    });
+
+    it('should handle config changes', () => {
+        handleConfigChange('test/path/config.json', 'File', 'changed');
+        expect(logger.info).toHaveBeenCalledWith('File test/path/config.json has been changed');
+        expect(ConfigManager.clearLoadedConfigs).toHaveBeenCalled();
+        expect(logger.debug).toHaveBeenCalledWith('Cache and loaded configs cleared due to local config change');
+    });
+
+    it('should respect TTL for cached data', () => {
+        jest.useFakeTimers();
+        setCachedData('testKey', 'testData', 100); // 100ms TTL
+        expect(getCachedData('testKey')).toBe('testData');
+        
+        // Advance time past TTL
+        jest.advanceTimersByTime(101);
+        expect(getCachedData('testKey')).toBeNull();
+        
+        jest.useRealTimers();
+    });
+
+    it('should handle cache size limits', () => {
+        // Fill cache to its limit (MAX_CACHE_SIZE is 1000 in the implementation)
+        for (let i = 0; i < 1001; i++) {
+            setCachedData(`key${i}`, `value${i}`);
+        }
+        
+        // The first key should be evicted
+        expect(getCachedData('key0')).toBeNull();
+        
+        // The last key should still be present
+        expect(getCachedData('key1000')).toBe('value1000');
     });
 });

@@ -1,54 +1,118 @@
-import { Express } from 'express';
-import { archetypeRoute } from './routes/archetypeRoute';
-import { archetypeRulesRoute } from './routes/archetypeRulesRoute';
-import { archetypeRuleRoute } from './routes/archetypeRuleRoute';
-import { telemetryRoute } from './routes/telemetryRoute';
-import { clearCacheRoute } from './routes/clearCacheRoute';
-import { viewCacheRoute } from './routes/viewCacheRoute';
-import { githubWebhookConfigUpdateRoute } from './routes/githubWebhookConfigUpdateRoute';
-import { checkSharedSecret } from './middleware/checkSharedSecret';
-import { validateGithubWebhook } from './middleware/validateGithubWebhook';
+import express from 'express';
+import https from 'https';
+import fs from 'fs';
+import { startServer } from './configServer';
+import { logger } from '../utils/logger';
+import chokidar from 'chokidar';
+import { options } from '../core/cli';
 
-jest.mock('./routes/archetypeRoute');
-jest.mock('./routes/archetypeRulesRoute');
-jest.mock('./routes/archetypeRuleRoute');
-jest.mock('./routes/telemetryRoute');
-jest.mock('./routes/clearCacheRoute');
-jest.mock('./routes/viewCacheRoute');
-jest.mock('./routes/githubWebhookConfigUpdateRoute');
-jest.mock('./middleware/checkSharedSecret');
+jest.mock('express', () => {
+  const mockApp = {
+    use: jest.fn().mockReturnThis(),
+    get: jest.fn().mockReturnThis(),
+    post: jest.fn().mockReturnThis(),
+    listen: jest.fn().mockImplementation((port, callback) => {
+      callback();
+      return { on: jest.fn() };
+    })
+  };
+  return jest.fn(() => mockApp);
+});
+
+jest.mock('https', () => ({
+  createServer: jest.fn().mockImplementation(() => ({
+    listen: jest.fn().mockImplementation((port, callback) => {
+      callback();
+      return { on: jest.fn() };
+    })
+  }))
+}));
+
+jest.mock('fs', () => ({
+  readFileSync: jest.fn(),
+  existsSync: jest.fn()
+}));
+
+jest.mock('chokidar', () => ({
+  watch: jest.fn().mockReturnValue({
+    on: jest.fn().mockReturnThis()
+  })
+}));
+
+jest.mock('../utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn()
+  },
+  setLogPrefix: jest.fn()
+}));
+
+jest.mock('../core/cli', () => ({
+  options: {
+    port: '8888',
+    localConfigPath: '/test/path'
+  }
+}));
 
 describe('configServer', () => {
-  let app: Express;
-
   beforeEach(() => {
-    app = {
-      get: jest.fn(),
-      post: jest.fn(),
-    } as unknown as Express;
+    jest.clearAllMocks();
   });
 
-  it('should set up routes correctly', () => {
-    // Set up routes
-    app.get('/archetypes/:archetype', archetypeRoute);
-    app.get('/archetypes/:archetype/rules', archetypeRulesRoute);
-    app.get('/archetypes/:archetype/rules/:rule', archetypeRuleRoute);
-    app.post('/telemetry', checkSharedSecret, telemetryRoute);
-    app.post('/clearcache', checkSharedSecret, clearCacheRoute);
-    app.get('/viewcache', checkSharedSecret, viewCacheRoute);
-    app.post('/github-config-update', validateGithubWebhook, githubWebhookConfigUpdateRoute);
-
-    // Verify routes are set up correctly
-    expect(app.get).toHaveBeenCalledWith('/archetypes/:archetype', archetypeRoute);
-    expect(app.get).toHaveBeenCalledWith('/archetypes/:archetype/rules', archetypeRulesRoute);
-    expect(app.get).toHaveBeenCalledWith('/archetypes/:archetype/rules/:rule', archetypeRuleRoute);
-    expect(app.post).toHaveBeenCalledWith('/telemetry', checkSharedSecret, telemetryRoute);
-    expect(app.post).toHaveBeenCalledWith('/clearcache', checkSharedSecret, clearCacheRoute);
-    expect(app.get).toHaveBeenCalledWith('/viewcache', checkSharedSecret, viewCacheRoute);
-    expect(app.post).toHaveBeenCalledWith('/github-config-update', validateGithubWebhook, githubWebhookConfigUpdateRoute);
+  it('should start HTTPS server when certificates are available', () => {
+    (fs.readFileSync as jest.Mock).mockImplementation((path) => {
+      if (path.includes('tls.key')) return 'private-key';
+      if (path.includes('tls.pem')) return 'certificate';
+      return '';
+    });
+    
+    const server = startServer({ customPort: '9999', executionLogPrefix: 'test-prefix' });
+    
+    expect(fs.readFileSync).toHaveBeenCalledTimes(2);
+    expect(https.createServer).toHaveBeenCalledWith(
+      { key: 'private-key', cert: 'certificate' },
+      expect.any(Object)
+    );
+    expect(logger.info).toHaveBeenCalledWith('xfidelity server is running on https://localhost:9999');
+    expect(chokidar.watch).toHaveBeenCalledWith('/test/path', expect.any(Object));
   });
 
-  afterEach(() => {
-    jest.resetAllMocks();
+  it('should fall back to HTTP server when certificates are not available', () => {
+    (fs.readFileSync as jest.Mock).mockImplementation(() => {
+      throw new Error('File not found');
+    });
+    
+    const server = startServer({});
+    
+    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'Failed to start server with TLS, falling back to HTTP'
+    }));
+    expect(express().listen).toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledWith('xfidelity server is running on http://localhost:8888');
+  });
+
+  it('should set up file watcher when localConfigPath is provided', () => {
+    (fs.readFileSync as jest.Mock).mockImplementation(() => {
+      throw new Error('File not found');
+    });
+    
+    const server = startServer({});
+    
+    expect(chokidar.watch).toHaveBeenCalledWith('/test/path', expect.any(Object));
+    expect(logger.info).toHaveBeenCalledWith('Watching for changes in /test/path');
+  });
+
+  it('should not set up file watcher when localConfigPath is not provided', () => {
+    options.localConfigPath = '';
+    
+    (fs.readFileSync as jest.Mock).mockImplementation(() => {
+      throw new Error('File not found');
+    });
+    
+    const server = startServer({});
+    
+    expect(chokidar.watch).not.toHaveBeenCalled();
   });
 });
