@@ -1,6 +1,12 @@
-import { ConfigManager, REPO_GLOBAL_CHECK } from './configManager';
+import { ConfigManager, REPO_GLOBAL_CHECK, repoDir } from './configManager';
 import { isExempt, loadLocalExemptions, normalizeGitHubUrl } from "../utils/exemptionUtils";
 import { loadExemptions } from '../utils/exemptionUtils';
+
+describe('repoDir', () => {
+    it('should return options.dir', () => {
+        expect(repoDir()).toBe('/repo');
+    });
+});
 
 describe('normalizeGitHubUrl', () => {
     it('should normalize URLs to SSH format', () => {
@@ -31,16 +37,20 @@ describe('normalizeGitHubUrl', () => {
     });
 });
 import { axiosClient } from '../utils/axiosClient';
-import { validateArchetype } from '../utils/jsonSchemas';
+import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 import fs from 'fs';
 import { DEMO_CONFIG_PATH, options } from './cli';
 import { logger } from '../utils/logger';
 import { sendTelemetry } from '../utils/telemetry';
+import { execSync } from 'child_process';
+import { pluginRegistry } from './pluginRegistry';
+import { loadRules } from '../utils/ruleUtils';
 
 jest.mock('../utils/axiosClient');
 jest.mock('../utils/ruleUtils');
 jest.mock('../utils/jsonSchemas', () => ({
-  validateArchetype: jest.fn().mockReturnValue(true)
+  validateArchetype: jest.fn().mockReturnValue(true),
+  validateRule: jest.fn().mockReturnValue(true)
 }));
 jest.mock('fs', () => ({
     promises: {
@@ -51,11 +61,15 @@ jest.mock('fs', () => ({
     readFileSync: jest.fn(),
     readdirSync: jest.fn(),
 }));
+jest.mock('child_process', () => ({
+    execSync: jest.fn().mockReturnValue(Buffer.from('/global/node_modules'))
+}));
 jest.mock('../core/cli', () => ({
     options: {
         configServer: 'http://test-server.com',
         localConfigPath: '/path/to/local/config',
-        archetype: 'node-fullstack'
+        archetype: 'node-fullstack',
+        extensions: ['test-extension']
     }
 }));
 jest.mock('../utils/logger', () => ({
@@ -64,10 +78,16 @@ jest.mock('../utils/logger', () => ({
         error: jest.fn(),
         info: jest.fn(),
         warn: jest.fn()
-    }
+    },
+    setLogPrefix: jest.fn()
 }));
 jest.mock('../utils/telemetry', () => ({
     sendTelemetry: jest.fn()
+}));
+jest.mock('./pluginRegistry', () => ({
+    pluginRegistry: {
+        registerPlugin: jest.fn()
+    }
 }));
 
 describe('ConfigManager', () => {
@@ -76,6 +96,7 @@ describe('ConfigManager', () => {
         rules: ['rule1', 'rule2'],
         operators: ['operator1', 'operator2'],
         facts: ['fact1', 'fact2'],
+        plugins: ['plugin1', 'plugin2'],
         config: {
             minimumDependencyVersions: {},
             standardStructure: {},
@@ -116,6 +137,12 @@ describe('ConfigManager', () => {
             const config = await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(config.archetype.name).toBe('java-microservice');
         });
+
+        it('should handle error during initialization', async () => {
+            (axiosClient.get as jest.Mock).mockRejectedValue(new Error('Initialization error'));
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Initialization error');
+            expect(logger.error).toHaveBeenCalled();
+        });
     });
 
     describe('initialize', () => {
@@ -141,6 +168,74 @@ describe('ConfigManager', () => {
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
         });
 
+        it('should throw an error when local config is invalid', async () => {
+            options.configServer = '';
+            (validateArchetype as jest.Mock).mockReturnValueOnce(false);
+            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid local archetype configuration');
+            expect(logger.error).toHaveBeenCalled();
+        });
+
+        it('should throw an error when local config file cannot be read', async () => {
+            options.configServer = '';
+            (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File read error'));
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('File read error');
+            expect(logger.error).toHaveBeenCalled();
+        });
+
+        it('should throw an error for invalid archetype name', async () => {
+            options.configServer = '';
+            await expect(ConfigManager.getConfig({ archetype: 'invalid/archetype' })).rejects.toThrow('Invalid archetype name');
+        });
+
+        it('should throw an error when no valid configuration is found', async () => {
+            options.configServer = '';
+            options.localConfigPath = '';
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('No valid configuration found for archetype: test-archetype');
+        });
+
+        it('should load CLI-specified plugins', async () => {
+            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            await ConfigManager.getConfig({ archetype: 'test-archetype' });
+            expect(execSync).toHaveBeenCalledWith('yarn global dir');
+        });
+
+        it('should load archetype-specified plugins', async () => {
+            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            await ConfigManager.getConfig({ archetype: 'test-archetype' });
+            expect(logger.info).toHaveBeenCalledWith('Loading plugins specified by archetype: plugin1,plugin2');
+        });
+
+        it('should validate rules after loading', async () => {
+            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            (loadRules as jest.Mock).mockResolvedValue([
+                { name: 'rule1', conditions: {}, event: {} },
+                { name: 'rule2', conditions: {}, event: {} }
+            ]);
+            await ConfigManager.getConfig({ archetype: 'test-archetype' });
+            expect(validateRule).toHaveBeenCalledTimes(2);
+        });
+
+        it('should filter out invalid rules', async () => {
+            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            (loadRules as jest.Mock).mockResolvedValue([
+                { name: 'rule1', conditions: {}, event: {} },
+                { name: 'invalidRule', conditions: {}, event: {} }
+            ]);
+            (validateRule as jest.Mock)
+                .mockReturnValueOnce(true)
+                .mockReturnValueOnce(false);
+            const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
+            expect(config.rules.length).toBe(1);
+            expect(config.rules[0].name).toBe('rule1');
+            expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Invalid rule configuration'));
+        });
+
+        it('should set logPrefix when provided', async () => {
+            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            await ConfigManager.getConfig({ archetype: 'test-archetype', logPrefix: 'test-prefix' });
+            expect(logger.setLogPrefix).toHaveBeenCalledWith('test-prefix');
+        });
     });
 
     describe('getLoadedConfigs', () => {
@@ -152,8 +247,100 @@ describe('ConfigManager', () => {
             expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/node-fullstack.json', 'utf8');
             await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/java-microservice.json', 'utf8');
-            const loadedConfigs = await ConfigManager.getLoadedConfigs();
+            const loadedConfigs = ConfigManager.getLoadedConfigs();
             expect(loadedConfigs).toEqual(['node-fullstack', 'java-microservice']);
+        });
+    });
+
+    describe('clearLoadedConfigs', () => {
+        it('should clear all loaded configs', async () => {
+            options.configServer = '';
+            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
+            await ConfigManager.getConfig({ archetype: 'node-fullstack' });
+            await ConfigManager.getConfig({ archetype: 'java-microservice' });
+            expect(ConfigManager.getLoadedConfigs().length).toBe(2);
+            
+            ConfigManager.clearLoadedConfigs();
+            expect(ConfigManager.getLoadedConfigs().length).toBe(0);
+        });
+    });
+
+    describe('loadPlugins', () => {
+        it('should load plugins from global modules', async () => {
+            const mockPlugin = { plugin: { name: 'test-plugin' } };
+            jest.doMock('/global/node_modules/test-extension', () => mockPlugin, { virtual: true });
+            
+            await ConfigManager.loadPlugins(['test-extension']);
+            
+            expect(execSync).toHaveBeenCalledWith('yarn global dir');
+            expect(pluginRegistry.registerPlugin).toHaveBeenCalledWith(mockPlugin.plugin);
+            expect(logger.info).toHaveBeenCalledWith('Successfully loaded extension: test-extension');
+        });
+
+        it('should handle ES modules', async () => {
+            const mockPlugin = { default: { name: 'test-plugin' } };
+            jest.doMock('/global/node_modules/test-extension', () => mockPlugin, { virtual: true });
+            
+            await ConfigManager.loadPlugins(['test-extension']);
+            
+            expect(pluginRegistry.registerPlugin).toHaveBeenCalledWith(mockPlugin.default);
+            expect(logger.debug).toHaveBeenCalledWith('Registering ES module plugin: test-extension');
+        });
+
+        it('should handle direct exports', async () => {
+            const mockPlugin = { name: 'test-plugin' };
+            jest.doMock('/global/node_modules/test-extension', () => mockPlugin, { virtual: true });
+            
+            await ConfigManager.loadPlugins(['test-extension']);
+            
+            expect(pluginRegistry.registerPlugin).toHaveBeenCalledWith(mockPlugin);
+            expect(logger.debug).toHaveBeenCalledWith('Registering direct export plugin: test-extension');
+        });
+
+        it('should handle errors when loading plugins', async () => {
+            jest.doMock('/global/node_modules/test-extension', () => {
+                throw new Error('Plugin load error');
+            }, { virtual: true });
+            
+            await expect(ConfigManager.loadPlugins(['test-extension'])).rejects.toThrow('Failed to load extension test-extension from all locations');
+            expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to load extension test-extension'));
+        });
+
+        it('should do nothing when no extensions are provided', async () => {
+            await ConfigManager.loadPlugins([]);
+            expect(execSync).not.toHaveBeenCalled();
+            expect(pluginRegistry.registerPlugin).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('fetchRemoteConfig', () => {
+        it('should retry fetching remote config on failure', async () => {
+            (axiosClient.get as jest.Mock)
+                .mockRejectedValueOnce(new Error('Network error'))
+                .mockResolvedValueOnce({ data: mockConfig });
+            
+            const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
+            
+            expect(axiosClient.get).toHaveBeenCalledTimes(2);
+            expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
+            expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Attempt 1 failed'));
+        });
+
+        it('should throw error after max retries', async () => {
+            (axiosClient.get as jest.Mock).mockRejectedValue(new Error('Network error'));
+            
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Network error');
+            
+            // MAX_RETRIES is 3
+            expect(axiosClient.get).toHaveBeenCalledTimes(3);
+            expect(logger.error).toHaveBeenCalledTimes(3);
+        });
+
+        it('should throw error when remote config is invalid', async () => {
+            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            (validateArchetype as jest.Mock).mockReturnValueOnce(false);
+            
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid remote archetype configuration');
         });
     });
 
