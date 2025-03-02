@@ -82,7 +82,7 @@ describe('File operations', () => {
         it('should return file data for files in the repository', async () => {
             const repoPath = 'mock/repo';
             (fs.readdirSync as jest.Mock).mockReturnValue(['file1.js', 'file2.tsx', 'file3.txt']);
-            // fs.realpathSync is already mocked in the jest.mock setup
+            jest.mocked(fs.realpathSync).mockImplementation(path => path.toString());
             
             const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
             mockedFsPromises.stat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
