@@ -11,6 +11,7 @@ import { collectTelemetryData } from './telemetryCollector';
 import { setupEngine } from './engineSetup';
 import { runEngineOnFiles } from './engineRunner';
 import { countRuleFailures, safeStringify } from '../../utils/utils';
+import { validateRule } from '../../utils/jsonSchemas';
 
 import { AnalyzeCodebaseParams } from '../../types/typeDefs';
 import { options } from '../cli';
@@ -91,7 +92,12 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         for (const rule of repoXFIConfig.additionalRules) {
             if (validateRule(rule)) {
                 logger.info(`Adding custom rule from repo config: ${rule.name}`);
-                engine.addRule(rule);
+                // Convert RuleConfig to RuleProperties for Engine
+                const ruleProperties = {
+                    ...rule,
+                    conditions: rule.conditions as any
+                };
+                engine.addRule(ruleProperties);
             } else {
                 logger.warn(`Invalid custom rule in repo config: ${rule.name}`);
             }

@@ -15,7 +15,8 @@ ajv.addFormat("semverPattern", {
     validate: (x) => semver.valid(x) !== null && semver.validRange(x) !== null,
 });
 
-const repoXFIConfigSchema: RepoXFIConfigSchema = {
+// Using a simpler schema definition to avoid TypeScript errors with complex Ajv types
+const repoXFIConfigSchema = {
     type: "object",
     properties: {
         sensitiveFileFalsePositives: {
@@ -51,7 +52,7 @@ const repoXFIConfigSchema: RepoXFIConfigSchema = {
     },
     required: [],
     additionalProperties: true,
-};
+} as RepoXFIConfigSchema;
 
 const archetypeSchema: ArchetypeConfigSchema = {
     type: "object",

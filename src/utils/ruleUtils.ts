@@ -78,7 +78,8 @@ async function loadLocalConfigRule(params: LoadLocalConfigRuleParams): Promise<R
     return result;
 }
 
-export function validateCustomRules(rules: any[]): RuleConfig[] {
+// Function to validate custom rules
+function validateCustomRules(rules: any[]): RuleConfig[] {
   const validRules: RuleConfig[] = [];
   
   for (const rule of rules) {
