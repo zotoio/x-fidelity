@@ -6,6 +6,6 @@ describe('customFact', () => {
             factValue: jest.fn()
         };
         const result = await customFact.fn({}, mockAlmanac);
-        expect(result).toEqual({ result: 'custom fact data' });
+        expect(result).toEqual('custom fact data');
     });
 });

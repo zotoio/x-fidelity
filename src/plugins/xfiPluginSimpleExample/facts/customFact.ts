@@ -10,7 +10,7 @@ export const customFact: FactDefn = {
     fn: async (params, almanac) => {
         try {
             logger.debug('Executing customFact');
-            const result = { result: 'custom fact data' };
+            const result = 'custom fact data';
             
             // Add the result to the almanac if resultFact is provided
             if (params && params.resultFact) {
