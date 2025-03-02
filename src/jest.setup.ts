@@ -6,11 +6,13 @@ import { EventEmitter } from 'events';
 // Increase the default max listeners
 EventEmitter.defaultMaxListeners = 20;
 
+let exitSpy: jest.SpyInstance;
+
 beforeAll(() => {
   // Set max listeners for process
   process.setMaxListeners(20);
   
-  jest.spyOn(process, 'exit').mockImplementation((code?: string | number | null | undefined): never => {
+  exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: string | number | null | undefined): never => {
     logger.info({ 
         code,
         type: 'test-exit'
@@ -22,7 +24,7 @@ beforeAll(() => {
 
 afterAll(() => {
   // Use mockRestore on the spy directly
-  jest.mocked(process.exit).mockRestore();
+  exitSpy.mockRestore();
   // Reset max listeners to default
   process.setMaxListeners(10);
   EventEmitter.defaultMaxListeners = 10;
