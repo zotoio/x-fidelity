@@ -350,7 +350,7 @@ describe('ConfigManager', () => {
     describe('loadPlugins', () => {
         it('should load plugins from global modules', async () => {
             // Create a mock plugin module
-            const mockPlugin = { plugin: { name: 'test-plugin' } };
+            const mockPlugin = { plugin: { name: 'test-plugin', version: '1.0.0' } };
         
             // Mock the import function
             const originalImport = jest.requireActual('../utils/utils').dynamicImport;
@@ -373,7 +373,7 @@ describe('ConfigManager', () => {
 
         it('should handle ES modules', async () => {
             // Create a mock ES module plugin
-            const mockPlugin = { default: { name: 'test-plugin' } };
+            const mockPlugin = { default: { name: 'test-plugin', version: '1.0.0' } };
         
             // Mock the import function
             const mockImport = jest.fn().mockResolvedValue(mockPlugin);
@@ -395,7 +395,7 @@ describe('ConfigManager', () => {
 
         it('should handle direct exports', async () => {
             // Create a mock direct export plugin
-            const mockPlugin = { name: 'test-plugin' };
+            const mockPlugin = { name: 'test-plugin', version: '1.0.0' };
         
             // Mock the import function
             const mockImport = jest.fn().mockResolvedValue(mockPlugin);
