@@ -5,11 +5,16 @@ import { ArchetypeConfig, FileData, IsBlacklistedParams, isWhitelistedParams } f
 import { maskSensitiveData } from '../utils/maskSensitiveData';
 
 async function parseFile(filePath: string): Promise<FileData> {
-    return Promise.resolve({
-        fileName: path.basename(filePath),
-        filePath,
-        fileContent: fs.readFileSync(filePath, 'utf8')
-    });
+    try {
+        return Promise.resolve({
+            fileName: path.basename(filePath),
+            filePath,
+            fileContent: fs.readFileSync(filePath, 'utf8')
+        });
+    } catch (error) {
+        logger.warn(`Error reading file ${filePath}: ${error}`);
+        throw error;
+    }
 }
 
 async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeConfig): Promise<FileData[]> {

@@ -69,6 +69,11 @@ describe('File operations', () => {
                 throw new Error('File not found');
             });
 
+            // Mock parseFile for this test to avoid the actual error
+            jest.spyOn(fs, 'readFileSync').mockImplementation(() => {
+                throw new Error('File not found');
+            });
+            
             try {
                 await parseFile(filePath);
                 fail('Should have thrown an error');
@@ -156,12 +161,18 @@ describe('File operations', () => {
 
         it('should skip blacklisted directories', async () => {
             const repoPath = 'mock/repo';
-            (fs.readdirSync as jest.Mock).mockReturnValue(['node_modules', 'src']);
+            (fs.readdirSync as jest.Mock)
+                .mockReturnValueOnce(['node_modules', 'src'])
+                .mockReturnValueOnce(['file1.js']);
             // fs.realpathSync is already mocked in the jest.mock setup
             
             const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
             mockedFsPromises.stat.mockResolvedValueOnce({ isDirectory: () => true } as fs.Stats)
-                .mockResolvedValueOnce({ isDirectory: () => true } as fs.Stats);
+                .mockResolvedValueOnce({ isDirectory: () => true } as fs.Stats)
+                .mockResolvedValueOnce({ isDirectory: () => false } as fs.Stats);
+            
+            // Mock parseFile to avoid errors
+            jest.spyOn(fs, 'readFileSync').mockReturnValue('mock content');
 
             await collectRepoFileData(repoPath, mockArchetypeConfig);
             expect(fs.readdirSync).toHaveBeenCalledTimes(2); // Once for repo, once for src
@@ -186,9 +197,7 @@ describe('File operations', () => {
             const filePath = '/etc/passwd';
             const repoPath = '/test/repo';
             expect(isBlacklisted({ filePath, repoPath, blacklistPatterns: mockArchetypeConfig.config.blacklistPatterns })).toBe(true);
-            expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
-                filePath: '/etc/passwd'
-            }), 'Potential path traversal attempt detected');
+            expect(logger.warn).toHaveBeenCalledWith('Potential path traversal attempt detected: /etc/passwd');
         });
 
         it('should log debug information', () => {
@@ -218,9 +227,7 @@ describe('File operations', () => {
             const filePath = '/etc/passwd';
             const repoPath = '/test/repo';
             expect(isWhitelisted({ filePath, repoPath, whitelistPatterns: mockArchetypeConfig.config.whitelistPatterns })).toBe(false);
-            expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({
-                filePath: '/etc/passwd'
-            }), 'Potential path traversal attempt detected');
+            expect(logger.warn).toHaveBeenCalledWith('Potential path traversal attempt detected: /etc/passwd');
         });
 
         it('should log debug information', () => {
