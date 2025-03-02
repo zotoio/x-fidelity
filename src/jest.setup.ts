@@ -21,7 +21,8 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  (process.exit as unknown as jest.Mock).mockRestore();
+  // Use mockRestore on the spy directly
+  jest.mocked(process.exit).mockRestore();
   // Reset max listeners to default
   process.setMaxListeners(10);
   EventEmitter.defaultMaxListeners = 10;
