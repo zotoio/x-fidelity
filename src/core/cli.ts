@@ -91,12 +91,22 @@ export function initCLI() {
 
     // In test environment, handle paths differently to avoid actual filesystem checks
     if (process.env.NODE_ENV === 'test') {
-        if (options.mode === 'server' || !options.dir) {
-            options.dir = '.';
-        } else if (program.args.length == 1 && program.args[0] !== undefined) {
+        // For tests, use the values directly from program.opts() without validation
+        const opts = program.opts();
+        if (program.args.length == 1 && program.args[0] !== undefined) {
             options.dir = program.args[0];
+        } else if (opts.dir) {
+            options.dir = opts.dir;
+        } else if (opts.mode === 'server' || !opts.dir) {
+            options.dir = '.';
         }
-        // Don't modify localConfigPath in test environment
+        
+        // Copy other options directly in test environment
+        if (opts.localConfigPath) options.localConfigPath = opts.localConfigPath;
+        if (opts.mode) options.mode = opts.mode;
+        if (opts.port) options.port = opts.port;
+        if (opts.openaiEnabled) options.openaiEnabled = opts.openaiEnabled;
+        if (opts.extensions) options.extensions = opts.extensions;
     } else if (options.mode === 'server') {
         options.dir = '.';
         try {
@@ -139,7 +149,8 @@ export function initCLI() {
 
     logger.info(bannerArt);
 
-    logger.info(`\n${json.render({
+    // Create a display object for logging
+    const displayObj = {
         version,
         startTime: new Date().toString().slice(0, 24),
         archetype: options.archetype,
@@ -151,7 +162,9 @@ export function initCLI() {
         jsonTTL: `${options.jsonTTL} minutes`,
         openaiEnabled: options.openaiEnabled,
         extensions: options.extensions ? options.extensions : 'none'
-    })}
+    };
+    
+    logger.info(`\n${json.render(displayObj)}
 -------------------------------------
     `);
 
