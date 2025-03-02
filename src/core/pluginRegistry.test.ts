@@ -55,7 +55,7 @@ describe('XFiPluginRegistry', () => {
       const invalidPlugin = {
         // Missing name and version
         facts: [{ name: 'testFact', fn: jest.fn() }],
-      } as XFiPlugin;
+      } as unknown as XFiPlugin;
 
       expect(() => pluginRegistry.registerPlugin(invalidPlugin)).toThrow('Invalid plugin format - missing name or version');
       expect(logger.error).toHaveBeenCalled();
@@ -190,7 +190,9 @@ describe('XFiPluginRegistry', () => {
       const plugin: XFiPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
-        testFunction: mockFn,
+        name: 'test-plugin',
+        version: '1.0.0',
+        testFunction: mockFn as unknown as any,
       };
 
       pluginRegistry.registerPlugin(plugin);
@@ -235,7 +237,9 @@ describe('XFiPluginRegistry', () => {
       const plugin: XFiPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
-        testFunction: mockFn,
+        name: 'test-plugin',
+        version: '1.0.0',
+        testFunction: mockFn as unknown as any,
         onError: mockErrorHandler,
       };
 
@@ -266,7 +270,9 @@ describe('XFiPluginRegistry', () => {
       const plugin: XFiPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
-        testFunction: mockFn,
+        name: 'test-plugin',
+        version: '1.0.0',
+        testFunction: mockFn as unknown as any,
         // No error handler
       };
 
