@@ -381,7 +381,7 @@ describe('ConfigManager', () => {
         
             // Mock the import function
             const mockImport = jest.fn().mockResolvedValue(mockPlugin);
-            jest.spyOn(ConfigManager as any, 'dynamicImport').mockImplementation(mockImport);
+            jest.spyOn(ConfigManager, 'dynamicImport').mockImplementation(mockImport);
         
             // Mock process.env.NODE_ENV to not be 'test' for this specific test
             const originalNodeEnv = process.env.NODE_ENV;
