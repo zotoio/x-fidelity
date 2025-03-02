@@ -6,30 +6,13 @@ import { semverValid, normalizePackageName, collectLocalDependencies, getDepende
 import * as util from 'util';
 import { logger } from '../utils/logger';
 
-// First, create the mock directly in the jest.mock call
-jest.mock('child_process', () => {
-    const mockExecSync = jest.fn().mockImplementation(() => {
-        return Buffer.from(JSON.stringify({
-            data: {
-                trees: [
-                    {
-                        name: 'package1@1.0.0',
-                        children: [
-                            { name: 'dependency1@0.1.0' }
-                        ]
-                    }
-                ]
-            }
-        }));
-    });
-    
-    return {
-        execSync: mockExecSync
-    };
-});
+// Mock child_process.execSync
+jest.mock('child_process', () => ({
+    execSync: jest.fn()
+}));
 
-// Then get a reference to the mock for use in tests
-const mockExecSync = jest.requireMock('child_process').execSync;
+// Get a reference to the mock for use in tests
+const mockExecSync = require('child_process').execSync;
 jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
     existsSync: jest.fn(),
@@ -56,7 +39,14 @@ jest.mock('util', () => ({
     ...jest.requireActual('util'),
     promisify: jest.fn().mockImplementation((fn) => {
         // Return a function that returns a promise
-        return (...args: any[]) => Promise.resolve(fn(...args));
+        return (...args: any[]) => {
+            try {
+                const result = fn(...args);
+                return Promise.resolve(result);
+            } catch (error) {
+                return Promise.reject(error);
+            }
+        };
     })
 }));
 
@@ -73,7 +63,7 @@ describe('repoDependencyFacts', () => {
             (fs.existsSync as jest.Mock).mockImplementation((path) => {
                 return path.includes('yarn.lock');
             });
-            
+        
             const mockYarnOutput = {
                 data: {
                     trees: [
@@ -86,11 +76,11 @@ describe('repoDependencyFacts', () => {
                     ]
                 }
             };
-            
+        
             mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
-            
+        
             const result = await collectLocalDependencies();
-            
+        
             expect(result).toEqual([
                 {
                     name: 'package1',
@@ -197,6 +187,19 @@ describe('repoDependencyFacts', () => {
     });
 
     describe('getDependencyVersionFacts', () => {
+        beforeEach(() => {
+            // Reset the mock implementation for collectLocalDependencies
+            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies')
+                .mockImplementation(async () => {
+                    return [
+                        {
+                            name: 'package1',
+                            version: '1.0.0'
+                        }
+                    ];
+                });
+        });
+
         it('should return dependency version facts', async () => {
             const mockArchetypeConfig = {
                 facts: ['repoDependencyFacts'],
@@ -206,15 +209,6 @@ describe('repoDependencyFacts', () => {
                     }
                 }
             };
-            
-            const mockLocalDependencies = [
-                {
-                    name: 'package1',
-                    version: '1.0.0'
-                }
-            ];
-            
-            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies').mockResolvedValue(mockLocalDependencies);
             
             const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
             
@@ -245,7 +239,9 @@ describe('repoDependencyFacts', () => {
                 }
             };
             
-            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies').mockResolvedValue([]);
+            // Override the mock for this specific test
+            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies')
+                .mockImplementationOnce(async () => []);
             
             const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
             
