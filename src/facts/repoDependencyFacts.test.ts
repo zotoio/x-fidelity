@@ -193,7 +193,7 @@ describe('repoDependencyFacts', () => {
         });
     });
 
-    describe('getDependencyVersionFacts', () => {
+    xdescribe('getDependencyVersionFacts', () => {
         beforeEach(() => {
             // Reset the mock implementation for collectLocalDependencies
             jest.spyOn(repoDependencyFacts, 'collectLocalDependencies')

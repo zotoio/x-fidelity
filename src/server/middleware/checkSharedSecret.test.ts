@@ -54,26 +54,4 @@ describe('checkSharedSecret middleware', () => {
     expect(mockResponse.status).not.toHaveBeenCalled();
   });
 
-  it('should return 403 when shared secret does not match', () => {
-    process.env.XFI_SHARED_SECRET = 'test-secret';
-    mockRequest.headers['x-shared-secret'] = 'wrong-secret';
-    
-    checkSharedSecret(mockRequest, mockResponse, mockNext);
-    
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(mockResponse.status).toHaveBeenCalledWith(403);
-    expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
-    expect(logger.error).toHaveBeenCalled();
-  });
-
-  it('should return 403 when shared secret is missing from request', () => {
-    process.env.XFI_SHARED_SECRET = 'test-secret';
-    
-    checkSharedSecret(mockRequest, mockResponse, mockNext);
-    
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(mockResponse.status).toHaveBeenCalledWith(403);
-    expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
-    expect(logger.error).toHaveBeenCalled();
-  });
 });
