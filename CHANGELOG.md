@@ -1,3 +1,10 @@
+# [3.10.0](https://github.com/zotoio/x-fidelity/compare/v3.9.1...v3.10.0) (2025-03-08)
+
+
+### Features
+
+* **canary:** add example canary rollout script using launchdarkly ([73fbcfb](https://github.com/zotoio/x-fidelity/commit/73fbcfb4eca11be8af7eb9fca20f7ed132898a83))
+
 ## [3.9.1](https://github.com/zotoio/x-fidelity/compare/v3.9.0...v3.9.1) (2025-03-02)
 
 
