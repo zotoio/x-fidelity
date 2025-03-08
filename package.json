@@ -89,6 +89,7 @@
     "json-rules-engine": "^7.3.1",
     "jsonpath-plus": "^10.3.0",
     "kill-port": "^2.0.1",
+    "launchdarkly-node-client-sdk": "^3.3.0",
     "lodash": "^4.17.21",
     "nodemon": "^3.1.9",
     "openai": "^4.86.1",
@@ -96,9 +97,9 @@
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
     "prettyjson": "^1.2.5",
+    "sanitize-filename": "^1.6.3",
     "semver": "^7.7.1",
-    "yarn": "^1.22.22",
-    "sanitize-filename": "^1.6.3"
+    "yarn": "^1.22.22"
   },
   "peerDependencies": {
     "artillery": "^2.0.22"
