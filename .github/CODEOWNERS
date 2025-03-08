@@ -10,3 +10,6 @@
 /src/types/ @zotoio/core-team
 /src/utils/ @zotoio/core-team
 /website/ @zotoio/docs-team
+
+# Notification test team
+/src/notifications/ @zotoio/notification-team
