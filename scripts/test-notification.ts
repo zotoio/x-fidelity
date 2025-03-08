@@ -1,5 +1,6 @@
 import { initializeNotifications } from '../src/notifications';
 import { ResultMetadata } from '../src/types/typeDefs';
+import path from 'path';
 
 async function sendTestNotification() {
   // Test configuration
@@ -7,7 +8,14 @@ async function sendTestNotification() {
     enabled: true,
     providers: ['email'],
     notifyOnSuccess: true,
-    notifyOnFailure: true
+    notifyOnFailure: true,
+    codeOwnersPath: path.join(process.cwd(), '.github/CODEOWNERS'),
+    codeOwnersEnabled: true,
+    notifications: {
+      recipients: {
+        email: ['test@example.com']
+      }
+    }
   };
 
   // Initialize notification system

@@ -1,0 +1,12 @@
+# Default owners for everything in the repo
+* @zotoio/core-team
+
+# Specific ownership rules
+/src/core/ @zotoio/core-team
+/src/facts/ @zotoio/rules-team
+/src/operators/ @zotoio/rules-team
+/src/plugins/ @zotoio/plugin-team
+/src/server/ @zotoio/api-team
+/src/types/ @zotoio/core-team
+/src/utils/ @zotoio/core-team
+/website/ @zotoio/docs-team
