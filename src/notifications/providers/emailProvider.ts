@@ -23,6 +23,21 @@ export class EmailProvider implements NotificationProvider {
 
   public async send(notification: Notification): Promise<boolean> {
     try {
+      logger.debug({
+        config: {
+          ...this.config,
+          auth: {
+            user: this.config.auth.user,
+            pass: '****'
+          }
+        },
+        notification: {
+          recipients: notification.recipients,
+          subject: notification.subject,
+          contentLength: notification.content.length
+        }
+      }, 'Attempting to send email notification');
+
       const transporter = nodemailer.createTransport({
         host: this.config.host,
         port: this.config.port,
@@ -33,18 +48,42 @@ export class EmailProvider implements NotificationProvider {
         },
       });
 
+      // Test the connection
+      try {
+        await transporter.verify();
+        logger.debug('SMTP connection verified successfully');
+      } catch (verifyError) {
+        logger.error(verifyError, 'Failed to verify SMTP connection');
+        return false;
+      }
+
       const info = await transporter.sendMail({
         from: this.config.from,
         to: notification.recipients.join(', '),
         subject: notification.subject,
         text: notification.content,
-        // Can add HTML version if needed
       });
 
-      logger.info(`Email sent: ${info.messageId}`);
+      logger.info({
+        messageId: info.messageId,
+        response: info.response,
+        accepted: info.accepted,
+        rejected: info.rejected
+      }, 'Email sent successfully');
+      
       return true;
     } catch (error) {
-      logger.error(error, 'Failed to send email notification');
+      logger.error({
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        } : error,
+        notification: {
+          recipients: notification.recipients,
+          subject: notification.subject
+        }
+      }, 'Failed to send email notification');
       return false;
     }
   }

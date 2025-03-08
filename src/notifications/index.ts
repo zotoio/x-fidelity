@@ -44,7 +44,7 @@ export async function initializeNotifications(config: NotificationConfig): Promi
 
 function loadEmailConfig(): EmailProviderConfig | null {
   try {
-    return {
+    const config = {
       host: process.env.NOTIFICATION_EMAIL_HOST || '',
       port: parseInt(process.env.NOTIFICATION_EMAIL_PORT || '587'),
       secure: process.env.NOTIFICATION_EMAIL_SECURE === 'true',
@@ -54,6 +54,29 @@ function loadEmailConfig(): EmailProviderConfig | null {
       },
       from: process.env.NOTIFICATION_EMAIL_FROM || 'x-fidelity@noreply.com',
     };
+
+    // Add debug logging
+    logger.debug({
+      emailConfig: {
+        ...config,
+        auth: {
+          user: config.auth.user,
+          pass: '****' // Mask password
+        }
+      }
+    }, 'Email configuration loaded');
+
+    // Validate required fields
+    if (!config.host || !config.auth.user || !config.auth.pass) {
+      logger.warn('Missing required email configuration fields', {
+        hasHost: !!config.host,
+        hasUser: !!config.auth.user,
+        hasPass: !!config.auth.pass
+      });
+      return null;
+    }
+
+    return config;
   } catch (error) {
     logger.error(error, 'Failed to load email configuration');
     return null;
