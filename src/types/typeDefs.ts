@@ -195,6 +195,7 @@ export interface ResultMetadata {
         repoXFIConfig: RepoXFIConfig;
         memoryUsage: any;
         repoUrl: string;
+        xfiVersion: string;
     };
 }
 
