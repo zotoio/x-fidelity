@@ -71,10 +71,23 @@ export async function main() {
                 const resultString = JSON.stringify(resultMetadata);
                 const prettyResult = json.render(resultMetadata.XFI_RESULT);
 
+                // Add debug logging before notification check
+                logger.debug({
+                    notificationsEnabled: process.env.NOTIFICATIONS_ENABLED,
+                    notificationConfig: notificationConfig,
+                    hasNotificationManager: !!notificationManager
+                }, 'Checking notification status');
+
                 // Send notifications if enabled
                 if (notificationConfig.enabled) {
+                    logger.debug('Notifications are enabled, preparing to send report');
                     // Get list of affected files (those with issues)
                     const affectedFiles = getAffectedFiles(resultMetadata);
+                    logger.debug({
+                        affectedFilesCount: affectedFiles.length,
+                        hasRepoConfig: !!resultMetadata.XFI_RESULT.repoXFIConfig
+                    }, 'Preparing notification data');
+                    
                     // Pass the repo config to the notification manager
                     await notificationManager.sendReport(
                         resultMetadata, 
