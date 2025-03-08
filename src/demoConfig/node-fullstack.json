@@ -59,6 +59,20 @@
             ".*\\.(ts|tsx|js|jsx)$",
             ".*\\/xfiTestMatch\\.json$",
             ".*\\/README\\.md$"
-        ]
+        ],
+        "notifications": {
+            "enabled": true,
+            "providers": ["email"],
+            "recipients": {
+                "email": ["team@example.com"]
+            },
+            "codeOwners": true,
+            "notifyOnSuccess": true,
+            "notifyOnFailure": true,
+            "customTemplates": {
+                "success": "All checks passed successfully! 🎉\n\nArchetype: ${archetype}\nFiles analyzed: ${fileCount}\nExecution time: ${executionTime}s",
+                "failure": "Issues found in codebase:\n\nArchetype: ${archetype}\nTotal issues: ${totalIssues}\n- Warnings: ${warningCount}\n- Errors: ${errorCount}\n- Fatalities: ${fatalityCount}\n\nAffected files:\n${affectedFiles}"
+            }
+        }
     }
 }
