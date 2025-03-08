@@ -13,6 +13,8 @@ import { analyzeCodebase } from "./core/engine/analyzer";
 import { startServer } from './server/configServer';
 import { sendTelemetry } from './utils/telemetry';
 import { ResultMetadata } from './types/typeDefs';
+import { initializeNotifications } from './notifications';
+import { NotificationConfig } from './types/notificationTypes';
 
 // Function to handle errors and send telemetry
 const handleError = async (error: Error) => {
@@ -39,6 +41,18 @@ logger.debug({ options }, 'Startup options');
 
 export async function main() {
     try {
+        // Initialize notification system
+        const notificationConfig: NotificationConfig = {
+            enabled: process.env.NOTIFICATIONS_ENABLED === 'true',
+            providers: (process.env.NOTIFICATION_PROVIDERS || '').split(',').filter(Boolean),
+            codeOwnersPath: process.env.CODEOWNERS_PATH || '.github/CODEOWNERS',
+            codeOwnersEnabled: process.env.CODEOWNERS_ENABLED !== 'false', // Default to true
+            notifyOnSuccess: process.env.NOTIFY_ON_SUCCESS === 'true',
+            notifyOnFailure: process.env.NOTIFY_ON_FAILURE !== 'false', // Default to true
+        };
+        
+        const notificationManager = await initializeNotifications(notificationConfig);
+        
         if (options.examine && process.env.NODE_ENV !== 'test') {
             const { validateArchetypeConfig } = await import('./core/validateConfig');
             validateArchetypeConfig();
@@ -56,6 +70,18 @@ export async function main() {
 
                 const resultString = JSON.stringify(resultMetadata);
                 const prettyResult = json.render(resultMetadata.XFI_RESULT);
+
+                // Send notifications if enabled
+                if (notificationConfig.enabled) {
+                    // Get list of affected files (those with issues)
+                    const affectedFiles = getAffectedFiles(resultMetadata);
+                    // Pass the repo config to the notification manager
+                    await notificationManager.sendReport(
+                        resultMetadata, 
+                        affectedFiles,
+                        resultMetadata.XFI_RESULT.repoXFIConfig
+                    );
+                }
 
                 // if results are found, there were issues found in the codebase
                 if (resultMetadata.XFI_RESULT.totalIssues > 0) {
@@ -94,6 +120,21 @@ export async function main() {
             setTimeout(() => process.exit(1), 3000);
         }
     }
+}
+
+// Helper function to extract affected files from results
+function getAffectedFiles(resultMetadata: ResultMetadata): string[] {
+    const affectedFiles: string[] = [];
+    
+    if (resultMetadata.XFI_RESULT.issueDetails) {
+        for (const issue of resultMetadata.XFI_RESULT.issueDetails) {
+            if (issue.filePath && !affectedFiles.includes(issue.filePath)) {
+                affectedFiles.push(issue.filePath);
+            }
+        }
+    }
+    
+    return affectedFiles;
 }
 
 export { repoDir } from './core/configManager';

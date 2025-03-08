@@ -49,6 +49,59 @@ const repoXFIConfigSchema = {
             minItems: 0,
             nullable: true,
         },
+        notifications: {
+            type: "object",
+            properties: {
+                recipients: {
+                    type: "object",
+                    properties: {
+                        email: {
+                            type: "array",
+                            items: { type: "string" },
+                            nullable: true
+                        },
+                        slack: {
+                            type: "array",
+                            items: { type: "string" },
+                            nullable: true
+                        },
+                        teams: {
+                            type: "array",
+                            items: { type: "string" },
+                            nullable: true
+                        }
+                    },
+                    nullable: true
+                },
+                codeOwners: {
+                    type: "boolean",
+                    nullable: true
+                },
+                notifyOnSuccess: {
+                    type: "boolean",
+                    nullable: true
+                },
+                notifyOnFailure: {
+                    type: "boolean",
+                    nullable: true
+                },
+                customTemplates: {
+                    type: "object",
+                    properties: {
+                        success: {
+                            type: "string",
+                            nullable: true
+                        },
+                        failure: {
+                            type: "string",
+                            nullable: true
+                        }
+                    },
+                    nullable: true
+                }
+            },
+            nullable: true
+        }
     },
     required: [],
     additionalProperties: true,

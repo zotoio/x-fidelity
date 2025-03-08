@@ -279,6 +279,20 @@ export interface RepoXFIConfig {
   additionalFacts?: string[];
   additionalOperators?: string[];
   additionalPlugins?: string[];
+  notifications?: {
+    recipients?: {
+      email?: string[];
+      slack?: string[];
+      teams?: string[];
+    };
+    codeOwners?: boolean;
+    notifyOnSuccess?: boolean;
+    notifyOnFailure?: boolean;
+    customTemplates?: {
+      success?: string;
+      failure?: string;
+    };
+  };
   [key: string]: any;  // Allow for additional properties
 }
 

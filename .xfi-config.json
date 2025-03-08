@@ -34,5 +34,28 @@
     ],
     "additionalFacts": ["customFact"],
     "additionalOperators": ["customOperator"],
-    "additionalPlugins": ["xfiPluginSimpleExample"]
+    "additionalPlugins": ["xfiPluginSimpleExample"],
+    "notifications": {
+        "recipients": {
+            "email": [
+                "team-lead@example.com",
+                "security-team@example.com"
+            ],
+            "slack": [
+                "U123456",
+                "U789012"
+            ],
+            "teams": [
+                "user1@example.com",
+                "user2@example.com"
+            ]
+        },
+        "codeOwners": true,
+        "notifyOnSuccess": false,
+        "notifyOnFailure": true,
+        "customTemplates": {
+            "success": "# Success! 🎉\n\nYour codebase passed all X-Fidelity checks.\n\n- Archetype: ${archetype}\n- Files analyzed: ${fileCount}\n- Execution time: ${executionTime} seconds\n\nGreat job keeping the code clean!",
+            "failure": "# Issues Detected ⚠️\n\nX-Fidelity found issues in your codebase:\n\n- Archetype: ${archetype}\n- Files analyzed: ${fileCount}\n- Total issues: ${totalIssues}\n  - Warnings: ${warningCount}\n  - Errors: ${errorCount}\n  - Fatalities: ${fatalityCount}\n\n## Affected Files\n${affectedFiles}\n\nPlease address these issues as soon as possible."
+        }
+    }
 }
