@@ -1,6 +1,7 @@
 import { logger } from '../../utils/logger';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../configManager';
 import { ArchetypeConfig, ResultMetadata } from '../../types/typeDefs';
+import { version } from '../../../package.json';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';
 import { collectRepoFileData, repoFileAnalysis } from '../../facts/repoFilesystemFacts';
@@ -191,7 +192,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             exemptCount: exemptCount,
             options,
             repoPath,
-            repoUrl
+            repoUrl,
+            xfiVersion: version
         }
     }
     
