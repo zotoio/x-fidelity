@@ -40,7 +40,7 @@ ${message}
 logger.debug({ options }, 'Startup options');
 
 export async function main() {
-    try {
+    try { console.log(process.env)
         // Initialize notification system
         const notificationConfig: NotificationConfig = {
             enabled: process.env.NOTIFICATIONS_ENABLED === 'true',
