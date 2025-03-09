@@ -1,3 +1,24 @@
+# [3.11.0](https://github.com/zotoio/x-fidelity/compare/v3.10.0...v3.11.0) (2025-03-09)
+
+
+### Bug Fixes
+
+* Remove duplicate import statement in notifications test ([f5c6468](https://github.com/zotoio/x-fidelity/commit/f5c6468063c1575610cd4b54aad84b97d4884437))
+* **results:** fix missing filesystem match details ([bc62faf](https://github.com/zotoio/x-fidelity/commit/bc62faff20e69fa6977e1ceee1bc22ad578cf2ba))
+* update NotificationManager mock to properly handle registerProvider ([6102837](https://github.com/zotoio/x-fidelity/commit/6102837f206938500885faf33560a91235a41885))
+
+
+### Features
+
+* add CODEOWNERS and notification test config ([5dc2904](https://github.com/zotoio/x-fidelity/commit/5dc29047d86f33b27fc9603077884b4df3f37330))
+* add debug logging for notification flow ([0e6af6b](https://github.com/zotoio/x-fidelity/commit/0e6af6b1583636935561f85a33c0bbea830905a5))
+* add detailed debug logging for email notifications ([18d929b](https://github.com/zotoio/x-fidelity/commit/18d929b3cc49b538c6ea3330d51d2670b090f7ba))
+* add email notification configuration to node-fullstack archetype ([424c5a0](https://github.com/zotoio/x-fidelity/commit/424c5a007c1b9eabeaffbca375cac131142ff7c9))
+* add notification system with email, slack and teams providers ([95d4ade](https://github.com/zotoio/x-fidelity/commit/95d4ade7de8db30c1592087ffa8dd78845c4ee47))
+* add notification team to CODEOWNERS file ([edb648e](https://github.com/zotoio/x-fidelity/commit/edb648e7378239ae7b6f672b9ce73c97e820a82a))
+* add package version to XFI_RESULT metadata ([1ee061a](https://github.com/zotoio/x-fidelity/commit/1ee061a971bbf63d18014f529a3353d4efb63482))
+* add xfiVersion field to ResultMetadata interface ([e59b187](https://github.com/zotoio/x-fidelity/commit/e59b18725b98781f547e58c5d9581d2ad7d5949f))
+
 # [3.10.0](https://github.com/zotoio/x-fidelity/compare/v3.9.1...v3.10.0) (2025-03-08)
 
 
