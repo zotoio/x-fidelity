@@ -1,6 +1,7 @@
 import { logger } from '../utils/logger';
 import { execSync } from 'child_process';
 import { ResultMetadata, RepoXFIConfig } from '../types/typeDefs';
+import { stringify as yamlStringify } from 'yaml';
 import { Notification, NotificationProvider, NotificationConfig, CodeOwner } from '../types/notificationTypes';
 import fs from 'fs';
 
@@ -300,8 +301,18 @@ export class NotificationManager {
 ${fileDetails}
 </ul>
 
+${yamlSection}
+
 <p>Please address these issues as soon as possible.</p>`;
     }
+
+    // Generate YAML attachment
+    const yamlAttachment = yamlStringify(results.XFI_RESULT);
+    const yamlSection = `
+<h2>📎 Full Results (YAML)</h2>
+<pre style="background-color: #f6f8fa; padding: 16px; border-radius: 6px; overflow-x: auto;">
+${yamlAttachment}
+</pre>`;
 
     // Success template
     return `<h1>✅ Success!</h1>
@@ -314,6 +325,8 @@ ${fileDetails}
   <li><strong>Files analyzed:</strong> ${results.XFI_RESULT.fileCount}</li>
   <li><strong>Execution time:</strong> ${results.XFI_RESULT.durationSeconds} seconds</li>
 </ul>
+
+${yamlSection}
 
 <p>🎉 Great job keeping the code clean!</p>`;
   }

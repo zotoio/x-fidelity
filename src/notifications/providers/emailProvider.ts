@@ -57,12 +57,18 @@ export class EmailProvider implements NotificationProvider {
         return false;
       }
 
+      // Generate plain text version with YAML
+      const plainTextContent = `${notification.content.replace(/<[^>]*>/g, '')}
+
+--- Full Results ---
+${yamlStringify(notification.metadata?.results.XFI_RESULT)}`;
+
       const info = await transporter.sendMail({
         from: this.config.from,
         to: notification.recipients.join(', '),
         subject: notification.subject,
-        html: notification.content, // Send as HTML
-        text: notification.content.replace(/<[^>]*>/g, ''), // Strip HTML tags for plain text version
+        html: notification.content,
+        text: plainTextContent,
       });
 
       logger.info({
