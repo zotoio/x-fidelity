@@ -225,49 +225,43 @@ export class NotificationManager {
   }
 
 
-  private readonly successTemplate = `# Success! 🎉
+  private generateReportContent(results: ResultMetadata, affectedFiles: string[]): string {
+    if (results.XFI_RESULT.totalIssues > 0) {
+      // Failure template
+      const fileDetails = affectedFiles.map(file => {
+        const fileIssues = results.XFI_RESULT.issueDetails.find(detail => detail.filePath === file);
+        const ruleNames = fileIssues?.errors.map(e => e.ruleFailure).join(', ');
+        return `- ${file}\n  Failed rules: ${ruleNames}`;
+      }).join('\n');
 
-Your codebase passed all X-Fidelity checks.
-
-## Summary
-- Archetype: \${archetype}
-- Files analyzed: \${fileCount}
-- Execution time: \${executionTime} seconds
-
-Great job keeping the code clean!`;
-
-  private readonly failureTemplate = `# Issues Detected ⚠️
+      return `# Issues Detected ⚠️
 
 X-Fidelity found issues in your codebase:
 
 ## Summary
-- Archetype: ${archetype}
-- Files analyzed: \${fileCount}
-- Total issues: \${totalIssues}
-  - Warnings: \${warningCount}
-  - Errors: \${errorCount}
-  - Fatalities: \${fatalityCount}
+- Archetype: ${results.XFI_RESULT.archetype}
+- Files analyzed: ${results.XFI_RESULT.fileCount}
+- Total issues: ${results.XFI_RESULT.totalIssues}
+  - Warnings: ${results.XFI_RESULT.warningCount}
+  - Errors: ${results.XFI_RESULT.errorCount}
+  - Fatalities: ${results.XFI_RESULT.fatalityCount}
 
 ## Issues by File
-\${affectedFiles.map(file => {
-  const fileIssues = results.XFI_RESULT.issueDetails.find(detail => detail.filePath === file);
-  const ruleNames = fileIssues?.errors.map(e => e.ruleFailure).join(', ');
-  return '- ' + file + '\\n  Failed rules: ' + ruleNames;
-}).join('\\n')}
+${fileDetails}
 
 Please address these issues as soon as possible.`;
+    }
 
-  private generateReportContent(results: ResultMetadata, affectedFiles: string[]): string {
-    const template = results.XFI_RESULT.totalIssues > 0 ? this.failureTemplate : this.successTemplate;
-    
-    return template
-        .replace(/\${archetype}/g, results.XFI_RESULT.archetype)
-        .replace(/\${fileCount}/g, String(results.XFI_RESULT.fileCount))
-        .replace(/\${totalIssues}/g, String(results.XFI_RESULT.totalIssues))
-        .replace(/\${warningCount}/g, String(results.XFI_RESULT.warningCount))
-        .replace(/\${errorCount}/g, String(results.XFI_RESULT.errorCount))
-        .replace(/\${fatalityCount}/g, String(results.XFI_RESULT.fatalityCount))
-        .replace(/\${affectedFiles}/g, affectedFiles.map(file => `- ${file}`).join('\n'))
-        .replace(/\${executionTime}/g, String(results.XFI_RESULT.durationSeconds));
+    // Success template
+    return `# Success! 🎉
+
+Your codebase passed all X-Fidelity checks.
+
+## Summary
+- Archetype: ${results.XFI_RESULT.archetype}
+- Files analyzed: ${results.XFI_RESULT.fileCount}
+- Execution time: ${results.XFI_RESULT.durationSeconds} seconds
+
+Great job keeping the code clean!`;
   }
 }
