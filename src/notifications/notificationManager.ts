@@ -1,4 +1,5 @@
 import { logger } from '../utils/logger';
+import { execSync } from 'child_process';
 import { ResultMetadata, RepoXFIConfig } from '../types/typeDefs';
 import { Notification, NotificationProvider, NotificationConfig, CodeOwner } from '../types/notificationTypes';
 import fs from 'fs';
@@ -226,14 +227,34 @@ export class NotificationManager {
 
 
   private generateReportContent(results: ResultMetadata, affectedFiles: string[]): string {
-    // Extract GitHub info from environment variables or fallback to git config
-    const githubServer = process.env.GITHUB_SERVER_URL || 'https://github.com';
-    const githubRepo = process.env.GITHUB_REPOSITORY || results.XFI_RESULT.repoUrl
-        .replace(/\.git$/, '')
-        .replace(/^git@([^:]+):/, 'https://$1/')
-        .replace(/^https?:\/\/[^\/]+\//, '');
-    const githubBranch = process.env.GITHUB_REF_NAME || 'main';
+    // Get GitHub details from git commands with fallbacks to env vars
+    let githubServer = '';
+    let githubRepo = '';
+    let githubBranch = '';
     
+    try {
+      // Get remote URL and extract server/repo
+      const remoteUrl = execSync('git config --get remote.origin.url', { encoding: 'utf8' }).trim();
+      if (remoteUrl) {
+        const match = remoteUrl.match(/^(?:https?:\/\/|git@)([^/:]+)[/:]([^/]+\/[^/.]+)(?:\.git)?$/);
+        if (match) {
+          githubServer = process.env.GITHUB_SERVER_URL || `https://${match[1]}`;
+          githubRepo = process.env.GITHUB_REPOSITORY || match[2];
+        }
+      }
+
+      // Get current branch
+      githubBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+    } catch (error) {
+      logger.warn('Failed to get git details, falling back to defaults', { error });
+      githubServer = process.env.GITHUB_SERVER_URL || 'https://github.com';
+      githubRepo = process.env.GITHUB_REPOSITORY || results.XFI_RESULT.repoUrl
+          .replace(/\.git$/, '')
+          .replace(/^git@([^:]+):/, 'https://$1/')
+          .replace(/^https?:\/\/[^\/]+\//, '');
+      githubBranch = process.env.GITHUB_REF_NAME || 'main';
+    }
+
     const githubUrl = `${githubServer}/${githubRepo}/blob/${githubBranch}`;
 
     if (results.XFI_RESULT.totalIssues > 0) {
