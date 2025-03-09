@@ -271,11 +271,11 @@ export class NotificationManager {
             const ruleDetails = fileIssues?.errors.map(e => {
                 const lineNumber = e.details?.lineNumber;
                 const lineLink = lineNumber ? `${githubUrl}/${relativePath}#L${lineNumber}` : `${githubUrl}/${relativePath}`;
-                const color = e.level === 'fatality' ? '#FF0000' : 
-                             e.level === 'error' ? '#FFA500' : 
-                             e.level === 'warning' ? '#FFFF00' : '#808080';
+                const color = e.level === 'fatality' ? '#f20707' : 
+                             e.level === 'error' ? '#53046c' : 
+                             e.level === 'warning' ? '#944801' : '#1a1818';
                 
-                return `<li><span style="color: ${color}">${e.ruleFailure}</span>${lineNumber ? ` - <a href="${lineLink}">Line ${lineNumber}</a>` : ''}</li>`;
+                return `<li><span style="color: ${color};font-weight:bold">${e.ruleFailure}</span>${lineNumber ? ` - <a href="${lineLink}">Line ${lineNumber}</a>` : ''}</li>`;
             }).join('');
             
             return output + ruleDetails + '</ul></li>';
