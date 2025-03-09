@@ -2,7 +2,6 @@ import { logger } from '../utils/logger';
 import { ResultMetadata, RepoXFIConfig } from '../types/typeDefs';
 import { Notification, NotificationProvider, NotificationConfig, CodeOwner } from '../types/notificationTypes';
 import fs from 'fs';
-import path from 'path';
 
 export class NotificationManager {
   private static instance: NotificationManager;
