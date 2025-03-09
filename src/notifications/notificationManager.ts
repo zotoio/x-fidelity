@@ -264,10 +264,10 @@ export class NotificationManager {
             const relativePath = file.replace(results.XFI_RESULT.repoPath + '/', '');
             const fileIssues = results.XFI_RESULT.issueDetails.find(detail => detail.filePath === file);
             
-            // Start with file name as bold list item
-            let output = `- **[${relativePath}](${githubUrl}/${relativePath})**\n`;
+            // Start with file name as bold list item with link
+            let output = `<li><strong><a href="${githubUrl}/${relativePath}">${relativePath}</a></strong><ul>`;
             
-            // Add rule failures with severity-based colors
+            // Add rule failures with severity-based colors and line links
             const ruleDetails = fileIssues?.errors.map(e => {
                 const lineNumber = e.details?.lineNumber;
                 const lineLink = lineNumber ? `${githubUrl}/${relativePath}#L${lineNumber}` : `${githubUrl}/${relativePath}`;
@@ -275,40 +275,46 @@ export class NotificationManager {
                              e.level === 'error' ? '#FFA500' : 
                              e.level === 'warning' ? '#FFFF00' : '#808080';
                 
-                return `  - <span style="color: ${color}">${e.ruleFailure}</span>${lineNumber ? ` - [Line ${lineNumber}](${lineLink})` : ''}`;
-            }).join('\n');
+                return `<li><span style="color: ${color}">${e.ruleFailure}</span>${lineNumber ? ` - <a href="${lineLink}">Line ${lineNumber}</a>` : ''}</li>`;
+            }).join('');
             
-            return output + ruleDetails;
-        }).join('\n');
+            return output + ruleDetails + '</ul></li>';
+        }).join('');
 
-        return `# 🚨 Issues Detected
+        return `<h1>🚨 Issues Detected</h1>
 
-X-Fidelity found issues in your codebase:
+<p>X-Fidelity found issues in your codebase:</p>
 
-## 📊 Summary
-- **Archetype:** \`${results.XFI_RESULT.archetype}\`
-- **Files analyzed:** ${results.XFI_RESULT.fileCount}
-- **Total issues:** ${results.XFI_RESULT.totalIssues}
-  - ⚠️ Warnings: ${results.XFI_RESULT.warningCount}
-  - ❌ Errors: ${results.XFI_RESULT.errorCount}
-  - 🔥 Fatalities: ${results.XFI_RESULT.fatalityCount}
+<h2>📊 Summary</h2>
+<ul>
+  <li><strong>Archetype:</strong> <code>${results.XFI_RESULT.archetype}</code></li>
+  <li><strong>Files analyzed:</strong> ${results.XFI_RESULT.fileCount}</li>
+  <li><strong>Total issues:</strong> ${results.XFI_RESULT.totalIssues}</li>
+  <li>⚠️ Warnings: ${results.XFI_RESULT.warningCount}</li>
+  <li>❌ Errors: ${results.XFI_RESULT.errorCount}</li>
+  <li>🔥 Fatalities: ${results.XFI_RESULT.fatalityCount}</li>
+</ul>
 
-## 📝 Issues by File
+<h2>📝 Issues by File</h2>
+<ul>
 ${fileDetails}
+</ul>
 
-Please address these issues as soon as possible.`;
+<p>Please address these issues as soon as possible.</p>`;
     }
 
     // Success template
-    return `# ✅ Success!
+    return `<h1>✅ Success!</h1>
 
-Your codebase passed all X-Fidelity checks.
+<p>Your codebase passed all X-Fidelity checks.</p>
 
-## 📊 Summary
-- **Archetype:** \`${results.XFI_RESULT.archetype}\`
-- **Files analyzed:** ${results.XFI_RESULT.fileCount}
-- **Execution time:** ${results.XFI_RESULT.durationSeconds} seconds
+<h2>📊 Summary</h2>
+<ul>
+  <li><strong>Archetype:</strong> <code>${results.XFI_RESULT.archetype}</code></li>
+  <li><strong>Files analyzed:</strong> ${results.XFI_RESULT.fileCount}</li>
+  <li><strong>Execution time:</strong> ${results.XFI_RESULT.durationSeconds} seconds</li>
+</ul>
 
-🎉 Great job keeping the code clean!`;
+<p>🎉 Great job keeping the code clean!</p>`;
   }
 }
