@@ -241,7 +241,7 @@ Great job keeping the code clean!`;
 X-Fidelity found issues in your codebase:
 
 ## Summary
-- Archetype: \${archetype}
+- Archetype: ${archetype}
 - Files analyzed: \${fileCount}
 - Total issues: \${totalIssues}
   - Warnings: \${warningCount}
