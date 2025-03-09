@@ -1,15 +1,20 @@
 import { initializeNotifications } from './index';
+import { initializeNotifications } from './index';
 import { NotificationManager } from './notificationManager';
 import { EmailProvider } from './providers/emailProvider';
 import { SlackProvider } from './providers/slackProvider';
 import { TeamsProvider } from './providers/teamsProvider';
 import { logger } from '../utils/logger';
 
+// Create a mock registerProvider function
+const mockRegisterProvider = jest.fn();
+
+// Mock NotificationManager with a proper getInstance implementation
 jest.mock('./notificationManager', () => ({
   NotificationManager: {
-    getInstance: jest.fn().mockReturnValue({
-      registerProvider: jest.fn()
-    })
+    getInstance: jest.fn().mockImplementation(() => ({
+      registerProvider: mockRegisterProvider
+    }))
   }
 }));
 jest.mock('./providers/emailProvider');
@@ -53,6 +58,7 @@ describe('Notifications', () => {
     expect(EmailProvider).toHaveBeenCalled();
     expect(SlackProvider).toHaveBeenCalled();
     expect(TeamsProvider).toHaveBeenCalled();
+    expect(mockRegisterProvider).toHaveBeenCalled();
   });
 
   it('should not initialize providers when notifications are disabled', async () => {
