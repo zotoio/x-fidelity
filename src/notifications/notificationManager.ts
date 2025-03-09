@@ -226,42 +226,53 @@ export class NotificationManager {
 
 
   private generateReportContent(results: ResultMetadata, affectedFiles: string[]): string {
-    if (results.XFI_RESULT.totalIssues > 0) {
-      // Failure template
-      const fileDetails = affectedFiles.map(file => {
-        const fileIssues = results.XFI_RESULT.issueDetails.find(detail => detail.filePath === file);
-        const ruleDetails = fileIssues?.errors.map(e => `\n    - ${e.ruleFailure} (${e.level})`).join('');
-        return `- ${file}${ruleDetails}`;
-      }).join('\n');
+    const repoUrl = results.XFI_RESULT.repoUrl;
+    // Remove .git suffix and convert SSH to HTTPS format if needed
+    const githubUrl = repoUrl
+        .replace(/\.git$/, '')
+        .replace(/^git@github\.com:/, 'https://github.com/');
 
-      return `# Issues Detected ⚠️
+    if (results.XFI_RESULT.totalIssues > 0) {
+        // Failure template
+        const fileDetails = affectedFiles.map(file => {
+            const fileIssues = results.XFI_RESULT.issueDetails.find(detail => detail.filePath === file);
+            const ruleDetails = fileIssues?.errors.map(e => {
+                const lineNumber = e.details?.lineNumber;
+                const lineLink = lineNumber ? `${githubUrl}/blob/main/${file}#L${lineNumber}` : `${githubUrl}/blob/main/${file}`;
+                return `\n    - ${e.ruleFailure} (${e.level})${lineNumber ? ` - [Line ${lineNumber}](${lineLink})` : ''}`;
+            }).join('');
+            
+            return `- [${file}](${githubUrl}/blob/main/${file})${ruleDetails}`;
+        }).join('\n');
+
+        return `# 🚨 Issues Detected
 
 X-Fidelity found issues in your codebase:
 
-## Summary
-- Archetype: ${results.XFI_RESULT.archetype}
-- Files analyzed: ${results.XFI_RESULT.fileCount}
-- Total issues: ${results.XFI_RESULT.totalIssues}
-  - Warnings: ${results.XFI_RESULT.warningCount}
-  - Errors: ${results.XFI_RESULT.errorCount}
-  - Fatalities: ${results.XFI_RESULT.fatalityCount}
+## 📊 Summary
+- **Archetype:** \`${results.XFI_RESULT.archetype}\`
+- **Files analyzed:** ${results.XFI_RESULT.fileCount}
+- **Total issues:** ${results.XFI_RESULT.totalIssues}
+  - ⚠️ Warnings: ${results.XFI_RESULT.warningCount}
+  - ❌ Errors: ${results.XFI_RESULT.errorCount}
+  - 🔥 Fatalities: ${results.XFI_RESULT.fatalityCount}
 
-## Issues by File
+## 📝 Issues by File
 ${fileDetails}
 
 Please address these issues as soon as possible.`;
     }
 
     // Success template
-    return `# Success! 🎉
+    return `# ✅ Success!
 
 Your codebase passed all X-Fidelity checks.
 
-## Summary
-- Archetype: ${results.XFI_RESULT.archetype}
-- Files analyzed: ${results.XFI_RESULT.fileCount}
-- Execution time: ${results.XFI_RESULT.durationSeconds} seconds
+## 📊 Summary
+- **Archetype:** \`${results.XFI_RESULT.archetype}\`
+- **Files analyzed:** ${results.XFI_RESULT.fileCount}
+- **Execution time:** ${results.XFI_RESULT.durationSeconds} seconds
 
-Great job keeping the code clean!`;
+🎉 Great job keeping the code clean!`;
   }
 }
