@@ -226,11 +226,15 @@ export class NotificationManager {
 
 
   private generateReportContent(results: ResultMetadata, affectedFiles: string[]): string {
-    const repoUrl = results.XFI_RESULT.repoUrl;
-    // Remove .git suffix and convert SSH to HTTPS format if needed
-    const githubUrl = repoUrl
+    // Extract GitHub info from environment variables or fallback to git config
+    const githubServer = process.env.GITHUB_SERVER_URL || 'https://github.com';
+    const githubRepo = process.env.GITHUB_REPOSITORY || results.XFI_RESULT.repoUrl
         .replace(/\.git$/, '')
-        .replace(/^git@github\.com:/, 'https://github.com/');
+        .replace(/^git@([^:]+):/, 'https://$1/')
+        .replace(/^https?:\/\/[^\/]+\//, '');
+    const githubBranch = process.env.GITHUB_REF_NAME || 'main';
+    
+    const githubUrl = `${githubServer}/${githubRepo}/blob/${githubBranch}`;
 
     if (results.XFI_RESULT.totalIssues > 0) {
         // Failure template
