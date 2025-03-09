@@ -261,7 +261,7 @@ export class NotificationManager {
         // Failure template
         const fileDetails = affectedFiles.map(file => {
             // Remove local path prefix from file paths
-            const relativePath = file.replace(repoPath + '/', '');
+            const relativePath = file.replace(results.XFI_RESULT.repoPath + '/', '');
             const fileIssues = results.XFI_RESULT.issueDetails.find(detail => detail.filePath === file);
             const ruleDetails = fileIssues?.errors.map(e => {
                 const lineNumber = e.details?.lineNumber;
