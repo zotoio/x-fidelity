@@ -309,14 +309,31 @@ ${fileDetails}
 ${yamlAttachment}
 </pre>`;
 
+    if (results.XFI_RESULT.totalIssues > 0) {
+        // Failure template
+        return `<h1>🚨 Issues Detected</h1>
+
+<p>X-Fidelity found issues in your codebase:</p>
+
+<h2>📊 Summary</h2>
+<ul>
+  <li><strong>Archetype:</strong> <code>${results.XFI_RESULT.archetype}</code></li>
+  <li><strong>Files analyzed:</strong> ${results.XFI_RESULT.fileCount}</li>
+  <li><strong>Total issues:</strong> ${results.XFI_RESULT.totalIssues}</li>
+  <li>⚠️ Warnings: ${results.XFI_RESULT.warningCount}</li>
+  <li>❌ Errors: ${results.XFI_RESULT.errorCount}</li>
+  <li>🔥 Fatalities: ${results.XFI_RESULT.fatalityCount}</li>
+</ul>
+
+<h2>📝 Issues by File</h2>
+<ul>
+${fileDetails}
+</ul>
+
 ${yamlSection}
 
 <p>Please address these issues as soon as possible.</p>`;
     }
-<h2>📎 Full Results (YAML)</h2>
-<pre style="background-color: #f6f8fa; padding: 16px; border-radius: 6px; overflow-x: auto;">
-${yamlAttachment}
-</pre>`;
 
     // Success template
     return `<h1>✅ Success!</h1>
