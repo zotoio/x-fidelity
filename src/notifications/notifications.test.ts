@@ -5,11 +5,23 @@ import { SlackProvider } from './providers/slackProvider';
 import { TeamsProvider } from './providers/teamsProvider';
 import { logger } from '../utils/logger';
 
-jest.mock('./notificationManager');
+jest.mock('./notificationManager', () => ({
+  NotificationManager: {
+    getInstance: jest.fn().mockReturnValue({
+      registerProvider: jest.fn()
+    })
+  }
+}));
 jest.mock('./providers/emailProvider');
 jest.mock('./providers/slackProvider');
 jest.mock('./providers/teamsProvider');
-jest.mock('../utils/logger');
+jest.mock('../utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn()
+  }
+}));
 
 describe('Notifications', () => {
   beforeEach(() => {
