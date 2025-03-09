@@ -23,13 +23,15 @@ jest.mock('../utils/logger', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
-    warn: jest.fn()
+    warn: jest.fn(),
+    debug: jest.fn()
   }
 }));
 
 describe('Notifications', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Set up required environment variables for providers
     process.env = {
       ...process.env,
       NOTIFICATION_EMAIL_HOST: 'smtp.test.com',
@@ -41,6 +43,18 @@ describe('Notifications', () => {
       NOTIFICATION_SLACK_CHANNEL: '#test-channel',
       NOTIFICATION_TEAMS_WEBHOOK: 'https://teams.webhook.com/test'
     };
+  });
+
+  afterEach(() => {
+    // Clean up environment variables
+    delete process.env.NOTIFICATION_EMAIL_HOST;
+    delete process.env.NOTIFICATION_EMAIL_PORT;
+    delete process.env.NOTIFICATION_EMAIL_USER;
+    delete process.env.NOTIFICATION_EMAIL_PASS;
+    delete process.env.NOTIFICATION_EMAIL_FROM;
+    delete process.env.NOTIFICATION_SLACK_WEBHOOK;
+    delete process.env.NOTIFICATION_SLACK_CHANNEL;
+    delete process.env.NOTIFICATION_TEAMS_WEBHOOK;
   });
 
   it('should initialize notifications when enabled', async () => {
