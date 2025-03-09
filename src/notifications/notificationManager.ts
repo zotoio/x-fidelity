@@ -263,13 +263,22 @@ export class NotificationManager {
             // Remove local path prefix from file paths
             const relativePath = file.replace(results.XFI_RESULT.repoPath + '/', '');
             const fileIssues = results.XFI_RESULT.issueDetails.find(detail => detail.filePath === file);
+            
+            // Start with file name as bold list item
+            let output = `- **[${relativePath}](${githubUrl}/${relativePath})**\n`;
+            
+            // Add rule failures with severity-based colors
             const ruleDetails = fileIssues?.errors.map(e => {
                 const lineNumber = e.details?.lineNumber;
                 const lineLink = lineNumber ? `${githubUrl}/${relativePath}#L${lineNumber}` : `${githubUrl}/${relativePath}`;
-                return `\n    - ${e.ruleFailure} (${e.level})${lineNumber ? ` - [Line ${lineNumber}](${lineLink})` : ''}`;
-            }).join('');
+                const color = e.level === 'fatality' ? '#FF0000' : 
+                             e.level === 'error' ? '#FFA500' : 
+                             e.level === 'warning' ? '#FFFF00' : '#808080';
+                
+                return `  - <span style="color: ${color}">${e.ruleFailure}</span>${lineNumber ? ` - [Line ${lineNumber}](${lineLink})` : ''}`;
+            }).join('\n');
             
-            return `- [${relativePath}](${githubUrl}/${relativePath})${ruleDetails}`;
+            return output + ruleDetails;
         }).join('\n');
 
         return `# 🚨 Issues Detected
