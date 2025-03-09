@@ -64,13 +64,7 @@ export class NotificationManager {
       ? `[X-Fidelity] Issues found in your codebase (${results.XFI_RESULT.totalIssues})`
       : '[X-Fidelity] Your codebase passed all checks';
     
-    // Use custom template if available
-    const templateKey = hasIssues ? 'failure' : 'success';
-    const customTemplate = repoXFIConfig?.notifications?.customTemplates?.[templateKey];
-    
-    const content = customTemplate 
-      ? this.applyTemplate(customTemplate, results, affectedFiles)
-      : this.generateReportContent(results, affectedFiles);
+    const content = this.generateReportContent(results, affectedFiles);
 
     // Send through all configured providers
     for (const providerName of this.config.providers) {
