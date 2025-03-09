@@ -301,14 +301,18 @@ export class NotificationManager {
 ${fileDetails}
 </ul>
 
+    // Generate YAML attachment
+    const yamlAttachment = yamlStringify(results.XFI_RESULT);
+    const yamlSection = `
+<h2>📎 Full Results (YAML)</h2>
+<pre style="background-color: #f6f8fa; padding: 16px; border-radius: 6px; overflow-x: auto;">
+${yamlAttachment}
+</pre>`;
+
 ${yamlSection}
 
 <p>Please address these issues as soon as possible.</p>`;
     }
-
-    // Generate YAML attachment
-    const yamlAttachment = yamlStringify(results.XFI_RESULT);
-    const yamlSection = `
 <h2>📎 Full Results (YAML)</h2>
 <pre style="background-color: #f6f8fa; padding: 16px; border-radius: 6px; overflow-x: auto;">
 ${yamlAttachment}

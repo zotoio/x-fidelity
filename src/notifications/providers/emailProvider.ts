@@ -1,6 +1,7 @@
 import { NotificationProvider, Notification } from '../../types/notificationTypes';
 import { logger } from '../../utils/logger';
 import nodemailer from 'nodemailer';
+import { stringify as yamlStringify } from 'yaml';
 
 export interface EmailProviderConfig {
   host: string;
