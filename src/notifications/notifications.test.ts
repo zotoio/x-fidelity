@@ -1,5 +1,4 @@
 import { initializeNotifications } from './index';
-import { initializeNotifications } from './index';
 import { NotificationManager } from './notificationManager';
 import { EmailProvider } from './providers/emailProvider';
 import { SlackProvider } from './providers/slackProvider';
