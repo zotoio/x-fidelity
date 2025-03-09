@@ -64,7 +64,7 @@
             "enabled": true,
             "providers": ["email"],
             "recipients": {
-                "email": ["team@example.com"]
+                "email": ["io@zoto.io"]
             },
             "codeOwners": true,
             "notifyOnSuccess": true,

@@ -38,8 +38,7 @@
     "notifications": {
         "recipients": {
             "email": [
-                "team-lead@example.com",
-                "security-team@example.com"
+                "io@zoto.io"
             ],
             "slack": [
                 "U123456",

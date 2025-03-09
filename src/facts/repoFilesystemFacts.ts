@@ -119,11 +119,11 @@ async function repoFileAnalysis(params: any, almanac: any) {
     }
 
     //if there is already a resultFact for this file, we need to append
-    // const existingResult = almanac.factValue(params.resultFact);
-    // if (Object.keys(existingResult).includes('result')) {
-    //     logger.error(JSON.stringify(existingResult));
-    //     result.result = existingResult.result;
-    // }
+    const existingResult = almanac.factValue(params.resultFact);
+    if (Object.keys(existingResult).includes('result')) {
+        logger.error(JSON.stringify(existingResult));
+        result.result = existingResult.result;
+    }
 
     const analysis: any = [];
     const lines = fileContent.split('\n');
@@ -190,9 +190,9 @@ async function repoFileAnalysis(params: any, almanac: any) {
         }  
     }
 
-    //result.result. = analysis;
+    result.result = analysis;
 
-    almanac.addRuntimeFact(params.resultFact, result);
+    almanac.addRuntimeFact(params.resultFact, result.result);
 
     return result;
 

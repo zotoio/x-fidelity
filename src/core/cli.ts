@@ -32,7 +32,8 @@ export function initCLI() {
             info: (obj: unknown) => console.log(JSON.stringify(obj)),
             error: (obj: unknown) => console.error(JSON.stringify(obj)),
             warn: (obj: unknown) => console.warn(JSON.stringify(obj)), 
-            debug: (obj: unknown) => console.debug(JSON.stringify(obj))
+            debug: (obj: unknown) => console.debug(JSON.stringify(obj)),
+            trace: (obj: unknown) => console.trace(JSON.stringify(obj))
         };
         (global as any).logger = fallbackLogger;
     }
