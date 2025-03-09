@@ -51,6 +51,6 @@
         },
         "codeOwners": true,
         "notifyOnSuccess": false,
-        "notifyOnFailure": true,
+        "notifyOnFailure": true
     }
 }
