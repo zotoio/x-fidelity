@@ -61,7 +61,8 @@ export class EmailProvider implements NotificationProvider {
         from: this.config.from,
         to: notification.recipients.join(', '),
         subject: notification.subject,
-        text: notification.content,
+        html: notification.content, // Send as HTML
+        text: notification.content.replace(/<[^>]*>/g, ''), // Strip HTML tags for plain text version
       });
 
       logger.info({
