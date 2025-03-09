@@ -15,7 +15,6 @@ export interface NotificationConfig {
   providers: string[];
   codeOwnersPath?: string;
   codeOwnersEnabled?: boolean;
-  reportTemplate?: string;
   notifyOnSuccess?: boolean;
   notifyOnFailure?: boolean;
 }

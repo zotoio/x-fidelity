@@ -289,10 +289,6 @@ export interface RepoXFIConfig {
     codeOwners?: boolean;
     notifyOnSuccess?: boolean;
     notifyOnFailure?: boolean;
-    customTemplates?: {
-      success?: string;
-      failure?: string;
-    };
   };
   [key: string]: any;  // Allow for additional properties
 }

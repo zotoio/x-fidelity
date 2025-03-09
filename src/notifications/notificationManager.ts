@@ -245,27 +245,45 @@ export class NotificationManager {
       .replace(/\${executionTime}/g, String(results.XFI_RESULT.durationSeconds));
   }
 
-  private generateReportContent(results: ResultMetadata, affectedFiles: string[]): string {
-    // Basic template - can be enhanced or made configurable
-    return `
-# X-Fidelity Analysis Report
+  private readonly successTemplate = `# Success! 🎉
+
+Your codebase passed all X-Fidelity checks.
 
 ## Summary
-- Archetype: ${results.XFI_RESULT.archetype}
-- Total files analyzed: ${results.XFI_RESULT.fileCount}
-- Issues found: ${results.XFI_RESULT.totalIssues}
-  - Warnings: ${results.XFI_RESULT.warningCount}
-  - Errors: ${results.XFI_RESULT.errorCount}
-  - Fatalities: ${results.XFI_RESULT.fatalityCount}
-- Exemptions: ${results.XFI_RESULT.exemptCount}
+- Archetype: \${archetype}
+- Files analyzed: \${fileCount}
+- Execution time: \${executionTime} seconds
+
+Great job keeping the code clean!`;
+
+  private readonly failureTemplate = `# Issues Detected ⚠️
+
+X-Fidelity found issues in your codebase:
+
+## Summary
+- Archetype: \${archetype}
+- Files analyzed: \${fileCount}
+- Total issues: \${totalIssues}
+  - Warnings: \${warningCount}
+  - Errors: \${errorCount}
+  - Fatalities: \${fatalityCount}
 
 ## Affected Files
-${affectedFiles.map(file => `- ${file}`).join('\n')}
+\${affectedFiles}
 
-## Execution Time
-${results.XFI_RESULT.durationSeconds} seconds
+Please address these issues as soon as possible.`;
 
-For detailed information, please check the CI logs.
-`;
+  private generateReportContent(results: ResultMetadata, affectedFiles: string[]): string {
+    const template = results.XFI_RESULT.totalIssues > 0 ? this.failureTemplate : this.successTemplate;
+    
+    return template
+        .replace(/\${archetype}/g, results.XFI_RESULT.archetype)
+        .replace(/\${fileCount}/g, String(results.XFI_RESULT.fileCount))
+        .replace(/\${totalIssues}/g, String(results.XFI_RESULT.totalIssues))
+        .replace(/\${warningCount}/g, String(results.XFI_RESULT.warningCount))
+        .replace(/\${errorCount}/g, String(results.XFI_RESULT.errorCount))
+        .replace(/\${fatalityCount}/g, String(results.XFI_RESULT.fatalityCount))
+        .replace(/\${affectedFiles}/g, affectedFiles.map(file => `- ${file}`).join('\n'))
+        .replace(/\${executionTime}/g, String(results.XFI_RESULT.durationSeconds));
   }
 }
