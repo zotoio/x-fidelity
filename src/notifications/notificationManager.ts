@@ -266,7 +266,7 @@ X-Fidelity found issues in your codebase:
 \${affectedFiles.map(file => {
   const fileIssues = results.XFI_RESULT.issueDetails.find(detail => detail.filePath === file);
   const ruleNames = fileIssues?.errors.map(e => e.ruleFailure).join(', ');
-  return \`- \${file}\\n  Failed rules: \${ruleNames}\`;
+  return '- ' + file + '\\n  Failed rules: ' + ruleNames;
 }).join('\\n')}
 
 Please address these issues as soon as possible.`;
