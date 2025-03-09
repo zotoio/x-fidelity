@@ -231,7 +231,9 @@ export class NotificationManager {
       const fileDetails = affectedFiles.map(file => {
         const fileIssues = results.XFI_RESULT.issueDetails.find(detail => detail.filePath === file);
         const ruleNames = fileIssues?.errors.map(e => e.ruleFailure).join(', ');
-        return `- ${file}\n  Failed rules: ${ruleNames}`;
+        const fileIssues = results.XFI_RESULT.issueDetails.find(detail => detail.filePath === file);
+        const ruleDetails = fileIssues?.errors.map(e => `\n    - ${e.ruleFailure} (${e.level})`).join('');
+        return `- ${file}${ruleDetails}`;
       }).join('\n');
 
       return `# Issues Detected ⚠️
