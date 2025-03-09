@@ -260,14 +260,16 @@ export class NotificationManager {
     if (results.XFI_RESULT.totalIssues > 0) {
         // Failure template
         const fileDetails = affectedFiles.map(file => {
+            // Remove local path prefix from file paths
+            const relativePath = file.replace(repoPath + '/', '');
             const fileIssues = results.XFI_RESULT.issueDetails.find(detail => detail.filePath === file);
             const ruleDetails = fileIssues?.errors.map(e => {
                 const lineNumber = e.details?.lineNumber;
-                const lineLink = lineNumber ? `${githubUrl}/blob/main/${file}#L${lineNumber}` : `${githubUrl}/blob/main/${file}`;
+                const lineLink = lineNumber ? `${githubUrl}/${relativePath}#L${lineNumber}` : `${githubUrl}/${relativePath}`;
                 return `\n    - ${e.ruleFailure} (${e.level})${lineNumber ? ` - [Line ${lineNumber}](${lineLink})` : ''}`;
             }).join('');
             
-            return `- [${file}](${githubUrl}/blob/main/${file})${ruleDetails}`;
+            return `- [${relativePath}](${githubUrl}/${relativePath})${ruleDetails}`;
         }).join('\n');
 
         return `# 🚨 Issues Detected
