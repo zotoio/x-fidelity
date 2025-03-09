@@ -224,20 +224,6 @@ export class NotificationManager {
     return filePath === pattern;
   }
 
-  private applyTemplate(template: string, results: ResultMetadata, affectedFiles: string[]): string {
-    // Replace template variables with actual values
-    return template
-      .replace(/\${archetype}/g, results.XFI_RESULT.archetype)
-      .replace(/\${fileCount}/g, String(results.XFI_RESULT.fileCount))
-      .replace(/\${totalIssues}/g, String(results.XFI_RESULT.totalIssues))
-      .replace(/\${warningCount}/g, String(results.XFI_RESULT.warningCount))
-      .replace(/\${errorCount}/g, String(results.XFI_RESULT.errorCount))
-      .replace(/\${fatalityCount}/g, String(results.XFI_RESULT.fatalityCount))
-      .replace(/\${exemptCount}/g, String(results.XFI_RESULT.exemptCount))
-      .replace(/\${affectedFiles}/g, affectedFiles.map(file => `- ${file}`).join('\n'))
-      .replace(/\${date}/g, new Date().toISOString())
-      .replace(/\${executionTime}/g, String(results.XFI_RESULT.durationSeconds));
-  }
 
   private readonly successTemplate = `# Success! 🎉
 
