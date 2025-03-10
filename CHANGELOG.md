@@ -1,3 +1,10 @@
+## [3.12.1](https://github.com/zotoio/x-fidelity/compare/v3.12.0...v3.12.1) (2025-03-10)
+
+
+### Bug Fixes
+
+* **examples:** simple rules to check code evolution ([46547a6](https://github.com/zotoio/x-fidelity/commit/46547a6d5127976178b57010dbc33ad16d0cbdbc))
+
 # [3.12.0](https://github.com/zotoio/x-fidelity/compare/v3.11.0...v3.12.0) (2025-03-10)
 
 
