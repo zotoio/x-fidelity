@@ -1,0 +1,30 @@
+{
+    "name": "functionComplexity-iterative",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "notEqual",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "ast",
+                "params": {
+                    "resultFact": "astResult"
+                },
+                "operator": "astComplexity",
+                "value": 5
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "Function complexity exceeds threshold of 5",
+            "details": {
+                "fact": "astResult"
+            }
+        }
+    }
+}
