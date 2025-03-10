@@ -54,6 +54,10 @@ export const functionComplexityFact: FactDefn = {
                 }))
             }, 'Completed complexity analysis');
 
+            // Handle empty array case
+            const complexityValues = complexities.map(c => c.complexity);
+            const maxComplexity = complexityValues.length > 0 ? Math.max(...complexityValues) : 0;
+            
             const result = {
                 complexities,
                 maxComplexity
