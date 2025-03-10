@@ -12,10 +12,10 @@
                 "fact": "globalFileAnalysis",
                 "params": {
                     "newPatterns": [
-                        "logger\\.info\\("
+                        "const plugin: XFiPlugin = {"
                     ],
                     "legacyPatterns": [
-                        "logger\\.debug\\("
+                        "import {.*FactDefn.*} from '\\.\\./types/typeDefs';"
                     ],
                     "fileFilter": ".*\\.(ts|js)$",
                     "resultFact": "sdkUsageAnalysis"

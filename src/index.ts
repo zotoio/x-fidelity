@@ -81,18 +81,13 @@ export async function main() {
                 // Send notifications if enabled
                 if (notificationConfig.enabled) {
                     logger.debug('Notifications are enabled, preparing to send report');
-                    // Get list of affected files (those with issues)
-                    const affectedFiles = getAffectedFiles(resultMetadata);
                     logger.debug({
-                        affectedFilesCount: affectedFiles.length,
-                        hasRepoConfig: !!resultMetadata.XFI_RESULT.repoXFIConfig
+                        affectedFilesCount: resultMetadata.XFI_RESULT.issueDetails.length
                     }, 'Preparing notification data');
                     
                     // Pass the repo config to the notification manager
                     await notificationManager.sendReport(
-                        resultMetadata, 
-                        affectedFiles,
-                        resultMetadata.XFI_RESULT.repoXFIConfig
+                        resultMetadata
                     );
                 }
 
@@ -133,21 +128,6 @@ export async function main() {
             setTimeout(() => process.exit(1), 3000);
         }
     }
-}
-
-// Helper function to extract affected files from results
-function getAffectedFiles(resultMetadata: ResultMetadata): string[] {
-    const affectedFiles: string[] = [];
-    
-    if (resultMetadata.XFI_RESULT.issueDetails) {
-        for (const issue of resultMetadata.XFI_RESULT.issueDetails) {
-            if (issue.filePath && !affectedFiles.includes(issue.filePath)) {
-                affectedFiles.push(issue.filePath);
-            }
-        }
-    }
-    
-    return affectedFiles;
 }
 
 export { repoDir } from './core/configManager';

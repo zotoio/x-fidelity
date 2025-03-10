@@ -23,11 +23,9 @@
                     "checkPattern": [
                         "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
                         "(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)",
-                        "(password|passphrase)",
                         "(private[_-]?key|ssh[_-]?key)",
                         "(oauth[_-]?token|jwt[_-]?token)",
-                        "db[_-]?password",
-                        "(declare)"
+                        "db[_-]?password"
                     ],
                     "resultFact": "fileResults"
                 },
