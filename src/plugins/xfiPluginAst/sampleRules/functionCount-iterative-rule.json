@@ -1,0 +1,30 @@
+{
+    "name": "functionCount-iterative",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "notEqual",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "functionCount",
+                "params": {
+                    "resultFact": "functionCountResult"
+                },
+                "operator": "functionCount",
+                "value": 5
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "File contains too many functions (>5). Consider splitting into multiple files.",
+            "details": {
+                "fact": "functionCountResult"
+            }
+        }
+    }
+}
