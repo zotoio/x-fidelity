@@ -10,7 +10,8 @@
         "invalidSystemIdConfigured-iterative",
         "missingRequiredFiles-global",
         "factDoesNotAddResultToAlmanac-iterative",
-        "newSdkFeatureNotAdoped-global"
+        "newSdkFeatureNotAdoped-global",
+        "mutuallyExclusivePackages-global"
     ],
     "operators": [
         "fileContains",

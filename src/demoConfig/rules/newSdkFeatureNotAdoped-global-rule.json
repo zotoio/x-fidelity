@@ -12,7 +12,7 @@
                 "fact": "globalFileAnalysis",
                 "params": {
                     "newPatterns": [
-                        "const plugin: XFiPlugin = {"
+                        "const plugin: XFiPlugin.="
                     ],
                     "legacyPatterns": [
                         "import {.*FactDefn.*} from '\\.\\./types/typeDefs';"

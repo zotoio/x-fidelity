@@ -1,0 +1,38 @@
+{                                                                                                                      
+     "name": "mutuallyExclusivePackages-global",                                                                        
+     "conditions": {                                                                                                    
+         "all": [                                                                                                       
+             {                                                                                                          
+                 "fact": "fileData",                                                                                    
+                 "path": "$.fileName",                                                                                  
+                 "operator": "equal",                                                                                   
+                 "value": "REPO_GLOBAL_CHECK"                                                                           
+             },                                                                                                         
+             {                                                                                                          
+                 "fact": "globalFileAnalysis",                                                                          
+                 "params": {                                                                                            
+                     "patterns": [                                                                                      
+                         "import.*from\\s+['\"](@mui/material.*)['\"]",                                              
+                         "import.*from\\s+['\"](antd)['\"]",                                              
+                         "require\\(['\"](@mui/material.*)['\"]\\)",                                                 
+                         "require\\(['\"](antd)['\"]\\)"                                                  
+                     ],                                                                                                 
+                     "fileFilter": "\\.(js|jsx|ts|tsx)$",                                                               
+                     "resultFact": "packageUsageAnalysis"                                                               
+                 },                                                                                                     
+                 "operator": "globalPatternCount",                                                                      
+                 "value": 0                                                                                             
+             }                                                                                                          
+         ]                                                                                                              
+     },                                                                                                                 
+     "event": {                                                                                                         
+         "type": "fatality",                                                                                            
+         "params": {                                                                                                    
+             "message": "Mutually exclusive packages detected. MUI and AntDesign should not be used together.",                                                                                                       
+             "details": {                                                                                               
+                 "fact": "packageUsageAnalysis",                                                                        
+                 "recommendation": "Choose migrate to MUI."                                                                          
+             }                                                                                                          
+         }                                                                                                              
+     }                                                                                                                  
+ }    
