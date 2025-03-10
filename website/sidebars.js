@@ -14,6 +14,7 @@ module.exports = {
         'exemptions',
         'openai-integration',
         'library-migration-tracking',
+        'notifications',
       ],
     },
     {
@@ -34,7 +35,6 @@ module.exports = {
         'docker-deployment',
         'github-webhooks',
         'telemetry',
-        'notifications',
       ],
     },
     {
