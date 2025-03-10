@@ -36,27 +36,40 @@ export const functionComplexityFact: FactDefn = {
             
             visit(tree.rootNode);
 
+            // Get minimum complexity threshold from params
+            const minimumComplexityLogged = params?.minimumComplexityLogged || 0;
+            
             // Analyze each function node
             for (const node of functionNodes) {
                 const name = getFunctionName(node);
                 const complexity = analyzeFunctionComplexity(node);
                 
-                logger.debug({ 
-                    functionName: name,
-                    nodeType: node.type,
-                    complexity,
-                    startLine: node.startPosition.row + 1,
-                    endLine: node.endPosition.row + 1
-                }, 'Analyzed function complexity');
+                // Only include functions that exceed the minimum complexity threshold
+                if (complexity >= minimumComplexityLogged) {
+                    logger.debug({ 
+                        functionName: name,
+                        nodeType: node.type,
+                        complexity,
+                        startLine: node.startPosition.row + 1,
+                        endLine: node.endPosition.row + 1,
+                        threshold: minimumComplexityLogged
+                    }, 'Function exceeds complexity threshold');
 
-                complexities.push({
-                    name,
-                    complexity,
-                    location: {
-                        start: node.startPosition,
-                        end: node.endPosition
-                    }
-                });
+                    complexities.push({
+                        name,
+                        complexity,
+                        location: {
+                            start: node.startPosition,
+                            end: node.endPosition
+                        }
+                    });
+                } else {
+                    logger.debug({
+                        functionName: name,
+                        complexity,
+                        threshold: minimumComplexityLogged
+                    }, 'Function below complexity threshold - skipping');
+                }
             }
 
             // Calculate max complexity from values

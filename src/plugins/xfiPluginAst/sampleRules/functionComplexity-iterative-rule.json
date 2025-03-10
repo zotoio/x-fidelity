@@ -11,7 +11,8 @@
             {
                 "fact": "ast",
                 "params": {
-                    "resultFact": "astResult"
+                    "resultFact": "astResult",
+                    "minimumComplexityLogged": 5
                 },
                 "operator": "astComplexity",
                 "value": 5
