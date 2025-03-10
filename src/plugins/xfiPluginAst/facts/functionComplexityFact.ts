@@ -1,12 +1,15 @@
 import { FactDefn, FileData } from '../../../types/typeDefs';
 import { logger } from '../../../utils/logger';
 import { SyntaxNode } from 'tree-sitter';
+import { generateAst } from '../../../utils/astUtils';
 
 export const functionComplexityFact: FactDefn = {
     name: 'functionComplexity',
     fn: async (params: any, almanac: any) => {
         try {
-            const { tree } = await almanac.factValue('astResult');
+            const fileData: FileData = await almanac.factValue('fileData');
+            const { tree } = generateAst(fileData);
+            
             if (!tree) {
                 logger.debug('No AST available for complexity analysis');
                 return { complexity: 0 };
