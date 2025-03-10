@@ -44,7 +44,10 @@ export const functionComplexityFact: FactDefn = {
                 }
             });
 
-            const maxComplexity = Math.max(...complexities.map(c => c.complexity));
+            // Calculate max complexity from values
+            const complexityValues = complexities.map(c => c.complexity);
+            const maxComplexity = complexityValues.length > 0 ? Math.max(...complexityValues) : 0;
+            
             logger.debug({ 
                 functionCount: complexities.length,
                 maxComplexity,
@@ -53,10 +56,6 @@ export const functionComplexityFact: FactDefn = {
                     complexity: c.complexity 
                 }))
             }, 'Completed complexity analysis');
-
-            // Handle empty array case
-            const complexityValues = complexities.map(c => c.complexity);
-            const maxComplexity = complexityValues.length > 0 ? Math.max(...complexityValues) : 0;
             
             const result = {
                 complexities,
