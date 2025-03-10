@@ -1,3 +1,31 @@
+# [3.12.0](https://github.com/zotoio/x-fidelity/compare/v3.11.0...v3.12.0) (2025-03-10)
+
+
+### Bug Fixes
+
+* add HTML email support with plain text fallback ([ec0f252](https://github.com/zotoio/x-fidelity/commit/ec0f2529d4f05ca570cd4b11db07ede2d4d21113))
+* correct string interpolation syntax in notification template ([092b64d](https://github.com/zotoio/x-fidelity/commit/092b64d3f614d505c7a792bd7a559e10aed3192c))
+* correct template literal syntax in notification manager ([f5720c2](https://github.com/zotoio/x-fidelity/commit/f5720c230051d8e38bbc95024a02d7298d2299f5))
+* escape nested template literals in notification template ([4feb497](https://github.com/zotoio/x-fidelity/commit/4feb497255615b93655ba7bba8729e55b56b4016))
+* **notify:** email formatting fixes ([06e80a8](https://github.com/zotoio/x-fidelity/commit/06e80a81bab30c1ab03d202d0649306fe331debd))
+* remove duplicate fileIssues declaration in notification manager ([d5678a1](https://github.com/zotoio/x-fidelity/commit/d5678a1620fae5b78ee475b95ee2248051d17c8f))
+* remove local directory paths from notification file links ([d55da96](https://github.com/zotoio/x-fidelity/commit/d55da9637477b0b14acb45d99a8a1a4b9e661c30))
+* remove trailing comma in .xfi-config.json ([41c7368](https://github.com/zotoio/x-fidelity/commit/41c7368a7e7ba8b989f3d8bf2fc0ce9e3e4d1183))
+* replace nested template literals with string concatenation ([89712cf](https://github.com/zotoio/x-fidelity/commit/89712cf77e231863e5bcb6c214fedf5b9f0d1f3f))
+* resolve TypeScript errors with yaml imports and variable declarations ([af2ea8e](https://github.com/zotoio/x-fidelity/commit/af2ea8ee80d48b9dddb1f586d61285518aee0b1c))
+* use repoPath from results metadata instead of undefined variable ([36b42fa](https://github.com/zotoio/x-fidelity/commit/36b42fae14895ba147955806efcf3cc94ec1d306))
+
+
+### Features
+
+* add failed rule names to notification template for each file ([d09d019](https://github.com/zotoio/x-fidelity/commit/d09d019bc1f9eff2f5c375185aec7f8f54fb7f96))
+* add severity levels to failed rules in notification output ([a90ffe7](https://github.com/zotoio/x-fidelity/commit/a90ffe724c440f60f1f1c59be0ec3074316c28c1))
+* add YAML results attachment to email notifications ([e2671b4](https://github.com/zotoio/x-fidelity/commit/e2671b46081168b1ac911f595a05f3301f8df780))
+* enhance notification formatting with HTML and color-coded severity ([f034a85](https://github.com/zotoio/x-fidelity/commit/f034a858c0da629d7fc134818babcbf28fa7b03e))
+* enhance notification templates with clickable links and emojis ([3afbd5d](https://github.com/zotoio/x-fidelity/commit/3afbd5db68cfbb604407e791f58c184961e7dc78))
+* support GitHub Enterprise links in notifications ([092867f](https://github.com/zotoio/x-fidelity/commit/092867fd3948e1bfcc10e8ecfc312686f37c9afa))
+* use git commands to extract GitHub repo details ([8f35471](https://github.com/zotoio/x-fidelity/commit/8f3547145a612444b9320c0b5d1b75529edfaa4a))
+
 # [3.11.0](https://github.com/zotoio/x-fidelity/compare/v3.10.0...v3.11.0) (2025-03-09)
 
 
