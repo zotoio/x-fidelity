@@ -1,3 +1,29 @@
+# [3.13.0](https://github.com/zotoio/x-fidelity/compare/v3.12.1...v3.13.0) (2025-03-10)
+
+
+### Bug Fixes
+
+* add proper TypeScript types for tree-sitter nodes and imports ([9f9d23f](https://github.com/zotoio/x-fidelity/commit/9f9d23ff8b7a08fae53e3d7512c368d187a71976))
+* correct JavaScript parser language initialization ([9ea4ba0](https://github.com/zotoio/x-fidelity/commit/9ea4ba0077cf69f4fa04f3fa0bff65b6b67974a0))
+* correct TypeScript import declaration for tree-sitter-typescript ([a0c3355](https://github.com/zotoio/x-fidelity/commit/a0c3355bd6774d579ac14c5bf944c89e7a1151db))
+* handle empty array case for maxComplexity calculation ([301e5c3](https://github.com/zotoio/x-fidelity/commit/301e5c3e53e37e0976b81a0f6f1c0c1748c3666c))
+* replace cursor traversal with recursive AST traversal for complexity analysis ([4d54473](https://github.com/zotoio/x-fidelity/commit/4d5447324be6d36cd25b9b752e647ec971ffaf95))
+* resolve maxComplexity variable redeclaration in functionComplexityFact ([0d35ea8](https://github.com/zotoio/x-fidelity/commit/0d35ea82a88bca3b6b5c9d9b8a6456e1ee083af4))
+* Update fact value key from 'ast' to 'astResult' ([e930b53](https://github.com/zotoio/x-fidelity/commit/e930b53d7bbc9414d66906903c0b01a1f2058405))
+* update tree-sitter TypeScript import path and usage ([8bf7ce6](https://github.com/zotoio/x-fidelity/commit/8bf7ce6b34be567216dc331f99b87be67fd5d8f3))
+* update tree-sitter walk API usage to use cursor-based traversal ([f92f2c0](https://github.com/zotoio/x-fidelity/commit/f92f2c0abd14d233d43ec377c4f783bbbae35da5))
+
+
+### Features
+
+* add AST analysis capabilities with function complexity detection ([9d01df0](https://github.com/zotoio/x-fidelity/commit/9d01df0bc3c49e92b6b870c87313a0936704b7b2))
+* add debug logging to AST plugin operations ([cd7ea16](https://github.com/zotoio/x-fidelity/commit/cd7ea16680d4c8d24fea1d14442ed8c3448b159b))
+* add function count rule with AST analysis ([3311d85](https://github.com/zotoio/x-fidelity/commit/3311d8528ff369cac21bee346dce7c2c109208fe))
+* add minimum complexity threshold filter for function analysis ([a67279c](https://github.com/zotoio/x-fidelity/commit/a67279c134d9dbdd711d9782389d6ee8629d929f))
+* add type declarations for tree-sitter-typescript module ([afd1553](https://github.com/zotoio/x-fidelity/commit/afd1553895f33eca6a016e194d70f504d3fb0e03))
+* create AST plugin with facts and operators ([0be5fa5](https://github.com/zotoio/x-fidelity/commit/0be5fa59d76ad2b5fa261545b0c1254ae1441c6c))
+* **plugin:** ast based facts and rule examples ([b734111](https://github.com/zotoio/x-fidelity/commit/b7341118645627967f0adfbe89664c4ffc5752a2))
+
 ## [3.12.1](https://github.com/zotoio/x-fidelity/compare/v3.12.0...v3.12.1) (2025-03-10)
 
 
