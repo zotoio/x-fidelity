@@ -19,38 +19,44 @@ export const functionComplexityFact: FactDefn = {
             logger.debug('Starting function complexity analysis');
 
             // Visit each function declaration/expression
-            const cursor = tree.rootNode.walk();
-            let reachedEnd = false;
-
-            while (!reachedEnd) {
-                if (cursor.nodeType === 'function_declaration' || 
-                    cursor.nodeType === 'function_expression' ||
-                    cursor.nodeType === 'arrow_function') {
-
-                    const name = getFunctionName(cursor.currentNode);
-                    const complexity = analyzeFunctionComplexity(cursor.currentNode);
-                    logger.debug({ 
-                        functionName: name,
-                        nodeType: cursor.nodeType,
-                        complexity,
-                        startLine: cursor.currentNode.startPosition.row + 1,
-                        endLine: cursor.currentNode.endPosition.row + 1
-                    }, 'Analyzed function complexity');
-
-                    complexities.push({
-                        name,
-                        complexity,
-                        location: {
-                            start: cursor.currentNode.startPosition,
-                            end: cursor.currentNode.endPosition
-                        }
-                    });
+            // Traverse the AST to find all function nodes
+            const functionNodes: any[] = [];
+            
+            function visit(node: any) {
+                if (node.type === 'function_declaration' || 
+                    node.type === 'function_expression' ||
+                    node.type === 'arrow_function') {
+                    functionNodes.push(node);
                 }
-
-                reachedEnd = !cursor.gotoNextSibling();
-                if (reachedEnd && cursor.gotoParent()) {
-                    reachedEnd = !cursor.gotoNextSibling();
+                
+                for (let child of node.children || []) {
+                    visit(child);
                 }
+            }
+            
+            visit(tree.rootNode);
+
+            // Analyze each function node
+            for (const node of functionNodes) {
+                const name = getFunctionName(node);
+                const complexity = analyzeFunctionComplexity(node);
+                
+                logger.debug({ 
+                    functionName: name,
+                    nodeType: node.type,
+                    complexity,
+                    startLine: node.startPosition.row + 1,
+                    endLine: node.endPosition.row + 1
+                }, 'Analyzed function complexity');
+
+                complexities.push({
+                    name,
+                    complexity,
+                    location: {
+                        start: node.startPosition,
+                        end: node.endPosition
+                    }
+                });
             }
 
             // Calculate max complexity from values
@@ -92,11 +98,8 @@ function analyzeFunctionComplexity(node: any): number {
     // - Loops (for, while, do-while)
     // - Logical operators (&&, ||)
     // - Try/catch blocks
-    const cursor = node.walk();
-    let reachedEnd = false;
-
-    while (!reachedEnd) {
-        switch (cursor.nodeType) {
+    function visit(node: any) {
+        switch (node.type) {
             case 'if_statement':
             case 'switch_case':
             case 'for_statement':
@@ -111,14 +114,12 @@ function analyzeFunctionComplexity(node: any): number {
                 break;
         }
 
-        reachedEnd = !cursor.gotoFirstChild();
-        if (reachedEnd) {
-            reachedEnd = !cursor.gotoNextSibling();
-            if (reachedEnd && cursor.gotoParent()) {
-                reachedEnd = !cursor.gotoNextSibling();
-            }
+        for (let child of node.children || []) {
+            visit(child);
         }
     }
+
+    visit(node);
 
     return complexity;
 }
