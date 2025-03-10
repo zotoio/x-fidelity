@@ -51,9 +51,9 @@ Add notification settings to your `.xfi-config.json`:
 
 ## Providers
 
-### Email
+### Email (Currently Available)
 
-Configure email notifications with these environment variables:
+Email is currently the only fully implemented notification provider. Configure email notifications with these environment variables:
 
 ```bash
 NOTIFICATION_EMAIL_HOST=smtp.example.com
@@ -64,22 +64,13 @@ NOTIFICATION_EMAIL_PASS=password
 NOTIFICATION_EMAIL_FROM=xfidelity@example.com
 ```
 
-### Slack
+### Slack (Coming Soon)
 
-Configure Slack notifications:
+Slack notifications are planned but not yet implemented.
 
-```bash
-NOTIFICATION_SLACK_WEBHOOK=https://hooks.slack.com/services/...
-NOTIFICATION_SLACK_CHANNEL=#engineering
-```
+### Microsoft Teams (Coming Soon)
 
-### Microsoft Teams
-
-Configure Teams notifications:
-
-```bash
-NOTIFICATION_TEAMS_WEBHOOK=https://outlook.office.com/webhook/...
-```
+Microsoft Teams notifications are planned but not yet implemented.
 
 ## Code Owners Integration
 
@@ -111,20 +102,6 @@ Notifications include:
 - Links to relevant code (when available)
 - Full results in YAML format (email only)
 
-## Custom Templates
-
-You can customize notification templates in your `.xfi-config.json`:
-
-```json
-{
-  "notifications": {
-    "customTemplates": {
-      "success": "All checks passed successfully! 🎉\n\nArchetype: ${archetype}\nFiles analyzed: ${fileCount}\nExecution time: ${executionTime}s",
-      "failure": "Issues found in codebase:\n\nArchetype: ${archetype}\nTotal issues: ${totalIssues}\n- Warnings: ${warningCount}\n- Errors: ${errorCount}\n- Fatalities: ${fatalityCount}\n\nAffected files:\n${affectedFiles}"
-    }
-  }
-}
-```
 
 ## Best Practices
 
