@@ -6,7 +6,7 @@ export const functionComplexityFact: FactDefn = {
     name: 'functionComplexity',
     fn: async (params: any, almanac: any) => {
         try {
-            const { tree } = await almanac.factValue('ast');
+            const { tree } = await almanac.factValue('astResult');
             if (!tree) {
                 logger.debug('No AST available for complexity analysis');
                 return { complexity: 0 };
