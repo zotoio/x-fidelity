@@ -13,7 +13,7 @@ export const astComplexity: OperatorDefn = {
             }
 
             const result = factValue.maxComplexity >= threshold;
-            logger.debug({ 
+            logger.trace({ 
                 maxComplexity: factValue.maxComplexity,
                 threshold,
                 exceedsThreshold: result,

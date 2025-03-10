@@ -7,12 +7,14 @@
         "nonStandardDirectoryStructure-global",
         "openaiAnalysisTop5-global",
         "openaiAnalysisA11y-global",
+        "openaiAnalysisTestCriticality-global",
         "invalidSystemIdConfigured-iterative",
         "missingRequiredFiles-global",
         "factDoesNotAddResultToAlmanac-iterative",
         "newSdkFeatureNotAdoped-global",
         "mutuallyExclusivePackages-global",
-        "functionComplexity-iterative"
+        "functionComplexity-iterative",
+        "functionCount-iterative"
     ],
     "operators": [
         "fileContains",
@@ -24,7 +26,8 @@
         "regexMatch",
         "globalPatternRatio",
         "globalPatternCount",
-        "astComplexity"
+        "astComplexity",
+        "functionCount"
     ],
     "facts": [
         "repoFilesystemFacts",
@@ -34,11 +37,13 @@
         "missingRequiredFiles",
         "globalFileAnalysisFacts",
         "ast",
-        "functionComplexity"
+        "functionComplexity",
+        "functionCount"
     ],
     "plugins": [
         "xfiPluginRequiredFiles",
-        "xfiPluginRemoteStringValidator"
+        "xfiPluginRemoteStringValidator",
+        "xfiPluginAst"
     ],
     "config": {
         "minimumDependencyVersions": {

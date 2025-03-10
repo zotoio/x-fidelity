@@ -1,0 +1,31 @@
+{
+    "name": "openaiAnalysisTestCriticality-global",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "openaiAnalysis",
+                "params": {
+                    "prompt": "what are the files and features in the codebase that are most likely to require unit test uplift in order to be able to trust pull-request checks?",
+                    "resultFact": "openaiAnalysisTestCriticality"
+                },
+                "operator": "openaiAnalysisHighSeverity",
+                "value": 8
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "OpenAI suggestions for the supplied prompt.",
+            "details": {
+                "fact": "openaiAnalysisTestCriticality"
+            }
+        }
+    }
+}

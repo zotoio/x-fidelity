@@ -11,7 +11,7 @@ export const astFact: FactDefn = {
 
             // Add the AST to the almanac for other facts/operators to use
             if (params?.resultFact) {
-                logger.debug({ resultFact: params.resultFact }, 'Adding AST to almanac');
+                logger.trace({ resultFact: params.resultFact }, 'Adding AST to almanac');
                 almanac.addRuntimeFact(params.resultFact, result);
             }
 

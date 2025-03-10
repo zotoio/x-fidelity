@@ -10,8 +10,7 @@
     "declaration": true,
     "types": [
       "node",
-      "jest",
-      "pino"
+      "jest"
     ],
     "typeRoots": [
       "./node_modules/@types",

@@ -9,22 +9,22 @@
                 "value": "REPO_GLOBAL_CHECK"
             },
             {
-                "fact": "ast",
+                "fact": "functionComplexity",
                 "params": {
-                    "resultFact": "astResult",
-                    "minimumComplexityLogged": 5
+                    "resultFact": "complexityResult",
+                    "minimumComplexityLogged": 8
                 },
                 "operator": "astComplexity",
-                "value": 5
+                "value": 10
             }
         ]
     },
     "event": {
         "type": "warning",
         "params": {
-            "message": "Function complexity exceeds threshold of 5",
+            "message": "Functions detected with high cyclomatic complexity (10+). Consider refactoring.",
             "details": {
-                "fact": "astResult"
+                "fact": "complexityResult"
             }
         }
     }

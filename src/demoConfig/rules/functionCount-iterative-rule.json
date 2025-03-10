@@ -4,9 +4,9 @@
         "all": [
             {
                 "fact": "fileData",
-                "path": "$.fileName",
-                "operator": "notEqual",
-                "value": "REPO_GLOBAL_CHECK"
+                "path": "$.filePath",
+                "operator": "regexMatch",
+                "value": "^.*\\/facts\\/(?!.*\\.test).*\\.ts$"
             },
             {
                 "fact": "functionCount",

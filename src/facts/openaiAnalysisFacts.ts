@@ -17,7 +17,7 @@ if (isOpenAIEnabled()) {
 
 const openaiAnalysis = async function (params: any, almanac: Almanac) {
     let result: object = {'result': []};
-    const model = process.env.OPENAI_MODEL || 'o3-mini';
+    const model = process.env.OPENAI_MODEL || 'gpt-4o';
     
     try {
         if (!openai) {
@@ -38,7 +38,7 @@ const openaiAnalysis = async function (params: any, almanac: Almanac) {
 
         const payload: ChatCompletionCreateParams = {
             model,
-            reasoning_effort: 'high',
+            //reasoning_effort: 'high',
             messages: [
                 { role: 'system', content: openaiSystemPrompt },
                 { role: 'user', content: `${params.prompt} 

@@ -2,7 +2,6 @@ import { collectRepoFileData } from './repoFilesystemFacts';
 import { getDependencyVersionFacts } from './repoDependencyFacts';
 import { openaiAnalysis } from './openaiAnalysisFacts';
 import { globalFileAnalysis } from './globalFileAnalysisFacts';
-import { astFact, functionComplexityFact } from './astFacts';
 import { pluginRegistry } from '../core/pluginRegistry';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { FactDefn } from '../types/typeDefs';
