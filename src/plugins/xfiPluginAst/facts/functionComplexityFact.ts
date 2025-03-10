@@ -19,33 +19,39 @@ export const functionComplexityFact: FactDefn = {
             logger.debug('Starting function complexity analysis');
 
             // Visit each function declaration/expression
-            tree.rootNode.walk({
-                visit: (node: SyntaxNode) => {
-                    if (node.type === 'function_declaration' || 
-                        node.type === 'function_expression' ||
-                        node.type === 'arrow_function') {
+            const cursor = tree.rootNode.walk();
+            let reachedEnd = false;
 
-                        const name = getFunctionName(node);
-                        const complexity = analyzeFunctionComplexity(node);
-                        logger.debug({ 
-                            functionName: name,
-                            nodeType: node.type,
-                            complexity,
-                            startLine: node.startPosition.row + 1,
-                            endLine: node.endPosition.row + 1
-                        }, 'Analyzed function complexity');
+            while (!reachedEnd) {
+                if (cursor.nodeType === 'function_declaration' || 
+                    cursor.nodeType === 'function_expression' ||
+                    cursor.nodeType === 'arrow_function') {
 
-                        complexities.push({
-                            name,
-                            complexity,
-                            location: {
-                                start: node.startPosition,
-                                end: node.endPosition
-                            }
-                        });
-                    }
+                    const name = getFunctionName(cursor.currentNode);
+                    const complexity = analyzeFunctionComplexity(cursor.currentNode);
+                    logger.debug({ 
+                        functionName: name,
+                        nodeType: cursor.nodeType,
+                        complexity,
+                        startLine: cursor.currentNode.startPosition.row + 1,
+                        endLine: cursor.currentNode.endPosition.row + 1
+                    }, 'Analyzed function complexity');
+
+                    complexities.push({
+                        name,
+                        complexity,
+                        location: {
+                            start: cursor.currentNode.startPosition,
+                            end: cursor.currentNode.endPosition
+                        }
+                    });
                 }
-            });
+
+                reachedEnd = !cursor.gotoNextSibling();
+                if (reachedEnd && cursor.gotoParent()) {
+                    reachedEnd = !cursor.gotoNextSibling();
+                }
+            }
 
             // Calculate max complexity from values
             const complexityValues = complexities.map(c => c.complexity);
@@ -86,24 +92,33 @@ function analyzeFunctionComplexity(node: any): number {
     // - Loops (for, while, do-while)
     // - Logical operators (&&, ||)
     // - Try/catch blocks
-    node.walk({
-        visit: (child: SyntaxNode) => {
-            switch (child.type) {
-                case 'if_statement':
-                case 'switch_case':
-                case 'for_statement':
-                case 'while_statement':
-                case 'do_statement':
-                case 'try_statement':
-                    complexity++;
-                    break;
-                case '&&':
-                case '||':
-                    complexity += 0.5;
-                    break;
+    const cursor = node.walk();
+    let reachedEnd = false;
+
+    while (!reachedEnd) {
+        switch (cursor.nodeType) {
+            case 'if_statement':
+            case 'switch_case':
+            case 'for_statement':
+            case 'while_statement':
+            case 'do_statement':
+            case 'try_statement':
+                complexity++;
+                break;
+            case '&&':
+            case '||':
+                complexity += 0.5;
+                break;
+        }
+
+        reachedEnd = !cursor.gotoFirstChild();
+        if (reachedEnd) {
+            reachedEnd = !cursor.gotoNextSibling();
+            if (reachedEnd && cursor.gotoParent()) {
+                reachedEnd = !cursor.gotoNextSibling();
             }
         }
-    });
+    }
 
     return complexity;
 }
