@@ -6,7 +6,7 @@ import * as TypeScript from 'tree-sitter-typescript/typescript';
 
 // Initialize parsers
 const jsParser = new Parser();
-jsParser.setLanguage(JavaScript.default as unknown as Language);
+jsParser.setLanguage(JavaScript as unknown as Language);
 
 const tsParser = new Parser();
 tsParser.setLanguage(TypeScript as unknown as Language);
