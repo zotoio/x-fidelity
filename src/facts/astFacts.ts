@@ -2,7 +2,7 @@ import { FactDefn, FileData } from '../types/typeDefs';
 import { logger } from '../utils/logger';
 import Parser, { Language, SyntaxNode } from 'tree-sitter';
 import * as JavaScript from 'tree-sitter-javascript';
-import * as TypeScript from 'tree-sitter-typescript/typescript';
+import { default as TypeScript } from 'tree-sitter-typescript/typescript';
 
 // Initialize parsers
 const jsParser = new Parser();
