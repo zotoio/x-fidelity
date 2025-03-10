@@ -62,6 +62,10 @@ Options:
 - `CERT_PATH`: SSL certificate path
 - `NODE_TLS_REJECT_UNAUTHORIZED`: Allow self-signed certs
 - `XFI_SHARED_SECRET`: Shared secret for security
+- `NOTIFICATIONS_ENABLED`: Enable notification system
+- `NOTIFICATION_PROVIDERS`: Comma-separated list of notification providers to use
+- `CODEOWNERS_PATH`: Path to CODEOWNERS file (default: .github/CODEOWNERS)
+- `CODEOWNERS_ENABLED`: Enable code owners integration
 
 ## Example Commands
 

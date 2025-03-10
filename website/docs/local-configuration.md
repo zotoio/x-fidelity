@@ -112,6 +112,28 @@ Example `team1-exemptions.json`:
 ]
 ```
 
+### Notification Configuration
+
+Example notification settings in `.xfi-config.json`:
+```json
+{
+    "notifications": {
+        "recipients": {
+            "email": ["team@example.com"],
+            "slack": ["U123456", "U789012"],
+            "teams": ["user1@example.com", "user2@example.com"]
+        },
+        "codeOwners": true,
+        "notifyOnSuccess": false,
+        "notifyOnFailure": true,
+        "customTemplates": {
+            "success": "All checks passed successfully! 🎉\n\nArchetype: ${archetype}\nFiles analyzed: ${fileCount}\nExecution time: ${executionTime}s",
+            "failure": "Issues found in codebase:\n\nArchetype: ${archetype}\nTotal issues: ${totalIssues}\n- Warnings: ${warningCount}\n- Errors: ${errorCount}\n- Fatalities: ${fatalityCount}\n\nAffected files:\n${affectedFiles}"
+        }
+    }
+}
+```
+
 ## Best Practices
 
 1. **Version Control**: Keep configurations in version control

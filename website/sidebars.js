@@ -34,6 +34,7 @@ module.exports = {
         'docker-deployment',
         'github-webhooks',
         'telemetry',
+        'notifications',
       ],
     },
     {
