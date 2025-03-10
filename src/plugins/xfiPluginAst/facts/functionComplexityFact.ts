@@ -8,10 +8,12 @@ export const functionComplexityFact: FactDefn = {
         try {
             const { tree } = await almanac.factValue('ast');
             if (!tree) {
+                logger.debug('No AST available for complexity analysis');
                 return { complexity: 0 };
             }
 
             const complexities: any[] = [];
+            logger.debug('Starting function complexity analysis');
 
             // Visit each function declaration/expression
             tree.rootNode.walk({
@@ -20,9 +22,18 @@ export const functionComplexityFact: FactDefn = {
                         node.type === 'function_expression' ||
                         node.type === 'arrow_function') {
 
+                        const name = getFunctionName(node);
                         const complexity = analyzeFunctionComplexity(node);
+                        logger.debug({ 
+                            functionName: name,
+                            nodeType: node.type,
+                            complexity,
+                            startLine: node.startPosition.row + 1,
+                            endLine: node.endPosition.row + 1
+                        }, 'Analyzed function complexity');
+
                         complexities.push({
-                            name: getFunctionName(node),
+                            name,
                             complexity,
                             location: {
                                 start: node.startPosition,
@@ -33,12 +44,23 @@ export const functionComplexityFact: FactDefn = {
                 }
             });
 
+            const maxComplexity = Math.max(...complexities.map(c => c.complexity));
+            logger.debug({ 
+                functionCount: complexities.length,
+                maxComplexity,
+                complexityBreakdown: complexities.map(c => ({ 
+                    name: c.name, 
+                    complexity: c.complexity 
+                }))
+            }, 'Completed complexity analysis');
+
             const result = {
                 complexities,
-                maxComplexity: Math.max(...complexities.map(c => c.complexity))
+                maxComplexity
             };
 
             if (params?.resultFact) {
+                logger.debug({ resultFact: params.resultFact }, 'Adding complexity results to almanac');
                 almanac.addRuntimeFact(params.resultFact, result);
             }
 

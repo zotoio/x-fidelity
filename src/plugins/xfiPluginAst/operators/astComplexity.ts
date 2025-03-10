@@ -5,11 +5,26 @@ export const astComplexity: OperatorDefn = {
     name: 'astComplexity',
     fn: (factValue: any, threshold: number) => {
         try {
+            logger.debug({ threshold }, 'Checking AST complexity against threshold');
+
             if (!factValue || !factValue.maxComplexity) {
+                logger.debug('No complexity data available');
                 return false;
             }
 
-            return factValue.maxComplexity >= threshold;
+            const result = factValue.maxComplexity >= threshold;
+            logger.debug({ 
+                maxComplexity: factValue.maxComplexity,
+                threshold,
+                exceedsThreshold: result,
+                complexityDetails: factValue.complexities?.map((c: any) => ({
+                    name: c.name,
+                    complexity: c.complexity,
+                    exceedsThreshold: c.complexity >= threshold
+                }))
+            }, 'Completed complexity threshold check');
+
+            return result;
         } catch (error) {
             logger.error(`Error in astComplexity operator: ${error}`);
             return false;
