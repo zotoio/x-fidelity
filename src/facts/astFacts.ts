@@ -1,15 +1,15 @@
 import { FactDefn, FileData } from '../types/typeDefs';
 import { logger } from '../utils/logger';
-import Parser from 'tree-sitter';
-import JavaScript from 'tree-sitter-javascript';
-import TypeScript from 'tree-sitter-typescript';
+import Parser, { Language, SyntaxNode } from 'tree-sitter';
+import * as JavaScript from 'tree-sitter-javascript';
+import * as TypeScript from 'tree-sitter-typescript';
 
 // Initialize parsers
 const jsParser = new Parser();
-jsParser.setLanguage(JavaScript);
+jsParser.setLanguage(JavaScript.default as unknown as Language);
 
 const tsParser = new Parser();
-tsParser.setLanguage(TypeScript.typescript);
+tsParser.setLanguage(TypeScript.typescript as unknown as Language);
 
 function getParserForFile(fileName: string): Parser {
     if (fileName.endsWith('.ts') || fileName.endsWith('.tsx')) {
@@ -57,7 +57,7 @@ export const functionComplexityFact: FactDefn = {
 
             // Visit each function declaration/expression
             tree.rootNode.walk({
-                visit: (node) => {
+                visit: (node: SyntaxNode) => {
                     if (node.type === 'function_declaration' || 
                         node.type === 'function_expression' ||
                         node.type === 'arrow_function') {
@@ -101,7 +101,7 @@ function analyzeFunctionComplexity(node: any): number {
     // - Logical operators (&&, ||)
     // - Try/catch blocks
     node.walk({
-        visit: (child) => {
+        visit: (child: SyntaxNode) => {
             switch (child.type) {
                 case 'if_statement':
                 case 'switch_case':
