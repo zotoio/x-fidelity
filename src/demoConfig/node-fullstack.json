@@ -3,7 +3,7 @@
     "rules": [
         "sensitiveLogging-iterative",
         "outdatedFramework-global",
-        "noDatabases-iterative",
+        "noDatabases-iterative", 
         "nonStandardDirectoryStructure-global",
         "openaiAnalysisTop5-global",
         "openaiAnalysisA11y-global",
@@ -11,26 +11,30 @@
         "missingRequiredFiles-global",
         "factDoesNotAddResultToAlmanac-iterative",
         "newSdkFeatureNotAdoped-global",
-        "mutuallyExclusivePackages-global"
+        "mutuallyExclusivePackages-global",
+        "functionComplexity-iterative"
     ],
     "operators": [
         "fileContains",
-        "outdatedFramework",
+        "outdatedFramework", 
         "nonStandardDirectoryStructure",
         "openaiAnalysisHighSeverity",
         "invalidRemoteValidation",
         "missingRequiredFiles",
         "regexMatch",
         "globalPatternRatio",
-        "globalPatternCount"
+        "globalPatternCount",
+        "astComplexity"
     ],
     "facts": [
         "repoFilesystemFacts",
         "repoDependencyFacts",
         "openaiAnalysisFacts",
-        "remoteSubstringValidation",
+        "remoteSubstringValidation", 
         "missingRequiredFiles",
-        "globalFileAnalysisFacts"
+        "globalFileAnalysisFacts",
+        "ast",
+        "functionComplexity"
     ],
     "plugins": [
         "xfiPluginRequiredFiles",

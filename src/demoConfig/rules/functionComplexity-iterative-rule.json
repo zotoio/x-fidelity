@@ -1,0 +1,38 @@
+{
+    "name": "functionComplexity-iterative",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "notEqual",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "ast",
+                "params": {
+                    "resultFact": "astResult"
+                },
+                "operator": "notEqual",
+                "value": null
+            },
+            {
+                "fact": "functionComplexity",
+                "params": {
+                    "resultFact": "complexityResult"
+                },
+                "operator": "astComplexity",
+                "value": 5
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "Functions detected with high cyclomatic complexity (>5). Consider refactoring.",
+            "details": {
+                "fact": "complexityResult"
+            }
+        }
+    }
+}
