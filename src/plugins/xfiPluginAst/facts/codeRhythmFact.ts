@@ -121,32 +121,44 @@ class CodeRhythmAnalyzer {
     }
 
     private calculateDiscontinuity(tree: CodeRhythmNode): number {
-        let discontinuityScore = 0;
+        let totalDiscontinuity = 0;
+        let maxDiscontinuity = 0;
         let previousInterval = 0;
 
         const traverse = (node: CodeRhythmNode) => {
-            // Large changes in interval indicate discontinuity
             if (previousInterval > 0) {
                 const change = Math.abs(node.interval - previousInterval);
-                discontinuityScore += change * node.weight;
+                const weightedChange = change * node.weight;
+                totalDiscontinuity += weightedChange;
+                maxDiscontinuity = Math.max(maxDiscontinuity, weightedChange);
             }
             previousInterval = node.interval;
             node.children.forEach(traverse);
         };
 
         traverse(tree);
-        return discontinuityScore;
+
+        // Normalize to 0-1 range
+        return maxDiscontinuity > 0 ? totalDiscontinuity / (maxDiscontinuity * tree.flowImpact) : 0;
     }
 
     analyzeNode(node: SyntaxTreeNode): CodeRhythmMetrics {
         this.flowPatterns.clear();
         const rhythmTree = this.buildRhythmTree(node);
         
-        return {
+        const metrics = {
             flowDensity: this.calculateFlowDensity(rhythmTree),
             operationalSymmetry: this.calculateSymmetry(rhythmTree),
             syntacticDiscontinuity: this.calculateDiscontinuity(rhythmTree)
         };
+
+        logger.debug({ 
+            metrics,
+            nodeType: node.type,
+            threshold: this.weightings.function_declaration
+        }, 'Code rhythm metrics calculated');
+
+        return metrics;
     }
 }
 
