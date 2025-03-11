@@ -2,6 +2,14 @@ import { FactDefn, FileData } from '../../../types/typeDefs';
 import { logger } from '../../../utils/logger';
 import { generateAst } from '../../../utils/astUtils';
 
+interface SyntaxTreeNode {
+    type: string;
+    startPosition: {
+        row: number;
+    };
+    children?: SyntaxTreeNode[];
+}
+
 interface CodeRhythmNode {
     type: string;
     weight: number;
@@ -16,9 +24,20 @@ interface CodeRhythmMetrics {
     syntacticDiscontinuity: number;
 }
 
+type NodeWeightings = {
+    function_declaration: number;
+    if_statement: number;
+    return_statement: number;
+    for_statement: number;
+    while_statement: number;
+    try_statement: number;
+    catch_clause: number;
+    variable_declaration: number;
+};
+
 class CodeRhythmAnalyzer {
     private flowPatterns: Map<string, number> = new Map();
-    private readonly weightings = {
+    private readonly weightings: NodeWeightings = {
         function_declaration: 3,
         if_statement: 2,
         return_statement: 1,
@@ -29,8 +48,8 @@ class CodeRhythmAnalyzer {
         variable_declaration: 1
     };
 
-    private buildRhythmTree(node: any): CodeRhythmNode {
-        const weight = this.weightings[node.type] || 0;
+    private buildRhythmTree(node: SyntaxTreeNode): CodeRhythmNode {
+        const weight = this.weightings[node.type as keyof NodeWeightings] || 0;
         const children: CodeRhythmNode[] = [];
         let interval = 0;
         let flowImpact = weight;
@@ -111,7 +130,7 @@ class CodeRhythmAnalyzer {
         return discontinuityScore;
     }
 
-    analyzeNode(node: any): CodeRhythmMetrics {
+    analyzeNode(node: SyntaxTreeNode): CodeRhythmMetrics {
         this.flowPatterns.clear();
         const rhythmTree = this.buildRhythmTree(node);
         
