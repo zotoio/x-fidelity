@@ -81,6 +81,7 @@ class CodeRhythmAnalyzer {
     private calculateFlowDensity(tree: CodeRhythmNode): number {
         let totalFlow = tree.flowImpact;
         let nodeCount = 1;
+        let maxFlow = this.weightings.function_declaration; // Use highest weighting as baseline
 
         const traverse = (node: CodeRhythmNode) => {
             for (const child of node.children) {
@@ -91,25 +92,32 @@ class CodeRhythmAnalyzer {
         };
 
         traverse(tree);
-        return totalFlow / nodeCount;
+        // Normalize to 0-1 range
+        return totalFlow / (nodeCount * maxFlow);
     }
 
     private calculateSymmetry(tree: CodeRhythmNode): number {
         const typeCounts = new Map<string, number>();
+        let totalNodes = 0;
         
         const countTypes = (node: CodeRhythmNode) => {
             typeCounts.set(node.type, (typeCounts.get(node.type) || 0) + 1);
+            totalNodes++;
             node.children.forEach(countTypes);
         };
 
         countTypes(tree);
 
-        // Calculate variance in type distributions
-        const counts = Array.from(typeCounts.values());
-        const mean = counts.reduce((a, b) => a + b, 0) / counts.length;
-        const variance = counts.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / counts.length;
+        // Calculate entropy-based symmetry
+        let entropy = 0;
+        typeCounts.forEach(count => {
+            const probability = count / totalNodes;
+            entropy -= probability * Math.log2(probability);
+        });
 
-        return 1 / (1 + variance); // Normalize to 0-1 range
+        // Normalize entropy to 0-1 range (max entropy for n types is log2(n))
+        const maxEntropy = Math.log2(typeCounts.size);
+        return entropy / maxEntropy;
     }
 
     private calculateDiscontinuity(tree: CodeRhythmNode): number {
