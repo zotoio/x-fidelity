@@ -1,5 +1,4 @@
-import { Logger } from './types';
-import { Metrics } from './types';
+import type { Logger, Metrics } from './types';
 
 // Mock dependencies for the example
 const logger: Logger = console;
