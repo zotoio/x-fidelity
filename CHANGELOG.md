@@ -1,3 +1,10 @@
+## [3.13.1](https://github.com/zotoio/x-fidelity/compare/v3.13.0...v3.13.1) (2025-03-11)
+
+
+### Bug Fixes
+
+* **exemptions:** trace logging ([343744c](https://github.com/zotoio/x-fidelity/commit/343744c161d2756d9fa5e419426d0b4f1a37d1d4))
+
 # [3.13.0](https://github.com/zotoio/x-fidelity/compare/v3.12.1...v3.13.0) (2025-03-10)
 
 
