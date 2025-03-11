@@ -5,7 +5,7 @@ const globalPatternCount: OperatorDefn = {
     'name': 'globalPatternCount',
     'fn': (analysisResult: any, threshold: number) => {
         try {
-            logger.debug(`globalPatternCount: processing ${JSON.stringify(analysisResult)}`);
+            logger.trace(`globalPatternCount: processing ${JSON.stringify(analysisResult)}`);
             
             if (!analysisResult || !analysisResult.summary) {
                 logger.debug('globalPatternCount: no analysis result available');

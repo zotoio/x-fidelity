@@ -8,7 +8,7 @@ const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 
 export async function sendTelemetry(event: TelemetryEvent, logPrefix: string): Promise<void> {
     if (!TELEMETRY_ENDPOINT) {
-        logger.debug('Telemetry endpoint or config server not set. Skipping telemetry.');
+        logger.trace('Telemetry endpoint or config server not set. Skipping telemetry.');
         return;
     }
     try {

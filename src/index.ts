@@ -68,8 +68,15 @@ export async function main() {
                     executionLogPrefix
                 });
 
-                const resultString = JSON.stringify(resultMetadata);
-                const prettyResult = json.render(resultMetadata.XFI_RESULT);
+                logger.info(`PERFORMANCE: Rule executions took ${resultMetadata.XFI_RESULT.durationSeconds} seconds`);
+
+                const reportGenerationStartTime = new Date().getTime();
+
+                let resultString = JSON.stringify(resultMetadata);
+                let prettyResult = json.render(resultMetadata.XFI_RESULT);
+
+                const reportGenerationdurationSeconds = ((new Date().getTime()) - reportGenerationStartTime) / 1000;
+                logger.info(`PERFORMANCE: Report generation took ${reportGenerationdurationSeconds} seconds`);
 
                 // Add debug logging before notification check
                 logger.debug({
@@ -80,6 +87,8 @@ export async function main() {
 
                 // Send notifications if enabled
                 if (notificationConfig.enabled) {
+                    const notificationStartTime = new Date().getTime()
+
                     logger.debug('Notifications are enabled, preparing to send report');
                     logger.debug({
                         affectedFilesCount: resultMetadata.XFI_RESULT.issueDetails.length
@@ -89,7 +98,27 @@ export async function main() {
                     await notificationManager.sendReport(
                         resultMetadata
                     );
+
+                    const notificationDurationSeconds = ((new Date().getTime()) - notificationStartTime) / 1000;
+                    logger.info(`PERFORMANCE: Notifications took ${notificationDurationSeconds} seconds`);
                 }
+
+                // update overall duration and end time in XFI_RESULT
+                const endTime = new Date().getTime();
+                resultMetadata.XFI_RESULT.durationSeconds = (endTime - resultMetadata.XFI_RESULT.startTime) / 1000;
+                resultMetadata.XFI_RESULT.finishTime = endTime; 
+
+                // change the finishTime value in the resultString to be endTimestamp
+                const resultStringWithEndTimestamp = resultString.replace(/("finishTime"):([\s]+)*([\d\.]+)/g, `$1:${endTime}`);
+
+                // change the durationSeconds value in the resultString to be the overall duration
+                resultString = resultStringWithEndTimestamp.replace(/("durationSeconds"):([\s]+)*([\d\.]+)/g, `$1:${resultMetadata.XFI_RESULT.durationSeconds}`);
+
+                // change the finishTime value in the prettyResult to be endTimestamp
+                const prettyResultWithEndTimestamp = prettyResult.replace(/(.*startTime.*34m)(\d*)(.*)/g, `$1$${endTime}$3`);
+
+                // change the durationSeconds value in the prettyResult to be the overall duration
+                prettyResult = prettyResultWithEndTimestamp.replace(/(.*durationSeconds.*34m)(\d*)(.*)/g, `$1${resultMetadata.XFI_RESULT.durationSeconds}$3`);
 
                 // if results are found, there were issues found in the codebase
                 if (resultMetadata.XFI_RESULT.totalIssues > 0) {

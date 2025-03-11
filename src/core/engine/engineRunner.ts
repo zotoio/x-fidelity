@@ -34,7 +34,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
         try {
             const { results } = await engine.run(facts);
             for (const result of results) {
-                logger.debug(JSON.stringify(result));
+                logger.trace(JSON.stringify(result));
                 if (result.result) {
                     fileFailures.push({
                         ruleFailure: result.name,

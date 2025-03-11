@@ -12,17 +12,17 @@
                 "fact": "functionComplexity",
                 "params": {
                     "resultFact": "complexityResult",
-                    "minimumComplexityLogged": 8
+                    "minimumComplexityLogged": 25
                 },
                 "operator": "astComplexity",
-                "value": 10
+                "value": 40
             }
         ]
     },
     "event": {
         "type": "warning",
         "params": {
-            "message": "Functions detected with high cyclomatic complexity (10+). Consider refactoring.",
+            "message": "Functions detected with high cyclomatic complexity (40+). Consider refactoring.",
             "details": {
                 "fact": "complexityResult"
             }

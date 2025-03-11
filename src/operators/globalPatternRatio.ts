@@ -5,7 +5,7 @@ const globalPatternRatio: OperatorDefn = {
     'name': 'globalPatternRatio',
     'fn': (analysisResult: any, threshold: number) => {
         try {
-            logger.debug(`globalPatternRatio: processing ${JSON.stringify(analysisResult)}`);
+            logger.trace(`globalPatternRatio: processing ${JSON.stringify(analysisResult)}`);
             
             if (!analysisResult || !analysisResult.summary) {
                 logger.debug('globalPatternRatio: no analysis result available');

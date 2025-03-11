@@ -279,7 +279,7 @@ export class NotificationManager {
       try {
         // Failure template
         fileDetails = results.XFI_RESULT.issueDetails.map(issue => {
-          logger.debug(issue, `generating report content for issue: ${issue.filePath}`);
+          logger.trace(issue, `generating report content for issue: ${issue.filePath}`);
           // Remove local path prefix from file paths
           const relativePath = issue.filePath.replace(results.XFI_RESULT.repoPath + '/', '');
           const fileIssues = issue.errors;
@@ -316,7 +316,7 @@ export class NotificationManager {
             return output + errorDetails + '</ul></li>';
           }).join('');
 
-          logger.debug(`fileDetails: ${output + ruleDetails}</ul></li>`);
+          logger.trace(`fileDetails: ${output + ruleDetails}</ul></li>`);
           return output + ruleDetails + '</ul></li>';
         }).join('');
 

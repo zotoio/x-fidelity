@@ -30,8 +30,9 @@
     "start-test-server": "node -e \"require('http').createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(require('fs').readFileSync('src/plugins/xfiPluginRemoteStringValidator/sampleRules/xfiTestServerResponse.json')); }).listen(4200, () => console.log('Test server running on port 4200'));\" &",
     "lint": "eslint . ",
     "lint:fix": "eslint . --fix",
-    "perftest": "artillery run src/server/configServer.performance.test.yml",
-    "perftest:cloud": "echo 'expecting env var ARTILLERY_CLOUD_API_KEY from artillery.io' && artillery run src/server/configServer.performance.test.yml --record",
+    "perftest:install": "global add artillery",
+    "perftest": "perftest:install && artillery run src/server/configServer.performance.test.yml",
+    "perftest:cloud": "perftest:install && echo 'expecting env var ARTILLERY_CLOUD_API_KEY from artillery.io' && artillery run src/server/configServer.performance.test.yml --record",
     "bats:install": "cd ./cli-testing && ./installBatsTesting.sh",
     "bats:test": "cd ./cli-testing && bats *.bats",
     "validate-demo-config": "yarn build && node . --dir . -x node-fullstack -e xfiPluginRemoteStringValidator -o true"
@@ -107,9 +108,6 @@
     "tree-sitter-typescript": "^0.23.2",
     "yaml": "^2.7.0",
     "yarn": "^1.22.22"
-  },
-  "peerDependencies": {
-    "artillery": "^2.0.22"
   },
   "config": {
     "commitizen": {
