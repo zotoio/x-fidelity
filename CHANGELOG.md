@@ -1,3 +1,16 @@
+# [3.14.0](https://github.com/zotoio/x-fidelity/compare/v3.13.1...v3.14.0) (2025-03-11)
+
+
+### Bug Fixes
+
+* **demo:** config speed improvement ([a1be883](https://github.com/zotoio/x-fidelity/commit/a1be88367a606187b90d27af09aebb725753ed77))
+
+
+### Features
+
+* add React patterns plugin with hook dependency and cleanup analysis ([7cfd38d](https://github.com/zotoio/x-fidelity/commit/7cfd38d86596ba97536aa0c2028ee054103630dd))
+* enhance function complexity analysis with additional metrics ([a3d61dc](https://github.com/zotoio/x-fidelity/commit/a3d61dc4cd0d5382ffa13a9565cd909782aa9aa4))
+
 ## [3.13.1](https://github.com/zotoio/x-fidelity/compare/v3.13.0...v3.13.1) (2025-03-11)
 
 
