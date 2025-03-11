@@ -45,6 +45,18 @@
         "xfiPluginRemoteStringValidator",
         "xfiPluginAst"
     ],
+    "facts": [
+        "repoFilesystemFacts",
+        "repoDependencyFacts",
+        "openaiAnalysisFacts",
+        "remoteSubstringValidation", 
+        "missingRequiredFiles",
+        "globalFileAnalysisFacts",
+        "ast",
+        "functionComplexity",
+        "functionCount",
+        "codeRhythm"
+    ],
     "config": {
         "minimumDependencyVersions": {
             "@types/react": ">=18.0.0",
