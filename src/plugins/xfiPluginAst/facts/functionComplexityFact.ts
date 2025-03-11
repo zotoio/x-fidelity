@@ -86,8 +86,21 @@ export const functionComplexityFact: FactDefn = {
             }, 'Completed complexity analysis');
             
             const result = {
-                complexities,
-                maxComplexity
+                complexities: complexities.map(c => ({
+                    ...c,
+                    metrics: {
+                        cyclomaticComplexity: c.complexity,
+                        parameterCount: c.metrics.parameterCount,
+                        returnCount: c.metrics.returnCount,
+                        nestingDepth: c.metrics.nestingDepth,
+                        cognitiveComplexity: c.metrics.cognitiveComplexity
+                    }
+                })),
+                maxComplexity,
+                maxNestingDepth: Math.max(...complexities.map(c => c.metrics.nestingDepth)),
+                maxParameterCount: Math.max(...complexities.map(c => c.metrics.parameterCount)),
+                maxReturnCount: Math.max(...complexities.map(c => c.metrics.returnCount)),
+                maxCognitiveComplexity: Math.max(...complexities.map(c => c.metrics.cognitiveComplexity))
             };
 
             if (params?.resultFact) {
@@ -103,38 +116,78 @@ export const functionComplexityFact: FactDefn = {
     }
 };
 
-function analyzeFunctionComplexity(node: any): number {
-    let complexity = 1; // Base complexity
+interface FunctionMetrics {
+    cyclomaticComplexity: number;
+    parameterCount: number;
+    returnCount: number;
+    nestingDepth: number;
+    cognitiveComplexity: number;
+}
 
-    // Walk the AST and count:
-    // - Conditional statements (if, else, switch cases)
-    // - Loops (for, while, do-while)
-    // - Logical operators (&&, ||)
-    // - Try/catch blocks
-    function visit(node: any) {
+function analyzeFunctionComplexity(node: any): FunctionMetrics {
+    let cyclomaticComplexity = 1;
+    let parameterCount = 0;
+    let returnCount = 0;
+    let maxNestingDepth = 0;
+    let cognitiveComplexity = 0;
+    let currentNestingDepth = 0;
+
+    // Count parameters
+    const parameterList = node.descendantsOfType('formal_parameters')[0];
+    if (parameterList) {
+        parameterCount = parameterList.namedChildCount;
+    }
+
+    function visit(node: any, depth: number = 0) {
+        currentNestingDepth = depth;
+        maxNestingDepth = Math.max(maxNestingDepth, depth);
+
         switch (node.type) {
             case 'if_statement':
             case 'switch_case':
+                cyclomaticComplexity++;
+                cognitiveComplexity += depth + 1;
+                break;
             case 'for_statement':
             case 'while_statement':
             case 'do_statement':
+                cyclomaticComplexity++;
+                cognitiveComplexity += depth + 2; // Loops are more complex
+                break;
             case 'try_statement':
-                complexity++;
+                cyclomaticComplexity++;
+                cognitiveComplexity += 1;
                 break;
             case '&&':
             case '||':
-                complexity += 0.5;
+                cyclomaticComplexity += 0.5;
+                cognitiveComplexity += 1;
+                break;
+            case 'return_statement':
+                returnCount++;
                 break;
         }
 
+        // Visit children with increased depth for control structures
+        const increaseDepthFor = [
+            'if_statement', 'for_statement', 'while_statement',
+            'do_statement', 'try_statement', 'switch_case'
+        ];
+        
         for (let child of node.children || []) {
-            visit(child);
+            visit(child, increaseDepthFor.includes(node.type) ? depth + 1 : depth);
         }
     }
 
     visit(node);
 
-    return complexity;
+    return {
+        cyclomaticComplexity,
+        parameterCount,
+        returnCount,
+        nestingDepth: maxNestingDepth,
+        cognitiveComplexity
+    };
 }
 
 function getFunctionName(node: any): string {
