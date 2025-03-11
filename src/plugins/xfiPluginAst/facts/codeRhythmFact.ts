@@ -82,18 +82,33 @@ class CodeRhythmAnalyzer {
         let totalFlow = tree.flowImpact;
         let nodeCount = 1;
         let maxFlow = this.weightings.function_declaration; // Use highest weighting as baseline
+        let previousNodeWeight = tree.weight;
+        let weightChanges = 0;
 
         const traverse = (node: CodeRhythmNode) => {
+            // Count abrupt weight changes
+            if (Math.abs(node.weight - previousNodeWeight) > 1) {
+                weightChanges++;
+            }
+            previousNodeWeight = node.weight;
+
+            // Add node's impact to total
+            totalFlow += node.flowImpact * (1 + (node.interval > 3 ? 0.5 : 0));
+            nodeCount++;
+
             for (const child of node.children) {
-                totalFlow += child.flowImpact;
-                nodeCount++;
                 traverse(child);
             }
         };
 
         traverse(tree);
-        // Normalize to 0-1 range
-        return totalFlow / (nodeCount * maxFlow);
+
+        // Normalize to 0-1 range with weight changes factored in
+        const baseScore = totalFlow / (nodeCount * maxFlow);
+        const weightChangeImpact = weightChanges / nodeCount;
+        
+        // Higher score indicates more chaotic flow
+        return baseScore + weightChangeImpact;
     }
 
     private calculateSymmetry(tree: CodeRhythmNode): number {
@@ -155,7 +170,7 @@ class CodeRhythmAnalyzer {
         logger.debug({ 
             metrics,
             nodeType: node.type,
-            threshold: this.weightings.function_declaration
+            threshold: params?.minimumComplexityLogged || 0
         }, 'Code rhythm metrics calculated');
 
         return metrics;
