@@ -18,8 +18,8 @@ describe('codeRhythmFact', () => {
     let poorCodeContent: string;
     
     beforeAll(() => {
-        goodCodeContent = fs.readFileSync(path.join(__dirname, '../../../../exampleTriggerFiles/goodCodeRhythm.ts'), 'utf8');
-        poorCodeContent = fs.readFileSync(path.join(__dirname, '../../../../exampleTriggerFiles/poorCodeRhythm.ts'), 'utf8');
+        goodCodeContent = fs.readFileSync(path.join(__dirname, '../../../exampleTriggerFiles/goodCodeRhythm.ts'), 'utf8');
+        poorCodeContent = fs.readFileSync(path.join(__dirname, '../../../exampleTriggerFiles/poorCodeRhythm.ts'), 'utf8');
     });
 
     const mockAlmanac = {
