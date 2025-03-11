@@ -1,0 +1,30 @@
+{
+    "name": "hookDependency-iterative",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "regexMatch",
+                "value": "\\.(jsx|tsx)$"
+            },
+            {
+                "fact": "hookDependency",
+                "params": {
+                    "resultFact": "hookDependencyResult"
+                },
+                "operator": "hasIssues",
+                "value": true
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "React hook dependency issues detected",
+            "details": {
+                "fact": "hookDependencyResult"
+            }
+        }
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "name": "effectCleanup-iterative", 
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "regexMatch",
+                "value": "\\.(jsx|tsx)$"
+            },
+            {
+                "fact": "effectCleanup",
+                "params": {
+                    "resultFact": "effectCleanupResult"
+                },
+                "operator": "hasIssues",
+                "value": true
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "useEffect cleanup issues detected",
+            "details": {
+                "fact": "effectCleanupResult" 
+            }
+        }
+    }
+}
