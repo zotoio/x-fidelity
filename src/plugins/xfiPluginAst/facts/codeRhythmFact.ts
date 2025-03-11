@@ -170,7 +170,7 @@ class CodeRhythmAnalyzer {
         logger.debug({ 
             metrics,
             nodeType: node.type,
-            threshold: params?.minimumComplexityLogged || 0
+            threshold: this.weightings.function_declaration
         }, 'Code rhythm metrics calculated');
 
         return metrics;
