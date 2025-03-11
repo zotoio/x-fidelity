@@ -155,13 +155,31 @@ export function isExempt(params: IsExemptParams): boolean {
         }
         const now = new Date();
         const normalizedRepoUrl = normalizeGitHubUrl(repoUrl);
-        const exemption = exemptions.find(exemption =>
-            normalizeGitHubUrl(exemption.repoUrl) === normalizedRepoUrl &&
+    
+        logger.trace(`Checking exemption for rule ${ruleName} in repo ${repoUrl}`);
+
+        const exemption = exemptions.find(exemption => {
+
+            logger.trace(JSON.stringify(exemption));
+            logger.trace(`repoUrl: ${repoUrl}`);
+            logger.trace(`ruleName: ${ruleName}`);
+            logger.trace(`normalizedRepoUrl: ${normalizedRepoUrl}`);
+            logger.trace(`now: ${now}`);
+            
+            const result = normalizeGitHubUrl(exemption.repoUrl) === normalizedRepoUrl &&
             exemption.rule === ruleName &&
-            new Date(exemption.expirationDate) > now
-        );
+            new Date(exemption.expirationDate) > now;
+
+            logger.trace(`Exemption check result: ${result}`);
+
+            return result;
+
+        });
+
+        logger.trace(`Exemption: ${exemption}`);
+
         if (exemption) {
-            logger.error(`Exempting rule ${ruleName} for repo ${repoUrl} until ${exemption.expirationDate}`);
+            logger.error(`Exempting rule ${ruleName} for repo ${normalizedRepoUrl}: ${exemption.expirationDate}`);
 
             // Send telemetry event for the allowed exemption
             sendTelemetry({

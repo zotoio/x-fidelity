@@ -8,7 +8,8 @@ jest.mock('../utils/logger', () => ({
         debug: jest.fn(),
         info: jest.fn(),
         error: jest.fn(),
-        warn: jest.fn()
+        warn: jest.fn(),
+        trace: jest.fn()
     }
 }));
 

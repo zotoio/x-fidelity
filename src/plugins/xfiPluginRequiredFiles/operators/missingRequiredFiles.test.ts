@@ -4,7 +4,10 @@ import { logger } from '../../../utils/logger';
 jest.mock('../../../utils/logger', () => ({
     logger: {
         debug: jest.fn(),
-        error: jest.fn()
+        error: jest.fn(),
+        trace: jest.fn(),
+        info: jest.fn(),
+        warn: jest.fn()
     },
 }));
 

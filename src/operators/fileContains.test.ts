@@ -4,7 +4,10 @@ import { fileContains } from './fileContains';
 jest.mock('../utils/logger', () => ({
     logger: {
         debug: jest.fn(),
-        error: jest.fn()
+        error: jest.fn(),
+        trace: jest.fn(),
+        info: jest.fn(),
+        warn: jest.fn()
     },
 }));
 

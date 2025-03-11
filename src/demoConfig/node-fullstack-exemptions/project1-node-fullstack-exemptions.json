@@ -1,8 +1,8 @@
 [
     {
       "repoUrl": "git@github.com:zotoio/x-fidelity.git",
-      "rule": "outdatedFramework-global",
-      "expirationDate": "2023-12-31",
+      "rule": "noDatabases-iterative",
+      "expirationDate": "2026-01-04",
       "reason": "Upgrading dependencies is scheduled for Q4 2024"
     },
     {
