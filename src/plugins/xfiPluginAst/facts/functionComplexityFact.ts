@@ -94,7 +94,7 @@ export const functionComplexityFact: FactDefn = {
                 functionCount: complexities.length,
                 complexityBreakdown: complexities.map(c => ({ 
                     name: c.name, 
-                    complexity: c.complexity 
+                    metrics: c.metrics
                 }))
             }, 'Completed complexity analysis');
             
