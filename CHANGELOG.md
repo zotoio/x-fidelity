@@ -1,3 +1,34 @@
+# [3.15.0](https://github.com/zotoio/x-fidelity/compare/v3.14.0...v3.15.0) (2025-03-12)
+
+
+### Bug Fixes
+
+* add currentNestingDepth tracking in CodeRhythmAnalyzer ([8f542c1](https://github.com/zotoio/x-fidelity/commit/8f542c1f58776b3001ec8a40d2dbb937d9ed55c8))
+* add missing types and remove duplicate code in example files ([352ae42](https://github.com/zotoio/x-fidelity/commit/352ae42c54e1cc7b2769113ad97207936a28c5a1))
+* add proper TypeScript interfaces for syntax tree nodes ([f3ca8e1](https://github.com/zotoio/x-fidelity/commit/f3ca8e1b4d56a09ee6f01d1652a90b346e8fe155))
+* adjust code rhythm calculation and add threshold logging ([54fae00](https://github.com/zotoio/x-fidelity/commit/54fae006ccbf54504876d3760b405ad6aa4a9bea))
+* adjust code rhythm calculation to better detect poor patterns ([b50cc4a](https://github.com/zotoio/x-fidelity/commit/b50cc4ae2cfab25799a43eb0c82361f340c2518b))
+* adjust code rhythm metric scaling factors to match test expectations ([0f2eeeb](https://github.com/zotoio/x-fidelity/commit/0f2eeeb60974ec777d16c6dc500e4d0a9315933a))
+* adjust code rhythm metric scaling to match test expectations ([d2e63ff](https://github.com/zotoio/x-fidelity/commit/d2e63ff23994db6d5a34ebbf8c7e9ac5a2719636))
+* adjust code rhythm metrics calculation for test stability ([8c9c341](https://github.com/zotoio/x-fidelity/commit/8c9c341890c04ff7f221dbe33b674cdd64a4de33))
+* **ast:** fix ast based examples ([de74088](https://github.com/zotoio/x-fidelity/commit/de74088bebf5b7ea97674f523d28ba5aa8f5c46d))
+* correct depth parameter handling in code rhythm traversal ([c90d267](https://github.com/zotoio/x-fidelity/commit/c90d267498cf08b237f46bfa80ee12a9c8a46c67))
+* enhance flow density calculation and correct threshold logging ([7e35dc6](https://github.com/zotoio/x-fidelity/commit/7e35dc6d3a3deddfa98b5210c0a5c9d70a6e112d))
+* improve code rhythm metrics calculation and normalization ([32f7a45](https://github.com/zotoio/x-fidelity/commit/32f7a455ee9bf0b1af09317cd095518da55a5373))
+* update complexity logging to use correct metrics property ([b840fcc](https://github.com/zotoio/x-fidelity/commit/b840fcc4002a664394bdc18714dd1b5f67f2757a))
+
+
+### Features
+
+* add code rhythm analysis to node-fullstack configuration ([9359d48](https://github.com/zotoio/x-fidelity/commit/9359d48b19b5473130d0cb03f07f619f0986b5c0))
+* add code rhythm analyzer for AST pattern analysis ([6bbc7e4](https://github.com/zotoio/x-fidelity/commit/6bbc7e4535c79afeaa0b0b8273ac6e1276b53d7b))
+* add max complexity metrics to function complexity fact result ([9899fcf](https://github.com/zotoio/x-fidelity/commit/9899fcf3f20d9d405edaea62a9e7987d8cfc0706))
+* add types file and consolidate type imports ([300a098](https://github.com/zotoio/x-fidelity/commit/300a098d7a9ac65681718853a5be774763538e02))
+* enhance function complexity analysis with additional metrics ([b4b23bf](https://github.com/zotoio/x-fidelity/commit/b4b23bfe28cb4351ed945e883241e8d1b8992a91))
+* filter functions by minimum complexity threshold ([53004ac](https://github.com/zotoio/x-fidelity/commit/53004ac28dcd02d45aa1acfc1a9352f894133717))
+* make complexity thresholds configurable via params ([9b53324](https://github.com/zotoio/x-fidelity/commit/9b533245d30447155196be2d99a54fb9716b69df))
+* normalize discontinuity score and add metrics logging ([59713d3](https://github.com/zotoio/x-fidelity/commit/59713d32b340d300fe6a8e8421a739fecd688e77))
+
 # [3.14.0](https://github.com/zotoio/x-fidelity/compare/v3.13.1...v3.14.0) (2025-03-11)
 
 
