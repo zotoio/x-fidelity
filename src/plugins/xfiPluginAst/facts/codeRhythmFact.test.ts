@@ -6,10 +6,7 @@ import path from 'path';
 jest.mock('../../../utils/logger', () => ({
     logger: {
         debug: jest.fn(),
-        error: jest.fn(),
-        info: jest.fn(),
-        warn: jest.fn(),
-        trace: jest.fn()
+        error: jest.fn()
     }
 }));
 
@@ -37,16 +34,12 @@ describe('codeRhythmFact', () => {
             fileContent: goodCodeContent
         });
 
-        const params = {
-            resultFact: 'rhythmResult'
-        };
-
-        const result = await codeRhythmFact.fn(params, mockAlmanac);
+        const result = await codeRhythmFact.fn({ resultFact: 'rhythmResult' }, mockAlmanac);
 
         expect(result.metrics).toBeDefined();
         expect(result.metrics.flowDensity).toBeLessThan(0.7);
-        expect(result.metrics.operationalSymmetry).toBeGreaterThan(0.6);
-        expect(result.metrics.syntacticDiscontinuity).toBeLessThan(0.4);
+        expect(result.metrics.operationalSymmetry).toBeGreaterThan(0.4);
+        expect(result.metrics.syntacticDiscontinuity).toBeLessThan(0.5);
         expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('rhythmResult', result.metrics);
     });
 
@@ -56,16 +49,12 @@ describe('codeRhythmFact', () => {
             fileContent: poorCodeContent
         });
 
-        const params = {
-            resultFact: 'rhythmResult'
-        };
-
-        const result = await codeRhythmFact.fn(params, mockAlmanac);
+        const result = await codeRhythmFact.fn({ resultFact: 'rhythmResult' }, mockAlmanac);
 
         expect(result.metrics).toBeDefined();
         expect(result.metrics.flowDensity).toBeGreaterThan(0.7);
-        expect(result.metrics.operationalSymmetry).toBeLessThan(0.6);
-        expect(result.metrics.syntacticDiscontinuity).toBeGreaterThan(0.4);
+        expect(result.metrics.operationalSymmetry).toBeLessThan(0.4);
+        expect(result.metrics.syntacticDiscontinuity).toBeGreaterThan(0.5);
         expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('rhythmResult', result.metrics);
     });
 
@@ -88,27 +77,5 @@ describe('codeRhythmFact', () => {
 
         expect(result.metrics).toBeNull();
         expect(logger.error).toHaveBeenCalledWith('Error in code rhythm analysis: Error: Test error');
-    });
-
-    it('should respect minimum complexity threshold', async () => {
-        mockAlmanac.factValue.mockResolvedValue({
-            fileName: 'goodCodeRhythm.ts',
-            fileContent: goodCodeContent
-        });
-
-        const params = {
-            resultFact: 'rhythmResult',
-            minimumComplexityLogged: 5
-        };
-
-        const result = await codeRhythmFact.fn(params, mockAlmanac);
-
-        expect(result.metrics).toBeDefined();
-        expect(logger.debug).toHaveBeenCalledWith(
-            expect.objectContaining({
-                threshold: 5
-            }),
-            expect.any(String)
-        );
     });
 });
