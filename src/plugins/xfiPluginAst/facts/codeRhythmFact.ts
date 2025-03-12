@@ -94,14 +94,14 @@ class CodeRhythmAnalyzer {
             previousNodeWeight = node.weight;
 
             // Track nesting depth
-            this.currentNestingDepth = Math.max(this.currentNestingDepth, depth);
+            const currentDepth = this.currentNestingDepth;
 
             // Add node's impact to total
             totalFlow += node.flowImpact * (1 + (node.interval > 3 ? 0.5 : 0));
             nodeCount++;
 
             for (const child of node.children) {
-                traverse(child);
+                traverse(child, currentDepth + 1);
             }
         };
 
