@@ -104,11 +104,12 @@ class CodeRhythmAnalyzer {
         traverse(tree);
 
         // Normalize to 0-1 range with weight changes factored in
-        const baseScore = totalFlow / (nodeCount * maxFlow);
-        const weightChangeImpact = weightChanges / nodeCount;
-        
         // Higher score indicates more chaotic flow
-        return baseScore + weightChangeImpact;
+        // Normalize to 0-1 range and amplify the impact of weight changes
+        const baseScore = totalFlow / (nodeCount * maxFlow);
+        const weightChangeImpact = (weightChanges / nodeCount) * 2;
+        
+        return Math.min(1, baseScore + weightChangeImpact);
     }
 
     private calculateSymmetry(tree: CodeRhythmNode): number {
@@ -194,7 +195,8 @@ export const codeRhythmFact: FactDefn = {
 
             logger.debug({ 
                 fileName: fileData.fileName,
-                metrics
+                metrics,
+                threshold: params?.minimumComplexityLogged || 5
             }, 'Code rhythm analysis complete');
 
             if (params?.resultFact) {
