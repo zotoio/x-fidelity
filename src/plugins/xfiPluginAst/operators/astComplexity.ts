@@ -3,9 +3,9 @@ import { OperatorDefn } from '../../../types/typeDefs';
 
 export const astComplexity: OperatorDefn = {
     name: 'astComplexity',
-    fn: (factValue: any, threshold: number) => {
+    fn: (factValue: any, thresholds: any) => {
         try {
-            logger.debug({ threshold }, 'Checking AST complexity against threshold');
+            logger.debug(thresholds, 'Checking AST complexity against threshold');
 
             if (!factValue || !factValue.complexities) {
                 logger.debug('No complexity data available');
@@ -13,13 +13,13 @@ export const astComplexity: OperatorDefn = {
             }
 
             // Get thresholds from params or use defaults based on the main threshold
-            const thresholds = {
-                cyclomaticComplexity: threshold,
-                cognitiveComplexity: threshold,
-                nestingDepth: Math.ceil(threshold / 2),
-                parameterCount: Math.ceil(threshold / 2),
-                returnCount: Math.ceil(threshold / 3)
-            };
+            // const thresholds = {
+            //     cyclomaticComplexity: threshold?.cyclomaticComplexity || threshold,
+            //     cognitiveComplexity: threshold?.cognitiveComplexity || threshold,
+            //     nestingDepth: Math.ceil(threshold / 2),
+            //     parameterCount: Math.ceil(threshold / 2),
+            //     returnCount: Math.ceil(threshold / 3)
+            // };
 
             // Check if any function exceeds any threshold
             const exceedsThreshold = factValue.complexities.some((func: any) => {
