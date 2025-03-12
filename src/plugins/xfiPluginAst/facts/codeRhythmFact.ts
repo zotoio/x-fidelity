@@ -62,29 +62,32 @@ function analyzeCodeMetrics(node: any): CodeMetrics {
 }
 
 function calculateConsistency(nodeTypes: Map<string, number>, total: number): number {
-    // Calculate variance in node type distribution
-    let variance = 0;
-    const mean = total / nodeTypes.size;
-    
+    // Calculate entropy-based consistency score
+    let entropy = 0;
     nodeTypes.forEach(count => {
-        variance += Math.pow(count - mean, 2);
+        const p = count / total;
+        entropy -= p * Math.log2(p);
     });
-
-    // Convert to 0-1 scale where 1 is most consistent
-    return 1 - Math.min(1, Math.sqrt(variance) / total);
+    
+    // Normalize entropy (max entropy for n types is log2(n))
+    const maxEntropy = Math.log2(nodeTypes.size);
+    // Convert to consistency score (1 - normalized entropy)
+    // Higher entropy means less consistency
+    return maxEntropy ? 1 - (entropy / maxEntropy) : 1;
 }
 
 function calculateComplexity(depth: number, weightedSum: number, total: number): number {
-    // Combine depth and weighted structure metrics
-    const depthFactor = Math.min(1, depth / 10); // Cap at depth of 10
-    const weightFactor = Math.min(1, weightedSum / (total * 3)); // Normalize by max weight
+    // Weighted complexity score considering nesting depth and node weights
+    const depthFactor = Math.min(1, (depth * depth) / 100); // Quadratic scaling for depth
+    const weightFactor = Math.min(1, weightedSum / (total * 4)); // Reduced weight impact
     
-    return (depthFactor + weightFactor) / 2;
+    // Emphasize depth more than raw node weights
+    return (depthFactor * 0.7 + weightFactor * 0.3);
 }
 
 function calculateReadability(consistency: number, complexity: number): number {
-    // Higher consistency and lower complexity = better readability
-    return (consistency * 0.6 + (1 - complexity) * 0.4);
+    // Weighted combination favoring consistency more heavily
+    return (consistency * 0.7 + (1 - complexity) * 0.3);
 }
 
 export const codeRhythmFact: FactDefn = {
