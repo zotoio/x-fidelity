@@ -125,7 +125,7 @@ interface FunctionMetrics {
 }
 
 function analyzeFunctionComplexity(node: any): FunctionMetrics {
-    let cyclomaticComplexity = 1;
+    let cyclomaticComplexity = 1; // Base complexity
     let parameterCount = 0;
     let returnCount = 0;
     let maxNestingDepth = 0;
@@ -145,14 +145,14 @@ function analyzeFunctionComplexity(node: any): FunctionMetrics {
         switch (node.type) {
             case 'if_statement':
             case 'switch_case':
-                cyclomaticComplexity++;
+                cyclomaticComplexity++; // Add 1 for each branch
                 cognitiveComplexity += depth + 1;
                 break;
             case 'for_statement':
             case 'while_statement':
             case 'do_statement':
-                cyclomaticComplexity++;
-                cognitiveComplexity += depth + 2; // Loops are more complex
+                cyclomaticComplexity += 2; // Loops are more complex
+                cognitiveComplexity += depth + 2;
                 break;
             case 'try_statement':
                 cyclomaticComplexity++;
@@ -160,11 +160,18 @@ function analyzeFunctionComplexity(node: any): FunctionMetrics {
                 break;
             case '&&':
             case '||':
-                cyclomaticComplexity += 0.5;
+                cyclomaticComplexity += 0.5; // Logical operators add complexity
                 cognitiveComplexity += 1;
                 break;
             case 'return_statement':
                 returnCount++;
+                break;
+            case 'catch_clause':
+                cyclomaticComplexity++;
+                cognitiveComplexity += depth + 1;
+                break;
+            case 'throw_statement':
+                cyclomaticComplexity++;
                 break;
         }
 
@@ -182,7 +189,7 @@ function analyzeFunctionComplexity(node: any): FunctionMetrics {
     visit(node);
 
     return {
-        cyclomaticComplexity,
+        cyclomaticComplexity: Math.ceil(cyclomaticComplexity), // Round up fractional complexity
         parameterCount,
         returnCount,
         nestingDepth: maxNestingDepth,
