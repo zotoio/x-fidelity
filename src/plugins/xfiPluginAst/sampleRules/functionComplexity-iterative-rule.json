@@ -12,7 +12,7 @@
                 "fact": "functionComplexity",
                 "params": {
                     "resultFact": "complexityResult",
-                    "minimumComplexityLogged": 8
+                    "minimumComplexityLogged": 5
                 },
                 "operator": "astComplexity",
                 "value": 10
@@ -22,7 +22,7 @@
     "event": {
         "type": "warning",
         "params": {
-            "message": "Functions detected with high cyclomatic complexity (10+). Consider refactoring.",
+            "message": "Functions detected with high complexity (cyclomatic complexity >= 10, cognitive complexity >= 10, or nesting depth >= 5). Consider refactoring.",
             "details": {
                 "fact": "complexityResult"
             }
