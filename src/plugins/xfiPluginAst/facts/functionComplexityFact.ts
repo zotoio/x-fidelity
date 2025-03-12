@@ -52,38 +52,43 @@ export const functionComplexityFact: FactDefn = {
             visit(tree.rootNode);
 
             // Get minimum complexity threshold from params
-            //const minimumComplexityLogged = params?.minimumComplexityLogged || 10;
+            const minimumComplexityLogged = params?.minimumComplexityLogged || 10;
             
             // Analyze each function node
             for (const node of functionNodes) {
                 const name = getFunctionName(node);
-                const complexity = analyzeFunctionComplexity(node);
+                const metrics = analyzeFunctionComplexity(node);
                 
-                // Only include functions that exceed the minimum complexity threshold
-                // if (complexity >= minimumComplexityLogged) {
-                    // logger.debug({ 
-                    //     functionName: name,
-                    //     nodeType: node.type,
-                    //     complexity,
-                    //     startLine: node.startPosition.row + 1,
-                    //     endLine: node.endPosition.row + 1,
-                    // }, 'Function exceeds complexity threshold');
+                // Only include functions that exceed the minimum complexity threshold for any metric
+                if (metrics.cyclomaticComplexity >= minimumComplexityLogged ||
+                    metrics.cognitiveComplexity >= minimumComplexityLogged ||
+                    metrics.nestingDepth >= minimumComplexityLogged ||
+                    metrics.parameterCount >= minimumComplexityLogged ||
+                    metrics.returnCount >= minimumComplexityLogged) {
+                    
+                    logger.debug({ 
+                        functionName: name,
+                        nodeType: node.type,
+                        metrics,
+                        startLine: node.startPosition.row + 1,
+                        endLine: node.endPosition.row + 1,
+                    }, 'Function exceeds complexity threshold');
 
                     complexities.push({
                         name,
-                        metrics: complexity,
+                        metrics,
                         location: {
                             start: node.startPosition,
                             end: node.endPosition
                         }
                     });
-                // } else {
-                //     logger.debug({
-                //         functionName: name,
-                //         complexity,
-                //         threshold: minimumComplexityLogged
-                //     }, 'Function below complexity threshold - skipping');
-                // }
+                } else {
+                    logger.debug({
+                        functionName: name,
+                        metrics,
+                        threshold: minimumComplexityLogged
+                    }, 'Function below complexity threshold - skipping');
+                }
             }
 
             // Calculate max complexity from values
