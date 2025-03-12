@@ -14,14 +14,14 @@
                     "resultFact": "functionCountResult"
                 },
                 "operator": "functionCount",
-                "value": 30
+                "value": 20
             }
         ]
     },
     "event": {
         "type": "warning",
         "params": {
-            "message": "File contains too many functions (>30). Consider splitting into multiple files.",
+            "message": "File contains too many functions (>20). Consider splitting into multiple files.",
             "details": {
                 "fact": "functionCountResult"
             }

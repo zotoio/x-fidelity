@@ -34,7 +34,7 @@
     ],
     "additionalFacts": ["customFact"],
     "additionalOperators": ["customOperator"],
-    "additionalPlugins": ["xfiPluginSimpleExample"],
+    "additionalPlugins": ["xfiPluginSimpleExample", "xfiPluginAst"],
     "notifications": {
         "recipients": {
             "email": [

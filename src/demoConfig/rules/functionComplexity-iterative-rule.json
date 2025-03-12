@@ -12,17 +12,29 @@
                 "fact": "functionComplexity",
                 "params": {
                     "resultFact": "complexityResult",
-                    "minimumComplexityLogged": 25
+                    "thresholds": {
+                        "cyclomaticComplexity": 20,
+                        "cognitiveComplexity": 30,
+                        "nestingDepth": 10,
+                        "parameterCount": 5,
+                        "returnCount": 5
+                    }
                 },
                 "operator": "astComplexity",
-                "value": 40
+                "value": {
+                    "cyclomaticComplexity": 20,
+                    "cognitiveComplexity": 30,
+                    "nestingDepth": 10,
+                    "parameterCount": 5,
+                    "returnCount": 5
+                }
             }
         ]
     },
     "event": {
         "type": "warning",
         "params": {
-            "message": "Functions detected with high cyclomatic complexity (40+). Consider refactoring.",
+            "message": "Functions detected with high complexity. Consider refactoring.",
             "details": {
                 "fact": "complexityResult"
             }

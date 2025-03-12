@@ -103,22 +103,22 @@ export async function main() {
                     logger.info(`PERFORMANCE: Notifications took ${notificationDurationSeconds} seconds`);
                 }
 
-                // update overall duration and end time in XFI_RESULT
-                const endTime = new Date().getTime();
-                resultMetadata.XFI_RESULT.durationSeconds = (endTime - resultMetadata.XFI_RESULT.startTime) / 1000;
-                resultMetadata.XFI_RESULT.finishTime = endTime; 
+                // // update overall duration and end time in XFI_RESULT
+                // const endTime = new Date().getTime();
+                // resultMetadata.XFI_RESULT.durationSeconds = (endTime - resultMetadata.XFI_RESULT.startTime) / 1000;
+                // resultMetadata.XFI_RESULT.finishTime = endTime; 
 
-                // change the finishTime value in the resultString to be endTimestamp
-                const resultStringWithEndTimestamp = resultString.replace(/("finishTime"):([\s]+)*([\d\.]+)/g, `$1:${endTime}`);
+                // // change the finishTime value in the resultString to be endTimestamp
+                // const resultStringWithEndTimestamp = resultString.replace(/("finishTime"):([\s]+)*([\d\.]+)/g, `$1:${endTime}`);
 
-                // change the durationSeconds value in the resultString to be the overall duration
-                resultString = resultStringWithEndTimestamp.replace(/("durationSeconds"):([\s]+)*([\d\.]+)/g, `$1:${resultMetadata.XFI_RESULT.durationSeconds}`);
+                // // change the durationSeconds value in the resultString to be the overall duration
+                // resultString = resultStringWithEndTimestamp.replace(/("durationSeconds"):([\s]+)*([\d\.]+)/g, `$1:${resultMetadata.XFI_RESULT.durationSeconds}`);
 
-                // change the finishTime value in the prettyResult to be endTimestamp
-                const prettyResultWithEndTimestamp = prettyResult.replace(/(.*startTime.*34m)(\d*)(.*)/g, `$1$${endTime}$3`);
+                // // change the finishTime value in the prettyResult to be endTimestamp
+                // const prettyResultWithEndTimestamp = prettyResult.replace(/(.*finishTime.*34m)(\d*)(.*)/g, `$1$${endTime}$3`);
 
-                // change the durationSeconds value in the prettyResult to be the overall duration
-                prettyResult = prettyResultWithEndTimestamp.replace(/(.*durationSeconds.*34m)(\d*)(.*)/g, `$1${resultMetadata.XFI_RESULT.durationSeconds}$3`);
+                // // change the durationSeconds value in the prettyResult to be the overall duration
+                // prettyResult = prettyResultWithEndTimestamp.replace(/(.*durationSeconds.*34m)(\d*)(.*)/g, `$1${resultMetadata.XFI_RESULT.durationSeconds}$3`);
 
                 // if results are found, there were issues found in the codebase
                 if (resultMetadata.XFI_RESULT.totalIssues > 0) {

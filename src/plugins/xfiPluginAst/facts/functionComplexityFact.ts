@@ -51,20 +51,18 @@ export const functionComplexityFact: FactDefn = {
             
             visit(tree.rootNode);
 
-            // Get minimum complexity threshold from params
-            const minimumComplexityLogged = params?.minimumComplexityLogged || 10;
-            
             // Analyze each function node
             for (const node of functionNodes) {
                 const name = getFunctionName(node);
                 const metrics = analyzeFunctionComplexity(node);
                 
                 // Only include functions that exceed the minimum complexity threshold for any metric
-                if (metrics.cyclomaticComplexity >= minimumComplexityLogged ||
-                    metrics.cognitiveComplexity >= minimumComplexityLogged ||
-                    metrics.nestingDepth >= minimumComplexityLogged ||
-                    metrics.parameterCount >= minimumComplexityLogged ||
-                    metrics.returnCount >= minimumComplexityLogged) {
+                if (metrics.cyclomaticComplexity >= params?.thresholds?.cyclomaticComplexity || 
+                    metrics.cognitiveComplexity >= params?.thresholds?.cognitiveComplexity || 
+                    metrics.nestingDepth >= params?.thresholds?.nestingDepth || 
+                    metrics.parameterCount >= params?.thresholds?.parameterCount || 
+                    metrics.returnCount >= params?.thresholds?.returnCount
+                ) {
                     
                     logger.debug({ 
                         functionName: name,
@@ -86,7 +84,7 @@ export const functionComplexityFact: FactDefn = {
                     logger.debug({
                         functionName: name,
                         metrics,
-                        threshold: minimumComplexityLogged
+                        thresholds: params?.thresholds
                     }, 'Function below complexity threshold - skipping');
                 }
             }
@@ -118,7 +116,7 @@ export const functionComplexityFact: FactDefn = {
                     metrics: c.metrics,
                     location: c.location
                 })),
-                maxComplexity: Math.max(...complexities.map(c => c.metrics.cyclomaticComplexity)),
+                maxCyclomaticComplexity: Math.max(...complexities.map(c => c.metrics.cyclomaticComplexity)),
                 maxNestingDepth: Math.max(...complexities.map(c => c.metrics.nestingDepth)),
                 maxParameterCount: Math.max(...complexities.map(c => c.metrics.parameterCount)), 
                 maxReturnCount: Math.max(...complexities.map(c => c.metrics.returnCount)),

@@ -14,7 +14,8 @@
         "newSdkFeatureNotAdoped-global",
         "mutuallyExclusivePackages-global",
         "functionComplexity-iterative",
-        "functionCount-iterative"
+        "functionCount-iterative",
+        "codeRhythm-iterative"
     ],
     "operators": [
         "fileContains",
@@ -27,17 +28,6 @@
         "globalPatternRatio",
         "globalPatternCount",
         "astComplexity",
-        "functionCount"
-    ],
-    "facts": [
-        "repoFilesystemFacts",
-        "repoDependencyFacts",
-        "openaiAnalysisFacts",
-        "remoteSubstringValidation", 
-        "missingRequiredFiles",
-        "globalFileAnalysisFacts",
-        "ast",
-        "functionComplexity",
         "functionCount"
     ],
     "plugins": [

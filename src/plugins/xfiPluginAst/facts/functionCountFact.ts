@@ -11,7 +11,7 @@ export const functionCountFact: FactDefn = {
             
             if (!tree) {
                 logger.debug('No AST available for function count analysis');
-                return { count: 0 };
+                return 0;
             }
 
             // Find all function nodes
@@ -51,7 +51,7 @@ export const functionCountFact: FactDefn = {
 
             // Add result to almanac if resultFact param provided
             if (params?.resultFact) {
-                almanac.addRuntimeFact(params.resultFact, result);
+                almanac.addRuntimeFact(params.resultFact, { count: result.count});
             }
 
             return result;
