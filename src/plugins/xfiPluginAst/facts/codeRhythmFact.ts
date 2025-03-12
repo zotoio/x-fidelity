@@ -62,32 +62,31 @@ function analyzeCodeMetrics(node: any): CodeMetrics {
 }
 
 function calculateConsistency(nodeTypes: Map<string, number>, total: number): number {
-    // Calculate entropy-based consistency score
-    let entropy = 0;
-    nodeTypes.forEach(count => {
-        const p = count / total;
-        entropy -= p * Math.log2(p);
-    });
+    // Calculate normalized variance in node type distribution
+    let variance = 0;
+    const mean = total / nodeTypes.size;
     
-    // Normalize entropy (max entropy for n types is log2(n))
-    const maxEntropy = Math.log2(nodeTypes.size);
-    // Convert to consistency score (1 - normalized entropy)
-    // Higher entropy means less consistency
-    return maxEntropy ? 1 - (entropy / maxEntropy) : 1;
+    nodeTypes.forEach(count => {
+        variance += Math.pow(count - mean, 2);
+    });
+
+    // Normalize variance to 0-1 range where 1 is most consistent
+    const maxVariance = Math.pow(mean * (nodeTypes.size - 1), 2);
+    return maxVariance > 0 ? 1 - (Math.sqrt(variance) / Math.sqrt(maxVariance)) : 1;
 }
 
 function calculateComplexity(depth: number, weightedSum: number, total: number): number {
-    // Weighted complexity score considering nesting depth and node weights
-    const depthFactor = Math.min(1, (depth * depth) / 100); // Quadratic scaling for depth
-    const weightFactor = Math.min(1, weightedSum / (total * 4)); // Reduced weight impact
+    // Linear scaling for depth with lower impact
+    const depthFactor = Math.min(1, depth / 15); // More gradual depth scaling
+    const weightFactor = Math.min(1, weightedSum / (total * 5)); // Lower weight impact
     
-    // Emphasize depth more than raw node weights
-    return (depthFactor * 0.7 + weightFactor * 0.3);
+    // Balance depth and weight factors more evenly
+    return (depthFactor * 0.5 + weightFactor * 0.5);
 }
 
 function calculateReadability(consistency: number, complexity: number): number {
-    // Weighted combination favoring consistency more heavily
-    return (consistency * 0.7 + (1 - complexity) * 0.3);
+    // More balanced weighting between consistency and complexity
+    return (consistency * 0.5 + (1 - complexity) * 0.5);
 }
 
 export const codeRhythmFact: FactDefn = {
