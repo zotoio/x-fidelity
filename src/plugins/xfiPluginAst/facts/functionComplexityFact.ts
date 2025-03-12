@@ -85,6 +85,15 @@ export const functionComplexityFact: FactDefn = {
                 }))
             }, 'Completed complexity analysis');
             
+            // Get thresholds from params or use defaults
+            const thresholds = {
+                cyclomaticComplexity: params?.thresholds?.cyclomaticComplexity || 10,
+                cognitiveComplexity: params?.thresholds?.cognitiveComplexity || 10,
+                nestingDepth: params?.thresholds?.nestingDepth || 5,
+                parameterCount: params?.thresholds?.parameterCount || 5,
+                returnCount: params?.thresholds?.returnCount || 3
+            };
+
             const result = {
                 complexities: complexities.map(c => ({
                     ...c,
@@ -94,13 +103,21 @@ export const functionComplexityFact: FactDefn = {
                         returnCount: c.metrics.returnCount,
                         nestingDepth: c.metrics.nestingDepth,
                         cognitiveComplexity: c.metrics.cognitiveComplexity
+                    },
+                    exceedsThresholds: {
+                        cyclomaticComplexity: c.complexity >= thresholds.cyclomaticComplexity,
+                        cognitiveComplexity: c.metrics.cognitiveComplexity >= thresholds.cognitiveComplexity,
+                        nestingDepth: c.metrics.nestingDepth >= thresholds.nestingDepth,
+                        parameterCount: c.metrics.parameterCount >= thresholds.parameterCount,
+                        returnCount: c.metrics.returnCount >= thresholds.returnCount
                     }
                 })),
                 maxComplexity,
                 maxNestingDepth: Math.max(...complexities.map(c => c.metrics.nestingDepth)),
                 maxParameterCount: Math.max(...complexities.map(c => c.metrics.parameterCount)),
                 maxReturnCount: Math.max(...complexities.map(c => c.metrics.returnCount)),
-                maxCognitiveComplexity: Math.max(...complexities.map(c => c.metrics.cognitiveComplexity))
+                maxCognitiveComplexity: Math.max(...complexities.map(c => c.metrics.cognitiveComplexity)),
+                thresholds
             };
 
             if (params?.resultFact) {

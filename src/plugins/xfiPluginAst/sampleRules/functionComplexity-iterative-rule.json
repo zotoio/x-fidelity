@@ -12,10 +12,23 @@
                 "fact": "functionComplexity",
                 "params": {
                     "resultFact": "complexityResult",
-                    "minimumComplexityLogged": 5
+                    "minimumComplexityLogged": 5,
+                    "thresholds": {
+                        "cyclomaticComplexity": 10,
+                        "cognitiveComplexity": 10,
+                        "nestingDepth": 5,
+                        "parameterCount": 5,
+                        "returnCount": 3
+                    }
                 },
                 "operator": "astComplexity",
-                "value": 10
+                "value": {
+                    "cyclomaticComplexity": 10,
+                    "cognitiveComplexity": 10,
+                    "nestingDepth": 5,
+                    "parameterCount": 5,
+                    "returnCount": 3
+                }
             }
         ]
     },

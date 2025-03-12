@@ -12,13 +12,24 @@ export const astComplexity: OperatorDefn = {
                 return false;
             }
 
-            // Check if any function exceeds the complexity threshold
+            // Get thresholds from params or use defaults based on the main threshold
+            const thresholds = {
+                cyclomaticComplexity: threshold,
+                cognitiveComplexity: threshold,
+                nestingDepth: Math.ceil(threshold / 2),
+                parameterCount: Math.ceil(threshold / 2),
+                returnCount: Math.ceil(threshold / 3)
+            };
+
+            // Check if any function exceeds any threshold
             const exceedsThreshold = factValue.complexities.some((func: any) => {
                 const metrics = func.metrics || {};
                 return (
-                    metrics.cyclomaticComplexity >= threshold ||
-                    metrics.cognitiveComplexity >= threshold ||
-                    metrics.nestingDepth >= Math.ceil(threshold / 2) // Nesting depth threshold is half
+                    metrics.cyclomaticComplexity >= thresholds.cyclomaticComplexity ||
+                    metrics.cognitiveComplexity >= thresholds.cognitiveComplexity ||
+                    metrics.nestingDepth >= thresholds.nestingDepth ||
+                    metrics.parameterCount >= thresholds.parameterCount ||
+                    metrics.returnCount >= thresholds.returnCount
                 );
             });
 
