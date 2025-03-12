@@ -125,7 +125,7 @@ interface FunctionMetrics {
 }
 
 function analyzeFunctionComplexity(node: any): FunctionMetrics {
-    let cyclomaticComplexity = 1; // Base complexity
+    let cyclomaticComplexity = 1;
     let parameterCount = 0;
     let returnCount = 0;
     let maxNestingDepth = 0;
