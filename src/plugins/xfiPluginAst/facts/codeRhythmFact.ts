@@ -105,11 +105,13 @@ class CodeRhythmAnalyzer {
 
         // Normalize to 0-1 range with weight changes factored in
         // Higher score indicates more chaotic flow
-        // Normalize to 0-1 range and amplify the impact of weight changes
+        // Calculate flow density with increased weight on changes and nesting
         const baseScore = totalFlow / (nodeCount * maxFlow);
-        const weightChangeImpact = (weightChanges / nodeCount) * 2;
+        const weightChangeImpact = (weightChanges / nodeCount) * 3; // Increase multiplier
+        const nestingImpact = (currentNestingDepth / nodeCount) * 2; // Add nesting impact
         
-        return Math.min(1, baseScore + weightChangeImpact);
+        // Combine scores with higher emphasis on weight changes
+        return Math.min(1, baseScore + weightChangeImpact + nestingImpact);
     }
 
     private calculateSymmetry(tree: CodeRhythmNode): number {
