@@ -15,9 +15,9 @@
                 },
                 "operator": "astComplexity",
                 "value": {
-                    "flowDensity": 0.7,
-                    "operationalSymmetry": 0.6,
-                    "syntacticDiscontinuity": 0.4
+                    "consistency": 0.6,
+                    "complexity": 0.7,
+                    "readability": 0.5
                 }
             }
         ]
@@ -25,14 +25,14 @@
     "event": {
         "type": "warning",
         "params": {
-            "message": "Code rhythm analysis suggests potential readability issues. Consider reviewing the code structure.",
+            "message": "Code structure analysis suggests potential readability issues.",
             "details": {
                 "fact": "codeRhythmResult",
                 "recommendations": [
-                    "Check if functions are too densely packed with operations",
-                    "Look for asymmetric code patterns that might be hard to follow",
-                    "Review areas with abrupt changes in code style or pattern",
-                    "Consider breaking down complex sections into smaller, more rhythmic units"
+                    "Maintain consistent code patterns and structure",
+                    "Reduce nesting depth and complexity",
+                    "Break down complex sections into smaller units",
+                    "Keep related code close together"
                 ]
             }
         }

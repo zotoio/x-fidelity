@@ -2,186 +2,89 @@ import { FactDefn, FileData } from '../../../types/typeDefs';
 import { logger } from '../../../utils/logger';
 import { generateAst } from '../../../utils/astUtils';
 
-interface SyntaxTreeNode {
-    type: string;
-    startPosition: {
-        row: number;
-    };
-    children?: SyntaxTreeNode[];
+interface CodeMetrics {
+    consistency: number;  // How consistent the code structure is (0-1)
+    complexity: number;   // Overall structural complexity (0-1) 
+    readability: number;  // Code readability score (0-1)
 }
 
-interface CodeRhythmNode {
-    type: string;
-    weight: number;
-    children: CodeRhythmNode[];
-    interval: number;
-    flowImpact: number;
-}
-
-interface CodeRhythmMetrics {
-    flowDensity: number;
-    operationalSymmetry: number;
-    syntacticDiscontinuity: number;
-}
-
-type NodeWeightings = {
-    function_declaration: number;
-    if_statement: number;
-    return_statement: number;
-    for_statement: number;
-    while_statement: number;
-    try_statement: number;
-    catch_clause: number;
-    variable_declaration: number;
+const NODE_WEIGHTS = {
+    function_declaration: 3,
+    if_statement: 2, 
+    for_statement: 2,
+    while_statement: 2,
+    try_statement: 2,
+    return_statement: 1,
+    variable_declaration: 1
 };
 
-class CodeRhythmAnalyzer {
-    private flowPatterns: Map<string, number> = new Map();
-    private currentNestingDepth: number = 0;
-    private readonly weightings: NodeWeightings = {
-        function_declaration: 3,
-        if_statement: 2,
-        return_statement: 1,
-        for_statement: 2,
-        while_statement: 2,
-        try_statement: 2,
-        catch_clause: 1,
-        variable_declaration: 1
-    };
+function analyzeCodeMetrics(node: any): CodeMetrics {
+    const nodeTypes = new Map<string, number>();
+    let totalNodes = 0;
+    let maxDepth = 0;
+    let currentDepth = 0;
+    let weightedSum = 0;
 
-    private buildRhythmTree(node: SyntaxTreeNode): CodeRhythmNode {
-        const weight = this.weightings[node.type as keyof NodeWeightings] || 0;
-        const children: CodeRhythmNode[] = [];
-        let interval = 0;
-        let flowImpact = weight;
+    // Traverse tree and collect metrics
+    function visit(node: any, depth: number) {
+        if (!node) return;
 
-        // Calculate interval from previous similar node
-        if (this.flowPatterns.has(node.type)) {
-            interval = node.startPosition.row - this.flowPatterns.get(node.type)!;
-            this.flowPatterns.set(node.type, node.startPosition.row);
-        } else {
-            this.flowPatterns.set(node.type, node.startPosition.row);
-        }
+        currentDepth = depth;
+        maxDepth = Math.max(maxDepth, depth);
+        totalNodes++;
 
-        // Process children
+        // Track node type frequencies
+        const count = nodeTypes.get(node.type) || 0;
+        nodeTypes.set(node.type, count + 1);
+
+        // Add weighted value based on node type
+        const weight = NODE_WEIGHTS[node.type as keyof typeof NODE_WEIGHTS] || 0;
+        weightedSum += weight * (1 + depth * 0.1); // Weight increases with depth
+
+        // Visit children
         for (const child of node.children || []) {
-            const childNode = this.buildRhythmTree(child);
-            children.push(childNode);
-            flowImpact += childNode.flowImpact * 0.5; // Dampen child impact
+            visit(child, depth + 1);
         }
-
-        return {
-            type: node.type,
-            weight,
-            children,
-            interval,
-            flowImpact
-        };
     }
 
-    private calculateFlowDensity(tree: CodeRhythmNode): number {
-        let totalFlow = tree.flowImpact;
-        let nodeCount = 1;
-        let maxFlow = this.weightings.function_declaration; // Use highest weighting as baseline
-        let previousNodeWeight = tree.weight;
-        let weightChanges = 0;
+    visit(node, 0);
 
-        const traverse = (node: CodeRhythmNode, depth: number = 0) => {
-            // Count abrupt weight changes
-            if (Math.abs(node.weight - previousNodeWeight) > 1) {
-                weightChanges++;
-            }
-            previousNodeWeight = node.weight;
+    // Calculate metrics
+    const consistency = calculateConsistency(nodeTypes, totalNodes);
+    const complexity = calculateComplexity(maxDepth, weightedSum, totalNodes);
+    const readability = calculateReadability(consistency, complexity);
 
-            // Track nesting depth
-            this.currentNestingDepth = Math.max(this.currentNestingDepth, depth);
+    return {
+        consistency,
+        complexity,
+        readability
+    };
+}
 
-            // Add node's impact to total
-            totalFlow += node.flowImpact * (1 + (node.interval > 3 ? 0.5 : 0));
-            nodeCount++;
+function calculateConsistency(nodeTypes: Map<string, number>, total: number): number {
+    // Calculate variance in node type distribution
+    let variance = 0;
+    const mean = total / nodeTypes.size;
+    
+    nodeTypes.forEach(count => {
+        variance += Math.pow(count - mean, 2);
+    });
 
-            for (const child of node.children) {
-                traverse(child, depth + 1);
-            }
-        };
+    // Convert to 0-1 scale where 1 is most consistent
+    return 1 - Math.min(1, Math.sqrt(variance) / total);
+}
 
-        traverse(tree);
+function calculateComplexity(depth: number, weightedSum: number, total: number): number {
+    // Combine depth and weighted structure metrics
+    const depthFactor = Math.min(1, depth / 10); // Cap at depth of 10
+    const weightFactor = Math.min(1, weightedSum / (total * 3)); // Normalize by max weight
+    
+    return (depthFactor + weightFactor) / 2;
+}
 
-        // Normalize to 0-1 range with weight changes factored in
-        // Higher score indicates more chaotic flow
-        // Calculate flow density with increased weight on changes and nesting
-        const baseScore = totalFlow / (nodeCount * maxFlow);
-        const weightChangeImpact = (weightChanges / nodeCount) * 3; // Increase multiplier
-        const nestingImpact = (this.currentNestingDepth / nodeCount) * 2; // Add nesting impact
-            
-        // Combine scores with higher emphasis on weight changes
-        return Math.min(1, baseScore + weightChangeImpact + nestingImpact);
-    }
-
-    private calculateSymmetry(tree: CodeRhythmNode): number {
-        const typeCounts = new Map<string, number>();
-        let totalNodes = 0;
-        
-        const countTypes = (node: CodeRhythmNode) => {
-            typeCounts.set(node.type, (typeCounts.get(node.type) || 0) + 1);
-            totalNodes++;
-            node.children.forEach(countTypes);
-        };
-
-        countTypes(tree);
-
-        // Calculate entropy-based symmetry
-        let entropy = 0;
-        typeCounts.forEach(count => {
-            const probability = count / totalNodes;
-            entropy -= probability * Math.log2(probability);
-        });
-
-        // Normalize entropy to 0-1 range (max entropy for n types is log2(n))
-        const maxEntropy = Math.log2(typeCounts.size);
-        return entropy / maxEntropy;
-    }
-
-    private calculateDiscontinuity(tree: CodeRhythmNode): number {
-        let totalDiscontinuity = 0;
-        let maxDiscontinuity = 0;
-        let previousInterval = 0;
-
-        const traverse = (node: CodeRhythmNode) => {
-            if (previousInterval > 0) {
-                const change = Math.abs(node.interval - previousInterval);
-                const weightedChange = change * node.weight;
-                totalDiscontinuity += weightedChange;
-                maxDiscontinuity = Math.max(maxDiscontinuity, weightedChange);
-            }
-            previousInterval = node.interval;
-            node.children.forEach(traverse);
-        };
-
-        traverse(tree);
-
-        // Normalize to 0-1 range
-        return maxDiscontinuity > 0 ? totalDiscontinuity / (maxDiscontinuity * tree.flowImpact) : 0;
-    }
-
-    analyzeNode(node: SyntaxTreeNode): CodeRhythmMetrics {
-        this.flowPatterns.clear();
-        const rhythmTree = this.buildRhythmTree(node);
-        
-        const metrics = {
-            flowDensity: this.calculateFlowDensity(rhythmTree),
-            operationalSymmetry: this.calculateSymmetry(rhythmTree),
-            syntacticDiscontinuity: this.calculateDiscontinuity(rhythmTree)
-        };
-
-        logger.debug({ 
-            metrics,
-            nodeType: node.type,
-            threshold: this.weightings.function_declaration
-        }, 'Code rhythm metrics calculated');
-
-        return metrics;
-    }
+function calculateReadability(consistency: number, complexity: number): number {
+    // Higher consistency and lower complexity = better readability
+    return (consistency * 0.6 + (1 - complexity) * 0.4);
 }
 
 export const codeRhythmFact: FactDefn = {
@@ -196,13 +99,11 @@ export const codeRhythmFact: FactDefn = {
                 return { metrics: null };
             }
 
-            const analyzer = new CodeRhythmAnalyzer();
-            const metrics = analyzer.analyzeNode(tree.rootNode);
+            const metrics = analyzeCodeMetrics(tree.rootNode);
 
             logger.debug({ 
                 fileName: fileData.fileName,
-                metrics,
-                threshold: params?.minimumComplexityLogged || 5
+                metrics
             }, 'Code rhythm analysis complete');
 
             if (params?.resultFact) {
