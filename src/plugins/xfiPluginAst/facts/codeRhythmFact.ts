@@ -86,7 +86,7 @@ class CodeRhythmAnalyzer {
         let previousNodeWeight = tree.weight;
         let weightChanges = 0;
 
-        const traverse = (node: CodeRhythmNode) => {
+        const traverse = (node: CodeRhythmNode, depth: number = 0) => {
             // Count abrupt weight changes
             if (Math.abs(node.weight - previousNodeWeight) > 1) {
                 weightChanges++;
@@ -94,14 +94,14 @@ class CodeRhythmAnalyzer {
             previousNodeWeight = node.weight;
 
             // Track nesting depth
-            const currentDepth = this.currentNestingDepth;
+            this.currentNestingDepth = Math.max(this.currentNestingDepth, depth);
 
             // Add node's impact to total
             totalFlow += node.flowImpact * (1 + (node.interval > 3 ? 0.5 : 0));
             nodeCount++;
 
             for (const child of node.children) {
-                traverse(child, currentDepth + 1);
+                traverse(child, depth + 1);
             }
         };
 
