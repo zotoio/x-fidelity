@@ -112,7 +112,12 @@ export const functionComplexityFact: FactDefn = {
                     name: c.name,
                     metrics: c.metrics,
                     location: c.location
-                }))
+                })),
+                maxComplexity: Math.max(...complexities.map(c => c.metrics.cyclomaticComplexity)),
+                maxNestingDepth: Math.max(...complexities.map(c => c.metrics.nestingDepth)),
+                maxParameterCount: Math.max(...complexities.map(c => c.metrics.parameterCount)), 
+                maxReturnCount: Math.max(...complexities.map(c => c.metrics.returnCount)),
+                maxCognitiveComplexity: Math.max(...complexities.map(c => c.metrics.cognitiveComplexity))
             };
 
             if (params?.resultFact) {
