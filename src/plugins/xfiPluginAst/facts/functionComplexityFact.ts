@@ -1,7 +1,23 @@
 import { FactDefn, FileData } from '../../../types/typeDefs';
 import { logger } from '../../../utils/logger';
-import { SyntaxNode } from 'tree-sitter';
 import { generateAst } from '../../../utils/astUtils';
+
+interface FunctionMetrics {
+    cyclomaticComplexity: number;
+    parameterCount: number;
+    returnCount: number;
+    nestingDepth: number;
+    cognitiveComplexity: number;
+}
+
+interface FunctionComplexityItem {
+    name: string;
+    metrics: FunctionMetrics;
+    location: {
+        start: { row: number; column: number; };
+        end: { row: number; column: number; };
+    };
+}
 
 export const functionComplexityFact: FactDefn = {
     name: 'functionComplexity',
@@ -12,11 +28,10 @@ export const functionComplexityFact: FactDefn = {
             
             if (!tree) {
                 logger.debug('No AST available for complexity analysis');
-                return { complexity: 0 };
+                return { complexities: [] };
             }
 
             const complexities: FunctionComplexityItem[] = [];
-            logger.debug('Starting function complexity analysis');
 
             // Visit each function declaration/expression
             // Traverse the AST to find all function nodes
@@ -56,7 +71,7 @@ export const functionComplexityFact: FactDefn = {
 
                     complexities.push({
                         name,
-                        complexity,
+                        metrics: complexity,
                         location: {
                             start: node.startPosition,
                             end: node.endPosition
@@ -94,27 +109,10 @@ export const functionComplexityFact: FactDefn = {
 
             const result = {
                 complexities: complexities.map(c => ({
-                    ...c,
-                    metrics: {
-                        cyclomaticComplexity: c.complexity.metrics.cyclomaticComplexity,
-                        parameterCount: c.complexity.metrics.parameterCount,
-                        returnCount: c.complexity.metrics.returnCount,
-                        nestingDepth: c.complexity.metrics.nestingDepth,
-                        cognitiveComplexity: c.complexity.metrics.cognitiveComplexity
-                    },
-                    exceedsThresholds: {
-                        cyclomaticComplexity: c.complexity.metrics.cyclomaticComplexity >= thresholds.cyclomaticComplexity,
-                        cognitiveComplexity: c.complexity.metrics.cognitiveComplexity >= thresholds.cognitiveComplexity,
-                        nestingDepth: c.complexity.metrics.nestingDepth >= thresholds.nestingDepth,
-                        parameterCount: c.complexity.metrics.parameterCount >= thresholds.parameterCount,
-                        returnCount: c.complexity.metrics.returnCount >= thresholds.returnCount
-                    }
-                })),
-                maxNestingDepth: Math.max(...complexities.map(c => c.complexity.metrics.nestingDepth)),
-                maxParameterCount: Math.max(...complexities.map(c => c.complexity.metrics.parameterCount)),
-                maxReturnCount: Math.max(...complexities.map(c => c.complexity.metrics.returnCount)),
-                maxCognitiveComplexity: Math.max(...complexities.map(c => c.complexity.metrics.cognitiveComplexity)),
-                thresholds
+                    name: c.name,
+                    metrics: c.metrics,
+                    location: c.location
+                }))
             };
 
             if (params?.resultFact) {
@@ -122,41 +120,14 @@ export const functionComplexityFact: FactDefn = {
                 almanac.addRuntimeFact(params.resultFact, result);
             }
 
-            return true//result.complexities.exceedsThresholds.length > 0;
+            return result;
         } catch (error) {
-            logger.error(`Error analyzing function complexity: ${error instanceof Error ? error.stack : error}`);
-            return true;
+            logger.error(`Error in function complexity analysis: ${error}`);
+            return { complexities: [] };
         }
     }
 };
 
-type FunctionComplexityItem = {
-    name: string;
-    complexity: any;
-    location: {
-        start: SyntaxNode;
-        end: SyntaxNode;
-    };
-}
-
-interface FunctionMetrics {
-    cyclomaticComplexity: number;
-    parameterCount: number;
-    returnCount: number;
-    nestingDepth: number;
-    cognitiveComplexity: number;
-}
-
-type FunctionComplexity = {
-    complexities: FunctionMetrics;
-    maxNestingDepth: number;
-    maxParameterCount: number;
-    maxReturnCount: number;
-    maxCognitiveComplexity: number;
-    exceedsThresholds: FunctionMetrics;
-    thresholds: FunctionMetrics;
-    metrics: FunctionMetrics;
-}
 
 function analyzeFunctionComplexity(node: any): FunctionMetrics {
     let cyclomaticComplexity = 1;
