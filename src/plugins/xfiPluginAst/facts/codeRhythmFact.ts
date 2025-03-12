@@ -37,6 +37,7 @@ type NodeWeightings = {
 
 class CodeRhythmAnalyzer {
     private flowPatterns: Map<string, number> = new Map();
+    private currentNestingDepth: number = 0;
     private readonly weightings: NodeWeightings = {
         function_declaration: 3,
         if_statement: 2,
@@ -92,6 +93,9 @@ class CodeRhythmAnalyzer {
             }
             previousNodeWeight = node.weight;
 
+            // Track nesting depth
+            this.currentNestingDepth = Math.max(this.currentNestingDepth, depth);
+
             // Add node's impact to total
             totalFlow += node.flowImpact * (1 + (node.interval > 3 ? 0.5 : 0));
             nodeCount++;
@@ -108,8 +112,8 @@ class CodeRhythmAnalyzer {
         // Calculate flow density with increased weight on changes and nesting
         const baseScore = totalFlow / (nodeCount * maxFlow);
         const weightChangeImpact = (weightChanges / nodeCount) * 3; // Increase multiplier
-        const nestingImpact = (currentNestingDepth / nodeCount) * 2; // Add nesting impact
-        
+        const nestingImpact = (this.currentNestingDepth / nodeCount) * 2; // Add nesting impact
+            
         // Combine scores with higher emphasis on weight changes
         return Math.min(1, baseScore + weightChangeImpact + nestingImpact);
     }
