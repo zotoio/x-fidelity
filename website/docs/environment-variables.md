@@ -47,6 +47,10 @@ XFI_LOG_LEVEL=debug
 XFI_LOG_COLOR=false
 ```
 
+The `XFI_LOG_COLOR` environment variable controls whether log output includes ANSI color codes. This is particularly useful in CI/CD environments, when redirecting logs to files, or when your terminal doesn't support colors.
+
+Setting `XFI_LOG_COLOR=false` will disable all colored output in logs, making them plain text. This can improve readability in environments where color codes might appear as strange characters.
+
 ## Usage Examples
 
 ### Basic Setup
