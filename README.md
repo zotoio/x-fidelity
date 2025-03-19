@@ -50,6 +50,7 @@ x-fidelity is an advanced CLI tool and paired config server designed to perform 
    - [Basic Usage](#basic-usage)
    - [Advanced Usage](#advanced-usage)
    - [Environment Variables](#environment-variables)
+   - [Logging Options](#logging-options)
    - [Local Configuration](#local-configuration)
    - [Remote Configuration](#remote-configuration)
 8. [Hosting Config Servers](#hosting-config-servers)
@@ -442,6 +443,7 @@ Options:
   -j, --jsonTTL [minutes]                        Set the server JSON cache TTL in minutes (default: "10")
   -e, --extensions <modules...>                  Space-separated list of npm module names to load as external plugin extensions
   -x, --examine                                  Validate archetype config only
+  -n, --no-color                                 Disable colored output in logs
   -v, --version                                  Output the version number of xfidelity
   -h, --help                                     Display help for command
 ```
@@ -475,6 +477,7 @@ x-fidelity supports the following environment variables:
 - `CERT_PATH`: The path to SSL certificates for HTTPS config server.
 - `NODE_TLS_REJECT_UNAUTHORIZED`: Set to '0' to allow self-signed certificates (use with caution).
 - `XFI_SHARED_SECRET`: Shared secret for securing telemetry and certain server routes.
+- `XFI_LOG_COLOR`: Set to 'false' to disable colored output in logs.
 
 Example usage:
 
@@ -483,6 +486,7 @@ export OPENAI_API_KEY=your_api_key_here
 export OPENAI_MODEL=gpt-4
 export XFI_LISTEN_PORT=9999
 export XFI_SHARED_SECRET=your_shared_secret_here
+export XFI_LOG_COLOR=false
 xfidelity -o true
 ```
 
@@ -499,6 +503,28 @@ The local config directory should contain:
 - A `rules` subdirectory containing rule JSON files
 
 You can override default archetypes or add new ones by placing the corresponding JSON files in the local config directory.
+
+### Logging Options
+
+x-fidelity provides options to customize the logging output:
+
+1. **Log Level**: Set the logging level using the `XFI_LOG_LEVEL` environment variable:
+   ```sh
+   export XFI_LOG_LEVEL=debug
+   ```
+   Available levels: trace, debug, info, warn, error, fatal
+
+2. **Colored Output**: You can disable colored logging output in two ways:
+   - Using the CLI option:
+     ```sh
+     xfidelity --no-color
+     ```
+   - Using the environment variable:
+     ```sh
+     export XFI_LOG_COLOR=false
+     ```
+
+This is particularly useful in CI/CD environments or when redirecting logs to files.
 
 ### Remote Configuration
 

@@ -42,6 +42,9 @@ GITHUB_WEBHOOK_SECRET=your_github_webhook_secret
 ```bash
 # Set logging level (default: 'info')
 XFI_LOG_LEVEL=debug
+
+# Disable colored output in logs (default: enabled)
+XFI_LOG_COLOR=false
 ```
 
 ## Usage Examples
