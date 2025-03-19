@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import pino from 'pino';
 import { maskSensitiveData } from './maskSensitiveData';
+import { options } from '../core/cli';
 
 // Initialize variables
 let loggerInstance: pino.Logger | undefined;
@@ -32,6 +33,9 @@ export function getLogPrefix(): string {
 
 // Initialize logger function that will create the singleton if it doesn't exist
 function getLogger(force?: boolean): pino.Logger {
+    // Determine if color should be enabled
+    const useColor = process.env.XFI_LOG_COLOR !== 'false' && options?.color !== false;
+    
     if (!loggerInstance || force) {
         const fileTransport = pino.destination({
             dest: 'x-fidelity.log',
@@ -44,7 +48,7 @@ function getLogger(force?: boolean): pino.Logger {
             options: {
                 loglevel: loglevel,
                 sync: false,
-                colorize: true,
+                colorize: useColor,
                 translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
                 ignore: 'pid,hostname',
                 singleLine: true,
