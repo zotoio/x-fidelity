@@ -1,3 +1,10 @@
+# [3.16.0](https://github.com/zotoio/x-fidelity/compare/v3.15.0...v3.16.0) (2025-03-19)
+
+
+### Features
+
+* add support for disabling colored logging via XFI_LOG_COLOR env var ([cafcf5b](https://github.com/zotoio/x-fidelity/commit/cafcf5b6fde9b29dbe31a62cba491ab42c24b759))
+
 # [3.15.0](https://github.com/zotoio/x-fidelity/compare/v3.14.0...v3.15.0) (2025-03-12)
 
 
