@@ -17,7 +17,7 @@
                         "cognitiveComplexity": 30,
                         "nestingDepth": 10,
                         "parameterCount": 5,
-                        "returnCount": 5
+                        "returnCount": 10
                     }
                 },
                 "operator": "astComplexity",
@@ -26,7 +26,7 @@
                     "cognitiveComplexity": 30,
                     "nestingDepth": 10,
                     "parameterCount": 5,
-                    "returnCount": 5
+                    "returnCount": 10
                 }
             }
         ]
