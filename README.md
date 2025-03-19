@@ -443,7 +443,6 @@ Options:
   -j, --jsonTTL [minutes]                        Set the server JSON cache TTL in minutes (default: "10")
   -e, --extensions <modules...>                  Space-separated list of npm module names to load as external plugin extensions
   -x, --examine                                  Validate archetype config only
-  -n, --no-color                                 Disable colored output in logs
   -v, --version                                  Output the version number of xfidelity
   -h, --help                                     Display help for command
 ```
@@ -514,15 +513,10 @@ x-fidelity provides options to customize the logging output:
    ```
    Available levels: trace, debug, info, warn, error, fatal
 
-2. **Colored Output**: You can disable colored logging output in two ways:
-   - Using the CLI option:
-     ```sh
-     xfidelity --no-color
-     ```
-   - Using the environment variable:
-     ```sh
-     export XFI_LOG_COLOR=false
-     ```
+2. **Colored Output**: You can disable colored logging output using an environment variable:
+   ```sh
+   export XFI_LOG_COLOR=false
+   ```
 
 This is particularly useful in CI/CD environments or when redirecting logs to files.
 

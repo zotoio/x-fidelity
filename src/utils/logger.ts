@@ -33,8 +33,8 @@ export function getLogPrefix(): string {
 
 // Initialize logger function that will create the singleton if it doesn't exist
 function getLogger(force?: boolean): pino.Logger {
-    // Determine if color should be enabled
-    const useColor = process.env.XFI_LOG_COLOR !== 'false' && options?.color !== false;
+    // Determine if color should be enabled based on environment variable only
+    const useColor = process.env.XFI_LOG_COLOR !== 'false';
     
     if (!loggerInstance || force) {
         const fileTransport = pino.destination({
