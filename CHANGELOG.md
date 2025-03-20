@@ -1,3 +1,10 @@
+# [3.17.0](https://github.com/zotoio/x-fidelity/compare/v3.16.0...v3.17.0) (2025-03-20)
+
+
+### Features
+
+* **canary:** example with proxy support for canary installs in ci ([6b5aff3](https://github.com/zotoio/x-fidelity/commit/6b5aff317d0d4fedfccd6cf79304722e8e7a7556))
+
 # [3.16.0](https://github.com/zotoio/x-fidelity/compare/v3.15.0...v3.16.0) (2025-03-19)
 
 
