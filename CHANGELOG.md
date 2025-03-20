@@ -1,3 +1,10 @@
+## [3.17.1](https://github.com/zotoio/x-fidelity/compare/v3.17.0...v3.17.1) (2025-03-20)
+
+
+### Bug Fixes
+
+* **deps:** cleanup ([c2b3c1a](https://github.com/zotoio/x-fidelity/commit/c2b3c1a8338ae7d06b4022bf46deed744d89d204))
+
 # [3.17.0](https://github.com/zotoio/x-fidelity/compare/v3.16.0...v3.17.0) (2025-03-20)
 
 
