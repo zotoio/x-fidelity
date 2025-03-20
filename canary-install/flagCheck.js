@@ -1,3 +1,5 @@
+
+const bootstrap = require('global-agent/bootstrap');
 const ldclient = require('launchdarkly-node-client-sdk');
 
 (async function main(contextKey) {
