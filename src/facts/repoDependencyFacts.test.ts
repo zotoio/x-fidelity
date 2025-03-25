@@ -208,6 +208,7 @@ describe('repoDependencyFacts', () => {
         });
 
         it('should return dependency version facts', async () => {
+            // Mock successful dependency collection
             const mockArchetypeConfig = {
                 facts: ['repoDependencyFacts'],
                 config: {
@@ -216,6 +217,24 @@ describe('repoDependencyFacts', () => {
                     }
                 }
             };
+
+            // Mock fs.existsSync to return true for yarn.lock
+            (fs.existsSync as jest.Mock).mockImplementation((path) => {
+                return path.includes('yarn.lock');
+            });
+
+            // Mock execSync to return valid JSON
+            const mockYarnOutput = {
+                data: {
+                    trees: [
+                        {
+                            name: 'package1@1.0.0',
+                            children: []
+                        }
+                    ]
+                }
+            };
+            (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
             
             const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
             
@@ -239,16 +258,29 @@ describe('repoDependencyFacts', () => {
         });
         
         it('should return empty array when no local dependencies are found', async () => {
+            // Mock empty dependency collection
+            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies')
+                .mockImplementation(async () => []);
+
             const mockArchetypeConfig = {
                 facts: ['repoDependencyFacts'],
                 config: {
                     minimumDependencyVersions: {}
                 }
             };
-            
-            // Override the mock for this specific test
-            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies')
-                .mockImplementationOnce(async () => []);
+
+            // Mock fs.existsSync to return true for yarn.lock
+            (fs.existsSync as jest.Mock).mockImplementation((path) => {
+                return path.includes('yarn.lock');
+            });
+
+            // Mock execSync to return valid JSON with no dependencies
+            const mockYarnOutput = {
+                data: {
+                    trees: []
+                }
+            };
+            (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
             
             const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
             
