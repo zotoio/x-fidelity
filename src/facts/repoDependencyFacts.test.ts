@@ -1,5 +1,6 @@
 import * as repoDependencyFacts from './repoDependencyFacts';
 import fs from 'fs';
+import { execSync } from 'child_process';
 import { Almanac } from 'json-rules-engine';
 import { LocalDependencies, MinimumDepVersions, VersionData } from '../types/typeDefs';
 import { semverValid, normalizePackageName, collectLocalDependencies, getDependencyVersionFacts } from './repoDependencyFacts';
