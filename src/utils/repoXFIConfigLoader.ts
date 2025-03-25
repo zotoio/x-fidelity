@@ -64,94 +64,6 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
       const validatedRules: any[] = [];
 
       for (const ruleConfig of parsedConfig.additionalRules) {
-          
-    try {
-      const configPath = path.resolve(baseRepo, '.xfi-config.json');
-
-      if (!fs.existsSync(configPath)) {
-        logger.warn(`No .xfi-config.json file found, returing default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
-        return defaultRepoXFIConfig;
-      }
-
-      if (!isPathInside(configPath, baseRepo)) {
-        throw new Error('Resolved config path is outside allowed directory');
-      }
-
-      const configContent = await fs.promises.readFile(configPath, 'utf8');
-      const parsedConfig = JSON.parse(configContent);
-
-      if (validateXFIConfig(parsedConfig)) {
-        logger.info('Loaded .xfi-config.json file from repo..');
-
-        // Add the repoPath prefix to the relative paths
-        if (parsedConfig.sensitiveFileFalsePositives) {
-          parsedConfig.sensitiveFileFalsePositives = parsedConfig.sensitiveFileFalsePositives.map((filePath: any) => {
-            filePath = path.join(repoPath, filePath);
-            return filePath;
-          });
-        }
-
-        // Initialize empty arrays if not present
-        parsedConfig.additionalRules = parsedConfig.additionalRules || [];
-        parsedConfig.additionalFacts = parsedConfig.additionalFacts || [];
-        parsedConfig.additionalOperators = parsedConfig.additionalOperators || [];
-        parsedConfig.additionalPlugins = parsedConfig.additionalPlugins || [];
-
-        // Validate and load additional rules if present
-        if (parsedConfig.additionalRules && Array.isArray(parsedConfig.additionalRules)) {
-          const validatedRules: any[] = [];
-
-          for (const ruleConfig of parsedConfig.additionalRules) {
-  export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig> {
-    try {
-      const baseRepo = path.resolve(repoPath);
-      const configPath = path.resolve(baseRepo, '.xfi-config.json');
-
-      if (!fs.existsSync(configPath)) {
-        logger.warn(`No .xfi-config.json file found, returing default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
-        return defaultRepoXFIConfig;
-      }
-
-      if (!isPathInside(configPath, baseRepo)) {
-        throw new Error('Resolved config path is outside allowed directory');
-      }
-
-      const configContent = await fs.promises.readFile(configPath, 'utf8');
-      let parsedConfig: RepoXFIConfig;
-      
-      try {
-        parsedConfig = JSON.parse(configContent);
-      } catch (error) {
-        logger.error(`Invalid JSON in .xfi-config.json: ${error}`);
-        return defaultRepoXFIConfig;
-      }
-
-      if (!validateXFIConfig(parsedConfig)) {
-        logger.warn(`Invalid .xfi-config.json schema, returning default config`);
-        return defaultRepoXFIConfig;
-      }
-
-      logger.info('Loaded .xfi-config.json file from repo..');
-
-      // Add the repoPath prefix to the relative paths
-      if (parsedConfig.sensitiveFileFalsePositives) {
-        parsedConfig.sensitiveFileFalsePositives = parsedConfig.sensitiveFileFalsePositives.map((filePath: any) => {
-          filePath = path.join(repoPath, filePath);
-          return filePath;
-        });
-      }
-
-      // Initialize empty arrays if not present
-      parsedConfig.additionalRules = parsedConfig.additionalRules || [];
-      parsedConfig.additionalFacts = parsedConfig.additionalFacts || [];
-      parsedConfig.additionalOperators = parsedConfig.additionalOperators || [];
-      parsedConfig.additionalPlugins = parsedConfig.additionalPlugins || [];
-
-      // Validate and load additional rules if present
-      if (parsedConfig.additionalRules && Array.isArray(parsedConfig.additionalRules)) {
-        const validatedRules: any[] = [];
-
-        for (const ruleConfig of parsedConfig.additionalRules) {
             // Handle inline rules first
             if (!('path' in ruleConfig) && !('url' in ruleConfig)) {
               if (validateRule(ruleConfig)) {
@@ -356,7 +268,6 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
       }
 
       parsedConfig.additionalRules = validatedRules;
-      return parsedConfig;
     }
 
     return parsedConfig;
