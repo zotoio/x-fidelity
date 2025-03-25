@@ -55,7 +55,7 @@ describe('loadRepoXFIConfig', () => {
     const result = await loadRepoXFIConfig(mockRepoPath);
     
     expect(result.additionalRules).toHaveLength(1);
-    expect(result.additionalRules[0].name).toBe('test-rule');
+    expect(result.additionalRules![0].name).toBe('test-rule');
   });
 
   it('should handle invalid config JSON', async () => {
