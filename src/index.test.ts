@@ -74,10 +74,24 @@ describe('index', () => {
     const mockAnalyzeCodebase = analyzeCodebase as jest.MockedFunction<typeof analyzeCodebase>;
     mockAnalyzeCodebase.mockResolvedValue({
       XFI_RESULT: {
+        archetype: 'test-archetype',
+        repoPath: 'mockRepoPath',
+        fileCount: 1,
         totalIssues: 0,
         warningCount: 0,
         fatalityCount: 0,
-        issueDetails: []
+        errorCount: 0,
+        exemptCount: 0,
+        issueDetails: [],
+        startTime: expect.any(Number),
+        finishTime: expect.any(Number),
+        durationSeconds: expect.any(Number),
+        telemetryData: expect.any(Object),
+        options: expect.any(Object),
+        repoXFIConfig: expect.any(Object),
+        memoryUsage: expect.any(Object),
+        repoUrl: expect.any(String),
+        xfiVersion: expect.any(String)
       }
     } as any);
 
