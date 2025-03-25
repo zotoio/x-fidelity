@@ -10,7 +10,11 @@ jest.mock('fs', () => ({
   existsSync: jest.fn(),
   promises: {
     readFile: jest.fn()
-  }
+  },
+  open: jest.fn().mockResolvedValue({
+    write: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined)
+  })
 }));
 
 jest.mock('./jsonSchemas', () => ({
