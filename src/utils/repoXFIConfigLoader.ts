@@ -6,7 +6,9 @@ import { RepoXFIConfig } from '../types/typeDefs';
 import { validateXFIConfig, validateRule } from './jsonSchemas';
 
 const defaultXFIConfig: RepoXFIConfig = {
-  sensitiveFileFalsePositives: []};
+  sensitiveFileFalsePositives: [],
+  additionalRules: []
+};
 
 export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig> {
   try {
