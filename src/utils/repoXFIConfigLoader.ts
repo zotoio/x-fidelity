@@ -98,30 +98,41 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
       }
 
       const configContent = await fs.promises.readFile(configPath, 'utf8');
-      const parsedConfig = JSON.parse(configContent);
+      let parsedConfig: RepoXFIConfig;
+      
+      try {
+        parsedConfig = JSON.parse(configContent);
+      } catch (error) {
+        logger.error(`Invalid JSON in .xfi-config.json: ${error}`);
+        return defaultRepoXFIConfig;
+      }
 
-      if (validateXFIConfig(parsedConfig)) {
-        logger.info('Loaded .xfi-config.json file from repo..');
+      if (!validateXFIConfig(parsedConfig)) {
+        logger.warn(`Invalid .xfi-config.json schema, returning default config`);
+        return defaultRepoXFIConfig;
+      }
 
-        // Add the repoPath prefix to the relative paths
-        if (parsedConfig.sensitiveFileFalsePositives) {
-          parsedConfig.sensitiveFileFalsePositives = parsedConfig.sensitiveFileFalsePositives.map((filePath: any) => {
-            filePath = path.join(repoPath, filePath);
-            return filePath;
-          });
-        }
+      logger.info('Loaded .xfi-config.json file from repo..');
 
-        // Initialize empty arrays if not present
-        parsedConfig.additionalRules = parsedConfig.additionalRules || [];
-        parsedConfig.additionalFacts = parsedConfig.additionalFacts || [];
-        parsedConfig.additionalOperators = parsedConfig.additionalOperators || [];
-        parsedConfig.additionalPlugins = parsedConfig.additionalPlugins || [];
+      // Add the repoPath prefix to the relative paths
+      if (parsedConfig.sensitiveFileFalsePositives) {
+        parsedConfig.sensitiveFileFalsePositives = parsedConfig.sensitiveFileFalsePositives.map((filePath: any) => {
+          filePath = path.join(repoPath, filePath);
+          return filePath;
+        });
+      }
 
-        // Validate and load additional rules if present
-        if (parsedConfig.additionalRules && Array.isArray(parsedConfig.additionalRules)) {
-          const validatedRules: any[] = [];
+      // Initialize empty arrays if not present
+      parsedConfig.additionalRules = parsedConfig.additionalRules || [];
+      parsedConfig.additionalFacts = parsedConfig.additionalFacts || [];
+      parsedConfig.additionalOperators = parsedConfig.additionalOperators || [];
+      parsedConfig.additionalPlugins = parsedConfig.additionalPlugins || [];
 
-          for (const ruleConfig of parsedConfig.additionalRules) {
+      // Validate and load additional rules if present
+      if (parsedConfig.additionalRules && Array.isArray(parsedConfig.additionalRules)) {
+        const validatedRules: any[] = [];
+
+        for (const ruleConfig of parsedConfig.additionalRules) {
             // Handle inline rules first
             if (!('path' in ruleConfig) && !('url' in ruleConfig)) {
               if (validateRule(ruleConfig)) {
