@@ -93,6 +93,7 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
                   try {
                     if (pathPattern.includes('*')) {
                       // Handle wildcards using glob pattern
+                      const { glob } = await import('glob');
                       const matches = await glob(fullPattern);
                       rulePaths.push(...matches);
                     } else if (fs.existsSync(fullPattern)) {
