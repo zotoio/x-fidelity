@@ -3,6 +3,7 @@ import { validateRule } from './jsonSchemas';
 import { logger } from './logger';
 import fs from 'fs';
 import path from 'path';
+import { RepoXFIConfig } from '../types/typeDefs';
 
 jest.mock('fs');
 jest.mock('./jsonSchemas');
@@ -15,7 +16,7 @@ describe('loadRepoXFIConfig', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (fs.existsSync as jest.Mock).mockReturnValue(true);
-    (validateRule as jest.Mock).mockReturnValue(true);
+    (validateRule as unknown as jest.Mock).mockReturnValue(true);
   });
 
   it('should return default config when no config file exists', async () => {
