@@ -5,6 +5,7 @@ import { isPathInside } from './pathUtils';
 import { logger } from './logger';
 import { RepoXFIConfig } from '../types/typeDefs';
 import { validateXFIConfig, validateRule } from './jsonSchemas';
+import { options } from '../core/cli';
 
 export const defaultRepoXFIConfig: RepoXFIConfig = {
   sensitiveFileFalsePositives: [],
@@ -45,9 +46,10 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
       if (parsedConfig.additionalRules && Array.isArray(parsedConfig.additionalRules)) {
         const validatedRules = [];
         for (const ruleConfig of parsedConfig.additionalRules) {
+          
           if ('path' in ruleConfig || 'url' in ruleConfig) {
             // Handle rule reference
-            try {
+            
               let ruleContent: string;
               let rulePaths: string[] = [];
               
