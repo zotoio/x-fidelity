@@ -11,7 +11,9 @@ x-fidelity supports local configuration for development and testing purposes.
 Local configuration allows you to:
 - Test rules offline
 - Develop new rules
-- Customize archetypes
+- Customize archetypes 
+- Add custom rules, facts, operators and plugins
+- Configure notifications
 - Iterate quickly
 
 ## Directory Structure
@@ -41,6 +43,96 @@ xfidelity . --localConfigPath ./config
 ```
 
 ## Configuration Files
+
+### Repository Configuration (.xfi-config.json)
+
+The `.xfi-config.json` file in your repository root allows you to customize x-fidelity's behavior:
+
+```json
+{
+    "sensitiveFileFalsePositives": [
+        "/src/facts/repoFilesystemFacts.ts"
+    ],
+    "additionalRules": [
+        {
+            "name": "custom-rule",
+            "conditions": {
+                "all": [
+                    {
+                        "fact": "fileData",
+                        "path": "$.fileName", 
+                        "operator": "equal",
+                        "value": "REPO_GLOBAL_CHECK"
+                    }
+                ]
+            },
+            "event": {
+                "type": "warning",
+                "params": {
+                    "message": "Custom rule detected matching data"
+                }
+            }
+        },
+        {
+            "name": "referenced-rule",
+            "path": "rules/custom-rule.json"
+        },
+        {
+            "name": "remote-rule", 
+            "url": "https://example.com/rules/custom-rule.json"
+        }
+    ],
+    "additionalFacts": ["customFact"],
+    "additionalOperators": ["customOperator"],
+    "additionalPlugins": ["xfiPluginSimpleExample"],
+    "notifications": {
+        "recipients": {
+            "email": ["team@example.com"],
+            "slack": ["U123456", "U789012"],
+            "teams": ["user1@example.com", "user2@example.com"]
+        },
+        "codeOwners": true,
+        "notifyOnSuccess": false,
+        "notifyOnFailure": true,
+        "customTemplates": {
+            "success": "All checks passed successfully! 🎉\n\nArchetype: ${archetype}\nFiles analyzed: ${fileCount}\nExecution time: ${executionTime}s",
+            "failure": "Issues found in codebase:\n\nArchetype: ${archetype}\nTotal issues: ${totalIssues}\n- Warnings: ${warningCount}\n- Errors: ${errorCount}\n- Fatalities: ${fatalityCount}\n\nAffected files:\n${affectedFiles}"
+        }
+    }
+}
+```
+
+#### sensitiveFileFalsePositives
+An array of file paths relative to your repository root that should be excluded from sensitive data checks.
+
+#### additionalRules
+An array of custom rules to add to your configuration. Rules can be specified in three ways:
+
+1. **Inline Rules**: Define the complete rule configuration directly in the config file
+2. **Local File References**: Reference a rule JSON file relative to your repository root using the `path` property
+3. **Remote Rules**: Reference a remote rule JSON file using the `url` property
+
+Each rule must follow the standard rule schema with:
+- `name`: Unique identifier for the rule
+- `conditions`: Rule conditions using facts and operators  
+- `event`: The event to trigger when conditions match
+
+#### additionalFacts
+An array of fact names to enable from installed plugins or custom implementations.
+
+#### additionalOperators
+An array of operator names to enable from installed plugins or custom implementations.
+
+#### additionalPlugins
+An array of plugin names to load. Plugins can provide additional facts, operators and rules.
+
+#### notifications
+Configure notification settings for analysis results:
+- `recipients` - Configure recipients for different notification channels
+- `codeOwners` - Enable/disable notifications to code owners (defaults to true)
+- `notifyOnSuccess` - Send notifications for successful checks
+- `notifyOnFailure` - Send notifications for failed checks
+- `customTemplates` - Custom notification message templates
 
 ### Archetype Configuration
 
@@ -112,28 +204,6 @@ Example `team1-exemptions.json`:
 ]
 ```
 
-### Notification Configuration
-
-Example notification settings in `.xfi-config.json`:
-```json
-{
-    "notifications": {
-        "recipients": {
-            "email": ["team@example.com"],
-            "slack": ["U123456", "U789012"],
-            "teams": ["user1@example.com", "user2@example.com"]
-        },
-        "codeOwners": true,
-        "notifyOnSuccess": false,
-        "notifyOnFailure": true,
-        "customTemplates": {
-            "success": "All checks passed successfully! 🎉\n\nArchetype: ${archetype}\nFiles analyzed: ${fileCount}\nExecution time: ${executionTime}s",
-            "failure": "Issues found in codebase:\n\nArchetype: ${archetype}\nTotal issues: ${totalIssues}\n- Warnings: ${warningCount}\n- Errors: ${errorCount}\n- Fatalities: ${fatalityCount}\n\nAffected files:\n${affectedFiles}"
-        }
-    }
-}
-```
-
 ## Best Practices
 
 1. **Version Control**: Keep configurations in version control
@@ -141,9 +211,13 @@ Example notification settings in `.xfi-config.json`:
 3. **Testing**: Test configurations before deployment
 4. **Organization**: Use clear naming conventions
 5. **Maintenance**: Regularly review and update configurations
+6. **Security**: Validate remote rule sources
+7. **Modularity**: Break complex rules into smaller, reusable components
+8. **Validation**: Test rules with sample data before deployment
 
 ## Next Steps
 
 - Learn about [Remote Configuration](remote-configuration)
 - Explore [Archetypes](archetypes)
 - Create custom [Rules](rules)
+- Develop [Plugins](plugins/overview)
