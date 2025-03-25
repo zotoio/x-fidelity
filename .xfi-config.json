@@ -33,6 +33,14 @@
         {
             "name": "sensitiveLogging-iterative",
             "path": "src/demoConfig/rules/sensitiveLogging-iterative-rule.json"
+        },
+        {
+            "name": "functionComplexity-iterative",
+            "path": "src/plugins/xfiPluginAst/sampleRules/functionComplexity-iterative-rule.json"
+        },
+        {
+            "name": "remote-rule",
+            "url": "https://example.com/rules/custom-rule.json"
         }
     ],
     "additionalFacts": ["customFact"],
