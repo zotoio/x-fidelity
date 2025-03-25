@@ -52,10 +52,10 @@ describe('loadRepoXFIConfig', () => {
     
     (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
     
-    const result = await loadRepoXFIConfig(mockRepoPath);
+    const result = await loadRepoXFIConfig(mockRepoPath) as RepoXFIConfig;
     
     expect(result.additionalRules).toHaveLength(1);
-    expect(result.additionalRules![0].name).toBe('test-rule');
+    expect(result.additionalRules?.[0]?.name).toBe('test-rule');
   });
 
   it('should handle invalid config JSON', async () => {
