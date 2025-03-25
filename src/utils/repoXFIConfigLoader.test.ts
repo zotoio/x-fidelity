@@ -190,7 +190,7 @@ describe('loadRepoXFIConfig', () => {
 
         expect(result.additionalRules).toHaveLength(0);
         expect(logger.warn).toHaveBeenCalledWith(
-            'Error loading rule * Error: File not found'
+            'No matching rule files found for pattern: rules/missing-rule.json'
         );
     });
 
