@@ -37,11 +37,7 @@ function getLogger(force?: boolean): pino.Logger {
     const useColor = process.env.XFI_LOG_COLOR !== 'false';
     
     if (!loggerInstance || force) {
-        const fileTransport = pino.destination({
-            dest: 'x-fidelity.log',
-            sync: false,
-            mkdir: true
-        });
+        const fileTransport = pino.destination('x-fidelity.log');
 
         const prettyTransport = pino.transport({
             target: 'pino-pretty',
