@@ -138,8 +138,15 @@ describe('loadRepoXFIConfig', () => {
             ]
         };
 
-        (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
+        (fs.promises.readFile as jest.Mock)
+            .mockImplementation((path: string) => {
+                if (path.endsWith('.xfi-config.json')) {
+                    return Promise.resolve(JSON.stringify(mockConfig));
+                }
+                return Promise.reject(new Error('File not found'));
+            });
         (validateRule as unknown as jest.Mock).mockReturnValue(false);
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
 
         const result = await loadRepoXFIConfig(mockRepoPath);
 
