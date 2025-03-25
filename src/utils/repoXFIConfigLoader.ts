@@ -33,23 +33,53 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
       if (parsedConfig.additionalRules && Array.isArray(parsedConfig.additionalRules)) {
         const validatedRules = [];
         for (const ruleConfig of parsedConfig.additionalRules) {
-          if ('path' in ruleConfig) {
+          if ('path' in ruleConfig || 'url' in ruleConfig) {
             // Handle rule reference
             try {
-              const rulePath = path.resolve(baseRepo, ruleConfig.path);
-              if (!isPathInside(rulePath, baseRepo)) {
-                logger.warn(`Rule path ${ruleConfig.path} is outside repo directory, skipping`);
-                continue;
+              let ruleContent: string;
+              
+              if ('url' in ruleConfig) {
+                // Handle remote URL
+                const response = await fetch(ruleConfig.url);
+                if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                ruleContent = await response.text();
+              } else {
+                // Handle local path - try different base directories
+                let rulePath: string | null = null;
+                
+                // Try relative to config dir first
+                if (options.localConfigPath) {
+                  const configDirPath = path.resolve(options.localConfigPath, ruleConfig.path);
+                  if (fs.existsSync(configDirPath)) {
+                    rulePath = configDirPath;
+                  }
+                }
+                
+                // Then try relative to repo dir
+                if (!rulePath) {
+                  const repoDirPath = path.resolve(baseRepo, ruleConfig.path);
+                  if (isPathInside(repoDirPath, baseRepo) && fs.existsSync(repoDirPath)) {
+                    rulePath = repoDirPath;
+                  }
+                }
+
+                if (!rulePath) {
+                  throw new Error(`Could not resolve rule path: ${ruleConfig.path}`);
+                }
+
+                ruleContent = await fs.promises.readFile(rulePath, 'utf8');
               }
-              const ruleContent = await fs.promises.readFile(rulePath, 'utf8');
+
               const rule = JSON.parse(ruleContent);
               if (validateRule(rule)) {
                 validatedRules.push(rule);
               } else {
-                logger.warn(`Invalid rule in referenced file ${ruleConfig.path}, skipping`);
+                logger.warn(`Invalid rule in referenced file ${ruleConfig.path || ruleConfig.url}, skipping`);
               }
             } catch (error) {
-              logger.warn(`Error loading rule from ${ruleConfig.path}: ${error}`);
+              logger.warn(`Error loading rule from ${ruleConfig.path || ruleConfig.url}: ${error}`);
             }
           } else {
             // Handle inline rule

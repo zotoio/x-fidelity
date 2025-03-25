@@ -276,7 +276,8 @@ export interface ValidationResult {
 
 export interface RuleReference {
   name: string;
-  path: string;
+  path?: string;  // Path relative to config dir or repo dir
+  url?: string;   // Remote URL to fetch rule from
 }
 
 export interface RepoXFIConfig {
