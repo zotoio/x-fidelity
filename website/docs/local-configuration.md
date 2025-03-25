@@ -106,16 +106,72 @@ The `.xfi-config.json` file in your repository root allows you to customize x-fi
 An array of file paths relative to your repository root that should be excluded from sensitive data checks.
 
 #### additionalRules
-An array of custom rules to add to your configuration. Rules can be specified in three ways:
+An array of custom rules to add to your configuration. Rules can be specified in three flexible ways:
 
-1. **Inline Rules**: Define the complete rule configuration directly in the config file
-2. **Local File References**: Reference a rule JSON file relative to your repository root using the `path` property
-3. **Remote Rules**: Reference a remote rule JSON file using the `url` property
+1. **Inline Rules**: Define the complete rule configuration directly in the config file:
+```json
+{
+    "name": "custom-inline-rule",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "operator": "regexMatch", 
+                "value": "password"
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "Found sensitive data"
+        }
+    }
+}
+```
+
+2. **Local File References**: Reference rule files relative to your repository or config paths:
+```json
+{
+    "name": "local-rule",
+    "path": "rules/custom-rule.json"
+}
+```
+The `path` property supports:
+- Absolute paths (relative to repo root)
+- Relative paths (relative to config location)
+- Glob patterns (e.g. `rules/*.json`)
+- Multiple base directories searched in order:
+  1. Local config directory
+  2. Current working directory  
+  3. Repository root
+
+3. **Remote Rules**: Load rules from remote URLs:
+```json
+{
+    "name": "remote-rule",
+    "url": "https://example.com/rules/custom-rule.json"
+}
+```
+Remote rules support:
+- HTTPS URLs
+- Authentication headers
+- Automatic retries
+- Error handling
+- Response validation
+
+Rules are loaded in the order specified. For each rule:
+1. The rule is validated against the schema
+2. For path/URL rules, the first valid rule found is used
+3. Invalid rules are skipped with a warning
+4. Rules can be exempted via exemptions config
 
 Each rule must follow the standard rule schema with:
 - `name`: Unique identifier for the rule
-- `conditions`: Rule conditions using facts and operators  
+- `conditions`: Rule conditions using facts and operators
 - `event`: The event to trigger when conditions match
+- `errorBehavior`: Optional "swallow" or "fatal" 
+- `onError`: Optional error handling configuration
 
 #### additionalFacts
 An array of fact names to enable from installed plugins or custom implementations.
