@@ -1,3 +1,10 @@
+## [3.19.1](https://github.com/zotoio/x-fidelity/compare/v3.19.0...v3.19.1) (2025-03-25)
+
+
+### Bug Fixes
+
+* add missing mock implementation for loadRepoXFIConfig in tests ([f77ef79](https://github.com/zotoio/x-fidelity/commit/f77ef79651fcbca54e4a8825dad1f0dd7f2e6a81))
+
 # [3.19.0](https://github.com/zotoio/x-fidelity/compare/v3.18.0...v3.19.0) (2025-03-25)
 
 
