@@ -19,8 +19,9 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
     const baseRepo = path.resolve(repoPath);
     const configPath = path.resolve(baseRepo, '.xfi-config.json');
 
+    // Early return if no config file
     if (!fs.existsSync(configPath)) {
-      logger.warn(`No .xfi-config.json file found, returning default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
+      logger.warn(`No .xfi-config.json file found, returning default config`);
       return defaultRepoXFIConfig;
     }
 
@@ -28,42 +29,61 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
       throw new Error('Resolved config path is outside allowed directory');
     }
 
-    const configContent = await fs.promises.readFile(configPath, 'utf8');
-    let parsedConfig: RepoXFIConfig;
-    
-    try {
-      parsedConfig = JSON.parse(configContent);
-    } catch (error) {
-      logger.error(`Invalid JSON in .xfi-config.json: ${error}`);
-      return defaultRepoXFIConfig;
+    // Load and parse config
+    const parsedConfig = await loadAndValidateConfig(configPath);
+    if (!parsedConfig) return defaultRepoXFIConfig;
+
+    // Process paths
+    parsedConfig.sensitiveFileFalsePositives = processFilePaths(parsedConfig.sensitiveFileFalsePositives, repoPath);
+
+    // Initialize arrays
+    initializeArrays(parsedConfig);
+
+    // Process additional rules
+    if (parsedConfig.additionalRules?.length) {
+      parsedConfig.additionalRules = await processAdditionalRules(parsedConfig.additionalRules, baseRepo);
     }
+
+    return parsedConfig;
+
+  } catch (error) {
+    logger.error(`Error loading repo config: ${error}`);
+    return defaultRepoXFIConfig;
+  }
+}
+
+async function loadAndValidateConfig(configPath: string): Promise<RepoXFIConfig | null> {
+  try {
+    const configContent = await fs.promises.readFile(configPath, 'utf8');
+    const parsedConfig = JSON.parse(configContent);
 
     if (!validateXFIConfig(parsedConfig)) {
-      logger.warn(`Invalid .xfi-config.json schema, returning default config`);
-      return defaultRepoXFIConfig;
+      logger.warn('Invalid .xfi-config.json schema');
+      return null;
     }
 
-    logger.info('Loaded .xfi-config.json file from repo..');
+    return parsedConfig;
+  } catch (error) {
+    logger.error(`Error reading/parsing config: ${error}`);
+    return null;
+  }
+}
 
-    // Add the repoPath prefix to the relative paths
-    if (parsedConfig.sensitiveFileFalsePositives) {
-      parsedConfig.sensitiveFileFalsePositives = parsedConfig.sensitiveFileFalsePositives.map((filePath: any) => {
-        filePath = path.join(repoPath, filePath);
-        return filePath;
-      });
-    }
+function processFilePaths(paths: string[] = [], repoPath: string): string[] {
+  return paths.map(filePath => path.join(repoPath, filePath));
+}
 
-    // Initialize empty arrays if not present
-    parsedConfig.additionalRules = parsedConfig.additionalRules || [];
-    parsedConfig.additionalFacts = parsedConfig.additionalFacts || [];
-    parsedConfig.additionalOperators = parsedConfig.additionalOperators || [];
-    parsedConfig.additionalPlugins = parsedConfig.additionalPlugins || [];
+function initializeArrays(config: RepoXFIConfig): void {
+  config.additionalRules = config.additionalRules || [];
+  config.additionalFacts = config.additionalFacts || [];
+  config.additionalOperators = config.additionalOperators || [];
+  config.additionalPlugins = config.additionalPlugins || [];
+}
 
-    // Validate and load additional rules if present
-    if (parsedConfig.additionalRules && Array.isArray(parsedConfig.additionalRules)) {
-      const validatedRules: any[] = [];
+async function processAdditionalRules(rules: any[], baseRepo: string): Promise<any[]> {
+  const validatedRules: any[] = [];
 
-      for (const ruleConfig of parsedConfig.additionalRules) {
+  for (const rule of rules) {
             // Handle inline rules first
             if (!('path' in ruleConfig) && !('url' in ruleConfig)) {
               if (validateRule(ruleConfig)) {
