@@ -37,6 +37,10 @@ describe('loadRepoXFIConfig', () => {
             sensitiveFileFalsePositives: [],
             additionalRules: [
                 {
+                    name: 'referenced-rule',
+                    path: 'rules/custom-rule.json'
+                },
+                {
                     name: 'inline-rule',
                     conditions: { all: [] },
                     event: { type: 'warning', params: {} }
