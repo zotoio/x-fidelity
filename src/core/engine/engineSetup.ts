@@ -34,7 +34,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                 // Check if rule is already registered
                 if (addedRules.has(rule.name)) {
                     logger.warn(`Skipping duplicate rule: ${rule.name}`);
-                    continue;
+                    return;
                 }
 
                 logger.info(`adding rule: ${rule.name}`);
