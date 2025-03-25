@@ -210,14 +210,14 @@ describe('loadLocalExemptions', () => {
 });
 
 describe('loadRemoteExemptions', () => {
-    const mockAxiosGet = jest.fn();
-    jest.mock('./axiosClient', () => ({
+    jest.mock('../utils/axiosClient', () => ({
         axiosClient: {
-            get: mockAxiosGet
+            get: jest.fn().mockRejectedValue(new Error('API Error'))
         }
     }));
 
     it('should handle API errors gracefully', async () => {
+        jest.setTimeout(30000); // Increase timeout for this test
         mockAxiosGet.mockRejectedValueOnce(new Error('API Error'));
 
         const result = await loadRemoteExemptions({

@@ -56,7 +56,8 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
             if (validateRule(ruleConfig)) {
               validatedRules.push(ruleConfig);
             } else {
-              logger.warn(`Invalid inline rule ${ruleConfig.name || 'unnamed'} in .xfi-config.json, skipping`);
+              const ruleName = (ruleConfig as any)?.name || 'unnamed';
+              logger.warn(`Invalid inline rule ${ruleName} in .xfi-config.json, skipping`);
             }
           }
         }
