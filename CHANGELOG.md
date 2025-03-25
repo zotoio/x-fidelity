@@ -1,3 +1,40 @@
+# [3.19.0](https://github.com/zotoio/x-fidelity/compare/v3.18.0...v3.19.0) (2025-03-25)
+
+
+### Bug Fixes
+
+* add non-null assertion for additionalRules array access ([9e7ee91](https://github.com/zotoio/x-fidelity/commit/9e7ee9117bd336c016bdeb5c1c429d6c59388fa1))
+* correct try-catch block structure in config loader ([dc6fd2c](https://github.com/zotoio/x-fidelity/commit/dc6fd2c7683c2694381020e9ac9ffd6032dbb2da))
+* correct try/catch block structure in repoXFIConfigLoader ([82ddb04](https://github.com/zotoio/x-fidelity/commit/82ddb04f4f9efa915386a213fad61dd55c923553))
+* correct TypeScript type errors in repoXFIConfigLoader tests ([4100e06](https://github.com/zotoio/x-fidelity/commit/4100e067e71b4154b14da299c4760950e7ebaa8b))
+* ensure inline rules are properly processed and assigned ([7ea7661](https://github.com/zotoio/x-fidelity/commit/7ea7661a962af83423f20270c1f27bb859573ef4))
+* handle undefined sensitiveFileFalsePositives in config loader ([4f940cf](https://github.com/zotoio/x-fidelity/commit/4f940cf7677a29b5e1c611531b0294f1970a15d3))
+* improve error message for missing rule files ([c271700](https://github.com/zotoio/x-fidelity/commit/c271700fa35bd9c43a68f996a7c1f29790bbab53))
+* improve file path handling in repoXFIConfigLoader tests ([93a0289](https://github.com/zotoio/x-fidelity/commit/93a02891528852192d0d7c1b86f9b441f1c66c75))
+* improve file system mocking in config loader test ([f0cfc25](https://github.com/zotoio/x-fidelity/commit/f0cfc25d1a3cfc9207b65078c2bc26b8c95cf0a0))
+* improve inline rule validation and logging in config loader ([625a4aa](https://github.com/zotoio/x-fidelity/commit/625a4aae86220f6ed856f8ea3679b17e48f75cfc))
+* improve test mocks for fs.promises and jsonSchemas validation ([8b1def8](https://github.com/zotoio/x-fidelity/commit/8b1def8bf577a7ad1d4314fe4787b8e7b6570264))
+* prevent duplicate rule registration in engine setup ([a9e2956](https://github.com/zotoio/x-fidelity/commit/a9e295666dc41079f31074164a6c60babae4cc96))
+* remove duplicate code blocks and fix return statements in config loader ([414e500](https://github.com/zotoio/x-fidelity/commit/414e5001b2a0329ce88f519a2d5563f815772154))
+* Replace continue with return in rule registration loop ([44ef9fd](https://github.com/zotoio/x-fidelity/commit/44ef9fd92be577043d1cf04585841e3ded5bf42f))
+* restructure rule loading logic and improve error handling ([ff8b6e6](https://github.com/zotoio/x-fidelity/commit/ff8b6e698d89b7adb99b294eec048c340d4976ac))
+* restructure try/catch blocks and improve error handling in config loader ([a0f76bb](https://github.com/zotoio/x-fidelity/commit/a0f76bbabfc29c172fecf7d1d0691358ff44226b))
+* simplify pino file transport configuration ([c99bf26](https://github.com/zotoio/x-fidelity/commit/c99bf2671abd96bf5b77d09ce3941852609dfaac))
+* **tests:** update docs and tests for .xfi-config.json ([cc6e11e](https://github.com/zotoio/x-fidelity/commit/cc6e11e24fbb94c8cca34147026c2072db918ba3))
+* update fs mock to include promises property in test ([1a50355](https://github.com/zotoio/x-fidelity/commit/1a50355aec723fa4cfd0ee4403b07fccd218303b))
+* update glob import to use dynamic import pattern ([2677260](https://github.com/zotoio/x-fidelity/commit/2677260d854728195559798d66ccd1a94ca8a476))
+* update glob import to use named import syntax ([c290016](https://github.com/zotoio/x-fidelity/commit/c2900168c270edd38bea766baa440baab8a16959))
+* update test mocks to handle file paths correctly ([4407c1e](https://github.com/zotoio/x-fidelity/commit/4407c1e39a433f8c9e7bc1b7cab1d3781447acc3))
+
+
+### Features
+
+* Add CLI options import to repo config loader ([26b97bc](https://github.com/zotoio/x-fidelity/commit/26b97bcbe80438debd1a07f3b22076ff9398f933))
+* add deduplication for rules and failure results ([169c035](https://github.com/zotoio/x-fidelity/commit/169c0351de2390bb9f22823c6a64110306caf32e))
+* add reference to sensitiveLogging-iterative rule ([fea3d28](https://github.com/zotoio/x-fidelity/commit/fea3d2817018c0b7e328cec539a1ac00a1cd48b6))
+* add support for loading additional rules from repo config ([7abac68](https://github.com/zotoio/x-fidelity/commit/7abac6891076f2eb0d47b3e2a08470241ac0b3fe))
+* add wildcard support and flexible rule loading patterns ([a2d19c2](https://github.com/zotoio/x-fidelity/commit/a2d19c2bb5ba38026ba3dce6ba0be17039b9387f))
+
 # [3.18.0](https://github.com/zotoio/x-fidelity/compare/v3.17.1...v3.18.0) (2025-03-25)
 
 
