@@ -44,12 +44,12 @@ describe('loadRepoXFIConfig', () => {
     };
 
     (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
-    (validateRule as jest.Mock).mockReturnValue(true);
+    (validateRule as unknown as jest.Mock).mockReturnValue(true);
 
     const result = await loadRepoXFIConfig(mockRepoPath);
 
     expect(result.additionalRules).toHaveLength(1);
-    expect(result.additionalRules[0].name).toBe('inline-rule');
+    expect(result.additionalRules?.[0].name).toBe('inline-rule');
     expect(validateRule).toHaveBeenCalledTimes(1);
   });
 

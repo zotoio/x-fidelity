@@ -38,20 +38,21 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
             try {
               let ruleContent: string;
               
-              if ('url' in ruleConfig) {
+              if ('url' in ruleConfig && ruleConfig.url) {
                 // Handle remote URL
                 const response = await fetch(ruleConfig.url);
                 if (!response.ok) {
                   throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 ruleContent = await response.text();
-              } else {
+              } else if ('path' in ruleConfig && ruleConfig.path) {
                 // Handle local path - try different base directories
                 let rulePath: string | null = null;
                 
                 // Try relative to config dir first
-                if (options.localConfigPath) {
-                  const configDirPath = path.resolve(options.localConfigPath, ruleConfig.path);
+                const localConfigPath = process.env.LOCAL_CONFIG_PATH;
+                if (localConfigPath) {
+                  const configDirPath = path.resolve(localConfigPath, ruleConfig.path);
                   if (fs.existsSync(configDirPath)) {
                     rulePath = configDirPath;
                   }
@@ -70,6 +71,8 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
                 }
 
                 ruleContent = await fs.promises.readFile(rulePath, 'utf8');
+              } else {
+                throw new Error('Rule reference must have either url or path');
               }
 
               const rule = JSON.parse(ruleContent);

@@ -218,7 +218,7 @@ describe('loadRemoteExemptions', () => {
 
     it('should handle API errors gracefully', async () => {
         jest.setTimeout(30000); // Increase timeout for this test
-        mockAxiosGet.mockRejectedValueOnce(new Error('API Error'));
+        (axiosClient.get as jest.Mock).mockRejectedValueOnce(new Error('API Error'));
 
         const result = await loadRemoteExemptions({
             configServer: 'https://config.example.com',
