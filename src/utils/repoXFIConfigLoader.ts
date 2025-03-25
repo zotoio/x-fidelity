@@ -33,8 +33,12 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
     const parsedConfig = await loadAndValidateConfig(configPath);
     if (!parsedConfig) return defaultRepoXFIConfig;
 
-    // Process paths
-    parsedConfig.sensitiveFileFalsePositives = processFilePaths(parsedConfig.sensitiveFileFalsePositives, repoPath);
+    // Process paths if they exist
+    if (parsedConfig.sensitiveFileFalsePositives) {
+        parsedConfig.sensitiveFileFalsePositives = processFilePaths(parsedConfig.sensitiveFileFalsePositives, repoPath);
+    } else {
+        parsedConfig.sensitiveFileFalsePositives = [];
+    }
 
     // Initialize arrays
     initializeArrays(parsedConfig);
