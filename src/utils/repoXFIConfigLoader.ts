@@ -84,135 +84,47 @@ async function processAdditionalRules(rules: any[], baseRepo: string): Promise<a
   const validatedRules: any[] = [];
 
   for (const rule of rules) {
-    // Handle inline rules first
-    if (!('path' in rule) && !('url' in rule)) {
-      if (validateRule(rule)) {
-        validatedRules.push(rule);
-        continue;
-      } else {
-        const ruleName = (rule as any)?.name || 'unnamed';
-        logger.warn(`Invalid inline rule ${ruleName} in .xfi-config.json, skipping`);
-        continue;
-      }
-    }
-
-    // Handle remote URL
-    if ('url' in rule && rule.url) {
-      try {
-        const response = await fetch(rule.url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const ruleContent = await response.text();
-        const remoteRule = JSON.parse(ruleContent);
-        if (validateRule(remoteRule)) {
-          validatedRules.push(remoteRule);
-          logger.info(`Loaded rule from URL ${rule.url}`);
+    try {
+      // Handle inline rules first
+      if (!('path' in rule) && !('url' in rule)) {
+        if (validateRule(rule)) {
+          validatedRules.push(rule);
+          continue;
         } else {
-          logger.warn(`Invalid rule from URL ${rule.url}, skipping`);
-        }
-      } catch (error) {
-        logger.warn(`Error loading rule from URL ${rule.url}: ${error}`);
-      }
-      continue;
-    }
-
-    // Handle local path with potential wildcards
-    if ('path' in rule && rule.path) {
-      const pathPattern = rule.path;
-      let foundValidRule = false;
-
-      // Try multiple base directories in order of precedence
-      const searchPaths = [
-        options.localConfigPath, // Local config dir first
-        process.cwd(),           // Current working dir second
-        baseRepo                 // Repository root last
-      ].filter(Boolean); // Remove undefined/null paths
-
-      for (const basePath of searchPaths) {
-        if (foundValidRule) break; // Stop once we find a valid rule
-
-        const fullPattern = path.resolve(basePath, pathPattern);
-        const baseDir = path.dirname(fullPattern);
-
-        // Check if path is inside allowed directories
-        if (!searchPaths.some(allowedPath => isPathInside(baseDir, allowedPath))) {
-          logger.warn(`Rule path ${pathPattern} resolves outside allowed directories, skipping`);
+          const ruleName = (rule as any)?.name || 'unnamed';
+          logger.warn(`Invalid inline rule ${ruleName} in .xfi-config.json, skipping`);
           continue;
         }
-
-        try {
-          let rulePaths: string[] = [];
-          if (pathPattern.includes('*')) {
-            // Handle wildcards using glob pattern
-            const { glob } = await import('glob');
-            rulePaths = await glob(fullPattern);
-          } else if (fs.existsSync(fullPattern)) {
-            // Single file path
-            rulePaths = [fullPattern];
-          }
-
-          // Load and validate each rule file
-          for (const rulePath of rulePaths) {
-            try {
-              const content = await fs.promises.readFile(rulePath, 'utf8');
-              const rule = JSON.parse(content);
-              if (validateRule(rule)) {
-                validatedRules.push(rule);
-                logger.info(`Loaded rule from ${rulePath}`);
-                foundValidRule = true;
-                break; // Take first valid rule found
-              } else {
-                logger.warn(`Invalid rule in ${rulePath}, skipping`);
-              }
-            } catch (error) {
-              logger.warn(`Error loading rule from ${rulePath}: ${error}`);
-            }
-          }
-        } catch (error) {
-          logger.debug(`Error resolving pattern ${pathPattern} in ${basePath}: ${error}`);
-        }
       }
 
-      if (!foundValidRule) {
-        logger.warn(`No valid rules found for pattern: ${pathPattern}`);
+      // Handle remote URL
+      if ('url' in rule && rule.url) {
+        await processRemoteRule(rule, validatedRules);
+        continue;
       }
+
+      // Handle local path with potential wildcards
+      if ('path' in rule && rule.path) {
+        await processLocalRule(rule, baseRepo, validatedRules);
+      }
+    } catch (error) {
+      logger.error(`Error processing rule: ${error}`);
     }
   }
 
   return validatedRules;
-} else {
-  logger.warn(`Ignoring invalid .xfi-config.json file, returing default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
-  return defaultRepoXFIConfig;
-}
-      } catch (error) {
-  logger.warn(`No .xfi-config.json file found, returing default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
-  return defaultRepoXFIConfig;
-}
-    }
-// Handle inline rules first
-if (!('path' in rule) && !('url' in rule)) {
-  if (validateRule(rule)) {
-    validatedRules.push(rule);
-    continue;
-  } else {
-    const ruleName = (rule as any)?.name || 'unnamed';
-    logger.warn(`Invalid inline rule ${ruleName} in .xfi-config.json, skipping`);
-    continue;
-  }
 }
 
-// Handle remote URL
-if ('url' in rule && rule.url) {
+async function processRemoteRule(rule: any, validatedRules: any[]): Promise<void> {
   try {
     const response = await fetch(rule.url);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const ruleContent = await response.text();
-    const ruleData = JSON.parse(ruleContent);
-    if (validateRule(ruleData)) {
-      validatedRules.push(ruleData);
+    const remoteRule = JSON.parse(ruleContent);
+    if (validateRule(remoteRule)) {
+      validatedRules.push(remoteRule);
       logger.info(`Loaded rule from URL ${rule.url}`);
     } else {
       logger.warn(`Invalid rule from URL ${rule.url}, skipping`);
@@ -220,12 +132,10 @@ if ('url' in rule && rule.url) {
   } catch (error) {
     logger.warn(`Error loading rule from URL ${rule.url}: ${error}`);
   }
-  continue;
 }
 
-// Handle local path with potential wildcards
-if ('path' in ruleConfig && ruleConfig.path) {
-  const pathPattern = ruleConfig.path;
+async function processLocalRule(rule: any, baseRepo: string, validatedRules: any[]): Promise<void> {
+  const pathPattern = rule.path;
   let foundValidRule = false;
 
   // Try multiple base directories in order of precedence
@@ -236,7 +146,7 @@ if ('path' in ruleConfig && ruleConfig.path) {
   ].filter(Boolean); // Remove undefined/null paths
 
   for (const basePath of searchPaths) {
-    if (foundValidRule) break; // Stop once we find a valid rule
+    if (foundValidRule) break;
 
     const fullPattern = path.resolve(basePath, pathPattern);
     const baseDir = path.dirname(fullPattern);
@@ -283,16 +193,5 @@ if ('path' in ruleConfig && ruleConfig.path) {
   if (!foundValidRule) {
     logger.warn(`No valid rules found for pattern: ${pathPattern}`);
   }
-
-      }
-
-parsedConfig.additionalRules = validatedRules;
-    
-
-return parsedConfig;
-
-  } catch (error) {
-  logger.warn(`Error loading repo config: ${error}`);
-  return defaultRepoXFIConfig;
 }
 
