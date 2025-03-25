@@ -88,6 +88,7 @@
     "esprima": "^4.0.1",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
+    "glob": "^11.0.1",
     "helmet": "^8.0.0",
     "json-rules-engine": "^7.3.1",
     "jsonpath-plus": "^10.3.0",

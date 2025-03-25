@@ -9,7 +9,7 @@ import { ConfigManager } from '../configManager';
 import { loadRepoXFIConfig } from '../../utils/repoXFIConfigLoader';
 
 export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
-    const { archetypeConfig, archetype, executionLogPrefix, repoUrl } = params;
+    const { archetypeConfig, archetype, executionLogPrefix, repoUrl, localConfigPath } = params;
     const engine = new Engine([], { replaceFactsInEventParams: true, allowUndefinedFacts: true });
 
     // Add operators to engine
@@ -27,7 +27,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     const config = await ConfigManager.getConfig({ archetype, logPrefix: executionLogPrefix });
     
     // Load repo config to get additional rules
-    const repoConfig = await loadRepoXFIConfig(repoPath);
+    const repoConfig = await loadRepoXFIConfig(localConfigPath);
         
     logger.debug(`rules loaded: ${config.rules}`);
 
