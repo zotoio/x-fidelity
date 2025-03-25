@@ -5,14 +5,19 @@ import fs from 'fs';
 import path from 'path';
 import { RepoXFIConfig } from '../types/typeDefs';
 
+// Mock fs with promises property
 jest.mock('fs', () => ({
-    open: jest.fn(),
   existsSync: jest.fn(),
   promises: {
     readFile: jest.fn()
   }
 }));
-jest.mock('./jsonSchemas');
+
+jest.mock('./jsonSchemas', () => ({
+  validateXFIConfig: jest.fn().mockReturnValue(true),
+  validateRule: jest.fn().mockReturnValue(true)
+}));
+
 jest.mock('./logger');
 
 describe('loadRepoXFIConfig', () => {
@@ -22,7 +27,6 @@ describe('loadRepoXFIConfig', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (fs.existsSync as jest.Mock).mockReturnValue(true);
-    (validateRule as unknown as jest.Mock).mockReturnValue(true);
   });
 
   it('should return default config when no config file exists', async () => {
