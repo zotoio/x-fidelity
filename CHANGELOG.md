@@ -1,3 +1,21 @@
+# [3.18.0](https://github.com/zotoio/x-fidelity/compare/v3.17.1...v3.18.0) (2025-03-25)
+
+
+### Bug Fixes
+
+* add missing execSync import in repoDependencyFacts test ([b06abdd](https://github.com/zotoio/x-fidelity/commit/b06abdd9007f3631f7586aac86bf3b160810c217))
+* handle type safety and increase test timeout for exemption utils ([02939c2](https://github.com/zotoio/x-fidelity/commit/02939c2c55e0a592a5a019130310a563ca54e486))
+* resolve TypeScript errors in config loader and tests ([f91a7d8](https://github.com/zotoio/x-fidelity/commit/f91a7d8d2c6f4fded75dd50e696cd7cfaab40caf))
+
+
+### Features
+
+* add additionalRules field to default XFI config ([ce6d787](https://github.com/zotoio/x-fidelity/commit/ce6d78706ac368bec79f7ae0da6bf07baebe47f1))
+* add missing fields to default XFI config ([f9841fb](https://github.com/zotoio/x-fidelity/commit/f9841fbf551e6615a58f7e04b52cac6ea1c4facb))
+* add support for external rule references in xfi config ([9dc47a1](https://github.com/zotoio/x-fidelity/commit/9dc47a161c19078de56ece1d4ed0938350dee2e9))
+* add support for loading rules from URLs and multiple paths ([2704fd8](https://github.com/zotoio/x-fidelity/commit/2704fd85cae845f49abf07ec537a2640005a5ea7))
+* **xfi-config:** support for file references in repo config for additional rules ([706febc](https://github.com/zotoio/x-fidelity/commit/706febc866ee3c0dce413920247d8d1d534d0c94))
+
 ## [3.17.1](https://github.com/zotoio/x-fidelity/compare/v3.17.0...v3.17.1) (2025-03-20)
 
 
