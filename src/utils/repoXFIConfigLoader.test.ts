@@ -5,7 +5,12 @@ import fs from 'fs';
 import path from 'path';
 import { RepoXFIConfig } from '../types/typeDefs';
 
-jest.mock('fs');
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  promises: {
+    readFile: jest.fn()
+  }
+}));
 jest.mock('./jsonSchemas');
 jest.mock('./logger');
 
