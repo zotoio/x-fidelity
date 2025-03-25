@@ -31,21 +31,27 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     config.rules.forEach((rule) => {
         try {
             if (rule && rule.name) {
-                if (!addedRules.has(rule.name)) {
-                    logger.info(`adding rule: ${rule.name}`);
-                    if (isExempt({ exemptions: config.exemptions, repoUrl, ruleName: rule.name, logPrefix: executionLogPrefix })) {
-                        // clone the rule to avoid modifying the original rule
-                        const exemptRule = JSON.parse(JSON.stringify(rule));
-                        // update the rule event type to 'exempt' if it is exempted
-                        exemptRule.event.type = 'exempt';
-                        engine.addRule(exemptRule as RuleProperties);
-                    } else {
-                        engine.addRule(rule as RuleProperties);
-                    }
-                    addedRules.add(rule.name);
-                } else {
+                // Check if rule is already registered
+                if (addedRules.has(rule.name)) {
                     logger.warn(`Skipping duplicate rule: ${rule.name}`);
+                    continue;
                 }
+
+                logger.info(`adding rule: ${rule.name}`);
+                
+                // Check for exemption
+                if (isExempt({ exemptions: config.exemptions, repoUrl, ruleName: rule.name, logPrefix: executionLogPrefix })) {
+                    // clone the rule to avoid modifying the original rule
+                    const exemptRule = JSON.parse(JSON.stringify(rule));
+                    // update the rule event type to 'exempt' if it is exempted
+                    exemptRule.event.type = 'exempt';
+                    engine.addRule(exemptRule as RuleProperties);
+                } else {
+                    engine.addRule(rule as RuleProperties);
+                }
+                
+                // Track added rule
+                addedRules.add(rule.name);
             } else {
                 logger.error('Invalid rule configuration: rule or rule name is undefined');
             }

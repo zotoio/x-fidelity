@@ -33,17 +33,27 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
 
         try {
             const { results } = await engine.run(facts);
+            const seenFailures = new Set<string>();
+
             for (const result of results) {
                 logger.trace(JSON.stringify(result));
                 if (result.result) {
-                    fileFailures.push({
-                        ruleFailure: result.name,
-                        level: result.event?.type as ErrorLevel,
-                        details: {
-                            message: result.event?.params?.message || 'Rule failure detected',
-                            ...result.event?.params
-                        }
-                    });
+                    // Create unique key for deduplication
+                    const failureKey = `${result.name}:${result.event?.type}:${result.event?.params?.message}`;
+                    
+                    if (!seenFailures.has(failureKey)) {
+                        fileFailures.push({
+                            ruleFailure: result.name,
+                            level: result.event?.type as ErrorLevel,
+                            details: {
+                                message: result.event?.params?.message || 'Rule failure detected',
+                                ...result.event?.params
+                            }
+                        });
+                        seenFailures.add(failureKey);
+                    } else {
+                        logger.debug(`Skipping duplicate failure: ${failureKey}`);
+                    }
                 }
             }
         } catch (e) {
