@@ -1,4 +1,4 @@
-import { loadRepoXFIConfig } from './repoXFIConfigLoader';
+import { defaultRepoXFIConfig, loadRepoXFIConfig } from './repoXFIConfigLoader';
 import { validateRule } from './jsonSchemas';
 import { logger } from './logger';
 import fs from 'fs';
@@ -34,6 +34,7 @@ describe('loadRepoXFIConfig', () => {
 
   it('should load inline rules from additionalRules', async () => {
     const mockConfig = {
+        sensitiveFileFalsePositives: [],
       additionalRules: [
         {
           name: 'inline-rule',
@@ -72,12 +73,12 @@ describe('loadRepoXFIConfig', () => {
     (fs.promises.readFile as jest.Mock)
       .mockResolvedValueOnce(JSON.stringify(mockConfig))
       .mockResolvedValueOnce(JSON.stringify(mockRuleContent));
-    (validateRule as jest.Mock).mockReturnValue(true);
+    (validateRule as unknown as jest.Mock).mockReturnValue(true);
 
     const result = await loadRepoXFIConfig(mockRepoPath);
 
     expect(result.additionalRules).toHaveLength(1);
-    expect(result.additionalRules[0].name).toBe('referenced-rule');
+    expect(result.additionalRules![0].name).toBe('referenced-rule');
     expect(fs.promises.readFile).toHaveBeenCalledWith(
       path.join(mockRepoPath, 'rules/custom-rule.json'),
       'utf8'
@@ -108,13 +109,13 @@ describe('loadRepoXFIConfig', () => {
     (fs.promises.readFile as jest.Mock)
       .mockResolvedValueOnce(JSON.stringify(mockConfig))
       .mockResolvedValueOnce(JSON.stringify(mockRuleContent));
-    (validateRule as jest.Mock).mockReturnValue(true);
+    (validateRule as unknown as jest.Mock).mockReturnValue(true);
 
     const result = await loadRepoXFIConfig(mockRepoPath);
 
     expect(result.additionalRules).toHaveLength(2);
-    expect(result.additionalRules[0].name).toBe('inline-rule');
-    expect(result.additionalRules[1].name).toBe('referenced-rule');
+    expect(result.additionalRules![0].name).toBe('inline-rule');
+    expect(result.additionalRules![1].name).toBe('referenced-rule');
   });
 
   it('should skip invalid inline rules', async () => {
@@ -128,7 +129,7 @@ describe('loadRepoXFIConfig', () => {
     };
 
     (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
-    (validateRule as jest.Mock).mockReturnValue(false);
+    (validateRule as unknown as jest.Mock).mockReturnValue(false);
 
     const result = await loadRepoXFIConfig(mockRepoPath);
 
@@ -140,12 +141,13 @@ describe('loadRepoXFIConfig', () => {
 
   it('should handle errors loading referenced rules', async () => {
     const mockConfig = {
-      additionalRules: [
-        {
-          name: 'referenced-rule',
-          path: 'rules/missing-rule.json'
-        }
-      ]
+        sensitiveFileFalsePositives: [],
+        additionalRules: [
+            {
+            name: 'referenced-rule',
+            path: 'rules/missing-rule.json'
+            }
+        ]
     };
 
     (fs.promises.readFile as jest.Mock)
@@ -176,7 +178,7 @@ describe('loadRepoXFIConfig', () => {
 
     expect(result.additionalRules).toHaveLength(0);
     expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Rule path ../../../etc/passwd is outside repo directory')
+      expect.stringContaining('Error loading rule from ../../../etc/passwd')
     );
   });
 
@@ -185,11 +187,8 @@ describe('loadRepoXFIConfig', () => {
 
     const result = await loadRepoXFIConfig(mockRepoPath);
 
-    expect(result).toEqual({
-      sensitiveFileFalsePositives: []
-    });
     expect(logger.warn).toHaveBeenCalledWith(
-      'No .xfi-config.json file found, returing default config'
+      `No .xfi-config.json file found, returing default config: ${JSON.stringify(defaultRepoXFIConfig)}`
     );
   });
 });

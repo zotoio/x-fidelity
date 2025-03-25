@@ -5,7 +5,7 @@ import { logger } from './logger';
 import { RepoXFIConfig } from '../types/typeDefs';
 import { validateXFIConfig, validateRule } from './jsonSchemas';
 
-const defaultXFIConfig: RepoXFIConfig = {
+export const defaultRepoXFIConfig: RepoXFIConfig = {
   sensitiveFileFalsePositives: [],
   additionalRules: [],
   additionalFacts: [],
@@ -17,9 +17,15 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
   try {
     const baseRepo = path.resolve(repoPath);
     const configPath = path.resolve(baseRepo, '.xfi-config.json');
+
+    if (!fs.existsSync(configPath)) {
+      throw new Error('No .xfi-config.json file found');
+    }
+
     if (!isPathInside(configPath, baseRepo)) {
         throw new Error('Resolved config path is outside allowed directory');
     }
+
     const configContent = await fs.promises.readFile(configPath, 'utf8');
     const parsedConfig = JSON.parse(configContent);
 
@@ -104,11 +110,11 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
 
       return parsedConfig;
     } else {
-      logger.warn(`Ignoring invalid .xfi-config.json file, returing default config: ${JSON.stringify(defaultXFIConfig)}`);
-      return defaultXFIConfig;
+      logger.warn(`Ignoring invalid .xfi-config.json file, returing default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
+      return defaultRepoXFIConfig;
     }
   } catch (error) {
-    logger.warn(`No .xfi-config.json file found, returing default config: ${JSON.stringify(defaultXFIConfig)}`);
-    return defaultXFIConfig;
+    logger.warn(`No .xfi-config.json file found, returing default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
+    return defaultRepoXFIConfig;
   }
 }

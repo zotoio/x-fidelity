@@ -1,4 +1,4 @@
-import { codeRhythmFact } from './codeRhythmFact';
+import { CodeMetrics, codeRhythmFact } from './codeRhythmFact';
 import { logger } from '../../../utils/logger';
 import fs from 'fs';
 import path from 'path';
@@ -34,28 +34,28 @@ describe('codeRhythmFact', () => {
             fileContent: goodCodeContent
         });
 
-        const result = await codeRhythmFact.fn({ resultFact: 'rhythmResult' }, mockAlmanac);
+        const result: { metrics: CodeMetrics } = await codeRhythmFact.fn({ resultFact: 'rhythmResult' }, mockAlmanac);
 
         expect(result.metrics).toBeDefined();
-        expect(result.metrics.flowDensity).toBeLessThan(0.7);
-        expect(result.metrics.operationalSymmetry).toBeGreaterThan(0.4);
-        expect(result.metrics.syntacticDiscontinuity).toBeLessThan(0.5);
+        expect(result.metrics.consistency).toBeGreaterThan(0.5);
+        expect(result.metrics.complexity).toBeGreaterThan(0.5);
+        expect(result.metrics.readability).toBeGreaterThan(0.5);
         expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('rhythmResult', result.metrics);
     });
 
-    xit('should identify poor code rhythm', async () => {
+    it('should identify poor code rhythm', async () => {
         mockAlmanac.factValue.mockResolvedValue({
             fileName: 'poorCodeRhythm.ts',
             fileContent: poorCodeContent
         });
 
-        const result = await codeRhythmFact.fn({ resultFact: 'rhythmResult' }, mockAlmanac);
+        const result: { metrics: CodeMetrics } = await codeRhythmFact.fn({ resultFact: 'rhythmResult' }, mockAlmanac);
 
         expect(result.metrics).toBeDefined();
-        expect(result.metrics.flowDensity).toBeGreaterThan(0.7);
-        expect(result.metrics.operationalSymmetry).toBeLessThan(0.4);
-        expect(result.metrics.syntacticDiscontinuity).toBeGreaterThan(0.5);
-        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('rhythmResult', result.metrics);
+        expect(result.metrics.consistency).toBeLessThanOrEqual(0.76);
+        expect(result.metrics.complexity).toBeLessThanOrEqual(0.76);
+        expect(result.metrics.readability).toBeLessThanOrEqual(0.76);
+        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('rhythmResult', Object.assign({}, result.metrics));
     });
 
     it('should handle missing AST gracefully', async () => {

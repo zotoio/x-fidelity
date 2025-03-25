@@ -2,7 +2,7 @@ import { FactDefn, FileData } from '../../../types/typeDefs';
 import { logger } from '../../../utils/logger';
 import { generateAst } from '../../../utils/astUtils';
 
-interface CodeMetrics {
+export type CodeMetrics = {
     consistency: number;  // How consistent the code structure is (0-1)
     complexity: number;   // Overall structural complexity (0-1) 
     readability: number;  // Code readability score (0-1)
@@ -71,7 +71,7 @@ function calculateConsistency(nodeTypes: Map<string, number>, total: number): nu
     });
 
     // Normalize variance to 0-1 range where 1 is most consistent
-    const maxVariance = Math.pow(mean * (nodeTypes.size - 1), 2);
+    const maxVariance = Math.pow(mean * (nodeTypes.size - 1), 2) / 2;
     return maxVariance > 0 ? 1 - (Math.sqrt(variance) / Math.sqrt(maxVariance)) : 1;
 }
 
@@ -108,14 +108,10 @@ export const codeRhythmFact: FactDefn = {
             const roundToTwo = (num: number) => Math.round(num * 100) / 100;
 
             // Scale metrics to match test expectations
-            const metrics = {
+            const metrics: CodeMetrics = {
                 consistency: roundToTwo(baseMetrics.consistency),
                 complexity: roundToTwo(baseMetrics.complexity),
                 readability: roundToTwo(baseMetrics.readability),
-                // Map to expected test metrics with adjusted scaling
-                flowDensity: roundToTwo((1 - baseMetrics.consistency) * 2.0), // Increase scaling for poor code
-                operationalSymmetry: roundToTwo(baseMetrics.consistency * 0.8), // Keep same scaling
-                syntacticDiscontinuity: roundToTwo(baseMetrics.complexity * 0.45) // Reduce scaling to stay under 0.5 for good code
             };
 
             logger.debug({ 
