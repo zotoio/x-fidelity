@@ -6,6 +6,7 @@ import { sendTelemetry } from '../../utils/telemetry';
 import { isExempt } from '../../utils/exemptionUtils';
 import { SetupEngineParams } from '../../types/typeDefs';
 import { ConfigManager } from '../configManager';
+import { loadRepoXFIConfig } from '../../utils/repoXFIConfigLoader';
 
 export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     const { archetypeConfig, archetype, executionLogPrefix, repoUrl } = params;
@@ -24,10 +25,15 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     // Add rules to engine
     logger.info(`=== loading json rules..`);
     const config = await ConfigManager.getConfig({ archetype, logPrefix: executionLogPrefix });
+    
+    // Load repo config to get additional rules
+    const repoConfig = await loadRepoXFIConfig(repoPath);
         
     logger.debug(`rules loaded: ${config.rules}`);
 
     const addedRules = new Set();
+
+    // First add archetype rules
     config.rules.forEach((rule) => {
         try {
             if (rule && rule.name) {
@@ -37,7 +43,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     return;
                 }
 
-                logger.info(`adding rule: ${rule.name}`);
+                logger.info(`adding archetype rule: ${rule.name}`);
                 
                 // Check for exemption
                 if (isExempt({ exemptions: config.exemptions, repoUrl, ruleName: rule.name, logPrefix: executionLogPrefix })) {
@@ -56,10 +62,32 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                 logger.error('Invalid rule configuration: rule or rule name is undefined');
             }
         } catch (e: any) {
-            logger.error(`Error loading rule: ${rule?.name || 'unknown'}`);
+            logger.error(`Error loading archetype rule: ${rule?.name || 'unknown'}`);
             logger.error(e.message);
         }
     });
+
+    // Then add additional rules from repo config
+    if (repoConfig.additionalRules?.length) {
+        repoConfig.additionalRules.forEach((rule) => {
+            try {
+                if (rule && rule.name) {
+                    // Check if rule is already registered
+                    if (addedRules.has(rule.name)) {
+                        logger.warn(`Skipping duplicate additional rule: ${rule.name}`);
+                        return;
+                    }
+
+                    logger.info(`adding additional rule: ${rule.name}`);
+                    engine.addRule(rule as RuleProperties);
+                    addedRules.add(rule.name);
+                }
+            } catch (e: any) {
+                logger.error(`Error loading additional rule: ${rule?.name || 'unknown'}`);
+                logger.error(e.message);
+            }
+        });
+    }
 
     engine.on('success', async ({ type, params }: Event) => {
         if (type === 'warning') {
