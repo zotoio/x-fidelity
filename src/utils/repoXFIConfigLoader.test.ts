@@ -116,10 +116,19 @@ describe('loadRepoXFIConfig', () => {
         };
 
         (fs.promises.readFile as jest.Mock)
-            .mockResolvedValueOnce(JSON.stringify(mockConfig))
-            .mockResolvedValueOnce(JSON.stringify(mockRuleContent));
+            .mockImplementation((path: string) => {
+                if (path.endsWith('.xfi-config.json')) {
+                    return Promise.resolve(JSON.stringify(mockConfig));
+                }
+                if (path.includes('custom-rule.json')) {
+                    return Promise.resolve(JSON.stringify(mockRuleContent));
+                }
+                return Promise.reject(new Error('File not found'));
+            });
         (validateRule as unknown as jest.Mock).mockReturnValue(true);
-        (fs.existsSync as jest.Mock).mockImplementation(path => path.includes('custom-rule.json'));
+        (fs.existsSync as jest.Mock).mockImplementation(path => 
+            path.endsWith('.xfi-config.json') || path.includes('custom-rule.json')
+        );
 
         const result = await loadRepoXFIConfig(mockRepoPath);
 
@@ -158,7 +167,6 @@ describe('loadRepoXFIConfig', () => {
 
     it('should handle errors loading referenced rules', async () => {
         const mockConfig = {
-            sensitiveFileFalsePositives: [],
             additionalRules: [
                 {
                     name: 'referenced-rule',
@@ -168,8 +176,15 @@ describe('loadRepoXFIConfig', () => {
         };
 
         (fs.promises.readFile as jest.Mock)
-            .mockResolvedValueOnce(JSON.stringify(mockConfig))
-            .mockRejectedValueOnce(new Error('File not found'));
+            .mockImplementation((path: string) => {
+                if (path.endsWith('.xfi-config.json')) {
+                    return Promise.resolve(JSON.stringify(mockConfig));
+                }
+                return Promise.reject(new Error('File not found'));
+            });
+        (fs.existsSync as jest.Mock).mockImplementation(path => 
+            path.endsWith('.xfi-config.json')
+        );
 
         const result = await loadRepoXFIConfig(mockRepoPath);
 
