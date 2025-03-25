@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { glob } from 'glob';
 import { isPathInside } from './pathUtils';
 import { logger } from './logger';
 import { RepoXFIConfig } from '../types/typeDefs';
@@ -48,6 +49,7 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
             // Handle rule reference
             try {
               let ruleContent: string;
+              let rulePaths: string[] = [];
               
               if ('url' in ruleConfig && ruleConfig.url) {
                 // Handle remote URL
@@ -56,45 +58,71 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
                   throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 ruleContent = await response.text();
-              } else if ('path' in ruleConfig && ruleConfig.path) {
-                // Handle local path - try different base directories
-                let rulePath: string | null = null;
-                
-                // Try relative to config dir first
-                const localConfigPath = process.env.LOCAL_CONFIG_PATH;
-                if (localConfigPath) {
-                  const configDirPath = path.resolve(localConfigPath, ruleConfig.path);
-                  if (fs.existsSync(configDirPath)) {
-                    rulePath = configDirPath;
-                  }
+                const rule = JSON.parse(ruleContent);
+                if (validateRule(rule)) {
+                  validatedRules.push(rule);
+                  logger.info(`Loaded rule from URL ${ruleConfig.url}`);
+                } else {
+                  logger.warn(`Invalid rule from URL ${ruleConfig.url}, skipping`);
                 }
-                
-                // Then try relative to repo dir
-                if (!rulePath) {
-                  const repoDirPath = path.resolve(baseRepo, ruleConfig.path);
-                  if (isPathInside(repoDirPath, baseRepo) && fs.existsSync(repoDirPath)) {
-                    rulePath = repoDirPath;
-                  }
-                }
-
-                if (!rulePath) {
-                  throw new Error(`Could not resolve rule path: ${ruleConfig.path}`);
-                }
-
-                ruleContent = await fs.promises.readFile(rulePath, 'utf8');
-              } else {
-                throw new Error('Rule reference must have either url or path');
+                continue;
               }
 
-              const rule = JSON.parse(ruleContent);
-              if (validateRule(rule)) {
-                validatedRules.push(rule);
-              } else {
-                logger.warn(`Invalid rule in referenced file ${ruleConfig.path || ruleConfig.url}, skipping`);
+              // Handle local path with potential wildcards
+              if ('path' in ruleConfig && ruleConfig.path) {
+                const pathPattern = ruleConfig.path;
+                
+                // Try multiple base directories in order of precedence
+                const searchPaths = [
+                  options.localConfigPath, // Local config dir first
+                  process.cwd(),           // Current working dir second
+                  baseRepo                 // Repository root last
+                ].filter(Boolean); // Remove undefined/null paths
+
+                for (const basePath of searchPaths) {
+                  const fullPattern = path.resolve(basePath, pathPattern);
+                  const baseDir = path.dirname(fullPattern);
+                  
+                  // Check if path is inside allowed directories
+                  if (!searchPaths.some(allowedPath => isPathInside(baseDir, allowedPath))) {
+                    logger.warn(`Rule path ${pathPattern} resolves outside allowed directories, skipping`);
+                    continue;
+                  }
+
+                  try {
+                    if (pathPattern.includes('*')) {
+                      // Handle wildcards using glob pattern
+                      const matches = await glob(fullPattern);
+                      rulePaths.push(...matches);
+                    } else if (fs.existsSync(fullPattern)) {
+                      // Single file path
+                      rulePaths.push(fullPattern);
+                    }
+                  } catch (error) {
+                    logger.debug(`Error resolving pattern ${pathPattern} in ${basePath}: ${error}`);
+                  }
+                }
+
+                // Load and validate each rule file
+                for (const rulePath of rulePaths) {
+                  try {
+                    const content = await fs.promises.readFile(rulePath, 'utf8');
+                    const rule = JSON.parse(content);
+                    if (validateRule(rule)) {
+                      validatedRules.push(rule);
+                      logger.info(`Loaded rule from ${rulePath}`);
+                    } else {
+                      logger.warn(`Invalid rule in ${rulePath}, skipping`);
+                    }
+                  } catch (error) {
+                    logger.warn(`Error loading rule from ${rulePath}: ${error}`);
+                  }
+                }
+
+                if (rulePaths.length === 0) {
+                  logger.warn(`No matching rule files found for pattern: ${pathPattern}`);
+                }
               }
-            } catch (error) {
-              logger.warn(`Error loading rule from ${ruleConfig.path || ruleConfig.url}: ${error}`);
-            }
           } else {
             // Handle inline rule
             if (validateRule(ruleConfig)) {
