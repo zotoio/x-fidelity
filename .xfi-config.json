@@ -29,8 +29,11 @@
                     }
                 }
             }
+        },
+        {
+            "name": "sensitiveLogging-iterative",
+            "path": "src/demoConfig/rules/sensitiveLogging-iterative-rule.json"
         }
-        
     ],
     "additionalFacts": ["customFact"],
     "additionalOperators": ["customOperator"],
