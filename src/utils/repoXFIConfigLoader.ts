@@ -41,7 +41,10 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
 
     // Process additional rules
     if (parsedConfig.additionalRules?.length) {
-      parsedConfig.additionalRules = await processAdditionalRules(parsedConfig.additionalRules, baseRepo);
+      const validatedRules = await processAdditionalRules(parsedConfig.additionalRules, baseRepo);
+      if (validatedRules.length > 0) {
+        parsedConfig.additionalRules = validatedRules;
+      }
     }
 
     return parsedConfig;
@@ -87,14 +90,15 @@ async function processAdditionalRules(rules: any[], baseRepo: string): Promise<a
     try {
       // Handle inline rules first
       if (!('path' in rule) && !('url' in rule)) {
+        const ruleName = (rule as any)?.name || 'unnamed';
+        logger.debug(`Validating inline rule ${ruleName}`);
         if (validateRule(rule)) {
+          logger.info(`Adding valid inline rule ${ruleName}`);
           validatedRules.push(rule);
-          continue;
         } else {
-          const ruleName = (rule as any)?.name || 'unnamed';
           logger.warn(`Invalid inline rule ${ruleName} in .xfi-config.json, skipping`);
-          continue;
         }
+        continue;
       }
 
       // Handle remote URL
