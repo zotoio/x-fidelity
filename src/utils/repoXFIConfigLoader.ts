@@ -219,18 +219,16 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
           }
 
           parsedConfig.additionalRules = validatedRules;
+          return parsedConfig;
+        } else {
+          logger.warn(`Ignoring invalid .xfi-config.json file, returing default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
+          return defaultRepoXFIConfig;
         }
-
-        return parsedConfig;
-      } else {
-        logger.warn(`Ignoring invalid .xfi-config.json file, returing default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
+      } catch (error) {
+        logger.warn(`No .xfi-config.json file found, returing default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
         return defaultRepoXFIConfig;
       }
-    } catch (error) {
-      logger.warn(`No .xfi-config.json file found, returing default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
-      return defaultRepoXFIConfig;
     }
-  }
           }
 
           parsedConfig.additionalRules = validatedRules;
