@@ -58,6 +58,13 @@ describe('setupEngine', () => {
             ],
             cliOptions: {}
         });
+        (loadRepoXFIConfig as jest.Mock).mockResolvedValue({
+            additionalRules: [],
+            additionalFacts: [],
+            additionalOperators: [],
+            additionalPlugins: [],
+            sensitiveFileFalsePositives: []
+        });
         (loadOperators as jest.Mock).mockResolvedValue([
             { name: 'operator1', fn: jest.fn() },
             { name: 'operator2', fn: jest.fn() }
