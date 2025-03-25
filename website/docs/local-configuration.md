@@ -130,21 +130,47 @@ An array of custom rules to add to your configuration. Rules can be specified in
 }
 ```
 
-2. **Local File References**: Reference rule files relative to your repository or config paths:
+2. **Local File References**: Reference rule files using paths that can be:
+
+a) Relative to repository root:
+```json
+{
+    "name": "sensitiveLogging-iterative",
+    "path": "src/demoConfig/rules/sensitiveLogging-iterative-rule.json"
+}
+```
+
+b) Relative to local config directory (if using --localConfigPath):
 ```json
 {
     "name": "local-rule",
     "path": "rules/custom-rule.json"
 }
 ```
+
+c) Relative to plugin directory (for plugin-provided rules):
+```json
+{
+    "name": "functionComplexity-iterative",
+    "path": "src/plugins/xfiPluginAst/sampleRules/functionComplexity-iterative-rule.json"
+}
+```
+
 The `path` property supports:
-- Absolute paths (relative to repo root)
-- Relative paths (relative to config location)
 - Glob patterns (e.g. `rules/*.json`, `**/*-rule.json`)
 - Multiple base directories searched in order:
-  1. Local config directory
+  1. Local config directory (if --localConfigPath is specified)
   2. Current working directory  
   3. Repository root
+  4. Plugin directories (for plugin rules)
+
+Example using glob pattern:
+```json
+{
+    "name": "all-iterative-rules",
+    "path": "**/*-iterative-rule.json"
+}
+```
 
 3. **Remote Rules**: Load rules from remote URLs:
 ```json
