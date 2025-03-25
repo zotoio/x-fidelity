@@ -6,6 +6,7 @@ import path from 'path';
 import { RepoXFIConfig } from '../types/typeDefs';
 
 jest.mock('fs', () => ({
+    open: jest.fn(),
   existsSync: jest.fn(),
   promises: {
     readFile: jest.fn()
