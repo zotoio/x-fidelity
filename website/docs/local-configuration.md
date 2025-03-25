@@ -106,7 +106,7 @@ The `.xfi-config.json` file in your repository root allows you to customize x-fi
 An array of file paths relative to your repository root that should be excluded from sensitive data checks.
 
 #### additionalRules
-An array of custom rules to add to your configuration. Rules can be specified in three flexible ways:
+An array of custom rules to add to your configuration. Rules can be specified in multiple flexible ways:
 
 1. **Inline Rules**: Define the complete rule configuration directly in the config file:
 ```json
@@ -140,7 +140,7 @@ An array of custom rules to add to your configuration. Rules can be specified in
 The `path` property supports:
 - Absolute paths (relative to repo root)
 - Relative paths (relative to config location)
-- Glob patterns (e.g. `rules/*.json`)
+- Glob patterns (e.g. `rules/*.json`, `**/*-rule.json`)
 - Multiple base directories searched in order:
   1. Local config directory
   2. Current working directory  
@@ -156,15 +156,39 @@ The `path` property supports:
 Remote rules support:
 - HTTPS URLs
 - Authentication headers
-- Automatic retries
-- Error handling
+- Automatic retries with exponential backoff
+- Error handling with detailed logging
 - Response validation
+- Caching with TTL
+
+4. **Reference Existing Rules**: Reference rules from archetypes:
+```json
+{
+    "name": "sensitiveLogging-iterative",
+    "path": "src/demoConfig/rules/sensitiveLogging-iterative-rule.json"
+}
+```
+
+5. **Plugin Rules**: Load rules provided by plugins:
+```json
+{
+    "additionalPlugins": ["xfiPluginAst"],
+    "additionalRules": [
+        {
+            "name": "functionComplexity-iterative",
+            "path": "src/plugins/xfiPluginAst/sampleRules/functionComplexity-iterative-rule.json"
+        }
+    ]
+}
+```
 
 Rules are loaded in the order specified. For each rule:
 1. The rule is validated against the schema
 2. For path/URL rules, the first valid rule found is used
 3. Invalid rules are skipped with a warning
 4. Rules can be exempted via exemptions config
+5. Duplicate rules (same name) are skipped
+6. Plugin rules are loaded after archetype rules
 
 Each rule must follow the standard rule schema with:
 - `name`: Unique identifier for the rule
@@ -172,6 +196,21 @@ Each rule must follow the standard rule schema with:
 - `event`: The event to trigger when conditions match
 - `errorBehavior`: Optional "swallow" or "fatal" 
 - `onError`: Optional error handling configuration
+
+Rule Loading Order:
+1. Archetype rules (from config server or local config)
+2. Plugin rules (from installed plugins)
+3. Additional rules from .xfi-config.json:
+   - Inline rules
+   - Local file rules
+   - Remote URL rules
+   - Referenced rules
+
+Duplicate Rule Handling:
+- Rules with the same name are not loaded twice
+- First rule loaded takes precedence
+- Warning logged for duplicate rule names
+- Archetype rules take precedence over additional rules
 
 #### additionalFacts
 An array of fact names to enable from installed plugins or custom implementations.
