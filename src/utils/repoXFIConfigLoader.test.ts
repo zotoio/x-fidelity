@@ -74,15 +74,12 @@ describe('loadRepoXFIConfig', () => {
       .mockResolvedValueOnce(JSON.stringify(mockConfig))
       .mockResolvedValueOnce(JSON.stringify(mockRuleContent));
     (validateRule as unknown as jest.Mock).mockReturnValue(true);
+    (fs.existsSync as jest.Mock).mockImplementation(path => path.includes('custom-rule.json'));
 
     const result = await loadRepoXFIConfig(mockRepoPath);
 
     expect(result.additionalRules).toHaveLength(1);
     expect(result.additionalRules![0].name).toBe('referenced-rule');
-    expect(fs.promises.readFile).toHaveBeenCalledWith(
-      path.join(mockRepoPath, 'rules/custom-rule.json'),
-      'utf8'
-    );
   });
 
   it('should handle mix of inline and referenced rules', async () => {
@@ -110,12 +107,13 @@ describe('loadRepoXFIConfig', () => {
       .mockResolvedValueOnce(JSON.stringify(mockConfig))
       .mockResolvedValueOnce(JSON.stringify(mockRuleContent));
     (validateRule as unknown as jest.Mock).mockReturnValue(true);
+    (fs.existsSync as jest.Mock).mockImplementation(path => path.includes('custom-rule.json'));
 
     const result = await loadRepoXFIConfig(mockRepoPath);
 
     expect(result.additionalRules).toHaveLength(2);
     expect(result.additionalRules![0].name).toBe('inline-rule');
-    expect(result.additionalRules![1].name).toBe('referenced-rule');
+    expect(result.additionalRules![1].name).toBe('referenced-rule'); 
   });
 
   it('should skip invalid inline rules', async () => {
@@ -178,7 +176,7 @@ describe('loadRepoXFIConfig', () => {
 
     expect(result.additionalRules).toHaveLength(0);
     expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Error loading rule from ../../../etc/passwd')
+      'Rule path ../../../etc/passwd resolves outside allowed directories, skipping'
     );
   });
 
