@@ -29,15 +29,38 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
         });
       }
 
-      // Validate additional rules if present
+      // Validate and load additional rules if present
       if (parsedConfig.additionalRules && Array.isArray(parsedConfig.additionalRules)) {
-        for (let i = 0; i < parsedConfig.additionalRules.length; i++) {
-          if (!validateRule(parsedConfig.additionalRules[i])) {
-            logger.warn(`Invalid rule at index ${i} in .xfi-config.json, removing it`);
-            parsedConfig.additionalRules.splice(i, 1);
-            i--;
+        const validatedRules = [];
+        for (const ruleConfig of parsedConfig.additionalRules) {
+          if ('path' in ruleConfig) {
+            // Handle rule reference
+            try {
+              const rulePath = path.resolve(baseRepo, ruleConfig.path);
+              if (!isPathInside(rulePath, baseRepo)) {
+                logger.warn(`Rule path ${ruleConfig.path} is outside repo directory, skipping`);
+                continue;
+              }
+              const ruleContent = await fs.promises.readFile(rulePath, 'utf8');
+              const rule = JSON.parse(ruleContent);
+              if (validateRule(rule)) {
+                validatedRules.push(rule);
+              } else {
+                logger.warn(`Invalid rule in referenced file ${ruleConfig.path}, skipping`);
+              }
+            } catch (error) {
+              logger.warn(`Error loading rule from ${ruleConfig.path}: ${error}`);
+            }
+          } else {
+            // Handle inline rule
+            if (validateRule(ruleConfig)) {
+              validatedRules.push(ruleConfig);
+            } else {
+              logger.warn(`Invalid inline rule ${ruleConfig.name || 'unnamed'} in .xfi-config.json, skipping`);
+            }
           }
         }
+        parsedConfig.additionalRules = validatedRules;
       }
 
       return parsedConfig;

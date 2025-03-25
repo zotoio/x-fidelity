@@ -274,9 +274,14 @@ export interface ValidationResult {
     error?: string;
 }
 
+export interface RuleReference {
+  name: string;
+  path: string;
+}
+
 export interface RepoXFIConfig {
   sensitiveFileFalsePositives?: string[];
-  additionalRules?: RuleConfig[];
+  additionalRules?: (RuleConfig | RuleReference)[];
   additionalFacts?: string[];
   additionalOperators?: string[];
   additionalPlugins?: string[];
