@@ -20,31 +20,50 @@ export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig
     const configPath = path.resolve(baseRepo, '.xfi-config.json');
 
     if (!fs.existsSync(configPath)) {
-      throw new Error('No .xfi-config.json file found');
+      logger.warn(`No .xfi-config.json file found, returning default config: ${JSON.stringify(defaultRepoXFIConfig)}`);
+      return defaultRepoXFIConfig;
     }
 
     if (!isPathInside(configPath, baseRepo)) {
-        throw new Error('Resolved config path is outside allowed directory');
+      throw new Error('Resolved config path is outside allowed directory');
     }
 
     const configContent = await fs.promises.readFile(configPath, 'utf8');
-    const parsedConfig = JSON.parse(configContent);
+    let parsedConfig: RepoXFIConfig;
+    
+    try {
+      parsedConfig = JSON.parse(configContent);
+    } catch (error) {
+      logger.error(`Invalid JSON in .xfi-config.json: ${error}`);
+      return defaultRepoXFIConfig;
+    }
 
-    if (validateXFIConfig(parsedConfig)) {
-      logger.info('Loaded .xfi-config.json file from repo..');
+    if (!validateXFIConfig(parsedConfig)) {
+      logger.warn(`Invalid .xfi-config.json schema, returning default config`);
+      return defaultRepoXFIConfig;
+    }
 
-      // Add the repoPath prefix to the relative paths
-      if (parsedConfig.sensitiveFileFalsePositives) {
-        parsedConfig.sensitiveFileFalsePositives = parsedConfig.sensitiveFileFalsePositives.map((filePath: any) => {
-          filePath = path.join(repoPath, filePath);
-          return filePath;
-        });
-      }
+    logger.info('Loaded .xfi-config.json file from repo..');
 
-      // Validate and load additional rules if present
-      if (parsedConfig.additionalRules && Array.isArray(parsedConfig.additionalRules)) {
-        const validatedRules = [];
-        for (const ruleConfig of parsedConfig.additionalRules) {
+    // Add the repoPath prefix to the relative paths
+    if (parsedConfig.sensitiveFileFalsePositives) {
+      parsedConfig.sensitiveFileFalsePositives = parsedConfig.sensitiveFileFalsePositives.map((filePath: any) => {
+        filePath = path.join(repoPath, filePath);
+        return filePath;
+      });
+    }
+
+    // Initialize empty arrays if not present
+    parsedConfig.additionalRules = parsedConfig.additionalRules || [];
+    parsedConfig.additionalFacts = parsedConfig.additionalFacts || [];
+    parsedConfig.additionalOperators = parsedConfig.additionalOperators || [];
+    parsedConfig.additionalPlugins = parsedConfig.additionalPlugins || [];
+
+    // Validate and load additional rules if present
+    if (parsedConfig.additionalRules && Array.isArray(parsedConfig.additionalRules)) {
+      const validatedRules: any[] = [];
+
+      for (const ruleConfig of parsedConfig.additionalRules) {
           
     try {
       const configPath = path.resolve(baseRepo, '.xfi-config.json');
