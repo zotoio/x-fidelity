@@ -7,7 +7,10 @@ import { validateXFIConfig, validateRule } from './jsonSchemas';
 
 const defaultXFIConfig: RepoXFIConfig = {
   sensitiveFileFalsePositives: [],
-  additionalRules: []
+  additionalRules: [],
+  additionalFacts: [],
+  additionalOperators: [],
+  additionalPlugins: []
 };
 
 export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig> {
