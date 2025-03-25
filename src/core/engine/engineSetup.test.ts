@@ -5,6 +5,7 @@ import { loadFacts } from '../../facts';
 import { sendTelemetry } from '../../utils/telemetry';
 import { ConfigManager } from '../configManager';
 import { logger } from '../../utils/logger';
+import { loadRepoXFIConfig } from '../../utils/repoXFIConfigLoader';
 
 jest.mock('json-rules-engine');
 jest.mock('../../operators');
@@ -12,6 +13,7 @@ jest.mock('../../facts');
 jest.mock('../../utils/telemetry');
 jest.mock('../configManager');
 jest.mock('../../utils/logger');
+jest.mock('../../utils/repoXFIConfigLoader');
 
 describe('setupEngine', () => {
     let engine: Engine & { removeAllListeners?: () => void } | undefined;
@@ -178,5 +180,62 @@ describe('setupEngine', () => {
         expect(mockAddFact).toHaveBeenCalledTimes(2);
         expect(mockAddFact).toHaveBeenCalledWith('fact1', expect.any(Function), { priority: 1 });
         expect(mockAddFact).toHaveBeenCalledWith('openaiAnalysis', expect.any(Function), { priority: 1 });
+    });
+
+    describe('rule loading order', () => {
+        it('should load archetype rules before additional rules', async () => {
+            const mockArchetypeRule = { name: 'rule1', conditions: {}, event: {} };
+            const mockAdditionalRule = { name: 'rule2', conditions: {}, event: {} };
+            
+            (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
+                rules: [mockArchetypeRule],
+                exemptions: []
+            });
+            
+            (loadRepoXFIConfig as jest.Mock).mockResolvedValue({
+                additionalRules: [mockAdditionalRule]
+            });
+
+            const mockAddRule = jest.fn();
+            (Engine as jest.Mock).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: mockAddRule,
+                addFact: jest.fn(),
+                on: jest.fn()
+            }));
+
+            await setupEngine(mockParams);
+            
+            expect(mockAddRule).toHaveBeenNthCalledWith(1, mockArchetypeRule);
+            expect(mockAddRule).toHaveBeenNthCalledWith(2, mockAdditionalRule);
+        });
+
+        it('should skip duplicate rules and keep first occurrence', async () => {
+            const duplicateRule = { name: 'duplicate', conditions: {}, event: {} };
+            const uniqueRule = { name: 'unique', conditions: {}, event: {} };
+            
+            (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
+                rules: [duplicateRule],
+                exemptions: []
+            });
+            
+            (loadRepoXFIConfig as jest.Mock).mockResolvedValue({
+                additionalRules: [duplicateRule, uniqueRule]
+            });
+
+            const mockAddRule = jest.fn();
+            (Engine as jest.Mock).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: mockAddRule,
+                addFact: jest.fn(),
+                on: jest.fn()
+            }));
+
+            await setupEngine(mockParams);
+            
+            expect(mockAddRule).toHaveBeenCalledTimes(2);
+            expect(mockAddRule).toHaveBeenNthCalledWith(1, duplicateRule);
+            expect(mockAddRule).toHaveBeenNthCalledWith(2, uniqueRule);
+        });
     });
 });
