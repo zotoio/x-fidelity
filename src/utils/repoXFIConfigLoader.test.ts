@@ -115,20 +115,26 @@ describe('loadRepoXFIConfig', () => {
             event: { type: 'warning', params: {} }
         };
 
-        (fs.promises.readFile as jest.Mock)
-            .mockImplementation((path: string) => {
-                if (path.endsWith('.xfi-config.json')) {
-                    return Promise.resolve(JSON.stringify(mockConfig));
-                }
-                if (path.includes('custom-rule.json')) {
-                    return Promise.resolve(JSON.stringify(mockRuleContent));
-                }
-                return Promise.reject(new Error('File not found'));
-            });
+        // Mock file system operations
+        const mockFiles = new Map([
+            ['.xfi-config.json', JSON.stringify(mockConfig)],
+            ['rules/custom-rule.json', JSON.stringify(mockRuleContent)]
+        ]);
+
+        (fs.promises.readFile as jest.Mock).mockImplementation((filePath: string) => {
+            const fileName = path.basename(filePath);
+            const content = mockFiles.get(fileName);
+            if (content) {
+                return Promise.resolve(content);
+            }
+            return Promise.reject(new Error(`File not found: ${filePath}`));
+        });
+
         (validateRule as unknown as jest.Mock).mockReturnValue(true);
-        (fs.existsSync as jest.Mock).mockImplementation(path => 
-            path.endsWith('.xfi-config.json') || path.includes('custom-rule.json')
-        );
+        (fs.existsSync as jest.Mock).mockImplementation((filePath: string) => {
+            const fileName = path.basename(filePath);
+            return mockFiles.has(fileName);
+        });
 
         const result = await loadRepoXFIConfig(mockRepoPath);
 
