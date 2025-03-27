@@ -78,6 +78,7 @@ export class XFiReportGenerator {
     const { successfulFiles, successRate } = this.calculateSuccessRate();
     
     return `# X-Fidelity Analysis Report
+Generated for: ${this.repoName} on ${getFormattedDate()}
 
 ## Executive Summary
 
