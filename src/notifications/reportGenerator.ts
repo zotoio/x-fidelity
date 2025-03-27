@@ -217,7 +217,7 @@ ${mermaidChart.join('\n')}
     factMetrics.forEach(([name, metrics]) => {
       // Only include metrics with non-zero execution time
       if (metrics.totalExecutionTime > 0) {
-        executionTimeChart.push(`    "${name}" : ${metrics.totalExecutionTime.toFixed(3)}`);
+        executionTimeChart.push(`    "${name} (avg ${metrics.averageExecutionTime.toFixed(3)}s)" : ${metrics.totalExecutionTime.toFixed(3)}`);
       }
     });
     
