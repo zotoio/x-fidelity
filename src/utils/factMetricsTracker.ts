@@ -27,7 +27,7 @@ export class FactMetricsTracker {
             return result;
         } finally {
             const [seconds, nanoseconds] = process.hrtime(startTime);
-            const executionTime = seconds * 1000 + nanoseconds / 1000000; // Convert to milliseconds
+            const executionTime = seconds + nanoseconds / 1e9; // Convert to seconds with 6 decimal precision
             
             const current = this.metrics.get(factName) || { 
                 executionCount: 0, 
