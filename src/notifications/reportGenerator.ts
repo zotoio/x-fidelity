@@ -305,7 +305,7 @@ The analysis identified several functions with high complexity that should be re
     complexityIssues.forEach(issue => {
       if (issue.details && issue.details.details && issue.details.details.complexities) {
         issue.details.details.complexities.forEach((complexity: any) => {
-          section += `| [${issue.fileName}](${issue.fileUrl}) | ${complexity.name} | ${complexity.metrics.cyclomaticComplexity} | ${complexity.metrics.cognitiveComplexity} | ${complexity.metrics.nestingDepth} | ${complexity.metrics.parameterCount} | ${complexity.metrics.returnCount} |\n`;
+          section += `| [${issue.fileName}](${issue.fileUrl}#L${complexity.location?.start?.row || ''}) | ${complexity.name} | ${complexity.metrics.cyclomaticComplexity} | ${complexity.metrics.cognitiveComplexity} | ${complexity.metrics.nestingDepth} | ${complexity.metrics.parameterCount} | ${complexity.metrics.returnCount} |\n`;
         });
       }
     });
