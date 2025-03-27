@@ -1,11 +1,6 @@
 import { logger } from './logger';
 
-export interface FactMetric {
-    executionCount: number;
-    totalExecutionTime: number;
-    averageExecutionTime: number;
-    lastExecutionTime?: number;
-}
+import { FactMetrics } from '../types/typeDefs';
 
 export class FactMetricsTracker {
     private static instance: FactMetricsTracker;
@@ -54,8 +49,8 @@ export class FactMetricsTracker {
         }
     }
 
-    public getMetrics(): { [factName: string]: FactMetric } {
-        const result: { [factName: string]: FactMetric } = {};
+    public getMetrics(): { [factName: string]: FactMetrics } {
+        const result: { [factName: string]: FactMetrics } = {};
         this.metrics.forEach((value, key) => {
             result[key] = {
                 ...value,
