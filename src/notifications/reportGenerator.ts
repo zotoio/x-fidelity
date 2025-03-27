@@ -372,7 +372,7 @@ Several files contain potentially sensitive data patterns that shouldn't be logg
     sensitiveDataIssues.forEach(issue => {
       if (issue.details && issue.details.details) {
         issue.details.details.forEach((detail: any) => {
-          section += `| [${issue.fileName}](${issue.fileUrl}) | ${detail.pattern} | ${detail.line} |\n`;
+          section += `| [${issue.fileName}](${issue.fileUrl}) | ${detail.match} | ${detail.line} |\n`;
         });
       }
     });
