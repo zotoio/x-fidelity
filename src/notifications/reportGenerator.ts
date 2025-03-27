@@ -210,15 +210,15 @@ ${mermaidChart.join('\n')}
     // Generate execution time chart
     const executionTimeChart = [
       '```mermaid',
-      'gantt',
-      '    title Fact Analyzer Execution Time (seconds)',
-      '    dateFormat X',
-      '    axisFormat %s',
-      '    section Execution Time'
+      'pie',
+      '    title Fact Analyzer Execution Time (seconds)'
     ];
     
     factMetrics.forEach(([name, metrics]) => {
-      executionTimeChart.push(`    ${name} :0, ${metrics.totalExecutionTime.toFixed(2)}`);
+      // Only include metrics with non-zero execution time
+      if (metrics.totalExecutionTime > 0) {
+        executionTimeChart.push(`    "${name}" : ${metrics.totalExecutionTime.toFixed(3)}`);
+      }
     });
     
     executionTimeChart.push('```');
