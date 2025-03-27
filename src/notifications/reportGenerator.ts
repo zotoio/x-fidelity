@@ -16,12 +16,10 @@ export class XFiReportGenerator {
     
     // Extract repository name from URL (format: git@github.com:owner/repo.git)
     this.repoName = this.data.XFI_RESULT.repoUrl.split(':')[1]?.split('.git')[0] || '';
-    this.githubHostname = this.data.XFI_RESULT.repoUrl.split(':')[1]?.split('/')[0] || '';;
+    this.githubHostname = this.data.XFI_RESULT.repoUrl.split(':')[1]?.split('/')[0] || '';
     
     // Set GitHub base URL for linking to files
     this.githubBaseUrl = `https://${this.githubHostname}/${this.repoName}/blob/main`;
-
-    ConfigManager.getConfig
   }
 
   private getFileName(filePath: string): string {
@@ -437,41 +435,16 @@ Several files contain potentially sensitive data patterns that shouldn't be logg
     ].join('\n');
   }
 
-  public saveReportToFile(outputPath: string): void {
-
+  public async saveReportToFile(outputPath: string): Promise<void> {
     const outputFile = outputPath || `xfi-report-${this.repoName}-${getFormattedDate()}.md`;
-
     const report = this.generateReport();
-    fs.writeFileSync(outputPath, report);
-    logger.info(`Report saved to ${outputFile}`);
+    
+    try {
+      await fs.writeFile(outputPath, report);
+      logger.info(`Report saved to ${outputFile}`);
+    } catch (error) {
+      logger.error(`Failed to save report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
+    }
   }
 }
-
-function main() {
-  const args = process.argv.slice(2);
-  
-  if (args.length < 1) {
-    console.log('Usage: node reportGenerator.js <input-json-file> [output-markdown-file]');
-    process.exit(1);
-  }
-  
-  try {
-    const inputFile = args[0];
-    const jsonData = JSON.parse(fs.readFileSync(inputFile, 'utf8'));
-    const generator = new XFiReportGenerator(jsonData);
-
-    const outputFile = args[1] || `xfi-report-${generator.repoName}-${getFormattedDate()}.md`;
-
-    generator.saveReportToFile(outputFile);
-  } catch (error) {
-    console.error('Error processing the report:', error);
-    process.exit(1);
-  }
-}
-
-// Run the script if executed directly
-if (require.main === module) {
-  main();
-}
-
-export { XFiReportGenerator };
