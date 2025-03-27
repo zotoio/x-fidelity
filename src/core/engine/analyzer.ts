@@ -184,6 +184,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             telemetryData,
             memoryUsage,
             repoXFIConfig: repoXFIConfig,
+            factMetrics: factMetricsTracker.getMetrics(),
             issueDetails: failures,
             startTime: telemetryData.startTime,
             finishTime: finishTime,
@@ -197,8 +198,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             options,
             repoPath,
             repoUrl,
-            xfiVersion: version,
-            factMetrics: factMetricsTracker.getMetrics()
+            xfiVersion: version
         }
     }
     

@@ -12,7 +12,7 @@ export class FactMetricsTracker {
     private metrics: Map<string, {
         executionCount: number;
         totalExecutionTime: number;
-        lastExecutionTime?: number;
+        longestExecutionTime: number;
     }> = new Map();
 
     private constructor() {}
@@ -36,13 +36,14 @@ export class FactMetricsTracker {
             
             const current = this.metrics.get(factName) || { 
                 executionCount: 0, 
-                totalExecutionTime: 0 
+                totalExecutionTime: 0,
+                longestExecutionTime: 0
             };
 
             this.metrics.set(factName, {
                 executionCount: current.executionCount + 1,
                 totalExecutionTime: current.totalExecutionTime + executionTime,
-                lastExecutionTime: executionTime
+                longestExecutionTime: Math.max(executionTime, current.longestExecutionTime || 0)
             });
 
             logger.debug({

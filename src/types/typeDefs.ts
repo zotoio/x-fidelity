@@ -180,7 +180,7 @@ export interface FactMetrics {
     executionCount: number;
     totalExecutionTime: number;
     averageExecutionTime: number;
-    lastExecutionTime?: number;
+    longestExecutionTime: number;  // milliseconds to 5 decimal places
 }
 
 export interface ResultMetadata {
