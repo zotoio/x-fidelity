@@ -137,13 +137,29 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
 
     if (isOpenAIEnabled() && archetypeConfig.facts.includes('openaiAnalysisFacts')) {
         logger.info(`adding additional openai facts to engine..`);
-        engine.addFact('openaiAnalysis', openaiAnalysis);
+        engine.addFact('openaiAnalysis', async (params: any, almanac: any) => {
+            return factMetricsTracker.trackFactExecution('openaiAnalysis', 
+                () => openaiAnalysis(params, almanac)
+            );
+        });
+        // Static data doesn't need execution tracking
         engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
     }
 
     // add functions for dependency and file analysis
-    engine.addFact('repoDependencyAnalysis', repoDependencyAnalysis);
-    engine.addFact('repoFileAnalysis', repoFileAnalysis);
+    engine.addFact('repoDependencyAnalysis', async (params: any, almanac: any) => {
+        return factMetricsTracker.trackFactExecution('repoDependencyAnalysis', 
+            () => repoDependencyAnalysis(params, almanac)
+        );
+    });
+    
+    engine.addFact('repoFileAnalysis', async (params: any, almanac: any) => {
+        return factMetricsTracker.trackFactExecution('repoFileAnalysis', 
+            () => repoFileAnalysis(params, almanac)
+        );
+    });
+
+    // Static data doesn't need execution tracking
     engine.addFact('globalFileMetadata', fileData, { priority: 50 });
 
     logger.trace(fileData, 'Added globalFileData as fact');
