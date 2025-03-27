@@ -27,7 +27,7 @@ export class FactMetricsTracker {
             return result;
         } finally {
             const [seconds, nanoseconds] = process.hrtime(startTime);
-            const executionTime = seconds + nanoseconds / 1e9; // Convert to seconds with 6 decimal precision
+            const executionTime = Number((seconds + nanoseconds / 1e9).toFixed(3)); // Convert to seconds with 3 decimal precision
             
             const current = this.metrics.get(factName) || { 
                 executionCount: 0, 
@@ -54,7 +54,7 @@ export class FactMetricsTracker {
         this.metrics.forEach((value, key) => {
             result[key] = {
                 ...value,
-                averageExecutionTime: value.totalExecutionTime / value.executionCount
+                averageExecutionTime: Number((value.totalExecutionTime / value.executionCount).toFixed(3))
             };
         });
         return result;
