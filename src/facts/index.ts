@@ -23,8 +23,9 @@ async function loadFacts(factNames: string[]): Promise<FactDefn[]> {
         repoDependencyFacts: { 
             name: 'dependencyData', 
             fn: async (params: any, almanac: any) => {
+                const archetypeConfig = await almanac.factValue('archetypeConfig');
                 return factMetricsTracker.trackFactExecution('dependencyData', 
-                    () => getDependencyVersionFacts(params, almanac)
+                    () => getDependencyVersionFacts(archetypeConfig)
                 );
             }
         },
