@@ -1,6 +1,6 @@
 import { logger } from '../../utils/logger';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../configManager';
-import { saveReports } from '../reportGenerator';
+import { XFiReportGenerator } from '../../notifications/reportGenerator';
 import { ArchetypeConfig, ResultMetadata } from '../../types/typeDefs';
 import { version } from '../../../package.json';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
@@ -221,7 +221,18 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     
     // Generate reports
     try {
-        await saveReports(resultMetadata);
+        // Save JSON report
+        const jsonReportPath = path.join(process.cwd(), 'xfi-report.json');
+        await fs.writeFile(
+            jsonReportPath,
+            JSON.stringify(resultMetadata, null, 2)
+        );
+        logger.info(`JSON report saved to: ${jsonReportPath}`);
+
+        // Generate and save markdown report
+        const generator = new XFiReportGenerator(resultMetadata);
+        const markdownReportPath = path.join(process.cwd(), `xfi-report-${getFormattedDate()}.md`);
+        generator.saveReportToFile(markdownReportPath);
     } catch (error) {
         logger.error('Failed to save analysis reports - continuing with execution');
     }

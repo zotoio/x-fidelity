@@ -1,12 +1,11 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
-import { ResultMetadata } from '../types';
-import { ConfigManager } from '../core/configManager';
+import { ResultMetadata } from '../types/typeDefs';
 import { options } from '../core/cli';
 import { getFormattedDate } from '../utils/utils';
 import { logger } from '../utils/logger';
 
-class XFiReportGenerator {
+export class XFiReportGenerator {
   private data: ResultMetadata;
   public repoName: string;
   private githubBaseUrl: string;
