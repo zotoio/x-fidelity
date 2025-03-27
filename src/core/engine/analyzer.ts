@@ -4,6 +4,7 @@ import { ArchetypeConfig, ResultMetadata } from '../../types/typeDefs';
 import { version } from '../../../package.json';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { sendTelemetry } from '../../utils/telemetry';
+import { factMetricsTracker } from '../../utils/factMetricsTracker';
 import { collectRepoFileData, repoFileAnalysis } from '../../facts/repoFilesystemFacts';
 import { loadRepoXFIConfig } from '../../utils/repoXFIConfigLoader';
 import { getDependencyVersionFacts, repoDependencyAnalysis } from '../../facts/repoDependencyFacts';
@@ -20,6 +21,9 @@ import { options } from '../cli';
 
 export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<ResultMetadata> {
     const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '', executionLogPrefix = '' } = params;
+    
+    // Reset metrics at start of analysis
+    factMetricsTracker.reset();
     
     logger.info(`STARTING..`);
 
@@ -193,7 +197,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             options,
             repoPath,
             repoUrl,
-            xfiVersion: version
+            xfiVersion: version,
+            factMetrics: factMetricsTracker.getMetrics()
         }
     }
     

@@ -176,6 +176,13 @@ export interface StartServerParams {
     executionLogPrefix?: string;
 }
 
+export interface FactMetrics {
+    executionCount: number;
+    totalExecutionTime: number;
+    averageExecutionTime: number;
+    lastExecutionTime?: number;
+}
+
 export interface ResultMetadata {
     XFI_RESULT: {
         archetype: string;
@@ -196,6 +203,9 @@ export interface ResultMetadata {
         memoryUsage: any;
         repoUrl: string;
         xfiVersion: string;
+        factMetrics: {
+            [factName: string]: FactMetrics;
+        };
     };
 }
 
