@@ -235,7 +235,11 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         // Generate and save markdown report
         const generator = new XFiReportGenerator(resultMetadata);
         const markdownReportPath = path.join(process.cwd(), `xfi-report-${getFormattedDate()}.md`);
-        generator.saveReportToFile(markdownReportPath);
+        try {
+            await generator.saveReportToFile(markdownReportPath);
+        } catch (error) {
+            logger.error(`Failed to generate markdown report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
     } catch (error) {
         logger.error('Failed to save analysis reports - continuing with execution');
     }
