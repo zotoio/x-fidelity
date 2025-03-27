@@ -225,7 +225,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     // Generate reports
     try {
         // Save JSON report
-        const jsonReportPath = path.join(process.cwd(), 'xfi-report.json');
+        const jsonReportPath = path.join(process.cwd(), `xfi-report-${getFormattedDate()}.json`);
         await fs.writeFile(
             jsonReportPath,
             JSON.stringify(resultMetadata, null, 2)
