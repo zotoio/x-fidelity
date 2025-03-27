@@ -1,5 +1,6 @@
 import { logger } from '../../utils/logger';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../configManager';
+import { saveReports } from '../reportGenerator';
 import { ArchetypeConfig, ResultMetadata } from '../../types/typeDefs';
 import { version } from '../../../package.json';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
@@ -216,6 +217,13 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             repoUrl,
             xfiVersion: version
         }
+    }
+    
+    // Generate reports
+    try {
+        await saveReports(resultMetadata);
+    } catch (error) {
+        logger.error('Failed to save analysis reports - continuing with execution');
     }
     
     // Send telemetry for analysis end
