@@ -439,7 +439,23 @@ Several files contain potentially sensitive data patterns that shouldn't be logg
     const outputFile = outputPath || `xfi-report-${this.repoName}-${getFormattedDate()}.md`;
     const report = this.generateReport();
     
+    logger.debug({
+      outputPath,
+      reportLength: report.length,
+      hasContent: Boolean(report),
+      sections: {
+        executiveSummary: Boolean(this.generateExecutiveSummary()),
+        fileStatus: Boolean(this.generateFileStatusChart()),
+        topRuleFailures: Boolean(this.generateTopRuleFailuresChart()),
+        fileIssues: Boolean(this.generateFileIssuesChart()),
+        factMetrics: Boolean(this.generateFactMetricsChart())
+      }
+    }, 'Generating report');
+
     try {
+      if (!report) {
+        throw new Error('Generated report is empty');
+      }
       await fs.writeFile(outputPath, report);
       logger.info(`Report saved to ${outputFile}`);
     } catch (error) {
