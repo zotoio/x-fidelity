@@ -232,17 +232,27 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
         const dependencyData: any = await almanac.factValue('dependencyData');
         const safeDependencyData = safeClone(dependencyData);
 
-        safeDependencyData.installedDependencyVersions.forEach((versionData: VersionData) => { 
+        // Use rule-provided versions if they exist, otherwise use the ones from dependencyData
+        const versionsToCheck = params?.minimumDependencyVersions ? 
+            safeDependencyData.installedDependencyVersions.filter((versionData: VersionData) => 
+                params.minimumDependencyVersions[versionData.dep]) :
+            safeDependencyData.installedDependencyVersions;
+
+        versionsToCheck.forEach((versionData: VersionData) => { 
             logger.debug(`outdatedFramework: checking ${versionData.dep}`);
 
             try {
                 // Check if the installed version satisfies the required version, supporting both ranges and specific versions
-                const isValid = semverValid(versionData.ver, versionData.min);
+                // Get required version from rule params if it exists, otherwise from archetype config
+                const requiredVersion = params?.minimumDependencyVersions?.[versionData.dep] || versionData.min;
+                
+                // Check if the installed version satisfies the required version
+                const isValid = semverValid(versionData.ver, requiredVersion);
                 if (!isValid && semver.valid(versionData.ver)) {
                     const dependencyFailure = {
                         'dependency': versionData.dep,
                         'currentVersion': versionData.ver,
-                        'requiredVersion': versionData.min
+                        'requiredVersion': requiredVersion
                     };
                     
                     logger.error(`dependencyFailure: ${safeStringify(dependencyFailure)}`);
