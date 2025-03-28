@@ -9,9 +9,15 @@
                 "value": "REPO_GLOBAL_CHECK"
             },
             {
-                "fact": "repoDependencyAnalysis",
+                "fact": "repoDependencyAnalysis", 
                 "params": {
-                    "resultFact": "repoDependencyResults"
+                    "resultFact": "repoDependencyResults",
+                    "minimumDependencyVersions": {
+                        "typescript": "5.0.0",
+                        "node": "18.0.0",
+                        "react": "18.2.0",
+                        "next": "13.0.0"
+                    }
                 },
                 "operator": "outdatedFramework",
                 "value": true
@@ -21,7 +27,7 @@
     "event": {
         "type": "fatality",
         "params": {
-            "message": "some core framework dependencies have expired!",
+            "message": "Core framework dependencies do not meet minimum version requirements! Please update your dependencies to the required versions.",
             "details": {
                 "fact": "repoDependencyResults"
             }
@@ -29,7 +35,7 @@
     },
     "errorBehavior": "fatal",
     "onError": {
-        "action": "sendNotification",
+        "action": "sendNotification", 
         "params": {
             "channel": "security-alerts",
             "priority": "high"
