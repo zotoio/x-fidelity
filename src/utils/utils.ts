@@ -1,6 +1,11 @@
 import { ScanResult } from "../types/typeDefs";
 import { logger } from './logger';
 
+export function getFormattedDate(): string {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+}
+
 export const countRuleFailures = (scanResults: ScanResult[], level?: string): number => {
     return scanResults.reduce((total, scanResult) => {
         const filteredErrors = level 
