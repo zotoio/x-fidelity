@@ -7,6 +7,8 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+xfi-report*
+
 # bats test_helpers
 test_helper/
 
