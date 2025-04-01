@@ -1,9 +1,9 @@
 import { logger } from '../utils/logger';
-import { OperatorDefn } from '../types/typeDefs';
+import { OperatorDefn, RatioThreshold } from '../types/typeDefs';
 
 const globalPatternCount: OperatorDefn = {
     'name': 'globalPatternCount',
-    'fn': (analysisResult: any, threshold: number) => {
+    'fn': (analysisResult: any, threshold: number | RatioThreshold) => {
         try {
             logger.trace(`globalPatternCount: processing ${JSON.stringify(analysisResult)}`);
             
@@ -12,13 +12,26 @@ const globalPatternCount: OperatorDefn = {
                 return false;
             }
             
+            // Parse threshold and comparison type
+            let thresholdValue: number;
+            let comparisonType: 'gte' | 'lte' = 'gte'; // Default to greater than or equal
+            
+            if (typeof threshold === 'object' && threshold !== null) {
+                thresholdValue = threshold.threshold;
+                if (threshold.comparison) {
+                    comparisonType = threshold.comparison;
+                }
+            } else {
+                thresholdValue = threshold as number;
+            }
+            
             // Check if we have new pattern totals
             if (analysisResult.summary.newPatternsTotal !== undefined) {
                 const newTotal = analysisResult.summary.newPatternsTotal;
-                logger.info(`globalPatternCount: new patterns total: ${newTotal}, threshold: ${threshold}`);
+                logger.info(`globalPatternCount: new patterns total: ${newTotal}, threshold: ${thresholdValue}, comparison: ${comparisonType}`);
                 
-                // Compare count with threshold
-                return newTotal >= threshold;
+                // Compare count with threshold based on comparison type
+                return comparisonType === 'gte' ? newTotal >= thresholdValue : newTotal <= thresholdValue;
             }
             
             // Fallback to original behavior for backward compatibility
@@ -30,10 +43,10 @@ const globalPatternCount: OperatorDefn = {
             
             // Get count for the first pattern
             const patternCount = analysisResult.matchCounts[patterns[0]] || 0;
-            logger.info(`globalPatternCount: ${patternCount}, threshold: ${threshold}`);
+            logger.info(`globalPatternCount: ${patternCount}, threshold: ${thresholdValue}, comparison: ${comparisonType}`);
             
-            // Compare count with threshold
-            return patternCount >= threshold;
+            // Compare count with threshold based on comparison type
+            return comparisonType === 'gte' ? patternCount >= thresholdValue : patternCount <= thresholdValue;
         } catch (e) {
             logger.error(`globalPatternCount error: ${e}`);
             return false;
