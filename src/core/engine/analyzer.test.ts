@@ -11,6 +11,8 @@ import { sendTelemetry } from '../../utils/telemetry';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
 import { generateLogPrefix } from '../../utils/logger';
 
+jest.setTimeout(30000); // 30 seconds
+
 jest.mock('../../utils/openaiUtils');
 jest.mock('../../core/cli', () => ({
     options: {

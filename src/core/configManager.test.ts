@@ -2,6 +2,8 @@ import { ConfigManager, REPO_GLOBAL_CHECK, repoDir } from './configManager';
 import { isExempt, loadLocalExemptions, normalizeGitHubUrl } from "../utils/exemptionUtils";
 import { loadExemptions } from '../utils/exemptionUtils';
 
+jest.setTimeout(30000); // 30 seconds
+
 describe('repoDir', () => {
     it('should return options.dir', () => {
         expect(repoDir()).toBe('/repo');

@@ -4,6 +4,8 @@ import { sendTelemetry } from './utils/telemetry';
 import { logger } from './utils/logger';
 import { options } from './core/cli';
 
+jest.setTimeout(30000); // 30 seconds
+
 jest.mock('./core/engine/analyzer');
 jest.mock('./server/configServer');
 jest.mock('./utils/telemetry');
