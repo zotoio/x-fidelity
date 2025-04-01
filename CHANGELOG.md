@@ -1,3 +1,31 @@
+# [3.20.0](https://github.com/zotoio/x-fidelity/compare/v3.19.1...v3.20.0) (2025-04-01)
+
+
+### Bug Fixes
+
+* add error handling and await for markdown report generation ([c199ffe](https://github.com/zotoio/x-fidelity/commit/c199ffe7bdc2de689baf939441e0819f7637b2ea))
+* add missing imports and convert fs operations to async ([a9185b0](https://github.com/zotoio/x-fidelity/commit/a9185b0da399ba3b5500a6a5c27415b41f220061))
+* correct line number property reference in sensitive data report ([53c3da2](https://github.com/zotoio/x-fidelity/commit/53c3da25f4d47b008d3159de03c39fb54052731a))
+* update execution time precision to 4 decimal places and round totals ([04ef987](https://github.com/zotoio/x-fidelity/commit/04ef9878c43cef8184f6cb26f0ec1bab1363dc5e))
+* update getDependencyVersionFacts to use correct argument ([890f27c](https://github.com/zotoio/x-fidelity/commit/890f27c8960186ae4cbeed0589b92833cfdacb27))
+* update property names for sensitive data table generation ([1e1bfaf](https://github.com/zotoio/x-fidelity/commit/1e1bfafc2753aca5f64819a1c82ec5e8c9dbf222))
+* use correct property name for sensitive data match pattern ([49b3914](https://github.com/zotoio/x-fidelity/commit/49b3914ee5bfd744eb06fe62ee765622ffaab8f2))
+
+
+### Features
+
+* add average execution time per fact in pie chart labels ([4cdf959](https://github.com/zotoio/x-fidelity/commit/4cdf95916389b5b4181a502b7edcbb1ce3f9e958))
+* add debug logging for empty report diagnosis ([ef55d2c](https://github.com/zotoio/x-fidelity/commit/ef55d2ca9570f30f0ae5f9d1c12c924bbcd5caa9))
+* add fact execution metrics tracking and reporting ([dc3c541](https://github.com/zotoio/x-fidelity/commit/dc3c541370f93225280b713c8017306dd2f3c4d8))
+* add getFormattedDate utility function for date formatting ([3586378](https://github.com/zotoio/x-fidelity/commit/3586378394f646102e80ca1d22d4f691fdb66a1a))
+* add line number anchors to report table URLs ([a8723ce](https://github.com/zotoio/x-fidelity/commit/a8723cefc2250c096c8af5fd9cd1fc66649fce73))
+* add line number anchors to sensitive data issue links ([f8488ea](https://github.com/zotoio/x-fidelity/commit/f8488ea01a12edb579b6cf370ea16cf6ab139cb5))
+* add metrics tracking for dynamic fact executions ([757853f](https://github.com/zotoio/x-fidelity/commit/757853f5a3241e72d88ff57165b99e05334ab01d))
+* add minimum version requirements to outdatedFramework rule ([3412333](https://github.com/zotoio/x-fidelity/commit/3412333dd2110e0cf0b50664407736528e531117))
+* add repo name and date to report title ([f00855e](https://github.com/zotoio/x-fidelity/commit/f00855e4b5c2b400baaa4e8ee769cca8553d1ace))
+* add report generation with JSON and Markdown output ([0b735e4](https://github.com/zotoio/x-fidelity/commit/0b735e4a86cd043c57f1e01160264641b151247d))
+* add report generator for X-Fidelity analysis results ([e58d56d](https://github.com/zotoio/x-fidelity/commit/e58d56d510aadbd417c3950372680f704389788f))
+
 ## [3.19.1](https://github.com/zotoio/x-fidelity/compare/v3.19.0...v3.19.1) (2025-03-25)
 
 
