@@ -170,7 +170,7 @@ describe('globalFileAnalysis', () => {
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
         expect(logger.error).toHaveBeenCalledWith(`Error in globalFileAnalysis: Error: Test error`);
-        expect(result).toEqual({ matchCounts: {}, fileMatches: {} });
+        expect(result).toEqual({ matchCounts: {}, fileMatches: {}, fileResults: {}, fileResultsArray: [] });
     });
 
     it('should handle invalid globalFileMetadata', async () => {
@@ -184,7 +184,7 @@ describe('globalFileAnalysis', () => {
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
         expect(logger.error).toHaveBeenCalledWith('Invalid globalFileMetadata');
-        expect(result).toEqual({ matchCounts: {}, fileMatches: {} });
+        expect(result).toEqual({ matchCounts: {}, fileMatches: {}, fileResults: {}, fileResultsArray: [] });
     });
 
     it('should support file-centric output format', async () => {
