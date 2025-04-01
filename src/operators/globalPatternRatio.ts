@@ -1,15 +1,33 @@
 import { logger } from '../utils/logger';
 import { OperatorDefn } from '../types/typeDefs';
 
+interface RatioThreshold {
+    value: number;
+    comparison?: 'gte' | 'lte'; // greater than or equal, less than or equal
+}
+
 const globalPatternRatio: OperatorDefn = {
     'name': 'globalPatternRatio',
-    'fn': (analysisResult: any, threshold: number) => {
+    'fn': (analysisResult: any, threshold: number | RatioThreshold) => {
         try {
             logger.trace(`globalPatternRatio: processing ${JSON.stringify(analysisResult)}`);
             
             if (!analysisResult || !analysisResult.summary) {
                 logger.debug('globalPatternRatio: no analysis result available');
                 return false;
+            }
+            
+            // Parse threshold and comparison type
+            let thresholdValue: number;
+            let comparisonType: 'gte' | 'lte' = 'gte'; // Default to greater than or equal
+            
+            if (typeof threshold === 'object' && threshold !== null) {
+                thresholdValue = threshold.value;
+                if (threshold.comparison) {
+                    comparisonType = threshold.comparison;
+                }
+            } else {
+                thresholdValue = threshold as number;
             }
             
             // Check if we have new and legacy pattern totals
@@ -28,10 +46,10 @@ const globalPatternRatio: OperatorDefn = {
                 
                 // Calculate ratio of new patterns to total patterns
                 const ratio = newTotal / total;
-                logger.info(`globalPatternRatio: ${newTotal}/(${newTotal}+${legacyTotal}) = ${ratio}, threshold: ${threshold}`);
+                logger.info(`globalPatternRatio: ${newTotal}/(${newTotal}+${legacyTotal}) = ${ratio}, threshold: ${thresholdValue}, comparison: ${comparisonType}`);
                 
-                // Compare ratio with threshold
-                return ratio >= threshold;
+                // Compare ratio with threshold based on comparison type
+                return comparisonType === 'gte' ? ratio >= thresholdValue : ratio <= thresholdValue;
             }
             
             // Fallback to original behavior for backward compatibility
@@ -52,10 +70,10 @@ const globalPatternRatio: OperatorDefn = {
             }
             
             const ratio = pattern1Count / pattern2Count;
-            logger.info(`globalPatternRatio: ${pattern1Count}/${pattern2Count} = ${ratio}, threshold: ${threshold}`);
+            logger.info(`globalPatternRatio: ${pattern1Count}/${pattern2Count} = ${ratio}, threshold: ${thresholdValue}, comparison: ${comparisonType}`);
             
-            // Compare ratio with threshold
-            return ratio >= threshold;
+            // Compare ratio with threshold based on comparison type
+            return comparisonType === 'gte' ? ratio >= thresholdValue : ratio <= thresholdValue;
         } catch (e) {
             logger.error(`globalPatternRatio error: ${e}`);
             return false;

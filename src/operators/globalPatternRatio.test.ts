@@ -12,7 +12,11 @@ jest.mock('../utils/logger', () => ({
 }));
 
 describe('globalPatternRatio', () => {
-    it('should return true when ratio exceeds threshold', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('should return true when ratio exceeds threshold with default gte comparison', () => {
         const analysisResult = {
             matchCounts: {
                 'newApiMethod\\(': 8,
@@ -27,7 +31,22 @@ describe('globalPatternRatio', () => {
         expect(globalPatternRatio.fn(analysisResult, 3)).toBe(true);
     });
 
-    it('should return false when ratio is below threshold', () => {
+    it('should return true when ratio exceeds threshold with explicit gte comparison', () => {
+        const analysisResult = {
+            matchCounts: {
+                'newApiMethod\\(': 8,
+                'legacyApiMethod\\(': 2
+            },
+            summary: {
+                totalFiles: 5,
+                totalMatches: 10
+            }
+        };
+        
+        expect(globalPatternRatio.fn(analysisResult, { value: 3, comparison: 'gte' })).toBe(true);
+    });
+
+    it('should return false when ratio is below threshold with gte comparison', () => {
         const analysisResult = {
             matchCounts: {
                 'newApiMethod\\(': 4,
@@ -39,23 +58,79 @@ describe('globalPatternRatio', () => {
             }
         };
         
-        expect(globalPatternRatio.fn(analysisResult, 1)).toBe(false);
+        expect(globalPatternRatio.fn(analysisResult, { value: 1, comparison: 'gte' })).toBe(false);
+    });
+
+    it('should return true when ratio is below threshold with lte comparison', () => {
+        const analysisResult = {
+            matchCounts: {
+                'newApiMethod\\(': 4,
+                'legacyApiMethod\\(': 6
+            },
+            summary: {
+                totalFiles: 5,
+                totalMatches: 10
+            }
+        };
+        
+        expect(globalPatternRatio.fn(analysisResult, { value: 1, comparison: 'lte' })).toBe(true);
+    });
+
+    it('should return false when ratio exceeds threshold with lte comparison', () => {
+        const analysisResult = {
+            matchCounts: {
+                'newApiMethod\\(': 8,
+                'legacyApiMethod\\(': 2
+            },
+            summary: {
+                totalFiles: 5,
+                totalMatches: 10
+            }
+        };
+        
+        expect(globalPatternRatio.fn(analysisResult, { value: 3, comparison: 'lte' })).toBe(false);
     });
 
     it('should handle edge cases', () => {
         // No patterns
-        expect(globalPatternRatio.fn({ matchCounts: {}, summary: {} }, 1)).toBe(false);
+        expect(globalPatternRatio.fn({ matchCounts: {}, summary: {} }, { value: 1, comparison: 'gte' })).toBe(false);
         
         // Only one pattern
         expect(globalPatternRatio.fn({ 
             matchCounts: { 'pattern1': 5 }, 
             summary: { totalMatches: 5 } 
-        }, 1)).toBe(false);
+        }, { value: 1, comparison: 'gte' })).toBe(false);
         
         // Denominator is zero
         expect(globalPatternRatio.fn({ 
             matchCounts: { 'pattern1': 5, 'pattern2': 0 }, 
             summary: { totalMatches: 5 } 
-        }, 1)).toBe(false);
+        }, { value: 1, comparison: 'gte' })).toBe(false);
+    });
+
+    it('should handle new pattern totals with lte comparison', () => {
+        const analysisResult = {
+            summary: {
+                newPatternsTotal: 3,
+                legacyPatternsTotal: 7,
+                totalFiles: 5
+            }
+        };
+        
+        // 3/(3+7) = 0.3, which is <= 0.5
+        expect(globalPatternRatio.fn(analysisResult, { value: 0.5, comparison: 'lte' })).toBe(true);
+    });
+
+    it('should handle new pattern totals with gte comparison', () => {
+        const analysisResult = {
+            summary: {
+                newPatternsTotal: 7,
+                legacyPatternsTotal: 3,
+                totalFiles: 5
+            }
+        };
+        
+        // 7/(7+3) = 0.7, which is >= 0.5
+        expect(globalPatternRatio.fn(analysisResult, { value: 0.5, comparison: 'gte' })).toBe(true);
     });
 });
