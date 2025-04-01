@@ -169,7 +169,7 @@ describe('globalFileAnalysis', () => {
 
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
-        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Error in globalFileAnalysis'), expect.any(Error));
+        expect(logger.error).toHaveBeenCalledWith(`Error in globalFileAnalysis: ${expect.any(Error)}`);
         expect(result).toEqual({ matchCounts: {}, fileMatches: {} });
     });
 
