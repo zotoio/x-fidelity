@@ -5,7 +5,7 @@ import { maskSensitiveData } from '../utils/maskSensitiveData';
 export const globalFileAnalysis: FactDefn = {
     name: 'globalFileAnalysis',
     fn: async (params: any, almanac: any) => {
-        const result: any = { result: [], matchCounts: {}, fileMatches: {} };
+        const result: any = { matchCounts: {}, fileMatches: {} };
         
         try {
             // Get all file data from the almanac
@@ -89,7 +89,7 @@ export const globalFileAnalysis: FactDefn = {
             result.summary = {
                 totalFiles: filteredFiles.length,
                 totalMatches: Object.values(result.matchCounts).reduce((sum: number, count: unknown) => sum + (count as number), 0),
-                patternCounts: result.matchCounts,
+                //patternCounts: result.matchCounts,
                 newPatternCounts: newPatterns.reduce((counts: Record<string, number>, pattern: string) => {
                     counts[pattern] = result.matchCounts[pattern] || 0;
                     return counts;
