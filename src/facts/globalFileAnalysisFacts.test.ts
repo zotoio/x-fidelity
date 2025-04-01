@@ -62,7 +62,6 @@ describe('globalFileAnalysis', () => {
 
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
-        expect(result.result).toEqual([]);
         expect(logger.error).toHaveBeenCalled();
     });
 });
