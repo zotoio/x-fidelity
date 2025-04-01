@@ -188,6 +188,7 @@ describe('globalFileAnalysis', () => {
     });
 
     it('should support file-centric output format', async () => {
+        // Mock the file data with content that will definitely match our patterns
         mockAlmanac.factValue.mockResolvedValue([
             {
                 fileName: 'file1.ts',
@@ -201,6 +202,7 @@ describe('globalFileAnalysis', () => {
             }
         ]);
 
+        // Use the exact same pattern strings that appear in the file content
         const params = {
             patterns: ['pattern1\\(', 'pattern2\\('],
             fileFilter: '\\.ts$',
@@ -210,13 +212,25 @@ describe('globalFileAnalysis', () => {
 
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
+        // Check that the file-centric output properties exist
         expect(result).toHaveProperty('fileResults');
         expect(result).toHaveProperty('fileResultsArray');
-        expect(result.fileResultsArray).toHaveLength(2);
+        
+        // Verify the file results array has the expected length
+        expect(result.fileResultsArray.length).toBe(2);
+        
+        // Check that the pattern matches exist for each file
+        expect(result.fileResults['/path/to/file1.ts']).toBeDefined();
+        expect(result.fileResults['/path/to/file1.ts'].patternMatches).toBeDefined();
         expect(result.fileResults['/path/to/file1.ts'].patternMatches['pattern1\\(']).toBeDefined();
         expect(result.fileResults['/path/to/file1.ts'].patternMatches['pattern2\\(']).toBeDefined();
+        
+        expect(result.fileResults['/path/to/file2.ts']).toBeDefined();
+        expect(result.fileResults['/path/to/file2.ts'].patternMatches).toBeDefined();
         expect(result.fileResults['/path/to/file2.ts'].patternMatches['pattern1\\(']).toBeDefined();
         expect(result.fileResults['/path/to/file2.ts'].patternMatches['pattern2\\(']).toBeUndefined();
+        
+        // Verify the runtime fact was added
         expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('fileCentricAnalysis', expect.any(Object));
     });
 });
