@@ -60,15 +60,9 @@ export const globalFileAnalysis: FactDefn = {
                 
                 const lines = fileContent.split('\n');
                 
-                // Initialize file entry for file-centric output
-                if (outputFormat === 'file') {
-                    fileResults[file.filePath] = {
-                        fileName: file.fileName,
-                        filePath: file.filePath,
-                        patternMatches: {},
-                        totalMatches: 0
-                    };
-                }
+                // We'll initialize the file entry only if we find matches
+                let fileHasMatches = false;
+                let fileEntry: any;
                 
                 // Check each pattern against the file
                 for (const pattern of allPatterns) {
@@ -102,14 +96,29 @@ export const globalFileAnalysis: FactDefn = {
                                 matches: matchDetails
                             });
                         } else {
-                            // File-centric output
-                            fileResults[file.filePath].patternMatches[pattern] = {
+                            // File-centric output - initialize file entry if this is the first match
+                            if (!fileHasMatches) {
+                                fileHasMatches = true;
+                                fileEntry = {
+                                    fileName: file.fileName,
+                                    filePath: file.filePath,
+                                    patternMatches: {},
+                                    totalMatches: 0
+                                };
+                            }
+                            
+                            fileEntry.patternMatches[pattern] = {
                                 matchCount: fileMatches,
                                 matches: matchDetails
                             };
-                            fileResults[file.filePath].totalMatches += fileMatches;
+                            fileEntry.totalMatches += fileMatches;
                         }
                     }
+                }
+                
+                // Add the file entry to fileResults if matches were found
+                if (outputFormat === 'file' && fileHasMatches) {
+                    fileResults[file.filePath] = fileEntry;
                 }
             }
             
