@@ -5,7 +5,12 @@ import { maskSensitiveData } from '../utils/maskSensitiveData';
 export const globalFileAnalysis: FactDefn = {
     name: 'globalFileAnalysis',
     fn: async (params: any, almanac: any) => {
-        const result: any = { matchCounts: {}, fileMatches: {} };
+        const result: any = { 
+            matchCounts: {}, 
+            fileMatches: {},
+            fileResults: {},
+            fileResultsArray: []
+        };
         
         try {
             // Get all file data from the almanac

@@ -210,7 +210,8 @@ describe('globalFileAnalysis', () => {
 
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
-        expect(result.fileResults).toBeDefined();
+        expect(result).toHaveProperty('fileResults');
+        expect(result).toHaveProperty('fileResultsArray');
         expect(result.fileResultsArray).toHaveLength(2);
         expect(result.fileResults['/path/to/file1.ts'].patternMatches['pattern1\\(']).toBeDefined();
         expect(result.fileResults['/path/to/file1.ts'].patternMatches['pattern2\\(']).toBeDefined();
