@@ -186,4 +186,36 @@ describe('globalFileAnalysis', () => {
         expect(logger.error).toHaveBeenCalledWith('Invalid globalFileMetadata');
         expect(result).toEqual({ matchCounts: {}, fileMatches: {} });
     });
+
+    it('should support file-centric output format', async () => {
+        mockAlmanac.factValue.mockResolvedValue([
+            {
+                fileName: 'file1.ts',
+                filePath: '/path/to/file1.ts',
+                fileContent: 'function test() { pattern1(); pattern2(); }'
+            },
+            {
+                fileName: 'file2.ts',
+                filePath: '/path/to/file2.ts',
+                fileContent: 'function test2() { pattern1(); }'
+            }
+        ]);
+
+        const params = {
+            patterns: ['pattern1\\(', 'pattern2\\('],
+            fileFilter: '\\.ts$',
+            resultFact: 'fileCentricAnalysis',
+            outputFormat: 'file'
+        };
+
+        const result = await globalFileAnalysis.fn(params, mockAlmanac);
+
+        expect(result.fileResults).toBeDefined();
+        expect(result.fileResultsArray).toHaveLength(2);
+        expect(result.fileResults['/path/to/file1.ts'].patternMatches['pattern1\\(']).toBeDefined();
+        expect(result.fileResults['/path/to/file1.ts'].patternMatches['pattern2\\(']).toBeDefined();
+        expect(result.fileResults['/path/to/file2.ts'].patternMatches['pattern1\\(']).toBeDefined();
+        expect(result.fileResults['/path/to/file2.ts'].patternMatches['pattern2\\(']).toBeUndefined();
+        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('fileCentricAnalysis', expect.any(Object));
+    });
 });

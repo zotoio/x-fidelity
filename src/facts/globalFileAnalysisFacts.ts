@@ -24,6 +24,9 @@ export const globalFileAnalysis: FactDefn = {
             const fileFilter = params.fileFilter || '.*';
             const fileFilterRegex = new RegExp(fileFilter);
             
+            // New parameter to control output format - default to 'pattern' for backward compatibility
+            const outputFormat = params.outputFormat || 'pattern'; // 'pattern' or 'file'
+            
             // Combine all patterns for processing
             const allPatterns = [...newPatterns, ...legacyPatterns, ...patterns];
             
@@ -42,12 +45,25 @@ export const globalFileAnalysis: FactDefn = {
                 result.fileMatches[pattern] = [];
             });
             
+            // For file-centric output
+            const fileResults: Record<string, any> = {};
+            
             // Process each file
             for (const file of filteredFiles) {
                 const fileContent = file.fileContent;
                 if (!fileContent) continue;
                 
                 const lines = fileContent.split('\n');
+                
+                // Initialize file entry for file-centric output
+                if (outputFormat === 'file') {
+                    fileResults[file.filePath] = {
+                        fileName: file.fileName,
+                        filePath: file.filePath,
+                        patternMatches: {},
+                        totalMatches: 0
+                    };
+                }
                 
                 // Check each pattern against the file
                 for (const pattern of allPatterns) {
@@ -72,11 +88,22 @@ export const globalFileAnalysis: FactDefn = {
                     // Update results if matches found
                     if (fileMatches > 0) {
                         result.matchCounts[pattern] += fileMatches;
-                        result.fileMatches[pattern].push({
-                            filePath: file.filePath,
-                            matchCount: fileMatches,
-                            matches: matchDetails
-                        });
+                        
+                        if (outputFormat === 'pattern') {
+                            // Pattern-centric output (original)
+                            result.fileMatches[pattern].push({
+                                filePath: file.filePath,
+                                matchCount: fileMatches,
+                                matches: matchDetails
+                            });
+                        } else {
+                            // File-centric output
+                            fileResults[file.filePath].patternMatches[pattern] = {
+                                matchCount: fileMatches,
+                                matches: matchDetails
+                            };
+                            fileResults[file.filePath].totalMatches += fileMatches;
+                        }
                     }
                 }
             }
@@ -101,6 +128,12 @@ export const globalFileAnalysis: FactDefn = {
                 newPatternsTotal: newPatternsTotal,
                 legacyPatternsTotal: legacyPatternsTotal
             };
+            
+            // Add file-centric results if that format was requested
+            if (outputFormat === 'file') {
+                result.fileResults = fileResults;
+                result.fileResultsArray = Object.values(fileResults);
+            }
             
             // Add the result to the almanac
             almanac.addRuntimeFact(params.resultFact, result);

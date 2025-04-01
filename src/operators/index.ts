@@ -6,6 +6,7 @@ import { openaiAnalysisHighSeverity } from './openaiAnalysisHighSeverity';
 import { regexMatch } from './regexMatch';
 import { globalPatternRatio } from './globalPatternRatio';
 import { globalPatternCount } from './globalPatternCount';
+import { hasFilesWithMultiplePatterns } from './hasFilesWithMultiplePatterns';
 import { getOpenAIStatus } from '../utils/openaiUtils';
 import { logger } from '../utils/logger';
 import { pluginRegistry } from '../core/pluginRegistry';
@@ -20,6 +21,7 @@ async function loadOperators(operatorNames: string[]): Promise<OperatorDefn[]> {
         regexMatch,
         globalPatternRatio,
         globalPatternCount,
+        hasFilesWithMultiplePatterns,
         ...Object.fromEntries(
             pluginRegistry.getPluginOperators().map(op => [op.name, op])
         )
