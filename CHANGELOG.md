@@ -1,3 +1,32 @@
+# [3.22.0](https://github.com/zotoio/x-fidelity/compare/v3.21.1...v3.22.0) (2025-04-02)
+
+
+### Bug Fixes
+
+* access operatorThreshold and operatorValue through details property ([e427e94](https://github.com/zotoio/x-fidelity/commit/e427e942aa0072483e02c62fb6e8af967b6a76cc))
+* add missing logger function mocks in test files ([713a1e9](https://github.com/zotoio/x-fidelity/commit/713a1e969142272f4f9e835ede0853c8e92d1620))
+* add ruleName property to BasicTelemetryMetadata interface ([0c66b78](https://github.com/zotoio/x-fidelity/commit/0c66b787986018250f77f727425dfe012400c2e9))
+* add type assertions for conditionType in engineSetup ([734d492](https://github.com/zotoio/x-fidelity/commit/734d492b09e76531c42d712ff0e70a4150761b55))
+* resolve TypeScript type errors and null safety issues ([bfb892d](https://github.com/zotoio/x-fidelity/commit/bfb892d637519f3d4d7b768067e4f478ad74971a))
+
+
+### Features
+
+* add all condition operators to rule failure details ([023f44f](https://github.com/zotoio/x-fidelity/commit/023f44fffdd82011fc00ea9ae2dabd2ba380e5f7))
+* add all operator value objects to rule results ([c8103c5](https://github.com/zotoio/x-fidelity/commit/c8103c55f60f9da2453305980fe305c57341f961))
+* add backward compatibility for pattern and file output grouping ([db22b70](https://github.com/zotoio/x-fidelity/commit/db22b7084532ddf3edac2b16e7fe30761b15d5d4))
+* add condition details to rule failure output ([168aeec](https://github.com/zotoio/x-fidelity/commit/168aeec2741a22e6706d309b93e361946024a14a))
+* add operator threshold details to rule output and telemetry ([c28974a](https://github.com/zotoio/x-fidelity/commit/c28974a0d1259a943b5afda3ec3f83424c196b16))
+* add operator threshold details to rule output reports ([0ce279d](https://github.com/zotoio/x-fidelity/commit/0ce279d4e480645ba2636beedec5d2fd17f8dadc))
+* add operator value information to report sections ([697a1a3](https://github.com/zotoio/x-fidelity/commit/697a1a36dbb0b6de19b1c5b3be7ca308f757cbbe))
+* add operator value to rule failure details ([ae62f56](https://github.com/zotoio/x-fidelity/commit/ae62f561583209bc8496ff0cd07be597b04909d9))
+* add rule name to log prefix for better traceability ([6a4c4b6](https://github.com/zotoio/x-fidelity/commit/6a4c4b6880c9dfa06bad56a024b3065db771dcdd))
+* enhance rule condition details with descriptions and recommendations ([8eef433](https://github.com/zotoio/x-fidelity/commit/8eef43370c800b5dcb3e9150c858ed7e848abc58))
+* enhance rule condition tracking with detailed condition info ([4e48e7c](https://github.com/zotoio/x-fidelity/commit/4e48e7c63843aef98a6ccbf73cc1252c0e48608c))
+* enhance rule failure reporting with detailed condition information ([915ae09](https://github.com/zotoio/x-fidelity/commit/915ae09a0b3f539d7e48effd3abe26e16d28dee5))
+* enhance XFI_RESULT with detailed rule conditions and recommendations ([7243da5](https://github.com/zotoio/x-fidelity/commit/7243da538f1c37abae2806bc405ec6c251184bb5))
+* include all rule conditions and parameters in output ([ae802bb](https://github.com/zotoio/x-fidelity/commit/ae802bbb41a0613835e4d3e6e477c66abcd8e1ac))
+
 ## [3.21.1](https://github.com/zotoio/x-fidelity/compare/v3.21.0...v3.21.1) (2025-04-02)
 
 
