@@ -148,17 +148,16 @@ describe('globalFileAnalysis', () => {
         const params = {
             patterns: ['pattern\\('],
             fileFilter: '\\.ts$',
-            resultFact: 'lineNumberAnalysis'
+            resultFact: 'lineNumberAnalysis',
+            outputGrouping: 'pattern' // Explicitly set to pattern to ensure patternData is available
         };
 
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
-        // Check both the new patternData structure and the backward-compatible fileMatches
+        // Check the patternData structure is available when outputGrouping is 'pattern'
         expect(result.patternData[0].files[0].matches[0].lineNumber).toBe(2);
         expect(result.patternData[0].files[0].matches[0].match).toBe('pattern\\(');
         expect(result.patternData[0].files[0].matches[0].context).toBe('line2 pattern()');
-        
-        // Check the pattern data structure
         
         expect(maskSensitiveData).toHaveBeenCalled();
     });
