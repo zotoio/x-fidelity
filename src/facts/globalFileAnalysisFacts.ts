@@ -174,11 +174,7 @@ export const globalFileAnalysis: FactDefn = {
             
             return result;
         } catch (error: unknown) {
-            if (error instanceof Error) {
-                logger.error(error.stack, `Error in globalFileAnalysis: ${error}`);
-            } else {
-                logger.error(`Error in globalFileAnalysis: ${error}`);
-            }
+            logger.error(`Error in globalFileAnalysis: ${error}`);
             return result;
         }
     }
