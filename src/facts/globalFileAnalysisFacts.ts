@@ -137,12 +137,10 @@ export const globalFileAnalysis: FactDefn = {
                 return sum + (patternEntry?.count || 0);
             }, 0);
             
-            // Create matchCounts and fileMatches for backward compatibility
+            // Create matchCounts for convenience
             result.matchCounts = {};
-            result.fileMatches = {};
             result.patternData.forEach((entry: any) => {
                 result.matchCounts[entry.pattern] = entry.count;
-                result.fileMatches[entry.pattern] = entry.files;
             });
             
             // Add summary to result
@@ -168,16 +166,9 @@ export const globalFileAnalysis: FactDefn = {
                 result.fileResults = Object.values(fileResults);
                 // Only include patternData in the result if pattern grouping is requested
                 delete result.patternData;
-                // For backward compatibility, update fileMatches
-                delete result.fileMatches;
             } else {
                 // For pattern grouping, don't include fileResults
                 delete result.fileResults;
-                // For backward compatibility, update matchCounts
-                result.fileMatches = {};
-                result.patternData.forEach((entry: any) => {
-                    result.fileMatches[entry.pattern] = entry.files;
-                });
             }
             
             // Add the result to the almanac
