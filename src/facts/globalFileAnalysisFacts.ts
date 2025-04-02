@@ -136,8 +136,13 @@ export const globalFileAnalysis: FactDefn = {
                 return sum + (patternEntry?.count || 0);
             }, 0);
             
-            // Store pattern data directly in the result
-            // No need for backward compatibility
+            // Create matchCounts and fileMatches for backward compatibility
+            result.matchCounts = {};
+            result.fileMatches = {};
+            result.patternData.forEach((entry: any) => {
+                result.matchCounts[entry.pattern] = entry.count;
+                result.fileMatches[entry.pattern] = entry.files;
+            });
             
             // Add summary to result
             result.summary = {
