@@ -94,9 +94,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         const ruleName = name || 'unknown-rule';
         setLogPrefix(`${originalLogPrefix}:${ruleName}`);
         
-        // Extract operator threshold, value, and condition details from conditions
-        let operatorThreshold: { operator: string; value: any } | undefined = undefined;
-        let operatorValue: any = undefined;
+        // Extract condition details from conditions
         let conditionDetails: { fact: string; operator: string; value: any; params?: any } | undefined = undefined;
         let allConditions: any[] = [];
         let conditionType: 'all' | 'any' | 'unknown' = 'unknown';
@@ -117,26 +115,15 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                 }));
                 
                 
-                // Find the first condition with operator and value
+                // Find the first condition with operator and value for backward compatibility
                 for (const condition of conditions) {
                     if (condition.operator && condition.value !== undefined) {
-                        operatorThreshold = {
+                        conditionDetails = {
+                            fact: condition.fact,
                             operator: condition.operator,
-                            value: condition.value
+                            value: condition.value,
+                            params: condition.params
                         };
-                        operatorValue = condition.value;
-                        break;
-                    }
-                }
-                
-                // Still keep the specific condition that triggered the rule
-                for (const condition of conditions) {
-                    if (condition.operator && condition.value !== undefined) {
-                        operatorThreshold = {
-                            operator: condition.operator,
-                            value: condition.value
-                        };
-                        operatorValue = condition.value;
                         break;
                     }
                 }

@@ -8,11 +8,6 @@ export interface ErrorActionParams {
     source?: "operator" | "fact" | "plugin" | "rule" | "unknown";
     params: Record<string, any>;
     file: any;
-    operatorThreshold?: {
-        operator: string;
-        value: any;
-    };
-    operatorValue?: any;
 }
 
 export async function executeErrorAction(actionName: string, params: ErrorActionParams): Promise<any> {

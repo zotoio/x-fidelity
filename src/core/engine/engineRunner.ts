@@ -49,9 +49,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         const ruleName = result.name || 'unknown-rule';
                         setLogPrefix(`${originalLogPrefix}:${ruleName}`);
                         
-                        // Extract operator value from the condition that triggered the rule
-                        let operatorThreshold: { operator: string; value: any } | undefined = undefined;
-                        let operatorValue: any = undefined;
+                        // Extract condition details from the rule
                         let conditionDetails: { fact: string; operator: string; value: any; params?: any } | undefined = undefined;
                         let ruleDescription = null;
                         let recommendations = null;
@@ -86,7 +84,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                                 }));
                                 
                                 
-                                // Find the first condition with operator and value
+                                // Find the first condition with operator and value for backward compatibility
                                 for (const condition of conditions) {
                                     if (condition.operator && condition.value !== undefined) {
                                         conditionDetails = {
@@ -95,18 +93,6 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                                             value: condition.value,
                                             params: condition.params
                                         };
-                                        break;
-                                    }
-                                }
-                                
-                                // Still keep the specific condition that triggered the rule
-                                for (const condition of conditions) {
-                                    if (condition.operator && condition.value !== undefined) {
-                                        operatorThreshold = {
-                                            operator: condition.operator,
-                                            value: condition.value
-                                        };
-                                        operatorValue = condition.value;
                                         break;
                                     }
                                 }
@@ -120,8 +106,6 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                             level: result.event?.type as ErrorLevel,
                             details: {
                                 message: result.event?.params?.message || 'Rule failure detected',
-                                operatorThreshold: operatorThreshold,
-                                operatorValue: operatorValue,
                                 conditionDetails: conditionDetails,
                                 allConditions: allConditions,
                                 conditionType: conditionType,

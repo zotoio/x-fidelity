@@ -161,11 +161,6 @@ export interface BasicTelemetryMetadata {
     options?: any;
     errorStack?: string;
     ruleName?: string;
-    operatorThreshold?: {
-        operator: string;
-        value: any;
-    };
-    operatorValue?: any;
     conditionDetails?: {
         fact: string;
         operator: string;
