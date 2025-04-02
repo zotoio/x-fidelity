@@ -1,3 +1,27 @@
+# [3.21.0](https://github.com/zotoio/x-fidelity/compare/v3.20.0...v3.21.0) (2025-04-02)
+
+
+### Bug Fixes
+
+* add match field and rename line to context in match details ([77e2e69](https://github.com/zotoio/x-fidelity/commit/77e2e6927e14dac57d2324cf02a2f733911c185d))
+* add outputGrouping param to fix failing file analysis test ([f4744d9](https://github.com/zotoio/x-fidelity/commit/f4744d9b25d0fd32c3097cc19dc71322dc914904))
+* **globalfileanalysis:** improve output ([35fd2c6](https://github.com/zotoio/x-fidelity/commit/35fd2c6068b25bc4d6e17af5972643b987766c3e))
+* initialize file-centric output properties in result object ([d0ef14b](https://github.com/zotoio/x-fidelity/commit/d0ef14bee652f9a2ceb6e1c91a88a82320d7c7db))
+* simplify threshold value extraction in globalPatternRatio operator ([9c591a6](https://github.com/zotoio/x-fidelity/commit/9c591a60256723dd92b18db1da9dbb65ae5f8d5b))
+* support both value and threshold properties in globalPatternRatio ([54ca8bc](https://github.com/zotoio/x-fidelity/commit/54ca8bcddb0020768f1bdb13efc36e4f73d74eb8))
+* update error logging test assertion format ([9e0da7c](https://github.com/zotoio/x-fidelity/commit/9e0da7c20ab471cd39f969bb0258a0776c5ec823))
+* update pattern ratio threshold handling and error logging ([fa70ba9](https://github.com/zotoio/x-fidelity/commit/fa70ba929305c9eef7da6090a73b5272d4cff725))
+* update test assertions to include file-centric output properties ([ab458e8](https://github.com/zotoio/x-fidelity/commit/ab458e8472861c556f1ef51e4ee981290b870ad3))
+
+
+### Features
+
+* add backward compatibility for pattern data mapping ([be7da4f](https://github.com/zotoio/x-fidelity/commit/be7da4f3bfde1cacf96f4ef76c560e20ff468b38))
+* add file-centric output format to globalFileAnalysis ([8791d4c](https://github.com/zotoio/x-fidelity/commit/8791d4c7fc47a30301657efa1d733b4f021d397a))
+* add less-than-or-equal comparison to globalPatternRatio operator ([92f1314](https://github.com/zotoio/x-fidelity/commit/92f131454d7d29e2a381e53da0faa3ba258b8eea))
+* add ratio threshold support to globalPatternCount operator ([9b9f541](https://github.com/zotoio/x-fidelity/commit/9b9f5411bf36557728de466979a1e289ea3fad60))
+* toggle output between patternData and fileResults based on grouping ([b813c9d](https://github.com/zotoio/x-fidelity/commit/b813c9df8135c247282e80b7818bfda9c115c186))
+
 # [3.20.0](https://github.com/zotoio/x-fidelity/compare/v3.19.1...v3.20.0) (2025-04-01)
 
 
