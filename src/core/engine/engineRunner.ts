@@ -122,7 +122,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                                 operatorValue: operatorValue,
                                 conditionDetails: conditionDetails,
                                 allConditions: allConditions,
-                                conditionType: rule?.conditions.all ? 'all' : 'any',
+                                conditionType: conditionType,
                                 ruleDescription: ruleDescription,
                                 recommendations: recommendations,
                                 ...result.event?.params
