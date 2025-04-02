@@ -154,6 +154,7 @@ describe('globalFileAnalysis', () => {
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
         expect(result.fileMatches['pattern\\('][0].matches[0].lineNumber).toBe(2);
+        expect(result.fileMatches['pattern\\('][0].matches[0].match).toBe('pattern\\(');
         expect(result.fileMatches['pattern\\('][0].matches[0].context).toBe('line2 pattern()');
         expect(maskSensitiveData).toHaveBeenCalled();
     });
@@ -214,22 +215,96 @@ describe('globalFileAnalysis', () => {
 
         // Check that the file-centric output properties exist
         expect(result).toHaveProperty('fileResults');
-        expect(result).toHaveProperty('fileResultsArray');
         
         // Verify the file results array has the expected length
         expect(result.fileResults.length).toBe(2);
         
         // Check that the pattern matches exist for each file
-        expect(result.fileResults[0].filePath).toBe('/path/to/file1.ts');
-        expect(result.fileResults[0].patternMatches).toBeDefined();
-        //expect(result.fileResults[0].patternMatches."'pattern2\\(']").toBeDefined();
+        expect(result.fileResults[0]).toHaveProperty('fileName', 'file1.ts');
+        expect(result.fileResults[0]).toHaveProperty('filePath', '/path/to/file1.ts');
+        expect(result.fileResults[0]).toHaveProperty('patternMatches');
+        expect(result.fileResults[0].patternMatches).toHaveProperty('pattern1\\(');
+        expect(result.fileResults[0].patternMatches).toHaveProperty('pattern2\\(');
         
-        expect(result.fileResults['/path/to/file2.ts']).toBeDefined();
-        expect(result.fileResults['/path/to/file2.ts'].patternMatches).toBeDefined();
-        expect(result.fileResults['/path/to/file2.ts'].patternMatches['pattern1\\(']).toBeDefined();
-        expect(result.fileResults['/path/to/file2.ts'].patternMatches['pattern2\\(']).toBeUndefined();
+        expect(result.fileResults[1]).toHaveProperty('fileName', 'file2.ts');
+        expect(result.fileResults[1]).toHaveProperty('filePath', '/path/to/file2.ts');
+        expect(result.fileResults[1].patternMatches).toHaveProperty('pattern1\\(');
+        expect(result.fileResults[1].patternMatches).not.toHaveProperty('pattern2\\(');
         
         // Verify the runtime fact was added
         expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('fileCentricAnalysis', expect.any(Object));
+    });
+    it('should only include files with matches in file-centric output', async () => {
+        mockAlmanac.factValue.mockResolvedValue([
+            {
+                fileName: 'file1.ts',
+                filePath: '/path/to/file1.ts',
+                fileContent: 'function test() { pattern1(); }'
+            },
+            {
+                fileName: 'file2.ts',
+                filePath: '/path/to/file2.ts',
+                fileContent: 'function test2() { noMatch(); }'
+            },
+            {
+                fileName: 'file3.ts',
+                filePath: '/path/to/file3.ts',
+                fileContent: 'function test3() { pattern2(); }'
+            }
+        ]);
+
+        const params = {
+            patterns: ['pattern1\\(', 'pattern2\\('],
+            fileFilter: '\\.ts$',
+            resultFact: 'fileCentricAnalysis',
+            outputGrouping: 'file'
+        };
+
+        const result = await globalFileAnalysis.fn(params, mockAlmanac);
+
+        // Only 2 files should be in the results (file1.ts and file3.ts)
+        expect(result.fileResults.length).toBe(2);
+        
+        // Check that file2.ts is not included
+        const fileNames = result.fileResults.map((file: any) => file.fileName);
+        expect(fileNames).toContain('file1.ts');
+        expect(fileNames).not.toContain('file2.ts');
+        expect(fileNames).toContain('file3.ts');
+    });
+
+    it('should handle pattern-centric output format', async () => {
+        mockAlmanac.factValue.mockResolvedValue([
+            {
+                fileName: 'file1.ts',
+                filePath: '/path/to/file1.ts',
+                fileContent: 'function test() { pattern1(); pattern2(); }'
+            },
+            {
+                fileName: 'file2.ts',
+                filePath: '/path/to/file2.ts',
+                fileContent: 'function test2() { pattern1(); }'
+            }
+        ]);
+
+        const params = {
+            patterns: ['pattern1\\(', 'pattern2\\('],
+            fileFilter: '\\.ts$',
+            resultFact: 'patternCentricAnalysis',
+            outputGrouping: 'pattern'
+        };
+
+        const result = await globalFileAnalysis.fn(params, mockAlmanac);
+
+        // Check that the pattern-centric output properties exist
+        expect(result).toHaveProperty('fileMatches');
+        expect(result.fileMatches).toHaveProperty('pattern1\\(');
+        expect(result.fileMatches).toHaveProperty('pattern2\\(');
+        
+        // Verify pattern1 matches both files
+        expect(result.fileMatches['pattern1\\('].length).toBe(2);
+        
+        // Verify pattern2 matches only one file
+        expect(result.fileMatches['pattern2\\('].length).toBe(1);
+        expect(result.fileMatches['pattern2\\('][0].filePath).toBe('/path/to/file1.ts');
     });
 });
