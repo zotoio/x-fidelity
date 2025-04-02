@@ -311,14 +311,14 @@ The analysis identified several functions with high complexity that should be re
 `;
 
     // Add threshold information if available from the first issue
-    if (complexityIssues[0].operatorThreshold) {
-      const { operator, value } = complexityIssues[0].operatorThreshold;
+    if (complexityIssues[0].details && complexityIssues[0].details.operatorThreshold) {
+      const { operator, value } = complexityIssues[0].details.operatorThreshold;
       section += `**Threshold**: \`${operator}: ${JSON.stringify(value)}\`\n\n`;
     }
     
     // Add operator value information if available
-    if (complexityIssues[0].operatorValue) {
-      section += `**Required Value**: \`${JSON.stringify(complexityIssues[0].operatorValue)}\`\n\n`;
+    if (complexityIssues[0].details && complexityIssues[0].details.operatorValue) {
+      section += `**Required Value**: \`${JSON.stringify(complexityIssues[0].details.operatorValue)}\`\n\n`;
     }
 
     section += `| File | Function | Cyclomatic Complexity | Cognitive Complexity | Nesting Depth | Parameter Count | Return Count |
