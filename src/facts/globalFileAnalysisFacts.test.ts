@@ -207,7 +207,7 @@ describe('globalFileAnalysis', () => {
             patterns: ['pattern1\\(', 'pattern2\\('],
             fileFilter: '\\.ts$',
             resultFact: 'fileCentricAnalysis',
-            outputFormat: 'file'
+            outputGrouping: 'file'
         };
 
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
@@ -217,13 +217,12 @@ describe('globalFileAnalysis', () => {
         expect(result).toHaveProperty('fileResultsArray');
         
         // Verify the file results array has the expected length
-        expect(result.fileResultsArray.length).toBe(2);
+        expect(result.fileResults.length).toBe(2);
         
         // Check that the pattern matches exist for each file
-        expect(result.fileResults['/path/to/file1.ts']).toBeDefined();
-        expect(result.fileResults['/path/to/file1.ts'].patternMatches).toBeDefined();
-        expect(result.fileResults['/path/to/file1.ts'].patternMatches['pattern1\\(']).toBeDefined();
-        expect(result.fileResults['/path/to/file1.ts'].patternMatches['pattern2\\(']).toBeDefined();
+        expect(result.fileResults[0].filePath).toBe('/path/to/file1.ts');
+        expect(result.fileResults[0].patternMatches).toBeDefined();
+        expect(result.fileResults[0].patternMatches."'pattern2\\(']").toBeDefined();
         
         expect(result.fileResults['/path/to/file2.ts']).toBeDefined();
         expect(result.fileResults['/path/to/file2.ts'].patternMatches).toBeDefined();

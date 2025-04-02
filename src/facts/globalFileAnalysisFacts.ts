@@ -30,7 +30,7 @@ export const globalFileAnalysis: FactDefn = {
             const fileFilterRegex = new RegExp(fileFilter);
             
             // New parameter to control output format - default to 'pattern' for backward compatibility
-            const outputFormat = params.outputFormat || 'pattern'; // 'pattern' or 'file'
+            const outputGrouping = params.outputGrouping || 'pattern'; // 'pattern' or 'file'
             
             // Combine all patterns for processing
             const allPatterns = [...newPatterns, ...legacyPatterns, ...patterns];
@@ -78,7 +78,6 @@ export const globalFileAnalysis: FactDefn = {
                             fileMatches++;
                             matchDetails.push({
                                 lineNumber: i + 1,
-                                match: pattern,
                                 context: maskSensitiveData(line.trim())
                             });
                         }
@@ -88,7 +87,7 @@ export const globalFileAnalysis: FactDefn = {
                     if (fileMatches > 0) {
                         result.matchCounts[pattern] += fileMatches;
                         
-                        if (outputFormat === 'pattern') {
+                        if (outputGrouping === 'pattern') {
                             // Pattern-centric output (original)
                             result.fileMatches[pattern].push({
                                 filePath: file.filePath,
@@ -117,7 +116,7 @@ export const globalFileAnalysis: FactDefn = {
                 }
                 
                 // Add the file entry to fileResults if matches were found
-                if (outputFormat === 'file' && fileHasMatches) {
+                if (outputGrouping === 'file' && fileHasMatches) {
                     fileResults[file.filePath] = fileEntry;
                 }
             }
@@ -144,9 +143,8 @@ export const globalFileAnalysis: FactDefn = {
             };
             
             // Add file-centric results if that format was requested
-            if (outputFormat === 'file') {
-                result.fileResults = fileResults;
-                result.fileResultsArray = Object.values(fileResults);
+            if (outputGrouping === 'file' && fileResults) {
+                result.fileResults = Object.values(fileResults);
             }
             
             // Add the result to the almanac
