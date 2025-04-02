@@ -105,12 +105,12 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
             value: any;
             params?: any;
         }> = [];
-        let conditionType = 'unknown';
+        let conditionType: 'all' | 'any' | 'unknown' = 'unknown';
         try {
             const rule = (engine as any).rules.find((r: any) => r.name === name);
             if (rule) {
                 const conditions = rule.conditions.all || rule.conditions.any || [];
-                conditionType = rule.conditions.all ? 'all' : 'any';
+                conditionType = rule.conditions.all ? 'all' as const : 'any' as const;
                 
                 // Capture all conditions with their parameters
                 allConditions = conditions.map((condition: any) => ({
