@@ -12,16 +12,17 @@
                 "fact": "globalFileAnalysis",
                 "params": {
                     "newPatterns": [
-                        "const plugin: XFiPlugin.="
-                    ],
-                    "legacyPatterns": [
-                        "import {.*FactDefn.*} from '\\.\\./types/typeDefs';"
+                        "processUserData"
                     ],
                     "fileFilter": ".*\\.(ts|js)$",
+                    "outputGrouping": "pattern", 
                     "resultFact": "sdkUsageAnalysis"
                 },
-                "operator": "globalPatternRatio",
-                "value": 0.6
+                "operator": "globalPatternCount",
+                "value": {
+                    "threshold": 2,
+                    "comparison": "lte"
+                }  
             }
         ]
     },

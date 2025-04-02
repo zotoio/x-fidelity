@@ -43,7 +43,7 @@ describe('globalPatternRatio', () => {
             }
         };
         
-        expect(globalPatternRatio.fn(analysisResult, { value: 3, comparison: 'gte' })).toBe(true);
+        expect(globalPatternRatio.fn(analysisResult, { threshold: 1, comparison: 'gte' })).toBe(true);
     });
 
     it('should return false when ratio is below threshold with gte comparison', () => {
@@ -58,7 +58,7 @@ describe('globalPatternRatio', () => {
             }
         };
         
-        expect(globalPatternRatio.fn(analysisResult, { value: 1, comparison: 'gte' })).toBe(false);
+        expect(globalPatternRatio.fn(analysisResult, { threshold: 1, comparison: 'gte' })).toBe(false);
     });
 
     it('should return true when ratio is below threshold with lte comparison', () => {
@@ -73,7 +73,7 @@ describe('globalPatternRatio', () => {
             }
         };
         
-        expect(globalPatternRatio.fn(analysisResult, { value: 1, comparison: 'lte' })).toBe(true);
+        expect(globalPatternRatio.fn(analysisResult, { threshold: 1, comparison: 'lte' })).toBe(true);
     });
 
     it('should return false when ratio exceeds threshold with lte comparison', () => {
@@ -88,7 +88,7 @@ describe('globalPatternRatio', () => {
             }
         };
         
-        expect(globalPatternRatio.fn(analysisResult, { value: 3, comparison: 'lte' })).toBe(false);
+        expect(globalPatternRatio.fn(analysisResult, { threshold: 3, comparison: 'lte' })).toBe(false);
     });
 
     it('should handle edge cases', () => {
@@ -121,7 +121,7 @@ describe('globalPatternRatio', () => {
         };
         
         // 3/(3+7) = 0.3, which is <= 0.5
-        expect(globalPatternRatio.fn(analysisResult, { value: 0.5, comparison: 'lte' })).toBe(true);
+        expect(globalPatternRatio.fn(analysisResult, { threshold: 0.5, comparison: 'lte' })).toBe(true);
     });
 
     it('should handle new pattern totals with gte comparison', () => {
@@ -134,6 +134,6 @@ describe('globalPatternRatio', () => {
         };
         
         // 7/(7+3) = 0.7, which is >= 0.5
-        expect(globalPatternRatio.fn(analysisResult, { value: 0.5, comparison: 'gte' })).toBe(true);
+        expect(globalPatternRatio.fn(analysisResult, { threshold: 0.5, comparison: 'gte' })).toBe(true);
     });
 });

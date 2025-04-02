@@ -12,7 +12,7 @@
         "missingRequiredFiles-global",
         "factDoesNotAddResultToAlmanac-iterative",
         "newSdkFeatureNotAdoped-global",
-        "mutuallyExclusivePackages-global",
+        "lowMigrationToNewComponentLib-global",
         "functionComplexity-iterative",
         "functionCount-iterative",
         "codeRhythm-iterative"

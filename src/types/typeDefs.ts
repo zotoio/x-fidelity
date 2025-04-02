@@ -361,3 +361,7 @@ export interface AiSuggestions {
 }
 
 export type AiSuggestionsSchema = JSONSchemaType<AiSuggestions>;
+export interface RatioThreshold {
+    threshold: number;
+    comparison?: 'gte' | 'lte'; // greater than or equal, less than or equal
+}

@@ -1,5 +1,5 @@
 {                                                                                                                      
-     "name": "mutuallyExclusivePackages-global",                                                                        
+     "name": "lowMigrationToNewComponentLib-global",                                                                        
      "conditions": {                                                                                                    
          "all": [                                                                                                       
              {                                                                                                          
@@ -10,28 +10,32 @@
              },                                                                                                         
              {                                                                                                          
                  "fact": "globalFileAnalysis",                                                                          
-                 "params": {                                                                                            
-                     "patterns": [                                                                                      
-                         "import.*from\\s+['\"](@mui/material.*)['\"]",                                              
-                         "import.*from\\s+['\"](antd)['\"]",                                              
-                         "require\\(['\"](@mui/material.*)['\"]\\)",                                                 
-                         "require\\(['\"](antd)['\"]\\)"                                                  
-                     ],                                                                                                 
-                     "fileFilter": "\\.(js|jsx|ts|tsx)$",                                                               
-                     "resultFact": "packageUsageAnalysis"                                                               
+                 "params": {    
+                     "newPatterns": [
+                        "import.*from\\s+['\"](@mui/material.*)['\"]"
+                    ],
+                    "legacyPatterns": [
+                        "import.*from\\s+['\"](antd)['\"]"
+                    ],                                                                                                                                                                                      
+                     "fileFilter": "\\.(js|jsx|ts|tsx)$",   
+                     "outputGrouping": "file",                                                            
+                     "resultFact": "lowMigrationToNewComponentLib"                                                               
                  },                                                                                                     
-                 "operator": "globalPatternCount",                                                                      
-                 "value": 0                                                                                             
+                 "operator": "globalPatternRatio",                                                                      
+                 "value": {
+                    "threshold": 0.7,
+                    "comparison": "lte"
+                }                                                                                    
              }                                                                                                          
          ]                                                                                                              
      },                                                                                                                 
      "event": {                                                                                                         
          "type": "fatality",                                                                                            
          "params": {                                                                                                    
-             "message": "Mutually exclusive packages detected. MUI and AntDesign should not be used together.",                                                                                                       
+             "message": "MUI migration from AntDesign is low.",                                                                                                       
              "details": {                                                                                               
-                 "fact": "packageUsageAnalysis",                                                                        
-                 "recommendation": "Choose migrate to MUI."                                                                          
+                 "fact": "lowMigrationToNewComponentLib",                                                                        
+                 "recommendation": "Migrate to MUI."                                                                          
              }                                                                                                          
          }                                                                                                              
      }                                                                                                                  
