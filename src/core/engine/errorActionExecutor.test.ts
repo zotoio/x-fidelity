@@ -1,11 +1,13 @@
 import { executeErrorAction } from './errorActionExecutor';
-import { logger } from '../../utils/logger';
+import { logger, getLogPrefix, setLogPrefix } from '../../utils/logger';
 
 jest.mock('../../utils/logger', () => ({
     logger: {
         info: jest.fn(),
         error: jest.fn(),
     },
+    getLogPrefix: jest.fn().mockReturnValue('test-prefix'),
+    setLogPrefix: jest.fn(),
 }));
 
 describe('executeErrorAction', () => {

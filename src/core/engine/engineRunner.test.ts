@@ -1,6 +1,6 @@
 import { runEngineOnFiles } from './engineRunner';
 import { Engine } from 'json-rules-engine';
-import { logger } from '../../utils/logger';
+import { logger, getLogPrefix, setLogPrefix } from '../../utils/logger';
 import { REPO_GLOBAL_CHECK } from '../configManager';
 
 jest.mock('json-rules-engine');
@@ -12,6 +12,8 @@ jest.mock('../../utils/logger', () => ({
         warn: jest.fn(),
         trace: jest.fn()
     },
+    getLogPrefix: jest.fn().mockReturnValue('test-prefix'),
+    setLogPrefix: jest.fn(),
 }));
 
 describe('runEngineOnFiles', () => {
