@@ -10,6 +10,19 @@ interface ErrorActionParams {
     file: any;
 }
 
+export interface ErrorActionParams {
+    error: Error;
+    rule: string;
+    level: string;
+    source?: "operator" | "fact" | "plugin" | "rule" | "unknown";
+    params: Record<string, any>;
+    file: any;
+    operatorThreshold?: {
+        operator: string;
+        value: any;
+    };
+}
+
 export async function executeErrorAction(actionName: string, params: ErrorActionParams): Promise<any> {
     const originalLogPrefix = getLogPrefix();
     setLogPrefix(`${originalLogPrefix}:${params.rule || 'unknown-rule'}`);

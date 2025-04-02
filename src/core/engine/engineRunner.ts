@@ -48,11 +48,34 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         // Set the rule name as log prefix for this failure
                         setLogPrefix(`${originalLogPrefix}:${result.name}`);
                         
+                        // Extract operator value from the condition that triggered the rule
+                        let operatorValue = null;
+                        try {
+                            // Find the condition that triggered this rule
+                            const rule = (engine as any).rules.find((r: any) => r.name === result.name);
+                            if (rule) {
+                                // Extract operator value from the condition
+                                const conditions = rule.conditions.all || rule.conditions.any || [];
+                                for (const condition of conditions) {
+                                    if (condition.operator && condition.value !== undefined) {
+                                        operatorValue = {
+                                            operator: condition.operator,
+                                            value: condition.value
+                                        };
+                                        break;
+                                    }
+                                }
+                            }
+                        } catch (err) {
+                            logger.debug(`Error extracting operator value: ${err}`);
+                        }
+                        
                         fileFailures.push({
                             ruleFailure: result.name,
                             level: result.event?.type as ErrorLevel,
                             details: {
                                 message: result.event?.params?.message || 'Rule failure detected',
+                                operatorThreshold: operatorValue,
                                 ...result.event?.params
                             }
                         });
