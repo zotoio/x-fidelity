@@ -157,9 +157,14 @@ export const globalFileAnalysis: FactDefn = {
                 legacyPatternsTotal: legacyPatternsTotal
             };
             
-            // Add file-centric results if that format was requested
+            // Add results based on the requested output grouping
             if (outputGrouping === 'file' && fileResults) {
                 result.fileResults = Object.values(fileResults);
+                // Only include patternData in the result if pattern grouping is requested
+                delete result.patternData;
+            } else {
+                // For pattern grouping, don't include fileResults
+                delete result.fileResults;
             }
             
             // Add the result to the almanac
