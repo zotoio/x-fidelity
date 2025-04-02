@@ -6,10 +6,7 @@ export const globalFileAnalysis: FactDefn = {
     name: 'globalFileAnalysis',
     fn: async (params: any, almanac: any) => {
         const result: any = { 
-            matchCounts: {}, 
-            fileMatches: {},
-            fileResults: {},
-            fileResultsArray: []
+            fileResults: [],
         };
         
         try {
@@ -29,8 +26,8 @@ export const globalFileAnalysis: FactDefn = {
             const fileFilter = params.fileFilter || '.*';
             const fileFilterRegex = new RegExp(fileFilter);
             
-            // New parameter to control output format - default to 'pattern' for backward compatibility
-            const outputGrouping = params.outputGrouping || 'pattern'; // 'pattern' or 'file'
+            // parameter to control output format
+            const outputGrouping = params.outputGrouping || 'file'; // 'pattern' or 'file'
             
             // Combine all patterns for processing
             const allPatterns = [...newPatterns, ...legacyPatterns, ...patterns];
@@ -78,7 +75,7 @@ export const globalFileAnalysis: FactDefn = {
                             fileMatches++;
                             matchDetails.push({
                                 lineNumber: i + 1,
-                                context: maskSensitiveData(line.trim())
+                                line: maskSensitiveData(line.trim())
                             });
                         }
                     }
@@ -153,8 +150,12 @@ export const globalFileAnalysis: FactDefn = {
             logger.info(`Global file analysis complete: ${JSON.stringify(result.summary)}`);
             
             return result;
-        } catch (error) {
-            logger.error(`Error in globalFileAnalysis: ${error}`);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                logger.error(error.stack, `Error in globalFileAnalysis: ${error}`);
+            } else {
+                logger.error(`Error in globalFileAnalysis: ${error}`);
+            }
             return result;
         }
     }
