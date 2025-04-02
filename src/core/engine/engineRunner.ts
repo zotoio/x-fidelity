@@ -56,6 +56,12 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         let ruleDescription = null;
                         let recommendations = null;
                         let allConditions: any[] = [];
+                        let allConditionOperators: Array<{
+                            fact: string;
+                            operator: string;
+                            value: any;
+                            params?: any;
+                        }> = [];
                         let conditionType = 'unknown';
                         try {
                             // Find the condition that triggered this rule
@@ -84,6 +90,16 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                                     path: condition.path,
                                     priority: condition.priority
                                 }));
+                                
+                                // Capture all conditions with operator values
+                                allConditionOperators = conditions
+                                    .filter((condition: any) => condition.operator && condition.value !== undefined)
+                                    .map((condition: any) => ({
+                                        fact: condition.fact,
+                                        operator: condition.operator,
+                                        value: condition.value,
+                                        params: condition.params
+                                    }));
                                 
                                 // Find the first condition with operator and value
                                 for (const condition of conditions) {

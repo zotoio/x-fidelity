@@ -510,6 +510,17 @@ Several files contain potentially sensitive data patterns that shouldn't be logg
       }
     }
     
+    // Add all condition operators if available
+    if (error.details && error.details.allConditionOperators && error.details.allConditionOperators.length > 0) {
+      issueDetails += `  - All Condition Operators:\n`;
+      error.details.allConditionOperators.forEach((condition: any, index: number) => {
+        issueDetails += `    ${index + 1}. Fact: \`${condition.fact}\` Operator: \`${condition.operator}\` Value: \`${JSON.stringify(condition.value)}\`\n`;
+        if (condition.params) {
+          issueDetails += `       Parameters: \`${JSON.stringify(condition.params)}\`\n`;
+        }
+      });
+    }
+    
     return issueDetails;
   }
 
