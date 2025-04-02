@@ -52,28 +52,47 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         let operatorThreshold = null;
                         let operatorValue = null;
                         let conditionDetails = null;
+                        let ruleDescription = null;
+                        let recommendations = null;
                         try {
                             // Find the condition that triggered this rule
                             const rule = (engine as any).rules.find((r: any) => r.name === result.name);
                             if (rule) {
+                                // Extract rule description if available
+                                ruleDescription = rule.description || 'No description available';
+                                
+                                // Extract recommendations if available
+                                if (result.event?.params?.recommendations) {
+                                    recommendations = result.event.params.recommendations;
+                                } else if (rule.recommendations) {
+                                    recommendations = rule.recommendations;
+                                }
+                                
                                 // Extract operator value from the condition
                                 const conditions = rule.conditions.all || rule.conditions.any || [];
+                                
+                                // Capture full condition structure
+                                conditionDetails = {
+                                    type: rule.conditions.all ? 'all' : 'any',
+                                    conditions: conditions.map((condition: any) => ({
+                                        fact: condition.fact,
+                                        operator: condition.operator,
+                                        value: condition.value,
+                                        params: condition.params,
+                                        path: condition.path,
+                                        priority: condition.priority
+                                    })),
+                                    description: `Rule requires ${rule.conditions.all ? 'all' : 'any'} of ${conditions.length} conditions to be met`
+                                };
+                                
+                                // Still keep the specific condition that triggered the rule
                                 for (const condition of conditions) {
                                     if (condition.operator && condition.value !== undefined) {
                                         operatorThreshold = {
                                             operator: condition.operator,
                                             value: condition.value
                                         };
-                                        // Also capture the actual value that was expected
                                         operatorValue = condition.value;
-                                        
-                                        // Capture more details about the condition
-                                        conditionDetails = {
-                                            fact: condition.fact,
-                                            operator: condition.operator,
-                                            value: condition.value,
-                                            params: condition.params
-                                        };
                                         break;
                                     }
                                 }
