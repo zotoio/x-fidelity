@@ -77,7 +77,8 @@ export const globalFileAnalysis: FactDefn = {
                             fileMatches++;
                             matchDetails.push({
                                 lineNumber: i + 1,
-                                line: maskSensitiveData(line.trim())
+                                match: pattern,
+                                context: maskSensitiveData(line.trim())
                             });
                         }
                     }
