@@ -94,8 +94,9 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         const ruleName = name || 'unknown-rule';
         setLogPrefix(`${originalLogPrefix}:${ruleName}`);
         
-        // Extract operator threshold from conditions
+        // Extract operator threshold and value from conditions
         let operatorThreshold = null;
+        let operatorValue = null;
         try {
             const rule = (engine as any).rules.find((r: any) => r.name === name);
             if (rule) {
@@ -106,6 +107,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                             operator: condition.operator,
                             value: condition.value
                         };
+                        operatorValue = condition.value;
                         break;
                     }
                 }
@@ -123,6 +125,9 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     repoPath: '',
                     ruleName,
                     operatorThreshold,
+                    operatorValue,
+                    operatorValue,
+                    operatorValue,
                     ...params
                 },
                 timestamp: new Date().toISOString()

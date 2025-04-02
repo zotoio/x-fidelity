@@ -21,6 +21,7 @@ export interface ErrorActionParams {
         operator: string;
         value: any;
     };
+    operatorValue?: any;
 }
 
 export async function executeErrorAction(actionName: string, params: ErrorActionParams): Promise<any> {

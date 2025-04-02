@@ -49,6 +49,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         setLogPrefix(`${originalLogPrefix}:${result.name}`);
                         
                         // Extract operator value from the condition that triggered the rule
+                        let operatorThreshold = null;
                         let operatorValue = null;
                         try {
                             // Find the condition that triggered this rule
@@ -58,10 +59,12 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                                 const conditions = rule.conditions.all || rule.conditions.any || [];
                                 for (const condition of conditions) {
                                     if (condition.operator && condition.value !== undefined) {
-                                        operatorValue = {
+                                        operatorThreshold = {
                                             operator: condition.operator,
                                             value: condition.value
                                         };
+                                        // Also capture the actual value that was expected
+                                        operatorValue = condition.value;
                                         break;
                                     }
                                 }
@@ -75,7 +78,8 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                             level: result.event?.type as ErrorLevel,
                             details: {
                                 message: result.event?.params?.message || 'Rule failure detected',
-                                operatorThreshold: operatorValue,
+                                operatorThreshold: operatorThreshold,
+                                operatorValue: operatorValue,
                                 ...result.event?.params
                             }
                         });
