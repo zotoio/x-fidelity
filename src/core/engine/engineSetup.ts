@@ -99,6 +99,12 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         let operatorValue: any = undefined;
         let conditionDetails: { fact: string; operator: string; value: any; params?: any } | undefined = undefined;
         let allConditions: any[] = [];
+        let allConditionOperators: Array<{
+            fact: string;
+            operator: string;
+            value: any;
+            params?: any;
+        }> = [];
         let conditionType = 'unknown';
         try {
             const rule = (engine as any).rules.find((r: any) => r.name === name);
@@ -115,6 +121,16 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     path: condition.path,
                     priority: condition.priority
                 }));
+                
+                // Capture all conditions with operator values
+                allConditionOperators = conditions
+                    .filter((condition: any) => condition.operator && condition.value !== undefined)
+                    .map((condition: any) => ({
+                        fact: condition.fact,
+                        operator: condition.operator,
+                        value: condition.value,
+                        params: condition.params
+                    }));
                 
                 // Find the first condition with operator and value
                 for (const condition of conditions) {
@@ -155,6 +171,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     operatorThreshold,
                     operatorValue,
                     allConditions,
+                    allConditionOperators,
                     conditionType,
                     ...params
                 },

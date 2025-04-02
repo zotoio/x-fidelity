@@ -180,6 +180,12 @@ export interface BasicTelemetryMetadata {
         path?: string;
         priority?: number;
     }>;
+    allConditionOperators?: Array<{
+        fact: string;
+        operator: string;
+        value: any;
+        params?: any;
+    }>;
     conditionType?: 'all' | 'any' | 'unknown';
 }
 
