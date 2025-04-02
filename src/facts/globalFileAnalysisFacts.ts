@@ -6,6 +6,8 @@ export const globalFileAnalysis: FactDefn = {
     name: 'globalFileAnalysis',
     fn: async (params: any, almanac: any) => {
         const result: any = { 
+            matchCounts: {},
+            fileMatches: {},
             fileResults: [],
         };
         
@@ -41,11 +43,12 @@ export const globalFileAnalysis: FactDefn = {
             
             logger.info(`Analyzing ${filteredFiles.length} files after filtering`);
             
-            // Initialize match counts for each pattern
-            allPatterns.forEach((pattern: string) => {
-                result.matchCounts[pattern] = 0;
-                result.fileMatches[pattern] = [];
-            });
+            // Initialize match counts and file matches as arrays
+            result.patternData = allPatterns.map((pattern: string) => ({
+                pattern,
+                count: 0,
+                files: []
+            }));
             
             // For file-centric output
             const fileResults: Record<string, any> = {};
@@ -82,32 +85,37 @@ export const globalFileAnalysis: FactDefn = {
                     
                     // Update results if matches found
                     if (fileMatches > 0) {
-                        result.matchCounts[pattern] += fileMatches;
-                        
-                        if (outputGrouping === 'pattern') {
-                            // Pattern-centric output (original)
-                            result.fileMatches[pattern].push({
-                                filePath: file.filePath,
-                                matchCount: fileMatches,
-                                matches: matchDetails
-                            });
-                        } else {
-                            // File-centric output - initialize file entry if this is the first match
-                            if (!fileHasMatches) {
-                                fileHasMatches = true;
-                                fileEntry = {
-                                    fileName: file.fileName,
-                                    filePath: file.filePath,
-                                    patternMatches: {},
-                                    totalMatches: 0
-                                };
-                            }
+                        // Find the pattern data entry
+                        const patternEntry = result.patternData.find((p: any) => p.pattern === pattern);
+                        if (patternEntry) {
+                            patternEntry.count += fileMatches;
                             
-                            fileEntry.patternMatches[pattern] = {
-                                matchCount: fileMatches,
-                                matches: matchDetails
-                            };
-                            fileEntry.totalMatches += fileMatches;
+                            if (outputGrouping === 'pattern') {
+                                // Pattern-centric output
+                                patternEntry.files.push({
+                                    filePath: file.filePath,
+                                    matchCount: fileMatches,
+                                    matches: matchDetails
+                                });
+                            } else {
+                                // File-centric output - initialize file entry if this is the first match
+                                if (!fileHasMatches) {
+                                    fileHasMatches = true;
+                                    fileEntry = {
+                                        fileName: file.fileName,
+                                        filePath: file.filePath,
+                                        patternMatches: [],
+                                        totalMatches: 0
+                                    };
+                                }
+                                
+                                fileEntry.patternMatches.push({
+                                    pattern,
+                                    matchCount: fileMatches,
+                                    matches: matchDetails
+                                });
+                                fileEntry.totalMatches += fileMatches;
+                            }
                         }
                     }
                 }
@@ -119,20 +127,36 @@ export const globalFileAnalysis: FactDefn = {
             }
             
             // Calculate totals for new and legacy patterns
-            const newPatternsTotal = newPatterns.reduce((sum: number, pattern: string) => sum + (result.matchCounts[pattern] || 0), 0);
-            const legacyPatternsTotal = legacyPatterns.reduce((sum: number, pattern: string) => sum + (result.matchCounts[pattern] || 0), 0);
+            const newPatternsTotal = newPatterns.reduce((sum: number, pattern: string) => {
+                const patternEntry = result.patternData.find((p: any) => p.pattern === pattern);
+                return sum + (patternEntry?.count || 0);
+            }, 0);
+            
+            const legacyPatternsTotal = legacyPatterns.reduce((sum: number, pattern: string) => {
+                const patternEntry = result.patternData.find((p: any) => p.pattern === pattern);
+                return sum + (patternEntry?.count || 0);
+            }, 0);
+            
+            // Create backward-compatible matchCounts and fileMatches
+            result.matchCounts = {};
+            result.fileMatches = {};
+            result.patternData.forEach((entry: any) => {
+                result.matchCounts[entry.pattern] = entry.count;
+                result.fileMatches[entry.pattern] = entry.files;
+            });
             
             // Add summary to result
             result.summary = {
                 totalFiles: filteredFiles.length,
-                totalMatches: Object.values(result.matchCounts).reduce((sum: number, count: unknown) => sum + (count as number), 0),
-                //patternCounts: result.matchCounts,
+                totalMatches: result.patternData.reduce((sum: number, entry: any) => sum + entry.count, 0),
                 newPatternCounts: newPatterns.reduce((counts: Record<string, number>, pattern: string) => {
-                    counts[pattern] = result.matchCounts[pattern] || 0;
+                    const patternEntry = result.patternData.find((p: any) => p.pattern === pattern);
+                    counts[pattern] = patternEntry?.count || 0;
                     return counts;
                 }, {}),
                 legacyPatternCounts: legacyPatterns.reduce((counts: Record<string, number>, pattern: string) => {
-                    counts[pattern] = result.matchCounts[pattern] || 0;
+                    const patternEntry = result.patternData.find((p: any) => p.pattern === pattern);
+                    counts[pattern] = patternEntry?.count || 0;
                     return counts;
                 }, {}),
                 newPatternsTotal: newPatternsTotal,

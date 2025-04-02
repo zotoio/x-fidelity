@@ -153,9 +153,16 @@ describe('globalFileAnalysis', () => {
 
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
+        // Check both the new patternData structure and the backward-compatible fileMatches
+        expect(result.patternData[0].files[0].matches[0].lineNumber).toBe(2);
+        expect(result.patternData[0].files[0].matches[0].match).toBe('pattern\\(');
+        expect(result.patternData[0].files[0].matches[0].context).toBe('line2 pattern()');
+        
+        // Also check the backward-compatible structure
         expect(result.fileMatches['pattern\\('][0].matches[0].lineNumber).toBe(2);
         expect(result.fileMatches['pattern\\('][0].matches[0].match).toBe('pattern\\(');
         expect(result.fileMatches['pattern\\('][0].matches[0].context).toBe('line2 pattern()');
+        
         expect(maskSensitiveData).toHaveBeenCalled();
     });
 
@@ -223,13 +230,24 @@ describe('globalFileAnalysis', () => {
         expect(result.fileResults[0]).toHaveProperty('fileName', 'file1.ts');
         expect(result.fileResults[0]).toHaveProperty('filePath', '/path/to/file1.ts');
         expect(result.fileResults[0]).toHaveProperty('patternMatches');
-        expect(result.fileResults[0].patternMatches).toHaveProperty('pattern1\\(');
-        expect(result.fileResults[0].patternMatches).toHaveProperty('pattern2\\(');
+        
+        // Check that patternMatches is now an array
+        expect(Array.isArray(result.fileResults[0].patternMatches)).toBe(true);
+        
+        // Find the pattern entries in the array
+        const file1Pattern1 = result.fileResults[0].patternMatches.find((p: any) => p.pattern === 'pattern1\\(');
+        const file1Pattern2 = result.fileResults[0].patternMatches.find((p: any) => p.pattern === 'pattern2\\(');
+        expect(file1Pattern1).toBeDefined();
+        expect(file1Pattern2).toBeDefined();
         
         expect(result.fileResults[1]).toHaveProperty('fileName', 'file2.ts');
         expect(result.fileResults[1]).toHaveProperty('filePath', '/path/to/file2.ts');
-        expect(result.fileResults[1].patternMatches).toHaveProperty('pattern1\\(');
-        expect(result.fileResults[1].patternMatches).not.toHaveProperty('pattern2\\(');
+        
+        // Check pattern matches for second file
+        const file2Pattern1 = result.fileResults[1].patternMatches.find((p: any) => p.pattern === 'pattern1\\(');
+        const file2Pattern2 = result.fileResults[1].patternMatches.find((p: any) => p.pattern === 'pattern2\\(');
+        expect(file2Pattern1).toBeDefined();
+        expect(file2Pattern2).toBeUndefined();
         
         // Verify the runtime fact was added
         expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('fileCentricAnalysis', expect.any(Object));
@@ -296,14 +314,25 @@ describe('globalFileAnalysis', () => {
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
         // Check that the pattern-centric output properties exist
+        expect(result).toHaveProperty('patternData');
+        expect(result.patternData.length).toBe(2);
+        
+        // Find the pattern entries
+        const pattern1Entry = result.patternData.find((p: any) => p.pattern === 'pattern1\\(');
+        const pattern2Entry = result.patternData.find((p: any) => p.pattern === 'pattern2\\(');
+        
+        // Verify pattern1 matches both files
+        expect(pattern1Entry.files.length).toBe(2);
+        
+        // Verify pattern2 matches only one file
+        expect(pattern2Entry.files.length).toBe(1);
+        expect(pattern2Entry.files[0].filePath).toBe('/path/to/file1.ts');
+        
+        // Also check backward-compatible structure
         expect(result).toHaveProperty('fileMatches');
         expect(result.fileMatches).toHaveProperty('pattern1\\(');
         expect(result.fileMatches).toHaveProperty('pattern2\\(');
-        
-        // Verify pattern1 matches both files
         expect(result.fileMatches['pattern1\\('].length).toBe(2);
-        
-        // Verify pattern2 matches only one file
         expect(result.fileMatches['pattern2\\('].length).toBe(1);
         expect(result.fileMatches['pattern2\\('][0].filePath).toBe('/path/to/file1.ts');
     });
