@@ -275,6 +275,11 @@ Based on the OpenAI analysis, these are the top 5 critical issues to address:
             const { operator, value } = openAiAnalysis.details.operatorThreshold;
             aiAnalysis += `**Threshold**: \`${operator}: ${JSON.stringify(value)}\`\n\n`;
           }
+          
+          // Add operator value information if available
+          if (openAiAnalysis.details.operatorValue) {
+            aiAnalysis += `**Required Value**: \`${JSON.stringify(openAiAnalysis.details.operatorValue)}\`\n\n`;
+          }
         });
       }
     }
@@ -293,7 +298,8 @@ Based on the OpenAI analysis, these are the top 5 critical issues to address:
             fileName: this.getFileName(detail.filePath),
             fileUrl: this.getGithubUrl(detail.filePath),
             details: error.details,
-            operatorThreshold: error.details.operatorThreshold
+            operatorThreshold: error.details.operatorThreshold,
+            operatorValue: error.details.operatorValue
           }))
       );
     
@@ -311,6 +317,11 @@ The analysis identified several functions with high complexity that should be re
     if (complexityIssues[0].operatorThreshold) {
       const { operator, value } = complexityIssues[0].operatorThreshold;
       section += `**Threshold**: \`${operator}: ${JSON.stringify(value)}\`\n\n`;
+    }
+    
+    // Add operator value information if available
+    if (complexityIssues[0].operatorValue) {
+      section += `**Required Value**: \`${JSON.stringify(complexityIssues[0].operatorValue)}\`\n\n`;
     }
 
     section += `| File | Function | Cyclomatic Complexity | Cognitive Complexity | Nesting Depth | Parameter Count | Return Count |
@@ -354,6 +365,11 @@ The analysis detected outdated framework dependencies that need updating:
     if (dependencyIssue.details.operatorThreshold) {
       const { operator, value } = dependencyIssue.details.operatorThreshold;
       section += `**Threshold**: \`${operator}: ${JSON.stringify(value)}\`\n\n`;
+    }
+    
+    // Add operator value information if available
+    if (dependencyIssue.details.operatorValue) {
+      section += `**Required Value**: \`${JSON.stringify(dependencyIssue.details.operatorValue)}\`\n\n`;
     }
 
     section += `| Dependency | Current Version | Required Version |
@@ -433,9 +449,32 @@ Several files contain potentially sensitive data patterns that shouldn't be logg
         const { operator, value } = issue.details.operatorThreshold;
         section += `  - Threshold: \`${operator}: ${JSON.stringify(value)}\`\n`;
       }
+      
+      // Add operator value information if available
+      if (issue.details && issue.details.operatorValue) {
+        section += `  - Required Value: \`${JSON.stringify(issue.details.operatorValue)}\`\n`;
+      }
     });
     
     return section;
+  }
+
+  /**
+   * Helper method to add operator information to report sections
+   */
+  private addOperatorValueToReport(issueDetails: string, error: any): string {
+    // Add operator threshold information if available
+    if (error.details.operatorThreshold) {
+      const { operator, value } = error.details.operatorThreshold;
+      issueDetails += `  - Threshold: \`${operator}: ${JSON.stringify(value)}\`\n`;
+    }
+    
+    // Add operator value information if available
+    if (error.details.operatorValue) {
+      issueDetails += `  - Required Value: \`${JSON.stringify(error.details.operatorValue)}\`\n`;
+    }
+    
+    return issueDetails;
   }
 
   public generateReport(): string {
