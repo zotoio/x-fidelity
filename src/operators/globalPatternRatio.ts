@@ -1,10 +1,5 @@
 import { logger } from '../utils/logger';
-import { OperatorDefn } from '../types/typeDefs';
-
-interface RatioThreshold {
-    value: number;
-    comparison?: 'gte' | 'lte'; // greater than or equal, less than or equal
-}
+import { OperatorDefn, RatioThreshold } from '../types/typeDefs';
 
 const globalPatternRatio: OperatorDefn = {
     'name': 'globalPatternRatio',
@@ -22,7 +17,7 @@ const globalPatternRatio: OperatorDefn = {
             let comparisonType: 'gte' | 'lte' = 'gte'; // Default to greater than or equal
             
             if (typeof threshold === 'object' && threshold !== null) {
-                thresholdValue = threshold.value;
+                thresholdValue = threshold.threshold;
                 if (threshold.comparison) {
                     comparisonType = threshold.comparison;
                 }
