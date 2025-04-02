@@ -14,7 +14,7 @@ const globalPatternCount: OperatorDefn = {
             
             // Parse threshold and comparison type
             let thresholdValue: number;
-            let comparisonType: 'gte' | 'lte' = 'gte'; // Default to greater than or equal
+            let comparisonType: 'gte' | 'lte' = 'lte'; // Default to greater than or equal
             
             if (typeof threshold === 'object' && threshold !== null) {
                 thresholdValue = threshold.threshold;

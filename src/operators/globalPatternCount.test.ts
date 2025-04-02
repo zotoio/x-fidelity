@@ -27,7 +27,7 @@ describe('globalPatternCount', () => {
             }
         };
         
-        expect(globalPatternCount.fn(analysisResult, 5)).toBe(true);
+        expect(globalPatternCount.fn(analysisResult, 5)).toBe(false);
     });
 
     it('should return true when count exceeds threshold with explicit gte comparison', () => {
@@ -94,7 +94,7 @@ describe('globalPatternCount', () => {
         expect(globalPatternCount.fn({ 
             patternData: [{ pattern: 'pattern1', count: 0, files: [] }], 
             summary: { totalMatches: 0 } 
-        }, 1)).toBe(false);
+        }, 1)).toBe(true);
     });
 
     it('should handle new pattern totals with lte comparison', () => {

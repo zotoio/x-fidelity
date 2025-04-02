@@ -93,13 +93,13 @@ describe('globalPatternRatio', () => {
 
     it('should handle edge cases', () => {
         // No patterns
-        expect(globalPatternRatio.fn({ patternData: [], summary: {} }, { value: 1, comparison: 'gte' })).toBe(false);
+        expect(globalPatternRatio.fn({ patternData: [], summary: {} }, { threshold: 1, comparison: 'gte' })).toBe(false);
         
         // Only one pattern
         expect(globalPatternRatio.fn({ 
             patternData: [{ pattern: 'pattern1', count: 5, files: [] }], 
             summary: { totalMatches: 5 } 
-        }, { value: 1, comparison: 'gte' })).toBe(false);
+        }, { threshold: 1, comparison: 'gte' })).toBe(false);
         
         // Denominator is zero
         expect(globalPatternRatio.fn({ 
@@ -108,7 +108,7 @@ describe('globalPatternRatio', () => {
                 { pattern: 'pattern2', count: 0, files: [] }
             ], 
             summary: { totalMatches: 5 } 
-        }, { value: 1, comparison: 'gte' })).toBe(false);
+        }, { threshold: 1, comparison: 'gte' })).toBe(false);
     });
 
     it('should handle new pattern totals with lte comparison', () => {
