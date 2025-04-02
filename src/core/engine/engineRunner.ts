@@ -80,6 +80,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                                 message: result.event?.params?.message || 'Rule failure detected',
                                 operatorThreshold: operatorThreshold,
                                 operatorValue: operatorValue,
+                                conditionDetails: conditionDetails,
                                 ...result.event?.params
                             }
                         });
@@ -168,7 +169,13 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                     message: `${errorSource} execution failed: ${(handledError || error).message}`,
                     source: errorSource as "operator" | "fact" | "plugin" | "rule" | "unknown",
                     stack: (handledError || error).stack,
-                    details: (error as any)?.pluginError?.details
+                    details: (error as any)?.pluginError?.details,
+                    // Include rule information if available
+                    rule: rule ? {
+                        name: rule.name,
+                        conditions: rule.conditions,
+                        event: rule.event
+                    } : undefined
                 }
             });
             

@@ -94,9 +94,10 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         const ruleName = name || 'unknown-rule';
         setLogPrefix(`${originalLogPrefix}:${ruleName}`);
         
-        // Extract operator threshold and value from conditions
+        // Extract operator threshold, value, and condition details from conditions
         let operatorThreshold = null;
         let operatorValue = null;
+        let conditionDetails = null;
         try {
             const rule = (engine as any).rules.find((r: any) => r.name === name);
             if (rule) {
@@ -108,6 +109,14 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                             value: condition.value
                         };
                         operatorValue = condition.value;
+                                        
+                        // Capture more details about the condition
+                        conditionDetails = {
+                            fact: condition.fact,
+                            operator: condition.operator,
+                            value: condition.value,
+                            params: condition.params
+                        };
                         break;
                     }
                 }
@@ -126,8 +135,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     ruleName,
                     operatorThreshold,
                     operatorValue,
-                    operatorValue,
-                    operatorValue,
+                    conditionDetails,
                     ...params
                 },
                 timestamp: new Date().toISOString()
@@ -142,6 +150,8 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     repoPath: '',
                     ruleName,
                     operatorThreshold,
+                    operatorValue,
+                    conditionDetails,
                     ...params
                 },
                 timestamp: new Date().toISOString()
@@ -156,6 +166,8 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     repoPath: '',
                     ruleName,
                     operatorThreshold,
+                    operatorValue,
+                    conditionDetails,
                     ...params
                 },
                 timestamp: new Date().toISOString()

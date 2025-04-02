@@ -123,7 +123,27 @@ export async function main() {
                 // if results are found, there were issues found in the codebase
                 if (resultMetadata.XFI_RESULT.totalIssues > 0) {
                     logger.warn(`WARNING: lo-fi attributes detected in codebase. ${resultMetadata.XFI_RESULT.warningCount} are warnings, ${resultMetadata.XFI_RESULT.fatalityCount} are fatal.`);
-                    logger.warn(resultString);
+                    
+                    // Create a more detailed summary of issues
+                    const issuesSummary = {
+                        totalIssues: resultMetadata.XFI_RESULT.totalIssues,
+                        warningCount: resultMetadata.XFI_RESULT.warningCount,
+                        fatalityCount: resultMetadata.XFI_RESULT.fatalityCount,
+                        errorCount: resultMetadata.XFI_RESULT.errorCount,
+                        exemptCount: resultMetadata.XFI_RESULT.exemptCount,
+                        topIssues: resultMetadata.XFI_RESULT.issueDetails
+                            .slice(0, 5)
+                            .map(detail => ({
+                                filePath: detail.filePath,
+                                errors: detail.errors.map(err => ({
+                                    rule: err.ruleFailure,
+                                    level: err.level,
+                                    message: err.details?.message
+                                }))
+                            }))
+                    };
+                    
+                    logger.warn(JSON.stringify(issuesSummary, null, 2));
 
                     if (resultMetadata.XFI_RESULT.errorCount > 0) {
                         logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));

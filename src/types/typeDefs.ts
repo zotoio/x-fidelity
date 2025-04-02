@@ -24,6 +24,17 @@ export interface RuleFailure {
         source?: 'operator' | 'fact' | 'plugin' | 'rule' | 'unknown';
         originalError?: Error;
         stack?: string;
+        operatorThreshold?: {
+            operator: string;
+            value: any;
+        };
+        operatorValue?: any;
+        conditionDetails?: {
+            fact: string;
+            operator: string;
+            value: any;
+            params?: any;
+        };
         [key: string]: any;
     } | undefined;
 }

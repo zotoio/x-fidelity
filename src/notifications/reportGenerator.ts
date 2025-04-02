@@ -280,6 +280,15 @@ Based on the OpenAI analysis, these are the top 5 critical issues to address:
           if (openAiAnalysis.details.operatorValue) {
             aiAnalysis += `**Required Value**: \`${JSON.stringify(openAiAnalysis.details.operatorValue)}\`\n\n`;
           }
+          
+          // Add condition details if available
+          if (openAiAnalysis.details.conditionDetails) {
+            const { fact, operator, value, params } = openAiAnalysis.details.conditionDetails;
+            aiAnalysis += `**Condition**: Fact \`${fact}\` with operator \`${operator}\`\n`;
+            if (params) {
+              aiAnalysis += `**Parameters**: \`${JSON.stringify(params)}\`\n\n`;
+            }
+          }
         });
       }
     }
@@ -371,6 +380,15 @@ The analysis detected outdated framework dependencies that need updating:
     if (dependencyIssue.details.operatorValue) {
       section += `**Required Value**: \`${JSON.stringify(dependencyIssue.details.operatorValue)}\`\n\n`;
     }
+    
+    // Add condition details if available
+    if (dependencyIssue.details.conditionDetails) {
+      const { fact, operator, params } = dependencyIssue.details.conditionDetails;
+      section += `**Condition**: Fact \`${fact}\` with operator \`${operator}\`\n`;
+      if (params) {
+        section += `**Parameters**: \`${JSON.stringify(params)}\`\n\n`;
+      }
+    }
 
     section += `| Dependency | Current Version | Required Version |
 |------------|-----------------|------------------|
@@ -454,6 +472,15 @@ Several files contain potentially sensitive data patterns that shouldn't be logg
       if (issue.details && issue.details.operatorValue) {
         section += `  - Required Value: \`${JSON.stringify(issue.details.operatorValue)}\`\n`;
       }
+      
+      // Add condition details if available
+      if (issue.details && issue.details.conditionDetails) {
+        const { fact, operator, params } = issue.details.conditionDetails;
+        section += `  - Condition: Fact \`${fact}\` with operator \`${operator}\`\n`;
+        if (params) {
+          section += `  - Parameters: \`${JSON.stringify(params)}\`\n`;
+        }
+      }
     });
     
     return section;
@@ -472,6 +499,15 @@ Several files contain potentially sensitive data patterns that shouldn't be logg
     // Add operator value information if available
     if (error.details.operatorValue) {
       issueDetails += `  - Required Value: \`${JSON.stringify(error.details.operatorValue)}\`\n`;
+    }
+    
+    // Add condition details if available
+    if (error.details.conditionDetails) {
+      const { fact, operator, params } = error.details.conditionDetails;
+      issueDetails += `  - Condition: Fact \`${fact}\` with operator \`${operator}\`\n`;
+      if (params) {
+        issueDetails += `  - Parameters: \`${JSON.stringify(params)}\`\n`;
+      }
     }
     
     return issueDetails;
