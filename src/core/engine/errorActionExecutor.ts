@@ -1,4 +1,4 @@
-import { logger } from '../../utils/logger';
+import { logger, setLogPrefix, getLogPrefix } from '../../utils/logger';
 import { pluginRegistry } from '../pluginRegistry';
 
 interface ErrorActionParams {
@@ -11,24 +11,32 @@ interface ErrorActionParams {
 }
 
 export async function executeErrorAction(actionName: string, params: ErrorActionParams): Promise<any> {
-    // First check if it's a plugin action
-    if (actionName.includes(':')) {
-        const [pluginName, functionName] = actionName.split(':');
-        const result = pluginRegistry.executePluginFunction(pluginName, functionName, params);
-        if (!result.success) {
-            throw new Error(`Plugin error action failed: ${result.error?.message}`);
+    const originalLogPrefix = getLogPrefix();
+    setLogPrefix(`${originalLogPrefix}:${params.rule || 'unknown-rule'}`);
+    
+    try {
+        // First check if it's a plugin action
+        if (actionName.includes(':')) {
+            const [pluginName, functionName] = actionName.split(':');
+            const result = pluginRegistry.executePluginFunction(pluginName, functionName, params);
+            if (!result.success) {
+                throw new Error(`Plugin error action failed: ${result.error?.message}`);
+            }
+            return result.data;
         }
-        return result.data;
-    }
 
-    // Otherwise check built-in actions
-    switch (actionName) {
-        case 'sendNotification':
-            return await sendNotification(params);
-        case 'logToFile':
-            return await logToFile(params);
-        default:
-            throw new Error(`Unknown error action: ${actionName}`);
+        // Otherwise check built-in actions
+        switch (actionName) {
+            case 'sendNotification':
+                return await sendNotification(params);
+            case 'logToFile':
+                return await logToFile(params);
+            default:
+                throw new Error(`Unknown error action: ${actionName}`);
+        }
+    } finally {
+        // Always restore the original log prefix
+        setLogPrefix(originalLogPrefix);
     }
 }
 

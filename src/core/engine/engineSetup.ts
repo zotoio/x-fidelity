@@ -1,5 +1,5 @@
 import { Engine, Event, RuleProperties } from 'json-rules-engine';
-import { logger } from '../../utils/logger';
+import { logger, setLogPrefix, getLogPrefix } from '../../utils/logger';
 import { loadOperators } from '../../operators';
 import { loadFacts } from '../../facts';
 import { sendTelemetry } from '../../utils/telemetry';
@@ -89,7 +89,11 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         });
     }
 
-    engine.on('success', async ({ type, params }: Event) => {
+    engine.on('success', async ({ type, params, name }: Event & { name?: string }) => {
+        const originalLogPrefix = getLogPrefix();
+        const ruleName = name || 'unknown-rule';
+        setLogPrefix(`${originalLogPrefix}:${ruleName}`);
+        
         if (type === 'warning') {
             logger.warn(`warning detected: ${JSON.stringify(params)}`);
             await sendTelemetry({
@@ -97,6 +101,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                 metadata: {
                     archetype,
                     repoPath: '',
+                    ruleName,
                     ...params
                 },
                 timestamp: new Date().toISOString()
@@ -109,6 +114,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                 metadata: {
                     archetype,
                     repoPath: '',
+                    ruleName,
                     ...params
                 },
                 timestamp: new Date().toISOString()
@@ -121,11 +127,15 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                 metadata: {
                     archetype,
                     repoPath: '',
+                    ruleName,
                     ...params
                 },
                 timestamp: new Date().toISOString()
             }, executionLogPrefix);
         }
+        
+        // Restore original log prefix
+        setLogPrefix(originalLogPrefix);
     });
 
     // Add facts to engine

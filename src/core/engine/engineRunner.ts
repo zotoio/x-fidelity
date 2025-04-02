@@ -1,5 +1,5 @@
 import { ScanResult, RuleFailure, ErrorLevel } from '../../types/typeDefs';
-import { logger } from '../../utils/logger';
+import { logger, setLogPrefix, getLogPrefix } from '../../utils/logger';
 import { REPO_GLOBAL_CHECK } from '../configManager';
 import { executeErrorAction } from './errorActionExecutor';
 
@@ -32,6 +32,9 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
         const fileFailures: RuleFailure[] = [];
 
         try {
+            // Save the original log prefix
+            const originalLogPrefix = getLogPrefix();
+            
             const { results } = await engine.run(facts);
             const seenFailures = new Set<string>();
 
@@ -42,6 +45,9 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                     const failureKey = `${result.name}:${result.event?.type}:${result.event?.params?.message}`;
                     
                     if (!seenFailures.has(failureKey)) {
+                        // Set the rule name as log prefix for this failure
+                        setLogPrefix(`${originalLogPrefix}:${result.name}`);
+                        
                         fileFailures.push({
                             ruleFailure: result.name,
                             level: result.event?.type as ErrorLevel,
@@ -50,6 +56,9 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                                 ...result.event?.params
                             }
                         });
+                        
+                        // Restore original log prefix
+                        setLogPrefix(originalLogPrefix);
                         seenFailures.add(failureKey);
                     } else {
                         logger.debug(`Skipping duplicate failure: ${failureKey}`);
@@ -60,6 +69,10 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
             const error = e as Error;
             const failedRuleName = (error as any)?.rule?.name;
             const rule = failedRuleName ? (engine as any).rules.find((r: any) => r.name === failedRuleName) : null;
+
+            // Set the rule name as log prefix for this error
+            const originalLogPrefix = getLogPrefix();
+            setLogPrefix(`${originalLogPrefix}:${failedRuleName || 'unknown-rule'}`);
 
             // Determine error source and level
             let errorSource = 'unknown';
@@ -131,6 +144,9 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                     details: (error as any)?.pluginError?.details
                 }
             });
+            
+            // Restore original log prefix before returning
+            setLogPrefix(originalLogPrefix);
         }
 
         if (fileFailures.length > 0) {

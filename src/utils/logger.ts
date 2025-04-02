@@ -31,7 +31,21 @@ export function setLogPrefix(prefix: string): void {
 
 export function getLogPrefix(): string {
     return logPrefix;
-}   
+}
+
+export function appendLogPrefix(suffix: string): void {
+    logPrefix = `${logPrefix}:${suffix}`;
+}
+
+export function withLogPrefix<T>(prefix: string, fn: () => T): T {
+    const originalPrefix = getLogPrefix();
+    setLogPrefix(`${originalPrefix}:${prefix}`);
+    try {
+        return fn();
+    } finally {
+        setLogPrefix(originalPrefix);
+    }
+}
 
 // Initialize logger function that will create the singleton if it doesn't exist
 function getLogger(force?: boolean): pino.Logger {
