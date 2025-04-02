@@ -95,9 +95,9 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         setLogPrefix(`${originalLogPrefix}:${ruleName}`);
         
         // Extract operator threshold, value, and condition details from conditions
-        let operatorThreshold = null;
-        let operatorValue = null;
-        let conditionDetails = null;
+        let operatorThreshold: { operator: string; value: any } | undefined = undefined;
+        let operatorValue: any = undefined;
+        let conditionDetails: { fact: string; operator: string; value: any; params?: any } | undefined = undefined;
         try {
             const rule = (engine as any).rules.find((r: any) => r.name === name);
             if (rule) {
