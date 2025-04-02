@@ -439,59 +439,85 @@ The following repository-wide issues were detected:
 
 `;
     
+    // Group issues by level for better organization
+    const issuesByLevel: Record<string, typeof globalIssues> = {
+      'FATALITY': [],
+      'ERROR': [],
+      'WARNING': [],
+      'EXEMPT': [],
+      'UNKNOWN': []
+    };
+    
     globalIssues.forEach(issue => {
-      // Extract rule name without the -global suffix for cleaner display
-      const ruleName = issue.ruleFailure.replace(/-global$/, '');
-      
-      section += `### ${ruleName} (${issue.level?.toUpperCase() || 'UNKNOWN'})\n\n`;
-      section += `**Issue**: ${issue.details && issue.details.message ? issue.details.message : 'No details available'}\n\n`;
-      
-      // Add rule description if available
-      if (issue.details && issue.details.ruleDescription) {
-        section += `**Description**: ${issue.details.ruleDescription}\n\n`;
+      const level = issue.level?.toUpperCase() || 'UNKNOWN';
+      if (issuesByLevel[level]) {
+        issuesByLevel[level].push(issue);
+      } else {
+        issuesByLevel['UNKNOWN'].push(issue);
       }
-      
-      // Add recommendations if available
-      if (issue.details && issue.details.recommendations) {
-        section += `**Recommendations**:\n`;
-        if (Array.isArray(issue.details.recommendations)) {
-          issue.details.recommendations.forEach((rec: string) => {
-            section += `- ${rec}\n`;
-          });
-        } else {
-          section += `- ${issue.details.recommendations}\n`;
-        }
-        section += `\n`;
-      }
-      
-      // Add condition details in a more readable format
-      if (issue.details && issue.details.conditionDetails) {
-        const { fact, operator, value, params } = issue.details.conditionDetails;
-        section += `**Rule Condition**: \`${fact}\` ${operator} \`${JSON.stringify(value)}\`\n\n`;
+    });
+    
+    // Process issues by severity level (highest first)
+    ['FATALITY', 'ERROR', 'WARNING', 'EXEMPT', 'UNKNOWN'].forEach(level => {
+      const levelIssues = issuesByLevel[level];
+      if (levelIssues.length > 0) {
+        section += `### ${level} Level Issues\n\n`;
         
-        if (params) {
-          section += `**Parameters**: \`${JSON.stringify(params, null, 2)}\`\n\n`;
-        }
-      }
-      
-      // Add all conditions if available
-      if (issue.details && issue.details.allConditions && issue.details.allConditions.length > 0) {
-        section += `**All Conditions** (${issue.details.conditionType || 'unknown'}):\n\n`;
-        issue.details.allConditions.forEach((condition: any, index: number) => {
-          section += `${index + 1}. \`${condition.fact}\` ${condition.operator} \`${JSON.stringify(condition.value)}\`\n`;
-          if (condition.params) {
-            section += `   Parameters: \`${JSON.stringify(condition.params, null, 2)}\`\n`;
+        levelIssues.forEach(issue => {
+          // Extract rule name without the -global suffix for cleaner display
+          const ruleName = issue.ruleFailure.replace(/-global$/, '');
+          
+          section += `#### ${ruleName}\n\n`;
+          section += `**Issue**: ${issue.details && issue.details.message ? issue.details.message : 'No details available'}\n\n`;
+          
+          // Add rule description if available
+          if (issue.details && issue.details.ruleDescription) {
+            section += `**Description**: ${issue.details.ruleDescription}\n\n`;
           }
+          
+          // Add recommendations if available
+          if (issue.details && issue.details.recommendations) {
+            section += `**Recommendations**:\n`;
+            if (Array.isArray(issue.details.recommendations)) {
+              issue.details.recommendations.forEach((rec: string) => {
+                section += `- ${rec}\n`;
+              });
+            } else {
+              section += `- ${issue.details.recommendations}\n`;
+            }
+            section += `\n`;
+          }
+          
+          // Add condition details in a more readable format
+          if (issue.details && issue.details.conditionDetails) {
+            const { fact, operator, value, params } = issue.details.conditionDetails;
+            section += `**Rule Condition**: \`${fact}\` ${operator} \`${JSON.stringify(value)}\`\n\n`;
+            
+            if (params) {
+              section += `**Parameters**: \`${JSON.stringify(params, null, 2)}\`\n\n`;
+            }
+          }
+          
+          // Add all conditions if available
+          if (issue.details && issue.details.allConditions && issue.details.allConditions.length > 0) {
+            section += `**All Conditions** (${issue.details.conditionType || 'unknown'}):\n\n`;
+            issue.details.allConditions.forEach((condition: any, index: number) => {
+              section += `${index + 1}. \`${condition.fact}\` ${condition.operator} \`${JSON.stringify(condition.value)}\`\n`;
+              if (condition.params) {
+                section += `   Parameters: \`${JSON.stringify(condition.params, null, 2)}\`\n`;
+              }
+            });
+            section += `\n`;
+          }
+          
+          // Add any additional details
+          if (issue.details && issue.details.details) {
+            section += `**Additional Details**:\n\`\`\`\n${JSON.stringify(issue.details.details, null, 2)}\n\`\`\`\n\n`;
+          }
+          
+          section += `---\n\n`;
         });
-        section += `\n`;
       }
-      
-      // Add any additional details
-      if (issue.details && issue.details.details) {
-        section += `**Additional Details**:\n\`\`\`\n${JSON.stringify(issue.details.details, null, 2)}\n\`\`\`\n\n`;
-      }
-      
-      section += `---\n\n`;
     });
     
     return section;
