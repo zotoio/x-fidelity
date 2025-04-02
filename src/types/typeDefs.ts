@@ -172,6 +172,15 @@ export interface BasicTelemetryMetadata {
         value: any;
         params?: any;
     };
+    allConditions?: Array<{
+        fact: string;
+        operator: string;
+        value: any;
+        params?: any;
+        path?: string;
+        priority?: number;
+    }>;
+    conditionType?: 'all' | 'any' | 'unknown';
 }
 
 export interface ExemptionTelemetryMetadata {

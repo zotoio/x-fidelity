@@ -141,7 +141,8 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     ruleName,
                     operatorThreshold,
                     operatorValue,
-                    conditionDetails,
+                    allConditions,
+                    conditionType,
                     ...params
                 },
                 timestamp: new Date().toISOString()
@@ -157,7 +158,8 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     ruleName,
                     operatorThreshold,
                     operatorValue,
-                    conditionDetails,
+                    allConditions,
+                    conditionType,
                     ...params
                 },
                 timestamp: new Date().toISOString()
@@ -173,7 +175,8 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     ruleName,
                     operatorThreshold,
                     operatorValue,
-                    conditionDetails,
+                    allConditions,
+                    conditionType,
                     ...params
                 },
                 timestamp: new Date().toISOString()
