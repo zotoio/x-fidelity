@@ -17,7 +17,7 @@ const globalPatternRatio: OperatorDefn = {
             let comparisonType: 'gte' | 'lte' = 'gte'; // Default to greater than or equal
             
             if (typeof threshold === 'object' && threshold !== null) {
-                thresholdValue = threshold.value || threshold.threshold;
+                thresholdValue = threshold.threshold;
                 if (threshold.comparison) {
                     comparisonType = threshold.comparison;
                 }
