@@ -1,3 +1,15 @@
+# [3.23.0](https://github.com/zotoio/x-fidelity/compare/v3.22.0...v3.23.0) (2025-04-02)
+
+
+### Bug Fixes
+
+* add null check for issue level in report generator ([6e2db2a](https://github.com/zotoio/x-fidelity/commit/6e2db2ad234c041b8b8fdfc2902a55ee3bdf1b2a))
+
+
+### Features
+
+* enhance global issues report with detailed formatting and sections ([42e3033](https://github.com/zotoio/x-fidelity/commit/42e3033b9e8cd86c08ef46c3f2470315a336741d))
+
 # [3.22.0](https://github.com/zotoio/x-fidelity/compare/v3.21.1...v3.22.0) (2025-04-02)
 
 
