@@ -1,3 +1,10 @@
+## [3.21.1](https://github.com/zotoio/x-fidelity/compare/v3.21.0...v3.21.1) (2025-04-02)
+
+
+### Bug Fixes
+
+* **tests:** logic issue ([1578b81](https://github.com/zotoio/x-fidelity/commit/1578b817ff58912a312e32f5480b2b5f655a1014))
+
 # [3.21.0](https://github.com/zotoio/x-fidelity/compare/v3.20.0...v3.21.0) (2025-04-02)
 
 
