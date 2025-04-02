@@ -138,6 +138,8 @@ export interface RuleConfig {
         action: string;  // Name of function to execute
         params?: Record<string, any>;  // Parameters for the action
     };
+    description?: string;  // Description of what the rule checks for
+    recommendations?: string[];  // Recommendations on how to fix the issue
 }
 export type RuleConfigSchema = JSONSchemaType<RuleConfig>;
 

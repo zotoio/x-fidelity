@@ -90,6 +90,8 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                                 operatorThreshold: operatorThreshold,
                                 operatorValue: operatorValue,
                                 conditionDetails: conditionDetails,
+                                ruleDescription: ruleDescription,
+                                recommendations: recommendations,
                                 ...result.event?.params
                             }
                         });

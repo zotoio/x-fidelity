@@ -102,6 +102,21 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
             const rule = (engine as any).rules.find((r: any) => r.name === name);
             if (rule) {
                 const conditions = rule.conditions.all || rule.conditions.any || [];
+                
+                // Capture full condition structure
+                conditionDetails = {
+                    type: rule.conditions.all ? 'all' : 'any',
+                    conditions: conditions.map((condition: any) => ({
+                        fact: condition.fact,
+                        operator: condition.operator,
+                        value: condition.value,
+                        params: condition.params,
+                        path: condition.path
+                    })),
+                    description: `Rule requires ${rule.conditions.all ? 'all' : 'any'} of ${conditions.length} conditions to be met`
+                };
+                
+                // Still keep the specific condition that triggered the rule
                 for (const condition of conditions) {
                     if (condition.operator && condition.value !== undefined) {
                         operatorThreshold = {
@@ -109,14 +124,6 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                             value: condition.value
                         };
                         operatorValue = condition.value;
-                                        
-                        // Capture more details about the condition
-                        conditionDetails = {
-                            fact: condition.fact,
-                            operator: condition.operator,
-                            value: condition.value,
-                            params: condition.params
-                        };
                         break;
                     }
                 }
