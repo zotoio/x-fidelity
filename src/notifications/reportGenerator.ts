@@ -443,7 +443,7 @@ The following repository-wide issues were detected:
       // Extract rule name without the -global suffix for cleaner display
       const ruleName = issue.ruleFailure.replace(/-global$/, '');
       
-      section += `### ${ruleName} (${issue.level.toUpperCase()})\n\n`;
+      section += `### ${ruleName} (${issue.level?.toUpperCase() || 'UNKNOWN'})\n\n`;
       section += `**Issue**: ${issue.details && issue.details.message ? issue.details.message : 'No details available'}\n\n`;
       
       // Add rule description if available
