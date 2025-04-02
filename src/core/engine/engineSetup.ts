@@ -198,6 +198,9 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         
         // Restore original log prefix
         setLogPrefix(originalLogPrefix);
+        
+        // Restore original log prefix
+        setLogPrefix(originalLogPrefix);
     });
 
     // Add facts to engine

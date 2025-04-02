@@ -46,7 +46,8 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                     
                     if (!seenFailures.has(failureKey)) {
                         // Set the rule name as log prefix for this failure
-                        setLogPrefix(`${originalLogPrefix}:${result.name}`);
+                        const ruleName = result.name || 'unknown-rule';
+                        setLogPrefix(`${originalLogPrefix}:${ruleName}`);
                         
                         // Extract operator value from the condition that triggered the rule
                         let operatorThreshold: { operator: string; value: any } | undefined = undefined;
@@ -130,6 +131,8 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         });
                         
                         // Restore original log prefix
+                        setLogPrefix(originalLogPrefix);
+                        // Restore original log prefix before continuing
                         setLogPrefix(originalLogPrefix);
                         seenFailures.add(failureKey);
                     } else {
