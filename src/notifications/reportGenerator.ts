@@ -271,18 +271,18 @@ Based on the OpenAI analysis, these are the top 5 critical issues to address:
 `;
 
           // Add operator threshold information if available
-          if (openAiAnalysis.details.operatorThreshold) {
+          if (openAiAnalysis.details && openAiAnalysis.details.operatorThreshold) {
             const { operator, value } = openAiAnalysis.details.operatorThreshold;
             aiAnalysis += `**Threshold**: \`${operator}: ${JSON.stringify(value)}\`\n\n`;
           }
           
           // Add operator value information if available
-          if (openAiAnalysis.details.operatorValue) {
+          if (openAiAnalysis.details && openAiAnalysis.details.operatorValue) {
             aiAnalysis += `**Required Value**: \`${JSON.stringify(openAiAnalysis.details.operatorValue)}\`\n\n`;
           }
           
           // Add condition details if available
-          if (openAiAnalysis.details.conditionDetails) {
+          if (openAiAnalysis.details && openAiAnalysis.details.conditionDetails) {
             const { fact, operator, value, params } = openAiAnalysis.details.conditionDetails;
             aiAnalysis += `**Condition**: Fact \`${fact}\` with operator \`${operator}\`\n`;
             if (params) {
@@ -307,8 +307,8 @@ Based on the OpenAI analysis, these are the top 5 critical issues to address:
             fileName: this.getFileName(detail.filePath),
             fileUrl: this.getGithubUrl(detail.filePath),
             details: error.details,
-            operatorThreshold: error.details.operatorThreshold,
-            operatorValue: error.details.operatorValue
+            operatorThreshold: error.details?.operatorThreshold,
+            operatorValue: error.details?.operatorValue
           }))
       );
     

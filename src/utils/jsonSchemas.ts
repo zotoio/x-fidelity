@@ -192,9 +192,15 @@ const ruleSchema: RuleConfigSchema = {
             required: ["action"],
             nullable: true,
         },
+        description: { type: "string", nullable: true },
+        recommendations: { 
+            type: "array", 
+            items: { type: "string" }, 
+            nullable: true 
+        }
     },
     required: ["name", "conditions", "event"],
-};
+} as unknown as RuleConfigSchema;
 
 export const aiSuggestionsSchema: AiSuggestionsSchema = {
     type: "object",

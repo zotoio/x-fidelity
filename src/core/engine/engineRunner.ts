@@ -49,9 +49,9 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         setLogPrefix(`${originalLogPrefix}:${result.name}`);
                         
                         // Extract operator value from the condition that triggered the rule
-                        let operatorThreshold = null;
-                        let operatorValue = null;
-                        let conditionDetails = null;
+                        let operatorThreshold: { operator: string; value: any } | undefined = undefined;
+                        let operatorValue: any = undefined;
+                        let conditionDetails: { fact: string; operator: string; value: any; params?: any } | undefined = undefined;
                         let ruleDescription = null;
                         let recommendations = null;
                         try {
@@ -71,19 +71,18 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                                 // Extract operator value from the condition
                                 const conditions = rule.conditions.all || rule.conditions.any || [];
                                 
-                                // Capture full condition structure
-                                conditionDetails = {
-                                    type: rule.conditions.all ? 'all' : 'any',
-                                    conditions: conditions.map((condition: any) => ({
-                                        fact: condition.fact,
-                                        operator: condition.operator,
-                                        value: condition.value,
-                                        params: condition.params,
-                                        path: condition.path,
-                                        priority: condition.priority
-                                    })),
-                                    description: `Rule requires ${rule.conditions.all ? 'all' : 'any'} of ${conditions.length} conditions to be met`
-                                };
+                                // Find the first condition with operator and value
+                                for (const condition of conditions) {
+                                    if (condition.operator && condition.value !== undefined) {
+                                        conditionDetails = {
+                                            fact: condition.fact,
+                                            operator: condition.operator,
+                                            value: condition.value,
+                                            params: condition.params
+                                        };
+                                        break;
+                                    }
+                                }
                                 
                                 // Still keep the specific condition that triggered the rule
                                 for (const condition of conditions) {

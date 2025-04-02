@@ -1,15 +1,6 @@
 import { logger, setLogPrefix, getLogPrefix } from '../../utils/logger';
 import { pluginRegistry } from '../pluginRegistry';
 
-interface ErrorActionParams {
-    error: Error;
-    rule: string;
-    level: string;
-    source?: "operator" | "fact" | "plugin" | "rule" | "unknown";
-    params: Record<string, any>;
-    file: any;
-}
-
 export interface ErrorActionParams {
     error: Error;
     rule: string;
