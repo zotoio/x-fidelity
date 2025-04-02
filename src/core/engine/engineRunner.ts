@@ -51,6 +51,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         // Extract operator value from the condition that triggered the rule
                         let operatorThreshold = null;
                         let operatorValue = null;
+                        let conditionDetails = null;
                         try {
                             // Find the condition that triggered this rule
                             const rule = (engine as any).rules.find((r: any) => r.name === result.name);
@@ -65,6 +66,14 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                                         };
                                         // Also capture the actual value that was expected
                                         operatorValue = condition.value;
+                                        
+                                        // Capture more details about the condition
+                                        conditionDetails = {
+                                            fact: condition.fact,
+                                            operator: condition.operator,
+                                            value: condition.value,
+                                            params: condition.params
+                                        };
                                         break;
                                     }
                                 }
