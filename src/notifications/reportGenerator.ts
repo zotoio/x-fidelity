@@ -269,6 +269,12 @@ Based on the OpenAI analysis, these are the top 5 critical issues to address:
 **Suggestion**: ${issue.suggestion}
 
 `;
+
+          // Add operator threshold information if available
+          if (openAiAnalysis.details.operatorThreshold) {
+            const { operator, value } = openAiAnalysis.details.operatorThreshold;
+            aiAnalysis += `**Threshold**: \`${operator}: ${JSON.stringify(value)}\`\n\n`;
+          }
         });
       }
     }
@@ -286,7 +292,8 @@ Based on the OpenAI analysis, these are the top 5 critical issues to address:
             filePath: detail.filePath,
             fileName: this.getFileName(detail.filePath),
             fileUrl: this.getGithubUrl(detail.filePath),
-            details: error.details
+            details: error.details,
+            operatorThreshold: error.details.operatorThreshold
           }))
       );
     
@@ -298,7 +305,15 @@ Based on the OpenAI analysis, these are the top 5 critical issues to address:
 
 The analysis identified several functions with high complexity that should be refactored:
 
-| File | Function | Cyclomatic Complexity | Cognitive Complexity | Nesting Depth | Parameter Count | Return Count |
+`;
+
+    // Add threshold information if available from the first issue
+    if (complexityIssues[0].operatorThreshold) {
+      const { operator, value } = complexityIssues[0].operatorThreshold;
+      section += `**Threshold**: \`${operator}: ${JSON.stringify(value)}\`\n\n`;
+    }
+
+    section += `| File | Function | Cyclomatic Complexity | Cognitive Complexity | Nesting Depth | Parameter Count | Return Count |
 |------|----------|------------------------|----------------------|--------------|----------------|--------------|
 `;
     
@@ -333,7 +348,15 @@ The analysis identified several functions with high complexity that should be re
 
 The analysis detected outdated framework dependencies that need updating:
 
-| Dependency | Current Version | Required Version |
+`;
+
+    // Add operator threshold information if available
+    if (dependencyIssue.details.operatorThreshold) {
+      const { operator, value } = dependencyIssue.details.operatorThreshold;
+      section += `**Threshold**: \`${operator}: ${JSON.stringify(value)}\`\n\n`;
+    }
+
+    section += `| Dependency | Current Version | Required Version |
 |------------|-----------------|------------------|
 `;
     
@@ -404,6 +427,12 @@ Several files contain potentially sensitive data patterns that shouldn't be logg
     
     globalIssues.forEach(issue => {
       section += `- **${issue.ruleFailure}** (${issue.level}): ${issue.details && issue.details.message ? issue.details.message : 'No details available'}\n`;
+      
+      // Add operator threshold information if available
+      if (issue.details && issue.details.operatorThreshold) {
+        const { operator, value } = issue.details.operatorThreshold;
+        section += `  - Threshold: \`${operator}: ${JSON.stringify(value)}\`\n`;
+      }
     });
     
     return section;
