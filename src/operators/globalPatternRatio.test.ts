@@ -18,10 +18,10 @@ describe('globalPatternRatio', () => {
 
     it('should return true when ratio exceeds threshold with default gte comparison', () => {
         const analysisResult = {
-            matchCounts: {
-                'newApiMethod\\(': 8,
-                'legacyApiMethod\\(': 2
-            },
+            patternData: [
+                { pattern: 'newApiMethod\\(', count: 8, files: [] },
+                { pattern: 'legacyApiMethod\\(', count: 2, files: [] }
+            ],
             summary: {
                 totalFiles: 5,
                 totalMatches: 10
@@ -33,10 +33,10 @@ describe('globalPatternRatio', () => {
 
     it('should return true when ratio exceeds threshold with explicit gte comparison', () => {
         const analysisResult = {
-            matchCounts: {
-                'newApiMethod\\(': 8,
-                'legacyApiMethod\\(': 2
-            },
+            patternData: [
+                { pattern: 'newApiMethod\\(', count: 8, files: [] },
+                { pattern: 'legacyApiMethod\\(', count: 2, files: [] }
+            ],
             summary: {
                 totalFiles: 5,
                 totalMatches: 10
@@ -48,10 +48,10 @@ describe('globalPatternRatio', () => {
 
     it('should return false when ratio is below threshold with gte comparison', () => {
         const analysisResult = {
-            matchCounts: {
-                'newApiMethod\\(': 4,
-                'legacyApiMethod\\(': 6
-            },
+            patternData: [
+                { pattern: 'newApiMethod\\(', count: 4, files: [] },
+                { pattern: 'legacyApiMethod\\(', count: 6, files: [] }
+            ],
             summary: {
                 totalFiles: 5,
                 totalMatches: 10
@@ -63,10 +63,10 @@ describe('globalPatternRatio', () => {
 
     it('should return true when ratio is below threshold with lte comparison', () => {
         const analysisResult = {
-            matchCounts: {
-                'newApiMethod\\(': 4,
-                'legacyApiMethod\\(': 6
-            },
+            patternData: [
+                { pattern: 'newApiMethod\\(', count: 4, files: [] },
+                { pattern: 'legacyApiMethod\\(', count: 6, files: [] }
+            ],
             summary: {
                 totalFiles: 5,
                 totalMatches: 10
@@ -78,10 +78,10 @@ describe('globalPatternRatio', () => {
 
     it('should return false when ratio exceeds threshold with lte comparison', () => {
         const analysisResult = {
-            matchCounts: {
-                'newApiMethod\\(': 8,
-                'legacyApiMethod\\(': 2
-            },
+            patternData: [
+                { pattern: 'newApiMethod\\(', count: 8, files: [] },
+                { pattern: 'legacyApiMethod\\(', count: 2, files: [] }
+            ],
             summary: {
                 totalFiles: 5,
                 totalMatches: 10
@@ -93,17 +93,20 @@ describe('globalPatternRatio', () => {
 
     it('should handle edge cases', () => {
         // No patterns
-        expect(globalPatternRatio.fn({ matchCounts: {}, summary: {} }, { value: 1, comparison: 'gte' })).toBe(false);
+        expect(globalPatternRatio.fn({ patternData: [], summary: {} }, { value: 1, comparison: 'gte' })).toBe(false);
         
         // Only one pattern
         expect(globalPatternRatio.fn({ 
-            matchCounts: { 'pattern1': 5 }, 
+            patternData: [{ pattern: 'pattern1', count: 5, files: [] }], 
             summary: { totalMatches: 5 } 
         }, { value: 1, comparison: 'gte' })).toBe(false);
         
         // Denominator is zero
         expect(globalPatternRatio.fn({ 
-            matchCounts: { 'pattern1': 5, 'pattern2': 0 }, 
+            patternData: [
+                { pattern: 'pattern1', count: 5, files: [] },
+                { pattern: 'pattern2', count: 0, files: [] }
+            ], 
             summary: { totalMatches: 5 } 
         }, { value: 1, comparison: 'gte' })).toBe(false);
     });

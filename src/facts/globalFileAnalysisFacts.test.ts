@@ -158,10 +158,7 @@ describe('globalFileAnalysis', () => {
         expect(result.patternData[0].files[0].matches[0].match).toBe('pattern\\(');
         expect(result.patternData[0].files[0].matches[0].context).toBe('line2 pattern()');
         
-        // Also check the backward-compatible structure
-        expect(result.fileMatches['pattern\\('][0].matches[0].lineNumber).toBe(2);
-        expect(result.fileMatches['pattern\\('][0].matches[0].match).toBe('pattern\\(');
-        expect(result.fileMatches['pattern\\('][0].matches[0].context).toBe('line2 pattern()');
+        // Check the pattern data structure
         
         expect(maskSensitiveData).toHaveBeenCalled();
     });
@@ -178,7 +175,7 @@ describe('globalFileAnalysis', () => {
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
         expect(logger.error).toHaveBeenCalledWith(`Error in globalFileAnalysis: Error: Test error`);
-        expect(result).toEqual({ matchCounts: {}, fileMatches: {}, fileResults: {}, fileResultsArray: [] });
+        expect(result).toEqual({ patternData: [], fileResults: [] });
     });
 
     it('should handle invalid globalFileMetadata', async () => {
@@ -192,7 +189,7 @@ describe('globalFileAnalysis', () => {
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
         expect(logger.error).toHaveBeenCalledWith('Invalid globalFileMetadata');
-        expect(result).toEqual({ matchCounts: {}, fileMatches: {}, fileResults: {}, fileResultsArray: [] });
+        expect(result).toEqual({ patternData: [], fileResults: [] });
     });
 
     it('should support file-centric output format', async () => {
@@ -328,12 +325,6 @@ describe('globalFileAnalysis', () => {
         expect(pattern2Entry.files.length).toBe(1);
         expect(pattern2Entry.files[0].filePath).toBe('/path/to/file1.ts');
         
-        // Also check backward-compatible structure
-        expect(result).toHaveProperty('fileMatches');
-        expect(result.fileMatches).toHaveProperty('pattern1\\(');
-        expect(result.fileMatches).toHaveProperty('pattern2\\(');
-        expect(result.fileMatches['pattern1\\('].length).toBe(2);
-        expect(result.fileMatches['pattern2\\('].length).toBe(1);
-        expect(result.fileMatches['pattern2\\('][0].filePath).toBe('/path/to/file1.ts');
+        // No need to check backward-compatible structure
     });
 });

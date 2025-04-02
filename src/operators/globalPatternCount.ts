@@ -34,15 +34,14 @@ const globalPatternCount: OperatorDefn = {
                 return comparisonType === 'gte' ? newTotal >= thresholdValue : newTotal <= thresholdValue;
             }
             
-            // Fallback to original behavior for backward compatibility
-            const patterns = Object.keys(analysisResult.matchCounts);
-            if (patterns.length < 1) {
+            // Use pattern data directly
+            if (!analysisResult.patternData || analysisResult.patternData.length < 1) {
                 logger.debug('globalPatternCount: no patterns found in analysis');
                 return false;
             }
             
             // Get count for the first pattern
-            const patternCount = analysisResult.matchCounts[patterns[0]] || 0;
+            const patternCount = analysisResult.patternData[0].count || 0;
             logger.info(`globalPatternCount: ${patternCount}, threshold: ${thresholdValue}, comparison: ${comparisonType}`);
             
             // Compare count with threshold based on comparison type

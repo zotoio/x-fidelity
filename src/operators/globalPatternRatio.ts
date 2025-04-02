@@ -47,16 +47,15 @@ const globalPatternRatio: OperatorDefn = {
                 return comparisonType === 'gte' ? ratio >= thresholdValue : ratio <= thresholdValue;
             }
             
-            // Fallback to original behavior for backward compatibility
-            const patterns = Object.keys(analysisResult.matchCounts);
-            if (patterns.length < 2) {
+            // Use pattern data directly
+            if (!analysisResult.patternData || analysisResult.patternData.length < 2) {
                 logger.debug('globalPatternRatio: need at least 2 patterns to calculate ratio');
                 return false;
             }
             
             // Calculate ratio between first two patterns
-            const pattern1Count = analysisResult.matchCounts[patterns[0]] || 0;
-            const pattern2Count = analysisResult.matchCounts[patterns[1]] || 0;
+            const pattern1Count = analysisResult.patternData[0].count || 0;
+            const pattern2Count = analysisResult.patternData[1].count || 0;
             
             // Avoid division by zero
             if (pattern2Count === 0) {

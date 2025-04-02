@@ -6,8 +6,7 @@ export const globalFileAnalysis: FactDefn = {
     name: 'globalFileAnalysis',
     fn: async (params: any, almanac: any) => {
         const result: any = { 
-            matchCounts: {},
-            fileMatches: {},
+            patternData: [],
             fileResults: [],
         };
         
@@ -137,13 +136,8 @@ export const globalFileAnalysis: FactDefn = {
                 return sum + (patternEntry?.count || 0);
             }, 0);
             
-            // Create backward-compatible matchCounts and fileMatches
-            result.matchCounts = {};
-            result.fileMatches = {};
-            result.patternData.forEach((entry: any) => {
-                result.matchCounts[entry.pattern] = entry.count;
-                result.fileMatches[entry.pattern] = entry.files;
-            });
+            // Store pattern data directly in the result
+            // No need for backward compatibility
             
             // Add summary to result
             result.summary = {

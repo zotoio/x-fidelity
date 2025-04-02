@@ -18,9 +18,9 @@ describe('globalPatternCount', () => {
 
     it('should return true when count exceeds threshold with default gte comparison', () => {
         const analysisResult = {
-            matchCounts: {
-                'pattern1': 10
-            },
+            patternData: [
+                { pattern: 'pattern1', count: 10, files: [] }
+            ],
             summary: {
                 totalFiles: 5,
                 totalMatches: 10
@@ -32,9 +32,9 @@ describe('globalPatternCount', () => {
 
     it('should return true when count exceeds threshold with explicit gte comparison', () => {
         const analysisResult = {
-            matchCounts: {
-                'pattern1': 10
-            },
+            patternData: [
+                { pattern: 'pattern1', count: 10, files: [] }
+            ],
             summary: {
                 totalFiles: 5,
                 totalMatches: 10
@@ -46,9 +46,9 @@ describe('globalPatternCount', () => {
 
     it('should return false when count is below threshold with gte comparison', () => {
         const analysisResult = {
-            matchCounts: {
-                'pattern1': 3
-            },
+            patternData: [
+                { pattern: 'pattern1', count: 3, files: [] }
+            ],
             summary: {
                 totalFiles: 5,
                 totalMatches: 3
@@ -60,9 +60,9 @@ describe('globalPatternCount', () => {
 
     it('should return true when count is below threshold with lte comparison', () => {
         const analysisResult = {
-            matchCounts: {
-                'pattern1': 3
-            },
+            patternData: [
+                { pattern: 'pattern1', count: 3, files: [] }
+            ],
             summary: {
                 totalFiles: 5,
                 totalMatches: 3
@@ -74,9 +74,9 @@ describe('globalPatternCount', () => {
 
     it('should return false when count exceeds threshold with lte comparison', () => {
         const analysisResult = {
-            matchCounts: {
-                'pattern1': 10
-            },
+            patternData: [
+                { pattern: 'pattern1', count: 10, files: [] }
+            ],
             summary: {
                 totalFiles: 5,
                 totalMatches: 10
@@ -88,11 +88,11 @@ describe('globalPatternCount', () => {
 
     it('should handle edge cases', () => {
         // No patterns
-        expect(globalPatternCount.fn({ matchCounts: {}, summary: {} }, 1)).toBe(false);
+        expect(globalPatternCount.fn({ patternData: [], summary: {} }, 1)).toBe(false);
         
         // No matches
         expect(globalPatternCount.fn({ 
-            matchCounts: { 'pattern1': 0 }, 
+            patternData: [{ pattern: 'pattern1', count: 0, files: [] }], 
             summary: { totalMatches: 0 } 
         }, 1)).toBe(false);
     });
