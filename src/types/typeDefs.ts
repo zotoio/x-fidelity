@@ -147,6 +147,7 @@ export interface BasicTelemetryMetadata {
     errorMessage?: string;
     options?: any;
     errorStack?: string;
+    ruleName?: string;
 }
 
 export interface ExemptionTelemetryMetadata {
