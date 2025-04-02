@@ -140,8 +140,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     archetype,
                     repoPath: '',
                     ruleName,
-                    operatorThreshold,
-                    operatorValue,
+                    conditionDetails,
                     allConditions,
                     conditionType,
                     ...params
@@ -157,8 +156,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     archetype,
                     repoPath: '',
                     ruleName,
-                    operatorThreshold,
-                    operatorValue,
+                    conditionDetails,
                     allConditions,
                     conditionType,
                     ...params
@@ -174,8 +172,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     archetype,
                     repoPath: '',
                     ruleName,
-                    operatorThreshold,
-                    operatorValue,
+                    conditionDetails,
                     allConditions,
                     conditionType,
                     ...params
