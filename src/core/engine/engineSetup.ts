@@ -98,10 +98,23 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         let operatorThreshold: { operator: string; value: any } | undefined = undefined;
         let operatorValue: any = undefined;
         let conditionDetails: { fact: string; operator: string; value: any; params?: any } | undefined = undefined;
+        let allConditions: any[] = [];
+        let conditionType = 'unknown';
         try {
             const rule = (engine as any).rules.find((r: any) => r.name === name);
             if (rule) {
                 const conditions = rule.conditions.all || rule.conditions.any || [];
+                conditionType = rule.conditions.all ? 'all' : 'any';
+                
+                // Capture all conditions with their parameters
+                allConditions = conditions.map((condition: any) => ({
+                    fact: condition.fact,
+                    operator: condition.operator,
+                    value: condition.value,
+                    params: condition.params,
+                    path: condition.path,
+                    priority: condition.priority
+                }));
                 
                 // Find the first condition with operator and value
                 for (const condition of conditions) {

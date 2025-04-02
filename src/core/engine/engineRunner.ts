@@ -54,6 +54,8 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                         let conditionDetails: { fact: string; operator: string; value: any; params?: any } | undefined = undefined;
                         let ruleDescription = null;
                         let recommendations = null;
+                        let allConditions: any[] = [];
+                        let conditionType = 'unknown';
                         try {
                             // Find the condition that triggered this rule
                             const rule = (engine as any).rules.find((r: any) => r.name === result.name);
@@ -70,6 +72,17 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                                 
                                 // Extract operator value from the condition
                                 const conditions = rule.conditions.all || rule.conditions.any || [];
+                                conditionType = rule.conditions.all ? 'all' : 'any';
+                                
+                                // Capture all conditions with their parameters
+                                allConditions = conditions.map((condition: any) => ({
+                                    fact: condition.fact,
+                                    operator: condition.operator,
+                                    value: condition.value,
+                                    params: condition.params,
+                                    path: condition.path,
+                                    priority: condition.priority
+                                }));
                                 
                                 // Find the first condition with operator and value
                                 for (const condition of conditions) {
