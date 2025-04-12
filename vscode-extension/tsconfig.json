@@ -10,7 +10,10 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "x-fidelity": ["./node_modules/x-fidelity/dist"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", ".vscode-test"]

@@ -1,17 +1,17 @@
 {
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity Analyzer",
-  "description": "Provides X-Fidelity architectural analysis within VS Code.",
+  "description": "Provides X-Fidelity software architectural analysis within VS Code.",
   "version": "0.0.1",
-  "publisher": "your-publisher-name",
+  "publisher": "zotoio",
   "private": true,
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/zotoio/x-fidelity.git"
   },
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.99.0"
   },
   "categories": [
     "Linters",
@@ -63,14 +63,15 @@
     "publish": "vsce publish"
   },
   "dependencies": {
+    "pino-pretty": "^13.0.0",
     "x-fidelity": "^3.23.0"
   },
   "devDependencies": {
     "@types/node": "^18.x",
     "@types/vscode": "^1.80.0",
     "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^3.3.2",
     "esbuild": "^0.18.0",
-    "typescript": "^5.0.0",
-    "vsce": "^2.15.0"
+    "typescript": "^5.0.0"
   }
 }

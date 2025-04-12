@@ -182,6 +182,8 @@ export async function main() {
 export { repoDir } from './core/configManager';
 export * from './utils/logger';
 export * from './types';
+export { options } from './core/cli';
+export { analyzeCodebase } from './core/engine/analyzer';
 
 if (require.main === module) {
     main();
