@@ -174,7 +174,7 @@ async function runAnalysis(progress?: vscode.Progress<{ message?: string; increm
             archetype: archetype,
             configServer: configServer,
             localConfigPath: localConfigPath,
-            executionLogPrefix: generateLogPrefix() // Use the logger's prefix
+            executionLogPrefix: generateLogPrefix() // Generate a new log prefix for this analysis
         });
 
         logger.info(`Analysis complete. Found ${results.XFI_RESULT.totalIssues} issues.`);
