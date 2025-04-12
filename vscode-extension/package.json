@@ -62,6 +62,9 @@
     "package": "vsce package",
     "publish": "vsce publish"
   },
+  "dependencies": {
+    "x-fidelity": "^3.23.0"
+  },
   "devDependencies": {
     "@types/node": "^18.x",
     "@types/vscode": "^1.80.0",
