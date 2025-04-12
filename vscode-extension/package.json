@@ -1,0 +1,73 @@
+{
+  "name": "x-fidelity-vscode",
+  "displayName": "X-Fidelity Analyzer",
+  "description": "Provides X-Fidelity architectural analysis within VS Code.",
+  "version": "0.0.1",
+  "publisher": "your-publisher-name",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zotoio/x-fidelity.git"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "xfidelity.runAnalysis",
+        "title": "X-Fidelity: Run Analysis Now"
+      }
+    ],
+    "configuration": {
+      "title": "X-Fidelity",
+      "properties": {
+        "xfidelity.runInterval": {
+          "type": "number",
+          "default": 300,
+          "description": "Interval (in seconds) for running background analysis. Set to 0 to disable periodic runs."
+        },
+        "xfidelity.archetype": {
+          "type": "string",
+          "default": "node-fullstack",
+          "description": "The X-Fidelity archetype to use for analysis."
+        },
+        "xfidelity.configServer": {
+          "type": "string",
+          "default": "",
+          "description": "URL of the X-Fidelity config server (optional)."
+        },
+        "xfidelity.localConfigPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to local X-Fidelity configuration (relative to workspace root, optional)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run build",
+    "build": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^18.x",
+    "@types/vscode": "^1.80.0",
+    "@vscode/test-electron": "^2.3.0",
+    "esbuild": "^0.18.0",
+    "typescript": "^5.0.0",
+    "vsce": "^2.15.0"
+  }
+}
