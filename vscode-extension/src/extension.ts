@@ -189,11 +189,20 @@ async function runAnalysis(progress?: vscode.Progress<{ message?: string; increm
 
     } catch (error) {
         logger.error(error, 'Analysis failed during execution');
-        outputChannel.appendLine(`ERROR during analysis: ${error.message}\n${error.stack}`);
-        vscode.window.showErrorMessage(`X-Fidelity analysis failed: ${error.message}`);
-        // Ensure status bar is reset even on error
-        statusBarItem.text = `$(error) X-Fidelity`;
-        statusBarItem.tooltip = `Analysis failed: ${error.message}`;
+        
+        if (error instanceof Error) {
+            outputChannel.appendLine(`ERROR during analysis: ${error.message}\n${error.stack}`);
+            vscode.window.showErrorMessage(`X-Fidelity analysis failed: ${error.message}`);
+            // Ensure status bar is reset even on error
+            statusBarItem.text = `$(error) X-Fidelity`;
+            statusBarItem.tooltip = `Analysis failed: ${error.message}`;
+        } else {
+            const errorMessage = String(error);
+            outputChannel.appendLine(`ERROR during analysis: ${errorMessage}`);
+            vscode.window.showErrorMessage(`X-Fidelity analysis failed: ${errorMessage}`);
+            statusBarItem.text = `$(error) X-Fidelity`;
+            statusBarItem.tooltip = `Analysis failed: ${errorMessage}`;
+        }
         // Rethrow or handle as needed
         throw error; // Rethrow so the progress indicator catches it
     } finally {
