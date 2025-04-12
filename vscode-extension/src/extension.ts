@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-// Import necessary functions from the parent project using relative paths
-// IMPORTANT: These imports rely on the build step (esbuild) to bundle correctly.
-import { analyzeCodebase } from '../../src/core/engine/analyzer';
-import { options as cliOptions } from '../../src/core/cli'; // We need to manage/override these
-import { logger, setLogLevel, setLogPrefix, generateLogPrefix } from '../../utils/logger';
-import { ResultMetadata } from '../../src/types/typeDefs';
+// Import necessary functions from the x-fidelity package
+import { analyzeCodebase } from 'x-fidelity/dist/core/engine/analyzer';
+import { options as cliOptions } from 'x-fidelity/dist/core/cli'; // We need to manage/override these
+import { logger, setLogLevel, setLogPrefix, generateLogPrefix } from 'x-fidelity/dist/utils/logger';
+import { ResultMetadata } from 'x-fidelity/dist/types/typeDefs';
 
 let diagnosticCollection: vscode.DiagnosticCollection;
 let analysisInterval: NodeJS.Timeout | undefined;
