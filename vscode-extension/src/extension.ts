@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 // Import necessary functions from the x-fidelity package
-import { analyzeCodebase } from 'x-fidelity/dist/core/engine/analyzer';
-import { options as cliOptions } from 'x-fidelity/dist/core/cli'; // We need to manage/override these
-import { logger, setLogLevel, setLogPrefix, generateLogPrefix } from 'x-fidelity/dist/utils/logger';
-import { ResultMetadata } from 'x-fidelity/dist/types/typeDefs';
+import { analyzeCodebase } from 'x-fidelity';
+import { options as cliOptions } from 'x-fidelity';
+import { logger, setLogLevel, setLogPrefix, generateLogPrefix } from 'x-fidelity';
+import { ResultMetadata } from 'x-fidelity';
 
 let diagnosticCollection: vscode.DiagnosticCollection;
 let analysisInterval: NodeJS.Timeout | undefined;
