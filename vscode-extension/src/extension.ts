@@ -86,7 +86,8 @@ export function activate(context: vscode.ExtensionContext) {
     outputChannel.appendLine('X-Fidelity extension activated.');
 }
 
-function setupPeriodicAnalysis() {
+// Export for testing
+export function setupPeriodicAnalysis() {
     // Clear existing interval if it exists
     if (analysisInterval) {
         clearInterval(analysisInterval);
@@ -117,7 +118,8 @@ function setupPeriodicAnalysis() {
     }
 }
 
-async function runAnalysis(progress?: vscode.Progress<{ message?: string; increment?: number }>) {
+// Export for testing
+export async function runAnalysis(progress?: vscode.Progress<{ message?: string; increment?: number }>) {
     outputChannel.appendLine('Starting analysis run...');
     statusBarItem.text = `$(sync~spin) X-Fidelity`;
     statusBarItem.tooltip = 'Analysis is running...';
@@ -216,7 +218,8 @@ async function runAnalysis(progress?: vscode.Progress<{ message?: string; increm
     }
 }
 
-function displayDiagnostics(results: ResultMetadata, workspacePath: string) {
+// Export for testing
+export function displayDiagnostics(results: ResultMetadata, workspacePath: string) {
     diagnosticCollection.clear();
     const diagnosticsMap = new Map<string, vscode.Diagnostic[]>();
     let globalIssuesCount = 0;
@@ -307,7 +310,8 @@ function displayDiagnostics(results: ResultMetadata, workspacePath: string) {
     logger.info('Diagnostics displayed.');
 }
 
-function mapSeverity(level: 'warning' | 'error' | 'fatality' | 'exempt' | undefined): vscode.DiagnosticSeverity {
+// Export for testing
+export function mapSeverity(level: 'warning' | 'error' | 'fatality' | 'exempt' | undefined): vscode.DiagnosticSeverity {
     switch (level) {
         case 'fatality':
         case 'error':

@@ -56,22 +56,38 @@
   },
   "scripts": {
     "vscode:prepublish": "yarn run build",
-    "build": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
-    "watch": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
+    "build": "tsc -p ./ && esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "tsc -watch -p ./ && esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
     "lint": "eslint src --ext ts",
     "package": "vsce package",
-    "publish": "vsce publish"
+    "publish": "vsce publish",
+    "test": "node ./out/test/runTest.js",
+    "pretest": "yarn run build"
   },
   "dependencies": {
-    "pino-pretty": "^13.0.0",
     "x-fidelity": "^3.23.0"
   },
   "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
     "@types/node": "^18.x",
+    "@types/sinon": "^17.0.3",
     "@types/vscode": "^1.80.0",
     "@vscode/test-electron": "^2.3.0",
     "@vscode/vsce": "^3.3.2",
     "esbuild": "^0.18.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.3.0",
+    "sinon": "^17.0.1",
     "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run build",
+    "build": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "test": "node ./out/test/runTest.js"
   }
 }
