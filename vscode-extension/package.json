@@ -54,16 +54,6 @@
       }
     }
   },
-  "scripts": {
-    "vscode:prepublish": "yarn run build",
-    "build": "tsc -p ./ && esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
-    "watch": "tsc -watch -p ./ && esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
-    "lint": "eslint src --ext ts",
-    "package": "vsce package",
-    "publish": "vsce publish",
-    "test": "node ./out/test/runTest.js",
-    "pretest": "yarn run build"
-  },
   "dependencies": {
     "x-fidelity": "^3.23.0"
   },
