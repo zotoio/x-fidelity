@@ -1,10 +1,54 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 // Import necessary functions from the x-fidelity package
-import { analyzeCodebase } from 'x-fidelity';
-import { options as cliOptions } from 'x-fidelity';
-import { logger, setLogLevel, setLogPrefix, generateLogPrefix } from 'x-fidelity';
-import { ResultMetadata } from 'x-fidelity';
+import { analyzeCodebase } from 'x-fidelity/dist/core/engine/analyzer';
+import { options as cliOptions } from 'x-fidelity/dist/core/cli';
+import { ResultMetadata } from 'x-fidelity/dist/types/typeDefs';
+
+// Create our own logger to avoid pino-pretty transport issues
+const logger = {
+    info: (msg: any, context?: string) => {
+        const message = context ? `${context}: ${typeof msg === 'object' ? JSON.stringify(msg) : msg}` : 
+                                  (typeof msg === 'object' ? JSON.stringify(msg) : msg);
+        console.log(message);
+        return logger;
+    },
+    error: (err: any, msg?: string) => {
+        console.error(msg || '', err);
+        return logger;
+    },
+    warn: (msg: any, context?: string) => {
+        const message = context ? `${context}: ${typeof msg === 'object' ? JSON.stringify(msg) : msg}` : 
+                                  (typeof msg === 'object' ? JSON.stringify(msg) : msg);
+        console.warn(message);
+        return logger;
+    },
+    debug: (msg: any, context?: string) => {
+        const message = context ? `${context}: ${typeof msg === 'object' ? JSON.stringify(msg) : msg}` : 
+                                  (typeof msg === 'object' ? JSON.stringify(msg) : msg);
+        console.debug(message);
+        return logger;
+    },
+    trace: (msg: any, context?: string) => {
+        const message = context ? `${context}: ${typeof msg === 'object' ? JSON.stringify(msg) : msg}` : 
+                                  (typeof msg === 'object' ? JSON.stringify(msg) : msg);
+        console.trace(message);
+        return logger;
+    }
+};
+
+// Simple implementations to replace the x-fidelity logger functions
+function setLogLevel(level: string) {
+    // No-op for our simple logger
+}
+
+function setLogPrefix(prefix: string) {
+    // No-op for our simple logger
+}
+
+function generateLogPrefix() {
+    return `vscode-ext-${Date.now()}`;
+}
 
 let diagnosticCollection: vscode.DiagnosticCollection;
 let analysisInterval: NodeJS.Timeout | undefined;
@@ -36,6 +80,22 @@ export function activate(context: vscode.ExtensionContext) {
     setLogPrefix(generateLogPrefix());
     logger.info('X-Fidelity VS Code extension activating.');
     outputChannel.appendLine('X-Fidelity extension activating.');
+    
+    // Monkey patch the x-fidelity logger to use our custom logger
+    try {
+        // This is a workaround to replace the x-fidelity logger with our custom logger
+        // to avoid pino-pretty transport issues
+        const xfidelity = require('x-fidelity');
+        if (xfidelity && xfidelity.logger) {
+            Object.keys(logger).forEach(key => {
+                if (typeof logger[key] === 'function') {
+                    xfidelity.logger[key] = logger[key];
+                }
+            });
+        }
+    } catch (err) {
+        outputChannel.appendLine(`Warning: Could not patch x-fidelity logger: ${err}`);
+    }
 
     // Register command for manual analysis
     let disposable = vscode.commands.registerCommand(XFIDELITY_COMMAND_ID, () => {

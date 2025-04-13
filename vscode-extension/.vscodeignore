@@ -7,3 +7,7 @@ yarn.lock
 webpack.config.js
 esbuild.config.js
 .gitignore
+.DS_Store
+**/.DS_Store
+**/*.ts
+!dist/**/*.js
