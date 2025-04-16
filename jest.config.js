@@ -7,10 +7,15 @@ module.exports = {
   testMatch: ['**/*.test.ts'],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'tsconfig.json'
+      tsconfig: 'tsconfig.test.json'
     }]
   },
   moduleNameMapper: {
     '^x-fidelity$': '<rootDir>/node_modules/x-fidelity/dist'
+  },
+  globals: {
+    'ts-jest': {
+      isolatedModules: true
+    }
   }
 };

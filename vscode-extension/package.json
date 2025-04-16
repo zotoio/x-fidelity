@@ -97,7 +97,9 @@
     "test": "node ./out/test/runTest.js",
     "test:jest": "jest",
     "test:coverage": "jest --coverage",
-    "compile": "tsc -p ./",
-    "pretest": "yarn run compile && yarn run lint"
+    "compile": "tsc -p ./tsconfig.json",
+    "compile:tests": "tsc -p ./tsconfig.test.json",
+    "pretest": "yarn run compile && yarn run lint",
+    "pretest:jest": "yarn run compile:tests"
   }
 }

@@ -12,7 +12,7 @@ beforeAll(() => {
   // Set max listeners for process
   process.setMaxListeners(20);
   
-  exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: string | number | null | undefined): never => {
+  exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: number): never => {
     logger.info({ 
         code,
         type: 'test-exit'
