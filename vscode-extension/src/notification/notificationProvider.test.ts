@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 import { VSCodeNotificationProvider } from './notificationProvider';
 
-// Define the Notification interface locally to avoid import issues
-interface Notification {
+// Define the Notification type locally to avoid import issues
+type Notification = {
   recipients: string[];
   subject: string;
   content: string;
   metadata?: Record<string, any>;
-}
+};
 
 // Mock VS Code APIs
 jest.mock('vscode', () => ({

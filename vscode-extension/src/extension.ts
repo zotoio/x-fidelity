@@ -8,12 +8,12 @@ import { ResultMetadata } from 'x-fidelity';
 import { VSCodeNotificationProvider } from './notification';
 
 // Define the Notification type locally to avoid import issues
-interface Notification {
+type Notification = {
   recipients: string[];
   subject: string;
   content: string;
   metadata?: Record<string, any>;
-}
+};
 
 // Create our own logger to avoid pino-pretty transport issues
 const logger = {
