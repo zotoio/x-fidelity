@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 // Import necessary functions from the x-fidelity package
-import { analyzeCodebase } from 'x-fidelity/dist/core/engine/analyzer';
-import { options as cliOptions } from 'x-fidelity/dist/core/cli';
-import { ResultMetadata } from 'x-fidelity/dist/types/typeDefs';
+import { analyzeCodebase } from 'x-fidelity';
+import { options as cliOptions } from 'x-fidelity';
+import { ResultMetadata } from 'x-fidelity';
 
 // Create our own logger to avoid pino-pretty transport issues
 const logger = {
