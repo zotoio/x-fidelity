@@ -3,5 +3,14 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ["<rootDir>/src/"],
-  setupFilesAfterEnv: ['./src/jest.setup.ts']
+  setupFilesAfterEnv: ['./src/jest.setup.ts'],
+  testMatch: ['**/*.test.ts'],
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: 'tsconfig.json'
+    }]
+  },
+  moduleNameMapper: {
+    '^x-fidelity$': '<rootDir>/node_modules/x-fidelity/dist'
+  }
 };
