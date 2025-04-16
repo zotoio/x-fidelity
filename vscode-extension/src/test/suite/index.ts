@@ -2,8 +2,7 @@ import * as path from 'path';
 import * as Mocha from 'mocha';
 import * as glob from 'glob';
 
-// Use a more explicit function declaration
-export async function run(): Promise<void> {
+export function run(): Promise<void> {
   // Create the mocha test
   const mocha = new Mocha({
     ui: 'tdd',

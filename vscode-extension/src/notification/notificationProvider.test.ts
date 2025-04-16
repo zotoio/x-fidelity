@@ -1,7 +1,13 @@
 import * as vscode from 'vscode';
 import { VSCodeNotificationProvider } from './notificationProvider';
-// Import as a type to avoid parsing issues
-import type { Notification } from 'x-fidelity';
+
+// Define the Notification interface locally to avoid import issues
+interface Notification {
+  recipients: string[];
+  subject: string;
+  content: string;
+  metadata?: Record<string, any>;
+}
 
 // Mock VS Code APIs
 jest.mock('vscode', () => ({

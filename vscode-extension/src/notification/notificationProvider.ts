@@ -1,6 +1,12 @@
 import * as vscode from 'vscode';
-// Import as a type to avoid parsing issues
-import type { Notification } from 'x-fidelity';
+
+// Define the Notification interface locally to avoid import issues
+interface Notification {
+  recipients: string[];
+  subject: string;
+  content: string;
+  metadata?: Record<string, any>;
+}
 
 /**
  * VS Code notification provider for X-Fidelity

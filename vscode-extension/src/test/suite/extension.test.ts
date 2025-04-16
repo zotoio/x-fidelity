@@ -46,12 +46,11 @@ jest.mock('x-fidelity', () => ({
 
 describe('Extension Test Suite', () => {
   let sandbox: sinon.SinonSandbox;
-  // Use a simpler type declaration
-  let mockWorkspaceFolders: any[];
+  let mockWorkspaceFolders: Array<any>;
   let mockOutputChannel: any;
   let mockDiagnosticCollection: any;
   let mockStatusBarItem: any;
-  let mockContext: vscode.ExtensionContext;
+  let mockContext: any;
 
   beforeEach(() => {
     sandbox = sinon.createSandbox();

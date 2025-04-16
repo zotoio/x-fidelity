@@ -4,9 +4,16 @@ import * as path from 'path';
 import { analyzeCodebase } from 'x-fidelity';
 import { options as cliOptions } from 'x-fidelity';
 import { ResultMetadata } from 'x-fidelity';
-// Import as a type to avoid parsing issues
-import type { Notification } from 'x-fidelity';
+// Import notification type
 import { VSCodeNotificationProvider } from './notification';
+
+// Define the Notification type locally to avoid import issues
+interface Notification {
+  recipients: string[];
+  subject: string;
+  content: string;
+  metadata?: Record<string, any>;
+}
 
 // Create our own logger to avoid pino-pretty transport issues
 const logger = {
