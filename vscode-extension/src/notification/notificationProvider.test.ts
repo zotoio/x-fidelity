@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { VSCodeNotificationProvider } from './notificationProvider';
-import { Notification } from 'x-fidelity';
+import type { Notification } from 'x-fidelity';
 
 // Mock VS Code APIs
 jest.mock('vscode', () => ({

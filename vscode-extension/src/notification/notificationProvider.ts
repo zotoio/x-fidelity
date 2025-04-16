@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Notification } from 'x-fidelity';
+import type { Notification } from 'x-fidelity';
 
 /**
  * VS Code notification provider for X-Fidelity
