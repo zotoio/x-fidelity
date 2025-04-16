@@ -1,0 +1,8 @@
+.vscode-test/
+node_modules/
+out/
+dist/
+*.vsix
+.DS_Store
+coverage/
+.nyc_output/

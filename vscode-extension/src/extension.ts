@@ -3,7 +3,8 @@ import * as path from 'path';
 // Import necessary functions from the x-fidelity package
 import { analyzeCodebase } from 'x-fidelity';
 import { options as cliOptions } from 'x-fidelity';
-import { ResultMetadata } from 'x-fidelity';
+import { ResultMetadata, Notification } from 'x-fidelity';
+import { VSCodeNotificationProvider } from './notification';
 
 // Create our own logger to avoid pino-pretty transport issues
 const logger = {
@@ -54,6 +55,7 @@ let diagnosticCollection: vscode.DiagnosticCollection;
 let analysisInterval: NodeJS.Timeout | undefined;
 let outputChannel: vscode.OutputChannel;
 let statusBarItem: vscode.StatusBarItem;
+let notificationProvider: VSCodeNotificationProvider;
 
 const XFIDELITY_COMMAND_ID = 'xfidelity.runAnalysis';
 
@@ -74,6 +76,9 @@ export function activate(context: vscode.ExtensionContext) {
     statusBarItem.tooltip = 'Click to run X-Fidelity analysis';
     context.subscriptions.push(statusBarItem);
     statusBarItem.show();
+    
+    // Initialize notification provider
+    notificationProvider = new VSCodeNotificationProvider(outputChannel);
 
     // Initial log setup
     setLogLevel(process.env.XFI_LOG_LEVEL || 'info'); // Or read from config
@@ -221,9 +226,10 @@ export async function runAnalysis(progress?: vscode.Progress<{ message?: string;
         cliOptions.archetype = archetype;
         cliOptions.configServer = configServer;
         cliOptions.localConfigPath = localConfigPath;
-        cliOptions.openaiEnabled = false; // TODO: Make configurable?
-        cliOptions.telemetryCollector = ''; // TODO: Make configurable?
+        cliOptions.openaiEnabled = config.get<boolean>('openaiEnabled', false);
+        cliOptions.telemetryCollector = config.get<string>('telemetryCollector', '');
         cliOptions.mode = 'client'; // Force client mode
+        cliOptions.notificationProvider = notificationProvider; // Set our custom notification provider
         logger.debug('CLI options set for analysis:', cliOptions);
         // --- End Setting CLI options ---
 
