@@ -4,6 +4,7 @@ import * as path from 'path';
 import { analyzeCodebase } from 'x-fidelity';
 import { options as cliOptions } from 'x-fidelity';
 import { ResultMetadata } from 'x-fidelity';
+// Import as a type to avoid parsing issues
 import type { Notification } from 'x-fidelity';
 import { VSCodeNotificationProvider } from './notification';
 

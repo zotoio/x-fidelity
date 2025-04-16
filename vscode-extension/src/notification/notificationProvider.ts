@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+// Import as a type to avoid parsing issues
 import type { Notification } from 'x-fidelity';
 
 /**

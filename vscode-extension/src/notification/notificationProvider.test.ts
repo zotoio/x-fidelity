@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { VSCodeNotificationProvider } from './notificationProvider';
+// Import as a type to avoid parsing issues
 import type { Notification } from 'x-fidelity';
 
 // Mock VS Code APIs
