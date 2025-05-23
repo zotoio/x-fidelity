@@ -28,7 +28,7 @@
     "build-run-with-stubs": "yarn build && yarn start-test-server && node . --dir . --extensions xfiPluginRemoteStringValidator | jq -R -r '. as $line | try fromjson catch $line' && kill-port 4200",
     "start-server": "ts-node src/index.ts --mode server",
     "start-test-server": "node -e \"require('http').createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(require('fs').readFileSync('src/plugins/xfiPluginRemoteStringValidator/sampleRules/xfiTestServerResponse.json')); }).listen(4200, () => console.log('Test server running on port 4200'));\" &",
-    "lint": "eslint . --ignore-path .gitignore",
+    "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "perftest:install": "global add artillery",
     "perftest": "perftest:install && artillery run src/server/configServer.performance.test.yml",

@@ -1,4 +1,32 @@
 const { ESLint } = require("eslint");
+const fs = require("fs");
+const path = require("path");
+
+// Read .gitignore file and parse its patterns
+function getGitIgnorePatterns() {
+  try {
+    const gitignorePath = path.resolve(".gitignore");
+    if (fs.existsSync(gitignorePath)) {
+      const content = fs.readFileSync(gitignorePath, "utf8");
+      return content
+        .split("\n")
+        .filter(line => line.trim() && !line.startsWith("#"))
+        .map(line => line.trim());
+    }
+  } catch (error) {
+    console.error("Error reading .gitignore:", error);
+  }
+  return [];
+}
+
+// Get patterns from .gitignore
+const gitIgnorePatterns = getGitIgnorePatterns();
+
+// Base ignores from the original config
+const baseIgnores = ["node_modules/", "dist/", "build/", "coverage/", "website/"];
+
+// Combine all ignore patterns
+const allIgnores = [...baseIgnores, ...gitIgnorePatterns];
 
 module.exports = [
   {
@@ -26,6 +54,6 @@ module.exports = [
     }
   },
   {
-    ignores: ["node_modules/", "dist/", "build/", "coverage/", "website/"],
+    ignores: allIgnores,
   }
 ];
