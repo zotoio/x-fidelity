@@ -10,4 +10,4 @@ esbuild.config.js
 .DS_Store
 **/.DS_Store
 **/*.ts
-!dist/**/*.js
+#!dist/**/*.js

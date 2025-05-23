@@ -125,28 +125,31 @@ export async function main() {
                     logger.warn(`WARNING: lo-fi attributes detected in codebase. ${resultMetadata.XFI_RESULT.warningCount} are warnings, ${resultMetadata.XFI_RESULT.fatalityCount} are fatal.`);
                     
                     // Create a more detailed summary of issues
-                    const issuesSummary = {
-                        totalIssues: resultMetadata.XFI_RESULT.totalIssues,
-                        warningCount: resultMetadata.XFI_RESULT.warningCount,
-                        fatalityCount: resultMetadata.XFI_RESULT.fatalityCount,
-                        errorCount: resultMetadata.XFI_RESULT.errorCount,
-                        exemptCount: resultMetadata.XFI_RESULT.exemptCount,
-                        topIssues: resultMetadata.XFI_RESULT.issueDetails
-                            .slice(0, 5)
-                            .map(detail => ({
-                                filePath: detail.filePath,
-                                errors: detail.errors.map(err => ({
-                                    rule: err.ruleFailure,
-                                    level: err.level,
-                                    message: err.details?.message
+                    const issueSummary = {
+                        issueSummary: {
+                            totalIssues: resultMetadata.XFI_RESULT.totalIssues,
+                            warningCount: resultMetadata.XFI_RESULT.warningCount,
+                            fatalityCount: resultMetadata.XFI_RESULT.fatalityCount,
+                            errorCount: resultMetadata.XFI_RESULT.errorCount,
+                            exemptCount: resultMetadata.XFI_RESULT.exemptCount,
+                            topIssues: resultMetadata.XFI_RESULT.issueDetails
+                                .slice(0, 5)
+                                .map(detail => ({
+                                    filePath: detail.filePath,
+                                    errors: detail.errors.map(err => ({
+                                        rule: err.ruleFailure,
+                                        level: err.level,
+                                        message: err.details?.message
+                                    }))
                                 }))
-                            }))
+                        },
                     };
                     
-                    logger.warn(JSON.stringify(issuesSummary, null, 2));
+                    logger.debug(JSON.stringify(issueSummary, null, 2));
 
                     if (resultMetadata.XFI_RESULT.errorCount > 0) {
                         logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
+                        logger.info(resultString);
                         logger.error(`\n${prettyResult}\n\n`);
                         logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
                         process.exit(1);
@@ -154,11 +157,13 @@ export async function main() {
 
                     if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
                         logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
+                        logger.info(resultString);
                         logger.error(`\n${prettyResult}\n\n`);
                         logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
                         process.exit(1);
                     } else {
                         logger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
+                        logger.info(resultString);
                         logger.warn(`\n${prettyResult}\n\n`);
                         logger.warn(outcomeMessage('No fatal errors were found, however please review the above warnings.'));
                     }
