@@ -1,3 +1,25 @@
+# [3.24.0](https://github.com/zotoio/x-fidelity/compare/v3.23.0...v3.24.0) (2025-05-23)
+
+
+### Bug Fixes
+
+* improve error handling for non-error objects in analysis ([9037036](https://github.com/zotoio/x-fidelity/commit/9037036eca98c8956462352a7bdc7e80106ccc5c))
+* **logging:** reinstate the XFI_RESULT json log entry ([facb182](https://github.com/zotoio/x-fidelity/commit/facb1827213ff50f2b81fa7a53b89336c965481e))
+* replace pino logger with custom logger in vscode extension ([48c57c9](https://github.com/zotoio/x-fidelity/commit/48c57c9c42c0268b07783418ae5451e4f8276691))
+* resolve TypeScript parsing errors in ESLint configuration ([134aa08](https://github.com/zotoio/x-fidelity/commit/134aa08c269db292e12808ef63116ac9c8a16c72))
+* resolve TypeScript parsing errors in VS Code extension ([576da89](https://github.com/zotoio/x-fidelity/commit/576da89dabe44991f5f488eb87a877795a5a5496))
+* update process.exit mock type signature to match expected types ([a53989f](https://github.com/zotoio/x-fidelity/commit/a53989f8dd8b421c601fe2f9eeebaea71f905f1a))
+* update TypeScript type imports and compiler configuration ([dedc5ea](https://github.com/zotoio/x-fidelity/commit/dedc5eaae1f07976c3048331e69d947f51d574db))
+
+
+### Features
+
+* add notification provider and testing infrastructure ([808b6c6](https://github.com/zotoio/x-fidelity/commit/808b6c6dd90e0d045f3355c2f068806271d3f38e))
+* add tsconfig.test.json for test suite configuration ([44220de](https://github.com/zotoio/x-fidelity/commit/44220dee6ffa3e136d5e193d16dcfc5ce355742e))
+* add vscode extension implementation ([9c15a83](https://github.com/zotoio/x-fidelity/commit/9c15a83699646be3e1fc22633d978bea85c63367))
+* add vscode extension with output channel and status bar ([b5b9c84](https://github.com/zotoio/x-fidelity/commit/b5b9c84aebac769916e918380ea5341f0c21d6db))
+* add x-fidelity as standalone dependency ([1b87ee0](https://github.com/zotoio/x-fidelity/commit/1b87ee0c41a81784eafee2cc8e56556ad21b2838))
+
 # [3.23.0](https://github.com/zotoio/x-fidelity/compare/v3.22.0...v3.23.0) (2025-04-02)
 
 
