@@ -1,6 +1,6 @@
 # Plugin Guidance
 
-This document provides detailed guidance on how to use, install, and create external plugin extensions for x‑fidelity. External plugins allow you to extend x‑fidelity’s core functionality without modifying the main codebase.
+This document provides detailed guidance on how to use, install, and create external plugin extensions for x‑fidelity. External plugins allow you to extend x‑fidelity's core functionality without modifying the main codebase.
 
 ## Introduction
 
@@ -22,7 +22,7 @@ x‑fidelity supports plugins that conform to the `XFiPlugin` interface. Plugins
   ```bash
   yarn add <plugin-module-name>
   ```
-- Local plugins are stored in your project’s `node_modules` directory. x‑fidelity will check local installations first.
+- Local plugins are stored in your project's `node_modules` directory. x‑fidelity will check local installations first.
 
 ## Using Plugins with x‑fidelity
 
@@ -79,7 +79,7 @@ For any further questions, consult the x‑fidelity documentation or reach out t
 
 ### Testing Locally with Yarn Link
 
-To test your plugin locally without publishing it to an npm repo, you can use `yarn link`. In your plugin’s development directory, run:
+To test your plugin locally without publishing it to an npm repo, you can use `yarn link`. In your plugin's development directory, run:
 ```bash
 yarn link
 ```
@@ -93,11 +93,11 @@ Replace `<plugin-module-name>` with your plugin's package name. This will create
 
 For seamless integration with x‑fidelity, ensure your plugin imports the key types and utilities. For example:
 ```javascript
-import { XFiPlugin } from 'x-fidelity/types/typeDefs';
-import { logger } from 'x-fidelity/utils/logger';
-import { safeClone, safeStringify } from 'x-fidelity/utils/utils';
+import { XFiPlugin } from '@x-fidelity/core/types';
+import { logger } from '@x-fidelity/core/utils/logger';
+import { safeClone, safeStringify } from '@x-fidelity/core/utils/utils';
 ```
-These imports ensure that your plugin can interoperate correctly with x‑fidelity’s API, logging, and utility functions.
+These imports ensure that your plugin can interoperate correctly with x‑fidelity's API, logging, and utility functions.
 
 ## Sample Plugin Rules and Unit Tests
 
@@ -134,8 +134,8 @@ Place this sample rule file in your local configuration rules directory (e.g., `
 
 Complement your sample rule with unit tests to validate your plugin behavior. For example, using Jest you might create a test file such as `custom-plugin-rule.test.ts` with the following content:
 ```typescript
-import { customFact } from 'xfiPluginSimpleExample/facts/customFact';
-import { customOperator } from 'xfiPluginSimpleExample/operators/customOperator';
+import { customFact } from '@x-fidelity/core/plugins/xfiPluginSimpleExample/facts/customFact';
+import { customOperator } from '@x-fidelity/core/plugins/xfiPluginSimpleExample/operators/customOperator';
 
 describe('Custom Plugin Rule', () => {
   it('should trigger when the custom fact produces expected data', async () => {
@@ -147,7 +147,7 @@ describe('Custom Plugin Rule', () => {
   });
 });
 ```
-Include these tests in your plugin’s test suite and run them via:
+Include these tests in your plugin's test suite and run them via:
 ```bash
 yarn test
 ```

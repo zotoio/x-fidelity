@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@x-fidelity/types": ["packages/x-fidelity-types/src"],
+      "@x-fidelity/core": ["packages/x-fidelity-core/src"],
+      "@x-fidelity/plugins": ["packages/x-fidelity-plugins/src"],
+      "@x-fidelity/server": ["packages/x-fidelity-server/src"],
+      "@x-fidelity/vscode": ["packages/x-fidelity-vscode/src"]
+    }
+  }
+} 

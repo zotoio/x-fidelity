@@ -1,0 +1,36 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "resolveJsonModule": true,
+    "types": [
+      "@types/node",
+      "@types/jest"
+    ]
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts",
+    "dist"
+  ],
+  "references": [
+    {
+      "path": "../x-fidelity-types"
+    },
+    {
+      "path": "../x-fidelity-core"
+    },
+    {
+      "path": "../x-fidelity-plugins"
+    },
+    {
+      "path": "../x-fidelity-server"
+    }
+  ]
+}

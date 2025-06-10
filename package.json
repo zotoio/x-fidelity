@@ -1,118 +1,29 @@
 {
-  "name": "x-fidelity",
+  "name": "x-fidelity-monorepo",
   "version": "3.24.0",
-  "description": "cli for opinionated framework adherence checks",
-  "main": "dist/index",
-  "types": "dist/index.d.ts",
-  "bin": {
-    "xfidelity": "./dist/xfidelity"
-  },
-  "module": "dist/index.js",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
-    },
-    "./*": "./dist/*"
-  },
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "rimraf dist/ && tsc && yarn copy-files",
-    "copy-files": "cp -rf src/demoConfig dist/ && cp dist/index.js dist/xfidelity && chmod 755 dist/xfidelity",
-    "start": "NODE_ENV=test OPENAI_API_KEY= jest --watch",
-    "test": "NODE_ENV=test yarn lint && NODE_ENV=test OPENAI_API_KEY= jest --testPathIgnorePatterns=vscode-extension",
-    "test:coverage": "NODE_ENV=test OPENAI_API_KEY= jest --coverage",
+    "clean": "yarn workspaces run clean && rm -rf dist *.tsbuildinfo",
+    "clean:artifacts": "find . -name '*.d.ts' -o -name '*.map' -o -name '*.js.map' | grep -v node_modules | grep -v dist | xargs rm -f || true",
+    "build:clean": "yarn clean && yarn clean:artifacts && tsc -b --verbose",
+    "build": "tsc -b --verbose",
+    "build:watch": "tsc -b --watch",
+    "test": "yarn workspaces run test",
+    "lint": "yarn workspaces run lint",
     "commit": "yarn test && git-cz",
-    "release": "semantic-release",
-    "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
-    "build-run": "yarn build && node . --dir . --extensions xfiPluginRequiredFiles xfiPluginRemoteStringValidator xfiPluginAst | jq -R -r '. as $line | try fromjson catch $line' ",
-    "build-run-with-stubs": "yarn build && yarn start-test-server && node . --dir . --extensions xfiPluginRemoteStringValidator | jq -R -r '. as $line | try fromjson catch $line' && kill-port 4200",
-    "start-server": "ts-node src/index.ts --mode server",
-    "start-test-server": "node -e \"require('http').createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(require('fs').readFileSync('src/plugins/xfiPluginRemoteStringValidator/sampleRules/xfiTestServerResponse.json')); }).listen(4200, () => console.log('Test server running on port 4200'));\" &",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "perftest:install": "global add artillery",
-    "perftest": "perftest:install && artillery run src/server/configServer.performance.test.yml",
-    "perftest:cloud": "perftest:install && echo 'expecting env var ARTILLERY_CLOUD_API_KEY from artillery.io' && artillery run src/server/configServer.performance.test.yml --record",
-    "bats:install": "cd ./cli-testing && ./installBatsTesting.sh",
-    "bats:test": "cd ./cli-testing && bats *.bats",
-    "validate-demo-config": "yarn build && node . --dir . -x node-fullstack -e xfiPluginRemoteStringValidator -o true"
-  },
-  "repository": "git@github.com:zotoio/x-fidelity.git",
-  "author": "wyvern8 <io@zoto.io>",
-  "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0",
-    "yarn": ">=1.22.0"
+    "build-run": "yarn workspace x-fidelity run build-run"
   },
   "devDependencies": {
-    "@jest/globals": "^29.7.0",
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/commit-analyzer": "^13.0.1",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^11.0.1",
-    "@semantic-release/npm": "^12.0.1",
-    "@semantic-release/release-notes-generator": "^14.0.3",
-    "@types/esprima": "^4.0.6",
-    "@types/express": "^4.17.21",
-    "@types/jest": "^29.5.14",
-    "@types/lodash": "^4.17.16",
-    "@types/node": "^22.13.8",
-    "@types/nodemailer": "^6.4.17",
-    "@types/pino": "^7.0.5",
-    "@types/prettyjson": "^0.0.33",
-    "@types/semver": "^7.5.8",
-    "@types/supertest": "^6.0.2",
-    "@typescript-eslint/eslint-plugin": "^8.25.0",
-    "@typescript-eslint/parser": "^8.25.0",
-    "commitizen": "^4.3.1",
-    "conventional-changelog-cli": "^5.0.0",
-    "conventional-recommended-bump": "^11.0.0",
+    "commitizen": "^4.3.0",
     "cz-conventional-changelog": "^3.3.0",
-    "eslint": "^9.21.0",
-    "jest": "^29.7.0",
-    "rimraf": "^6.0.1",
-    "semantic-release": "^24.2.3",
-    "supertest": "^7.0.0",
-    "ts-jest": "^29.2.6",
-    "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
-  },
-  "dependencies": {
-    "@types/body-parser": "^1.19.5",
-    "@yarnpkg/lockfile": "^1.1.0",
-    "ajv": "^8.17.1",
-    "axios": "^1.8.1",
-    "body-parser": "^1.20.3",
-    "commander": "^13.1.0",
-    "dotenv": "^16.4.7",
-    "esprima": "^4.0.1",
-    "express": "^4.21.2",
-    "express-rate-limit": "^7.5.0",
-    "glob": "^11.0.1",
-    "helmet": "^8.0.0",
-    "json-rules-engine": "^7.3.1",
-    "jsonpath-plus": "^10.3.0",
-    "kill-port": "^2.0.1",
-    "lodash": "^4.17.21",
-    "nodemailer": "^6.10.0",
-    "nodemon": "^3.1.9",
-    "openai": "^4.86.1",
-    "ora": "^8.2.0",
-    "pino": "^9.6.0",
-    "pino-pretty": "^13.0.0",
-    "prettyjson": "^1.2.5",
-    "sanitize-filename": "^1.6.3",
-    "semver": "^7.7.1",
-    "tree-sitter": "^0.22.4",
-    "tree-sitter-javascript": "^0.23.1",
-    "tree-sitter-typescript": "^0.23.2",
-    "yaml": "^2.7.0",
-    "yarn": "^1.22.22"
   },
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  }
 }

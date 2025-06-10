@@ -18,6 +18,53 @@ x-fidelity is an advanced CLI tool and paired config server designed to perform 
 
 **NEW beta genai docs: https://zotoio.github.io/x-fidelity/**
 
+## Project Structure
+
+This is a monorepo containing the following packages:
+
+- `packages/x-fidelity`: The core X-Fidelity package containing the CLI tool and analysis engine
+- `packages/x-fidelity-vscode`: VSCode extension for X-Fidelity integration
+
+## Development Setup
+
+1. Install dependencies:
+```bash
+yarn install
+```
+
+2. Build all packages:
+```bash
+yarn workspaces run build
+```
+
+3. Development workflow:
+   - For core package:
+     ```bash
+     # In packages/x-fidelity
+     yarn build:watch
+     ```
+   - For VSCode extension:
+     ```bash
+     # In packages/x-fidelity-vscode
+     yarn dev
+     ```
+
+## Testing
+
+Run tests for all packages:
+```bash
+yarn workspaces run test
+```
+
+Or test individual packages:
+```bash
+# Test core package
+yarn workspace x-fidelity test
+
+# Test VSCode extension
+yarn workspace x-fidelity-vscode test
+```
+
 ## Quick Start
 
 1. Install x-fidelity:
@@ -168,7 +215,7 @@ This diagram shows the main components of x-fidelity and how they interact:
 - **x-fidelity Core**: The main components of the system, including the analysis engine, CLI interface, and configuration manager.
 - **x-fidelity Infrastructure**: Servers for configuration and telemetry.
 - **External Services**: GitHub for repository interaction and optional OpenAI integration. Includes GitHub Webhooks for triggering config refresh.
-- **Remote Validation**: Within the plugins outlined under “Extensions”.
+- **Remote Validation**: Within the plugins outlined under "Extensions".
 - **Enhanced Telemetry**: Flows from both client and server to the Telemetry Server.
 - **Data Sources**: The files and dependencies that x-fidelity analyzes.
 
@@ -388,7 +435,7 @@ Usage example in a rule:
     }
 }
 ```
-- **invalidRemoteValidation:** This operator is provided by the xfiPluginRemoteStringValidator plugin. It validates extracted string data by sending a request to a remote endpoint (using customizable HTTP method, headers, and a JSON body where “#MATCH#” is interpolated) and uses a JSONPath check on the response to decide if the value is valid.
+- **invalidRemoteValidation:** This operator is provided by the xfiPluginRemoteStringValidator plugin. It validates extracted string data by sending a request to a remote endpoint (using customizable HTTP method, headers, and a JSON body where "#MATCH#" is interpolated) and uses a JSONPath check on the response to decide if the value is valid.
 
 The 'openaiAnalysisHighSeverity' operator will be discussed in the section on the optional OpenAI integration feature.
 

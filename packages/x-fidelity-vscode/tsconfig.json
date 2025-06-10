@@ -1,0 +1,31 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "types": ["node", "vscode"],
+    "noEmitOnError": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules", 
+    ".vscode-test",
+    "dist/",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/test/**/*",
+    "**/jest.setup.ts"
+  ],
+  "references": [
+    {
+      "path": "../x-fidelity-types"
+    },
+    {
+      "path": "../x-fidelity-core"
+    }
+  ]
+}

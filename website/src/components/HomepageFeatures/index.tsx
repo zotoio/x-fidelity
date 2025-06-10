@@ -4,61 +4,34 @@ import styles from './styles.module.css';
 
 type FeatureItem = {
   title: string;
-  description: JSX.Element;
+  description: React.ReactNode;
 };
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Flexible Archetype System',
+    title: 'Easy to Use',
     description: (
       <>
-        Define custom project archetypes with specific rules, configurations, and standards. 
-        Ensure consistency across your entire codebase.
+        X-Fidelity was designed from the ground up to be easily installed and
+        used to get your project up and running quickly.
       </>
     ),
   },
   {
-    title: 'Powerful Plugin System',
+    title: 'Focus on What Matters',
     description: (
       <>
-        Extend functionality with custom plugins. Add new facts, operators, and validation rules. 
-        Integrate with external services and APIs.
+        X-Fidelity lets you focus on your code, while we&apos;ll do the chores. Go
+        ahead and move your project forward.
       </>
     ),
   },
   {
-    title: 'AI-Powered Analysis',
+    title: 'Powered by TypeScript',
     description: (
       <>
-        Leverage OpenAI integration for advanced code analysis. Get intelligent suggestions 
-        and identify potential issues early.
-      </>
-    ),
-  },
-  {
-    title: 'Library Migration Tracking',
-    description: (
-      <>
-        Track adoption of new APIs and deprecation of legacy code. Measure migration progress 
-        with statistical analysis and visualize adoption rates across teams.
-      </>
-    ),
-  },
-  {
-    title: 'Comprehensive Validation',
-    description: (
-      <>
-        Check dependencies, directory structures, and code patterns. Ensure your projects 
-        follow best practices and standards.
-      </>
-    ),
-  },
-  {
-    title: 'CI/CD Integration',
-    description: (
-      <>
-        Seamlessly integrate with your CI/CD pipelines. Automate checks and maintain 
-        code quality throughout development.
+        Extend or customize your project&apos;s setup through TypeScript. X-Fidelity can
+        be extended while maintaining type-safety.
       </>
     ),
   },

@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "outDir": "dist-test",
+    "rootDir": "src",
+    "types": ["node", "jest", "vscode"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": [
+    "src/**/*.test.ts", 
+    "src/**/*.spec.ts", 
+    "src/jest.setup.ts",
+    "src/test/**/*"
+  ],
+  "exclude": ["node_modules", ".vscode-test", "dist"]
+}

@@ -1,0 +1,1 @@
+export { xfiPluginSimpleExample } from './xfiPluginSimpleExample';

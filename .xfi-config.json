@@ -43,8 +43,6 @@
             "url": "https://example.com/rules/custom-rule.json"
         }
     ],
-    "additionalFacts": ["customFact"],
-    "additionalOperators": ["customOperator"],
     "additionalPlugins": ["xfiPluginSimpleExample", "xfiPluginAst"],
     "notifications": {
         "recipients": {

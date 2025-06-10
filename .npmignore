@@ -72,3 +72,45 @@ typings/
 
 .aider*
 .aider/*
+
+# Source
+src/
+tests/
+__tests__/
+*.test.ts
+*.spec.ts
+
+# Development
+.vscode/
+.idea/
+.git/
+.github/
+.gitignore
+.npmignore
+.eslintrc*
+.prettierrc*
+tsconfig*.json
+jest.config.js
+
+# Build artifacts
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Environment
+.env*
+.env.local
+.env.*.local
+
+# VSCode Extension
+.vscode-test/
+.vsix
+
+# Misc
+.DS_Store
+Thumbs.db
