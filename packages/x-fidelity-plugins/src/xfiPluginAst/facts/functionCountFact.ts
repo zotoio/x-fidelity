@@ -1,5 +1,5 @@
 import { FactDefn, FileData } from '@x-fidelity/types';
-import { AstResult } from '@x-fidelity/types';
+import { AstResult } from '../types';
 import { logger, generateAst } from '@x-fidelity/core';
 
 export const functionCountFact: FactDefn = {

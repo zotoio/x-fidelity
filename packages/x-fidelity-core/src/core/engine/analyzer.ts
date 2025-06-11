@@ -21,7 +21,7 @@ import { factMetricsTracker } from '../../utils/factMetricsTracker';
 import { loadRepoXFIConfig } from '../../utils/repoXFIConfigLoader';
 import { collectTelemetryData } from './telemetryCollector';
 import { setupEngine } from './engineSetup';
-import { runEngineOnFiles } from './engineRunner';
+import { runEngineOnFiles, registerRuleForTracking } from './engineRunner';
 import { countRuleFailures, safeStringify } from '../../utils/utils';
 import { validateRule } from '../../utils/jsonSchemas';
 import { pluginRegistry } from '../pluginRegistry';
@@ -164,6 +164,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                     event: ruleConfig.event
                 };
                 engine.addRule(ruleProperties);
+                // Register the rule for proper name tracking (v3.24.0 contract)
+                registerRuleForTracking(ruleProperties);
             } else {
                 logger.warn(`Invalid custom rule in repo config: ${(ruleConfig as any)?.name || 'unnamed rule'}`);
             }

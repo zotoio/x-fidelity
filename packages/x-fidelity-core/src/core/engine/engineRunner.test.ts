@@ -1,9 +1,10 @@
 import { runEngineOnFiles } from './engineRunner';
+import { REPO_GLOBAL_CHECK } from '../configManager';
 import { Engine } from 'json-rules-engine';
 import { logger, getLogPrefix, setLogPrefix } from '../../utils/logger';
-import { REPO_GLOBAL_CHECK } from '../configManager';
 
 jest.mock('json-rules-engine');
+
 jest.mock('../../utils/logger', () => ({
     logger: {
         info: jest.fn(),
@@ -42,8 +43,8 @@ describe('runEngineOnFiles', () => {
     });
 
     const mockFileData = [
-        { fileName: 'test.ts', filePath: 'src/test.ts', fileContent: 'logger.log("test");' },
-        { fileName: REPO_GLOBAL_CHECK, filePath: REPO_GLOBAL_CHECK, fileContent: REPO_GLOBAL_CHECK },
+        { fileName: 'test.ts', filePath: 'src/test.ts', fileContent: 'logger.log("test");', content: 'logger.log("test");' },
+        { fileName: REPO_GLOBAL_CHECK, filePath: REPO_GLOBAL_CHECK, fileContent: REPO_GLOBAL_CHECK, content: REPO_GLOBAL_CHECK },
     ];
 
     const getMockParams = () => ({
@@ -51,8 +52,7 @@ describe('runEngineOnFiles', () => {
         fileData: mockFileData,
         installedDependencyVersions: {},
         minimumDependencyVersions: {},
-        standardStructure: {},
-        repoUrl: 'https://github.com/mock/repo',
+        standardStructure: false,
     });
 
     it('should run engine on all files', async () => {

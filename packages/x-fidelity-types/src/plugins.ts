@@ -52,26 +52,6 @@ export interface PluginConfig {
     cleanup?: () => Promise<void>;
 }
 
-// Function metrics type
-export interface FunctionMetrics {
-    name: string;
-    cyclomaticComplexity: number;
-    cognitiveComplexity: number;
-    nestingDepth: number;
-    parameterCount: number;
-    returnCount: number;
-    lineCount: number;
-}
-
-// AST result type
-export interface AstResult {
-    tree: any;
-    rootNode?: any;
-    program?: any;
-    sourceFile?: any;
-    functions?: FunctionMetrics[];
-}
-
 // Plugin context type
 export interface PluginContext {
     config: any;
@@ -88,14 +68,6 @@ export interface PluginFactResult {
 export interface PluginOperatorResult {
     result: boolean;
     message?: string;
-}
-
-// Remote validation result type
-export interface RemoteValidationResult {
-    isValid: boolean;
-    response?: any;
-    error?: string;
-    matches?: any[];
 }
 
  

@@ -1,4 +1,4 @@
-import { XFiPlugin, PluginError } from '@x-fidelity/types';
+import { XFiPlugin, PluginError, FactDefn, OperatorDefn } from '@x-fidelity/types';
 import { globalFileAnalysis } from './facts/globalFileAnalysisFacts';
 import { regexMatch } from './operators/regexMatch';
 import { globalPatternCount } from './operators/globalPatternCount';
@@ -20,3 +20,14 @@ export const xfiPluginPatterns: XFiPlugin = {
 };
 
 export default xfiPluginPatterns; 
+
+// Export individual facts and operators for direct use
+export const facts: FactDefn[] = [
+    globalFileAnalysis
+];
+
+export const operators: OperatorDefn[] = [
+    regexMatch, 
+    globalPatternCount, 
+    globalPatternRatio
+]; 

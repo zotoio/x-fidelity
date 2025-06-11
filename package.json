@@ -14,7 +14,7 @@
     "test": "yarn workspaces run test",
     "lint": "yarn workspaces run lint",
     "commit": "yarn test && git-cz",
-    "build-run": "yarn workspace x-fidelity run build-run"
+    "build-run": "yarn build && yarn workspace x-fidelity run build-run"
   },
   "devDependencies": {
     "commitizen": "^4.3.0",

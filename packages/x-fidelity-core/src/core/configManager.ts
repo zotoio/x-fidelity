@@ -94,18 +94,26 @@ export class ConfigManager {
 
     public static async loadPlugins(extensions?: string[]): Promise<void> {
         if (extensions && extensions.length > 0) {
-            // List of built-in plugins that should be skipped for dynamic loading
-            const builtinPlugins = [
-                'xfiPluginSimpleExample',
-                'xfiPluginRequiredFiles',
-                'xfiPluginAst',
-                'xfiPluginReactPatterns',
-                'xfiPluginRemoteStringValidator',
-                'xfiPluginFilesystem',
-                'xfiPluginDependency',
-                'xfiPluginOpenAI',
-                'xfiPluginPatterns'
-            ];
+            // Dynamically get the list of built-in plugins from the plugins package
+            let builtinPlugins: string[] = [];
+            try {
+                const pluginsModule = await this.dynamicImport('@x-fidelity/plugins');
+                builtinPlugins = pluginsModule.BUILTIN_PLUGIN_NAMES || [];
+            } catch (error) {
+                // Fallback to hardcoded list if dynamic import fails
+                logger.warn(`Failed to load builtin plugin names dynamically, using fallback list: ${error}`);
+                builtinPlugins = [
+                    'xfiPluginSimpleExample',
+                    'xfiPluginRequiredFiles',
+                    'xfiPluginAst',
+                    'xfiPluginReactPatterns',
+                    'xfiPluginRemoteStringValidator',
+                    'xfiPluginFilesystem',
+                    'xfiPluginDependency',
+                    'xfiPluginOpenAI',
+                    'xfiPluginPatterns'
+                ];
+            }
             
             for (const moduleName of extensions) {
                 try {
@@ -222,15 +230,29 @@ export class ConfigManager {
             }
             
             // Auto-load essential base plugins that provide core functionality
-            const essentialPlugins = [
-                'xfiPluginFilesystem',      // Provides: repoFiles fact, fileContains operator
-                'xfiPluginPatterns',        // Provides: regexMatch operator, globalFileAnalysis fact  
-                'xfiPluginDependency',      // Provides: repoDependencyVersions fact, outdatedFramework operator
-                'xfiPluginRequiredFiles',   // Provides: missingRequiredFiles fact
-                'xfiPluginRemoteStringValidator',  // Provides: remoteSubstringValidation fact, invalidRemoteValidation operator
-                'xfiPluginAst',            // Provides: ast facts, astComplexity operator, functionCount operator
-                'xfiPluginSimpleExample'   // Provides: example fact/operator
-            ];
+            let essentialPlugins: string[] = [];
+            try {
+                const pluginsModule = await this.dynamicImport('@x-fidelity/plugins');
+                // Use the available plugins from the plugins package, but only load essential ones
+                const availablePluginNames = pluginsModule.BUILTIN_PLUGIN_NAMES || [];
+                essentialPlugins = availablePluginNames.filter((pluginName: string) => 
+                    ['xfiPluginFilesystem', 'xfiPluginPatterns', 'xfiPluginDependency', 
+                     'xfiPluginRequiredFiles', 'xfiPluginRemoteStringValidator', 
+                     'xfiPluginAst', 'xfiPluginSimpleExample'].includes(pluginName)
+                );
+            } catch (error) {
+                // Fallback to hardcoded list if dynamic import fails
+                logger.warn(`Failed to load essential plugin names dynamically, using fallback list: ${error}`);
+                essentialPlugins = [
+                    'xfiPluginFilesystem',      // Provides: repoFiles fact, fileContains operator
+                    'xfiPluginPatterns',        // Provides: regexMatch operator, globalFileAnalysis fact  
+                    'xfiPluginDependency',      // Provides: repoDependencyVersions fact, outdatedFramework operator
+                    'xfiPluginRequiredFiles',   // Provides: missingRequiredFiles fact
+                    'xfiPluginRemoteStringValidator',  // Provides: remoteSubstringValidation fact, invalidRemoteValidation operator
+                    'xfiPluginAst',            // Provides: ast facts, astComplexity operator, functionCount operator
+                    'xfiPluginSimpleExample'   // Provides: example fact/operator
+                ];
+            }
 
             logger.info(`Loading essential base plugins: ${essentialPlugins.join(', ')}`);
             await this.loadPlugins(essentialPlugins).catch(error => {

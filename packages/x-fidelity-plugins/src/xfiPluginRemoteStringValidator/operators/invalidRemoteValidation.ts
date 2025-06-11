@@ -1,5 +1,5 @@
 import { OperatorDefn } from '@x-fidelity/types';
-import { RemoteValidationResult } from '@x-fidelity/types';
+import { RemoteValidationResult } from '../types';
 
 export const invalidRemoteValidationOperator: OperatorDefn<RemoteValidationResult, boolean> = {
     name: 'invalidRemoteValidation',

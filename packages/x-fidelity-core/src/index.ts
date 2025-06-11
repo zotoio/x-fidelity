@@ -58,13 +58,10 @@ export type {
     XFiPlugin,
     PluginResult,
     PluginRegistry,
-    FunctionMetrics,
-    AstResult,
     PluginConfig,
     PluginContext,
     PluginFactResult,
     PluginOperatorResult,
-    RemoteValidationResult,
     
     // Server types
     StartServerParams,

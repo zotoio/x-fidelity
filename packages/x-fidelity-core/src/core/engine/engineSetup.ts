@@ -3,6 +3,7 @@ import { SetupEngineParams, ArchetypeConfig, ExecutionConfig } from '@x-fidelity
 import { loadRepoXFIConfig } from '../../utils/repoXFIConfigLoader';
 import { logger } from '../../utils/logger';
 import { pluginRegistry } from '../pluginRegistry';
+import { registerRuleForTracking } from './engineRunner';
 
 export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     const {
@@ -57,6 +58,8 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     event: rule.event
                 };
                 engine.addRule(ruleProperties);
+                // Register the rule for proper name tracking (v3.24.0 contract)
+                registerRuleForTracking(ruleProperties);
             });
         }
 

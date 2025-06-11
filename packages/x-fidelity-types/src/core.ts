@@ -1,6 +1,8 @@
 // Core types for X-Fidelity
 // Moved from packages/x-fidelity-core/src/types/core.ts
 
+import { RepoXFIConfig } from './config';
+
 // Basic types
 export type OperatorParams = Record<string, unknown>;
 export type OperatorResult = boolean;
@@ -64,7 +66,7 @@ export interface ScanResult {
 
 export interface RuleFailure {
     ruleFailure: string;
-    level: string;
+    level: ErrorLevel;
     message: string;
     data?: any;
     details?: {
@@ -136,7 +138,7 @@ export interface ResultMetadata {
             external: number;
             rss: number;
         };
-        repoXFIConfig: any;
+        repoXFIConfig: RepoXFIConfig;
         factMetrics: Record<string, FactMetrics>;
         startTime: number;
         finishTime: number;
@@ -264,14 +266,7 @@ export interface GetConfigParams {
     logPrefix?: string;
 }
 
-export interface ComplexityThresholds {
-    cyclomaticComplexity: number;
-    cognitiveComplexity: number;
-    nestingDepth: number;
-    parameterCount: number;
-    returnCount: number;
-    lines: number;
-}
+
 
 export interface IsBlacklistedParams {
     filePath: string;
@@ -336,17 +331,7 @@ export interface OpenAIAnalysisParams {
     content: string;
 }
 
-// Plugin-specific types
-export interface RemoteValidationParams {
-    substring: string;
-    url: string;
-    content?: string;
-    pattern?: string;
-    options?: any;
-    headers?: Record<string, string>;
-    timeout?: number;
-    jsonPath?: string;
-}
+
 
 export interface RequiredFilesResult {
     missingFiles: string[];

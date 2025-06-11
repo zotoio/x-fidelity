@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
-import { FactDefn } from '@x-fidelity/types';
-import { RemoteValidationParams, RemoteValidationResult } from '@x-fidelity/types';
+import { FactDefn, FileData } from '@x-fidelity/types';
+import { RemoteValidationParams, RemoteValidationResult } from '../types';
 import { logger } from '@x-fidelity/core';
 import { JSONPath as jp } from 'jsonpath-plus'; 
 

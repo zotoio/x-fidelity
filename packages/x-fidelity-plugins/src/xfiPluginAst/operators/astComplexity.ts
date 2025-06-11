@@ -1,15 +1,16 @@
 import { logger } from '@x-fidelity/core';
-import { OperatorDefn, ComplexityThresholds } from '@x-fidelity/types';
+import { OperatorDefn } from '@x-fidelity/types';
+import { ComplexityThresholds } from '../types';
 
 export const astComplexity: OperatorDefn = {
     name: 'astComplexity',
     description: 'Checks if AST complexity metrics exceed specified thresholds',
     fn: (factValue: any, thresholds: ComplexityThresholds) => {
         try {
-            console.debug({ thresholds }, 'Checking AST complexity against thresholds');
+            logger.debug({ thresholds }, 'Checking AST complexity against thresholds');
 
             if (!factValue?.complexities?.length) {
-                console.debug('No complexity data available');
+                logger.debug('No complexity data available');
                 return false;
             }
 
@@ -29,7 +30,7 @@ export const astComplexity: OperatorDefn = {
                 const isOverThreshold = Object.values(exceedsThresholds).some(Boolean);
 
                 if (isOverThreshold) {
-                    console.debug({
+                    logger.debug({
                         functionName: func.name,
                         metrics,
                         thresholds,
@@ -42,7 +43,7 @@ export const astComplexity: OperatorDefn = {
 
             return exceedsThreshold;
         } catch (error) {
-            console.error(`Error in astComplexity operator: ${error}`);
+            logger.error(`Error in astComplexity operator: ${error}`);
             return false;
         }
     }

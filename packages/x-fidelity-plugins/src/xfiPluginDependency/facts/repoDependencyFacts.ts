@@ -129,6 +129,11 @@ function processYarnDependencies(yarnOutput: any): LocalDependencies[] {
             return newDep;
         };
         const extractNameAndVersion = (nameAndVersion: string) => {
+            if (!nameAndVersion || typeof nameAndVersion !== 'string') {
+                logger.debug(`Invalid nameAndVersion parameter: ${nameAndVersion}`);
+                return { name: 'unknown', version: 'unknown' };
+            }
+            
             const lastAtIndex = nameAndVersion.lastIndexOf('@');
             if (nameAndVersion.startsWith('@') && lastAtIndex > 0) {
                 return {
@@ -137,7 +142,7 @@ function processYarnDependencies(yarnOutput: any): LocalDependencies[] {
                 };
             }
             const parts = nameAndVersion.split('@');
-            return { name: parts[0], version: parts[1] };
+            return { name: parts[0] || 'unknown', version: parts[1] || 'unknown' };
         };
         yarnOutput.data.trees.forEach((tree: any) => {
             dependencies.push(processDependency(tree));
@@ -272,6 +277,10 @@ async function getInstalledDependencies(): Promise<Record<string, string>> {
 
 async function getMinimumDependencyVersions(archetypeConfig: ArchetypeConfig): Promise<MinimumDepVersions> {
     try {
+        if (!archetypeConfig) {
+            logger.debug('No archetype config provided, returning empty minimum dependency versions');
+            return {};
+        }
         return archetypeConfig.minimumDependencyVersions || {};
     } catch (error) {
         logger.error(`Error getting minimum dependency versions: ${error}`);
@@ -285,8 +294,9 @@ async function getLatestDependencyVersions(installedDeps: Record<string, string>
     try {
         for (const dep of Object.keys(installedDeps)) {
             try {
-                const output = execSync(`npm view ${dep} version`, { encoding: 'utf8' });
-                latestVersions[dep] = output.trim();
+                const output = execSync(`yarn info ${dep} version --json`, { encoding: 'utf8' });
+                const parsed = JSON.parse(output);
+                latestVersions[dep] = parsed.data;
             } catch (error) {
                 logger.warn(`Error getting latest version for ${dep}: ${error}`);
             }

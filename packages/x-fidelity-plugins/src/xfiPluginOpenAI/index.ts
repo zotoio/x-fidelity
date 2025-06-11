@@ -16,3 +16,12 @@ export const xfiPluginOpenAI: XFiPlugin = {
 };
 
 export default xfiPluginOpenAI; 
+
+// Export individual facts and operators for direct use
+export const facts: any[] = [
+    // No facts implemented yet
+];
+
+export const operators: any[] = [
+    // No operators implemented yet
+]; 

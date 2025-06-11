@@ -1,6 +1,6 @@
 import ts from 'typescript';
 import { FactDefn } from '@x-fidelity/types';
-import { FunctionMetrics } from '@x-fidelity/types';
+import { FunctionMetrics } from '../types';
 import { generateAst, logger } from '@x-fidelity/core';
 
 export const functionComplexityFact: FactDefn = {
@@ -8,8 +8,34 @@ export const functionComplexityFact: FactDefn = {
     description: 'Calculates complexity metrics for functions in the codebase',
     fn: async (params: unknown, almanac?: unknown) => {
         try {
-            const { tree, sourceFile } = generateAst(params as any);
+            // Get fileData from almanac like other AST facts
+            const fileData = await (almanac as any)?.factValue('fileData');
+            
+            if (!fileData) {
+                logger.debug('No fileData available for functionComplexity fact');
+                return [];
+            }
+
+            if (!fileData.content && !fileData.fileContent) {
+                logger.debug('No file content available for functionComplexity fact');
+                return [];
+            }
+
+            // Use content or fileContent, whichever is available
+            const content = fileData.content || fileData.fileContent;
+            if (!content || typeof content !== 'string') {
+                logger.debug('File content is not a valid string for functionComplexity fact');
+                return [];
+            }
+
+            const astData = {
+                ...fileData,
+                content: content
+            };
+
+            const { tree, sourceFile } = generateAst(astData);
             if (!tree) {
+                logger.debug('No AST tree generated for functionComplexity fact');
                 return [];
             }
 
@@ -17,10 +43,11 @@ export const functionComplexityFact: FactDefn = {
             const visited = new Set<string>();
 
             function visit(node: ts.Node) {
-                if (visited.has(node.pos.toString())) {
+                const nodePos = node.pos?.toString() || Math.random().toString();
+                if (visited.has(nodePos)) {
                     return;
                 }
-                visited.add(node.pos.toString());
+                visited.add(nodePos);
 
                 if (isFunctionLike(node)) {
                     const metrics = calculateMetrics(node, sourceFile);
@@ -191,8 +218,14 @@ function calculateReturnCount(node: ts.Node): number {
 }
 
 function getFunctionName(node: ts.Node): string {
-    if (ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) {
-        return node.name?.getText() || 'anonymous';
+    try {
+        if (ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) {
+            const nameText = node.name?.getText();
+            return nameText && typeof nameText === 'string' ? nameText : 'anonymous';
+        }
+        return 'anonymous';
+    } catch (error) {
+        logger.debug(`Error getting function name: ${error}`);
+        return 'anonymous';
     }
-    return 'anonymous';
 }

@@ -1,4 +1,4 @@
-import { XFiPlugin, PluginError, FactDefn } from '@x-fidelity/types';
+import { XFiPlugin, PluginError, FactDefn, OperatorDefn } from '@x-fidelity/types';
 import { getDependencyVersionFacts, repoDependencyAnalysis } from './facts/repoDependencyFacts';
 import { outdatedFramework } from './operators/outdatedFramework';
 
@@ -56,4 +56,16 @@ export const xfiPluginDependency: XFiPlugin = {
     })
 };
 
-export default xfiPluginDependency; 
+export default xfiPluginDependency;
+
+// Export individual facts and operators for direct use
+export const facts: FactDefn[] = [
+    repoDependencyVersionsFact, 
+    repoDependencyFactsFact, 
+    dependencyDataFact, 
+    repoDependencyAnalysisFact
+];
+
+export const operators: OperatorDefn[] = [
+    outdatedFramework
+]; 
