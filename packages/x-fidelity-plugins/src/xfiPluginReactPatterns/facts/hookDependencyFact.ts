@@ -1,6 +1,6 @@
 import { FactDefn, FileData } from '@x-fidelity/types';
-import { AstResult } from '../../xfiPluginAst/types';
-import { logger, generateAst } from '@x-fidelity/core';
+import { AstResult, generateAst } from '../../sharedPluginUtils/astUtils';
+import { logger } from '@x-fidelity/core';
 
 export const hookDependencyFact: FactDefn = {
     name: 'hookDependency',
@@ -10,7 +10,7 @@ export const hookDependencyFact: FactDefn = {
             const fileData = params as FileData;
             const ast = await (almanac as any)?.factValue('ast') as AstResult;
 
-            if (!ast || !ast.program) {
+            if (!ast || !ast.tree) {
                 return {
                     missingDependencies: [],
                     unnecessaryDependencies: []

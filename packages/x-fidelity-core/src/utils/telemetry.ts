@@ -1,20 +1,39 @@
-import axios, { AxiosError } from 'axios';
+import { axiosClient, isAxiosError } from './axiosClient';
 import { logger } from './logger';
 import { TelemetryEvent } from '@x-fidelity/types';
 
-export async function sendTelemetry(event: TelemetryEvent): Promise<void> {
+// Note: In v4 monorepo structure, options might need to be passed as parameter
+// For now, we'll use environment variables for configuration
+const TELEMETRY_ENDPOINT = process.env.TELEMETRY_ENDPOINT || process.env.XFI_TELEMETRY_COLLECTOR;
+const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
+
+export async function sendTelemetry(event: TelemetryEvent, logPrefix?: string): Promise<void> {
+    if (!TELEMETRY_ENDPOINT) {
+        logger.trace('Telemetry endpoint not set. Skipping telemetry.');
+        return;
+    }
     try {
-        const response = await axios.post('https://telemetry.example.com/collect', event);
-        logger.debug(`Telemetry sent successfully: ${response.status}`);
+        await axiosClient.post(TELEMETRY_ENDPOINT, event, {
+            timeout: 5000, // 5 seconds timeout
+            headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'x-fidelity-telemetry',
+                'X-Log-Prefix': logPrefix || '',
+                'X-Shared-Secret': SHARED_SECRET || ''
+            }
+        });
+        logger.debug({ 
+            telemetryData: event,
+            type: 'telemetry-received'
+        }, 'Accepting telemetry data');
     } catch (error) {
-        if (axios.isAxiosError(error)) {
-            const axiosError = error as AxiosError;
-            logger.debug(`Failed to send telemetry: ${axiosError.message}`);
-            if (axiosError.response) {
-                logger.debug(`Response status: ${axiosError.response.status}`);
+        if (isAxiosError(error)) {
+            logger.debug(`Failed to send telemetry: ${error.message}`);
+            if (error.response) {
+                logger.debug(`Response status: ${error.response.status}`);
             }
         } else {
-            logger.debug('Failed to send telemetry: Unknown error');
+            logger.debug(`Failed to send telemetry: ${error}`);
         }
     }
 }

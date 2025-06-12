@@ -1,4 +1,9 @@
+import { SyntaxNode } from 'tree-sitter';
+
 // AST Plugin specific types
+
+// AST result type - for compatibility, import from baseUtils
+export type { AstResult } from '../sharedPluginUtils/astUtils';
 
 // Function metrics type
 export interface FunctionMetrics {
@@ -9,15 +14,12 @@ export interface FunctionMetrics {
     parameterCount: number;
     returnCount: number;
     lineCount?: number;
-}
-
-// AST result type
-export interface AstResult {
-    tree: any;
-    rootNode?: any;
-    program?: any;
-    sourceFile?: any;
-    functions?: FunctionMetrics[];
+    location: {
+        startLine: number;
+        endLine: number;
+        startColumn: number;
+        endColumn: number;
+    };
 }
 
 // Complexity thresholds type

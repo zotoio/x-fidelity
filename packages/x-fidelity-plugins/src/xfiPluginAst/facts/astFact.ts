@@ -1,16 +1,46 @@
 import { FactDefn, FileData } from '@x-fidelity/types';
 // TODO: Import utilities from core package when available
-import { logger, generateAst } from '@x-fidelity/core';
+import { logger } from '@x-fidelity/core';
+import { generateAst } from '../../sharedPluginUtils/astUtils';
 
 export const astFact: FactDefn = {
     name: 'ast',
     description: 'Generates AST for code analysis',
     fn: async (params: any, almanac: any) => {
+        const startTime = Date.now();
         try {
             const fileData: FileData = await almanac.factValue('fileData');
-            // TODO: Implement AST generation when utilities are available
-            // const result = generateAst(fileData);
-            const result = { tree: null }; // Placeholder
+            
+            if (!fileData) {
+                logger.debug('No fileData available for AST generation');
+                return { tree: null };
+            }
+
+            if (!fileData.content && !fileData.fileContent) {
+                logger.debug('No file content available for AST generation');
+                return { tree: null };
+            }
+
+            // Use content or fileContent, whichever is available
+            const content = fileData.content || fileData.fileContent;
+            if (!content || typeof content !== 'string') {
+                logger.debug('File content is not a valid string for AST generation');
+                return { tree: null };
+            }
+
+            const astData = {
+                ...fileData,
+                content: content
+            };
+
+            const astStartTime = Date.now();
+            const result = generateAst(astData);
+            const astEndTime = Date.now();
+            
+            const totalTime = astEndTime - startTime;
+            const astGenTime = astEndTime - astStartTime;
+            
+            logger.debug(`AST TIMING: ${fileData.fileName} - Total: ${totalTime}ms, AST Gen: ${astGenTime}ms, Content size: ${content.length} chars`);
 
             // Add the AST to the almanac for other facts/operators to use
             if (params?.resultFact) {
@@ -20,7 +50,8 @@ export const astFact: FactDefn = {
 
             return result;
         } catch (error) {
-            console.error(`Error in AST fact: ${error}`);
+            const totalTime = Date.now() - startTime;
+            logger.error(`AST TIMING: Error after ${totalTime}ms - ${error}`);
             return { tree: null };
         }
     }

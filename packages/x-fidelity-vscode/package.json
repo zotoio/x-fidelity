@@ -67,6 +67,7 @@
   "dependencies": {
     "@x-fidelity/core": "4.0.0",
     "@x-fidelity/types": "4.0.0",
+    "@x-fidelity/plugins": "4.0.0",
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {

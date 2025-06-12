@@ -9,13 +9,13 @@ import {
     IssueDetail,
     ResultMetadata,
     FactMetrics,
-    ErrorLevel
+    ErrorLevel,
+    RuleConfig,
+    ArchetypeConfig
 } from './core';
 
 import {
-    RuleConfig,
     RuleCondition,
-    ArchetypeConfig,
     RepoXFIConfig,
     CLIOptions
 } from './config';
@@ -51,7 +51,7 @@ describe('Types Package', () => {
     it('should export plugin types correctly', () => {
         const pluginError: PluginError = {
             message: 'Test error',
-            severity: 'error',
+            level: 'error',
             source: 'test'
         };
         expect(pluginError.message).toBe('Test error');

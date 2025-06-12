@@ -1,104 +1,122 @@
-// Core types for X-Fidelity
-// Moved from packages/x-fidelity-core/src/types/core.ts
+import { Engine, OperatorEvaluator } from 'json-rules-engine';
+import { JSONSchemaType } from 'ajv';
 
-import { RepoXFIConfig } from './config';
-
-// Basic types
-export type OperatorParams = Record<string, unknown>;
-export type OperatorResult = boolean;
-export type ErrorLevel = 'warning' | 'error' | 'fatality' | 'exempt';
-
-// File related types
-export interface FileData {
-    fileName: string;
-    filePath: string;
-    fileContent: string;
-    content: string;
-    extension?: string;
-    lastModified?: Date;
-    relativePath?: string;
+export type OperatorDefn = {
+    name: string,
+    fn: OperatorEvaluator<any, any>
+    description?: string
 }
 
-// Core functionality types
-/**
- * Represents a fact value that can be used in rule conditions.
- * TFactValue: The type of value returned by the fact function
- */
-export interface Almanac {
-    factValue(name: string): Promise<any>;
-    addRuntimeFact(name: string, value: any): void;
-    [key: string]: any;
-}
-
-export interface FactDefn {
-    name: string;
-    description: string;
-    fn: (params: unknown, almanac?: Almanac) => Promise<any>;
-    priority?: number;
-}
-
-/**
- * Represents an operator that can be used in rule conditions.
- * TFactValue: The type of value returned by the fact
- * TValue: The type of value to compare against
- */
-export interface OperatorDefn<T = any, U = any> {
-    name: string;
-    description: string;
-    fn: (factValue: T, params: U) => boolean;
-}
-
-export interface ValidationResult {
-    isValid: boolean;
-    errors: string[];
-    error?: string;
+export type FactDefn = {
+    name: string,
+    fn: (params: any, almanac: any) => Promise<any>
+    priority?: number
+    description?: string
 }
 
 export interface ScanResult {
-    filePath?: string;
-    errors: {
-        level: string;
-        message: string;
-        data?: any;
-        ruleFailure: string;
-    }[];
-}
-
-export interface RuleFailure {
-    ruleFailure: string;
-    level: ErrorLevel;
-    message: string;
-    data?: any;
-    details?: {
-        message: string;
-        ruleDescription?: string;
-        recommendations?: string[];
-        conditionDetails?: any;
-        allConditions?: any[];
-        conditionType?: string;
-        details?: any;
-    };
-}
-
-export interface IssueDetail {
     filePath: string;
     errors: RuleFailure[];
 }
 
-export interface RatioThreshold {
-    ratio: number;
-    level: string;
-    value: number;
-    comparison?: 'gte' | 'lte' | 'gt' | 'lt' | 'eq';
+export interface RuleFailure {
+    ruleFailure: string;
+    level: ErrorLevel | undefined;
+    message?: string;  // V3.24.0 compatibility - used in reportGenerator
+    details: {
+        message: string;
+        source?: 'operator' | 'fact' | 'plugin' | 'rule' | 'unknown';
+        originalError?: Error;
+        stack?: string;
+        operatorThreshold?: {
+            operator: string;
+            value: any;
+        };
+        operatorValue?: any;
+        conditionDetails?: {
+            fact: string;
+            operator: string;
+            value: any;
+            params?: any;
+        };
+        allConditions?: Array<{
+            fact: string;
+            operator: string;
+            value: any;
+            params?: any;
+            path?: string;
+            priority?: number;
+        }>;
+        conditionType?: 'all' | 'any' | 'unknown';
+        ruleDescription?: string;
+        recommendations?: string[];
+        [key: string]: any;
+    } | undefined;
 }
 
-// Engine types
+export type ErrorLevel = 'warning' | 'error' | 'fatality' | 'exempt';
+
+export interface VersionData {
+    dep: string;
+    ver: string;
+    min: string;
+    name?: string;  // Add name property for compatibility
+    version?: string;  // Add version property for compatibility
+    latestVersion?: string;  // Add latestVersion property for compatibility
+    isOutdated?: boolean;  // Add isOutdated property for compatibility
+    updateType?: string;  // Add updateType property for compatibility
+    [key: string]: any;  // Allow additional properties for flexibility
+}
+
+export interface MinimumDepVersions {
+    [propertyName: string]: string;
+}
+
+export interface LocalDependencies {
+    name: string;
+    version: string;
+    dependencies?: LocalDependencies[];
+}
+
+export interface ExecutionConfig {
+    archetype: ArchetypeConfig;
+    rules: RuleConfig[];
+    cliOptions: { [key: string]: any };
+    exemptions: Exemption[];
+}
+
+export interface SetupEngineParams {
+    archetypeConfig: ArchetypeConfig;
+    archetype: string;
+    repoUrl: string;
+    executionLogPrefix: string;
+    localConfigPath: string;
+    logPrefix?: string;      // V4 enhancement - used in engineSetup.ts
+    rules?: RuleConfig[];    // V4 enhancement - used in engineSetup.ts for rule injection
+    exemptions?: Exemption[]; // V4 enhancement - used in engineSetup.ts for exemption logic
+}
+
 export interface RunEngineOnFilesParams {
-    engine: any;
+    engine: Engine;
     fileData: FileData[];
-    installedDependencyVersions: Record<string, string>;
-    minimumDependencyVersions: Record<string, string>;
-    standardStructure: boolean;
+    installedDependencyVersions: any;
+    minimumDependencyVersions: any;
+    standardStructure: any;
+    repoUrl: string;
+}
+
+export interface Exemption {
+    repoUrl: string;
+    rule: string;
+    expirationDate: string;
+    reason: string;
+}
+
+export interface IsExemptParams {
+    exemptions: Exemption[];
+    repoUrl: string;
+    ruleName: string;
+    logPrefix: string;
 }
 
 export interface AnalyzeCodebaseParams {
@@ -109,274 +127,364 @@ export interface AnalyzeCodebaseParams {
     executionLogPrefix?: string;
 }
 
-export interface VersionData {
-    name: string;
-    version: string;
-    latestVersion: string;
-    isOutdated: boolean;
-    updateType: 'major' | 'minor' | 'patch';
-    dep: string;
-    min: string;
-    ver: string;
-}
-
-export interface ResultMetadata {
-    XFI_RESULT: {
-        archetype: string;
-        fileCount: number;
-        totalIssues: number;
-        warningCount: number;
-        errorCount: number;
-        fatalityCount: number;
-        exemptCount?: number;
-        issueDetails: IssueDetail[];
-        durationSeconds?: number;
-        telemetryData: TelemetryData;
-        memoryUsage: {
-            heapTotal: number;
-            heapUsed: number;
-            external: number;
-            rss: number;
-        };
-        repoXFIConfig: RepoXFIConfig;
-        factMetrics: Record<string, FactMetrics>;
-        startTime: number;
-        finishTime: number;
-        options: any;
-        repoPath?: string;
-        repoUrl?: string;
-        xfiVersion: string;
-    };
-}
-
-// Fact metrics
-export interface FactMetrics {
-    executionCount: number;
-    totalExecutionTime: number;
-    averageExecutionTime: number;
-    lastExecutionTime: number;
-}
-
-// Telemetry types
-export interface TelemetryEvent {
-    eventType: string;
-    eventData: any;
-    metadata?: Record<string, any>;
-    timestamp?: string;
-}
-
-export interface TelemetryData {
-    eventType: string;
-    metadata: Record<string, any>;
-    timestamp: string;
-    repoUrl: string;
-    startTime: number;
-    configServer?: string;
-    hostInfo?: any;
-    userInfo?: any;
-}
-
 export interface CollectTelemetryDataParams {
     repoPath: string;
     configServer: string;
 }
 
-// Server types
-export interface StartServerParams {
-    port: number;
-    host: string;
-    configPath: string;
-    jsonTTL: string;
-    customPort?: number;
-    executionLogPrefix?: string;
-}
-
-// Exemption types
-export interface IsExemptParams {
-    archetype: string;
-    rule: string;
-    filePath: string;
-    repoUrl?: string;
-    ruleName?: string;
-    exemptions?: Exemption[];
-    logPrefix?: string;
-}
-
-export interface LoadExemptionsParams {
-    configServer?: string;
-    localConfigPath?: string;
-    logPrefix?: string;
-    archetype: string;
-}
-
-export interface Exemption {
-    rule: string;
-    pattern: string;
-    reason: string;
-    expirationDate?: string;
-    ruleName?: string;
-    filePath?: string;
-    createdAt?: string;
-    createdBy?: string;
-    repoUrl?: string;
-}
-
-// Dependency types
-export interface LocalDependencies {
+export interface ArchetypeConfig {
     name: string;
-    version: string;
-    dependencies?: LocalDependencies[];
-    [key: string]: any;
-}
-
-export interface MinimumDepVersions {
-    [key: string]: string;
-}
-
-// Rule and configuration types are defined in config.ts
-
-export interface LoadRulesParams {
-    configServer?: string;
-    ruleNames: string[];
-    logPrefix?: string;
-    archetype: string;
-    localConfigPath?: string;
-}
-
-export interface LoadLocalConfigRuleParams {
-    ruleName: string;
-    localConfigPath: string;
-    archetype?: string;
-    rule: string;
-    logPrefix?: string;
-}
-
-export interface LoadRemoteRuleParams {
-    configServer: string;
-    archetype: string;
-    ruleName: string;
-    rule: string;
-    logPrefix?: string;
-}
-
-// Configuration types
-export interface GetConfigParams {
-    archetype?: string;
-    configServer?: string;
-    logPrefix?: string;
-}
-
-
-
-export interface IsBlacklistedParams {
-    filePath: string;
-    repoPath: string;
-    blacklistPatterns: string[];
-}
-
-export interface isWhitelistedParams {
-    filePath: string;
-    repoPath: string;
-    whitelistPatterns: string[];
-}
-
-// Notification types (basic ones)
-export interface Notification {
-    type: 'success' | 'failure';
-    title: string;
-    message: string;
-    recipients: string[];
-    subject: string;
-    content: string;
-    metadata?: {
-        results?: ResultMetadata;
-        [key: string]: any;
+    rules: string[];  // Rule names as strings
+    plugins: string[];  // Required - plugins provide facts and operators dynamically
+    config: {
+        minimumDependencyVersions: Record<string, string>; // This will be validated in the JSON schema
+        standardStructure: Record<string, any>;
+        blacklistPatterns: string[];
+        whitelistPatterns: string[];
     };
+    minimumDependencyVersions?: Record<string, string>; // Add for compatibility with plugins
 }
 
-export interface NotificationProvider {
-    send: (notification: Notification) => Promise<void>;
-    getRecipients(): Promise<string[]>;
-    initialize?(config: any): Promise<void>;
+export type ArchetypeConfigSchema = JSONSchemaType<ArchetypeConfig>;
+
+// First define RuleCondition interface for better type safety
+export interface RuleCondition {
+    fact: string;
+    operator: string;
+    value: any;
+    params?: any;
+    path?: string;
+    priority?: number;
 }
 
-// Execution configuration (ArchetypeConfig is defined in config.ts)
-export interface ExecutionConfig {
-    archetype: any; // ArchetypeConfig - avoiding circular dependency
-    rules: any[]; // RuleConfig[] - avoiding circular dependency
-    cliOptions: any;
-    exemptions: Exemption[];
+export interface RuleConfig {
+    name: string;
+    conditions: {
+        all?: RuleCondition[];  // Replace any[] with proper type
+        any?: RuleCondition[];  // Replace any[] with proper type
+    };
+    event: {
+        type: string;
+        params: Record<string, any>;
+    };
+    errorBehavior?: 'swallow' | 'fatal';
+    onError?: {
+        action: string;  // Name of function to execute
+        params?: Record<string, any>;  // Parameters for the action
+    };
+    description?: string;  // Description of what the rule checks for
+    recommendations?: string[];  // Recommendations on how to fix the issue
 }
 
-// AI types
-export interface AiSuggestionCodeSnippet {
-    filePath: string;
-    lineNumber: number;
-    before: string;
-    after: string;
-}
-
-export interface AiSuggestion {
-    issue: string;
-    description: string;
-    filePaths: string[];
-    suggestion: string;
-}
-
-export interface AiSuggestions {
-    issues: AiSuggestion[];
-}
+export type RuleConfigSchema = JSONSchemaType<RuleConfig>;
 
 export interface OpenAIAnalysisParams {
-    content: string;
+    prompt: string;
+    resultFact: string;
 }
 
-
-
-export interface RequiredFilesResult {
-    missingFiles: string[];
-    foundFiles: string[];
+export interface TelemetryEvent {
+    eventType: string;
+    metadata: ResultMetadata | BasicTelemetryMetadata | ExemptionTelemetryMetadata | Record<string, any>;  // Flexible base type
+    timestamp: string;
+    eventData?: any;  // Flexible field for additional event data
 }
 
-export interface CustomFactResult {
-    value: string;
-    metadata?: any;
-}
-
-// Additional missing types
-export interface CodeOwner {
-    pattern: string;
-    path: string;
-    owners: string[];
-}
-
-export interface ErrorActionParams {
-    error: Error;
-    context: any;
-    rule?: any;
-    level?: string;
-    file?: any;
-}
-
-// Additional telemetry types
 export interface BasicTelemetryMetadata {
     archetype: string;
     repoPath: string;
-    options: Record<string, any>;
-    os: {
+    telemetryData?: TelemetryData;
+    errorMessage?: string;
+    options?: any;
+    errorStack?: string;
+    ruleName?: string;
+    conditionDetails?: {
+        fact: string;
+        operator: string;
+        value: any;
+        params?: any;
+    };
+    allConditions?: Array<{
+        fact: string;
+        operator: string;
+        value: any;
+        params?: any;
+        path?: string;
+        priority?: number;
+    }>;
+    conditionType?: 'all' | 'any' | 'unknown';
+}
+
+export interface ExemptionTelemetryMetadata {
+    repoUrl: string;
+    rule: string;
+    expirationDate: string;
+    reason: string;
+}
+
+export interface GetConfigParams {
+    archetype?: string;
+    logPrefix?: string;
+}
+
+export interface InitializeParams {
+    archetype: string;
+    logPrefix?: string;
+}
+
+export interface LoadLocalConfigParams {
+    archetype: string;
+    localConfigPath: string;
+}
+
+export interface StartServerParams {
+    customPort?: string;
+    executionLogPrefix?: string;
+}
+
+export interface FactMetrics {
+    executionCount: number;
+    totalExecutionTime: number;
+    averageExecutionTime: number;
+    longestExecutionTime: number;  // seconds to 4 decimal places
+}
+
+export interface ResultMetadata {
+    XFI_RESULT: {
+        archetype: string;
+        repoPath: string;
+        fileCount: number;
+        totalIssues: number;
+        warningCount: number;
+        errorCount: number;
+        fatalityCount: number;
+        exemptCount: number;
+        issueDetails: ScanResult[];
+        startTime: number;
+        finishTime: number;
+        durationSeconds: number;
+        telemetryData: TelemetryData;
+        options: any;
+        repoXFIConfig: RepoXFIConfig;
+        memoryUsage: any;
+        repoUrl: string;
+        xfiVersion: string;
+        factMetrics: {
+            [factName: string]: FactMetrics;
+        };
+    };
+}
+
+export interface TelemetryData {
+    repoUrl: string;
+    configServer: string;
+    hostInfo: {
         platform: string;
         release: string;
         type: string;
         arch: string;
-        version: string;
+        cpus: number;
+        totalMemory: number;
+        freeMemory: number;
+    };
+    userInfo: {
+        username: string;
         homedir: string;
         shell: string | null;
     };
     startTime: number;
 }
 
-export interface ExemptionTelemetryMetadata {
-    repoUrl: string;
+export interface LoadRulesParams {
+    archetype: string;
+    ruleNames: string[];
+    configServer?: string;
+    logPrefix?: string;
+    localConfigPath?: string;
+}
+
+export interface LoadRemoteRuleParams {
+    configServer: string;
+    archetype: string;
     ruleName: string;
-    exemptionCount: number;
+    logPrefix?: string;
+    rule?: string;  // v3.24.0 compatibility
+}
+
+export interface LoadLocalRuleParams {
+    ruleName: string;
+}
+
+export interface LoadLocalConfigRuleParams {
+    ruleName: string;
+    localConfigPath: string;
+    archetype?: string;  // v3.24.0 compatibility
+    rule?: string;       // v3.24.0 compatibility
+}
+
+export interface LoadExemptionsParams { 
+    configServer?: string;  // Optional - either configServer or localConfigPath
+    localConfigPath?: string;  // Optional - either configServer or localConfigPath
+    logPrefix?: string; 
+    archetype: string;
+}
+
+export interface IsBlacklistedParams { 
+    filePath: string; 
+    repoPath: string; 
+    blacklistPatterns: string[]; 
+}
+
+export interface isWhitelistedParams { 
+    filePath: string; 
+    repoPath: string; 
+    whitelistPatterns: string[]; 
+}
+
+export interface FileData {
+    fileName: string;
+    filePath: string;
+    fileContent: string;
+    fileAst?: Record<string, any> | null;  // More specific than any, allows for structured AST objects
+    relativePath?: string;
+    content?: string;  // v3.24.0 compatibility - alias for fileContent
+}
+
+export interface ValidationResult {
+    isValid: boolean;
+    error?: string;
+    errors?: string[];  // v3.24.0 compatibility - array of errors
+}
+
+export interface RuleReference {
+  name: string;
+  path?: string;  // Path relative to config dir or repo dir
+  url?: string;   // Remote URL to fetch rule from
+}
+
+export interface RepoXFIConfig {
+  sensitiveFileFalsePositives?: string[];
+  additionalRules?: (RuleConfig | RuleReference)[];
+  additionalFacts?: string[];
+  additionalOperators?: string[];
+  additionalPlugins?: string[];
+  notifications?: {
+    recipients?: {
+      email?: string[];
+      slack?: string[];
+      teams?: string[];
+    };
+    codeOwners?: boolean;
+    notifyOnSuccess?: boolean;
+    notifyOnFailure?: boolean;
+  };
+  [key: string]: any;  // Allow for additional properties
+}
+
+export type RepoXFIConfigSchema = JSONSchemaType<RepoXFIConfig>;
+
+export interface PluginError {
+  message: string;
+  level: ErrorLevel;
+  details?: any;
+}
+
+export interface PluginResult {
+  success: boolean;
+  data: any;
+  error?: PluginError;
+}
+
+export interface XFiPlugin {
+  name: string;
+  version: string;
+  facts?: FactDefn[];
+  operators?: OperatorDefn[];
+  onError?: (error: Error) => PluginError;
+  [key: string]: any; // Allow for additional properties
+}
+
+export interface PluginRegistry {
+  registerPlugin: (plugin: XFiPlugin) => void;
+  getPlugin: (name: string) => XFiPlugin | undefined;  // V4 enhancement - useful for plugin management
+  getPluginFacts: () => FactDefn[];
+  getPluginOperators: () => OperatorDefn[];
+  executePluginFunction: (pluginName: string, functionName: string, ...args: any[]) => PluginResult;
+}
+
+export interface AiSuggestionCodeSnippet {
+  filePath: string;
+  lineNumber: number;
+  before: string;
+  after: string;
+}
+  
+export interface AiSuggestion {
+  issue: string;
+  severity: number;
+  description: string;
+  filePaths: string[];
+  suggestion: string;
+  codeSnippets: AiSuggestionCodeSnippet[];
+}
+
+export interface AiSuggestions {
+  issues: AiSuggestion[];
+}
+
+export type AiSuggestionsSchema = JSONSchemaType<AiSuggestions>;
+
+export interface RatioThreshold {
+    threshold: number;
+    comparison?: 'gte' | 'lte'; // greater than or equal, less than or equal
+    value?: number; // Add value property for compatibility
+}
+
+// Additional interfaces for backward compatibility
+export type IssueDetail = ScanResult; // Alias for v4 compatibility
+
+// CLI Options interface
+export interface CLIOptions {
+    dir: string;
+    archetype: string;
+    configServer?: string;
+    localConfigPath?: string;
+    openaiEnabled?: boolean;
+    telemetryCollector?: string;
+    mode: 'client' | 'server';
+    port?: number;
+    jsonTTL?: string;
+    extensions?: string[];
+    examine?: boolean;
+}
+
+// CodeOwner interface with v3.24.0 compatibility
+export interface CodeOwner {
+  path: string;
+  owners: string[];
+  pattern?: string; // v3.24.0 compatibility
+}
+
+// Notification interfaces (from v3.24.0 notificationTypes.ts)
+export interface NotificationProvider {
+  name: string;
+  send(notification: Notification): Promise<void>;  // V4 implementation returns void, not boolean
+}
+
+export interface Notification {
+  recipients: string[];
+  subject: string;
+  content: string;
+  metadata?: Record<string, any>;
+  // v3.24.0 compatibility properties
+  type?: string;
+  title?: string;
+  message?: string;
+}
+
+export interface ErrorActionParams {
+    error: Error;
+    ruleName: string;
+    filePath?: string;
+    [key: string]: any;
 } 

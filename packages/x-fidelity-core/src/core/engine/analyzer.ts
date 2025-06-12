@@ -28,23 +28,32 @@ import { pluginRegistry } from '../pluginRegistry';
 import { Engine } from 'json-rules-engine';
 import { options } from '../options';
 import { ScanResult, RuleFailure, ErrorLevel } from '@x-fidelity/types';
+import { createTimingTracker } from '../../utils/timingUtils';
 
 export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<ResultMetadata> {
     const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '', executionLogPrefix = '' } = params;
+    
+    // Performance tracking
+    const timingTracker = createTimingTracker('ANALYZER TIMING');
     
     // Reset metrics at start of analysis
     factMetricsTracker.reset();
     
     logger.info(`STARTING..`);
+    timingTracker.recordTiming('startup');
 
     const telemetryData = await collectTelemetryData({ repoPath, configServer});
+    timingTracker.recordTiming('telemetry_collection');
+    
     const repoUrl = telemetryData.repoUrl;
 
     const executionConfig = await ConfigManager.getConfig({ archetype, logPrefix: executionLogPrefix });
+    timingTracker.recordTiming('config_loading');
+    
     const archetypeConfig: ArchetypeConfig = executionConfig.archetype;
 
     // Send telemetry for analysis start
-        await sendTelemetry({
+    await sendTelemetry({
         eventType: 'analysisStart',
         eventData: {
             archetype,
@@ -60,22 +69,38 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         },
         timestamp: new Date().toISOString()
     });
+    timingTracker.recordTiming('telemetry_send');
 
     // Get plugin functions for data collection
     const pluginFacts = pluginRegistry.getPluginFacts();
+    timingTracker.recordTiming('plugin_facts_loading');
     
     // Find and call dependency version facts
     const dependencyFact = pluginFacts.find(f => f.name === 'repoDependencyVersions');
     const installedDependencyVersions = dependencyFact 
         ? await dependencyFact.fn({ archetypeConfig }, undefined)
         : [];
+    timingTracker.recordTiming('dependency_analysis');
     
     // Find and call repo file data collection
     const repoFilesFact = pluginFacts.find(f => f.name === 'repoFilesystemFacts');
     const fileData = repoFilesFact 
         ? await repoFilesFact.fn({ repoPath, archetypeConfig }, undefined)
         : [];
+    timingTracker.recordTiming('file_data_collection');
+    
+    logger.info(`ANALYZER TIMING: File data collection found ${fileData.length} files`);
+    
+    // Add REPO_GLOBAL_CHECK to fileData, which is the trigger for global checks
+    fileData.push({
+        fileName: REPO_GLOBAL_CHECK,
+        filePath: REPO_GLOBAL_CHECK,
+        fileContent: REPO_GLOBAL_CHECK,
+        content: REPO_GLOBAL_CHECK
+    });
+    
     const repoXFIConfig = await loadRepoXFIConfig(repoPath);
+    timingTracker.recordTiming('repo_config_loading');
     
     // Load additional plugins from repo config
     if (repoXFIConfig.additionalPlugins && repoXFIConfig.additionalPlugins.length > 0) {
@@ -86,38 +111,12 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             logger.warn(`Error loading additional plugins from repo config: ${error}`);
         }
     }
+    timingTracker.recordTiming('additional_plugins_loading');
     
-    // Merge additional components into archetype config
-    if (repoXFIConfig.additionalFacts) {
-        archetypeConfig.facts = archetypeConfig.facts || [];
-        archetypeConfig.facts = [...new Set([...archetypeConfig.facts, ...repoXFIConfig.additionalFacts])];
-        logger.info(`Added additional facts from repo config: ${repoXFIConfig.additionalFacts.join(', ')}`);
-    }
-    
-    if (repoXFIConfig.additionalOperators) {
-        archetypeConfig.operators = archetypeConfig.operators || [];
-        archetypeConfig.operators = [...new Set([...archetypeConfig.operators, ...repoXFIConfig.additionalOperators])];
-        logger.info(`Added additional operators from repo config: ${repoXFIConfig.additionalOperators.join(', ')}`);
-    }
-
-    // add REPO_GLOBAL_CHECK to fileData, which is the trigger for global checks
-    fileData.push({
-        fileName: REPO_GLOBAL_CHECK,
-        filePath: REPO_GLOBAL_CHECK,
-        fileContent: REPO_GLOBAL_CHECK,
-        content: REPO_GLOBAL_CHECK
-    });
-
-    const { minimumDependencyVersions, standardStructure } = archetypeConfig.config;
-
-    let openaiSystemPrompt; 
-    if (isOpenAIEnabled()) {
-        // Find and call OpenAI analysis fact
-        const openAIFact = pluginFacts.find(f => f.name === 'openaiAnalysisFacts');
-        openaiSystemPrompt = openAIFact 
-            ? await openAIFact.fn({ fileData }, undefined)
-            : null;
-    }
+    // Get minimum dependency versions from archetype config
+    const minimumDependencyVersions = archetypeConfig.minimumDependencyVersions || {};
+    const standardStructure = archetypeConfig.config?.standardStructure || false;
+    timingTracker.recordTiming('config_merging');
 
     const engine = await setupEngine({
         archetypeConfig,
@@ -125,58 +124,72 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         executionLogPrefix,
         localConfigPath,
         repoUrl,
-        rules: executionConfig.rules
+        rules: executionConfig.rules,
+        exemptions: executionConfig.exemptions
     });
-
-    // Add plugin facts and operators directly to the engine
-    if (repoXFIConfig.additionalFacts) {
-        const pluginFacts = pluginRegistry.getPluginFacts();
-        for (const factName of repoXFIConfig.additionalFacts) {
-            const fact = pluginFacts.find(f => f.name === factName);
-            if (fact) {
-                logger.info(`Adding custom fact to engine: ${fact.name}`);
-                engine.addFact(fact.name, fact.fn, { priority: fact.priority || 1 });
-            }
-        }
-    }
-
-    if (repoXFIConfig.additionalOperators) {
-        const pluginOperators = pluginRegistry.getPluginOperators();
-        for (const operatorName of repoXFIConfig.additionalOperators) {
-            const operator = pluginOperators.find(o => o.name === operatorName);
-            if (operator) {
-                logger.info(`Adding custom operator to engine: ${operator.name}`);
-                engine.addOperator(operator.name, operator.fn);
-            }
-        }
-    }
+    timingTracker.recordTiming('engine_setup');
 
     // Load additional rules from repo config
     if (repoXFIConfig.additionalRules && repoXFIConfig.additionalRules.length > 0) {
         logger.info(`Loading additional rules from repo config: ${repoXFIConfig.additionalRules.length} rules`);
-        for (const ruleConfig of repoXFIConfig.additionalRules) {
-            if (validateRule(ruleConfig)) {
-                logger.info(`Adding custom rule from repo config: ${ruleConfig.name}`);
+        for (const rule of repoXFIConfig.additionalRules) {
+            if (validateRule(rule)) {
+                logger.info(`Adding custom rule from repo config: ${rule.name}`);
                 // Convert RuleConfig to RuleProperties for Engine
                 const ruleProperties = {
-                    name: ruleConfig.name,
-                    conditions: ruleConfig.conditions.all ? { all: ruleConfig.conditions.all } : { any: ruleConfig.conditions.any || [] },
-                    event: ruleConfig.event
+                    ...rule,
+                    conditions: rule.conditions as any
                 };
                 engine.addRule(ruleProperties);
-                // Register the rule for proper name tracking (v3.24.0 contract)
-                registerRuleForTracking(ruleProperties);
             } else {
-                logger.warn(`Invalid custom rule in repo config: ${(ruleConfig as any)?.name || 'unnamed rule'}`);
+                // Cast rule to any to safely access name property
+                const ruleName = (rule as any)?.name || 'unnamed rule';
+                logger.warn(`Invalid custom rule in repo config: ${ruleName}`);
             }
         }
     }
+    timingTracker.recordTiming('additional_rules_loading');
 
-    if (isOpenAIEnabled() && openaiSystemPrompt) {
-        logger.info(`adding OpenAI system prompt to engine..`);
-        // Static data doesn't need execution tracking
-        engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
+    if (isOpenAIEnabled()) {
+        logger.info(`adding additional openai facts to engine..`);
+        // Add fact execution tracking wrapper for openaiAnalysis
+        const openaiAnalysisFact = pluginFacts.find(f => f.name === 'openaiAnalysis');
+        if (openaiAnalysisFact) {
+            engine.addFact('openaiAnalysis', async (params: any, almanac: any) => {
+                return factMetricsTracker.trackFactExecution('openaiAnalysis', 
+                    () => openaiAnalysisFact.fn(params, almanac)
+                );
+            }, { priority: openaiAnalysisFact.priority || 1 });
+        }
+        
+        // Add OpenAI system prompt from plugin if available
+        const collectOpenaiAnalysisFacts = pluginFacts.find(f => f.name === 'collectOpenaiAnalysisFacts');
+        if (collectOpenaiAnalysisFacts) {
+            const openaiSystemPrompt = await collectOpenaiAnalysisFacts.fn(fileData, undefined);
+            engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
+        }
     }
+    
+    // Add fact execution tracking wrappers for core analysis facts
+    const repoDependencyAnalysisFact = pluginFacts.find(f => f.name === 'repoDependencyAnalysis');
+    if (repoDependencyAnalysisFact) {
+        engine.addFact('repoDependencyAnalysis', async (params: any, almanac: any) => {
+            return factMetricsTracker.trackFactExecution('repoDependencyAnalysis', 
+                () => repoDependencyAnalysisFact.fn(params, almanac)
+            );
+        }, { priority: repoDependencyAnalysisFact.priority || 1 });
+    }
+    
+    const repoFileAnalysisFact = pluginFacts.find(f => f.name === 'repoFileAnalysis');
+    if (repoFileAnalysisFact) {
+        engine.addFact('repoFileAnalysis', async (params: any, almanac: any) => {
+            return factMetricsTracker.trackFactExecution('repoFileAnalysis', 
+                () => repoFileAnalysisFact.fn(params, almanac)
+            );
+        }, { priority: repoFileAnalysisFact.priority || 1 });
+    }
+    
+    timingTracker.recordTiming('openai_setup');
 
     // Static data doesn't need execution tracking
     engine.addFact('globalFileMetadata', fileData, { priority: 50 });
@@ -187,14 +200,17 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     engine.addFact('repoXFIConfig', repoXFIConfig);
 
     logger.info({ repoXFIConfig }, 'Added repoXFIConfig as fact');
+    timingTracker.recordTiming('fact_setup');
 
     const failures = await runEngineOnFiles({
         engine,
         fileData,
         installedDependencyVersions: Object.fromEntries(installedDependencyVersions.map((v: any) => [v.name, v.version])),
         minimumDependencyVersions,
-        standardStructure
+        standardStructure,
+        repoUrl
     });
+    timingTracker.recordTiming('engine_execution');
 
     const finishMsg = `\n==========================\nCHECKS COMPLETED..\n==========================`;
     logger.info(finishMsg);
@@ -211,6 +227,10 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     const memoryUsage = process.memoryUsage();
 
     logger.info('Assemblying result metadata..');
+    timingTracker.recordTiming('result_assembly');
+
+    // Log detailed timing breakdown
+    timingTracker.logTimingBreakdown('ANALYZER', fileData.length - 1);
 
     const resultMetadata: ResultMetadata = {
         XFI_RESULT: {
@@ -242,7 +262,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             repoUrl,
             xfiVersion: version
         }
-    }
+    };
     
     // Generate reports
     try {

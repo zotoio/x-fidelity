@@ -1,4 +1,4 @@
-import { pluginRegistry } from './pluginRegistry';
+import { pluginRegistry, XFiPluginRegistry } from './pluginRegistry';
 import { logger } from '../utils/logger';
 import { XFiPlugin, FactDefn, OperatorDefn } from '@x-fidelity/types';
 
@@ -27,8 +27,8 @@ describe('XFiPluginRegistry', () => {
       const mockPlugin: XFiPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
-        facts: [{ name: 'testFact', fn: jest.fn() }],
-        operators: [{ name: 'testOperator', fn: jest.fn() }],
+        facts: [{ name: 'testFact', description: 'Test fact', fn: jest.fn() }],
+        operators: [{ name: 'testOperator', description: 'Test operator', fn: jest.fn() }],
       };
 
       pluginRegistry.registerPlugin(mockPlugin);
@@ -55,7 +55,7 @@ describe('XFiPluginRegistry', () => {
     it('should throw an error when registering an invalid plugin', () => {
       const invalidPlugin = {
         // Missing name and version
-        facts: [{ name: 'testFact', fn: jest.fn() }],
+        facts: [{ name: 'testFact', description: 'Test fact', fn: jest.fn() }],
       } as unknown as XFiPlugin;
 
       expect(() => pluginRegistry.registerPlugin(invalidPlugin)).toThrow('Invalid plugin format - missing name or version');
@@ -67,9 +67,9 @@ describe('XFiPluginRegistry', () => {
         name: 'test-plugin',
         version: '1.0.0',
         facts: [
-          { name: 'validFact', fn: jest.fn() },
-          { name: '', fn: jest.fn() }, // Invalid name
-          { name: 'noFn' } as FactDefn, // Missing fn
+          { name: 'validFact', description: 'Valid fact', fn: jest.fn() },
+          { name: '', description: 'Invalid fact', fn: jest.fn() }, // Invalid name
+          { name: 'noFn', description: 'No function' } as FactDefn, // Missing fn
         ],
         operators: [],
       };
@@ -87,9 +87,9 @@ describe('XFiPluginRegistry', () => {
         version: '1.0.0',
         facts: [],
         operators: [
-          { name: 'validOperator', fn: jest.fn() },
-          { name: '', fn: jest.fn() }, // Invalid name
-          { name: 'noFn' } as OperatorDefn, // Missing fn
+          { name: 'validOperator', description: 'Valid operator', fn: jest.fn() },
+          { name: '', description: 'Invalid operator', fn: jest.fn() }, // Invalid name
+          { name: 'noFn', description: 'No function' } as OperatorDefn, // Missing fn
         ],
       };
 
@@ -106,13 +106,13 @@ describe('XFiPluginRegistry', () => {
       const plugin1: XFiPlugin = {
         name: 'plugin1',
         version: '1.0.0',
-        facts: [{ name: 'fact1', fn: jest.fn() }],
+        facts: [{ name: 'fact1', description: 'Fact 1', fn: jest.fn() }],
       };
       
       const plugin2: XFiPlugin = {
         name: 'plugin2',
         version: '1.0.0',
-        facts: [{ name: 'fact2', fn: jest.fn() }],
+        facts: [{ name: 'fact2', description: 'Fact 2', fn: jest.fn() }],
       };
 
       pluginRegistry.registerPlugin(plugin1);
@@ -133,7 +133,7 @@ describe('XFiPluginRegistry', () => {
       const plugin: XFiPlugin = {
         name: 'plugin',
         version: '1.0.0',
-        operators: [{ name: 'operator', fn: jest.fn() }],
+        operators: [{ name: 'operator', description: 'Test operator', fn: jest.fn() }],
       };
 
       pluginRegistry.registerPlugin(plugin);
@@ -148,13 +148,13 @@ describe('XFiPluginRegistry', () => {
       const plugin1: XFiPlugin = {
         name: 'plugin1',
         version: '1.0.0',
-        operators: [{ name: 'operator1', fn: jest.fn() }],
+        operators: [{ name: 'operator1', description: 'Operator 1', fn: jest.fn() }],
       };
       
       const plugin2: XFiPlugin = {
         name: 'plugin2',
         version: '1.0.0',
-        operators: [{ name: 'operator2', fn: jest.fn() }],
+        operators: [{ name: 'operator2', description: 'Operator 2', fn: jest.fn() }],
       };
 
       pluginRegistry.registerPlugin(plugin1);
@@ -175,7 +175,7 @@ describe('XFiPluginRegistry', () => {
       const plugin: XFiPlugin = {
         name: 'plugin',
         version: '1.0.0',
-        facts: [{ name: 'fact', fn: jest.fn() }],
+        facts: [{ name: 'fact', description: 'Test fact', fn: jest.fn() }],
       };
 
       pluginRegistry.registerPlugin(plugin);

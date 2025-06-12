@@ -16,6 +16,7 @@ describe('executeErrorAction', () => {
             error: new Error('test error'),
             rule: 'test-rule',
             level: 'error',
+            context: {},
             params: {},
             file: { filePath: '/path/to/file' },
         };
@@ -35,6 +36,7 @@ describe('executeErrorAction', () => {
             error: new Error('test error'),
             rule: 'test-rule',
             level: 'error',
+            context: {},
             params: {},
             file: { filePath: '/path/to/file' },
         };
@@ -55,6 +57,7 @@ describe('executeErrorAction', () => {
             error: new Error('test error'),
             rule: 'test-rule',
             level: 'error',
+            context: {},
             params: {},
             file: { filePath: '/path/to/file' },
         };

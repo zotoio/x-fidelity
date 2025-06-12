@@ -1,3 +1,6 @@
+// Export shared utilities for plugins
+export * from './sharedPluginUtils/astUtils';
+
 // Export all plugins individually
 export { xfiPluginAst } from './xfiPluginAst';
 export { xfiPluginDependency } from './xfiPluginDependency';
@@ -33,5 +36,11 @@ export const availablePlugins = {
     xfiPluginSimpleExample: () => import('./xfiPluginSimpleExample').then(m => m.xfiPluginSimpleExample),
 };
 
-// Export the plugin names for dynamic loading
-export const BUILTIN_PLUGIN_NAMES = Object.keys(availablePlugins); 
+/**
+ * Dynamically determines the list of available built-in plugin names
+ * by inspecting the availablePlugins registry.
+ * This eliminates the need for a hardcoded BUILTIN_PLUGIN_NAMES array.
+ */
+export function getBuiltinPluginNames(): string[] {
+    return Object.keys(availablePlugins);
+} 

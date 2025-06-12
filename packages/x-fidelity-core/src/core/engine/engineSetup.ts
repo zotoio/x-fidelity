@@ -1,9 +1,11 @@
-import { Engine } from 'json-rules-engine';
+import { Engine, Event, RuleProperties } from 'json-rules-engine';
 import { SetupEngineParams, ArchetypeConfig, ExecutionConfig } from '@x-fidelity/types';
 import { loadRepoXFIConfig } from '../../utils/repoXFIConfigLoader';
-import { logger } from '../../utils/logger';
+import { logger, getLogPrefix, setLogPrefix } from '../../utils/logger';
 import { pluginRegistry } from '../pluginRegistry';
 import { registerRuleForTracking } from './engineRunner';
+import { isExempt } from '../../utils/exemptionUtils';
+import { sendTelemetry } from '../../utils/telemetry';
 
 export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
     const {
@@ -12,30 +14,34 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         archetypeConfig,
         executionLogPrefix,
         repoUrl,
-        rules
+        rules,
+        exemptions
     } = params;
 
-    const engine = new Engine();
+    const engine = new Engine([], { 
+        replaceFactsInEventParams: true, 
+        allowUndefinedFacts: true 
+    });
 
     try {
         // Load archetype configuration
         const config = archetypeConfig || await loadRepoXFIConfig(repoUrl || process.cwd());
 
-        // Check for deprecated archetype config arrays and warn users
-        if (config.facts && config.facts.length > 0) {
-            logger.warn(`DEPRECATED: Archetype config contains facts array. Facts are now dynamically loaded from plugins. Remove 'facts' array from archetype config.`);
-        }
+        // Facts and operators are now dynamically loaded from plugins only
 
-        if (config.operators && config.operators.length > 0) {
-            logger.warn(`DEPRECATED: Archetype config contains operators array. Operators are now dynamically loaded from plugins. Remove 'operators' array from archetype config.`);
-        }
-
-        // Load facts from all registered plugins (dynamic loading)
+        // Load facts from registered plugins (excluding file-dependent facts)
         const pluginFacts = pluginRegistry.getPluginFacts();
-        logger.info(`Dynamically loaded ${pluginFacts.length} facts from registered plugins: ${pluginFacts.map(f => f.name).join(', ')}`);
+        logger.info(`Available plugin facts: ${pluginFacts.map(f => f.name).join(', ')}`);
         
-        for (const fact of pluginFacts) {
-            logger.debug(`Adding fact to engine: ${fact.name}`);
+        // Only add facts that don't depend on fileData at engine setup time
+        // File-dependent facts (AST-based) will be available through plugin registry during execution
+        const globalFacts = pluginFacts.filter(fact => 
+            !['ast', 'functionComplexity', 'functionCount', 'codeRhythm'].includes(fact.name)
+        );
+        
+        logger.info(`Adding ${globalFacts.length} global facts to engine: ${globalFacts.map(f => f.name).join(', ')}`);
+        for (const fact of globalFacts) {
+            logger.debug(`Adding global fact to engine: ${fact.name}`);
             engine.addFact(fact.name, fact.fn, { priority: fact.priority || 1 });
         }
 
@@ -51,25 +57,146 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         // Add rules from the passed rules parameter
         if (rules && Array.isArray(rules)) {
             rules.forEach((rule) => {
-                // Convert RuleConfig to RuleProperties format
-                const ruleProperties = {
-                    name: rule.name,
-                    conditions: rule.conditions.all ? { all: rule.conditions.all } : { any: rule.conditions.any || [] },
-                    event: rule.event
-                };
-                engine.addRule(ruleProperties);
-                // Register the rule for proper name tracking (v3.24.0 contract)
-                registerRuleForTracking(ruleProperties);
+                try {
+                    if (rule && rule.name) {
+                        logger.info(`adding rule: ${rule.name}`);
+                        
+                        // Check for exemption (v3.24.0 contract)
+                        if (exemptions && isExempt({ exemptions, repoUrl: repoUrl || '', ruleName: rule.name, logPrefix: executionLogPrefix || '' })) {
+                            // clone the rule to avoid modifying the original rule
+                            const exemptRule = JSON.parse(JSON.stringify(rule));
+                            // update the rule event type to 'exempt' if it is exempted
+                            exemptRule.event.type = 'exempt';
+                            
+                            // Convert RuleConfig to RuleProperties format
+                            const ruleProperties = {
+                                name: exemptRule.name,
+                                conditions: exemptRule.conditions.all ? { all: exemptRule.conditions.all } : { any: exemptRule.conditions.any || [] },
+                                event: exemptRule.event
+                            };
+                            engine.addRule(ruleProperties);
+                            // Register the rule for proper name tracking (v3.24.0 contract)
+                            registerRuleForTracking(ruleProperties);
+                        } else {
+                            // Convert RuleConfig to RuleProperties format
+                            const ruleProperties = {
+                                name: rule.name,
+                                conditions: rule.conditions.all ? { all: rule.conditions.all } : { any: rule.conditions.any || [] },
+                                event: rule.event
+                            };
+                            engine.addRule(ruleProperties);
+                            // Register the rule for proper name tracking (v3.24.0 contract)
+                            registerRuleForTracking(ruleProperties);
+                        }
+                    } else {
+                        logger.error('Invalid rule configuration: rule or rule name is undefined');
+                    }
+                } catch (e: any) {
+                    logger.error(`Error loading rule: ${rule?.name || 'unknown'}`);
+                    logger.error(e.message);
+                }
             });
         }
 
-        // Add exemptions
-        if (config.exemptions && Array.isArray(config.exemptions)) {
-            engine.addFact('isExempt', (params: any) => {
-                // Implement exemption logic
-                return false;
-            });
-        }
+        // Add event handler for rule violations and telemetry
+        engine.on('success', async ({ type, params, name, conditions }: Event & { name?: string, conditions?: any }) => {
+            const originalLogPrefix = getLogPrefix();
+            const ruleName = name || 'unknown-rule';
+            setLogPrefix(`${originalLogPrefix}:${ruleName}`);
+            
+            // Extract condition details from conditions
+            let conditionDetails: { fact: string; operator: string; value: any; params?: any } | undefined = undefined;
+            let allConditions: any[] = [];
+            let conditionType: 'all' | 'any' | 'unknown' = 'unknown';
+            
+            try {
+                const rule = (engine as any).rules.find((r: any) => r.name === name);
+                if (rule) {
+                    const conditions = rule.conditions.all || rule.conditions.any || [];
+                    conditionType = rule.conditions.all ? 'all' as const : 'any' as const;
+                    
+                    // Capture all conditions with their parameters
+                    allConditions = conditions.map((condition: any) => ({
+                        fact: condition.fact,
+                        operator: condition.operator,
+                        value: condition.value,
+                        params: condition.params,
+                        path: condition.path,
+                        priority: condition.priority
+                    }));
+                    
+                    // Find the first condition with operator and value for backward compatibility
+                    for (const condition of conditions) {
+                        if (condition.operator && condition.value !== undefined) {
+                            conditionDetails = {
+                                fact: condition.fact,
+                                operator: condition.operator,
+                                value: condition.value,
+                                params: condition.params
+                            };
+                            break;
+                        }
+                    }
+                }
+            } catch (err) {
+                logger.debug(`Error extracting operator threshold: ${err}`);
+            }
+            
+            // Handle different event types with telemetry
+            if (type === 'warning') {
+                logger.warn(`warning detected: ${JSON.stringify(params)}`);
+                await sendTelemetry({
+                    eventType: 'warning',
+                    metadata: {
+                        archetype,
+                        repoPath: repoUrl || '',
+                        ruleName,
+                        conditionDetails,
+                        allConditions,
+                        conditionType,
+                        ...params
+                    },
+                    timestamp: new Date().toISOString()
+                }, executionLogPrefix);
+            }
+            
+            if (type === 'fatality') {
+                logger.error(`fatality detected: ${JSON.stringify(params)}`);
+                await sendTelemetry({
+                    eventType: 'fatality',
+                    metadata: {
+                        archetype,
+                        repoPath: repoUrl || '',
+                        ruleName,
+                        conditionDetails,
+                        allConditions,
+                        conditionType,
+                        ...params
+                    },
+                    timestamp: new Date().toISOString()
+                }, executionLogPrefix);
+            }
+            
+            if (type === 'exempt') {
+                logger.error(`exemption detected: ${JSON.stringify(params)}`);
+                await sendTelemetry({
+                    eventType: 'exempt',
+                    metadata: {
+                        archetype,
+                        repoPath: repoUrl || '',
+                        ruleName,
+                        conditionDetails,
+                        allConditions,
+                        conditionType,
+                        ...params
+                    },
+                    timestamp: new Date().toISOString()
+                }, executionLogPrefix);
+            }
+            
+            // Restore original log prefix
+            setLogPrefix(originalLogPrefix);
+        });
 
         return engine;
     } catch (error) {

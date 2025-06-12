@@ -1,16 +1,24 @@
 // X-Fidelity Types Package
 // This package contains all shared TypeScript type definitions
 
-// Export all core types
+// Export everything from core types (v3.24.0 takes precedence)
 export * from './core';
 
-// Export configuration types
-export * from './config';
+// Export notification types  
+export * from './notifications';
 
-// Export plugin types
+// Export selective config types that don't conflict with core.ts
+export type { 
+    RuleCondition,
+    EmailProviderConfig,
+    SlackProviderConfig,
+    TeamsProviderConfig
+} from './config';
+
+// Export plugin types (maintain v4 separation)  
 export * from './plugins';
 
-// Export server types
+// Export server types (maintain v4 separation)
 export * from './server';
 
 // Re-export commonly used types for convenience
@@ -53,20 +61,12 @@ export type {
 } from './core';
 
 export type {
-    // Rule types
-    RuleConfig,
-    RuleCondition,
-    ArchetypeConfig,
-    
-    // Configuration types
+    // Configuration types (no RuleConfig here anymore)
     RepoXFIConfig,
     CLIOptions,
     
     // Notification config types
-    NotificationConfig,
-    EmailProviderConfig,
-    SlackProviderConfig,
-    TeamsProviderConfig
+    NotificationConfig
 } from './config';
 
 export type {

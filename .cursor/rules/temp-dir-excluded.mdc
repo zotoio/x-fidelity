@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+never modify the files below the 'temp' dir, they are for reference only.

@@ -5,7 +5,7 @@ import path from 'path';
 import fs from 'fs';
 
 export const globalFileAnalysis: FactDefn = {
-    name: 'globalFileAnalysisFacts',
+    name: 'globalFileAnalysis',
     description: 'Analyzes global file patterns and structure',
     fn: async (params: any, almanac: any) => {
         const result: any = { 

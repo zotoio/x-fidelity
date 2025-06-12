@@ -13,22 +13,6 @@ export interface RuleCondition {
     priority?: number;
 }
 
-export interface RuleConfig {
-    name: string;
-    description: string;
-    conditions: {
-        all?: RuleCondition[];
-        any?: RuleCondition[];
-    };
-    event: {
-        type: string;
-        params: {
-            message: string;
-            [key: string]: any;
-        };
-    };
-}
-
 export interface NotificationConfig {
     enabled?: boolean;
     notifyOnSuccess?: boolean;
@@ -68,29 +52,10 @@ export interface TeamsProviderConfig {
     webhookUrl: string;
 }
 
-export interface ArchetypeConfig {
-    name: string;
-    description: string;
-    version?: string;
-    rules: RuleConfig[];
-    facts?: string[];     // DEPRECATED: Facts are now dynamically loaded from plugins
-    operators?: string[]; // DEPRECATED: Operators are now dynamically loaded from plugins
-    plugins?: string[];
-    configServer: string;
-    config: {
-        minimumDependencyVersions: Record<string, string>;
-        standardStructure: boolean;
-        blacklistPatterns: string[];
-        whitelistPatterns: string[];
-    };
-    minimumDependencyVersions?: Record<string, string>;  // For backward compatibility
-    exemptions?: any[];  // For backward compatibility
-}
-
 // Repository configuration
 export interface RepoXFIConfig {
     sensitiveFileFalsePositives?: string[];
-    additionalRules?: RuleConfig[];
+    additionalRules?: any[];  // Use any[] to avoid circular imports with RuleConfig
     additionalFacts?: string[];
     additionalOperators?: string[];
     additionalPlugins?: string[];
@@ -101,7 +66,7 @@ export interface RepoXFIConfig {
     };
     codeOwners?: boolean;
     notificationConfig?: NotificationConfig;
-    archetype: string;
+    archetype?: string;  // Make optional to match core.ts definition
     configServer?: string;
     localConfigPath?: string;
     notifications?: NotificationConfig;
@@ -116,14 +81,9 @@ export interface RuleReference {
     [key: string]: any;  // For backward compatibility
 }
 
-// Schema types
-export type ArchetypeConfigSchema = JSONSchemaType<ArchetypeConfig>;
-export type RuleConfigSchema = JSONSchemaType<RuleConfig>;
-export type RepoXFIConfigSchema = JSONSchemaType<RepoXFIConfig>;
-
 // CLI options
 export interface CLIOptions {
-    mode?: 'analyze' | 'server';
+    mode?: 'client' | 'server';
     examine?: boolean;
     archetype?: string;
     configServer?: string;
@@ -151,17 +111,6 @@ export interface InitializeParams {
 export interface LoadLocalConfigParams {
     archetype: string;
     localConfigPath: string;
-}
-
-// Setup engine parameters
-export interface SetupEngineParams {
-    archetypeConfig: ArchetypeConfig;
-    archetype: string;
-    executionLogPrefix?: string;
-    localConfigPath?: string;
-    repoUrl: string;
-    logPrefix?: string;
-    rules?: RuleConfig[];
 }
 
 export interface LoadLocalRuleParams {

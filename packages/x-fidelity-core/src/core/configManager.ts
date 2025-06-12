@@ -98,7 +98,9 @@ export class ConfigManager {
             let builtinPlugins: string[] = [];
             try {
                 const pluginsModule = await this.dynamicImport('@x-fidelity/plugins');
-                builtinPlugins = pluginsModule.BUILTIN_PLUGIN_NAMES || [];
+                // Use the new dynamic function to get available plugins
+                builtinPlugins = pluginsModule.getBuiltinPluginNames ? 
+                    pluginsModule.getBuiltinPluginNames() : [];
             } catch (error) {
                 // Fallback to hardcoded list if dynamic import fails
                 logger.warn(`Failed to load builtin plugin names dynamically, using fallback list: ${error}`);
@@ -230,32 +232,18 @@ export class ConfigManager {
             }
             
             // Auto-load essential base plugins that provide core functionality
-            let essentialPlugins: string[] = [];
+            let basePluginNames: string[] = [];
             try {
                 const pluginsModule = await this.dynamicImport('@x-fidelity/plugins');
                 // Use the available plugins from the plugins package, but only load essential ones
-                const availablePluginNames = pluginsModule.BUILTIN_PLUGIN_NAMES || [];
-                essentialPlugins = availablePluginNames.filter((pluginName: string) => 
-                    ['xfiPluginFilesystem', 'xfiPluginPatterns', 'xfiPluginDependency', 
-                     'xfiPluginRequiredFiles', 'xfiPluginRemoteStringValidator', 
-                     'xfiPluginAst', 'xfiPluginSimpleExample'].includes(pluginName)
-                );
+                basePluginNames = pluginsModule.getBuiltinPluginNames ? 
+                    pluginsModule.getBuiltinPluginNames() : [];
             } catch (error) {
-                // Fallback to hardcoded list if dynamic import fails
-                logger.warn(`Failed to load essential plugin names dynamically, using fallback list: ${error}`);
-                essentialPlugins = [
-                    'xfiPluginFilesystem',      // Provides: repoFiles fact, fileContains operator
-                    'xfiPluginPatterns',        // Provides: regexMatch operator, globalFileAnalysis fact  
-                    'xfiPluginDependency',      // Provides: repoDependencyVersions fact, outdatedFramework operator
-                    'xfiPluginRequiredFiles',   // Provides: missingRequiredFiles fact
-                    'xfiPluginRemoteStringValidator',  // Provides: remoteSubstringValidation fact, invalidRemoteValidation operator
-                    'xfiPluginAst',            // Provides: ast facts, astComplexity operator, functionCount operator
-                    'xfiPluginSimpleExample'   // Provides: example fact/operator
-                ];
+                logger.error(`Failed to load base plugins: ${error}`);
             }
 
-            logger.info(`Loading essential base plugins: ${essentialPlugins.join(', ')}`);
-            await this.loadPlugins(essentialPlugins).catch(error => {
+            logger.info(`Loading essential base plugins: ${basePluginNames.join(', ')}`);
+            await this.loadPlugins(basePluginNames).catch(error => {
                 logger.warn(`Some essential base plugins failed to load: ${error}`);
                 // Don't throw here - continue with available plugins
             });
@@ -289,14 +277,26 @@ export class ConfigManager {
                 }
             }
 
-            // Load all RuleConfig for the archetype
-            config.rules = await loadRules({
-                archetype,
-                ruleNames: config.archetype.rules,
-                configServer,
-                logPrefix,
-                localConfigPath
-            });
+            // V4 approach: Rules come from different sources in the config
+            // First check if rules are already RuleConfig objects (from local config)
+            if (config.archetype.rules && config.archetype.rules.length > 0 && typeof config.archetype.rules[0] === 'object') {
+                config.rules = config.archetype.rules as unknown as RuleConfig[];
+            } else {
+                // Legacy support: if rules are strings, load them using ruleUtils
+                const ruleNames = (config.archetype.rules as unknown as string[]) || [];
+                if (ruleNames.length > 0) {
+                    logger.info(`Loading rules from names: ${ruleNames.join(', ')}`);
+                    config.rules = await loadRules({
+                        archetype,
+                        ruleNames,
+                        configServer: options.configServer,
+                        localConfigPath: options.localConfigPath,
+                        logPrefix
+                    });
+                } else {
+                    config.rules = [];
+                }
+            }
 
             // Validate each rule
             config.rules = config.rules?.filter((rule: RuleConfig) => {
@@ -309,7 +309,12 @@ export class ConfigManager {
             });
 
             // Load exemptions
-            config.exemptions = await loadExemptions({ configServer, localConfigPath, logPrefix, archetype });
+            config.exemptions = await loadExemptions({ 
+                configServer: configServer || undefined, 
+                localConfigPath: localConfigPath || undefined, 
+                logPrefix, 
+                archetype: archetype || 'node-fullstack'
+            });
             
             return config;
         } catch (error) {

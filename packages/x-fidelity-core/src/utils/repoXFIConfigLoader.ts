@@ -1,74 +1,202 @@
-import { IsBlacklistedParams, isWhitelistedParams, RepoXFIConfig } from '@x-fidelity/types';
-import { logger } from './logger';
 import fs from 'fs';
 import path from 'path';
+import { isPathInside } from './pathUtils';
+import { logger } from './logger';
+import type { RepoXFIConfig } from '@x-fidelity/types';
+import { validateXFIConfig, validateRule } from './jsonSchemas';
 
 export const defaultRepoXFIConfig: RepoXFIConfig = {
     sensitiveFileFalsePositives: [],
     additionalRules: [],
     additionalFacts: [],
     additionalOperators: [],
+    additionalPlugins: [],
     archetype: 'default'
 };
 
 export async function loadRepoXFIConfig(repoPath: string): Promise<RepoXFIConfig> {
-    const configPath = path.join(repoPath, '.xfi-config.json');
-    
     try {
+        const baseRepo = path.resolve(repoPath);
+        const configPath = path.resolve(baseRepo, '.xfi-config.json');
+
+        // Early return if no config file
         if (!fs.existsSync(configPath)) {
-            logger.warn(`No .xfi-config.json found in ${repoPath}, using defaults`);
+            logger.warn(`No .xfi-config.json file found, returning default config`);
             return defaultRepoXFIConfig;
         }
-        
-        const configContent = await fs.promises.readFile(configPath, 'utf8');
-        const config = JSON.parse(configContent);
-        
-        // Process relative paths for sensitiveFileFalsePositives
-        if (config.sensitiveFileFalsePositives) {
-            config.sensitiveFileFalsePositives = config.sensitiveFileFalsePositives.map((filePath: string) => {
-                if (filePath.startsWith('/')) {
-                    return path.join(repoPath, filePath);
-                }
-                return path.join(repoPath, filePath);
-            });
+
+        if (!isPathInside(configPath, baseRepo)) {
+            throw new Error('Resolved config path is outside allowed directory');
         }
-        
-        // Validate and filter rules to prevent path traversal
-        if (config.additionalRules) {
-            config.additionalRules = config.additionalRules.filter((rule: any) => {
-                if (rule.path && rule.path.includes('..')) {
-                    logger.warn(`Skipping rule with path traversal attempt: ${rule.path}`);
-                    return false;
-                }
-                return true;
-            });
+
+        // Load and parse config
+        const parsedConfig = await loadAndValidateConfig(configPath);
+        if (!parsedConfig) return defaultRepoXFIConfig;
+
+        // Process paths if they exist
+        if (parsedConfig.sensitiveFileFalsePositives) {
+            parsedConfig.sensitiveFileFalsePositives = processFilePaths(parsedConfig.sensitiveFileFalsePositives, repoPath);
+        } else {
+            parsedConfig.sensitiveFileFalsePositives = [];
         }
-        
-        return {
-            ...defaultRepoXFIConfig,
-            ...config
-        };
+
+        // Initialize arrays
+        initializeArrays(parsedConfig);
+
+        // Process additional rules
+        if (parsedConfig.additionalRules?.length) {
+            parsedConfig.additionalRules = await processAdditionalRules(parsedConfig.additionalRules, baseRepo);
+        }
+
+        return parsedConfig;
+
     } catch (error) {
-        logger.error(`Error loading .xfi-config.json: ${error}`);
+        logger.error(`Error loading repo config: ${error}`);
         return defaultRepoXFIConfig;
     }
 }
 
-export function isBlacklisted(params: IsBlacklistedParams): boolean {
-    const { filePath, blacklistPatterns } = params;
-    return blacklistPatterns.some(pattern => {
-        const regex = new RegExp(pattern);
-        return regex.test(filePath);
-    });
+async function loadAndValidateConfig(configPath: string): Promise<RepoXFIConfig | null> {
+    try {
+        const configContent = await fs.promises.readFile(configPath, 'utf8');
+        const parsedConfig = JSON.parse(configContent);
+
+        if (!validateXFIConfig(parsedConfig)) {
+            logger.warn('Invalid .xfi-config.json schema');
+            return null;
+        }
+
+        return parsedConfig;
+    } catch (error) {
+        logger.error(`Error reading/parsing config: ${error}`);
+        return null;
+    }
 }
 
-export function isWhitelisted(params: isWhitelistedParams): boolean {
-    const { filePath, whitelistPatterns } = params;
-    if (whitelistPatterns.length === 0) {
-        return true;
+function processFilePaths(paths: string[] = [], repoPath: string): string[] {
+    return paths.map(filePath => path.join(repoPath, filePath));
+}
+
+function initializeArrays(config: RepoXFIConfig): void {
+    config.additionalRules = config.additionalRules || [];
+    config.additionalFacts = config.additionalFacts || [];
+    config.additionalOperators = config.additionalOperators || [];
+    config.additionalPlugins = config.additionalPlugins || [];
+}
+
+async function processAdditionalRules(rules: any[], baseRepo: string): Promise<any[]> {
+    const validatedRules: any[] = [];
+
+    for (const rule of rules) {
+        try {
+            // Handle inline rules first
+            if (!('path' in rule) && !('url' in rule)) {
+                const ruleName = (rule as any)?.name || 'unnamed';
+                logger.debug(`Validating inline rule ${ruleName}`);
+                if (validateRule(rule)) {
+                    logger.info(`Adding valid inline rule ${ruleName}`);
+                    validatedRules.push(rule);
+                    continue;
+                }
+                logger.warn(`Invalid inline rule ${ruleName} in .xfi-config.json, skipping`);
+                continue;
+            }
+
+            // Handle remote URL
+            if ('url' in rule && rule.url) {
+                await processRemoteRule(rule, validatedRules);
+                continue;
+            }
+
+            // Handle local path with potential wildcards
+            if ('path' in rule && rule.path) {
+                await processLocalRule(rule, baseRepo, validatedRules);
+            }
+        } catch (error) {
+            logger.error(`Error processing rule: ${error}`);
+        }
     }
-    return whitelistPatterns.some(pattern => {
-        const regex = new RegExp(pattern);
-        return regex.test(filePath);
-    });
+
+    return validatedRules;
+}
+
+async function processRemoteRule(rule: any, validatedRules: any[]): Promise<void> {
+    try {
+        const response = await fetch(rule.url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const ruleContent = await response.text();
+        const remoteRule = JSON.parse(ruleContent);
+        if (validateRule(remoteRule)) {
+            validatedRules.push(remoteRule);
+            logger.info(`Loaded rule from URL ${rule.url}`);
+        } else {
+            logger.warn(`Invalid rule from URL ${rule.url}, skipping`);
+        }
+    } catch (error) {
+        logger.warn(`Error loading rule from URL ${rule.url}: ${error}`);
+    }
+}
+
+async function processLocalRule(rule: any, baseRepo: string, validatedRules: any[]): Promise<void> {
+    const pathPattern = rule.path;
+    let foundValidRule = false;
+
+    // Try multiple base directories in order of precedence
+    // Note: In v4 monorepo structure, we don't have direct access to options here
+    // This will need to be passed as parameter when this function is called
+    const searchPaths = [
+        process.cwd(),           // Current working dir
+        baseRepo                 // Repository root
+    ].filter(Boolean); // Remove undefined/null paths
+
+    for (const basePath of searchPaths) {
+        if (foundValidRule) break;
+
+        const fullPattern = path.resolve(basePath, pathPattern);
+        const baseDir = path.dirname(fullPattern);
+
+        // Check if path is inside allowed directories
+        if (!searchPaths.some(allowedPath => isPathInside(baseDir, allowedPath))) {
+            logger.warn(`Rule path ${pathPattern} resolves outside allowed directories, skipping`);
+            continue;
+        }
+
+        try {
+            let rulePaths: string[] = [];
+            if (pathPattern.includes('*')) {
+                // Handle wildcards using glob pattern
+                const { glob } = await import('glob');
+                rulePaths = await glob(fullPattern);
+            } else if (fs.existsSync(fullPattern)) {
+                // Single file path
+                rulePaths = [fullPattern];
+            }
+
+            // Load and validate each rule file
+            for (const rulePath of rulePaths) {
+                try {
+                    const content = await fs.promises.readFile(rulePath, 'utf8');
+                    const rule = JSON.parse(content);
+                    if (validateRule(rule)) {
+                        validatedRules.push(rule);
+                        logger.info(`Loaded rule from ${rulePath}`);
+                        foundValidRule = true;
+                        break; // Take first valid rule found
+                    } else {
+                        logger.warn(`Invalid rule in ${rulePath}, skipping`);
+                    }
+                } catch (error) {
+                    logger.warn(`Error loading rule from ${rulePath}: ${error}`);
+                }
+            }
+        } catch (error) {
+            logger.debug(`Error resolving pattern ${pathPattern} in ${basePath}: ${error}`);
+        }
+    }
+
+    if (!foundValidRule) {
+        logger.warn(`No valid rules found for pattern: ${pathPattern}`);
+    }
 }

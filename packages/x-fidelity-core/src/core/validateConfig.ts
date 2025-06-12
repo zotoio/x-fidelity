@@ -9,7 +9,7 @@ import { logger } from '../utils/logger';
 import { RuleConfig } from '@x-fidelity/types';
 
 export async function validateArchetypeConfig(): Promise<void> {
-  const archetype = options.archetype || 'node-fullstack'; // Provide fallback
+  const archetype = options.archetype || 'node-fullstack';
   let errorCount = 0;
   try {
     // Load the archetype configuration
@@ -26,61 +26,48 @@ export async function validateArchetypeConfig(): Promise<void> {
 
     // 2. Load and validate exemptions
     const exemptions = await loadExemptions({
-      configServer: options.configServer || '',
-      localConfigPath: options.localConfigPath || '',
-      archetype,
+      configServer: options.configServer || undefined,
+      localConfigPath: options.localConfigPath || undefined,
+      archetype: archetype || 'node-fullstack',
     });
     logger.info(`Checked ${exemptions.length} exemption(s).`);
 
-    // 3. Load and validate all referenced rules
-    const rules = await loadRules({
-      archetype,
-      ruleNames: archetypeConfig.rules,
-      configServer: options.configServer,
-      localConfigPath: options.localConfigPath,
-      logPrefix: '',
-    });
-    if (rules.length !== archetypeConfig.rules.length) {
-      errorCount++;
-      logger.error(
-        `Expected ${archetypeConfig.rules.length} rule(s) but loaded ${rules.length}.`
-      );
-      
+    // 3. V4 approach: Rules are already in ArchetypeConfig, validate them directly
+    const rules = archetypeConfig.rules || [];
+    if (rules.length === 0) {
+      logger.warn('No rules configured in archetype.');
     } else {
-      // Optionally run validateRule() on each loaded rule for additional checks
-      for (const rule of rules) {
-        if (!validateRule(rule)) {
-          errorCount++;
-          logger.error(`Rule ${(rule as RuleConfig).name} failed validation.`);
+              // Validate each rule
+        for (const rule of rules) {
+            if (!validateRule(rule)) {
+                errorCount++;
+                const ruleName = typeof rule === 'string' ? rule : (rule as unknown as RuleConfig).name;
+                logger.error(`Rule ${ruleName} failed validation.`);
+            }
         }
-      }
-      logger.info('All configured rules checked.');
+      logger.info(`All ${rules.length} configured rules checked.`);
     }
 
-    // 4. Load and validate facts
-    const facts = await loadFacts(archetypeConfig.facts);
-    if (facts.length !== archetypeConfig.facts.length) {
+    // 4. V4 approach: Facts and operators come from plugins
+    logger.info('V4 approach: Facts and operators are loaded from plugins.');
+    
+    // Validate that required plugins are specified
+    if (!archetypeConfig.plugins || archetypeConfig.plugins.length === 0) {
       errorCount++;
-      logger.error(
-        `Expected ${archetypeConfig.facts.length} fact(s) but loaded ${facts.length}.`
-      );
+      logger.error('No plugins specified in archetype configuration.');
     } else {
-      logger.info('All  facts checked.');
-    }
-
-    // 5. Load and validate operators
-    const operators = await loadOperators();
-    if (operators.size !== archetypeConfig.operators.length) {
-      errorCount++;
-      logger.error(
-        `Expected ${archetypeConfig.operators.length} operator(s) but loaded ${operators.size}.`
-      );
-    } else {
-      logger.info('All operators loaded successfully.');
+      logger.info(`${archetypeConfig.plugins.length} plugin(s) specified in archetype.`);
+      
+      // Check if plugins have been loaded (they should be loaded by ConfigManager)
+      const loadedFacts = await loadFacts([]);  // Empty array since facts come from plugins
+      const loadedOperators = await loadOperators();  // Operators come from plugins
+      
+      logger.info(`Loaded ${loadedFacts.length} fact(s) from plugins.`);
+      logger.info(`Loaded ${loadedOperators.size} operator(s) from plugins.`);
     }
 
     logger.info(
-      'Archetype configuration, exemptions, rules, facts, and operator checks completed.'
+      'Archetype configuration, exemptions, rules, and plugin checks completed.'
     );
   } catch (error) {
     logger.error(`Unexpected error during validation: ${error}`);

@@ -1,86 +1,137 @@
-import ts from 'typescript';
-import { FactDefn } from '@x-fidelity/types';
+import { SyntaxNode } from 'tree-sitter';
+import { FactDefn, FileData } from '@x-fidelity/types';
 import { FunctionMetrics } from '../types';
-import { generateAst, logger } from '@x-fidelity/core';
+import { logger } from '@x-fidelity/core';
+import { AstResult, generateAst } from '../../sharedPluginUtils/astUtils';
 
 export const functionComplexityFact: FactDefn = {
     name: 'functionComplexity',
-    description: 'Calculates complexity metrics for functions in the codebase',
-    fn: async (params: unknown, almanac?: unknown) => {
+    description: 'Calculates complexity metrics for functions in the codebase using Tree-sitter',
+    fn: async (params: any, almanac: any) => {
         try {
-            // Get fileData from almanac like other AST facts
+            // Get fileData from almanac
             const fileData = await (almanac as any)?.factValue('fileData');
             
             if (!fileData) {
                 logger.debug('No fileData available for functionComplexity fact');
-                return [];
+                return { complexities: [] };
             }
 
             if (!fileData.content && !fileData.fileContent) {
                 logger.debug('No file content available for functionComplexity fact');
-                return [];
+                return { complexities: [] };
             }
 
-            // Use content or fileContent, whichever is available
-            const content = fileData.content || fileData.fileContent;
-            if (!content || typeof content !== 'string') {
-                logger.debug('File content is not a valid string for functionComplexity fact');
-                return [];
+            // Try to get existing AST first to avoid regenerating it
+            let astResult;
+            try {
+                astResult = await (almanac as any)?.factValue('ast');
+            } catch (error) {
+                logger.debug('AST fact not available, generating new AST');
             }
 
-            const astData = {
-                ...fileData,
-                content: content
-            };
+            // If no AST available, generate it
+            if (!astResult || !astResult.tree) {
+                const content = fileData.content || fileData.fileContent;
+                if (!content || typeof content !== 'string') {
+                    logger.debug('File content is not a valid string for functionComplexity fact');
+                    return { complexities: [] };
+                }
 
-            const { tree, sourceFile } = generateAst(astData);
-            if (!tree) {
-                logger.debug('No AST tree generated for functionComplexity fact');
-                return [];
+                const astData = {
+                    ...fileData,
+                    fileContent: content,
+                    fileName: fileData.fileName || 'unknown.ts'
+                };
+
+                astResult = generateAst(astData);
+                if (!astResult.tree) {
+                    logger.debug('No AST tree generated for functionComplexity fact');
+                    return { complexities: [] };
+                }
             }
 
+            const { tree } = astResult;
             const functions: FunctionMetrics[] = [];
             const visited = new Set<string>();
 
-            function visit(node: ts.Node) {
-                const nodePos = node.pos?.toString() || Math.random().toString();
-                if (visited.has(nodePos)) {
+            function visit(node: SyntaxNode) {
+                const nodeId = `${node.startPosition.row}-${node.startPosition.column}-${node.type}`;
+                if (visited.has(nodeId)) {
                     return;
                 }
-                visited.add(nodePos);
+                visited.add(nodeId);
 
                 if (isFunctionLike(node)) {
-                    const metrics = calculateMetrics(node, sourceFile);
+                    const metrics = calculateMetrics(node, fileData.fileContent || fileData.content);
                     functions.push(metrics);
                 }
 
-                node.forEachChild(visit);
+                for (const child of node.children) {
+                    visit(child);
+                }
             }
 
-            tree.forEachChild(visit);
-            return functions;
+            if (tree) {
+                visit(tree);
+            }
+            
+            // Return in the format expected by the astComplexity operator
+            const result = { complexities: functions.map(func => ({ name: func.name, metrics: func })) };
+            
+            // Add only functions that exceed thresholds to the result fact
+            if (params?.resultFact && params?.thresholds) {
+                const thresholds = params.thresholds;
+                const exceedingFunctions = functions.filter(func => {
+                    return func.cyclomaticComplexity >= thresholds.cyclomaticComplexity ||
+                           func.cognitiveComplexity >= thresholds.cognitiveComplexity ||
+                           func.nestingDepth >= thresholds.nestingDepth ||
+                           func.parameterCount >= thresholds.parameterCount ||
+                           func.returnCount >= thresholds.returnCount;
+                });
+                
+                const filteredResult = { 
+                    complexities: exceedingFunctions.map(func => ({ name: func.name, metrics: func })),
+                    thresholds: thresholds,
+                    totalFunctions: functions.length,
+                    exceedingFunctions: exceedingFunctions.length
+                };
+                
+                logger.debug(`Adding ${exceedingFunctions.length} exceeding functions to almanac:`, params.resultFact);
+                almanac.addRuntimeFact(params.resultFact, filteredResult);
+            }
+            return result;
         } catch (error) {
             console.error(`Error in functionComplexityFact: ${error}`);
-            return [];
+            return { complexities: [] };
         }
     }
 };
 
-function isFunctionLike(node: ts.Node): boolean {
-    return node.kind === ts.SyntaxKind.FunctionDeclaration ||
-           node.kind === ts.SyntaxKind.MethodDeclaration ||
-           node.kind === ts.SyntaxKind.ArrowFunction ||
-           node.kind === ts.SyntaxKind.FunctionExpression;
+function isFunctionLike(node: SyntaxNode): boolean {
+    return node.type === 'function_declaration' ||
+           node.type === 'method_definition' ||
+           node.type === 'arrow_function' ||
+           node.type === 'function_expression' ||
+           node.type === 'function';
 }
 
-function calculateMetrics(node: ts.Node, sourceFile: ts.SourceFile): FunctionMetrics {
+function calculateMetrics(node: SyntaxNode, sourceCode: string): FunctionMetrics {
     const name = getFunctionName(node);
     const cyclomaticComplexity = calculateCyclomaticComplexity(node);
     const cognitiveComplexity = calculateCognitiveComplexity(node);
     const nestingDepth = calculateNestingDepth(node);
     const parameterCount = calculateParameterCount(node);
     const returnCount = calculateReturnCount(node);
-    const lineCount = calculateLineCount(node, sourceFile);
+    const lineCount = calculateLineCount(node);
+
+    // Convert 0-based tree-sitter positions to 1-based editor line numbers
+    const location = {
+        startLine: node.startPosition.row + 1,
+        endLine: node.endPosition.row + 1,
+        startColumn: node.startPosition.column + 1,
+        endColumn: node.endPosition.column + 1
+    };
 
     return {
         name,
@@ -89,34 +140,36 @@ function calculateMetrics(node: ts.Node, sourceFile: ts.SourceFile): FunctionMet
         nestingDepth,
         parameterCount,
         returnCount,
-        lineCount
+        lineCount,
+        location
     };
 }
 
-function calculateLineCount(node: ts.Node, sourceFile: ts.SourceFile): number {
-    const start = sourceFile.getLineAndCharacterOfPosition(node.getStart());
-    const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
-    return end.line - start.line + 1;
+function calculateLineCount(node: SyntaxNode): number {
+    return node.endPosition.row - node.startPosition.row + 1;
 }
 
-function calculateCyclomaticComplexity(node: ts.Node): number {
+function calculateCyclomaticComplexity(node: SyntaxNode): number {
     let complexity = 1;
-    function visit(node: ts.Node) {
-        switch (node.kind) {
-            case ts.SyntaxKind.IfStatement:
-            case ts.SyntaxKind.WhileStatement:
-            case ts.SyntaxKind.DoStatement:
-            case ts.SyntaxKind.ForStatement:
-            case ts.SyntaxKind.ForInStatement:
-            case ts.SyntaxKind.ForOfStatement:
-            case ts.SyntaxKind.ConditionalExpression:
-            case ts.SyntaxKind.CaseClause:
-            case ts.SyntaxKind.CatchClause:
-            case ts.SyntaxKind.BinaryExpression:
-                if (node.kind === ts.SyntaxKind.BinaryExpression) {
-                    const binaryExpr = node as ts.BinaryExpression;
-                    if (binaryExpr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken ||
-                        binaryExpr.operatorToken.kind === ts.SyntaxKind.BarBarToken) {
+    
+    function visit(node: SyntaxNode) {
+        switch (node.type) {
+            case 'if_statement':
+            case 'while_statement':
+            case 'do_statement':
+            case 'for_statement':
+            case 'for_in_statement':
+            case 'for_of_statement':
+            case 'ternary_expression':
+            case 'switch_case':
+            case 'catch_clause':
+            case 'binary_expression':
+                if (node.type === 'binary_expression') {
+                    const operator = node.children.find(child => 
+                        child.type === '&&' || child.type === '||' || 
+                        child.text === '&&' || child.text === '||'
+                    );
+                    if (operator) {
                         complexity++;
                     }
                 } else {
@@ -124,108 +177,140 @@ function calculateCyclomaticComplexity(node: ts.Node): number {
                 }
                 break;
         }
-        node.forEachChild(visit);
+        
+        for (const child of node.children) {
+            visit(child);
+        }
     }
+    
     visit(node);
     return complexity;
 }
 
-function calculateCognitiveComplexity(node: ts.Node): number {
+function calculateCognitiveComplexity(node: SyntaxNode): number {
     let complexity = 0;
     let nestingLevel = 0;
 
-    function visit(node: ts.Node) {
-        switch (node.kind) {
-            case ts.SyntaxKind.IfStatement:
-            case ts.SyntaxKind.WhileStatement:
-            case ts.SyntaxKind.DoStatement:
-            case ts.SyntaxKind.ForStatement:
-            case ts.SyntaxKind.ForInStatement:
-            case ts.SyntaxKind.ForOfStatement:
+    function visit(node: SyntaxNode) {
+        switch (node.type) {
+            case 'if_statement':
+            case 'while_statement':
+            case 'do_statement':
+            case 'for_statement':
+            case 'for_in_statement':
+            case 'for_of_statement':
                 complexity += nestingLevel + 1;
                 nestingLevel++;
-                node.forEachChild(visit);
+                for (const child of node.children) {
+                    visit(child);
+                }
                 nestingLevel--;
                 break;
-            case ts.SyntaxKind.CatchClause:
-            case ts.SyntaxKind.ConditionalExpression:
-            case ts.SyntaxKind.BinaryExpression:
-                if (node.kind === ts.SyntaxKind.BinaryExpression) {
-                    const binaryExpr = node as ts.BinaryExpression;
-                    if (binaryExpr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken ||
-                        binaryExpr.operatorToken.kind === ts.SyntaxKind.BarBarToken) {
+            case 'catch_clause':
+            case 'ternary_expression':
+            case 'binary_expression':
+                if (node.type === 'binary_expression') {
+                    const operator = node.children.find(child => 
+                        child.type === '&&' || child.type === '||' || 
+                        child.text === '&&' || child.text === '||'
+                    );
+                    if (operator) {
                         complexity += nestingLevel + 1;
                     }
                 } else {
                     complexity += nestingLevel + 1;
                 }
-                node.forEachChild(visit);
+                for (const child of node.children) {
+                    visit(child);
+                }
                 break;
             default:
-                node.forEachChild(visit);
+                for (const child of node.children) {
+                    visit(child);
+                }
                 break;
         }
     }
+    
     visit(node);
     return complexity;
 }
 
-function calculateNestingDepth(node: ts.Node): number {
+function calculateNestingDepth(node: SyntaxNode): number {
     let maxDepth = 0;
     let currentDepth = 0;
 
-    function visit(node: ts.Node) {
-        switch (node.kind) {
-            case ts.SyntaxKind.IfStatement:
-            case ts.SyntaxKind.WhileStatement:
-            case ts.SyntaxKind.DoStatement:
-            case ts.SyntaxKind.ForStatement:
-            case ts.SyntaxKind.ForInStatement:
-            case ts.SyntaxKind.ForOfStatement:
-            case ts.SyntaxKind.CaseClause:
-            case ts.SyntaxKind.CatchClause:
+    function visit(node: SyntaxNode) {
+        switch (node.type) {
+            case 'if_statement':
+            case 'while_statement':
+            case 'do_statement':
+            case 'for_statement':
+            case 'for_in_statement':
+            case 'for_of_statement':
+            case 'switch_case':
+            case 'catch_clause':
                 currentDepth++;
                 maxDepth = Math.max(maxDepth, currentDepth);
-                node.forEachChild(visit);
+                for (const child of node.children) {
+                    visit(child);
+                }
                 currentDepth--;
                 break;
             default:
-                node.forEachChild(visit);
+                for (const child of node.children) {
+                    visit(child);
+                }
                 break;
         }
     }
+    
     visit(node);
     return maxDepth;
 }
 
-function calculateParameterCount(node: ts.Node): number {
-    if (ts.isFunctionLike(node)) {
-        return node.parameters?.length || 0;
-    }
-    return 0;
+function calculateParameterCount(node: SyntaxNode): number {
+    const parameterList = node.children.find(child => 
+        child.type === 'formal_parameters' || child.type === 'parameters'
+    );
+    
+    if (!parameterList) return 0;
+    
+    return parameterList.children.filter(child => 
+        child.type === 'identifier' || 
+        child.type === 'parameter' ||
+        child.type === 'required_parameter' ||
+        child.type === 'optional_parameter'
+    ).length;
 }
 
-function calculateReturnCount(node: ts.Node): number {
-    let count = 0;
-    function visit(node: ts.Node) {
-        if (node.kind === ts.SyntaxKind.ReturnStatement) {
-            count++;
+function calculateReturnCount(node: SyntaxNode): number {
+    let returnCount = 0;
+    
+    function visit(node: SyntaxNode) {
+        if (node.type === 'return_statement') {
+            returnCount++;
         }
-        node.forEachChild(visit);
+        
+        for (const child of node.children) {
+            visit(child);
+        }
     }
+    
     visit(node);
-    return count;
+    return returnCount;
 }
 
-function getFunctionName(node: ts.Node): string {
-    try {
-        if (ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) {
-            const nameText = node.name?.getText();
-            return nameText && typeof nameText === 'string' ? nameText : 'anonymous';
-        }
-        return 'anonymous';
-    } catch (error) {
-        logger.debug(`Error getting function name: ${error}`);
-        return 'anonymous';
+function getFunctionName(node: SyntaxNode): string {
+    // Try to find function name in various ways
+    const nameNode = node.children.find(child => 
+        child.type === 'identifier' || child.type === 'property_identifier'
+    );
+    
+    if (nameNode) {
+        return nameNode.text;
     }
+    
+    // For arrow functions or anonymous functions
+    return 'anonymous';
 }

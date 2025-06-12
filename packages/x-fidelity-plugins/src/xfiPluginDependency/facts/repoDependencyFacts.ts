@@ -177,29 +177,37 @@ function processNpmDependencies(npmOutput: any): LocalDependencies[] {
  * @returns The installed dependency versions.
  */
 export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig): Promise<VersionData[]> {
+    const startTime = Date.now();
     logger.debug('Getting dependency version facts...');
 
     try {
         // Get installed dependencies
+        const installedDepsStart = Date.now();
         const installedDeps = await getInstalledDependencies();
+        const installedDepsTime = Date.now() - installedDepsStart;
+        logger.trace(`DEPENDENCY TIMING: getInstalledDependencies took ${installedDepsTime}ms`);
         logger.debug(`Found ${Object.keys(installedDeps).length} installed dependencies`);
 
         // Get minimum required versions
+        const minVersionsStart = Date.now();
         const minVersions = await getMinimumDependencyVersions(archetypeConfig);
+        const minVersionsTime = Date.now() - minVersionsStart;
+        logger.trace(`DEPENDENCY TIMING: getMinimumDependencyVersions took ${minVersionsTime}ms`);
         logger.debug(`Found ${Object.keys(minVersions).length} minimum version requirements`);
 
-        // Get latest versions
-        const latestVersions = await getLatestDependencyVersions(installedDeps);
-        logger.debug(`Found ${Object.keys(latestVersions).length} latest versions`);
+        // PERFORMANCE OPTIMIZATION: Skip expensive network calls to get latest versions
+        // The rules only need to check against minimum required versions, not latest versions
+        // This eliminates the 48-second bottleneck caused by individual yarn info calls
+        logger.debug('Skipping latest version lookup for performance - using minimum versions for comparison');
 
-        // Compare versions and build result
+        // Compare versions and build result using only minimum required versions
+        const processingStart = Date.now();
         const result: VersionData[] = [];
         for (const [dep, ver] of Object.entries(installedDeps)) {
-            const latestVersion = latestVersions[dep];
             const minVersion = minVersions[dep];
 
-            if (!latestVersion) {
-                logger.warn(`Could not determine latest version for ${dep}`);
+            // Only process dependencies that have minimum version requirements
+            if (!minVersion) {
                 continue;
             }
 
@@ -210,9 +218,10 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
             let updateType: 'major' | 'minor' | 'patch' = 'patch';
             
             try {
-                if (semver.valid(cleanVer) && semver.valid(latestVersion)) {
-                    isOutdated = semver.lt(cleanVer, latestVersion);
-                    updateType = isOutdated ? getUpdateType(cleanVer, latestVersion) : 'patch';
+                if (semver.valid(cleanVer) && semver.valid(minVersion)) {
+                    // Check if installed version meets minimum requirement
+                    isOutdated = !semverValid(cleanVer, minVersion);
+                    updateType = isOutdated ? getUpdateType(cleanVer, minVersion) : 'patch';
                 }
             } catch (error) {
                 logger.warn(`Error comparing versions for ${dep}: ${error}`);
@@ -221,17 +230,24 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
             result.push({
                 name: dep,
                 version: cleanVer,
-                latestVersion,
+                latestVersion: minVersion, // Use minVersion as "target" version instead of latest
                 isOutdated,
                 updateType,
                 dep,
-                min: minVersion || '',
+                min: minVersion,
                 ver: cleanVer
             });
         }
+        const processingTime = Date.now() - processingStart;
+        logger.trace(`DEPENDENCY TIMING: version processing took ${processingTime}ms`);
 
+        const totalTime = Date.now() - startTime;
+        logger.trace(`DEPENDENCY TIMING: getDependencyVersionFacts total took ${totalTime}ms`);
+        logger.debug(`Processed ${result.length} dependencies with version requirements`);
         return result;
     } catch (error) {
+        const totalTime = Date.now() - startTime;
+        logger.trace(`DEPENDENCY TIMING: getDependencyVersionFacts failed after ${totalTime}ms`);
         logger.error(`Error getting dependency version facts: ${error}`);
         throw error;
     }

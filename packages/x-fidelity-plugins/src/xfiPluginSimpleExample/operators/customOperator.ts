@@ -10,10 +10,10 @@ interface CustomFactResult {
     value: string | null;
 }
 
-export const customOperator: OperatorDefn<CustomFactResult, string> = {
+export const customOperator: OperatorDefn = {
     name: 'customOperator',
     description: 'A simple example operator',
-    fn: (factValue, compareToValue) => {
+    fn: (factValue: any, compareToValue: any) => {
         if (!factValue || !factValue.value) {
             return false;
         }

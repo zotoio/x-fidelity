@@ -8,7 +8,7 @@ import { CLIOptions } from '@x-fidelity/types';
 export let options: CLIOptions = {
     dir: '.',
     archetype: 'node-fullstack',
-    mode: 'analyze',
+    mode: 'client',
     extensions: []
 };
 
@@ -27,7 +27,7 @@ export function initCLI(): void {
         .option('-l, --localConfigPath <path>', 'Path to local archetype config and rules')
         .option('-o, --openaiEnabled', 'Enable OpenAI analysis')
         .option('-t, --telemetryCollector <url>', 'The URL telemetry data will be sent to for usage analysis')
-        .option('-m, --mode <mode>', 'Run mode: \'analyze\' or \'server\'', 'analyze')
+        .option('-m, --mode <mode>', 'Run mode: \'client\' or \'server\'', 'client')
         .option('-p, --port <number>', 'The port to run the server on', '8888')
         .option('-j, --jsonTTL <minutes>', 'Set the server JSON cache TTL in minutes', '10')
         .option('-e, --extensions <modules...>', 'Space-separated list of npm module names to load as external plugin extensions')
@@ -43,7 +43,7 @@ export function initCLI(): void {
         localConfigPath: opts.localConfigPath || DEMO_CONFIG_PATH,
         openaiEnabled: opts.openaiEnabled || false,
         telemetryCollector: opts.telemetryCollector,
-        mode: opts.mode || 'analyze',
+        mode: opts.mode || 'client',
         port: opts.port ? parseInt(opts.port) : undefined,
         jsonTTL: opts.jsonTTL,
         extensions: opts.extensions || [],
@@ -58,7 +58,7 @@ export function initCLI(): void {
         localConfigPath: opts.localConfigPath || DEMO_CONFIG_PATH,
         openaiEnabled: opts.openaiEnabled || false,
         telemetryCollector: opts.telemetryCollector,
-        mode: opts.mode || 'analyze',
+        mode: opts.mode || 'client',
         port: opts.port ? parseInt(opts.port) : undefined,
         jsonTTL: opts.jsonTTL,
         extensions: opts.extensions || []
@@ -75,13 +75,15 @@ export function initCLI(): void {
 
     // If examine flag is set, display archetype config and exit
     if (options.examine) {
-        const archetypeConfigPath = path.resolve(DEMO_CONFIG_PATH, options.archetype || 'node-fullstack');
+        const archetypeName = options.archetype || 'node-fullstack';
+        const archetypeConfigPath = path.resolve(options.localConfigPath || DEMO_CONFIG_PATH, `${archetypeName}.json`);
         if (!fs.existsSync(archetypeConfigPath)) {
-            logger.error(`Archetype ${options.archetype} not found in ${DEMO_CONFIG_PATH}`);
+            logger.error(`Archetype ${archetypeName} not found in ${options.localConfigPath || DEMO_CONFIG_PATH}`);
             process.exit(1);
         }
-        logger.info(`Archetype config for ${options.archetype}:`);
-        logger.info(json.render(require(archetypeConfigPath)));
+        logger.info(`Archetype config for ${archetypeName}:`);
+        const config = JSON.parse(fs.readFileSync(archetypeConfigPath, 'utf8'));
+        logger.info(json.render(config));
         process.exit(0);
     }
 } 

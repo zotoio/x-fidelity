@@ -8,10 +8,10 @@ interface RequiredFilesResult {
     found: number;
 }
 
-export const missingRequiredFilesOperator: OperatorDefn<RequiredFilesResult, number> = {
+export const missingRequiredFilesOperator: OperatorDefn = {
     name: 'missingRequiredFiles',
     description: 'Checks if the number of missing required files exceeds a threshold',
-    fn: (factValue, compareToValue) => {
+    fn: (factValue: any, compareToValue: any) => {
         if (!factValue || !Array.isArray(factValue.missing)) {
             return false;
         }

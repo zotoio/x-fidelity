@@ -35,16 +35,10 @@ export async function collectTelemetryData(params: CollectTelemetryDataParams): 
     }
 
     return {
-        eventType: 'telemetryCollection',
-        metadata: {
-            repoUrl,
-            configServer: configServer || 'none',
-            hostInfo,
-            userInfo,
-            startTime: new Date().getTime()
-        },
-        timestamp: new Date().toISOString(),
         repoUrl,
+        configServer: configServer || 'none',
+        hostInfo,
+        userInfo,
         startTime: new Date().getTime()
     };
 }

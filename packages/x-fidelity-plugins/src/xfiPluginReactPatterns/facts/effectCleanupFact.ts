@@ -1,6 +1,6 @@
 import { FactDefn, FileData } from '@x-fidelity/types';
-import { AstResult } from '../../xfiPluginAst/types';
-import { logger, generateAst } from '@x-fidelity/core';
+import { AstResult, generateAst } from '../../sharedPluginUtils/astUtils';
+import { logger } from '@x-fidelity/core';
 
 export const effectCleanupFact: FactDefn = {
     name: 'effectCleanup',
@@ -11,7 +11,7 @@ export const effectCleanupFact: FactDefn = {
             const ast = await almanac?.factValue('ast') as AstResult;
             const effects: any[] = [];
 
-            if (!ast || !ast.rootNode) {
+            if (!ast || !ast.tree) {
                 return { effects: [] };
             }
 
@@ -36,7 +36,7 @@ export const effectCleanupFact: FactDefn = {
                 }
             };
 
-            visit(ast.rootNode);
+            visit(ast.tree);
             return { effects };
         } catch (error) {
             console.error('Error in effectCleanup fact:', error);

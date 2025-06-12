@@ -59,7 +59,7 @@ Fatal: ${fatalityCount}`;
 
         const issueList = details.map(detail => {
             const errorList = detail.errors.map(error => 
-                `- ${error.level.toUpperCase()}: ${error.message}`
+                `- ${(error.level || 'UNKNOWN').toUpperCase()}: ${error.message || error.ruleFailure}`
             ).join('\n');
 
             return `### ${detail.filePath}\n${errorList}`;

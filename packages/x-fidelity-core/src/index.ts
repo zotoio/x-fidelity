@@ -73,6 +73,11 @@ export type {
 // Utility exports
 export * from './utils/logger';
 export * from './utils/telemetry';
+export * from './utils/pathUtils';
+export * from './utils/openaiUtils';
+export * from './utils/inputValidation';
+export * from './utils/maskSensitiveData';
+export * from './utils/utils';
 
 // Export core functionality
 export { logger } from './utils/logger';
@@ -83,20 +88,9 @@ export { sendTelemetry } from './utils/telemetry';
 // Export core options functionality
 export { options, setOptions, getOptions } from './core/options';
 
-// Export utilities for plugins
-export { generateAst } from './utils/astUtils';
-export { validateUrlInput } from './utils/inputValidation';
-
 // Export plugin registry and configuration manager
 export { pluginRegistry } from './core/pluginRegistry';
 export { ConfigManager } from './core/configManager';
-
-// Export utility functions
-export * from './utils/pathUtils';
-export * from './utils/openaiUtils';
-export * from './utils/inputValidation';
-export * from './utils/maskSensitiveData';
-export * from './utils/utils';
 
 // Facts and operators are now provided by plugins through the plugin registry
 export { loadFacts } from './facts';
@@ -104,4 +98,6 @@ export { loadOperators } from './operators';
 
 // Export validation functions
 export { validateArchetype, validateRule, validateXFIConfig, aiSuggestionsSchema } from './utils/jsonSchemas';
-export { initializeNotifications } from './notifications'; 
+export { initializeNotifications } from './notifications';
+export { factMetricsTracker } from './utils/factMetricsTracker';
+export { loadRepoXFIConfig } from './utils/repoXFIConfigLoader'; 

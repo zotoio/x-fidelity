@@ -26,6 +26,9 @@
     },
     {
       "path": "../x-fidelity-core"
+    },
+    {
+      "path": "../x-fidelity-plugins"
     }
   ]
 }

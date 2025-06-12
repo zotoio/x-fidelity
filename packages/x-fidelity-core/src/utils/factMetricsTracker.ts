@@ -8,7 +8,6 @@ export class FactMetricsTracker {
         executionCount: number;
         totalExecutionTime: number;
         longestExecutionTime: number;
-        lastExecutionTime: number;
     }> = new Map();
 
     private constructor() {}
@@ -33,15 +32,13 @@ export class FactMetricsTracker {
             const current = this.metrics.get(factName) || { 
                 executionCount: 0, 
                 totalExecutionTime: 0,
-                longestExecutionTime: 0,
-                lastExecutionTime: Date.now()
+                longestExecutionTime: 0
             };
 
             this.metrics.set(factName, {
                 executionCount: current.executionCount + 1,
                 totalExecutionTime: Number((current.totalExecutionTime + executionTime).toFixed(4)),
-                longestExecutionTime: Math.max(executionTime, current.longestExecutionTime || 0),
-                lastExecutionTime: Date.now()
+                longestExecutionTime: Math.max(executionTime, current.longestExecutionTime || 0)
             });
 
             logger.debug({
@@ -52,14 +49,12 @@ export class FactMetricsTracker {
         }
     }
 
-    public getMetrics(): Record<string, FactMetrics> {
-        const result: Record<string, FactMetrics> = {};
+    public getMetrics(): { [factName: string]: FactMetrics } {
+        const result: { [factName: string]: FactMetrics } = {};
         this.metrics.forEach((value, key) => {
             result[key] = {
-                executionCount: value.executionCount,
-                totalExecutionTime: value.totalExecutionTime,
-                averageExecutionTime: Number((value.totalExecutionTime / value.executionCount).toFixed(4)),
-                lastExecutionTime: value.lastExecutionTime
+                ...value,
+                averageExecutionTime: Number((value.totalExecutionTime / value.executionCount).toFixed(4))
             };
         });
         return result;

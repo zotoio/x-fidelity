@@ -41,7 +41,7 @@ describe('normalizeGitHubUrl', () => {
 import { axiosClient } from '../utils/axiosClient';
 import * as jsonSchemas from '../utils/jsonSchemas';
 import fs from 'fs';
-import { DEMO_CONFIG_PATH, options } from './cli';
+import { options } from './options';
 import { logger, setLogPrefix } from '../utils/logger';
 import { sendTelemetry } from '../utils/telemetry';
 import { execSync } from 'child_process';
@@ -70,7 +70,7 @@ jest.mock('fs', () => ({
 jest.mock('child_process', () => ({
     execSync: jest.fn().mockReturnValue(Buffer.from('/global/node_modules'))
 }));
-jest.mock('../core/cli', () => ({
+jest.mock('./options', () => ({
     options: {
         configServer: 'http://test-server.com',
         localConfigPath: '/path/to/local/config',
@@ -572,7 +572,7 @@ describe('ConfigManager', () => {
     describe('loadExemptions', () => {
         it('should load exemptions from legacy file and directory', async () => {
             const mockLegacyExemptions = [
-                { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2023-12-31', reason: 'Test reason' }
+                { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', pattern: '*', expirationDate: '2023-12-31', reason: 'Test reason' }
             ];
             (fs.existsSync as jest.Mock).mockImplementation(path => 
                 path.includes('-exemptions.json') || path.includes('-exemptions'));
@@ -606,11 +606,14 @@ describe('ConfigManager', () => {
 
     describe('isExempt', () => {
         const mockExemptions = [
-            { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2099-12-31', reason: 'Test reason' }
+            { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', pattern: '*', expirationDate: '2099-12-31', reason: 'Test reason' }
         ];
 
         it('should return true for an exempted rule', () => {
             const result = isExempt({
+                archetype: 'test-archetype',
+                rule: 'test-rule',
+                filePath: '/test/file.ts',
                 repoUrl: 'https://github.com/example/repo',
                 ruleName: 'test-rule',
                 exemptions: mockExemptions,
@@ -632,6 +635,9 @@ describe('ConfigManager', () => {
 
         it('should return false for a non-exempted rule', () => {
             const result = isExempt({
+                archetype: 'test-archetype',
+                rule: 'non-exempted-rule',
+                filePath: '/test/file.ts',
                 repoUrl: 'https://github.com/example/repo',
                 ruleName: 'non-exempted-rule',
                 exemptions: mockExemptions,
@@ -644,9 +650,12 @@ describe('ConfigManager', () => {
 
         it('should return false for an expired exemption', () => {
             const expiredExemptions = [
-                { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2000-01-01', reason: 'Expired reason' }
+                { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', pattern: '*', expirationDate: '2000-01-01', reason: 'Expired reason' }
             ];
             const result = isExempt({
+                archetype: 'test-archetype',
+                rule: 'test-rule',
+                filePath: '/test/file.ts',
                 repoUrl: 'https://github.com/example/repo',
                 ruleName: 'test-rule',
                 exemptions: expiredExemptions,

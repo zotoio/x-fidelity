@@ -16,6 +16,7 @@ export interface CoreOptions {
     telemetryEnabled?: boolean;
     maxFileSize?: number;
     timeout?: number;
+    examine?: boolean;
 }
 
 // Default options for core functionality

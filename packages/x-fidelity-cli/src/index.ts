@@ -19,6 +19,7 @@ import type {
 } from '@x-fidelity/types';
 
 import { initCLI, options } from './cli';
+import { version } from '../package.json';
 
 // Re-export all types
 export type {
@@ -31,19 +32,26 @@ export type {
 
 // ASCII Art Banner Function
 function displayBanner(): void {
+    // Calculate exact spacing for version text to ensure perfect alignment
+    const borderWidth = 34; // Total width including border characters │ │
+    const contentWidth = borderWidth - 2; // Subtract 1 for each │ border character
+    const versionText = `v${version}`;
+    const padding = Math.max(0, contentWidth - versionText.length);
+    const leftPadding = Math.floor(padding / 2);
+    const rightPadding = padding - leftPadding;
+    const versionLine = `│${' '.repeat(leftPadding)}${versionText}${' '.repeat(rightPadding)}│`;
+    
     const banner = `
-╭─────────────────────────────────────────────────────────────────────────────╮
-│                                                                             │
-│     ██╗  ██╗      ███████╗██╗██████╗ ███████╗██╗     ██╗████████╗██╗   ██╗  │
-│     ╚██╗██╔╝      ██╔════╝██║██╔══██╗██╔════╝██║     ██║╚══██╔══╝╚██╗ ██╔╝  │
-│      ╚███╔╝ █████╗█████╗  ██║██║  ██║█████╗  ██║     ██║   ██║    ╚████╔╝   │
-│      ██╔██╗ ╚════╝██╔══╝  ██║██║  ██║██╔══╝  ██║     ██║   ██║     ╚██╔╝    │
-│     ██╔╝ ██╗      ██║     ██║██████╔╝███████╗███████╗██║   ██║      ██║     │
-│     ╚═╝  ╚═╝      ╚═╝     ╚═╝╚═════╝ ╚══════╝╚══════╝╚═╝   ╚═╝      ╚═╝     │
-│                                                                             │
-│                 🎯 Opinionated Framework Adherence Checks                   │
-│                                                                             │
-╰─────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────╮
+│                                │
+│   ██╗  ██╗      ███████╗██╗    │
+│   ╚██╗██╔╝      ██╔════╝██║    │
+│    ╚███╔╝ █████╗█████╗  ██║    │
+│    ██╔██╗ ╚════╝██╔══╝  ██║    │
+│   ██╔╝ ██╗      ██║     ██║    │
+│   ╚═╝  ╚═╝      ╚═╝     ╚═╝    │
+${versionLine}
+╰────────────────────────────────╯
 `;
     
     // Use console.log instead of logger to ensure banner always shows
@@ -61,18 +69,21 @@ import json from 'prettyjson';
 
 // Function to handle errors and send telemetry
 const handleError = async (error: Error) => {
-    // TODO: Fix telemetry integration when types are resolved
-    // await sendTelemetry({
-    //     eventType: 'execution failure',
-    //     metadata: {
-    //         archetype: options.archetype,
-    //         repoPath: options.dir,
-    //         options,
-    //         errorMessage: error.message,
-    //         errorStack: error.stack
-    //     },
-    //     timestamp: new Date().toISOString()
-    // });
+    await sendTelemetry({
+        eventType: 'execution failure',
+        metadata: {
+            archetype: options.archetype,
+            repoPath: options.dir,
+            telemetryData: undefined,
+            errorMessage: error.message,
+            errorStack: error.stack,
+            options: {
+                ...options,
+                port: options.port?.toString()
+            }
+        },
+        timestamp: new Date().toISOString()
+    });
     logger.error(error, 'Execution failure');
 };
 
@@ -96,11 +107,7 @@ export async function main() {
             
             if (options.mode === 'server') {
                 await startServer({ 
-                    port: options.port || 8888,
-                    host: 'localhost',
-                    configPath: options.localConfigPath || '',
-                    jsonTTL: '60',
-                    customPort: options.port, 
+                    customPort: options.port?.toString(), 
                     executionLogPrefix 
                 });
             } else {
@@ -138,10 +145,10 @@ export async function main() {
                                 .slice(0, 5)
                                 .map((detail: IssueDetail) => ({
                                     filePath: detail.filePath,
-                                    errors: detail.errors.map((err: { ruleFailure: string; level: string; message: string; data?: any; }) => ({
+                                    errors: detail.errors.map((err: RuleFailure) => ({
                                         rule: err.ruleFailure,
-                                        level: err.level as ErrorLevel,
-                                        message: err.message
+                                        level: err.level || 'error' as ErrorLevel,
+                                        message: err.details?.message || ''
                                     }))
                                 }))
                         },
