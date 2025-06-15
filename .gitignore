@@ -188,3 +188,5 @@ build/
 vscode-extension/node_modules/
 vscode-extension/dist/
 vscode-extension/*.vsix
+
+temp/

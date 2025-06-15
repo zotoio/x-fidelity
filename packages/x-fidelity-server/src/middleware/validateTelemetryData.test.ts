@@ -1,7 +1,8 @@
 import { validateTelemetryData } from './validateTelemetryData';
 import { validateTelemetryData as validateData, logValidationError } from '@x-fidelity/core';
 
-jest.mock('../../utils/inputValidation', () => ({
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   validateTelemetryData: jest.fn(),
   logValidationError: jest.fn()
 }));

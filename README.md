@@ -225,19 +225,20 @@ x-fidelity is designed to be highly extensible, and only has demo rules and arch
 
 1. **Custom Archetypes**: Define new archetypes as JSON files in your local config directory or on your config server.
 2. **Custom Rules**: Add new JSON rule files in the `rules` subdirectory of your local config or on your config server.
-3. **Custom Operators**: TODO: Implement new operators and add them to your x-fidelity fork or plugin.
-4. **Custom Facts**: TODO: Create new fact providers and add them to your x-fidelity fork or plugin.
-5. **Plugins**: Specify plugins in your archetype configuration or via the CLI to extend functionality.
+3. **Plugins**: Specify plugins in your archetype configuration or via the CLI to extend functionality with facts and operators.
  
-> At minimum you should configure your archetypes and rules using the provided facts and operators.  Facts and Operators are more complex and are not yet easily added without forking, and those provided are intended to be flexible enough for general codebase analysis.
+> At minimum you should configure your archetypes rules using the facts and operators provided by the included plugins, which are intended to be flexible enough for general codebase analysis rules.  You can add your own plugins to suit specific needs you have.
 
 ### Defining Archetypes
 Archetypes represent a pattern or template of git repo that you expect to be consistent.  They consist of:
 
 - **rules**: names of rules you have defined to perform either global (repo wide) checks, or checks on each file in a repo.
-- **facts**: data prepared before analysing a repo such as dependency data and file structures.
-- **operators**: these are custom operators, or provided operators that compare facts and return a boolean result.  In x-fi boolean true means a rule failure. 
 - **plugins**: names of plugins to load when using this archetype. These extend the functionality with custom facts and operators.
+
+> **facts**: provided by plugins, these collect and prepare data before analysing repo files such as dependency data and file structures.
+
+> **operators**: provided by plugins, these compare facts and return a boolean result.  In x-fi boolean true means a rule failure. 
+
 - **config**: core configuration related to codebase analysis:
 - minimumDependencyVersions: packages you want to conform to provided semver ranges.
 - standardStructure: expected filesystem directories at high level
@@ -249,8 +250,6 @@ Example of a custom archetype JSON file (`my-custom-archetype.json`):
 ```json
 {
     "rules": ["myCustomRule-global", "standardRule1-iterative", "standardRule2-iterative"],
-    "operators": ["myCustomOperator", "standardOperator1"],
-    "facts": ["myCustomFact", "standardFact1"],
     "plugins": ["xfiPluginRequiredFiles", "myCustomPlugin"],
     "config": {
         "minimumDependencyVersions": {
@@ -873,9 +872,7 @@ The `.xfi-config.json` file supports the following options:
 
 1. `sensitiveFileFalsePositives`: An array of file paths that should be excluded from sensitive data checks.
 2. `additionalPlugins`: An array of plugin module names to load for this repository.
-3. `additionalFacts`: An array of fact names to add to the archetype's facts.
-4. `additionalOperators`: An array of operator names to add to the archetype's operators.
-5. `additionalRules`: An array of custom rule definitions to add to the archetype's rules.
+3. `additionalRules`: An array of custom rule definitions to add to the archetype's rules.
 
 Example `.xfi-config.json`:
 
@@ -887,12 +884,6 @@ Example `.xfi-config.json`:
   ],
   "additionalPlugins": [
     "xfiPluginSimpleExample"
-  ],
-  "additionalFacts": [
-    "customFact"
-  ],
-  "additionalOperators": [
-    "customOperator"
   ],
   "additionalRules": [
     {
@@ -932,7 +923,6 @@ Example `.xfi-config.json`:
 - If found, it applies the configurations specified in this file.
 - For `sensitiveFileFalsePositives`, the specified files will be excluded from checks that look for sensitive data, such as API keys or passwords.
 - For `additionalPlugins`, the specified plugins will be loaded, making their facts and operators available.
-- For `additionalFacts` and `additionalOperators`, the specified facts and operators will be added to the archetype's facts and operators.
 - For `additionalRules`, the specified rules will be added to the archetype's rules.
 
 ### How to use it
@@ -945,22 +935,19 @@ Example `.xfi-config.json`:
 
 Remember, while `.xfi-config.json` allows you to adjust x-fidelity's behavior, it should be used judiciously to maintain the integrity of your code quality checks.
 
-### Using Extensions
+### Using Plugins
 
-New extensions are available:
-- *Remote String Validation Plugin:* (module: `xfiPluginRemoteStringValidator`) adds remote validation functionality via the `remoteSubstringValidation` fact and the `invalidRemoteValidation` operator.
-- *Sample Custom Plugin:* (module: `xfiPluginSimpleExample`) shows how to add custom facts and operators.
+There are three ways to load plugins in addition to the built-in plugins:
 
-There are two ways to load plugins:
+1. **Via --extra-plugins CLI option**: Pass plugin module names via the `-e` (or `--extra-plugins`) CLI option.
+2. **Via the plugins array in the archetype configuration**: Specify plugins in the `plugins` array of your archetype JSON file.
+3. **Via the plugins array in the .xfi-config file** in the repo root
 
-1. **Via CLI option**: Pass plugin module names via the `-e` (or `--extensions`) CLI option.
-2. **Via archetype configuration**: Specify plugins in the `plugins` array of your archetype JSON file.
-
-x-fidelity supports custom extensions through npm modules. To use extensions:
+x-fidelity supports custom plugins through npm modules. To use extensions:
 
 1. Install the extension packages:
 ```bash
-npm install xfi-basic-plugin xfi-another-plugin
+yarn global add xfi-basic-plugin xfi-another-plugin
 ```
 
 2. Run x-fidelity with the extensions:
@@ -1020,9 +1007,9 @@ x-fidelity now supports external plugin extensions that allow you to extend its 
 **How to use external plugin extensions:**
 1. Install the extension package(s) via npm. For example, run:
    ```bash
-   npm install xfi-basic-plugin xfi-another-plugin
+   yarn global add xfi-basic-plugin xfi-another-plugin
    ```
-2. Start x-fidelity and pass the extension names using the `-e` or `--extensions` option:
+2. Start x-fidelity and pass the extension names using the `-e` or `--extra-plugins` option:
    ```bash
    xfidelity /path/to/project -e xfi-basic-plugin xfi-another-plugin
    ```

@@ -217,14 +217,23 @@ async function runAnalysis() {
 
             result.XFI_RESULT.issueDetails.forEach(detail => {
                 const diagnostics: vscode.Diagnostic[] = detail.errors.map(error => {
+                    // Parse line/column information from error details
+                    const lineInfo = parseLineColumnInfo(error.details?.message || error.ruleFailure, error.details);
+                    
                     const diagnostic = new vscode.Diagnostic(
-                        new vscode.Range(0, 0, 0, 0), // TODO: Add proper line/column information
+                        new vscode.Range(lineInfo.line, lineInfo.column, lineInfo.endLine, lineInfo.endColumn),
                         error.details?.message || error.ruleFailure,
                         (error.level as ErrorLevel) === 'fatal' ? vscode.DiagnosticSeverity.Error :
                         (error.level as ErrorLevel) === 'warning' ? vscode.DiagnosticSeverity.Warning :
                         vscode.DiagnosticSeverity.Information
                     );
                     diagnostic.source = 'X-Fidelity';
+                    
+                    // Add rule name as diagnostic code
+                    if (error.ruleFailure) {
+                        diagnostic.code = error.ruleFailure;
+                    }
+                    
                     return diagnostic;
                 });
 
@@ -263,6 +272,73 @@ async function runAnalysis() {
     } finally {
         isAnalyzing = false;
     }
+}
+
+// Parse line/column information from error messages and details
+function parseLineColumnInfo(message: string, details: any): {
+    line: number;
+    column: number;
+    endLine: number;
+    endColumn: number;
+} {
+    let line = 0;
+    let column = 0;
+    let endLine = 0;
+    let endColumn = 0;
+
+    // Try to extract from details first (more reliable)
+    if (details) {
+        if (typeof details.lineNumber === 'number') {
+            line = Math.max(0, details.lineNumber - 1); // Convert to 0-based
+            endLine = line;
+        }
+        if (typeof details.columnNumber === 'number') {
+            column = Math.max(0, details.columnNumber - 1); // Convert to 0-based
+            endColumn = column + (details.length || 1);
+        }
+        if (typeof details.startLine === 'number') {
+            line = Math.max(0, details.startLine - 1);
+        }
+        if (typeof details.endLine === 'number') {
+            endLine = Math.max(0, details.endLine - 1);
+        }
+        if (typeof details.startColumn === 'number') {
+            column = Math.max(0, details.startColumn);
+        }
+        if (typeof details.endColumn === 'number') {
+            endColumn = Math.max(0, details.endColumn);
+        }
+    }
+
+    // Fallback: try to parse from message
+    if (line === 0 && column === 0) {
+        // Common patterns: "line 5", "line 5, column 10", "5:10", etc.
+        const patterns = [
+            /line\s+(\d+)(?:,?\s*column\s+(\d+))?/i,
+            /(\d+):(\d+)/,
+            /at\s+line\s+(\d+)/i,
+            /\((\d+),(\d+)\)/
+        ];
+
+        for (const pattern of patterns) {
+            const match = message.match(pattern);
+            if (match) {
+                line = Math.max(0, parseInt(match[1], 10) - 1); // Convert to 0-based
+                if (match[2]) {
+                    column = Math.max(0, parseInt(match[2], 10) - 1); // Convert to 0-based
+                }
+                endLine = line;
+                endColumn = column + 1; // Default to single character
+                break;
+            }
+        }
+    }
+
+    // Ensure we have valid ranges
+    if (endLine < line) endLine = line;
+    if (endColumn <= column) endColumn = column + 1;
+
+    return { line, column, endLine, endColumn };
 }
 
 // Deactivate extension

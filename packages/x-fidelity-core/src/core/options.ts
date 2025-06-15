@@ -8,7 +8,7 @@ export interface CoreOptions {
     configServer?: string;
     mode?: string;
     dir?: string;
-    extensions?: string[];
+    extraPlugins?: string[];
     port?: number;
     openaiEnabled?: boolean;
     telemetryCollector?: string;
@@ -27,7 +27,7 @@ export let options: CoreOptions = {
     configServer: undefined,
     mode: 'analyze',
     dir: undefined,
-    extensions: [],
+    extraPlugins: [],
     port: undefined,
     openaiEnabled: false,
     telemetryCollector: undefined,

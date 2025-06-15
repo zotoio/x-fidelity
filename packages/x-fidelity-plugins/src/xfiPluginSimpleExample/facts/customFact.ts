@@ -1,4 +1,5 @@
 import { FactDefn } from '@x-fidelity/types';
+import { logger } from '@x-fidelity/core';
 
 interface CustomFactParams {
     resultFact?: string;
@@ -29,7 +30,7 @@ export const customFact: FactDefn = {
 
             return result;
         } catch (error) {
-            console.error('Error in customFact:', error);
+            logger.error('Error in customFact:', error);
             return false;
         }
     }

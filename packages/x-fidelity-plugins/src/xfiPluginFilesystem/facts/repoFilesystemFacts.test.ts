@@ -2,8 +2,9 @@ import { collectRepoFileData, parseFile, isBlacklisted, isWhitelisted, repoFileA
 import fs from 'fs';
 import path from 'path';
 import { ArchetypeConfig, FileData } from '@x-fidelity/types';
-import { logger } from '../utils/logger';
-import { maskSensitiveData } from '../utils/maskSensitiveData';
+import { logger } from '@x-fidelity/core';
+import { maskSensitiveData } from '@x-fidelity/core';
+import { Stats } from 'fs';
 
 jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
@@ -18,24 +19,21 @@ jest.mock('fs', () => ({
     statSync: jest.fn(),
     realpathSync: jest.fn().mockImplementation(path => path),
   }));
-jest.mock('../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
     logger: {
         debug: jest.fn(),
         info: jest.fn(),
         warn: jest.fn(),
         error: jest.fn(),
         trace: jest.fn(),
-    }
-}));
-jest.mock('../utils/maskSensitiveData', () => ({
+    },
     maskSensitiveData: jest.fn(data => data)
 }));
 
 const mockArchetypeConfig: ArchetypeConfig = {
     name: 'testArchetype',
     rules: [],
-    operators: [],
-    facts: [],
+    plugins: [],
     config: {
         minimumDependencyVersions: {},
         standardStructure: {},
@@ -47,6 +45,9 @@ const mockArchetypeConfig: ArchetypeConfig = {
 describe('File operations', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        
+        // Ensure realpathSync returns a valid path by default
+        jest.mocked(fs.realpathSync).mockImplementation((filePath: fs.PathLike) => filePath.toString());
     });
 
     describe('parseFile', () => {
@@ -60,6 +61,7 @@ describe('File operations', () => {
                 fileName: path.basename(filePath),
                 filePath,
                 fileContent: mockContent,
+                content: mockContent,
             });
         });
 
@@ -80,6 +82,50 @@ describe('File operations', () => {
             } catch (error) {
                 expect(error).toBeDefined();
             }
+        });
+
+        it('should handle empty file content', async () => {
+            const filePath = 'test/path/empty.txt';
+            (fs.readFileSync as jest.Mock).mockReturnValue('');
+
+            const result = await parseFile(filePath);
+            expect(result).toEqual({
+                fileName: path.basename(filePath),
+                filePath,
+                fileContent: '',
+                content: '',
+            });
+        });
+
+        it('should handle binary files', async () => {
+            const filePath = 'test/path/binary.bin';
+            const mockContent = Buffer.from([0x00, 0x01, 0x02]);
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockContent);
+
+            const result = await parseFile(filePath);
+            expect(result).toEqual({
+                fileName: path.basename(filePath),
+                filePath,
+                fileContent: mockContent,
+                content: mockContent,
+            });
+        });
+
+        it('should handle symlinks', async () => {
+            const filePath = 'test/path/symlink.txt';
+            const targetPath = '/real/path/file.txt';
+            const mockContent = 'symlink content';
+            
+            jest.mocked(fs.realpathSync).mockReturnValue(targetPath);
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockContent);
+
+            const result = await parseFile(filePath);
+            expect(result).toEqual({
+                fileName: path.basename(filePath),
+                filePath: filePath, // parseFile doesn't update filePath to the real path
+                fileContent: mockContent,
+                content: mockContent,
+            });
         });
     });
 
@@ -177,6 +223,106 @@ describe('File operations', () => {
             await collectRepoFileData(repoPath, mockArchetypeConfig);
             //expect(fs.readdirSync).toHaveBeenCalledTimes(2); // Once for repo, once for src
             expect(fs.readdirSync).not.toHaveBeenCalledWith('mock/repo/node_modules');
+        });
+
+        it('should handle empty repository', async () => {
+            const repoPath = 'mock/empty-repo';
+            (fs.readdirSync as jest.Mock).mockReturnValue([]);
+            
+            const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
+            expect(result).toEqual([]);
+        });
+
+        it('should handle circular symlinks', async () => {
+            const repoPath = 'mock/repo-with-circular-symlinks';
+            (fs.readdirSync as jest.Mock).mockReturnValue(['circular-link']);
+            const realpathSyncSpy = jest.spyOn(fs, 'realpathSync');
+            realpathSyncSpy.mockImplementation(() => {
+                throw new Error('Circular symlink detected');
+            });
+            
+            const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
+            expect(result).toEqual([]);
+            expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Error resolving real path'));
+            
+            realpathSyncSpy.mockRestore();
+        });
+
+        it('should handle permission errors', async () => {
+            const repoPath = 'mock/restricted-repo';
+            (fs.readdirSync as jest.Mock).mockImplementation(() => {
+                throw new Error('Permission denied');
+            });
+            
+            // The function doesn't handle this error gracefully - it throws
+            await expect(collectRepoFileData(repoPath, mockArchetypeConfig)).rejects.toThrow('Permission denied');
+        });
+
+        it('should handle deeply nested directories', async () => {
+            const repoPath = 'mock/deep-repo';
+            const deepPath = 'a/b/c/d/e/f/g/h/i/j/k';
+            (fs.readdirSync as jest.Mock)
+                .mockReturnValueOnce(['a'])
+                .mockReturnValueOnce(['b'])
+                .mockReturnValueOnce(['c'])
+                .mockReturnValueOnce(['d'])
+                .mockReturnValueOnce(['e'])
+                .mockReturnValueOnce(['f'])
+                .mockReturnValueOnce(['g'])
+                .mockReturnValueOnce(['h'])
+                .mockReturnValueOnce(['i'])
+                .mockReturnValueOnce(['j'])
+                .mockReturnValueOnce(['k'])
+                .mockReturnValueOnce(['file.js']);
+            
+            const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+            const mockStats = {
+                isDirectory: () => true,
+                isFile: () => false,
+                isSymbolicLink: () => false,
+                size: 0,
+                atime: new Date(),
+                mtime: new Date(),
+                ctime: new Date(),
+                birthtime: new Date(),
+                dev: 0,
+                ino: 0,
+                mode: 0,
+                nlink: 0,
+                uid: 0,
+                gid: 0,
+                rdev: 0,
+                blksize: 0,
+                blocks: 0
+            } as Stats;
+
+            mockedFsPromises.stat
+                .mockResolvedValueOnce(mockStats)
+                .mockResolvedValueOnce(mockStats)
+                .mockResolvedValueOnce(mockStats)
+                .mockResolvedValueOnce(mockStats)
+                .mockResolvedValueOnce(mockStats)
+                .mockResolvedValueOnce(mockStats)
+                .mockResolvedValueOnce(mockStats)
+                .mockResolvedValueOnce(mockStats)
+                .mockResolvedValueOnce(mockStats)
+                .mockResolvedValueOnce(mockStats)
+                .mockResolvedValueOnce(mockStats)
+                .mockResolvedValueOnce({ ...mockStats, isDirectory: () => false, isFile: () => true });
+
+            const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
+            expect(result.length).toBe(1);
+            expect(result[0].fileName).toBe('file.js');
+        });
+
+        it('should handle file system errors during stat', async () => {
+            const repoPath = 'mock/error-repo';
+            (fs.readdirSync as jest.Mock).mockReturnValue(['file.js']);
+            const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+            mockedFsPromises.stat.mockRejectedValue(new Error('Stat failed'));
+            
+            // The function doesn't handle stat errors gracefully - it throws
+            await expect(collectRepoFileData(repoPath, mockArchetypeConfig)).rejects.toThrow('Stat failed');
         });
     });
 

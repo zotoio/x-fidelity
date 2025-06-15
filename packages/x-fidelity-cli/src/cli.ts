@@ -9,7 +9,7 @@ export let options: CLIOptions = {
     dir: '.',
     archetype: 'node-fullstack',
     mode: 'client',
-    extensions: []
+    extraPlugins: []
 };
 
 export const DEMO_CONFIG_PATH = path.resolve(__dirname, 'demoConfig');
@@ -30,7 +30,7 @@ export function initCLI(): void {
         .option('-m, --mode <mode>', 'Run mode: \'client\' or \'server\'', 'client')
         .option('-p, --port <number>', 'The port to run the server on', '8888')
         .option('-j, --jsonTTL <minutes>', 'Set the server JSON cache TTL in minutes', '10')
-        .option('-e, --extensions <modules...>', 'Space-separated list of npm module names to load as external plugin extensions')
+        .option('-e, --extraPlugins <modules...>', 'Space-separated list of npm module names to load as extra plugins')
         .option('-x, --examine', 'Validate archetype config only')
         .parse(process.argv);
 
@@ -46,7 +46,7 @@ export function initCLI(): void {
         mode: opts.mode || 'client',
         port: opts.port ? parseInt(opts.port) : undefined,
         jsonTTL: opts.jsonTTL,
-        extensions: opts.extensions || [],
+        extraPlugins: opts.extraPlugins || [],
         examine: opts.examine
     };
 
@@ -61,7 +61,7 @@ export function initCLI(): void {
         mode: opts.mode || 'client',
         port: opts.port ? parseInt(opts.port) : undefined,
         jsonTTL: opts.jsonTTL,
-        extensions: opts.extensions || []
+        extraPlugins: opts.extraPlugins || []
     });
 
     logger.debug({ options }, 'CLI options parsed');

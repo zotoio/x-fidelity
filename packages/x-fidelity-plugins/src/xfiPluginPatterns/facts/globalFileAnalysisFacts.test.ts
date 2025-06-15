@@ -1,8 +1,8 @@
 import { globalFileAnalysis } from './globalFileAnalysisFacts';
-import { logger } from '../utils/logger';
-import { maskSensitiveData } from '../utils/maskSensitiveData';
+import { logger } from '@x-fidelity/core';
+import { maskSensitiveData } from '@x-fidelity/core';
 
-jest.mock('../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
     logger: {
         debug: jest.fn(),
         error: jest.fn(),
@@ -10,9 +10,6 @@ jest.mock('../utils/logger', () => ({
         warn: jest.fn(),
         trace: jest.fn()
     },
-}));
-
-jest.mock('../utils/maskSensitiveData', () => ({
     maskSensitiveData: jest.fn(data => data)
 }));
 
@@ -325,5 +322,117 @@ describe('globalFileAnalysis', () => {
         expect(pattern2Entry.files[0].filePath).toBe('/path/to/file1.ts');
         
         // No need to check backward-compatible structure
+    });
+
+    it('should handle empty patterns array', async () => {
+        mockAlmanac.factValue.mockResolvedValue([
+            {
+                fileName: 'file1.ts',
+                filePath: '/path/to/file1.ts',
+                fileContent: 'function test() { pattern(); }'
+            }
+        ]);
+
+        const params = {
+            patterns: [],
+            fileFilter: '\\.ts$',
+            resultFact: 'emptyPatternsAnalysis'
+        };
+
+        const result = await globalFileAnalysis.fn(params, mockAlmanac);
+
+        expect(result.summary.totalFiles).toBe(1);
+        expect(result.matchCounts).toEqual({});
+    });
+
+    it('should handle invalid regex patterns', async () => {
+        mockAlmanac.factValue.mockResolvedValue([
+            {
+                fileName: 'file1.ts',
+                filePath: '/path/to/file1.ts',
+                fileContent: 'function test() { pattern(); }'
+            }
+        ]);
+
+        const params = {
+            patterns: ['[invalid regex'],
+            fileFilter: '\\.ts$',
+            resultFact: 'invalidRegexAnalysis'
+        };
+
+        const result = await globalFileAnalysis.fn(params, mockAlmanac);
+
+        // The function includes invalid regex patterns in patternData with 0 matches
+        expect(result.patternData).toEqual([{
+            pattern: '[invalid regex',
+            count: 0,
+            files: []
+        }]);
+        // Note: summary may not be defined for invalid patterns
+    });
+
+    it('should handle large file content', async () => {
+        const largeContent = 'pattern();\n'.repeat(10000);
+        mockAlmanac.factValue.mockResolvedValue([
+            {
+                fileName: 'large.ts',
+                filePath: '/path/to/large.ts',
+                fileContent: largeContent
+            }
+        ]);
+
+        const params = {
+            patterns: ['pattern\\(\\)'],
+            fileFilter: '\\.ts$',
+            resultFact: 'largeFileAnalysis'
+        };
+
+        const result = await globalFileAnalysis.fn(params, mockAlmanac);
+
+        expect(result.summary.totalFiles).toBe(1);
+        expect(result.matchCounts['pattern\\(\\)']).toBe(10000);
+    });
+
+    it('should handle concurrent pattern matching', async () => {
+        mockAlmanac.factValue.mockResolvedValue([
+            {
+                fileName: 'file1.ts',
+                filePath: '/path/to/file1.ts',
+                fileContent: 'pattern1(); pattern2(); pattern1();'
+            }
+        ]);
+
+        const params = {
+            patterns: ['pattern1\\(\\)', 'pattern2\\(\\)'],
+            fileFilter: '\\.ts$',
+            resultFact: 'concurrentPatternAnalysis'
+        };
+
+        const result = await globalFileAnalysis.fn(params, mockAlmanac);
+
+        expect(result.summary.totalFiles).toBe(1);
+        expect(result.matchCounts['pattern1\\(\\)']).toBe(2);
+        expect(result.matchCounts['pattern2\\(\\)']).toBe(1);
+    });
+
+    it('should handle special characters in patterns', async () => {
+        mockAlmanac.factValue.mockResolvedValue([
+            {
+                fileName: 'file1.ts',
+                filePath: '/path/to/file1.ts',
+                fileContent: 'function test() { $special@chars(); }'
+            }
+        ]);
+
+        const params = {
+            patterns: ['\\$special@chars\\(\\)'],
+            fileFilter: '\\.ts$',
+            resultFact: 'specialCharsAnalysis'
+        };
+
+        const result = await globalFileAnalysis.fn(params, mockAlmanac);
+
+        expect(result.summary.totalFiles).toBe(1);
+        expect(result.matchCounts['\\$special@chars\\(\\)']).toBe(1);
     });
 });

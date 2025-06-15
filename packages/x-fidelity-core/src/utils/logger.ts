@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { randomUUID } from 'crypto';
+import crypto from 'crypto';
 import pino from 'pino';
 import { maskSensitiveData } from './maskSensitiveData';
 import { options } from '../core/options';
@@ -18,7 +18,22 @@ export function initializeLogger() {
 }
 
 export function generateLogPrefix(): string {
-    return randomUUID().substring(0, 8);
+    try {
+        // Try to use crypto.randomUUID if available (Node.js 14.17.0+)
+        const crypto = require('crypto');
+        if (crypto.randomUUID) {
+            return crypto.randomUUID().substring(0, 8);
+        }
+        // Fallback to randomBytes if available
+        if (crypto.randomBytes) {
+            return crypto.randomBytes(4).toString('hex');
+        }
+    } catch (error) {
+        // Fall through to simple fallback
+    }
+    
+    // Simple fallback for test environments or when crypto is not available
+    return Math.random().toString(36).substring(2, 10);
 }
 
 export function resetLogPrefix(): void {

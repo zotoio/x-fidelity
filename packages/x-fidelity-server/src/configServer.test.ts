@@ -42,17 +42,15 @@ jest.mock('chokidar', () => ({
   })
 }));
 
-jest.mock('../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   logger: {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
     debug: jest.fn()
   },
-  setLogPrefix: jest.fn()
-}));
-
-jest.mock('../core/cli', () => ({
+  setLogPrefix: jest.fn(),
   options: {
     port: '8888',
     localConfigPath: '/test/path'

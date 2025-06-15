@@ -7,13 +7,20 @@ import { clearCache } from '../cacheManager';
 import { ConfigManager } from '@x-fidelity/core';
 import { options } from '@x-fidelity/core';
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   logger: {
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn()
   },
-  setLogPrefix: jest.fn()
+  setLogPrefix: jest.fn(),
+  ConfigManager: {
+    clearLoadedConfigs: jest.fn()
+  },
+  options: {
+    localConfigPath: '/test/path'
+  }
 }));
 
 jest.mock('crypto', () => ({
@@ -23,12 +30,23 @@ jest.mock('crypto', () => ({
   })
 }));
 
-jest.mock('axios', () => ({
-  get: jest.fn(),
-  default: {
-    get: jest.fn()
-  }
-}));
+jest.mock('axios', () => {
+  const mockAxios: any = {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    create: jest.fn((): any => mockAxios),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() }
+    }
+  };
+  return {
+    ...mockAxios,
+    default: mockAxios
+  };
+});
 
 jest.mock('fs', () => ({
   promises: {
@@ -42,17 +60,7 @@ jest.mock('../cacheManager', () => ({
   clearCache: jest.fn()
 }));
 
-jest.mock('../../core/configManager', () => ({
-  ConfigManager: {
-    clearLoadedConfigs: jest.fn()
-  }
-}));
 
-jest.mock('../../core/cli', () => ({
-  options: {
-    localConfigPath: '/test/path'
-  }
-}));
 
 describe('githubWebhookConfigUpdateRoute', () => {
   let mockRequest: any;

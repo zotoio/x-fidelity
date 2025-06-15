@@ -251,27 +251,27 @@ export interface FactMetrics {
 
 export interface ResultMetadata {
     XFI_RESULT: {
+        repoXFIConfig: RepoXFIConfig;
+        issueDetails: ScanResult[];
+        telemetryData: TelemetryData;
+        memoryUsage: any;
+        factMetrics: {
+            [factName: string]: FactMetrics;
+        };
+        options: any;
+        startTime: number;
+        finishTime: number;
+        durationSeconds: number;
+        xfiVersion: string;
         archetype: string;
-        repoPath: string;
         fileCount: number;
         totalIssues: number;
         warningCount: number;
         errorCount: number;
         fatalityCount: number;
         exemptCount: number;
-        issueDetails: ScanResult[];
-        startTime: number;
-        finishTime: number;
-        durationSeconds: number;
-        telemetryData: TelemetryData;
-        options: any;
-        repoXFIConfig: RepoXFIConfig;
-        memoryUsage: any;
+        repoPath: string;
         repoUrl: string;
-        xfiVersion: string;
-        factMetrics: {
-            [factName: string]: FactMetrics;
-        };
     };
 }
 
@@ -486,5 +486,8 @@ export interface ErrorActionParams {
     error: Error;
     ruleName: string;
     filePath?: string;
+    level?: string;
+    context?: any;
+    params?: any;
     [key: string]: any;
 } 

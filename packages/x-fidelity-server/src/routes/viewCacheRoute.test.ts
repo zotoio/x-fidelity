@@ -3,22 +3,22 @@ import { logger, setLogPrefix } from '@x-fidelity/core';
 import { getCacheContent } from '../cacheManager';
 import { ConfigManager } from '@x-fidelity/core';
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   logger: {
     info: jest.fn()
   },
-  setLogPrefix: jest.fn()
+  setLogPrefix: jest.fn(),
+  ConfigManager: {
+    getLoadedConfigs: jest.fn()
+  }
 }));
 
 jest.mock('../cacheManager', () => ({
   getCacheContent: jest.fn()
 }));
 
-jest.mock('../../core/configManager', () => ({
-  ConfigManager: {
-    getLoadedConfigs: jest.fn()
-  }
-}));
+
 
 describe('viewCacheRoute', () => {
   let mockRequest: any;

@@ -102,7 +102,7 @@ export const functionComplexityFact: FactDefn = {
             }
             return result;
         } catch (error) {
-            console.error(`Error in functionComplexityFact: ${error}`);
+            logger.error(`Error in functionComplexityFact: ${error}`);
             return { complexities: [] };
         }
     }

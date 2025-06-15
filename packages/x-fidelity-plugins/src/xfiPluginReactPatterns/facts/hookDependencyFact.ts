@@ -27,7 +27,7 @@ export const hookDependencyFact: FactDefn = {
                 unnecessaryDependencies
             };
         } catch (error) {
-            console.error('Error in hookDependency fact:', error);
+            logger.error('Error in hookDependency fact:', error);
             return {
                 missingDependencies: [],
                 unnecessaryDependencies: []

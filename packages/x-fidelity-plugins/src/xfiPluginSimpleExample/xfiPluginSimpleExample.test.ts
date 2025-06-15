@@ -1,35 +1,41 @@
-import { plugin } from './xfiPluginSimpleExample';
-import { pluginRegistry } from '../../core/pluginRegistry';
+import { xfiPluginSimpleExample } from './xfiPluginSimpleExample';
 import { customFact } from './facts/customFact';
 import { customOperator } from './operators/customOperator';
 
-describe('samplePlugin', () => {
+// Mock the plugin registry
+const mockPluginRegistry = {
+  registerPlugin: jest.fn(),
+  getPluginFacts: jest.fn().mockReturnValue([customFact]),
+  getPluginOperators: jest.fn().mockReturnValue([customOperator])
+};
+
+describe('xfiPluginSimpleExample', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('plugin structure', () => {
     it('should have correct metadata', () => {
-      expect(plugin).toHaveProperty('name', 'xfiPluginSimpleExample');
-      expect(plugin).toHaveProperty('version', '1.0.0');
-      expect(plugin.facts).toHaveLength(1);
-      expect(plugin.operators).toHaveLength(1);
+      expect(xfiPluginSimpleExample).toHaveProperty('name', 'xfi-plugin-simple-example');
+      expect(xfiPluginSimpleExample).toHaveProperty('version', '1.0.0');
+      expect(xfiPluginSimpleExample.facts).toHaveLength(1);
+      expect(xfiPluginSimpleExample.operators).toHaveLength(1);
     });
 
     it('should include customFact', () => {
-      expect(plugin.facts).toContainEqual(customFact);
+      expect(xfiPluginSimpleExample.facts).toContainEqual(customFact);
     });
 
     it('should include customOperator', () => {
-      expect(plugin.operators).toContainEqual(customOperator);
+      expect(xfiPluginSimpleExample.operators).toContainEqual(customOperator);
     });
   });
 
   describe('plugin registration', () => {
     it('should register successfully with registry', () => {
-      pluginRegistry.registerPlugin(plugin);
-      const facts = pluginRegistry.getPluginFacts();
-      const operators = pluginRegistry.getPluginOperators();
+      mockPluginRegistry.registerPlugin(xfiPluginSimpleExample);
+      const facts = mockPluginRegistry.getPluginFacts();
+      const operators = mockPluginRegistry.getPluginOperators();
 
       expect(facts).toHaveLength(1);
       expect(facts[0].name).toBe('customFact');

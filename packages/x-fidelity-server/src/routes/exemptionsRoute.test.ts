@@ -2,14 +2,12 @@ import { exemptionsRoute } from './exemptionsRoute';
 import { logger, setLogPrefix } from '@x-fidelity/core';
 import { ConfigManager } from '@x-fidelity/core';
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   logger: {
     info: jest.fn()
   },
-  setLogPrefix: jest.fn()
-}));
-
-jest.mock('../../core/configManager', () => ({
+  setLogPrefix: jest.fn(),
   ConfigManager: {
     getConfig: jest.fn()
   }

@@ -1,7 +1,8 @@
 import { validateUrlInput } from './validateUrlInput';
 import { validateUrlInput as validateUrl, logValidationError } from '@x-fidelity/core';
 
-jest.mock('../../utils/inputValidation', () => ({
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   validateUrlInput: jest.fn(),
   logValidationError: jest.fn()
 }));

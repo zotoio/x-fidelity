@@ -70,7 +70,7 @@ describe('VSCodeNotificationProvider', () => {
         // Verify error message was shown
         expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Error Subject', {
             detail: 'Error Content',
-            modal: undefined
+            modal: false
         });
     });
 
@@ -89,7 +89,7 @@ describe('VSCodeNotificationProvider', () => {
         // Verify warning message was shown
         expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('Warning Subject', {
             detail: 'Warning Content',
-            modal: undefined
+            modal: false
         });
     });
 
@@ -108,7 +108,7 @@ describe('VSCodeNotificationProvider', () => {
         // Verify info message was shown
         expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Info Subject', {
             detail: 'Info Content',
-            modal: undefined
+            modal: false
         });
     });
 

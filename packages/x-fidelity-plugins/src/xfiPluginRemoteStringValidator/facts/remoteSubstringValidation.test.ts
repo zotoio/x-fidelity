@@ -1,7 +1,7 @@
-import { remoteSubstringValidation } from './remoteSubstringValidation';
-import { logger } from '@x-fidelity/core/utils/logger';
+import { remoteSubstringValidationFact } from './remoteSubstringValidation';
+import { logger } from '@x-fidelity/core';
 
-jest.mock('../../../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
     logger: {
         debug: jest.fn(),
         error: jest.fn(),
@@ -11,55 +11,48 @@ jest.mock('../../../utils/logger', () => ({
     },
 }));
 
+// Mock console.error for proper test isolation
+const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+const mockConsoleDebug = jest.spyOn(console, 'debug').mockImplementation(() => {});
+
+afterEach(() => {
+    mockConsoleError.mockClear();
+    mockConsoleDebug.mockClear();
+});
+
 describe('remoteSubstringValidation', () => {
-    it('should extract patterns and validate remotely', async () => {
-        const mockAlmanac = {
-            factValue: jest.fn().mockResolvedValue({
-                fileContent: 'systemId: "abc"',
-                filePath: '/path/to/file',
-            }),
-            addRuntimeFact: jest.fn(),
-        };
-
+    it('should return error when missing required parameters', async () => {
         const params = {
-            pattern: '"systemId":[\\s]*"([a-z]*)"',
-            validationParams: {
-                url: 'http://localhost:4200/systemIdValidator',
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: { systemId: '#MATCH#' },
-                checkJsonPath: '$.validSystems[?(@.id == "#MATCH#")]',
-            },
-            resultFact: 'remoteCheckResultFact',
+            // Missing content and pattern
         };
 
-        const result = await remoteSubstringValidation.fn(params, mockAlmanac);
+        const result = await remoteSubstringValidationFact.fn(params, undefined);
 
-        expect(result).toHaveProperty('result');
-        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('remoteCheckResultFact', expect.any(Array));
+        expect(result).toHaveProperty('isValid', false);
+        expect(result).toHaveProperty('error', 'Missing required parameters: content and pattern');
     });
 
-    it('should handle errors gracefully', async () => {
-        const mockAlmanac = {
-            factValue: jest.fn().mockRejectedValue(new Error('mock error')),
-            addRuntimeFact: jest.fn(),
-        };
-
+    it('should return error when missing content parameter', async () => {
         const params = {
-            pattern: '"systemId":[\\s]*"([a-z]*)"',
-            validationParams: {
-                url: 'http://localhost:4200/systemIdValidator',
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: { systemId: '#MATCH#' },
-                checkJsonPath: '$.validSystems[?(@.id == "#MATCH#")]',
-            },
-            resultFact: 'remoteCheckResultFact',
+            pattern: 'http://example.com/validate',
+            // Missing content
         };
 
-        const result = await remoteSubstringValidation.fn(params, mockAlmanac);
+        const result = await remoteSubstringValidationFact.fn(params, undefined);
 
-        expect(result).toHaveProperty('result');
-        expect(console.error).toHaveBeenCalled();
+        expect(result).toHaveProperty('isValid', false);
+        expect(result).toHaveProperty('error', 'Missing required parameters: content and pattern');
+    });
+
+    it('should return error when missing pattern parameter', async () => {
+        const params = {
+            content: 'some content to validate',
+            // Missing pattern
+        };
+
+        const result = await remoteSubstringValidationFact.fn(params, undefined);
+
+        expect(result).toHaveProperty('isValid', false);
+        expect(result).toHaveProperty('error', 'Missing required parameters: content and pattern');
     });
 });

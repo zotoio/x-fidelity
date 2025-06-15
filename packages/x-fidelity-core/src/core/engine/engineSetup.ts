@@ -30,7 +30,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         // Facts and operators are now dynamically loaded from plugins only
 
         // Load facts from registered plugins (excluding file-dependent facts)
-        const pluginFacts = pluginRegistry.getPluginFacts();
+        const pluginFacts = pluginRegistry.getPluginFacts() || [];
         logger.info(`Available plugin facts: ${pluginFacts.map(f => f.name).join(', ')}`);
         
         // Only add facts that don't depend on fileData at engine setup time
@@ -46,7 +46,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         }
 
         // Load operators from all registered plugins (dynamic loading)
-        const pluginOperators = pluginRegistry.getPluginOperators();
+        const pluginOperators = pluginRegistry.getPluginOperators() || [];
         logger.info(`Dynamically loaded ${pluginOperators.length} operators from registered plugins: ${pluginOperators.map(o => o.name).join(', ')}`);
         
         for (const operator of pluginOperators) {

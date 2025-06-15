@@ -1,5 +1,4 @@
 import { OperatorDefn } from '@x-fidelity/types';
-// TODO: Import logger from core package when available
 import { logger } from '@x-fidelity/core';
 
 /**
@@ -13,7 +12,7 @@ interface CustomFactResult {
 export const customOperator: OperatorDefn = {
     name: 'customOperator',
     description: 'A simple example operator',
-    fn: (factValue: any, compareToValue: any) => {
+    fn: (factValue: CustomFactResult, compareToValue: any) => {
         if (!factValue || !factValue.value) {
             return false;
         }

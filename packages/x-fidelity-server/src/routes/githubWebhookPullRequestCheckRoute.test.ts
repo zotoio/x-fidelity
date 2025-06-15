@@ -2,9 +2,12 @@ import { githubWebhookPullRequestCheckRoute } from './githubWebhookPullRequestCh
 import { logger, setLogPrefix } from '@x-fidelity/core';
 import crypto from 'crypto';
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   logger: {
-    error: jest.fn()
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn()
   },
   setLogPrefix: jest.fn()
 }));
@@ -85,7 +88,7 @@ describe('githubWebhookPullRequestCheckRoute', () => {
     await githubWebhookPullRequestCheckRoute(mockRequest, mockResponse);
     
     expect(mockResponse.status).toHaveBeenCalledWith(200);
-    expect(mockResponse.send).toHaveBeenCalledWith('Webhook received and processed');
+    expect(mockResponse.send).toHaveBeenCalledWith('Push check completed');
   });
 
   it('should handle non-push events', async () => {

@@ -234,18 +234,11 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
 
     const resultMetadata: ResultMetadata = {
         XFI_RESULT: {
-            archetype,
-            fileCount: fileData.length - 1,
-            totalIssues: totalFailureCount,
-            warningCount,
-            errorCount,
-            fatalityCount,
-            exemptCount,
+            repoXFIConfig,
             issueDetails: failures.map(f => ({
                 filePath: f.filePath || '',
                 errors: f.errors
             })),
-            durationSeconds: (finishTime - telemetryData.startTime) / 1000,
             telemetryData,
             memoryUsage: {
                 heapTotal: memoryUsage.heapTotal,
@@ -253,14 +246,21 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 external: memoryUsage.external,
                 rss: memoryUsage.rss
             },
-            repoXFIConfig,
             factMetrics: factMetricsTracker.getMetrics(),
+            options,
             startTime: telemetryData.startTime,
             finishTime,
-            options,
+            durationSeconds: (finishTime - telemetryData.startTime) / 1000,
+            xfiVersion: version,
+            archetype,
+            fileCount: fileData.length - 1,
+            totalIssues: totalFailureCount,
+            warningCount,
+            errorCount,
+            fatalityCount,
+            exemptCount,
             repoPath,
-            repoUrl,
-            xfiVersion: version
+            repoUrl
         }
     };
     

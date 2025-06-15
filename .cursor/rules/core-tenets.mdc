@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Important guidance
+
+1. never modify the files below the 'temp' dir, they are for reference only.
+2. use yarn instead of npm for commmands
+3. ensure that unit tests work after making changes, and add any additional changes. If the unit tests fail, ensure that the issue is fixed without changing the implementation, and that any test changes related to existing code that has been updated is checked, as it may indicate that the implementation update is broken, and not the test.
+

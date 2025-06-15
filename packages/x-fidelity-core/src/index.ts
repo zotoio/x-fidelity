@@ -77,6 +77,7 @@ export * from './utils/pathUtils';
 export * from './utils/openaiUtils';
 export * from './utils/inputValidation';
 export * from './utils/maskSensitiveData';
+export * from './utils/timingUtils';
 export * from './utils/utils';
 
 // Export core functionality

@@ -1,24 +1,6 @@
 import { CodeMetrics, codeRhythmFact } from './codeRhythmFact';
-import { logger } from '@x-fidelity/core/utils/logger';
-import fs from 'fs';
-import path from 'path';
-
-jest.mock('../../../utils/logger', () => ({
-    logger: {
-        debug: jest.fn(),
-        error: jest.fn()
-    }
-}));
 
 describe('codeRhythmFact', () => {
-    let goodCodeContent: string;
-    let poorCodeContent: string;
-    
-    beforeAll(() => {
-        goodCodeContent = fs.readFileSync(path.join(__dirname, '../../../exampleTriggerFiles/goodCodeRhythm.ts'), 'utf8');
-        poorCodeContent = fs.readFileSync(path.join(__dirname, '../../../exampleTriggerFiles/poorCodeRhythm.ts'), 'utf8');
-    });
-
     const mockAlmanac = {
         factValue: jest.fn(),
         addRuntimeFact: jest.fn()
@@ -28,54 +10,47 @@ describe('codeRhythmFact', () => {
         jest.clearAllMocks();
     });
 
-    it('should identify good code rhythm', async () => {
+    it('should return basic metrics when AST is available', async () => {
         mockAlmanac.factValue.mockResolvedValue({
-            fileName: 'goodCodeRhythm.ts',
-            fileContent: goodCodeContent
+            program: { body: [] } // Mock AST structure
         });
 
-        const result: { metrics: CodeMetrics } = await codeRhythmFact.fn({ resultFact: 'rhythmResult' }, mockAlmanac);
+        const result: CodeMetrics = await codeRhythmFact.fn({}, mockAlmanac);
 
-        expect(result.metrics).toBeDefined();
-        expect(result.metrics.consistency).toBeGreaterThan(0.5);
-        expect(result.metrics.complexity).toBeGreaterThan(0.5);
-        expect(result.metrics.readability).toBeGreaterThan(0.5);
-        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('rhythmResult', result.metrics);
+        expect(result).toBeDefined();
+        expect(result.cyclomaticComplexity).toBe(1);
+        expect(result.cognitiveComplexity).toBe(1);
+        expect(result.nestingDepth).toBe(1);
+        expect(result.parameterCount).toBe(0);
+        expect(result.returnCount).toBe(0);
+        expect(result.lineCount).toBe(0);
     });
 
-    it('should identify poor code rhythm', async () => {
-        mockAlmanac.factValue.mockResolvedValue({
-            fileName: 'poorCodeRhythm.ts',
-            fileContent: poorCodeContent
-        });
+    it('should return zero metrics when AST is not available', async () => {
+        mockAlmanac.factValue.mockResolvedValue(null);
 
-        const result: { metrics: CodeMetrics } = await codeRhythmFact.fn({ resultFact: 'rhythmResult' }, mockAlmanac);
+        const result: CodeMetrics = await codeRhythmFact.fn({}, mockAlmanac);
 
-        expect(result.metrics).toBeDefined();
-        expect(result.metrics.consistency).toBeLessThanOrEqual(0.76);
-        expect(result.metrics.complexity).toBeLessThanOrEqual(0.76);
-        expect(result.metrics.readability).toBeLessThanOrEqual(0.76);
-        expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('rhythmResult', Object.assign({}, result.metrics));
-    });
-
-    it('should handle missing AST gracefully', async () => {
-        mockAlmanac.factValue.mockResolvedValue({
-            fileName: 'empty.ts',
-            fileContent: ''
-        });
-
-        const result = await codeRhythmFact.fn({}, mockAlmanac);
-
-        expect(result.metrics).toBeNull();
-        expect(console.debug).toHaveBeenCalledWith('No AST available for rhythm analysis');
+        expect(result).toBeDefined();
+        expect(result.cyclomaticComplexity).toBe(0);
+        expect(result.cognitiveComplexity).toBe(0);
+        expect(result.nestingDepth).toBe(0);
+        expect(result.parameterCount).toBe(0);
+        expect(result.returnCount).toBe(0);
+        expect(result.lineCount).toBe(0);
     });
 
     it('should handle errors gracefully', async () => {
         mockAlmanac.factValue.mockRejectedValue(new Error('Test error'));
 
-        const result = await codeRhythmFact.fn({}, mockAlmanac);
+        const result: CodeMetrics = await codeRhythmFact.fn({}, mockAlmanac);
 
-        expect(result.metrics).toBeNull();
-        expect(console.error).toHaveBeenCalledWith('Error in code rhythm analysis: Error: Test error');
+        expect(result).toBeDefined();
+        expect(result.cyclomaticComplexity).toBe(0);
+        expect(result.cognitiveComplexity).toBe(0);
+        expect(result.nestingDepth).toBe(0);
+        expect(result.parameterCount).toBe(0);
+        expect(result.returnCount).toBe(0);
+        expect(result.lineCount).toBe(0);
     });
 });

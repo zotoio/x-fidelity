@@ -1,4 +1,5 @@
 import { FactDefn, FileData } from '@x-fidelity/types';
+import { logger } from '@x-fidelity/core';
 import { glob } from 'glob';
 import { join } from 'path';
 
@@ -31,7 +32,7 @@ export const missingRequiredFilesFact: FactDefn = {
                 found: requiredFiles.length - missingFiles.length
             };
         } catch (error) {
-            console.error('Error in missingRequiredFiles fact:', error);
+            logger.error('Error in missingRequiredFiles fact:', error);
             return {
                 missing: [],
                 total: 0,

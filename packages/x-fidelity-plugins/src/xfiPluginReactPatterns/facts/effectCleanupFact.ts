@@ -39,7 +39,7 @@ export const effectCleanupFact: FactDefn = {
             visit(ast.tree);
             return { effects };
         } catch (error) {
-            console.error('Error in effectCleanup fact:', error);
+            logger.error('Error in effectCleanup fact:', error);
             return { effects: [] };
         }
     }

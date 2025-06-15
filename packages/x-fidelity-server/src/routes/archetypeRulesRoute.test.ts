@@ -4,27 +4,22 @@ import { validateUrlInput } from '@x-fidelity/core';
 import { getRuleListCache, setRuleListCache } from '../cacheManager';
 import { ConfigManager } from '@x-fidelity/core';
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   logger: {
     info: jest.fn(),
     error: jest.fn()
   },
-  setLogPrefix: jest.fn()
-}));
-
-jest.mock('../../utils/inputValidation', () => ({
-  validateUrlInput: jest.fn()
+  setLogPrefix: jest.fn(),
+  validateUrlInput: jest.fn(),
+  ConfigManager: {
+    getConfig: jest.fn()
+  }
 }));
 
 jest.mock('../cacheManager', () => ({
   getRuleListCache: jest.fn(),
   setRuleListCache: jest.fn()
-}));
-
-jest.mock('../../core/configManager', () => ({
-  ConfigManager: {
-    getConfig: jest.fn()
-  }
 }));
 
 describe('archetypeRulesRoute', () => {

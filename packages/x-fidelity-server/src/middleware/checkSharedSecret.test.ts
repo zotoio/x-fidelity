@@ -1,7 +1,8 @@
 import { checkSharedSecret } from './checkSharedSecret';
 import { logger } from '@x-fidelity/core';
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   logger: {
     error: jest.fn()
   }

@@ -180,6 +180,8 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
     const startTime = Date.now();
     logger.debug('Getting dependency version facts...');
 
+
+
     try {
         // Get installed dependencies
         const installedDepsStart = Date.now();
@@ -187,6 +189,12 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
         const installedDepsTime = Date.now() - installedDepsStart;
         logger.trace(`DEPENDENCY TIMING: getInstalledDependencies took ${installedDepsTime}ms`);
         logger.debug(`Found ${Object.keys(installedDeps).length} installed dependencies`);
+
+        // Check if no dependencies were found
+        if (Object.keys(installedDeps).length === 0) {
+            logger.warn('No local dependencies found');
+            return [];
+        }
 
         // Get minimum required versions
         const minVersionsStart = Date.now();
@@ -379,7 +387,7 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
         const analysis: any = [];
         const dependencyData: any = await almanac.factValue('dependencyData');
-        const safeDependencyData = safeClone(dependencyData);
+        const safeDependencyData = dependencyData ? JSON.parse(JSON.stringify(dependencyData)) : {};
 
         // Use rule-provided versions if they exist, otherwise use the ones from dependencyData
         const versionsToCheck = params?.minimumDependencyVersions ? 
@@ -414,7 +422,9 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
         result.result = analysis;
 
-        almanac.addRuntimeFact(params.resultFact, result);
+        if (params.resultFact) {
+            almanac.addRuntimeFact(params.resultFact, result);
+        }
 
         logger.debug(`repoDependencyAnalysis result: ${safeStringify(result)}`);
     } catch (error) {
@@ -426,7 +436,20 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
 export function semverValid(installed: string, required: string): boolean {
     try {
-        if (!semver.valid(installed) || !semver.valid(required)) {
+        if (!semver.valid(installed)) {
+            logger.error(`Invalid installed version: ${installed}`);
+            return false;
+        }
+        
+        // If required is a version range (like ^1.0.0, ~1.0.0, etc), use satisfies
+        if (required.includes('^') || required.includes('~') || required.includes('*') || 
+            required.includes('>') || required.includes('<') || required.includes('||') || 
+            required.includes(' - ') || required.includes('x') || required.includes('X')) {
+            return semver.satisfies(installed, required);
+        }
+        
+        // Otherwise, check if it's a valid version and compare
+        if (!semver.valid(required)) {
             return false;
         }
         return semver.gte(installed, required);

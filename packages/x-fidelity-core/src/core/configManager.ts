@@ -130,10 +130,11 @@ export class ConfigManager {
                                 pluginRegistry.registerPlugin(plugin);
                                 logger.info(`Successfully loaded built-in plugin: ${moduleName}`);
                             } else {
-                                logger.warn(`Built-in plugin ${moduleName} not found in @x-fidelity/plugins exports`);
+                                throw new Error(`Built-in plugin ${moduleName} not found in @x-fidelity/plugins exports`);
                             }
                         } catch (error) {
                             logger.error(`Failed to load built-in plugin ${moduleName}: ${error}`);
+                            throw new Error(`Failed to load built-in plugin ${moduleName}: ${error}`);
                         }
                         continue;
                     }
@@ -249,15 +250,15 @@ export class ConfigManager {
             });
             
             // Load CLI-specified plugins with deduplication
-            if (options.extensions && options.extensions.length > 0) {
-                const unloadedCLIPlugins = this.filterUnloadedPlugins(options.extensions);
+            if (options.extraPlugins && options.extraPlugins.length > 0) {
+                const unloadedCLIPlugins = this.filterUnloadedPlugins(options.extraPlugins);
                 if (unloadedCLIPlugins.length > 0) {
                     await this.loadPlugins(unloadedCLIPlugins).catch(error => {
                         logger.error(error, `Error loading CLI-specified plugins`);
                         throw error;
                     });
                 } else {
-                    logger.info(`All CLI plugins already loaded (${options.extensions.length} plugins), skipping duplicate loading`);
+                    logger.info(`All CLI plugins already loaded (${options.extraPlugins.length} plugins), skipping duplicate loading`);
                 }
             }
             

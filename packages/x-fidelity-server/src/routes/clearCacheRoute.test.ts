@@ -3,21 +3,19 @@ import { logger, setLogPrefix } from '@x-fidelity/core';
 import { clearCache } from '../cacheManager';
 import { ConfigManager } from '@x-fidelity/core';
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   logger: {
     info: jest.fn()
   },
-  setLogPrefix: jest.fn()
+  setLogPrefix: jest.fn(),
+  ConfigManager: {
+    clearLoadedConfigs: jest.fn()
+  }
 }));
 
 jest.mock('../cacheManager', () => ({
   clearCache: jest.fn()
-}));
-
-jest.mock('../../core/configManager', () => ({
-  ConfigManager: {
-    clearLoadedConfigs: jest.fn()
-  }
 }));
 
 describe('clearCacheRoute', () => {

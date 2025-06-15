@@ -2,14 +2,12 @@ import { telemetryRoute } from './telemetryRoute';
 import { logger, setLogPrefix } from '@x-fidelity/core';
 import { validateTelemetryData } from '@x-fidelity/core';
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   logger: {
     debug: jest.fn()
   },
-  setLogPrefix: jest.fn()
-}));
-
-jest.mock('../../utils/inputValidation', () => ({
+  setLogPrefix: jest.fn(),
   validateTelemetryData: jest.fn()
 }));
 

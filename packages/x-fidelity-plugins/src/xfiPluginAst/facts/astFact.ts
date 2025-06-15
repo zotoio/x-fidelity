@@ -1,5 +1,4 @@
 import { FactDefn, FileData } from '@x-fidelity/types';
-// TODO: Import utilities from core package when available
 import { logger } from '@x-fidelity/core';
 import { generateAst } from '../../sharedPluginUtils/astUtils';
 

@@ -28,7 +28,7 @@ export const functionCountFact: FactDefn = {
             visit(ast.rootNode);
             return { count };
         } catch (error) {
-            console.error('Error in functionCount fact:', error);
+            logger.error('Error in functionCount fact:', error);
             return { count: 0 };
         }
     }

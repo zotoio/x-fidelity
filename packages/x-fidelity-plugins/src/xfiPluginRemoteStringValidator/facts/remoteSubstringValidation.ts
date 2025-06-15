@@ -47,9 +47,7 @@ export const remoteSubstringValidationFact: FactDefn = {
 export async function validateMatch(params: RemoteValidationParams): Promise<RemoteValidationResult> {
     const { substring, url, headers, timeout } = params;
 
-    console.debug({
-        params,
-    }, 'making validation request');
+    logger.debug('making validation request', { params });
 
     let response: AxiosResponse<any, any>;
     let validatorUrl = url.replace('#MATCH#', substring);
@@ -61,10 +59,7 @@ export async function validateMatch(params: RemoteValidationParams): Promise<Rem
             timeout
         });
 
-        console.debug({
-            params,
-            response
-        }, 'Remote validation request complete');
+        logger.debug('Remote validation request complete', { params, response });
 
         if (response.status !== 200) {
             throw new Error(`invalid status code: ${response.status}`);
@@ -93,11 +88,7 @@ export async function validateMatch(params: RemoteValidationParams): Promise<Rem
 
     } catch (error: any) {
         
-        console.error({
-            error,
-            substring,
-            params
-        }, 'Remote validation request failed');
+        logger.error('Remote validation request failed', { error, substring, params });
 
         return {
             isValid: false,

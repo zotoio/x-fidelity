@@ -1,7 +1,8 @@
 import { FactDefn, FileData } from '@x-fidelity/types';
+import { logger } from '@x-fidelity/core';
 import { AstResult } from '../../sharedPluginUtils/astUtils';
 
-interface CodeMetrics {
+export interface CodeMetrics {
     cyclomaticComplexity: number;
     cognitiveComplexity: number;
     nestingDepth: number;
@@ -43,7 +44,7 @@ export const codeRhythmFact: FactDefn = {
             const baseMetrics = analyzeCodeMetrics(ast.program);
             return baseMetrics;
         } catch (error) {
-            console.error('Error in codeRhythm fact:', error);
+            logger.error('Error in codeRhythm fact:', error);
             return {
                 cyclomaticComplexity: 0,
                 cognitiveComplexity: 0,

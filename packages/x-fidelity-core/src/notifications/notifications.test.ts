@@ -8,13 +8,10 @@ import { logger } from '../utils/logger';
 // Create a mock registerProvider function
 const mockRegisterProvider = jest.fn();
 
-// Mock NotificationManager with a proper getInstance implementation
 jest.mock('./notificationManager', () => ({
-  NotificationManager: {
-    getInstance: jest.fn().mockImplementation(() => ({
-      registerProvider: mockRegisterProvider
-    }))
-  }
+  NotificationManager: jest.fn().mockImplementation(() => ({
+    registerProvider: mockRegisterProvider
+  }))
 }));
 jest.mock('./providers/emailProvider');
 jest.mock('./providers/slackProvider');
@@ -60,32 +57,30 @@ describe('Notifications', () => {
   it('should initialize notifications when enabled', async () => {
     const config = {
       enabled: true,
-      providers: ['email', 'slack', 'teams'],
+      providers: {
+        email: {},
+        slack: {},
+        teams: {}
+      },
       notifyOnSuccess: true,
       notifyOnFailure: true
     };
 
     await initializeNotifications(config);
 
-    expect(NotificationManager.getInstance).toHaveBeenCalledWith(config);
-    expect(EmailProvider).toHaveBeenCalled();
-    expect(SlackProvider).toHaveBeenCalled();
-    expect(TeamsProvider).toHaveBeenCalled();
-    expect(mockRegisterProvider).toHaveBeenCalled();
+    expect(NotificationManager).toHaveBeenCalled();
+    expect(mockRegisterProvider).toHaveBeenCalledTimes(3);
   });
 
   it('should not initialize providers when notifications are disabled', async () => {
     const config = {
-      enabled: false,
-      providers: ['email', 'slack', 'teams']
+      enabled: false
     };
 
     await initializeNotifications(config);
 
-    expect(NotificationManager.getInstance).toHaveBeenCalledWith(config);
-    expect(EmailProvider).not.toHaveBeenCalled();
-    expect(SlackProvider).not.toHaveBeenCalled();
-    expect(TeamsProvider).not.toHaveBeenCalled();
+    expect(NotificationManager).toHaveBeenCalled();
+    expect(mockRegisterProvider).not.toHaveBeenCalled();
     expect(logger.info).toHaveBeenCalledWith('Notifications are disabled');
   });
 
@@ -94,7 +89,11 @@ describe('Notifications', () => {
     
     const config = {
       enabled: true,
-      providers: ['email', 'slack', 'teams']
+      providers: {
+        email: {},
+        slack: {},
+        teams: {}
+      }
     };
 
     await initializeNotifications(config);
@@ -106,7 +105,9 @@ describe('Notifications', () => {
   it('should warn about unknown providers', async () => {
     const config = {
       enabled: true,
-      providers: ['unknown-provider']
+      providers: {
+        'unknown-provider': {}
+      }
     };
 
     await initializeNotifications(config);
