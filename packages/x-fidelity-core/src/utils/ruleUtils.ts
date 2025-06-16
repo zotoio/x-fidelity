@@ -57,7 +57,7 @@ async function loadLocalConfigRule(params: LoadLocalConfigRuleParams): Promise<R
     const fileName = `${rule}-rule.json`;
     const filePath = path.join(localConfigPath || '', 'rules', fileName);
 
-    if (!fileName.startsWith('openai') || (isOpenAIEnabled() && fileName.startsWith('openai'))) {
+    if (!rule || (!rule.startsWith('openai') || (isOpenAIEnabled() && rule.startsWith('openai')))) {
         try {
             logger.info(`loading local config rule file: ${filePath}`);
             const fileContent = await fs.promises.readFile(filePath, 'utf8');

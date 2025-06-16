@@ -1,5 +1,3 @@
-import { logger } from './logger';
-
 const sensitivePatterns = [
     /x-shared-secret/gi,
     /password/gi,
@@ -107,8 +105,6 @@ export function maskSensitiveData(obj: any): any {
             }
         }
     }
-
-    logger.debug({ maskedData: maskedObj }, 'Masked sensitive data');
 
     return maskedObj;
 }

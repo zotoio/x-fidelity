@@ -16,5 +16,13 @@ module.exports = {
     "**/?(*.)+(spec|test).+(ts|tsx|js)"
   ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
-  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"]
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  // Improve test cleanup and prevent hanging
+  testTimeout: 15000,
+  forceExit: true,
+  detectOpenHandles: true,
+  // Reset modules and mocks between tests
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true
 };

@@ -13,18 +13,24 @@ export const window = {
     text: '',
     tooltip: '',
     command: '',
+    backgroundColor: undefined,
     show: jest.fn(),
     dispose: jest.fn(),
     hide: jest.fn(),
   })),
-  showErrorMessage: jest.fn(),
-  showWarningMessage: jest.fn(),
-  showInformationMessage: jest.fn(),
-  withProgress: jest.fn(),
+  createTextEditorDecorationType: jest.fn(() => ({ dispose: jest.fn() })),
+  showErrorMessage: jest.fn(() => Promise.resolve('Show Details')),
+  showWarningMessage: jest.fn(() => Promise.resolve(undefined)),
+  showInformationMessage: jest.fn(() => Promise.resolve(undefined)),
+  showQuickPick: jest.fn(),
+  showInputBox: jest.fn(),
+  withProgress: jest.fn((options: any, task: any) => task({ report: jest.fn() })),
   createWebviewPanel: jest.fn(),
   showTextDocument: jest.fn(),
   activeTextEditor: undefined,
   visibleTextEditors: [],
+  onDidChangeActiveTextEditor: jest.fn(() => ({ dispose: jest.fn() })),
+  onDidChangeVisibleTextEditors: jest.fn(() => ({ dispose: jest.fn() })),
 };
 
 export const workspace = {
@@ -33,14 +39,16 @@ export const workspace = {
     update: jest.fn(),
     has: jest.fn(),
   })),
-  onDidChangeConfiguration: jest.fn(),
-  onDidChangeWorkspaceFolders: jest.fn(),
-  onDidChangeTextDocument: jest.fn(),
+  onDidChangeConfiguration: jest.fn(() => ({ dispose: jest.fn() })),
+  onDidChangeWorkspaceFolders: jest.fn(() => ({ dispose: jest.fn() })),
+  onDidChangeTextDocument: jest.fn(() => ({ dispose: jest.fn() })),
+  onDidSaveTextDocument: jest.fn(() => ({ dispose: jest.fn() })),
   workspaceFolders: [],
   getWorkspaceFolder: jest.fn(),
   findFiles: jest.fn(),
   openTextDocument: jest.fn(),
   saveAll: jest.fn(),
+  applyEdit: jest.fn(),
 };
 
 export const languages = {
@@ -49,8 +57,10 @@ export const languages = {
     clear: jest.fn(),
     dispose: jest.fn(),
     delete: jest.fn(),
+    get: jest.fn(),
+    forEach: jest.fn(),
   })),
-  registerCodeActionsProvider: jest.fn(),
+  registerCodeActionsProvider: jest.fn(() => ({ dispose: jest.fn() })),
   registerCompletionItemProvider: jest.fn(),
   registerHoverProvider: jest.fn(),
 };
@@ -77,6 +87,20 @@ export const Range = jest.fn();
 export const Position = jest.fn();
 export const Location = jest.fn();
 export const Diagnostic = jest.fn();
+export const CodeAction = jest.fn();
+export const WorkspaceEdit = jest.fn(() => ({
+  insert: jest.fn(),
+  replace: jest.fn(),
+  delete: jest.fn(),
+}));
+export const MarkdownString = jest.fn(() => ({
+  appendMarkdown: jest.fn(),
+  isTrusted: false,
+}));
+export const ThemeColor = jest.fn();
+export const DecorationRangeBehavior = {
+  ClosedClosed: 3,
+};
 
 // EventEmitter mock
 export class EventEmitter<T> {
@@ -136,6 +160,18 @@ export const ConfigurationTarget = {
   WorkspaceFolder: 3,
 };
 
+export const CodeActionKind = {
+  Empty: '',
+  QuickFix: 'quickfix',
+  Refactor: 'refactor',
+  RefactorExtract: 'refactor.extract',
+  RefactorInline: 'refactor.inline',
+  RefactorRewrite: 'refactor.rewrite',
+  Source: 'source',
+  SourceOrganizeImports: 'source.organizeImports',
+  SourceFixAll: 'source.fixAll',
+};
+
 export const extensions = {
   getExtension: jest.fn(),
   all: [],
@@ -163,6 +199,11 @@ export default {
   Position,
   Location,
   Diagnostic,
+  CodeAction,
+  WorkspaceEdit,
+  MarkdownString,
+  ThemeColor,
+  DecorationRangeBehavior,
   EventEmitter,
   DiagnosticSeverity,
   StatusBarAlignment,
@@ -170,6 +211,7 @@ export default {
   ExtensionMode,
   ViewColumn,
   ConfigurationTarget,
+  CodeActionKind,
   extensions,
   env,
 }; 

@@ -1,5 +1,3 @@
-import { logger } from '@x-fidelity/core';
-
 // jest.setup.ts
 import { EventEmitter } from 'events';
 
@@ -13,10 +11,7 @@ beforeAll(() => {
   process.setMaxListeners(20);
   
   exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: string | number | null | undefined): never => {
-    logger.info({ 
-        code,
-        type: 'test-exit'
-    }, 'Process exit called but ignored in tests');
+    console.log('Process exit called but ignored in tests', { code, type: 'test-exit' });
     // Throwing an error is avoided to prevent Jest worker crashes
     return undefined as never;
   });

@@ -52,8 +52,9 @@ describe('normalizeGitHubUrl', () => {
 jest.mock('../utils/axiosClient');
 jest.mock('../utils/ruleUtils');
 jest.mock('../utils/jsonSchemas', () => ({
-  validateArchetype: jest.fn().mockReturnValue(true),
-  validateRule: jest.fn().mockReturnValue(true)
+  validateArchetype: jest.fn(),
+  validateRule: jest.fn().mockReturnValue(true),
+  validateXFIConfig: jest.fn().mockReturnValue(true)
 }));
 
 // Properly type the mocked functions
@@ -117,10 +118,19 @@ describe('ConfigManager', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         ConfigManager['configs'] = {}; // Reset the static configs
+        
+        // Set default mock behavior only for successful cases
+        // Don't set validateArchetype default - let individual tests control it
+        (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+        
+        // Reset options to default values
+        options.configServer = 'http://test-server.com';
+        options.localConfigPath = '/path/to/local/config';
     });
 
     describe('getConfig', () => {
         it('should return the same instance for the same archetype', async () => {
+            validateArchetype.mockReturnValue(true);
             (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
             const instance1 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             const instance2 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
@@ -128,6 +138,7 @@ describe('ConfigManager', () => {
         });
 
         it('should return different instances for different archetypes', async () => {
+            validateArchetype.mockReturnValue(true);
             (axiosClient.get as jest.Mock).mockResolvedValueOnce({ data: { ...mockConfig, name: 'node-fullstack' } });
             (axiosClient.get as jest.Mock).mockResolvedValueOnce({ data: { ...mockConfig, name: 'java-microservice' } });
             const instance1 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
@@ -136,12 +147,14 @@ describe('ConfigManager', () => {
         });
 
         it('should initialize with default archetype when not specified', async () => {
+            validateArchetype.mockReturnValue(true);
             (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
             const config = await ConfigManager.getConfig({});
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
         });
 
         it('should initialize with specified archetype', async () => {
+            validateArchetype.mockReturnValue(true);
             (axiosClient.get as jest.Mock).mockResolvedValue({ data: { ...mockConfig, name: 'java-microservice' } });
             const config = await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(config.archetype.name).toBe('java-microservice');
@@ -154,28 +167,32 @@ describe('ConfigManager', () => {
         });
 
         it('should handle malformed config data', async () => {
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: { invalid: 'config' } });
-            const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
-            expect(config).toBeDefined();
-            expect(config.archetype).toEqual(expect.objectContaining({ invalid: 'config' }));
+            const malformedConfig = { invalid: 'config' };
+            (axiosClient.get as jest.Mock).mockResolvedValue({ data: malformedConfig });
+            validateArchetype.mockReturnValueOnce(false);
+            
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid remote archetype configuration');
         });
 
         it('should handle empty config data', async () => {
             (axiosClient.get as jest.Mock).mockResolvedValue({ data: {} });
-            const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
-            expect(config).toBeDefined();
+            validateArchetype.mockReturnValueOnce(false);
+            
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid remote archetype configuration');
         });
 
         it('should handle null config data', async () => {
             (axiosClient.get as jest.Mock).mockResolvedValue({ data: null });
-            const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
-            expect(config).toBeDefined();
-            expect(config.archetype).toEqual(expect.objectContaining({ configServer: 'http://test-server.com' }));
+            validateArchetype.mockReturnValueOnce(false);
+            
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid remote archetype configuration');
         });
+
     });
 
     describe('initialize', () => {
         it('should fetch remote config when configServer is provided', async () => {
+            validateArchetype.mockReturnValue(true);
             (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
             const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
             expect(axiosClient.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype', expect.any(Object));
@@ -190,6 +207,7 @@ describe('ConfigManager', () => {
         });
 
         it('should load local config when localConfigPath is provided', async () => {
+            validateArchetype.mockReturnValue(true);
             options.configServer = '';
             (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
             const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
@@ -237,9 +255,10 @@ describe('ConfigManager', () => {
 
         it('should handle missing required config fields', async () => {
             options.configServer = '';
+            validateArchetype.mockReturnValueOnce(false);
             const invalidConfig = { name: 'test-archetype' }; // Missing required fields
             (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(invalidConfig));
-            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('No valid configuration found for archetype: test-archetype');
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid local archetype configuration');
         });
 
         it('should load CLI-specified plugins', async () => {
@@ -381,6 +400,7 @@ describe('ConfigManager', () => {
 
     describe('getLoadedConfigs', () => {
         it('should return an array of loaded config names', async () => {
+            validateArchetype.mockReturnValue(true);
             options.configServer = '';
             options.localConfigPath = '/path/to/local/config';
             (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
@@ -395,6 +415,7 @@ describe('ConfigManager', () => {
 
     describe('clearLoadedConfigs', () => {
         it('should clear all loaded configs', async () => {
+            validateArchetype.mockReturnValue(true);
             options.configServer = '';
             (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
             await ConfigManager.getConfig({ archetype: 'node-fullstack' });
@@ -533,6 +554,7 @@ describe('ConfigManager', () => {
 
     describe('fetchRemoteConfig', () => {
         it('should retry fetching remote config on failure', async () => {
+            validateArchetype.mockReturnValue(true);
             options.configServer = 'http://test-server.com';
             options.localConfigPath = '';
             (axiosClient.get as jest.Mock).mockReset();
@@ -570,8 +592,9 @@ describe('ConfigManager', () => {
             (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
             validateArchetype.mockReturnValueOnce(false);
             jest.spyOn(ConfigManager, 'loadPlugins').mockResolvedValue();
-            const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
-            expect(config).toBeDefined(); // Implementation handles invalid config gracefully
+            
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid remote archetype configuration');
+            
             options.configServer = 'http://test-server.com';
             options.localConfigPath = '/path/to/local/config';
         });
@@ -656,11 +679,13 @@ describe('ConfigManager', () => {
         });
 
         it('should handle missing required exemption fields', async () => {
-            const invalidExemptions = [
+            const validExemptions = [
                 { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2023-12-31', reason: 'Test reason' }
             ];
-            (fs.existsSync as jest.Mock).mockReturnValue(true);
-            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(invalidExemptions));
+            // Mock existsSync to return true for the legacy exemptions file
+            (fs.existsSync as jest.Mock).mockImplementation(path => 
+                path.includes('test-archetype-exemptions.json'));
+            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(validExemptions));
             
             const exemptions = await loadLocalExemptions({ 
                 configServer: '', 
@@ -668,7 +693,7 @@ describe('ConfigManager', () => {
                 archetype: 'test-archetype' 
             });
             
-            expect(exemptions).toEqual(invalidExemptions);
+            expect(exemptions).toEqual(validExemptions);
             // Note: Implementation accepts valid exemption format
         });
     });

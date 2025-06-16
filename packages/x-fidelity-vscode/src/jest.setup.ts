@@ -20,3 +20,15 @@ jest.mock('@x-fidelity/core', () => ({
   setLogPrefix: jest.fn(),
   generateLogPrefix: jest.fn()
 }));
+
+// Global cleanup after all tests
+afterAll(() => {
+  // Clear all timers
+  jest.clearAllTimers();
+  jest.useRealTimers();
+  
+  // Clear all mocks
+  jest.clearAllMocks();
+  jest.resetAllMocks();
+  jest.restoreAllMocks();
+});

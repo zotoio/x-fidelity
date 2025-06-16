@@ -21,6 +21,9 @@ export * from './plugins';
 // Export server types (maintain v4 separation)
 export * from './server';
 
+// Export logger types
+export * from './logger';
+
 // Re-export commonly used types for convenience
 export type {
     // Core types

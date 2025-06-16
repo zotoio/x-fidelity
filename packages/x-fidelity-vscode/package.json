@@ -11,21 +11,94 @@
     "url": "https://github.com/zotoio/x-fidelity.git"
   },
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.80.0",
+    "node": ">=16.0.0"
   },
   "categories": [
     "Linters",
     "Programming Languages"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onCommand:xfidelity.runAnalysis",
+    "onCommand:xfidelity.openSettings",
+    "onCommand:xfidelity.detectArchetype",
+    "workspaceContains:**/package.json",
+    "workspaceContains:**/pom.xml",
+    "workspaceContains:**/build.gradle",
+    "workspaceContains:**/requirements.txt",
+    "workspaceContains:**/*.csproj"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
+        "command": "xfidelity.test",
+        "title": "X-Fidelity: Test Extension"
+      },
+      {
         "command": "xfidelity.runAnalysis",
         "title": "X-Fidelity: Run Analysis Now"
+      },
+      {
+        "command": "xfidelity.openSettings",
+        "title": "X-Fidelity: Open Settings"
+      },
+      {
+        "command": "xfidelity.openReports",
+        "title": "X-Fidelity: Open Reports Folder"
+      },
+      {
+        "command": "xfidelity.detectArchetype",
+        "title": "X-Fidelity: Detect Project Archetype"
+      },
+      {
+        "command": "xfidelity.resetConfiguration",
+        "title": "X-Fidelity: Reset Configuration"
+      },
+      {
+        "command": "xfidelity.addExemption",
+        "title": "X-Fidelity: Add Exemption"
+      },
+      {
+        "command": "xfidelity.addBulkExemptions",
+        "title": "X-Fidelity: Add Bulk Exemptions"
+      },
+      {
+        "command": "xfidelity.showRuleDocumentation",
+        "title": "X-Fidelity: Show Rule Documentation"
+      },
+      {
+        "command": "xfidelity.showReportHistory",
+        "title": "X-Fidelity: Show Report History"
+      },
+      {
+        "command": "xfidelity.exportReport",
+        "title": "X-Fidelity: Export Report"
+      },
+      {
+        "command": "xfidelity.shareReport",
+        "title": "X-Fidelity: Share Report"
+      },
+      {
+        "command": "xfidelity.compareReports",
+        "title": "X-Fidelity: Compare Reports"
+      },
+      {
+        "command": "xfidelity.viewTrends",
+        "title": "X-Fidelity: View Trends"
+      },
+      {
+        "command": "xfidelity.showAdvancedSettings",
+        "title": "X-Fidelity: Advanced Settings"
+      },
+      {
+        "command": "xfidelity.showDashboard",
+        "title": "X-Fidelity: Show Dashboard"
+      },
+      {
+        "command": "xfidelity.showIssueExplorer",
+        "title": "X-Fidelity: Issue Explorer"
       }
     ],
     "configuration": {
@@ -36,9 +109,20 @@
           "default": 300,
           "description": "Interval (in seconds) for running background analysis. Set to 0 to disable periodic runs."
         },
+        "xfidelity.autoAnalyzeOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically run analysis when files are saved."
+        },
+        "xfidelity.autoAnalyzeOnFileChange": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically run analysis when files are changed (debounced)."
+        },
         "xfidelity.archetype": {
           "type": "string",
           "default": "node-fullstack",
+          "enum": ["node-fullstack", "react-spa", "next-fullstack", "java-microservice", "python-service", "dotnet-service"],
           "description": "The X-Fidelity archetype to use for analysis."
         },
         "xfidelity.configServer": {
@@ -54,12 +138,135 @@
         "xfidelity.openaiEnabled": {
           "type": "boolean",
           "default": false,
-          "description": "Enable OpenAI analysis for advanced code insights."
+          "description": "Enable OpenAI analysis for advanced code insights (requires API key)."
         },
         "xfidelity.telemetryCollector": {
           "type": "string",
           "default": "",
           "description": "URL where telemetry data will be sent (optional)."
+        },
+        "xfidelity.telemetryEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable telemetry collection for usage analytics."
+        },
+        "xfidelity.generateReports": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically generate reports after analysis."
+        },
+        "xfidelity.reportOutputDir": {
+          "type": "string",
+          "default": "",
+          "description": "Directory for report output (default: workspace root)."
+        },
+        "xfidelity.reportFormats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["json", "md", "html", "csv"]
+          },
+          "default": ["json", "md"],
+          "description": "Report formats to generate."
+        },
+        "xfidelity.showReportAfterAnalysis": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically open reports after generation."
+        },
+        "xfidelity.reportRetentionDays": {
+          "type": "number",
+          "default": 30,
+          "description": "Number of days to keep old reports."
+        },
+        "xfidelity.showInlineDecorations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline decorations (squiggly lines) for issues."
+        },
+        "xfidelity.highlightSeverity": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["error", "warning", "info", "hint"]
+          },
+          "default": ["error", "warning"],
+          "description": "Which issue severities to highlight."
+        },
+        "xfidelity.statusBarVisibility": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show X-Fidelity status in the status bar."
+        },
+        "xfidelity.problemsPanelGrouping": {
+          "type": "string",
+          "enum": ["file", "severity", "rule", "category"],
+          "default": "file",
+          "description": "How to group issues in the Problems panel."
+        },
+        "xfidelity.showRuleDocumentation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show rule documentation in hover tooltips."
+        },
+        "xfidelity.maxFileSize": {
+          "type": "number",
+          "default": 1048576,
+          "description": "Maximum file size to analyze (in bytes)."
+        },
+        "xfidelity.analysisTimeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "Analysis timeout in milliseconds."
+        },
+        "xfidelity.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": ["node_modules/**", ".git/**"],
+          "description": "Glob patterns for files to exclude from analysis."
+        },
+        "xfidelity.includePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Glob patterns for files to include in analysis (empty = all)."
+        },
+        "xfidelity.maxConcurrentAnalysis": {
+          "type": "number",
+          "default": 3,
+          "description": "Maximum number of concurrent analysis operations."
+        },
+        "xfidelity.debugMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging for troubleshooting."
+        },
+        "xfidelity.customPlugins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Paths to custom X-Fidelity plugins."
+        },
+        "xfidelity.ruleOverrides": {
+          "type": "object",
+          "default": {},
+          "description": "Rule-specific configuration overrides."
+        },
+        "xfidelity.cacheResults": {
+          "type": "boolean",
+          "default": true,
+          "description": "Cache analysis results for better performance."
+        },
+        "xfidelity.cacheTTL": {
+          "type": "number",
+          "default": 60,
+          "description": "Cache time-to-live in minutes."
         }
       }
     }
@@ -86,15 +293,22 @@
     "glob": "^10.3.10",
     "jest": "^29.7.0",
     "mocha": "^10.3.0",
+    "rimraf": "^5.0.5",
     "sinon": "^17.0.1",
     "ts-jest": "^29.1.2",
     "typescript": "^5.4.3"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "yarn build:deps && node esbuild.config.js",
+    "build:deps": "cd ../../ && yarn build",
     "build:test": "tsc -p tsconfig.test.json",
-    "test": "npm run build:test && jest",
+    "test": "yarn build:test && jest --detectOpenHandles",
     "clean": "rimraf dist dist-test *.tsbuildinfo",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "watch": "node esbuild.config.js --watch",
+    "package": "yarn clean && yarn build --production && vsce package",
+    "package:dev": "yarn clean && yarn build && vsce package --pre-release",
+    "publish": "yarn package && vsce publish",
+    "install-vsix": "code --install-extension *.vsix"
   }
 }

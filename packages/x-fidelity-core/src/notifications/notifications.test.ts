@@ -1,18 +1,11 @@
+// Don't mock the entire class, just spy on the method
+
 import { initializeNotifications } from './index';
 import { NotificationManager } from './notificationManager';
 import { EmailProvider } from './providers/emailProvider';
 import { SlackProvider } from './providers/slackProvider';
 import { TeamsProvider } from './providers/teamsProvider';
 import { logger } from '../utils/logger';
-
-// Create a mock registerProvider function
-const mockRegisterProvider = jest.fn();
-
-jest.mock('./notificationManager', () => ({
-  NotificationManager: jest.fn().mockImplementation(() => ({
-    registerProvider: mockRegisterProvider
-  }))
-}));
 jest.mock('./providers/emailProvider');
 jest.mock('./providers/slackProvider');
 jest.mock('./providers/teamsProvider');
@@ -64,12 +57,17 @@ describe('Notifications', () => {
       },
       notifyOnSuccess: true,
       notifyOnFailure: true
-    };
+    } as any;
+
+    // Spy on the registerProvider method
+    const registerProviderSpy = jest.spyOn(NotificationManager.prototype, 'registerProvider');
 
     await initializeNotifications(config);
 
-    expect(NotificationManager).toHaveBeenCalled();
-    expect(mockRegisterProvider).toHaveBeenCalledTimes(3);
+    // All 3 providers should be registered since we set up the environment variables
+    expect(registerProviderSpy).toHaveBeenCalledTimes(3);
+    
+    registerProviderSpy.mockRestore();
   });
 
   it('should not initialize providers when notifications are disabled', async () => {
@@ -77,11 +75,15 @@ describe('Notifications', () => {
       enabled: false
     };
 
+    // Spy on the registerProvider method
+    const registerProviderSpy = jest.spyOn(NotificationManager.prototype, 'registerProvider');
+
     await initializeNotifications(config);
 
-    expect(NotificationManager).toHaveBeenCalled();
-    expect(mockRegisterProvider).not.toHaveBeenCalled();
+    expect(registerProviderSpy).not.toHaveBeenCalled();
     expect(logger.info).toHaveBeenCalledWith('Notifications are disabled');
+    
+    registerProviderSpy.mockRestore();
   });
 
   it('should handle missing provider configurations', async () => {
@@ -94,7 +96,7 @@ describe('Notifications', () => {
         slack: {},
         teams: {}
       }
-    };
+    } as any;
 
     await initializeNotifications(config);
 
@@ -108,7 +110,7 @@ describe('Notifications', () => {
       providers: {
         'unknown-provider': {}
       }
-    };
+    } as any;
 
     await initializeNotifications(config);
 

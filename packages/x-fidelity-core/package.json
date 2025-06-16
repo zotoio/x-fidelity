@@ -37,7 +37,6 @@
     "@types/lodash": "^4.17.16",
     "@types/node": "^22.13.8",
     "@types/nodemailer": "^6.4.17",
-    "@types/pino": "^7.0.5",
     "@types/prettyjson": "^0.0.33",
     "@types/semver": "^7.5.8",
     "@types/supertest": "^6.0.2",
@@ -48,7 +47,8 @@
     "rimraf": "^6.0.1",
     "supertest": "^7.0.0",
     "ts-jest": "^29.3.4",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "@types/fs-extra": "^11.0.4"
   },
   "dependencies": {
     "@x-fidelity/types": "4.0.0",
@@ -72,8 +72,6 @@
     "lodash": "^4.17.21",
     "nodemailer": "^6.10.0",
     "openai": "^4.86.1",
-    "pino": "^9.6.0",
-    "pino-pretty": "^13.0.0",
     "prettyjson": "^1.2.5",
     "sanitize-filename": "^1.6.3",
     "semver": "^7.7.1",
@@ -81,6 +79,16 @@
     "tree-sitter-javascript": "^0.23.1",
     "tree-sitter-typescript": "^0.23.2",
     "winston": "^3.11.0",
-    "yaml": "^2.7.0"
+    "yaml": "^2.7.0",
+    "fs-extra": "^11.2.0",
+    "pino": "^9.5.0",
+    "pino-pretty": "^13.0.0"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }

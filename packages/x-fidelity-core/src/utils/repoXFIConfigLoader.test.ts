@@ -1,5 +1,5 @@
 import { loadRepoXFIConfig, defaultRepoXFIConfig } from './repoXFIConfigLoader';
-import { validateRule } from './jsonSchemas';
+import { validateRule, validateXFIConfig } from './jsonSchemas';
 import { logger } from './logger';
 import fs from 'fs';
 import path from 'path';
@@ -18,11 +18,14 @@ jest.mock('fs', () => ({
 }));
 
 jest.mock('./jsonSchemas', () => ({
-  validateXFIConfig: jest.fn().mockReturnValue(true),
-  validateRule: jest.fn().mockReturnValue(true)
+  validateXFIConfig: jest.fn(),
+  validateRule: jest.fn()
 }));
 
 jest.mock('./logger');
+
+const mockValidateXFIConfig = validateXFIConfig as jest.MockedFunction<typeof validateXFIConfig>;
+const mockValidateRule = validateRule as jest.MockedFunction<typeof validateRule>;
 
 describe('loadRepoXFIConfig', () => {
   const mockRepoPath = '/test/repo';
@@ -31,6 +34,8 @@ describe('loadRepoXFIConfig', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (fs.existsSync as jest.Mock).mockReturnValue(true);
+    mockValidateXFIConfig.mockReturnValue(true);
+    mockValidateRule.mockReturnValue(true);
   });
 
   it('should return default config when no config file exists', async () => {

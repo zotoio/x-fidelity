@@ -5,7 +5,10 @@ alwaysApply: true
 ---
 # Important guidance
 
-1. never modify the files below the 'temp' dir, they are for reference only.
-2. use yarn instead of npm for commmands
-3. ensure that unit tests work after making changes, and add any additional changes. If the unit tests fail, ensure that the issue is fixed without changing the implementation, and that any test changes related to existing code that has been updated is checked, as it may indicate that the implementation update is broken, and not the test.
+1. ask for clarification if you are unsure about a given change or its implications, but only for complex changes.
+2. never modify the files below the 'temp' dir, they are for reference only.
+3. use yarn instead of npm for commmands
+4. ensure that unit tests across all packages work using `yarn test` from the workspace root as part concluding a prompt response before handing over to me for the next prompt.
+5. If the unit tests fail, ensure that they are fixed without changing the implementation, and that any test changes related to existing code that has been updated is checked, as it may indicate that the implementation update is broken, and not the test.
+6. When making changes, ensure that the README.md abd also the website is updated accordingly.
 

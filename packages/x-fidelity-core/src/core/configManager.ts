@@ -368,11 +368,21 @@ export class ConfigManager {
             const configPath = path.join(localConfigPath, `${sanitizedArchetype}.json`);
             logger.info(`Loading local archetype config from: ${configPath}`);
             const configContent = await fs.promises.readFile(configPath, 'utf8');
+            
+            let parsedContent;
+            try {
+                parsedContent = JSON.parse(configContent);
+            } catch (parseError) {
+                // If JSON parsing fails, throw the expected error message
+                throw new Error(`No valid configuration found for archetype: ${archetype}`);
+            }
+            
             const localConfig = {
                 description: 'Local archetype configuration',
                 configServer: '',
-                ...JSON.parse(configContent)
+                ...parsedContent
             } as ArchetypeConfig;
+            
             if (validateArchetype(localConfig)) {
                 return localConfig;
             } else {

@@ -1,0 +1,60 @@
+# Source files (keep compiled dist directory)
+src/**
+!dist/extension.js
+!dist/extension.js.map
+
+# Test files
+src/test/**
+src/**/*.test.ts
+src/**/*.spec.ts
+dist-test/**
+*.tsbuildinfo
+
+# Development files
+tsconfig.json
+tsconfig.test.json
+jest.config.js
+eslint.config.js
+esbuild.config.js
+.eslintrc.*
+
+# Build scripts
+scripts/**
+
+# Documentation (except README)
+docs/**
+*.md
+!README.md
+
+# Git and version control
+.git/**
+.gitignore
+.gitattributes
+
+# Dependencies (keep bundled dependencies)
+node_modules/**
+!dist/bundled/**
+
+# Logs and caches
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/**
+*.swp
+*.swo
+*~
+
+# Package files
+*.vsix
+*.tgz
+
+# Temporary files
+temp/**
+tmp/**
+.tmp/**
+
+# Coverage reports
+coverage/**
+.nyc_output/** 

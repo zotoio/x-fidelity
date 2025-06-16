@@ -4,15 +4,14 @@ This extension integrates the X-Fidelity code analysis tool into Visual Studio C
 
 ## Features
 
-- Automatic code analysis based on architectural archetypes
+- Automatic code analysis based on managed archetypes
 - Real-time diagnostics for architectural issues
 - Configurable analysis intervals
 - Support for local and remote configuration
 
 ## Requirements
 
-- Visual Studio Code 1.99.0 or higher
-- Node.js 16 or higher
+- Visual Studio Code 1.80.0 or higher
 
 ## Extension Settings
 

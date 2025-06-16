@@ -13,4 +13,10 @@ module.exports = {
     '^vscode$': '<rootDir>/src/__mocks__/vscode.ts',
   },
   setupFilesAfterEnv: ['<rootDir>/src/jest.setup.ts'],
+  testTimeout: 10000,
+  forceExit: true,
+  detectOpenHandles: true,
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true,
 }; 

@@ -1,349 +1,98 @@
 import * as vscode from 'vscode';
-import { logger, setLogLevel } from '@x-fidelity/core';
-import type { ResultMetadata } from '@x-fidelity/core';
-import { analyzeCodebase } from '@x-fidelity/core';
+import { ExtensionManager } from './core/extensionManager';
+import { logger } from './utils/logger';
 
-interface CLIOptions {
-    dir: string;
-    archetype: string;
-    configServer?: string;
-    localConfigPath?: string;
-    mode?: string;
-    port?: number;
-    examine?: boolean;
-    openaiEnabled?: boolean;
-    telemetryCollector?: string;
-    notificationProvider?: any;
-}
+let extensionManager: ExtensionManager | undefined;
 
-type ErrorLevel = 'fatal' | 'error' | 'warning' | 'exempt';
-
-// Store the original CLI options
-let originalOptions: CLIOptions | null = null;
-
-// Create output channel for logging
-let outputChannel: vscode.OutputChannel;
-
-// Create status bar item
-let statusBarItem: vscode.StatusBarItem;
-
-// Store the diagnostic collection
-let diagnosticCollection: vscode.DiagnosticCollection;
-
-// Store the analysis interval
-let analysisInterval: NodeJS.Timeout | null = null;
-
-// Store the last analysis time
-let lastAnalysisTime: number = 0;
-
-// Store whether we're currently analyzing
-let isAnalyzing: boolean = false;
-
-// Store whether we're in debug mode
-let isDebugMode: boolean = false;
-
-// Store the notification provider
-let notificationProvider: any = null;
-
-// Store the current workspace folder
-let currentWorkspaceFolder: string | undefined;
-
-// Store the current configuration
-let currentConfig: vscode.WorkspaceConfiguration;
-
-// Store the current CLI options
-let cliOptions: CLIOptions = {
-    dir: '.',
-    archetype: 'node-fullstack',
-    configServer: '',
-    localConfigPath: '',
-    mode: 'cli',
-    port: undefined,
-    examine: false,
-    openaiEnabled: false,
-    telemetryCollector: '',
-    notificationProvider: null
-};
-
-// Initialize the extension
+// Initialize the extension with enhanced logging best practices
 export function activate(context: vscode.ExtensionContext) {
-    // Create output channel
-    outputChannel = vscode.window.createOutputChannel('X-Fidelity');
-    context.subscriptions.push(outputChannel);
-
-    // Create status bar item
-    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.text = '$(sync) X-Fidelity';
-    statusBarItem.tooltip = 'Click to run X-Fidelity analysis';
-    statusBarItem.command = 'xfidelity.runAnalysis';
-    context.subscriptions.push(statusBarItem);
-    statusBarItem.show();
-
-    // Create diagnostic collection
-    diagnosticCollection = vscode.languages.createDiagnosticCollection('x-fidelity');
-    context.subscriptions.push(diagnosticCollection);
-
-    // Get workspace folder
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) {
-        void vscode.window.showErrorMessage('No workspace folder found. Please open a folder to use X-Fidelity.');
-        return;
-    }
-    currentWorkspaceFolder = workspaceFolders[0].uri.fsPath;
-
-    // Get configuration
-    currentConfig = vscode.workspace.getConfiguration('xfidelity');
-
-    // Register commands
-    context.subscriptions.push(
-        vscode.commands.registerCommand('xfidelity.runAnalysis', () => {
-            void runAnalysis();
-        })
-    );
-
-    // Watch for configuration changes
-    context.subscriptions.push(
-        vscode.workspace.onDidChangeConfiguration(e => {
-            if (e.affectsConfiguration('xfidelity')) {
-                updateConfiguration();
-            }
-        })
-    );
-
-    // Initialize configuration
-    updateConfiguration();
-
-    // Start periodic analysis if enabled
-    startPeriodicAnalysis();
-}
-
-// Update configuration
-function updateConfiguration() {
-    currentConfig = vscode.workspace.getConfiguration('xfidelity');
+  // Initialize the enhanced logger system with best practices configuration
+  const isDevelopment = context.extensionMode === vscode.ExtensionMode.Development;
+  const config = vscode.workspace.getConfiguration('xfidelity');
+  
+  logger.info('X-Fidelity extension activation started...', {
+    version: context.extension.packageJSON.version,
+    mode: isDevelopment ? 'development' : 'production'
+  });
+  
+  try {
+    logger.info('Creating ExtensionManager...');
+    extensionManager = new ExtensionManager(context);
+    context.subscriptions.push(extensionManager);
     
-    // Update debug mode
-    const newDebugMode = currentConfig.get<boolean>('debug', false);
-    if (newDebugMode !== isDebugMode) {
-        isDebugMode = newDebugMode;
-        setLogLevel(isDebugMode ? 'debug' : 'info');
+    logger.info('X-Fidelity extension activated successfully');
+    
+    // Show activation confirmation with appropriate messaging
+    if (isDevelopment) {
+      vscode.window.showInformationMessage('X-Fidelity extension activated (dev mode)');
+      logger.debug('Extension running in development mode');
+    } else {
+      vscode.window.showInformationMessage('X-Fidelity extension activated successfully!');
     }
-
-    // Update CLI options
-    cliOptions.archetype = currentConfig.get<string>('archetype', 'node-fullstack');
-    cliOptions.configServer = currentConfig.get<string>('configServer', '');
-    cliOptions.localConfigPath = currentConfig.get<string>('localConfigPath', '');
-
-    // Update analysis interval
-    const runInterval = currentConfig.get<number>('runInterval', 300);
-    if (runInterval !== currentConfig.get<number>('runInterval')) {
-        startPeriodicAnalysis();
-    }
+    
+    // Listen for configuration changes
+    const configWatcher = vscode.workspace.onDidChangeConfiguration(event => {
+      if (event.affectsConfiguration('xfidelity')) {
+        logger.info('Configuration updated');
+      }
+    });
+    
+    context.subscriptions.push(configWatcher);
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : '';
+    
+    logger.error('X-Fidelity activation failed:', { 
+      error: errorMessage, 
+      stack
+    });
+    
+    // Enhanced error handling with recovery options
+    vscode.window.showErrorMessage(
+      `Failed to activate X-Fidelity extension: ${errorMessage}`,
+      'Show Details',
+      'Retry',
+      'Report Issue'
+    ).then(choice => {
+      if (choice === 'Show Details') {
+        vscode.window.showInformationMessage(
+          `X-Fidelity Extension Error:\n\n${errorMessage}\n\nStack:\n${stack}`,
+          { modal: true }
+        );
+      } else if (choice === 'Retry') {
+        logger.info('Retrying extension activation...');
+        setTimeout(() => activate(context), 2000);
+      } else if (choice === 'Report Issue') {
+        // Open issue reporting URL
+        vscode.env.openExternal(vscode.Uri.parse(
+          'https://github.com/zotoio/x-fidelity/issues/new?template=bug_report.md'
+        ));
+      }
+    });
+    
+    throw error; // Re-throw to maintain error semantics
+  }
 }
 
-// Start periodic analysis
-function startPeriodicAnalysis() {
-    // Clear existing interval
-    if (analysisInterval) {
-        clearInterval(analysisInterval);
-        analysisInterval = null;
-    }
-
-    // Get run interval
-    const runInterval = currentConfig.get<number>('runInterval', 300);
-
-    // Start new interval if enabled
-    if (runInterval > 0) {
-        analysisInterval = setInterval(() => {
-            // Only run if enough time has passed and we're not currently analyzing
-            const now = Date.now();
-            if (!isAnalyzing && (now - lastAnalysisTime) >= (runInterval * 1000)) {
-                void runAnalysis();
-            }
-        }, 10000); // Check every 10 seconds
-    }
-}
-
-// Run analysis
-async function runAnalysis() {
-    try {
-        if (isAnalyzing) {
-            void vscode.window.showInformationMessage('Analysis is already in progress...');
-            return;
-        }
-
-        isAnalyzing = true;
-        statusBarItem.text = '$(sync~spin) X-Fidelity: Analyzing...';
-
-        // Backup original CLI options
-        if (!originalOptions) {
-            originalOptions = { ...cliOptions };
-            logger.debug('Original CLI options backed up:', JSON.stringify(originalOptions));
-        }
-
-        // Update CLI options for this analysis
-        cliOptions.dir = currentWorkspaceFolder || '.';
-        cliOptions.openaiEnabled = currentConfig.get<boolean>('openaiEnabled', false);
-        cliOptions.telemetryCollector = currentConfig.get<string>('telemetryCollector', '');
-        cliOptions.mode = 'cli';
-        cliOptions.notificationProvider = notificationProvider; // Set our custom notification provider
-
-        logger.debug('CLI options set for analysis:', JSON.stringify(cliOptions));
-
-        // Run analysis
-        const result: ResultMetadata = await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Window,
-            title: 'Running X-Fidelity analysis...',
-            cancellable: false
-        }, async () => {
-            return await analyzeCodebase({
-                repoPath: cliOptions.dir,
-                archetype: cliOptions.archetype,
-                configServer: cliOptions.configServer,
-                localConfigPath: cliOptions.localConfigPath,
-                executionLogPrefix: `vscode-ext-${Date.now()}`
-            });
-        });
-
-        // Update last analysis time
-        lastAnalysisTime = Date.now();
-
-        // Clear existing diagnostics
-        diagnosticCollection.clear();
-
-        // Process results
-        if (result.XFI_RESULT.totalIssues > 0) {
-            // Group issues by file
-            const issuesByFile = new Map<string, vscode.Diagnostic[]>();
-
-            result.XFI_RESULT.issueDetails.forEach(detail => {
-                const diagnostics: vscode.Diagnostic[] = detail.errors.map(error => {
-                    // Parse line/column information from error details
-                    const lineInfo = parseLineColumnInfo(error.details?.message || error.ruleFailure, error.details);
-                    
-                    const diagnostic = new vscode.Diagnostic(
-                        new vscode.Range(lineInfo.line, lineInfo.column, lineInfo.endLine, lineInfo.endColumn),
-                        error.details?.message || error.ruleFailure,
-                        (error.level as ErrorLevel) === 'fatal' ? vscode.DiagnosticSeverity.Error :
-                        (error.level as ErrorLevel) === 'warning' ? vscode.DiagnosticSeverity.Warning :
-                        vscode.DiagnosticSeverity.Information
-                    );
-                    diagnostic.source = 'X-Fidelity';
-                    
-                    // Add rule name as diagnostic code
-                    if (error.ruleFailure) {
-                        diagnostic.code = error.ruleFailure;
-                    }
-                    
-                    return diagnostic;
-                });
-
-                issuesByFile.set(detail.filePath, diagnostics);
-            });
-
-            // Set diagnostics
-            issuesByFile.forEach((diagnostics, filePath) => {
-                diagnosticCollection.set(vscode.Uri.file(filePath), diagnostics);
-            });
-
-            // Show summary
-            const message = `Found ${result.XFI_RESULT.totalIssues} issues (${result.XFI_RESULT.fatalityCount} fatal, ${result.XFI_RESULT.warningCount} warnings)`;
-            if (result.XFI_RESULT.fatalityCount > 0) {
-                void vscode.window.showErrorMessage(message);
-            } else {
-                void vscode.window.showWarningMessage(message);
-            }
-
-            statusBarItem.text = '$(alert) X-Fidelity: Issues found';
-        } else {
-            void vscode.window.showInformationMessage('No issues found!');
-            statusBarItem.text = '$(check) X-Fidelity: No issues';
-        }
-
-        // Restore original CLI options
-        if (originalOptions) {
-            cliOptions = { ...originalOptions };
-            logger.debug('Original CLI options restored:', JSON.stringify(cliOptions));
-        }
-
-    } catch (error: any) {
-        void vscode.window.showErrorMessage(`Analysis failed: ${error.message}`);
-        statusBarItem.text = '$(error) X-Fidelity: Error';
-        logger.error('Analysis failed:', error);
-    } finally {
-        isAnalyzing = false;
-    }
-}
-
-// Parse line/column information from error messages and details
-function parseLineColumnInfo(message: string, details: any): {
-    line: number;
-    column: number;
-    endLine: number;
-    endColumn: number;
-} {
-    let line = 0;
-    let column = 0;
-    let endLine = 0;
-    let endColumn = 0;
-
-    // Try to extract from details first (more reliable)
-    if (details) {
-        if (typeof details.lineNumber === 'number') {
-            line = Math.max(0, details.lineNumber - 1); // Convert to 0-based
-            endLine = line;
-        }
-        if (typeof details.columnNumber === 'number') {
-            column = Math.max(0, details.columnNumber - 1); // Convert to 0-based
-            endColumn = column + (details.length || 1);
-        }
-        if (typeof details.startLine === 'number') {
-            line = Math.max(0, details.startLine - 1);
-        }
-        if (typeof details.endLine === 'number') {
-            endLine = Math.max(0, details.endLine - 1);
-        }
-        if (typeof details.startColumn === 'number') {
-            column = Math.max(0, details.startColumn);
-        }
-        if (typeof details.endColumn === 'number') {
-            endColumn = Math.max(0, details.endColumn);
-        }
-    }
-
-    // Fallback: try to parse from message
-    if (line === 0 && column === 0) {
-        // Common patterns: "line 5", "line 5, column 10", "5:10", etc.
-        const patterns = [
-            /line\s+(\d+)(?:,?\s*column\s+(\d+))?/i,
-            /(\d+):(\d+)/,
-            /at\s+line\s+(\d+)/i,
-            /\((\d+),(\d+)\)/
-        ];
-
-        for (const pattern of patterns) {
-            const match = message.match(pattern);
-            if (match) {
-                line = Math.max(0, parseInt(match[1], 10) - 1); // Convert to 0-based
-                if (match[2]) {
-                    column = Math.max(0, parseInt(match[2], 10) - 1); // Convert to 0-based
-                }
-                endLine = line;
-                endColumn = column + 1; // Default to single character
-                break;
-            }
-        }
-    }
-
-    // Ensure we have valid ranges
-    if (endLine < line) endLine = line;
-    if (endColumn <= column) endColumn = column + 1;
-
-    return { line, column, endLine, endColumn };
-}
-
-// Deactivate extension
+// Enhanced deactivation with proper cleanup
 export function deactivate() {
-    if (analysisInterval) {
-        clearInterval(analysisInterval);
+  logger.info('X-Fidelity extension deactivating...');
+  
+  try {
+    // Dispose extension manager first
+    if (extensionManager) {
+      extensionManager.dispose();
+      extensionManager = undefined;
+      logger.debug('ExtensionManager disposed successfully');
     }
+    
+    logger.info('X-Fidelity extension deactivated successfully');
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('Error during extension deactivation:', { 
+      error: errorMessage
+    });
+  }
 }

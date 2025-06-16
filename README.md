@@ -3,17 +3,15 @@
 x-fidelity is an advanced CLI tool and paired config server designed to perform opinionated framework adherence checks within a codebase. It provides a flexible and extensible way to ensure your projects are using specific standards, tools and best practices.  It is based on https://github.com/CacheControl/json-rules-engine a powerful, lightweight rules engine.
 
 ```
-=====================================
- __    __          ________  ______ 
-| ##  | ##        | ######## \######
- \##\/  ## ______ | ##__      | ##  
-  >##  ## |      \| ##  \     | ##  
- /  ####\  \######| ######    | ##  
-|  ## \##\        | ##       _| ##_ 
-| ##  | ##        | ##      |   ## \
- \##   \##         \##       \######
-                               
--------------------------------------
+╭────────────────────────────────╮
+│                                │
+│   ██╗  ██╗      ███████╗██╗    │
+│   ╚██╗██╔╝      ██╔════╝██║    │
+│    ╚███╔╝ █████╗█████╗  ██║    │
+│    ██╔██╗ ╚════╝██╔══╝  ██║    │
+│   ██╔╝ ██╗      ██║     ██║    │
+│   ╚═╝  ╚═╝      ╚═╝     ╚═╝    │
+╰────────────────────────────────╯
 ```
 
 **NEW beta genai docs: https://zotoio.github.io/x-fidelity/**

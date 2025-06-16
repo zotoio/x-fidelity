@@ -3,7 +3,6 @@ import path from 'path';
 import crypto from 'crypto';
 import pino from 'pino';
 import { maskSensitiveData } from './maskSensitiveData';
-import { options } from '../core/options';
 
 // Initialize variables
 let loggerInstance: pino.Logger | undefined;
@@ -17,10 +16,14 @@ export function initializeLogger() {
     return getLogger();
 }
 
+/**
+ * Generate a unique log prefix for this logger instance
+ * This is used to correlate log messages from the same execution
+ * @returns {string} A unique prefix for log messages
+ */
 export function generateLogPrefix(): string {
     try {
         // Try to use crypto.randomUUID if available (Node.js 14.17.0+)
-        const crypto = require('crypto');
         if (crypto.randomUUID) {
             return crypto.randomUUID().substring(0, 8);
         }
@@ -66,21 +69,9 @@ export function withLogPrefix<T>(prefix: string, fn: () => T): T {
 function getLogger(force?: boolean): pino.Logger {
     // Determine if color should be enabled based on environment variable only
     const useColor = process.env.XFI_LOG_COLOR !== 'false';
+    const isTestEnv = process.env.NODE_ENV === 'test' || typeof jest !== 'undefined';
     
     if (!loggerInstance || force) {
-        const prettyTransport = pino.transport({
-            target: 'pino-pretty',
-            options: {
-                loglevel: loglevel,
-                sync: false,
-                colorize: useColor,
-                translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
-                ignore: 'pid,hostname',
-                singleLine: true,
-                errorProps: '*'
-            }
-        });
-
         const loggerOptions: pino.LoggerOptions = {
             timestamp: pino.stdTimeFunctions.isoTime,
             msgPrefix: `${logPrefix} - `,
@@ -118,7 +109,34 @@ function getLogger(force?: boolean): pino.Logger {
             }
         };
 
-        loggerInstance = pino(loggerOptions, prettyTransport);
+        if (isTestEnv) {
+            // In test environment, use simple console transport only
+            loggerInstance = pino(loggerOptions);
+        } else {
+            // In production/development, use file and pretty transports
+            const fileTransport = pino.destination('x-fidelity.log');
+
+            const prettyTransport = pino.transport({
+                target: 'pino-pretty',
+                options: {
+                    loglevel: loglevel,
+                    sync: false,
+                    colorize: useColor,
+                    translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
+                    ignore: 'pid,hostname',
+                    singleLine: true,
+                    errorProps: '*'
+                }
+            });
+
+            loggerInstance = pino(
+                loggerOptions,
+                pino.multistream([
+                    { level: loglevel, stream: fileTransport },
+                    { level: loglevel, stream: prettyTransport }
+                ])
+            );
+        }
     }
     return loggerInstance;
 }

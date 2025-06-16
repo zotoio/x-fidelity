@@ -22,6 +22,22 @@ jest.mock('./logger', () => ({
     },
 }));
 
+// Mock axiosClient at the top level to ensure proper hoisting
+jest.mock('./axiosClient', () => ({
+    axiosClient: {
+        get: jest.fn()
+    }
+}));
+
+// Mock telemetry to prevent any network calls
+jest.mock('./telemetry', () => ({
+    sendTelemetry: jest.fn()
+}));
+
+// Import the mocked axiosClient to get access to the mock function
+import { axiosClient } from './axiosClient';
+const mockAxiosGet = axiosClient.get as jest.MockedFunction<typeof axiosClient.get>;
+
 describe('normalizeGitHubUrl', () => {
     it('should normalize URLs to SSH format', () => {
         // SSH format should be preserved
@@ -210,12 +226,11 @@ describe('loadLocalExemptions', () => {
 });
 
 describe('loadRemoteExemptions', () => {
-    const mockAxiosGet = jest.fn();
-    jest.mock('./axiosClient', () => ({
-        axiosClient: {
-            get: mockAxiosGet
-        }
-    }));
+    beforeEach(() => {
+        jest.clearAllMocks();
+        // Reset the mock for each test
+        mockAxiosGet.mockReset();
+    });
 
     it('should handle API errors gracefully', async () => {
         mockAxiosGet.mockRejectedValueOnce(new Error('API Error'));
@@ -230,6 +245,47 @@ describe('loadRemoteExemptions', () => {
         expect(result).toEqual([]);
         expect(logger.error).toHaveBeenCalledWith(
             expect.stringContaining("Error loading remote exemptions")
+        );
+    });
+
+    it('should handle successful API response', async () => {
+        const mockExemptions = [
+            { repoUrl: 'org/repo', rule: 'test-rule', expirationDate: '2025-12-31', reason: 'test' }
+        ];
+        
+        mockAxiosGet.mockResolvedValueOnce({
+            data: mockExemptions
+        });
+
+        const result = await loadRemoteExemptions({
+            configServer: 'https://config.example.com',
+            archetype: 'test',
+            logPrefix: 'test',
+            localConfigPath: '/test/path'
+        });
+
+        expect(result).toEqual(mockExemptions);
+        expect(mockAxiosGet).toHaveBeenCalledWith(
+            'https://config.example.com/archetypes/test/exemptions',
+            expect.any(Object)
+        );
+    });
+
+    it('should handle non-array response from server', async () => {
+        mockAxiosGet.mockResolvedValueOnce({
+            data: { invalid: 'format' }
+        });
+
+        const result = await loadRemoteExemptions({
+            configServer: 'https://config.example.com',
+            archetype: 'test',
+            logPrefix: 'test',
+            localConfigPath: '/test/path'
+        });
+
+        expect(result).toEqual([]);
+        expect(logger.warn).toHaveBeenCalledWith(
+            expect.stringContaining("Invalid exemptions format")
         );
     });
 });

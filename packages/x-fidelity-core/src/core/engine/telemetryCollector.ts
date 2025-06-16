@@ -26,9 +26,13 @@ export async function collectTelemetryData(params: CollectTelemetryDataParams): 
     // Get GitHub repository URL
     let repoUrl = '';
     try {
-        repoUrl = execSync('git config --get remote.origin.url', { cwd: repoPath })?.toString().trim();
-        if (!repoUrl) {
-            logger.error('Unable to get GitHub repository URL from git config');
+        if (repoPath) {
+            const gitOutput = execSync('git config --get remote.origin.url', { cwd: repoPath })?.toString().trim();
+            if (gitOutput) {
+                repoUrl = gitOutput;
+            } else {
+                logger.error('Unable to get GitHub repository URL from git config');
+            }
         }
     } catch (error) {
         logger.error(`error determining repo url using 'git config --get remote.origin.url'`);
