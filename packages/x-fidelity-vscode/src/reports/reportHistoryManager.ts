@@ -58,6 +58,10 @@ export class ReportHistoryManager {
     const id = this.generateReportId();
     const timestamp = Date.now();
     
+    // Ensure .xfiResults directory exists
+    const resultsDir = path.join(workspaceRoot, '.xfiResults');
+    await fs.mkdir(resultsDir, { recursive: true });
+    
     // Get git information if available
     const gitInfo = await this.getGitInfo(workspaceRoot);
     
@@ -68,7 +72,7 @@ export class ReportHistoryManager {
       branch: gitInfo.branch,
       result,
       summary: this.createSummary(result),
-      filePath: this.getReportFilePath(workspaceRoot, id)
+      filePath: this.getReportFilePath(resultsDir, id)
     };
     
     // Save the full report data to separate file
@@ -81,7 +85,8 @@ export class ReportHistoryManager {
   }
   
   async getReportHistory(workspaceRoot: string): Promise<ReportHistoryEntry[]> {
-    const historyFile = path.join(workspaceRoot, this.HISTORY_FILE);
+    const resultsDir = path.join(workspaceRoot, '.xfiResults');
+    const historyFile = path.join(resultsDir, this.HISTORY_FILE);
     
     try {
       const data = await fs.readFile(historyFile, 'utf8');
@@ -135,33 +140,36 @@ export class ReportHistoryManager {
   }
   
   async cleanupOldReports(workspaceRoot: string): Promise<void> {
+    const config = this.configManager.getConfig();
+    if (config.reportRetentionDays <= 0) return;
+    
+    const cutoffTime = Date.now() - (config.reportRetentionDays * 24 * 60 * 60 * 1000);
     const history = await this.getReportHistory(workspaceRoot);
+    const resultsDir = path.join(workspaceRoot, '.xfiResults');
     
-    if (history.length <= this.MAX_HISTORY_ENTRIES) {
-      return;
-    }
-    
-    // Keep the most recent entries
-    const sortedHistory = history.sort((a, b) => b.timestamp - a.timestamp);
-    const toKeep = sortedHistory.slice(0, this.MAX_HISTORY_ENTRIES);
-    const toRemove = sortedHistory.slice(this.MAX_HISTORY_ENTRIES);
-    
-    // Remove old report files
-    for (const entry of toRemove) {
-      try {
-        await fs.unlink(entry.filePath);
-      } catch {
-        // Ignore errors when removing old files
+    // Filter out old entries and delete their files
+    const filteredHistory = [];
+    for (const entry of history) {
+      if (entry.timestamp >= cutoffTime) {
+        filteredHistory.push(entry);
+      } else {
+        // Delete the report file
+        try {
+          await fs.unlink(entry.filePath);
+        } catch {
+          // Ignore file deletion errors
+        }
       }
     }
     
-    // Update history index
-    await this.saveHistoryIndex(workspaceRoot, toKeep);
+    // Save the filtered history
+    await this.saveHistoryIndex(workspaceRoot, filteredHistory);
   }
   
   async exportHistory(workspaceRoot: string, format: 'json' | 'csv' = 'json'): Promise<string> {
     const history = await this.getReportHistory(workspaceRoot);
-    const exportPath = path.join(workspaceRoot, `xfi-history-export-${Date.now()}.${format}`);
+    const resultsDir = path.join(workspaceRoot, '.xfiResults');
+    const exportPath = path.join(resultsDir, `xfi-history-export-${Date.now()}.${format}`);
     
     if (format === 'csv') {
       const csv = this.generateHistoryCSV(history);
@@ -177,7 +185,7 @@ export class ReportHistoryManager {
   private createSummary(result: ResultMetadata): ReportSummary {
     const data = result.XFI_RESULT;
     
-    // Count info and hint issues
+    // Count different severity levels
     let infoCount = 0;
     let hintCount = 0;
     
@@ -248,8 +256,8 @@ export class ReportHistoryManager {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
   
-  private getReportFilePath(workspaceRoot: string, id: string): string {
-    return path.join(workspaceRoot, `.xfidelity-report-${id}.json`);
+  private getReportFilePath(resultsDir: string, id: string): string {
+    return path.join(resultsDir, `.xfidelity-report-${id}.json`);
   }
   
   private async saveReportData(filePath: string, result: ResultMetadata): Promise<void> {
@@ -274,7 +282,8 @@ export class ReportHistoryManager {
   }
   
   private async saveHistoryIndex(workspaceRoot: string, history: ReportHistoryEntry[]): Promise<void> {
-    const historyFile = path.join(workspaceRoot, this.HISTORY_FILE);
+    const resultsDir = path.join(workspaceRoot, '.xfiResults');
+    const historyFile = path.join(resultsDir, this.HISTORY_FILE);
     await fs.writeFile(historyFile, JSON.stringify(history, null, 2));
   }
   

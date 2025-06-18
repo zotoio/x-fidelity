@@ -44,7 +44,7 @@ export const functionComplexityFact: FactDefn = {
                     fileName: fileData.fileName || 'unknown.ts'
                 };
 
-                astResult = generateAst(astData);
+                astResult = await generateAst(astData);
                 if (!astResult.tree) {
                     logger.debug('No AST tree generated for functionComplexity fact');
                     return { complexities: [] };

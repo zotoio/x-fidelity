@@ -2,7 +2,7 @@ import express from 'express';
 import https from 'https';
 import fs from 'fs';
 import { startServer } from './configServer';
-import { logger } from '@x-fidelity/core';
+import { logger } from './utils/serverLogger';
 import chokidar from 'chokidar';
 import { options } from '@x-fidelity/core';
 
@@ -42,15 +42,18 @@ jest.mock('chokidar', () => ({
   })
 }));
 
-jest.mock('@x-fidelity/core', () => ({
-  ...jest.requireActual('@x-fidelity/core'),
+jest.mock('./utils/serverLogger', () => ({
   logger: {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
     debug: jest.fn()
   },
-  setLogPrefix: jest.fn(),
+  setLogPrefix: jest.fn()
+}));
+
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   options: {
     port: '8888',
     localConfigPath: '/test/path'

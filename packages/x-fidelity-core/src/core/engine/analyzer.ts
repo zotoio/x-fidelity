@@ -1,7 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { logger } from '../../utils/logger';
 import { getFormattedDate } from '../../utils/utils';
+import { DefaultLogger } from '../../utils/defaultLogger';
+import { LoggerProvider } from '../../utils/loggerProvider';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../configManager';
 import { ReportGenerator as XFiReportGenerator } from '../../notifications/reportGenerator';
 import { 
@@ -31,7 +32,19 @@ import { ScanResult, RuleFailure, ErrorLevel } from '@x-fidelity/types';
 import { createTimingTracker } from '../../utils/timingUtils';
 
 export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<ResultMetadata> {
-    const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '', executionLogPrefix = '' } = params;
+    const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '', executionLogPrefix = '', logger: injectedLogger } = params;
+    
+    // Use injected logger or create default logger
+    const logger = injectedLogger || new DefaultLogger('[X-Fidelity-Core]');
+    
+    // Inject the logger into the provider so all core and plugin code uses it
+    if (injectedLogger) {
+        LoggerProvider.setLogger(injectedLogger);
+    }
+    
+    // Create .xfiResults directory
+    const resultsDir = path.join(repoPath, '.xfiResults');
+    await fs.mkdir(resultsDir, { recursive: true });
     
     // Performance tracking
     const timingTracker = createTimingTracker('ANALYZER TIMING');
@@ -199,7 +212,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     // add xfiConfig as a fact
     engine.addFact('repoXFIConfig', repoXFIConfig);
 
-    logger.info({ repoXFIConfig }, 'Added repoXFIConfig as fact');
+    logger.info('Added repoXFIConfig as fact', { repoXFIConfig });
     timingTracker.recordTiming('fact_setup');
 
     const failures = await runEngineOnFiles({
@@ -267,7 +280,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     // Generate reports
     try {
         // Save JSON report
-        const jsonReportPath = path.join(process.cwd(), `xfi-report-${getFormattedDate()}.json`);
+        const jsonReportPath = path.join(resultsDir, `xfi-report-${getFormattedDate()}.json`);
         await fs.writeFile(
             jsonReportPath,
             JSON.stringify(resultMetadata, null, 2)
@@ -276,7 +289,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
 
         // Generate and save markdown report
         const generator = new XFiReportGenerator(resultMetadata);
-        const markdownReportPath = path.join(process.cwd(), `xfi-report-${getFormattedDate()}.md`);
+        const markdownReportPath = path.join(resultsDir, `xfi-report-${getFormattedDate()}.md`);
         try {
             await generator.saveReportToFile(markdownReportPath);
         } catch (error) {
@@ -297,8 +310,9 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     return resultMetadata;
 }
 
-export async function analyzeFiles(engine: Engine, files: FileData[]): Promise<any[]> {
+export async function analyzeFiles(engine: Engine, files: FileData[], logger?: import('@x-fidelity/types').ILogger): Promise<any[]> {
     const results = [];
+    const loggerInstance = logger || new DefaultLogger('[X-Fidelity-Core]');
 
     // Add a global check file
     files.push({
@@ -311,11 +325,11 @@ export async function analyzeFiles(engine: Engine, files: FileData[]): Promise<a
     // Run rules for each file
     for (const file of files) {
         try {
-            logger.debug(`Running rules for file: ${file.filePath}`);
+            loggerInstance.debug(`Running rules for file: ${file.filePath}`);
             const result = await engine.run(file);
             results.push(result);
         } catch (error) {
-            logger.error(`Error running rules for file ${file.filePath}:`, error);
+            loggerInstance.error(`Error running rules for file ${file.filePath}:`, error);
         }
     }
 

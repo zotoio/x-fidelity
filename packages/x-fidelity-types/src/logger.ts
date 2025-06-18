@@ -421,4 +421,14 @@ export interface LogTransport {
   
   /** Dispose transport resources */
   dispose(): void;
+}
+
+// Simple logger configuration for dependency injection
+export interface SimpleLoggerConfig {
+  level?: LogLevel;
+  prefix?: string;
+  filePath?: string;
+  enableColors?: boolean;
+  enableFile?: boolean;
+  enableConsole?: boolean;
 } 

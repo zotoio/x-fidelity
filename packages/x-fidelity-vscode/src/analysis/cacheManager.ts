@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { ConfigManager } from '../configuration/configManager';
 import type { AnalysisResult } from './types';
+import { logger } from '../utils/logger';
 
 export interface CacheEntry {
   result: AnalysisResult;
@@ -186,7 +187,7 @@ export class CacheManager {
       await fs.writeFile(cacheFile, JSON.stringify(serializable, null, 2));
     } catch (error) {
       // Fail silently for cache writes
-      console.warn(`Failed to save cache to disk: ${error}`);
+      logger.warn(`Failed to save cache to disk: ${error}`);
     }
   }
   

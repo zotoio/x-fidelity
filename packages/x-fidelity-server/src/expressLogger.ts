@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger, resetLogPrefix, setLogPrefix } from '@x-fidelity/core';
+import { logger, resetLogPrefix, setLogPrefix } from './utils/serverLogger';
 import { maskSensitiveData } from '@x-fidelity/core';
 import { IncomingMessage, ServerResponse } from 'http';
 

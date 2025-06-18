@@ -1,16 +1,19 @@
 import { getCachedData, setCachedData, clearCache, getCacheContent, getRuleListCache, setRuleListCache, handleConfigChange } from './cacheManager';
 import { ConfigManager } from '@x-fidelity/core';
-import { logger } from '@x-fidelity/core';
+import { logger } from './utils/serverLogger';
 
-jest.mock('@x-fidelity/core', () => ({
-    ...jest.requireActual('@x-fidelity/core'),
+jest.mock('./utils/serverLogger', () => ({
     logger: {
         debug: jest.fn(),
         info: jest.fn(),
         error: jest.fn(),
         warn: jest.fn(),
         trace: jest.fn()
-    },
+    }
+}));
+
+jest.mock('@x-fidelity/core', () => ({
+    ...jest.requireActual('@x-fidelity/core'),
     ConfigManager: {
         clearLoadedConfigs: jest.fn()
     }

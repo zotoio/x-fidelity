@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '@x-fidelity/core';
+import { logger } from '../utils/serverLogger';
 
 const SHARED_SECRET = process.env.XFI_SHARED_SECRET;
 const maskedSecret = SHARED_SECRET ? `${SHARED_SECRET.substring(0, 4)}****${SHARED_SECRET.substring(SHARED_SECRET.length - 4)}` : 'not set';

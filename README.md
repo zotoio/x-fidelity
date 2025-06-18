@@ -547,6 +547,23 @@ The local config directory should contain:
 
 You can override default archetypes or add new ones by placing the corresponding JSON files in the local config directory.
 
+### Output Files
+
+X-Fidelity writes analysis reports and logs to a dedicated `.xfiResults` directory in the workspace root of the repository being analyzed:
+
+- **Reports**: `xfi-report-{timestamp}.json` and `xfi-report-{timestamp}.md` are written to `.xfiResults/`
+- **Logs**: `x-fidelity.log` is written to `.xfiResults/`
+- **History**: Report history and cached data are stored in `.xfiResults/`
+- **VSCode Extension**: Reports are written to the configured `reportOutputDir` (defaults to `.xfiResults/`)
+
+This approach keeps the repository root clean while ensuring that output files are co-located with the code being analyzed. The `.xfiResults` directory can be added to `.gitignore` if you don't want to track analysis output in version control.
+
+**Example .gitignore entry:**
+```
+# X-Fidelity analysis results
+.xfiResults/
+```
+
 ### Logging Options
 
 x-fidelity provides options to customize the logging output:
@@ -1023,3 +1040,27 @@ Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` f
 ## License
 
 This project is licensed under the MIT License.. See the `LICENSE` file for details.
+
+### VSCode Extension Development
+
+For developing the X-Fidelity VSCode extension, you can use these convenient commands from the workspace root:
+
+```bash
+# Build and launch extension in debug mode
+yarn vscode:dev
+
+# Build and launch with fresh user data (clean state)
+yarn vscode:dev:fresh
+
+# Build, launch, and watch for changes (recommended for active development)
+yarn vscode:dev:watch
+
+# Package the extension for distribution
+yarn vscode:package
+```
+
+See `packages/x-fidelity-vscode/README.md` for detailed development instructions.
+
+**Note**: The `Lt.transport is not a function` error has been resolved by implementing VSCode environment detection in the core logger. The logger now automatically avoids problematic transport features when running in VSCode extensions.
+
+### Logging Options

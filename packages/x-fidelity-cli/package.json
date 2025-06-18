@@ -18,8 +18,9 @@
   "scripts": {
     "clean": "rimraf dist/",
     "prebuild": "yarn clean && mkdir -p dist",
-    "build": "tsc && yarn copy-files",
-    "copy-files": "cp -rf src/demoConfig dist/ && cp dist/index.js dist/xfidelity && chmod 755 dist/xfidelity",
+    "build": "yarn build:deps && tsc && yarn copy-files",
+    "build:deps": "cd ../../ && yarn tsc -b",
+    "copy-files": "mkdir -p dist/demoConfig && cp -rf ../x-fidelity-democonfig/src/* dist/demoConfig/ && cp dist/index.js dist/xfidelity && chmod 755 dist/xfidelity",
     "build:watch": "tsc --watch --sourceMap",
     "start": "NODE_ENV=test OPENAI_API_KEY= jest --watch",
     "test": "NODE_ENV=test yarn lint && NODE_ENV=test OPENAI_API_KEY= jest --testPathIgnorePatterns=vscode-extension",
@@ -76,10 +77,13 @@
     "nodemon": "^3.1.9",
     "ora": "^8.2.0",
     "prettyjson": "^1.2.5",
+    "pino": "^9.5.0",
+    "pino-pretty": "^13.0.0",
     "@x-fidelity/core": "4.0.0",
     "@x-fidelity/types": "4.0.0",
     "@x-fidelity/plugins": "4.0.0",
-    "@x-fidelity/server": "4.0.0"
+    "@x-fidelity/server": "4.0.0",
+    "@x-fidelity/democonfig": "4.0.0"
   },
   "config": {
     "commitizen": {

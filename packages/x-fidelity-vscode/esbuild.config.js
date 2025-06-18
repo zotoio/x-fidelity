@@ -1,5 +1,6 @@
 const esbuild = require('esbuild');
 const path = require('path');
+const fs = require('fs');
 
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
@@ -14,10 +15,17 @@ async function main() {
     sourcesContent: false,
     platform: 'node',
     outfile: 'dist/extension.js',
-    external: ['vscode'],
+    external: [
+      'vscode',
+      // Keep the native tree-sitter packages external since we're using WASM
+      'tree-sitter',
+      'tree-sitter-javascript',
+      'tree-sitter-typescript'
+    ],
     logLevel: 'silent',
     plugins: [
       esbuildProblemMatcherPlugin,
+      copyWasmFilesPlugin,
     ],
     // Bundle all X-Fidelity packages
     alias: {
@@ -42,6 +50,51 @@ async function main() {
     await ctx.dispose();
   }
 }
+
+/**
+ * Plugin to copy WASM files needed for web-tree-sitter
+ * @type {import('esbuild').Plugin}
+ */
+const copyWasmFilesPlugin = {
+  name: 'copy-wasm-files',
+  setup(build) {
+    build.onEnd(() => {
+      // Ensure dist directory exists
+      if (!fs.existsSync('dist')) {
+        fs.mkdirSync('dist', { recursive: true });
+      }
+
+      // Copy WASM files to dist directory - correct paths from workspace root
+      const wasmFiles = [
+        {
+          src: '../../node_modules/web-tree-sitter/tree-sitter.wasm',
+          dest: 'dist/tree-sitter.wasm'
+        },
+        {
+          src: '../../node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm',
+          dest: 'dist/tree-sitter-javascript.wasm'
+        },
+        {
+          src: '../../node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm',
+          dest: 'dist/tree-sitter-typescript.wasm'
+        }
+      ];
+
+      wasmFiles.forEach(({ src, dest }) => {
+        try {
+          if (fs.existsSync(src)) {
+            fs.copyFileSync(src, dest);
+            console.log(`[wasm] Copied ${src} to ${dest}`);
+          } else {
+            console.warn(`[wasm] Warning: ${src} not found, skipping copy`);
+          }
+        } catch (error) {
+          console.error(`[wasm] Error copying ${src}:`, error.message);
+        }
+      });
+    });
+  }
+};
 
 /**
  * @type {import('esbuild').Plugin}

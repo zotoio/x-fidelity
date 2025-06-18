@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import * as os from 'os';
 
 export type ReportFormat = 'json' | 'md' | 'html' | 'csv';
 export type SeverityLevel = 'error' | 'warning' | 'info' | 'hint';
@@ -154,5 +155,54 @@ export class ConfigManager {
   dispose(): void {
     this.configWatcher?.dispose();
     this.onConfigurationChanged.dispose();
+  }
+
+  /**
+   * Get the resolved local config path following the specified resolution order:
+   * 1. home dir ~/.config/x-fidelity (XDG_CONFIG_HOME/x-fidelity)
+   * 2. env var XFI_CONFIG_PATH
+   * 3. demoConfig dir provided by the extension
+   */
+  getResolvedLocalConfigPath(): string {
+    const config = this.getConfig();
+    
+    // If user has explicitly configured a path, use it directly
+    if (config.configServer || config.localConfigPath) {
+      return config.localConfigPath;
+    }
+    
+    // Resolution order for fallback when no remote config server or localconfig path is set
+    
+    // 1. Home directory XDG_CONFIG_HOME/x-fidelity or ~/.config/x-fidelity
+    const xdgConfigHome = process.env.XDG_CONFIG_HOME;
+    const homeConfigPath = xdgConfigHome && xdgConfigHome.startsWith('/') 
+      ? path.join(xdgConfigHome, 'x-fidelity')
+      : path.join(os.homedir(), '.config', 'x-fidelity');
+    
+    try {
+      const stats = require('fs').statSync(homeConfigPath);
+      if (stats.isDirectory()) {
+        return homeConfigPath;
+      }
+    } catch {
+      // Directory doesn't exist, continue to next option
+    }
+    
+    // 2. Environment variable
+    const envConfigPath = process.env.XFI_CONFIG_PATH;
+    if (envConfigPath) {
+      try {
+        const stats = require('fs').statSync(envConfigPath);
+        if (stats.isDirectory()) {
+          return envConfigPath;
+        }
+      } catch {
+        // Path doesn't exist or isn't accessible, continue to next option
+      }
+    }
+    
+    // 3. Extension's demoConfig directory
+    const extensionDemoConfigPath = path.join(this.context.extensionPath, 'config');
+    return extensionDemoConfigPath;
   }
 } 

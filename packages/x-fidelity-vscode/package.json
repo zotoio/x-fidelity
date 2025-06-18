@@ -275,7 +275,11 @@
     "@x-fidelity/core": "4.0.0",
     "@x-fidelity/types": "4.0.0",
     "@x-fidelity/plugins": "4.0.0",
-    "vscode-languageclient": "^9.0.1"
+    "@x-fidelity/democonfig": "4.0.0",
+    "vscode-languageclient": "^9.0.1",
+    "web-tree-sitter": "^0.25.6",
+    "tree-sitter-javascript": "^0.23.1",
+    "tree-sitter-typescript": "^0.23.2"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
@@ -299,16 +303,19 @@
     "typescript": "^5.4.3"
   },
   "scripts": {
-    "build": "yarn build:deps && node esbuild.config.js",
-    "build:deps": "cd ../../ && yarn build",
+    "build": "tsc && yarn copy:demoConfig && node esbuild.config.js",
+    "copy:demoConfig": "mkdir -p dist/demoConfig && cp -r ../x-fidelity-democonfig/src/* dist/demoConfig/",
     "build:test": "tsc -p tsconfig.test.json",
     "test": "yarn build:test && jest --detectOpenHandles",
-    "clean": "rimraf dist dist-test *.tsbuildinfo",
+    "clean": "rimraf dist dist-test config *.tsbuildinfo",
     "lint": "eslint .",
     "watch": "node esbuild.config.js --watch",
     "package": "yarn clean && yarn build --production && vsce package",
     "package:dev": "yarn clean && yarn build && vsce package --pre-release",
     "publish": "yarn package && vsce publish",
-    "install-vsix": "code --install-extension *.vsix"
+    "install-vsix": "code --install-extension *.vsix",
+    "dev": "yarn clean && yarn build && code --extensionDevelopmentPath=. --new-window .",
+    "dev:fresh": "yarn clean && yarn build && code --extensionDevelopmentPath=. --new-window --user-data-dir=/tmp/vscode-x-fidelity-dev .",
+    "dev:watch": "yarn clean && yarn build && (yarn watch &) && sleep 2 && code --extensionDevelopmentPath=. --new-window ."
   }
 }

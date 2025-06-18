@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { logger, setLogPrefix, analyzeCodebase } from '@x-fidelity/core';
+import { analyzeCodebase } from '@x-fidelity/core';
+import { logger, setLogPrefix, ServerLogger } from '../utils/serverLogger';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -99,11 +100,19 @@ async function handlePullRequestCheck(payload: any) {
         // Checkout PR head
         await execAsync(`cd ${tempDir} && git checkout ${headSha}`);
         
+        // Create logger for analysis
+        const analysisLogger = new ServerLogger({
+            level: 'info',
+            enableConsole: true,
+            enableColors: true
+        });
+
         // Run analysis on the PR
         const results = await analyzeCodebase({
             repoPath: tempDir,
             archetype: 'node-fullstack', // Could be configurable
-            executionLogPrefix: `PR-${prNumber}`
+            executionLogPrefix: `PR-${prNumber}`,
+            logger: analysisLogger
         });
         
         logger.info({
@@ -156,11 +165,19 @@ async function handlePushCheck(payload: any) {
         // Checkout specific commit
         await execAsync(`cd ${tempDir} && git checkout ${sha}`);
         
+        // Create logger for analysis
+        const analysisLogger = new ServerLogger({
+            level: 'info',
+            enableConsole: true,
+            enableColors: true
+        });
+        
         // Run analysis
         const results = await analyzeCodebase({
             repoPath: tempDir,
             archetype: 'node-fullstack', // Could be configurable
-            executionLogPrefix: `PUSH-${sha.substring(0, 8)}`
+            executionLogPrefix: `PUSH-${sha.substring(0, 8)}`,
+            logger: analysisLogger
         });
         
         logger.info({

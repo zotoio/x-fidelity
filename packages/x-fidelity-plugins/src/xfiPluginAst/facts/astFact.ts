@@ -33,7 +33,7 @@ export const astFact: FactDefn = {
             };
 
             const astStartTime = Date.now();
-            const result = generateAst(astData);
+            const result = await generateAst(astData);
             const astEndTime = Date.now();
             
             const totalTime = astEndTime - startTime;

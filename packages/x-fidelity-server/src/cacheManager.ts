@@ -1,5 +1,5 @@
 import { ConfigManager } from '@x-fidelity/core';
-import { logger } from '@x-fidelity/core';
+import { logger } from './utils/serverLogger';
 
 const MAX_CACHE_SIZE = 1000; // Maximum number of items in the cache
 const DEFAULT_TTL = 10 * 60 * 1000; // 10 minutes in milliseconds

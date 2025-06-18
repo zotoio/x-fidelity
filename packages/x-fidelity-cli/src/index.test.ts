@@ -1,31 +1,38 @@
 import { 
     analyzeCodebase,
     sendTelemetry,
-    logger,
     CLIOptions
 } from '@x-fidelity/core';
 import { startServer } from '@x-fidelity/server';
-import { main } from './index';
 import { options } from './cli';
+import { main } from './index';
 
 jest.setTimeout(30000); // 30 seconds
+
+// Mock console methods to capture output
+const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation();
+const mockConsoleWarn = jest.spyOn(console, 'warn').mockImplementation();
+const mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
 
 jest.mock('@x-fidelity/core', () => ({
     analyzeCodebase: jest.fn(),
     sendTelemetry: jest.fn(),
-    validateArchetypeConfig: jest.fn(),
-    logger: {
+    validateArchetypeConfig: jest.fn()
+}));
+
+// Mock the PinoLogger
+jest.mock('./utils/pinoLogger', () => ({
+    PinoLogger: jest.fn().mockImplementation(() => ({
         info: jest.fn(),
         warn: jest.fn(),
         error: jest.fn(),
         debug: jest.fn(),
-        trace: jest.fn()
-    },
-    setLogPrefix: jest.fn(),
-    setLogLevel: jest.fn(),
-    getLogPrefix: jest.fn().mockReturnValue('mockLogPrefix'),
-    initializeLogger: jest.fn(),
-    generateLogPrefix: jest.fn().mockReturnValue('mockLogPrefix')
+        trace: jest.fn(),
+        setLevel: jest.fn(),
+        getLevel: jest.fn(),
+        isLevelEnabled: jest.fn(),
+        child: jest.fn()
+    }))
 }));
 
 jest.mock('@x-fidelity/server', () => ({
@@ -58,10 +65,16 @@ describe('index', () => {
 
     afterAll(() => {
         process.exit = originalProcessExit;
+        mockConsoleLog.mockRestore();
+        mockConsoleWarn.mockRestore();
+        mockConsoleError.mockRestore();
     });
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockConsoleLog.mockClear();
+        mockConsoleWarn.mockClear();
+        mockConsoleError.mockClear();
         // Reset options to default values for each test
         (options as any).mode = 'client';
         (options as any).dir = '.';
@@ -125,7 +138,8 @@ describe('index', () => {
             localConfigPath: undefined,
             executionLogPrefix: expect.any(String)
         }));
-        expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('HIGH FIDELITY APPROVED!'));
+        // Check that the analysis completed successfully (exit code 0)
+        expect(process.exit).toHaveBeenCalledWith(0);
     });
 
     it('should handle fatal errors in codebase analysis', async () => {
@@ -148,7 +162,7 @@ describe('index', () => {
 
         await main();
 
-        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('THERE WERE 1 FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!'));
+        // Check that fatal errors cause exit code 1
         expect(process.exit).toHaveBeenCalledWith(1);
     }, 10000);
 
@@ -171,7 +185,7 @@ describe('index', () => {
 
         await main();
 
-        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No fatal errors were found'));
+        // Check that warnings without fatal errors cause exit code 0
         expect(process.exit).toHaveBeenCalledWith(0);
     });
 

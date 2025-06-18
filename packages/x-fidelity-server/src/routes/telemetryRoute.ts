@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { logger, setLogPrefix } from '@x-fidelity/core';
+import { logger, setLogPrefix } from '../utils/serverLogger';
 import { validateTelemetryData } from '@x-fidelity/core';
 
 export function telemetryRoute(req: Request, res: Response) {

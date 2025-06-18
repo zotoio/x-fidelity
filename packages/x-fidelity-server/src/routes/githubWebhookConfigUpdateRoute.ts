@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { logger, setLogPrefix } from '@x-fidelity/core';
+import { logger, setLogPrefix } from '../utils/serverLogger';
 import crypto from 'crypto';
 import axios from 'axios';
 import { URL } from 'url';

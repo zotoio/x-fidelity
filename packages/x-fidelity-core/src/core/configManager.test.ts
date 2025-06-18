@@ -238,7 +238,7 @@ describe('ConfigManager', () => {
         it('should throw an error when no valid configuration is found', async () => {
             options.configServer = '';
             options.localConfigPath = '';
-            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('No valid configuration found for archetype: test-archetype');
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('No valid builtin configuration found for archetype: test-archetype');
         });
 
         it('should handle malformed local config JSON', async () => {

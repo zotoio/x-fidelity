@@ -1,157 +1,55 @@
-import fs from 'fs/promises';
-import path from 'path';
-import crypto from 'crypto';
-import pino from 'pino';
-import { maskSensitiveData } from './maskSensitiveData';
+import { LoggerProvider } from './loggerProvider';
+import { ILogger } from '@x-fidelity/types';
 
-// Initialize variables
-let loggerInstance: pino.Logger | undefined;
-let loglevel = process.env.XFI_LOG_LEVEL || 
-                  (process.env.NODE_ENV === 'test' ? 'silent' : 'info');
-let logPrefix: string = generateLogPrefix();
+// Create a proxy logger that dynamically delegates to the current logger from the provider
+export const logger: ILogger = {
+  trace: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().trace(msgOrMeta, metaOrMsg),
+  debug: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().debug(msgOrMeta, metaOrMsg),
+  info: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().info(msgOrMeta, metaOrMsg),
+  warn: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().warn(msgOrMeta, metaOrMsg),
+  error: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().error(msgOrMeta, metaOrMsg),
+  fatal: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().fatal(msgOrMeta, metaOrMsg),
+  child: (bindings: any) => LoggerProvider.getLogger().child(bindings),
+  setLevel: (level: any) => LoggerProvider.getLogger().setLevel(level),
+  getLevel: () => LoggerProvider.getLogger().getLevel(),
+  isLevelEnabled: (level: any) => LoggerProvider.getLogger().isLevelEnabled(level)
+};
 
-// Initialize logger and prefix immediately
-export function initializeLogger() {
-    logPrefix = generateLogPrefix();
-    return getLogger();
-}
+// For backward compatibility, provide access to the provider
+export { LoggerProvider };
 
-/**
- * Generate a unique log prefix for this logger instance
- * This is used to correlate log messages from the same execution
- * @returns {string} A unique prefix for log messages
- */
-export function generateLogPrefix(): string {
-    try {
-        // Try to use crypto.randomUUID if available (Node.js 14.17.0+)
-        if (crypto.randomUUID) {
-            return crypto.randomUUID().substring(0, 8);
-        }
-        // Fallback to randomBytes if available
-        if (crypto.randomBytes) {
-            return crypto.randomBytes(4).toString('hex');
-        }
-    } catch (error) {
-        // Fall through to simple fallback
-    }
-    
-    // Simple fallback for test environments or when crypto is not available
-    return Math.random().toString(36).substring(2, 10);
-}
-
-export function resetLogPrefix(): void {
-    logPrefix = generateLogPrefix();
-}
-
-export function setLogPrefix(prefix: string): void {
-    logPrefix = prefix;
+// Legacy functions for compatibility
+export function setLogLevel(level: string): void {
+  LoggerProvider.getLogger().setLevel(level as any);
 }
 
 export function getLogPrefix(): string {
-    return logPrefix;
+  // This is a legacy function that may not be relevant with the new provider pattern
+  // but keeping for backward compatibility
+  return '[X-Fidelity-Core]';
 }
 
-export function appendLogPrefix(suffix: string): void {
-    logPrefix = `${logPrefix}:${suffix}`;
+export function setLogPrefix(prefix: string): void {
+  // This is a legacy function - with the provider pattern, prefixes are handled
+  // by the specific logger implementations
+  console.warn('setLogPrefix is deprecated with the new logger provider pattern');
 }
 
-export function withLogPrefix<T>(prefix: string, fn: () => T): T {
-    const originalPrefix = getLogPrefix();
-    setLogPrefix(`${originalPrefix}:${prefix}`);
-    try {
-        return fn();
-    } finally {
-        setLogPrefix(originalPrefix);
-    }
+export function setLogFilePath(filePath: string): void {
+  // This is a legacy function - file paths are handled by specific logger implementations
+  console.warn('setLogFilePath is deprecated with the new logger provider pattern');
 }
 
-// Initialize logger function that will create the singleton if it doesn't exist
-function getLogger(force?: boolean): pino.Logger {
-    // Determine if color should be enabled based on environment variable only
-    const useColor = process.env.XFI_LOG_COLOR !== 'false';
-    const isTestEnv = process.env.NODE_ENV === 'test' || typeof jest !== 'undefined';
-    
-    if (!loggerInstance || force) {
-        const loggerOptions: pino.LoggerOptions = {
-            timestamp: pino.stdTimeFunctions.isoTime,
-            msgPrefix: `${logPrefix} - `,
-            level: loglevel,
-            formatters: {
-                level: (label) => ({ level: label }),
-                bindings: (bindings) => bindings,
-                log: (object) => ({
-                    ...object
-                })
-            },
-            serializers: {
-                err: (err) => pino.stdSerializers.err,
-                error: (err) => pino.stdSerializers.err,
-                req: (req) => maskSensitiveData(pino.stdSerializers.req(req)),
-                res: (res) => maskSensitiveData(pino.stdSerializers.res(res)),
-                '*': (obj) => maskSensitiveData(obj)
-            },
-            redact: {
-                paths: [
-                    'password',
-                    'apiKey',
-                    'authorization',
-                    'cookie',
-                    'req.headers.authorization',
-                    'req.headers.cookie',
-                    'req.body.password',
-                    'res.headers["set-cookie"]',
-                    '*.password',
-                    '*.apiKey',
-                    '*.secret',
-                    '*.token'
-                ],
-                censor: '********'
-            }
-        };
-
-        if (isTestEnv) {
-            // In test environment, use simple console transport only
-            loggerInstance = pino(loggerOptions);
-        } else {
-            // In production/development, use file and pretty transports
-            const fileTransport = pino.destination('x-fidelity.log');
-
-            const prettyTransport = pino.transport({
-                target: 'pino-pretty',
-                options: {
-                    loglevel: loglevel,
-                    sync: false,
-                    colorize: useColor,
-                    translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',
-                    ignore: 'pid,hostname',
-                    singleLine: true,
-                    errorProps: '*'
-                }
-            });
-
-            loggerInstance = pino(
-                loggerOptions,
-                pino.multistream([
-                    { level: loglevel, stream: fileTransport },
-                    { level: loglevel, stream: prettyTransport }
-                ])
-            );
-        }
-    }
-    return loggerInstance;
+export function getLogFilePath(): string {
+  // This is a legacy function - returning empty string for compatibility
+  return '';
 }
 
-// For backward compatibility, also export the logger instance directly
-export const logger: pino.Logger = getLogger();
-
-// Add a way to reset the logger (mainly for testing)
 export function resetLogger(): void {
-    loggerInstance = getLogger(true);
+  // Clear any injected logger to fall back to default
+  LoggerProvider.clearInjectedLogger();
 }
 
-export function setLogLevel(level: string): void {
-    if (loggerInstance) {
-        loggerInstance.level = level.toLowerCase();
-    }
-}
-
+export function generateLogPrefix(): string {
+  return '';
+} 

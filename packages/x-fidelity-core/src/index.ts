@@ -72,17 +72,19 @@ export type {
 
 // Utility exports
 export * from './utils/logger';
-export * from './utils/telemetry';
-export * from './utils/pathUtils';
-export * from './utils/openaiUtils';
-export * from './utils/inputValidation';
-export * from './utils/maskSensitiveData';
-export * from './utils/timingUtils';
+export * from './utils/loggerProvider';
+export * from './utils/defaultLogger';
 export * from './utils/utils';
+export * from './utils/openaiUtils';
+export * from './utils/telemetry';
+export * from './utils/timingUtils';
+export * from './utils/maskSensitiveData';
+export * from './utils/inputValidation';
+export * from './utils/pathUtils';
 
 // Export core functionality
-export { logger } from './utils/logger';
-export { getLogPrefix, setLogLevel, setLogPrefix } from './utils/logger';
+export { logger, LoggerProvider } from './utils/logger';
+export { getLogPrefix, setLogLevel, setLogPrefix, setLogFilePath, getLogFilePath } from './utils/logger';
 export { analyzeCodebase } from './core/engine/analyzer';
 export { sendTelemetry } from './utils/telemetry';
 

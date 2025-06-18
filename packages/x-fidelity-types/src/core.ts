@@ -125,6 +125,7 @@ export interface AnalyzeCodebaseParams {
     configServer?: string;
     localConfigPath?: string;
     executionLogPrefix?: string;
+    logger?: import('./logger').ILogger;
 }
 
 export interface CollectTelemetryDataParams {

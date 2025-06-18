@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { logger, setLogPrefix } from '@x-fidelity/core';
+import { logger, setLogPrefix } from '../utils/serverLogger';
 import { validateUrlInput } from '@x-fidelity/core';
 import { getCachedData, setCachedData } from '../cacheManager';
 import { ConfigManager } from '@x-fidelity/core';

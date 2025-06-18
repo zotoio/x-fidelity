@@ -1,5 +1,5 @@
 import { githubWebhookConfigUpdateRoute } from './githubWebhookConfigUpdateRoute';
-import { logger, setLogPrefix } from '@x-fidelity/core';
+import { logger, setLogPrefix } from '../utils/serverLogger';
 import crypto from 'crypto';
 import axios from 'axios';
 import fs from 'fs';
@@ -7,14 +7,17 @@ import { clearCache } from '../cacheManager';
 import { ConfigManager } from '@x-fidelity/core';
 import { options } from '@x-fidelity/core';
 
-jest.mock('@x-fidelity/core', () => ({
-  ...jest.requireActual('@x-fidelity/core'),
+jest.mock('../utils/serverLogger', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn()
   },
-  setLogPrefix: jest.fn(),
+  setLogPrefix: jest.fn()
+}));
+
+jest.mock('@x-fidelity/core', () => ({
+  ...jest.requireActual('@x-fidelity/core'),
   ConfigManager: {
     clearLoadedConfigs: jest.fn()
   },

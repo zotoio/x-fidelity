@@ -225,7 +225,8 @@ export class ConfigManager {
                 logger.info(`Using local config path: ${localConfigPath}`);
                 config.archetype = await ConfigManager.loadLocalConfig({ archetype, localConfigPath });
             } else {
-                logger.error(`No config server or local config path provided`);
+                logger.warn(`No config server or local config path provided, using builtin configuration`);
+                config.archetype = await ConfigManager.loadBuiltinConfig(archetype);
             }
 
             if (!config.archetype || Object.keys(config.archetype).length === 0) {
@@ -390,6 +391,66 @@ export class ConfigManager {
             }
         } catch (error: any) {
             logger.error(`Error loading local archetype config: ${error.message}`);
+            throw error;
+        }
+    }
+
+    private static async loadBuiltinConfig(archetype: string): Promise<ArchetypeConfig> {
+        try {
+            if (!/^[a-zA-Z0-9-_]+$/.test(archetype)) {
+                throw new Error('Invalid archetype name');
+            }
+            
+            // Try multiple possible paths for builtin configs
+            const possiblePaths = [
+                // For standalone core package usage
+                path.join(__dirname, '../demoConfig', `${archetype}.json`),
+                // For VSCode extension bundled usage
+                path.join(__dirname, 'demoConfig', `${archetype}.json`),
+                // For development/test environments
+                path.join(process.cwd(), 'packages/x-fidelity-core/dist/demoConfig', `${archetype}.json`)
+            ];
+            
+            let configPath: string | null = null;
+            for (const tryPath of possiblePaths) {
+                try {
+                    await fs.promises.access(tryPath, fs.constants.F_OK);
+                    configPath = tryPath;
+                    break;
+                } catch {
+                    // Continue to next path
+                }
+            }
+            
+            if (!configPath) {
+                throw new Error(`No valid builtin configuration found for archetype: ${archetype}`);
+            }
+            
+            logger.info(`Loading builtin archetype config from: ${configPath}`);
+            
+            const configContent = await fs.promises.readFile(configPath, 'utf8');
+            
+            let parsedContent;
+            try {
+                parsedContent = JSON.parse(configContent);
+            } catch (parseError) {
+                throw new Error(`No valid builtin configuration found for archetype: ${archetype}`);
+            }
+            
+            const builtinConfig = {
+                description: 'Builtin archetype configuration',
+                configServer: '',
+                ...parsedContent
+            } as ArchetypeConfig;
+            
+            if (validateArchetype(builtinConfig)) {
+                logger.info(`Successfully loaded builtin configuration for archetype: ${archetype}`);
+                return builtinConfig;
+            } else {
+                throw new Error('Invalid builtin archetype configuration');
+            }
+        } catch (error: any) {
+            logger.error(`Error loading builtin archetype config: ${error.message}`);
             throw error;
         }
     }

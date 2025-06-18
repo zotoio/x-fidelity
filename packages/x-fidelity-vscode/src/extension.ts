@@ -1,11 +1,15 @@
 import * as vscode from 'vscode';
 import { ExtensionManager } from './core/extensionManager';
-import { logger } from './utils/logger';
+import { VSCodeLogger } from './utils/vscodeLogger';
+import { preloadDefaultPlugins } from './core/pluginPreloader';
+
+// Create VSCode-optimized logger
+const logger = new VSCodeLogger('X-Fidelity');
 
 let extensionManager: ExtensionManager | undefined;
 
 // Initialize the extension with enhanced logging best practices
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   // Initialize the enhanced logger system with best practices configuration
   const isDevelopment = context.extensionMode === vscode.ExtensionMode.Development;
   const config = vscode.workspace.getConfiguration('xfidelity');
@@ -14,6 +18,11 @@ export function activate(context: vscode.ExtensionContext) {
     version: context.extension.packageJSON.version,
     mode: isDevelopment ? 'development' : 'production'
   });
+  
+  // Pre-load all default plugins with WASM support before core initialization
+  // This is critical for bundled extensions where dynamic imports don't work
+  logger.info('Pre-loading default X-Fidelity plugins with WASM support...');
+  await preloadDefaultPlugins(context);
   
   try {
     logger.info('Creating ExtensionManager...');
@@ -24,10 +33,10 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Show activation confirmation with appropriate messaging
     if (isDevelopment) {
-      vscode.window.showInformationMessage('X-Fidelity extension activated (dev mode)');
+      await vscode.window.showInformationMessage('X-Fidelity extension activated (dev mode)');
       logger.debug('Extension running in development mode');
     } else {
-      vscode.window.showInformationMessage('X-Fidelity extension activated successfully!');
+      await vscode.window.showInformationMessage('X-Fidelity extension activated successfully!');
     }
     
     // Listen for configuration changes
@@ -49,7 +58,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
     
     // Enhanced error handling with recovery options
-    vscode.window.showErrorMessage(
+    await vscode.window.showErrorMessage(
       `Failed to activate X-Fidelity extension: ${errorMessage}`,
       'Show Details',
       'Retry',

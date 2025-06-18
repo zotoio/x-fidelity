@@ -8,13 +8,17 @@
   "scripts": {
     "clean": "yarn workspaces run clean && rm -rf dist *.tsbuildinfo",
     "clean:artifacts": "find . -name '*.d.ts' -o -name '*.map' -o -name '*.js.map' | grep -v node_modules | grep -v dist | xargs rm -f || true",
-    "build:clean": "yarn clean && yarn clean:artifacts && tsc -b --verbose",
-    "build": "tsc -b --verbose",
+    "build:clean": "yarn clean && yarn clean:artifacts && yarn build",
+    "build": "yarn workspaces run build",
     "build:watch": "tsc -b --watch",
     "test": "yarn workspaces run test",
     "lint": "yarn workspaces run lint",
     "commit": "yarn test && git-cz",
-    "build-run": "yarn build && yarn workspace x-fidelity run build-run"
+    "build-run": "yarn build && yarn workspace x-fidelity run build-run",
+    "vscode:dev": "yarn workspace x-fidelity-vscode dev",
+    "vscode:dev:fresh": "yarn workspace x-fidelity-vscode dev:fresh",
+    "vscode:dev:watch": "yarn workspace x-fidelity-vscode dev:watch",
+    "vscode:package": "yarn workspace x-fidelity-vscode package"
   },
   "devDependencies": {
     "commitizen": "^4.3.0",

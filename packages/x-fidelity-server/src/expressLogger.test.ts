@@ -1,9 +1,8 @@
 import { expressLogger } from './expressLogger';
-import { logger, resetLogPrefix, setLogPrefix } from '@x-fidelity/core';
+import { logger, resetLogPrefix, setLogPrefix } from './utils/serverLogger';
 import { maskSensitiveData } from '@x-fidelity/core';
 
-jest.mock('@x-fidelity/core', () => ({
-    ...jest.requireActual('@x-fidelity/core'),
+jest.mock('./utils/serverLogger', () => ({
     logger: {
         info: jest.fn(),
         error: jest.fn(),
@@ -11,7 +10,11 @@ jest.mock('@x-fidelity/core', () => ({
         debug: jest.fn()
     },
     resetLogPrefix: jest.fn(),
-    setLogPrefix: jest.fn(),
+    setLogPrefix: jest.fn()
+}));
+
+jest.mock('@x-fidelity/core', () => ({
+    ...jest.requireActual('@x-fidelity/core'),
     maskSensitiveData: jest.fn(data => data)
 }));
 

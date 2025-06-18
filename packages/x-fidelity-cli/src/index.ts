@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import { 
-    logger, 
-    getLogPrefix, 
-    setLogLevel, 
     analyzeCodebase, 
     sendTelemetry, 
     validateArchetypeConfig,
 } from '@x-fidelity/core';
+
+import { PinoLogger } from './utils/pinoLogger';
+import { LogLevel } from '@x-fidelity/types';
+import path from 'path';
 
 import { startServer } from '@x-fidelity/server';
 
@@ -58,12 +59,18 @@ ${versionLine}
     console.log(banner);
 }
 
+// Create CLI logger instance
+const logger = new PinoLogger({
+    level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
+    enableConsole: true,
+    enableColors: true
+});
+
 if (require.main === module) {
-    setLogLevel(process.env.XFI_LOG_LEVEL || 'info');
     initCLI();
 }
 
-const executionLogPrefix = getLogPrefix();
+const executionLogPrefix = '';
 
 import json from 'prettyjson';
 
@@ -84,7 +91,7 @@ const handleError = async (error: Error) => {
         },
         timestamp: new Date().toISOString()
     });
-    logger.error(error, 'Execution failure');
+    logger.error('Execution failure', error);
 };
 
 const outcomeMessage = (message: string) => `\n
@@ -92,7 +99,7 @@ const outcomeMessage = (message: string) => `\n
 ${message}
 ==========================================================================`;
 
-logger.debug({ options }, 'Startup options');
+logger.debug('Startup options', { options });
 
 // Main function
 export async function main() {
@@ -111,12 +118,25 @@ export async function main() {
                     executionLogPrefix 
                 });
             } else {
+                const repoPath = options.dir || '.';
+                const logFilePath = path.join(repoPath, '.xfiResults', 'x-fidelity.log');
+                
+                // Create logger with file output for analysis
+                const analysisLogger = new PinoLogger({
+                    level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
+                    enableConsole: true,
+                    enableColors: true,
+                    enableFile: true,
+                    filePath: logFilePath
+                });
+
                 const resultMetadata: ResultMetadata = await analyzeCodebase({
-                    repoPath: options.dir || '.',
+                    repoPath,
                     archetype: options.archetype || 'node-fullstack',
                     configServer: options.configServer,
                     localConfigPath: options.localConfigPath,
-                    executionLogPrefix
+                    executionLogPrefix,
+                    logger: analysisLogger
                 });
 
                 logger.info(`PERFORMANCE: Rule executions took ${resultMetadata.XFI_RESULT.durationSeconds} seconds`);

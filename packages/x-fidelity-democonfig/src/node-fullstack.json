@@ -17,11 +17,6 @@
         "functionCount-iterative",
         "codeRhythm-iterative"
     ],
-    "plugins": [
-        "xfiPluginRequiredFiles",
-        "xfiPluginRemoteStringValidator",
-        "xfiPluginAst"
-    ],
     "config": {
         "minimumDependencyVersions": {
             "@types/react": ">=18.0.0",

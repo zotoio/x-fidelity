@@ -1,15 +1,15 @@
 import { githubWebhookPullRequestCheckRoute } from './githubWebhookPullRequestCheckRoute';
-import { logger, setLogPrefix } from '@x-fidelity/core';
+import { logger, setLogPrefix } from '../utils/serverLogger';
 import crypto from 'crypto';
 
-jest.mock('@x-fidelity/core', () => ({
-  ...jest.requireActual('@x-fidelity/core'),
+jest.mock('../utils/serverLogger', () => ({
   logger: {
     error: jest.fn(),
     warn: jest.fn(),
     info: jest.fn()
   },
-  setLogPrefix: jest.fn()
+  setLogPrefix: jest.fn(),
+  ServerLogger: jest.fn()
 }));
 
 jest.mock('crypto', () => ({

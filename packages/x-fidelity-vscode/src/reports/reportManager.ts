@@ -28,7 +28,9 @@ export class ReportManager {
       return;
     }
     
-    const outputDir = config.reportOutputDir || workspaceRoot;
+    // Use .xfiResults directory as default, unless custom reportOutputDir is configured
+    const defaultOutputDir = path.join(workspaceRoot, '.xfiResults');
+    const outputDir = config.reportOutputDir || defaultOutputDir;
     const timestamp = this.getFormattedTimestamp();
     
     try {

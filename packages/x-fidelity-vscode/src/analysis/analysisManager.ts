@@ -4,7 +4,7 @@ import { analyzeCodebase } from '@x-fidelity/core';
 import { ConfigManager, type ExtensionConfig } from '../configuration/configManager';
 import { CacheManager } from './cacheManager';
 import { ReportManager } from '../reports/reportManager';
-import { logger } from '../utils/logger';
+import { VSCodeLogger } from '../utils/vscodeLogger';
 import type { AnalysisResult, AnalysisState, ResultMetadata } from './types';
 
 // Re-export types for other modules
@@ -17,6 +17,7 @@ export class AnalysisManager implements vscode.Disposable {
   private periodicTimer?: NodeJS.Timeout;
   private cacheManager: CacheManager;
   public reportManager: ReportManager; // Made public for ExtensionManager access
+  private logger: VSCodeLogger;
   
   private readonly onAnalysisStateChanged = new vscode.EventEmitter<AnalysisState>();
   private readonly onAnalysisComplete = new vscode.EventEmitter<AnalysisResult>();
@@ -25,6 +26,7 @@ export class AnalysisManager implements vscode.Disposable {
     private configManager: ConfigManager,
     private context?: vscode.ExtensionContext
   ) {
+    this.logger = new VSCodeLogger('X-Fidelity Analysis');
     this.cacheManager = new CacheManager();
     this.reportManager = new ReportManager(configManager, context!);
     this.setupEventListeners();
@@ -40,7 +42,7 @@ export class AnalysisManager implements vscode.Disposable {
   
   async runAnalysis(options?: { forceRefresh?: boolean }): Promise<AnalysisResult | null> {
     if (this.isAnalyzing) {
-      logger.info('Analysis already in progress, skipping request');
+      this.logger.info('Analysis already in progress, skipping request');
       vscode.window.showInformationMessage('Analysis already in progress...');
       return null;
     }
@@ -49,7 +51,7 @@ export class AnalysisManager implements vscode.Disposable {
     const workspaceFolder = this.getWorkspaceFolder();
     
     if (!workspaceFolder) {
-      logger.error('No workspace folder found for analysis');
+      this.logger.error('No workspace folder found for analysis');
       vscode.window.showErrorMessage('No workspace folder found for analysis');
       return null;
     }
@@ -57,7 +59,7 @@ export class AnalysisManager implements vscode.Disposable {
     this.isAnalyzing = true;
     const startTime = Date.now();
     
-    logger.info('Starting analysis:', { 
+    this.logger.info('Starting analysis', { 
       workspaceFolder: workspaceFolder.uri.fsPath, 
       archetype: config.archetype,
       forceRefresh: options?.forceRefresh 
@@ -66,10 +68,10 @@ export class AnalysisManager implements vscode.Disposable {
     try {
       // Check cache first
       if (!options?.forceRefresh && config.cacheResults) {
-        logger.debug('Checking cache for existing results');
+        this.logger.debug('Checking cache for existing results');
         const cached = await this.cacheManager.getCachedResult(workspaceFolder.uri.fsPath);
         if (cached) {
-          logger.info('Using cached analysis result');
+          this.logger.info('Using cached analysis result');
           this.onAnalysisComplete.fire(cached);
           return cached;
         }
@@ -82,9 +84,9 @@ export class AnalysisManager implements vscode.Disposable {
       });
       
       // Run X-Fidelity analysis
-      logger.debug('Performing X-Fidelity analysis');
+      this.logger.debug('Performing X-Fidelity analysis');
       const result = await this.performAnalysis(workspaceFolder, config);
-      logger.debug('Converting results to diagnostics');
+      this.logger.debug('Converting results to diagnostics');
       const diagnostics = this.convertToDiagnostics(result);
       
       const analysisResult: AnalysisResult = {
@@ -94,7 +96,7 @@ export class AnalysisManager implements vscode.Disposable {
         duration: Date.now() - startTime
       };
       
-      logger.info('Analysis completed:', { 
+      this.logger.info('Analysis completed', { 
         duration: analysisResult.duration,
         totalIssues: result.XFI_RESULT.totalIssues,
         filesAnalyzed: result.XFI_RESULT.issueDetails.length
@@ -102,13 +104,13 @@ export class AnalysisManager implements vscode.Disposable {
       
       // Cache result
       if (config.cacheResults) {
-        logger.debug('Caching analysis result');
+        this.logger.debug('Caching analysis result');
         await this.cacheManager.cacheResult(workspaceFolder.uri.fsPath, analysisResult);
       }
       
       // Generate reports
       if (config.generateReports) {
-        logger.debug('Generating reports');
+        this.logger.debug('Generating reports');
         await this.reportManager.generateReports(result, workspaceFolder.uri.fsPath);
       }
       
@@ -124,7 +126,7 @@ export class AnalysisManager implements vscode.Disposable {
     } catch (error) {
       const analysisError = error instanceof Error ? error : new Error(String(error));
       
-      logger.error('Analysis failed:', { error: analysisError.message, stack: analysisError.stack });
+      this.logger.error('Analysis failed', { error: analysisError.message, stack: analysisError.stack });
       
       this.onAnalysisStateChanged.fire({
         status: 'error',
@@ -192,12 +194,24 @@ export class AnalysisManager implements vscode.Disposable {
     }, async (progress) => {
       progress.report({ message: 'Initializing...', increment: 10 });
       
+      // Create .xfiResults directory and set up file logging
+      const resultsDir = path.join(workspaceFolder.uri.fsPath, '.xfiResults');
+      await vscode.workspace.fs.createDirectory(vscode.Uri.file(resultsDir));
+      const logFilePath = path.join(resultsDir, 'x-fidelity.log');
+      
+      // Create analysis-specific logger that reuses the existing output channel but adds file logging
+      const analysisLogger = new VSCodeLogger('X-Fidelity Analysis', logFilePath, '', this.logger.getOutputChannel());
+      
+      // Use resolved local config path that follows the specified resolution order
+      const resolvedLocalConfigPath = this.configManager.getResolvedLocalConfigPath();
+      
       const result = await analyzeCodebase({
         repoPath: workspaceFolder.uri.fsPath,
         archetype: config.archetype,
         configServer: config.configServer,
-        localConfigPath: config.localConfigPath,
-        executionLogPrefix: `vscode-ext-${Date.now()}`
+        localConfigPath: resolvedLocalConfigPath,
+        executionLogPrefix: `vscode-ext-${Date.now()}`,
+        logger: analysisLogger
       });
       
       progress.report({ message: 'Analysis complete', increment: 90 });

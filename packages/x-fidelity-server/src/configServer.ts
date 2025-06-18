@@ -2,7 +2,7 @@ import express from 'express';
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
-import { logger, setLogPrefix } from '@x-fidelity/core';
+import { logger, setLogPrefix } from './utils/serverLogger';
 import { pluginRegistry } from '@x-fidelity/core';
 import { expressLogger } from './expressLogger'
 import { options } from '@x-fidelity/core';

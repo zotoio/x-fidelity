@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { RuleProperties } from 'json-rules-engine';
-import { logger, setLogPrefix } from '@x-fidelity/core';
+import { logger, setLogPrefix } from '../utils/serverLogger';
 import { validateUrlInput } from '@x-fidelity/core';
 import { getRuleListCache, setRuleListCache } from '../cacheManager';
 import { ConfigManager } from '@x-fidelity/core';

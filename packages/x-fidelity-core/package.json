@@ -14,8 +14,7 @@
   },
   "scripts": {
     "clean": "rimraf dist/",
-    "prebuild": "yarn clean && mkdir -p dist",
-    "build": "tsc",
+    "build": "yarn clean && tsc",
     "build:watch": "tsc --watch --sourceMap",
     "test": "NODE_ENV=test jest --config jest.config.js",
     "test:coverage": "NODE_ENV=test jest --config jest.config.js --coverage",
@@ -80,9 +79,7 @@
     "tree-sitter-typescript": "^0.23.2",
     "winston": "^3.11.0",
     "yaml": "^2.7.0",
-    "fs-extra": "^11.2.0",
-    "pino": "^9.5.0",
-    "pino-pretty": "^13.0.0"
+    "fs-extra": "^11.2.0"
   },
   "files": [
     "dist/**/*",
