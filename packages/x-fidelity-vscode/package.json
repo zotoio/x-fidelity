@@ -20,9 +20,6 @@
   ],
   "activationEvents": [
     "onStartupFinished",
-    "onCommand:xfidelity.runAnalysis",
-    "onCommand:xfidelity.openSettings",
-    "onCommand:xfidelity.detectArchetype",
     "workspaceContains:**/package.json",
     "workspaceContains:**/pom.xml",
     "workspaceContains:**/build.gradle",
@@ -99,6 +96,10 @@
       {
         "command": "xfidelity.showIssueExplorer",
         "title": "X-Fidelity: Issue Explorer"
+      },
+      {
+        "command": "xfidelity.showControlCenter",
+        "title": "X-Fidelity: Control Center"
       }
     ],
     "configuration": {
@@ -306,16 +307,31 @@
     "build": "tsc && yarn copy:demoConfig && node esbuild.config.js",
     "copy:demoConfig": "mkdir -p dist/demoConfig && cp -r ../x-fidelity-democonfig/src/* dist/demoConfig/",
     "build:test": "tsc -p tsconfig.test.json",
-    "test": "yarn build:test && jest --detectOpenHandles",
-    "clean": "rimraf dist dist-test config *.tsbuildinfo",
+    "clean": "rimraf dist dist-test config *.tsbuildinfo .vscode-test .vscode-test-profile",
     "lint": "eslint .",
     "watch": "node esbuild.config.js --watch",
     "package": "yarn clean && yarn build --production && vsce package",
     "package:dev": "yarn clean && yarn build && vsce package --pre-release",
     "publish": "yarn package && vsce publish",
     "install-vsix": "code --install-extension *.vsix",
-    "dev": "yarn clean && yarn build && code --extensionDevelopmentPath=. --new-window .",
-    "dev:fresh": "yarn clean && yarn build && code --extensionDevelopmentPath=. --new-window --user-data-dir=/tmp/vscode-x-fidelity-dev .",
-    "dev:watch": "yarn clean && yarn build && (yarn watch &) && sleep 2 && code --extensionDevelopmentPath=. --new-window ."
+    
+    "dev:build": "yarn clean && yarn build:deps && tsc && yarn copy:demoConfig && node esbuild.config.js",
+    "build:deps": "cd ../../ && yarn build",
+    "dev": "yarn dev:build && code --extensionDevelopmentPath=. --new-window .",
+    "dev:fresh": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --user-data-dir=./.vscode-test-profile .",
+    "dev:watch": "yarn dev:build && (yarn watch &) && sleep 2 && code --extensionDevelopmentPath=. --new-window .",
+    "dev:complete": "./scripts/dev-complete.sh",
+    
+    "test": "yarn build:test && jest --detectOpenHandles",
+    "test:unit": "yarn build:test && jest --detectOpenHandles --testPathPattern=unit",
+    "test:integration": "yarn build:test && jest --detectOpenHandles --testPathPattern=integration",
+    "test:all": "yarn test:unit && yarn test:integration",
+    "test:watch": "yarn build:test && jest --watch",
+    
+    "debug": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --enable-proposed-api",
+    "logs": "echo 'Check VSCode Output panel > X-Fidelity Debug for logs'",
+    
+    "quick-start": "echo '🚀 Quick Start: Press F5 to launch extension, then Ctrl+Shift+P > X-Fidelity: Control Center'",
+    "help": "echo '📖 Development Help:\\n  yarn dev - Start development\\n  yarn dev:fresh - Fresh profile\\n  yarn test:all - Run tests\\n  F5 in VSCode - Debug launch'"
   }
 }

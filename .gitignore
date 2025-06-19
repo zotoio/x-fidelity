@@ -190,3 +190,5 @@ vscode-extension/dist/
 vscode-extension/*.vsix
 
 temp/
+
+.xfiResults

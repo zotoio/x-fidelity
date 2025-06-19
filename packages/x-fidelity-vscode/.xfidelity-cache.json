@@ -1,0 +1,72 @@
+{
+  "result": {
+    "metadata": {
+      "XFI_RESULT": {
+        "repoXFIConfig": {
+          "sensitiveFileFalsePositives": [],
+          "additionalRules": [],
+          "additionalFacts": [],
+          "additionalOperators": [],
+          "additionalPlugins": [],
+          "archetype": "default"
+        },
+        "issueDetails": [],
+        "telemetryData": {
+          "repoUrl": "git@github.com:zotoio/x-fidelity.git",
+          "configServer": "none",
+          "hostInfo": {
+            "platform": "linux",
+            "release": "6.11.0-26-generic",
+            "type": "Linux",
+            "arch": "x64",
+            "cpus": 12,
+            "totalMemory": 33270951936,
+            "freeMemory": 22440861696
+          },
+          "userInfo": {
+            "username": "andrewv",
+            "homedir": "/home/andrewv",
+            "shell": "/bin/bash"
+          },
+          "startTime": 1750322485068
+        },
+        "memoryUsage": {
+          "heapTotal": 350171136,
+          "heapUsed": 312180988,
+          "external": 6961405,
+          "rss": 580861952
+        },
+        "factMetrics": {},
+        "options": {
+          "jsonTTL": "60",
+          "archetype": "node-fullstack",
+          "mode": "analyze",
+          "extraPlugins": [],
+          "openaiEnabled": false,
+          "logLevel": "info",
+          "telemetryEnabled": true,
+          "maxFileSize": 1048576,
+          "timeout": 30000
+        },
+        "startTime": 1750322485068,
+        "finishTime": 1750322485102,
+        "durationSeconds": 0.034,
+        "xfiVersion": "4.0.0",
+        "archetype": "node-fullstack",
+        "fileCount": 46,
+        "totalIssues": 0,
+        "warningCount": 0,
+        "errorCount": 0,
+        "fatalityCount": 0,
+        "exemptCount": 0,
+        "repoPath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-vscode",
+        "repoUrl": "git@github.com:zotoio/x-fidelity.git"
+      }
+    },
+    "diagnostics": {},
+    "timestamp": 1750322485105,
+    "duration": 92
+  },
+  "timestamp": 1750322485106,
+  "hash": "6783d7ed4416a6bda41aad356be9873c"
+}

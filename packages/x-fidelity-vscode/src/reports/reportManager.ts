@@ -289,7 +289,9 @@ export class ReportManager {
   
   private getFormattedTimestamp(): string {
     const now = new Date();
-    return now.toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '-');
+    const formatted = now.toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '-');
+    const timestamp = now.getTime();
+    return `${formatted}-${timestamp}`;
   }
   
   private async cleanupOldReports(outputDir: string, retentionDays: number): Promise<void> {

@@ -8,6 +8,15 @@ const isVSCodeEnvironment = () => {
          (process.env.VSCODE_PID || process.env.VSCODE_CWD);
 };
 
+// Global reference to VSCode WASM utils when available
+let vscodeWasmUtils: any = null;
+
+// Function to set VSCode WASM utils from extension context
+export function setVSCodeWasmUtils(wasmUtils: any) {
+  vscodeWasmUtils = wasmUtils;
+  logger.debug('VSCode WASM utils set for AST generation');
+}
+
 // Dynamic imports for different environments
 let nativeTreeSitter: any = null;
 
@@ -19,18 +28,14 @@ if (!isVSCodeEnvironment()) {
     const JavaScript = require('tree-sitter-javascript');
     const TreeSitterTypescript = require('tree-sitter-typescript');
     
-    // Initialize native parsers
-    const jsParser = new Parser();
-    jsParser.setLanguage(JavaScript);
-    
-    const tsParser = new Parser();
-    tsParser.setLanguage(TreeSitterTypescript.typescript);
-    
-    nativeTreeSitter = { jsParser, tsParser, Parser };
-    logger.debug('Using native Tree-sitter for non-VSCode environment');
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.debug('Native Tree-sitter not available', { error: errorMessage });
+    nativeTreeSitter = {
+      Parser,
+      JavaScript,
+      TypeScript: TreeSitterTypescript.typescript
+    };
+    logger.debug('Native tree-sitter initialized for CLI/server environment');
+  } catch (error) {
+    logger.debug('Native tree-sitter not available, will use graceful degradation');
   }
 }
 
@@ -44,9 +49,9 @@ function getNativeParserForFile(fileName: string): any {
     if (!nativeTreeSitter) return null;
     
     if (fileName.endsWith('.ts') || fileName.endsWith('.tsx')) {
-        return nativeTreeSitter.tsParser;
+        return nativeTreeSitter.TypeScript;
     }
-    return nativeTreeSitter.jsParser;
+    return nativeTreeSitter.JavaScript;
 }
 
 export async function generateAst(fileData: FileData): Promise<AstResult> {
@@ -69,17 +74,20 @@ export async function generateAst(fileData: FileData): Promise<AstResult> {
 
         // Fallback to native tree-sitter (for CLI/server environments)
         if (nativeTreeSitter) {
-            const parser = getNativeParserForFile(fileData.fileName);
-            if (!parser) {
+            const language = getNativeParserForFile(fileData.fileName);
+            if (!language) {
                 logger.debug('No native parser available for file type');
                 return { tree: null, reason: 'Unsupported file type for native parser' };
             }
 
             logger.debug({ 
                 fileName: fileData.fileName, 
-                parserType: parser === nativeTreeSitter.jsParser ? 'JavaScript' : 'TypeScript' 
+                parserType: language === nativeTreeSitter.TypeScript ? 'TypeScript' : 'JavaScript' 
             }, 'Using native Tree-sitter parser');
 
+            // Create parser instance and set language
+            const parser = new nativeTreeSitter.Parser();
+            parser.setLanguage(language);
             const parseTree = parser.parse(fileData.fileContent);
             const rootNode = parseTree.rootNode;
             
@@ -107,6 +115,79 @@ export async function generateAst(fileData: FileData): Promise<AstResult> {
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error(`Error generating Tree-sitter AST: ${errorMessage}`);
+        return { 
+            tree: null, 
+            reason: `AST generation failed: ${errorMessage}`
+        };
+    }
+}
+
+export function generateAstFromCode(code: string, fileData: FileData): { tree: any; reason?: string } {
+    try {
+        // In VSCode environment, try to use WASM if available
+        if (isVSCodeEnvironment()) {
+            try {
+                // Check if VSCode WASM utils are available and ready
+                if (vscodeWasmUtils && typeof vscodeWasmUtils.generateAstFromCode === 'function') {
+                    logger.debug(`Using VSCode WASM utils for AST generation: ${fileData.fileName}`);
+                    const result = vscodeWasmUtils.generateAstFromCode(code, fileData);
+                    if (result && result.tree) {
+                        return result;
+                    }
+                }
+                
+                // Fallback: Try to use global WASM if available (for development/debugging)
+                if (typeof globalThis !== 'undefined' && (globalThis as any).wasmTreeSitter) {
+                    logger.debug(`Using global WASM tree-sitter for ${fileData.fileName}`);
+                    const wasmTreeSitter = (globalThis as any).wasmTreeSitter;
+                    if (wasmTreeSitter.generateAstFromCode) {
+                        const result = wasmTreeSitter.generateAstFromCode(code, fileData);
+                        if (result && result.tree) {
+                            return result;
+                        }
+                    }
+                }
+                
+                logger.debug('VSCode WASM not available, using graceful degradation');
+                return { 
+                    tree: null, 
+                    reason: 'VSCode WASM not available - AST features disabled'
+                };
+            } catch (wasmError: unknown) {
+                const errorMessage = wasmError instanceof Error ? wasmError.message : String(wasmError);
+                logger.debug(`VSCode WASM error: ${errorMessage}`);
+                return { 
+                    tree: null, 
+                    reason: `VSCode WASM error: ${errorMessage}`
+                };
+            }
+        }
+
+        // CLI/Server environment - use native tree-sitter
+        if (nativeTreeSitter) {
+            logger.debug(`Using native tree-sitter for ${fileData.fileName}`);
+            const parser = new nativeTreeSitter.Parser();
+            
+            // Determine language based on file extension
+            const isTypeScript = fileData.fileName.endsWith('.ts') || fileData.fileName.endsWith('.tsx');
+            const language = isTypeScript ? nativeTreeSitter.TypeScript : nativeTreeSitter.JavaScript;
+            
+            parser.setLanguage(language);
+            const tree = parser.parse(code);
+            
+            return { tree };
+        }
+
+        // Fallback for environments without tree-sitter support
+        logger.debug(`No tree-sitter available for ${fileData.fileName}, using graceful degradation`);
+        return { 
+            tree: null, 
+            reason: 'Tree-sitter not available in this environment'
+        };
+        
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.debug(`AST generation failed for ${fileData.fileName}: ${errorMessage}`);
         return { 
             tree: null, 
             reason: `AST generation failed: ${errorMessage}`

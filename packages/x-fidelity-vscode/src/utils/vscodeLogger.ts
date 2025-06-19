@@ -30,11 +30,18 @@ export class VSCodeLogger implements ILogger {
     this.logFilePath = logFilePath;
     this.prefix = prefix;
     
-    // Ensure log directory exists if file path is provided
+    // Ensure log directory exists and clear log file at start of execution
     if (this.logFilePath) {
       const logDir = path.dirname(this.logFilePath);
       if (!fs.existsSync(logDir)) {
         fs.mkdirSync(logDir, { recursive: true });
+      }
+      
+      // Clear the log file at the start of each execution
+      try {
+        fs.writeFileSync(this.logFilePath, '');
+      } catch (error) {
+        console.warn(`Failed to clear log file ${this.logFilePath}: ${error}`);
       }
     }
   }

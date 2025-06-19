@@ -3,7 +3,9 @@ import { logger } from './logger';
 
 export function getFormattedDate(): string {
     const now = new Date();
-    return now.toISOString().split('T')[0];
+    const date = now.toISOString().split('T')[0];
+    const timestamp = now.getTime();
+    return `${date}-${timestamp}`;
 }
 
 export const countRuleFailures = (scanResults: ScanResult[], level?: string): number => {

@@ -10,7 +10,9 @@ async function main() {
     entryPoints: ['src/extension.ts'],
     bundle: true,
     format: 'cjs',
-    minify: production,
+    minifyWhitespace: production,
+    minifyIdentifiers: false, // Prevent SG.* patterns that trigger false security warnings
+    minifySyntax: production,
     sourcemap: !production,
     sourcesContent: false,
     platform: 'node',

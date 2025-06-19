@@ -31,13 +31,34 @@ export class ServerLogger implements ILogger {
 
     // File transport
     if (config.enableFile !== false && config.filePath) {
-      targets.push({
-        target: 'pino/file',
-        level: config.level || 'info',
-        options: {
-          destination: config.filePath
+      try {
+        // Ensure directory exists and clear log file
+        const fs = require('fs');
+        const path = require('path');
+        const logDir = path.dirname(config.filePath);
+        
+        if (!fs.existsSync(logDir)) {
+          fs.mkdirSync(logDir, { recursive: true });
         }
-      });
+        
+        // Clear the log file at the start of each execution
+        try {
+          fs.writeFileSync(config.filePath, '');
+        } catch (error) {
+          console.warn(`Failed to clear log file ${config.filePath}: ${error}`);
+        }
+        
+        targets.push({
+          target: 'pino/file',
+          level: config.level || 'info',
+          options: {
+            destination: config.filePath
+          }
+        });
+      } catch (error) {
+        // If file logging fails, just continue with console logging
+        console.warn(`Failed to setup file logging: ${error}`);
+      }
     }
 
     if (targets.length === 1) {

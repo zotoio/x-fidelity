@@ -1,0 +1,122 @@
+{
+  "result": {
+    "metadata": {
+      "XFI_RESULT": {
+        "repoXFIConfig": {
+          "sensitiveFileFalsePositives": [
+            "/home/andrewv/git/cursor/x-fidelity/src/facts/repoFilesystemFacts.ts"
+          ],
+          "additionalRules": [
+            {
+              "name": "custom-rule",
+              "conditions": {
+                "all": [
+                  {
+                    "fact": "fileData",
+                    "path": "$.fileName",
+                    "operator": "equal",
+                    "value": "REPO_GLOBAL_CHECK"
+                  },
+                  {
+                    "fact": "customFact",
+                    "operator": "customOperator",
+                    "value": "custom fact data"
+                  }
+                ]
+              },
+              "event": {
+                "type": "warning",
+                "params": {
+                  "message": "Custom rule detected matching data",
+                  "details": {
+                    "fact": "customFact"
+                  }
+                }
+              }
+            }
+          ],
+          "additionalPlugins": [
+            "xfiPluginSimpleExample",
+            "xfiPluginAst"
+          ],
+          "notifications": {
+            "recipients": {
+              "email": [
+                "io@zoto.io"
+              ],
+              "slack": [
+                "U123456",
+                "U789012"
+              ],
+              "teams": [
+                "user1@example.com",
+                "user2@example.com"
+              ]
+            },
+            "codeOwners": true,
+            "notifyOnSuccess": false,
+            "notifyOnFailure": true
+          },
+          "additionalFacts": [],
+          "additionalOperators": []
+        },
+        "issueDetails": [],
+        "telemetryData": {
+          "repoUrl": "git@github.com:zotoio/x-fidelity.git",
+          "configServer": "none",
+          "hostInfo": {
+            "platform": "linux",
+            "release": "6.11.0-26-generic",
+            "type": "Linux",
+            "arch": "x64",
+            "cpus": 12,
+            "totalMemory": 33270951936,
+            "freeMemory": 22559330304
+          },
+          "userInfo": {
+            "username": "andrewv",
+            "homedir": "/home/andrewv",
+            "shell": "/bin/bash"
+          },
+          "startTime": 1750316393735
+        },
+        "memoryUsage": {
+          "heapTotal": 360677376,
+          "heapUsed": 329963084,
+          "external": 23837790,
+          "rss": 661381120
+        },
+        "factMetrics": {},
+        "options": {
+          "jsonTTL": "60",
+          "archetype": "node-fullstack",
+          "mode": "analyze",
+          "extraPlugins": [],
+          "openaiEnabled": false,
+          "logLevel": "info",
+          "telemetryEnabled": true,
+          "maxFileSize": 1048576,
+          "timeout": 30000
+        },
+        "startTime": 1750316393735,
+        "finishTime": 1750316395070,
+        "durationSeconds": 1.335,
+        "xfiVersion": "4.0.0",
+        "archetype": "node-fullstack",
+        "fileCount": 272,
+        "totalIssues": 0,
+        "warningCount": 0,
+        "errorCount": 0,
+        "fatalityCount": 0,
+        "exemptCount": 0,
+        "repoPath": "/home/andrewv/git/cursor/x-fidelity",
+        "repoUrl": "git@github.com:zotoio/x-fidelity.git"
+      }
+    },
+    "diagnostics": {},
+    "timestamp": 1750316395126,
+    "duration": 1455
+  },
+  "timestamp": 1750316395176,
+  "hash": "8e3a75422631cee0d0a6428fb81b4fcf"
+}

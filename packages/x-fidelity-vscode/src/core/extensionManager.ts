@@ -6,6 +6,7 @@ import { DiagnosticProvider } from '../diagnostics/diagnosticProvider';
 import { XFidelityCodeActionProvider, handleAddExemption, handleBulkExemptions } from '../diagnostics/codeActionProvider';
 import { StatusBarProvider } from '../ui/statusBarProvider';
 import { SettingsUIPanel, DashboardPanel, IssueDetailsPanel } from '../ui/panels';
+import { ControlCenterPanel } from '../ui/panels/controlCenterPanel';
 import { logger } from '../utils/logger';
 
 export class ExtensionManager implements vscode.Disposable {
@@ -19,6 +20,7 @@ export class ExtensionManager implements vscode.Disposable {
   private settingsUIPanel: SettingsUIPanel;
   private dashboardPanel: DashboardPanel;
   private issueDetailsPanel: IssueDetailsPanel;
+  private controlCenterPanel: ControlCenterPanel;
   
   constructor(private context: vscode.ExtensionContext) {
     this.configManager = ConfigManager.getInstance(context);
@@ -32,6 +34,7 @@ export class ExtensionManager implements vscode.Disposable {
     this.settingsUIPanel = new SettingsUIPanel(this.context, this.configManager);
     this.dashboardPanel = new DashboardPanel(this.context, this.configManager, this.analysisManager, this.diagnosticProvider);
     this.issueDetailsPanel = new IssueDetailsPanel(this.context, this.configManager, this.diagnosticProvider);
+    this.controlCenterPanel = new ControlCenterPanel(this.context, this.configManager, this.analysisManager, this.diagnosticProvider);
     
     this.initialize();
   }
@@ -47,7 +50,8 @@ export class ExtensionManager implements vscode.Disposable {
         this.statusBarProvider,
         this.settingsUIPanel,
         this.dashboardPanel,
-        this.issueDetailsPanel
+        this.issueDetailsPanel,
+        this.controlCenterPanel
       );
       
       logger.debug('Components added to disposables');
@@ -222,6 +226,13 @@ export class ExtensionManager implements vscode.Disposable {
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.showIssueExplorer', async () => {
         await this.issueDetailsPanel.show();
+      })
+    );
+    
+    // Control Center command - main entry point for all extension functionality
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.showControlCenter', async () => {
+        await this.controlCenterPanel.show();
       })
     );
   }

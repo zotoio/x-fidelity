@@ -130,6 +130,23 @@ function getLogger(force?: boolean): pino.Logger {
         } else {
             // In VSCode extension, use simple file destination only
             try {
+                // Clear the log file at the start of each execution
+                const fs = require('fs');
+                const path = require('path');
+                const logDir = path.dirname(logFilePath);
+                
+                // Ensure directory exists
+                if (!fs.existsSync(logDir)) {
+                    fs.mkdirSync(logDir, { recursive: true });
+                }
+                
+                // Clear the log file
+                try {
+                    fs.writeFileSync(logFilePath, '');
+                } catch (error) {
+                    console.warn(`Failed to clear log file ${logFilePath}: ${error}`);
+                }
+                
                 const fileDestination = pino.destination({
                     dest: logFilePath,
                     sync: false

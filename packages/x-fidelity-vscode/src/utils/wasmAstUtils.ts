@@ -1,79 +1,107 @@
-import { Parser, Language } from 'web-tree-sitter';
 import { FileData } from '@x-fidelity/types';
 import * as vscode from 'vscode';
+import { logger } from './logger';
+import * as path from 'path';
+import * as fs from 'fs';
 
 let isInitialized = false;
-let jsLanguage: Language | null = null;
-let tsLanguage: Language | null = null;
+let jsLanguage: any = null;
+let tsLanguage: any = null;
+let wasmInitializationFailed = false;
+let ParserClass: any = null;
 
 export async function initializeWasmTreeSitter(extensionContext: vscode.ExtensionContext): Promise<void> {
-  if (isInitialized) return;
+  if (isInitialized || wasmInitializationFailed) return;
   
   try {
-    console.log('[X-Fidelity VSCode] Initializing WASM Tree-sitter...');
-    console.log('[X-Fidelity VSCode] Extension URI:', extensionContext.extensionUri.toString());
+    logger.info('[X-Fidelity VSCode] Initializing WASM Tree-sitter...');
+    logger.info(`[X-Fidelity VSCode] Extension URI: ${extensionContext.extensionUri.toString()}`);
+    logger.info(`[X-Fidelity VSCode] Extension path: ${extensionContext.extensionPath}`);
     
-    // Check if WASM files exist before trying to load them
+    // Dynamic import to avoid TypeScript issues
+    const Parser = await import('web-tree-sitter');
+    ParserClass = Parser.default || Parser;
+    logger.info('[X-Fidelity VSCode] web-tree-sitter imported successfully');
+    
+    // Set up WASM paths - use extension path for bundled WASM files
+    const wasmPath = path.join(extensionContext.extensionPath, 'dist', 'tree-sitter.wasm');
+    const jsWasmPath = path.join(extensionContext.extensionPath, 'dist', 'tree-sitter-javascript.wasm');
+    const tsWasmPath = path.join(extensionContext.extensionPath, 'dist', 'tree-sitter-typescript.wasm');
+    
+    logger.info(`[X-Fidelity VSCode] WASM paths:`);
+    logger.info(`[X-Fidelity VSCode] - tree-sitter.wasm: ${wasmPath}`);
+    logger.info(`[X-Fidelity VSCode] - javascript.wasm: ${jsWasmPath}`);
+    logger.info(`[X-Fidelity VSCode] - typescript.wasm: ${tsWasmPath}`);
+    
+    // Check if WASM files exist
     const wasmFiles = [
-      'tree-sitter.wasm',
-      'tree-sitter-javascript.wasm', 
-      'tree-sitter-typescript.wasm'
+      { name: 'tree-sitter.wasm', path: wasmPath },
+      { name: 'tree-sitter-javascript.wasm', path: jsWasmPath },
+      { name: 'tree-sitter-typescript.wasm', path: tsWasmPath }
     ];
     
     for (const wasmFile of wasmFiles) {
-      const wasmPath = vscode.Uri.joinPath(extensionContext.extensionUri, 'dist', wasmFile);
-      try {
-        const stat = await vscode.workspace.fs.stat(wasmPath);
-        console.log(`[X-Fidelity VSCode] Found ${wasmFile} (${stat.size} bytes) at:`, wasmPath.fsPath);
-      } catch (error) {
-        console.error(`[X-Fidelity VSCode] Missing ${wasmFile} at:`, wasmPath.fsPath);
-        throw new Error(`Required WASM file ${wasmFile} not found at ${wasmPath.fsPath}`);
+      if (!fs.existsSync(wasmFile.path)) {
+        logger.error(`[X-Fidelity VSCode] WASM file not found: ${wasmFile.name} at ${wasmFile.path}`);
+        throw new Error(`WASM file not found: ${wasmFile.name}`);
+      } else {
+        logger.info(`[X-Fidelity VSCode] WASM file exists: ${wasmFile.name}`);
       }
     }
     
-    // Initialize web-tree-sitter with enhanced error handling
-    console.log('[X-Fidelity VSCode] Initializing Parser...');
-    await Parser.init({
-      locateFile(scriptName: string, scriptDirectory: string) {
-        const path = vscode.Uri.joinPath(extensionContext.extensionUri, 'dist', scriptName).fsPath;
-        console.log(`[X-Fidelity VSCode] Locating file: ${scriptName} -> ${path}`);
-        return path;
-      }
-    });
-    
-    console.log('[X-Fidelity VSCode] Parser initialized, loading language grammars...');
-    
-    // Load JavaScript grammar with better error handling
-    try {
-      const jsWasmPath = vscode.Uri.joinPath(extensionContext.extensionUri, 'dist', 'tree-sitter-javascript.wasm').fsPath;
-      console.log('[X-Fidelity VSCode] Loading JavaScript grammar from:', jsWasmPath);
-      jsLanguage = await Language.load(jsWasmPath);
-      console.log('[X-Fidelity VSCode] JavaScript grammar loaded successfully');
-    } catch (error) {
-      console.error('[X-Fidelity VSCode] Failed to load JavaScript grammar:', error);
-      throw new Error(`Failed to load JavaScript grammar: ${error}`);
+    // Initialize Parser with correct WASM path
+    if (ParserClass.init) {
+      await ParserClass.init({
+        locateFile: (scriptName: string, scriptDirectory: string) => {
+          logger.info(`[X-Fidelity VSCode] Locating file: ${scriptName} in ${scriptDirectory}`);
+          if (scriptName === 'tree-sitter.wasm') {
+            return wasmPath;
+          }
+          return path.join(scriptDirectory, scriptName);
+        }
+      });
+      logger.info('[X-Fidelity VSCode] Parser initialized successfully');
+    } else {
+      logger.error('[X-Fidelity VSCode] Parser.init not available');
+      throw new Error('Parser.init not available');
     }
     
-    // Load TypeScript grammar with better error handling
+    // Load JavaScript language
     try {
-      const tsWasmPath = vscode.Uri.joinPath(extensionContext.extensionUri, 'dist', 'tree-sitter-typescript.wasm').fsPath;
-      console.log('[X-Fidelity VSCode] Loading TypeScript grammar from:', tsWasmPath);
-      tsLanguage = await Language.load(tsWasmPath);
-      console.log('[X-Fidelity VSCode] TypeScript grammar loaded successfully');
+      if (ParserClass.Language && ParserClass.Language.load) {
+        jsLanguage = await ParserClass.Language.load(jsWasmPath);
+        logger.info('[X-Fidelity VSCode] JavaScript language loaded successfully');
+      } else {
+        throw new Error('Language.load not available');
+      }
     } catch (error) {
-      console.error('[X-Fidelity VSCode] Failed to load TypeScript grammar:', error);
-      throw new Error(`Failed to load TypeScript grammar: ${error}`);
+      logger.error(`[X-Fidelity VSCode] Failed to load JavaScript language: ${error}`);
+      throw error;
+    }
+    
+    // Load TypeScript language
+    try {
+      if (ParserClass.Language && ParserClass.Language.load) {
+        tsLanguage = await ParserClass.Language.load(tsWasmPath);
+        logger.info('[X-Fidelity VSCode] TypeScript language loaded successfully');
+      } else {
+        throw new Error('Language.load not available');
+      }
+    } catch (error) {
+      logger.error(`[X-Fidelity VSCode] Failed to load TypeScript language: ${error}`);
+      throw error;
     }
     
     isInitialized = true;
-    console.log('[X-Fidelity VSCode] WASM Tree-sitter initialized successfully');
-  } catch (error) {
-    console.error('[X-Fidelity VSCode] Failed to initialize WASM Tree-sitter:', error);
+    logger.info('[X-Fidelity VSCode] WASM Tree-sitter initialization completed successfully');
+  } catch (error: unknown) {
+    wasmInitializationFailed = true;
     const errorObj = error as Error;
-    console.error('[X-Fidelity VSCode] Error details:', {
+    logger.error(`[X-Fidelity VSCode] WASM Tree-sitter initialization failed: ${errorObj.message}`, {
       message: errorObj.message,
       stack: errorObj.stack,
-      name: errorObj.name
+      name: errorObj.name,
+      extensionPath: extensionContext?.extensionPath
     });
     throw error;
   }
@@ -90,14 +118,14 @@ export async function generateWasmAst(fileData: FileData): Promise<WasmAstResult
       throw new Error('WASM Tree-sitter not initialized. Call initializeWasmTreeSitter first.');
     }
     
-    console.log(`[X-Fidelity VSCode] Generating WASM AST for: ${fileData?.fileName}`);
+    logger.info(`[X-Fidelity VSCode] Generating WASM AST for: ${fileData?.fileName}`);
     
     if (!fileData?.fileContent || fileData.fileName === 'REPO_GLOBAL_CHECK') {
-      console.log('[X-Fidelity VSCode] Skipping AST generation - no content or REPO_GLOBAL_CHECK');
+      logger.info('[X-Fidelity VSCode] Skipping AST generation - no content or REPO_GLOBAL_CHECK');
       return { tree: null };
     }
 
-    const parser = new Parser();
+    const parser = new ParserClass();
     
     // Select appropriate language based on file extension
     if (fileData.fileName.endsWith('.ts') || fileData.fileName.endsWith('.tsx')) {
@@ -105,22 +133,22 @@ export async function generateWasmAst(fileData: FileData): Promise<WasmAstResult
         throw new Error('TypeScript language not loaded');
       }
       parser.setLanguage(tsLanguage);
-      console.log(`[X-Fidelity VSCode] Using TypeScript parser for: ${fileData.fileName}`);
+      logger.info(`[X-Fidelity VSCode] Using TypeScript parser for: ${fileData.fileName}`);
     } else if (fileData.fileName.endsWith('.js') || fileData.fileName.endsWith('.jsx')) {
       if (!jsLanguage) {
         throw new Error('JavaScript language not loaded');
       }
       parser.setLanguage(jsLanguage);
-      console.log(`[X-Fidelity VSCode] Using JavaScript parser for: ${fileData.fileName}`);
+      logger.info(`[X-Fidelity VSCode] Using JavaScript parser for: ${fileData.fileName}`);
     } else {
-      console.log(`[X-Fidelity VSCode] Unsupported file type for AST: ${fileData.fileName}`);
+      logger.info(`[X-Fidelity VSCode] Unsupported file type for AST: ${fileData.fileName}`);
       return { tree: null };
     }
 
     const tree = parser.parse(fileData.fileContent);
     const rootNode = tree?.rootNode;
     
-    console.log(`[X-Fidelity VSCode] Generated WASM AST for ${fileData.fileName}:`, {
+    logger.info(`[X-Fidelity VSCode] Generated WASM AST for ${fileData.fileName}:`, {
       rootType: rootNode?.type,
       childCount: rootNode?.childCount,
       startPosition: rootNode?.startPosition,
@@ -132,11 +160,40 @@ export async function generateWasmAst(fileData: FileData): Promise<WasmAstResult
       rootNode: rootNode
     };
   } catch (error) {
-    console.error(`[X-Fidelity VSCode] Error generating WASM AST for ${fileData?.fileName}:`, error);
+    logger.error(`[X-Fidelity VSCode] Error generating WASM AST for ${fileData?.fileName}:`, error);
     return { tree: null };
   }
 }
 
 export function isWasmTreeSitterReady(): boolean {
-  return isInitialized && jsLanguage !== null && tsLanguage !== null;
+  return isInitialized && !wasmInitializationFailed && jsLanguage !== null && tsLanguage !== null && ParserClass !== null;
+}
+
+export function generateAstFromCode(code: string, fileData: FileData): { tree: any } | null {
+  if (!isWasmTreeSitterReady()) {
+    logger.debug('[X-Fidelity VSCode] WASM Tree-sitter not ready, cannot generate AST');
+    return null;
+  }
+  
+  try {
+    const parser = new ParserClass();
+    
+    // Determine language based on file extension
+    const isTypeScript = fileData.fileName.endsWith('.ts') || fileData.fileName.endsWith('.tsx');
+    const language = isTypeScript ? tsLanguage : jsLanguage;
+    
+    if (!language) {
+      logger.debug(`[X-Fidelity VSCode] Language not available for ${fileData.fileName}`);
+      return null;
+    }
+    
+    parser.setLanguage(language);
+    const tree = parser.parse(code);
+    
+    logger.debug(`[X-Fidelity VSCode] AST generated successfully for ${fileData.fileName}`);
+    return { tree };
+  } catch (error) {
+    logger.error(`[X-Fidelity VSCode] Error generating AST for ${fileData.fileName}: ${error}`);
+    return null;
+  }
 } 

@@ -613,6 +613,9 @@ ${summary}
   }
   
   private getTimestamp(): string {
-    return new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '-');
+    const now = new Date();
+    const formatted = now.toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '-');
+    const timestamp = now.getTime();
+    return `${formatted}-${timestamp}`;
   }
 } 

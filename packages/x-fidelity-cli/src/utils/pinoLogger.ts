@@ -40,6 +40,13 @@ export class PinoLogger implements ILogger {
           fs.mkdirSync(logDir, { recursive: true });
         }
         
+        // Clear the log file at the start of each execution
+        try {
+          fs.writeFileSync(config.filePath, '');
+        } catch (error) {
+          console.warn(`Failed to clear log file ${config.filePath}: ${error}`);
+        }
+        
         targets.push({
           target: 'pino/file',
           level: config.level || 'info',
