@@ -17,7 +17,7 @@ export class XFiPluginRegistry implements PluginRegistry {
     public registerPlugin(plugin: XFiPlugin): void {
         // Validate plugin structure - maintain old 3.24.0 validation behavior
         if (!plugin || !plugin.name || !plugin.version) {
-            logger.error({ plugin }, 'Invalid plugin format - missing name or version');
+            logger.error('Invalid plugin format - missing name or version');
             throw new Error('Invalid plugin format - missing name or version');
         }
 
@@ -29,23 +29,7 @@ export class XFiPluginRegistry implements PluginRegistry {
         }
 
         // Enhanced logging from v3.24.0
-        logger.debug({
-            plugin: {
-                name: plugin.name,
-                version: plugin.version,
-                factCount: plugin.facts?.length || 0,
-                operatorCount: plugin.operators?.length || 0,
-                facts: plugin.facts?.map(f => ({
-                    name: f.name,
-                    type: typeof f.fn
-                })),
-                operators: plugin.operators?.map(o => ({
-                    name: o.name,
-                    type: typeof o.fn
-                }))
-            },
-            operation: 'register-plugin'
-        }, `Registering plugin: ${plugin.name}`);
+        logger.debug(`Registering plugin: ${plugin.name}`);
 
         // Validate facts and operators - v4 enhanced validation
         if (plugin.facts) {
@@ -112,12 +96,7 @@ export class XFiPluginRegistry implements PluginRegistry {
             return { success: true, data: result };
 
         } catch (error) {
-            logger.error({
-                err: error,
-                plugin: pluginName,
-                function: functionName,
-                type: 'plugin-error'
-            }, 'Error executing plugin');
+            logger.error(`Error executing plugin ${pluginName}.${functionName}: ${error}`);
             
             // Use plugin's error handler if available
             const plugin = this.plugins.find(p => p.name === pluginName);

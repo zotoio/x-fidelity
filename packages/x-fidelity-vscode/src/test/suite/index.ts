@@ -1,35 +1,31 @@
-import path from 'path';
-import Mocha from 'mocha';
-import { glob } from 'glob';
+import * as path from 'path';
+import { spawn } from 'child_process';
 
-export async function run(): Promise<void> {
-    // Create the mocha test
-    const mocha = new Mocha({
-        ui: 'tdd',
-        color: true
-    });
-
-    const testsRoot = path.resolve(__dirname, '..');
-
-    try {
-        // Find all test files
-        const files = await glob('**/**.test.js', { cwd: testsRoot });
-
-        // Add files to the test suite
-        files.forEach((f: string) => mocha.addFile(path.resolve(testsRoot, f)));
-
-        // Run the mocha test
-        return new Promise<void>((resolve, reject) => {
-            mocha.run((failures: number) => {
-                if (failures > 0) {
-                    reject(new Error(`${failures} tests failed.`));
-                } else {
-                    resolve();
-                }
-            });
+export function run(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        console.log('Running VSCode Extension Tests via Jest...');
+        
+        // Get the VSCode package root directory
+        const packageRoot = path.resolve(__dirname, '../../..');
+        
+        // Run Jest tests using yarn
+        const testProcess = spawn('yarn', ['test'], {
+            cwd: packageRoot,
+            stdio: 'inherit',
+            shell: true
         });
-    } catch (err) {
-        console.error('Failed to run tests');
-        throw err;
-    }
+        
+        testProcess.on('close', (code) => {
+            if (code === 0) {
+                console.log('All tests passed!');
+                resolve();
+            } else {
+                reject(new Error(`Tests failed with exit code ${code}`));
+            }
+        });
+        
+        testProcess.on('error', (error) => {
+            reject(error);
+        });
+    });
 }

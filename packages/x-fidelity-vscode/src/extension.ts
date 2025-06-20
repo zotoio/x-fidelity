@@ -19,12 +19,18 @@ export async function activate(context: vscode.ExtensionContext) {
     mode: isDevelopment ? 'development' : 'production'
   });
   
-  // Pre-load all default plugins with WASM support before core initialization
-  // This is critical for bundled extensions where dynamic imports don't work
-  logger.info('Pre-loading default X-Fidelity plugins with WASM support...');
-  await preloadDefaultPlugins(context);
-  
   try {
+    // Pre-load all default plugins with WASM support before core initialization
+    // This is critical for bundled extensions where dynamic imports don't work
+    logger.info('Pre-loading default X-Fidelity plugins with WASM support...');
+    try {
+      await preloadDefaultPlugins(context);
+      logger.info('Plugin preloading completed successfully');
+    } catch (pluginError) {
+      logger.warn('Plugin preloading failed, continuing with limited functionality:', pluginError);
+      // Don't fail activation if plugins fail to load
+    }
+    
     logger.info('Creating ExtensionManager...');
     extensionManager = new ExtensionManager(context);
     context.subscriptions.push(extensionManager);
@@ -57,11 +63,18 @@ export async function activate(context: vscode.ExtensionContext) {
       stack
     });
     
+    // Register a minimal command to help with debugging
+    const testCommand = vscode.commands.registerCommand('xfidelity.test', () => {
+      vscode.window.showErrorMessage(`X-Fidelity failed to activate: ${errorMessage}`);
+      logger.show(); // Show the output panel for debugging
+    });
+    context.subscriptions.push(testCommand);
+    
     // Enhanced error handling with recovery options
     await vscode.window.showErrorMessage(
       `Failed to activate X-Fidelity extension: ${errorMessage}`,
       'Show Details',
-      'Retry',
+      'Show Logs',
       'Report Issue'
     ).then(choice => {
       if (choice === 'Show Details') {
@@ -69,9 +82,8 @@ export async function activate(context: vscode.ExtensionContext) {
           `X-Fidelity Extension Error:\n\n${errorMessage}\n\nStack:\n${stack}`,
           { modal: true }
         );
-      } else if (choice === 'Retry') {
-        logger.info('Retrying extension activation...');
-        setTimeout(() => activate(context), 2000);
+      } else if (choice === 'Show Logs') {
+        logger.show();
       } else if (choice === 'Report Issue') {
         // Open issue reporting URL
         vscode.env.openExternal(vscode.Uri.parse(
@@ -80,7 +92,8 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     });
     
-    throw error; // Re-throw to maintain error semantics
+    // Don't re-throw to prevent VSCode from marking extension as failed
+    logger.error('Extension activation failed but not re-throwing to prevent complete failure');
   }
 }
 

@@ -56,22 +56,42 @@ export class ExtensionManager implements vscode.Disposable {
       
       logger.debug('Components added to disposables');
       
-      // Register commands
+      // Register commands first (most important for contributor experience)
       logger.debug('Registering commands...');
-      this.registerCommands();
+      try {
+        this.registerCommands();
+        logger.info('Commands registered successfully');
+      } catch (commandError) {
+        logger.error('Failed to register commands:', commandError);
+        // Register minimal fallback commands
+        this.registerFallbackCommands();
+      }
       
-      // Register providers
+      // Register providers (can fail without breaking commands)
       logger.debug('Registering providers...');
-      this.registerProviders();
+      try {
+        this.registerProviders();
+        logger.debug('Providers registered successfully');
+      } catch (providerError) {
+        logger.warn('Failed to register providers:', providerError);
+        // Continue without providers
+      }
       
-      // Setup event listeners
+      // Setup event listeners (can fail without breaking commands)
       logger.debug('Setting up event listeners...');
-      this.setupEventListeners();
+      try {
+        this.setupEventListeners();
+        logger.debug('Event listeners set up successfully');
+      } catch (eventError) {
+        logger.warn('Failed to setup event listeners:', eventError);
+        // Continue without event listeners
+      }
       
       // Initialize auto-detection (make this optional to prevent blocking)
       logger.debug('Performing initial setup...');
       try {
         await this.performInitialSetup();
+        logger.debug('Initial setup completed successfully');
       } catch (setupError) {
         logger.warn('Initial setup warning:', { error: setupError });
         // Don't fail the entire initialization for setup issues
@@ -85,21 +105,32 @@ export class ExtensionManager implements vscode.Disposable {
       
       logger.error('Failed to initialize X-Fidelity extension:', { error: errorMessage, stack });
       
+      // Try to register minimal fallback commands for debugging
+      try {
+        this.registerFallbackCommands();
+        logger.info('Fallback commands registered for debugging');
+      } catch (fallbackError) {
+        logger.error('Failed to register even fallback commands:', fallbackError);
+      }
+      
       vscode.window.showErrorMessage(
         `X-Fidelity initialization failed: ${errorMessage}`,
         'Show Output',
-        'Retry'
+        'Show Details'
       ).then(choice => {
         if (choice === 'Show Output') {
           // Show VSCode output panel
           vscode.commands.executeCommand('workbench.action.output.toggleOutput');
-        } else if (choice === 'Retry') {
-          logger.info('Retrying extension initialization...');
-          setTimeout(() => this.initialize(), 2000);
+        } else if (choice === 'Show Details') {
+          vscode.window.showInformationMessage(
+            `X-Fidelity Initialization Error:\n\n${errorMessage}\n\nStack:\n${stack}`,
+            { modal: true }
+          );
         }
       });
       
-      throw error; // Re-throw to prevent partial initialization
+      // Don't re-throw to prevent complete extension failure
+      logger.error('Extension initialization failed but not re-throwing to allow partial functionality');
     }
   }
   
@@ -690,6 +721,80 @@ Average Warnings: ${Math.round(trends.warningCounts.reduce((a, b) => a + b, 0) /
     } catch (error) {
       vscode.window.showErrorMessage(`Trend analysis failed: ${error}`);
     }
+  }
+  
+  private registerFallbackCommands(): void {
+    // Register minimal commands that always work for debugging
+    logger.info('Registering fallback commands for debugging...');
+    
+    // Test command to verify extension is working
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.test', () => {
+        vscode.window.showInformationMessage('X-Fidelity extension is partially working (fallback mode)!');
+        vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+      })
+    );
+    
+    // Basic analysis command with error handling
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.runAnalysis', async () => {
+        try {
+          vscode.window.showInformationMessage('X-Fidelity is in fallback mode. Full analysis not available.');
+          vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+        } catch (error) {
+          vscode.window.showErrorMessage(`Analysis failed: ${error}`);
+        }
+      })
+    );
+    
+    // Settings command
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.openSettings', () => {
+        return vscode.commands.executeCommand('workbench.action.openSettings', '@ext:zotoio.x-fidelity-vscode');
+      })
+    );
+    
+    // Show logs command
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.showControlCenter', () => {
+        vscode.window.showInformationMessage(
+          'X-Fidelity Control Center is not available in fallback mode. Check the Output panel for logs.',
+          'Show Logs'
+        ).then(choice => {
+          if (choice === 'Show Logs') {
+            vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+          }
+        });
+      })
+    );
+    
+    // Add other essential commands with fallback behavior
+    const fallbackCommands = [
+      'xfidelity.detectArchetype',
+      'xfidelity.resetConfiguration',
+      'xfidelity.openReports',
+      'xfidelity.showDashboard',
+      'xfidelity.showIssueExplorer',
+      'xfidelity.showAdvancedSettings'
+    ];
+    
+    fallbackCommands.forEach(commandId => {
+      this.disposables.push(
+        vscode.commands.registerCommand(commandId, () => {
+          const commandName = commandId.replace('xfidelity.', '');
+          vscode.window.showWarningMessage(
+            `X-Fidelity: ${commandName} is not available in fallback mode. Check logs for initialization errors.`,
+            'Show Logs'
+          ).then(choice => {
+            if (choice === 'Show Logs') {
+              vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+            }
+          });
+        })
+      );
+    });
+    
+    logger.info('Fallback commands registered successfully');
   }
   
   dispose(): void {

@@ -40,16 +40,7 @@ describe('XFiPluginRegistry', () => {
       expect(facts[0].name).toBe('testFact');
       expect(operators).toHaveLength(1);
       expect(operators[0].name).toBe('testOperator');
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.objectContaining({
-          plugin: expect.objectContaining({
-            name: 'test-plugin',
-            version: '1.0.0',
-          }),
-          operation: 'register-plugin'
-        }),
-        'Registering plugin: test-plugin'
-      );
+      expect(logger.debug).toHaveBeenCalledWith('Registering plugin: test-plugin');
     });
 
     it('should throw an error when registering an invalid plugin', () => {

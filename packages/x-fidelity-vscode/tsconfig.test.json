@@ -2,11 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": false,
-    "outDir": "dist-test",
+    "outDir": "out",
+    "sourceMap": true,
     "types": ["node", "jest", "vscode"],
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": false
   },
   "include": [
     "src/**/*.test.ts", 
@@ -14,7 +15,7 @@
     "src/jest.setup.ts",
     "src/test/**/*"
   ],
-  "exclude": ["node_modules", ".vscode-test", "dist"],
+  "exclude": ["node_modules", ".vscode-test", "dist", "out"],
   "references": [
     {
       "path": "../x-fidelity-types"

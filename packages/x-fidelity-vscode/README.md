@@ -135,7 +135,27 @@ Access these commands via the Command Palette (Ctrl+Shift+P):
 
 ### Configuration
 
-The extension can be configured through VSCode settings:
+#### 🎯 **Built-in Demo Configuration**
+
+The extension **automatically uses demo configuration** with sensible defaults:
+
+- **Default Archetype**: `node-fullstack` with comprehensive rule set
+- **Built-in Rules**: 15+ predefined rules including security, architecture, and code quality checks
+- **All Plugins**: Automatically loads all builtin plugins with facts and operators
+- **Zero Setup**: Works immediately without any configuration
+
+#### Configuration Hierarchy
+
+The extension resolves configuration in this order:
+
+1. **User-specified config** (if `configServer` or `localConfigPath` is set)
+2. **Home directory config** (`~/.config/x-fidelity`)
+3. **Environment variable** (`$XFI_CONFIG_PATH`)
+4. **🎯 Demo config** (automatically used as fallback)
+
+#### Settings Customization
+
+You can customize the extension through VSCode settings:
 
 ```json
 {
@@ -147,6 +167,14 @@ The extension can be configured through VSCode settings:
   "xfidelity.runInterval": 300
 }
 ```
+
+#### Available Demo Archetypes
+
+- `node-fullstack` (default) - Full-stack Node.js applications
+- `java-microservice` - Java-based microservices
+- `react-spa` - React single-page applications
+- `python-service` - Python services
+- `dotnet-service` - .NET services
 
 ### Output Files
 
