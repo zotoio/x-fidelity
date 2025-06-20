@@ -1,4 +1,5 @@
-import { logger, setLogPrefix, getLogPrefix } from '../../utils/logger';
+import { logger } from '../../utils/logger';
+import { LoggerProvider } from '../../utils/loggerProvider';
 import { pluginRegistry } from '../pluginRegistry';
 import { ErrorActionParams } from '@x-fidelity/types';
 
@@ -64,8 +65,8 @@ function safeSerializeValue(value: any): any {
 }
 
 export async function executeErrorAction(actionName: string, params: ErrorActionParams): Promise<any> {
-    const originalLogPrefix = getLogPrefix();
-    setLogPrefix(`${originalLogPrefix}:${params.ruleName || 'unknown-rule'}`);
+    // Create a child logger without verbose bindings since execution ID is already in prefix
+    const childLogger = LoggerProvider.getLogger();
     
     try {
         // First check if it's a plugin action
@@ -81,19 +82,19 @@ export async function executeErrorAction(actionName: string, params: ErrorAction
         // Otherwise check built-in actions
         switch (actionName) {
             case 'sendNotification':
-                return await sendNotification(params);
+                return await sendNotification(params, childLogger);
             case 'logToFile':
-                return await logToFile(params);
+                return await logToFile(params, childLogger);
             default:
                 throw new Error(`Unknown error action: ${actionName}`);
         }
-    } finally {
-        // Always restore the original log prefix
-        setLogPrefix(originalLogPrefix);
+    } catch (error) {
+        childLogger.error('Error executing error action', { actionName, error: error instanceof Error ? error.message : String(error) });
+        throw error;
     }
 }
 
-async function sendNotification(params: ErrorActionParams): Promise<void> {
+async function sendNotification(params: ErrorActionParams, childLogger = logger): Promise<void> {
     // Implementation for sending notifications (email, Slack, etc.)
     const notification: any = {
         rule: params.ruleName,
@@ -106,11 +107,11 @@ async function sendNotification(params: ErrorActionParams): Promise<void> {
         Object.assign(notification, safeSerialize(params.params));
     }
 
-    logger.info({ notification }, 'Sending error notification');
+    childLogger.info({ notification }, 'Sending error notification');
     // Add actual notification implementation here
 }
 
-async function logToFile(params: ErrorActionParams): Promise<void> {
+async function logToFile(params: ErrorActionParams, childLogger = logger): Promise<void> {
     // Implementation for logging to a separate file
     const errorLog: any = {
         rule: params.ruleName,
@@ -154,6 +155,6 @@ async function logToFile(params: ErrorActionParams): Promise<void> {
         });
     }
 
-    logger.info({ errorLog }, 'Logging error to file');
+    childLogger.info({ errorLog }, 'Logging error to file');
     // Add actual file logging implementation here
 }

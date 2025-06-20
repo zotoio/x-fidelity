@@ -537,11 +537,11 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
     timingTracker.logTimingBreakdown('DETAILED ENGINE', iterativeFiles.length + (globalFile ? 1 : 0));
     
     // Log additional engine-specific metrics
-    const timings = timingTracker.getTimings();
-    const totalTime = Object.values(timings).reduce((sum, time) => sum + time, 0);
+    // Calculate actual total execution time from start to now
+    const totalExecutionTime = fileProcessingTime; // This represents the actual total time spent processing all files
     
-    logger.info(`Rule execution time: ${ruleExecutionTime}ms (${Math.round((ruleExecutionTime / totalTime) * 100)}%)`);
-    logger.info(`Event processing time: ${eventProcessingTime}ms (${Math.round((eventProcessingTime / totalTime) * 100)}%)`);
+    logger.info(`Rule execution time: ${ruleExecutionTime}ms (${Math.round((ruleExecutionTime / totalExecutionTime) * 100)}%)`);
+    logger.info(`Event processing time: ${eventProcessingTime}ms (${Math.round((eventProcessingTime / totalExecutionTime) * 100)}%)`);
     logger.info(`File processing overhead: ${fileProcessingTime - ruleExecutionTime - eventProcessingTime}ms`);
     
     // Show slowest files

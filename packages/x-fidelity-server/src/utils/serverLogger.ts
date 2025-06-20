@@ -154,6 +154,7 @@ export const logger = new ServerLogger({
 
 // Legacy compatibility functions for existing server code
 export function setLogPrefix(prefix: string): void {
+  console.warn('setLogPrefix is deprecated with the new logger provider pattern. Use child loggers instead.');
   // No-op for compatibility - child loggers can be used instead
 }
 

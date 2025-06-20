@@ -1,0 +1,25 @@
+==========================================
+  X-FIDELITY CONSISTENCY BASELINE
+==========================================
+
+This report documents the current state of
+consistency between CLI and VSCode extension.
+Use this as a baseline to measure improvements.
+
+Generated: 2025-06-19T23:15:47.753Z
+
+BASELINE METRICS:
+Total Tests: 2
+✅ Consistent: 2
+❌ Inconsistent: 0
+Success Rate: 100.0%
+Total Discrepancies: 0
+Average per Test: 0.0
+
+ARCHETYPE BREAKDOWN:
+java-microservice:
+   Tests: 2
+   Consistent: 2/2
+   Discrepancies: 0
+
+==========================================

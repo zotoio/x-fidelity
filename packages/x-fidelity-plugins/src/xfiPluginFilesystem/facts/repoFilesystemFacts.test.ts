@@ -492,7 +492,7 @@ describe('File operations', () => {
             expect(result.result.length).toBe(3);
         });
 
-        it('should log warnings when issues are found', async () => {
+        it('should provide enhanced match results with position data', async () => {
             const mockAlmanac = {
                 factValue: jest.fn().mockResolvedValue({
                     fileName: 'test.js',
@@ -507,15 +507,27 @@ describe('File operations', () => {
                 resultFact: 'testResult'
             };
 
-            await repoFileAnalysis(params, mockAlmanac);
+            const result = await repoFileAnalysis(params, mockAlmanac);
             
-            expect(logger.warn).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    filePath: '/test/repo/test.js',
-                    analysis: expect.any(Array)
-                }),
-                'Found issues in file analysis'
-            );
+            // Check enhanced format
+            expect(result.matches).toBeDefined();
+            expect(result.matches.length).toBe(1);
+            expect(result.matches[0]).toEqual(expect.objectContaining({
+                pattern: 'password',
+                match: 'password',
+                range: {
+                    start: { line: 1, column: 7 },
+                    end: { line: 1, column: 15 }
+                },
+                context: expect.any(String)
+            }));
+            
+            // Check summary
+            expect(result.summary).toEqual(expect.objectContaining({
+                totalMatches: 1,
+                patterns: ['password'],
+                hasPositionData: true
+            }));
         });
     });
 });

@@ -5,6 +5,7 @@ import { loadFacts } from '../../facts';
 import { sendTelemetry } from '../../utils/telemetry';
 import { ConfigManager } from '../configManager';
 import { logger } from '../../utils/logger';
+import { LoggerProvider } from '../../utils/loggerProvider';
 import { loadRepoXFIConfig } from '../../utils/repoXFIConfigLoader';
 import { pluginRegistry } from '../pluginRegistry';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
@@ -15,6 +16,7 @@ jest.mock('../../facts');
 jest.mock('../../utils/telemetry');
 jest.mock('../configManager');
 jest.mock('../../utils/logger');
+jest.mock('../../utils/loggerProvider');
 jest.mock('../../utils/repoXFIConfigLoader');
 jest.mock('../pluginRegistry');
 jest.mock('../../utils/openaiUtils');
@@ -59,6 +61,26 @@ describe('engineSetup - Enhanced Test Suite', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        
+        // Mock child logger for event handlers
+        const mockChildLogger = {
+            warn: jest.fn(),
+            error: jest.fn(),
+            debug: jest.fn(),
+            info: jest.fn(),
+            trace: jest.fn(),
+            fatal: jest.fn(),
+            child: jest.fn(),
+            setLevel: jest.fn(),
+            getLevel: jest.fn(),
+            isLevelEnabled: jest.fn()
+        };
+        
+        (LoggerProvider.createChildLogger as jest.Mock) = jest.fn().mockReturnValue(mockChildLogger);
+        (LoggerProvider.getLogger as jest.Mock) = jest.fn().mockReturnValue(mockChildLogger);
+        
+        // Set up the mockChildLogger as a property so we can access it in tests
+        (global as any).mockChildLogger = mockChildLogger;
         
         (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
             archetype: mockArchetypeConfig,
@@ -145,7 +167,7 @@ describe('engineSetup - Enhanced Test Suite', () => {
             // Test warning event
             const warningCallback = mockOn.mock.calls[0][1];
             await warningCallback({ type: 'warning', params: { message: 'Test warning' } });
-            expect(logger.warn).toHaveBeenCalledWith('warning detected: {"message":"Test warning"}');
+            expect((global as any).mockChildLogger.warn).toHaveBeenCalledWith('warning detected: {"message":"Test warning"}');
             expect(sendTelemetry).toHaveBeenCalledWith(
                 expect.objectContaining({
                     eventType: 'warning',
@@ -159,7 +181,7 @@ describe('engineSetup - Enhanced Test Suite', () => {
 
             // Test fatality event
             await warningCallback({ type: 'fatality', params: { message: 'Test fatality' } });
-            expect(logger.error).toHaveBeenCalledWith('fatality detected: {"message":"Test fatality"}');
+            expect((global as any).mockChildLogger.error).toHaveBeenCalledWith('fatality detected: {"message":"Test fatality"}');
             expect(sendTelemetry).toHaveBeenCalledWith(
                 expect.objectContaining({
                     eventType: 'fatality',

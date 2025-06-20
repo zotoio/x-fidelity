@@ -115,10 +115,15 @@ async function repoFileAnalysis(params: any, almanac: any) {
     const fileContent = fileData.fileContent;
     const filePath = fileData.filePath;
 
-    logger.debug({ checkPatterns, filePath }, 'Running repo file analysis');
+    // Enhanced parameters
+    const captureGroups = params.captureGroups || false;
+    const contextLength = params.contextLength || 50;
+    const multilineMatches = params.multilineMatches || false;
+
+    logger.debug({ checkPatterns, filePath, captureGroups }, 'Running repo file analysis with position tracking');
 
     if (fileData.fileName === 'REPO_GLOBAL_CHECK' || checkPatterns.length === 0 || !fileContent) {
-        return result;
+        return { result: [], matches: [], summary: { totalMatches: 0, patterns: checkPatterns, hasPositionData: true } };
     }
 
     //if there is already a resultFact for this file, we need to append
@@ -133,7 +138,7 @@ async function repoFileAnalysis(params: any, almanac: any) {
         logger.debug(`No existing result fact found for ${params.resultFact}, creating new one`);
     }
 
-    const analysis: any = [];
+    const enhancedMatches: any = [];
     const lines = fileContent.split('\n');
     logger.debug({ lineCount: lines.length }, 'Processing file lines');
     const processedLines: string[] = [];
@@ -172,33 +177,67 @@ async function repoFileAnalysis(params: any, almanac: any) {
     for (let i = 0; i < processedLines.length; i++) {
         const line = processedLines[i];
         for (const pattern of checkPatterns) {
-            const regex = new RegExp(pattern, 'g');
-            if (regex.test(line)) {
-                logger.debug({ lineNumber: i + 1, pattern }, 'Found pattern match');
-                const match = {
-                    'match': pattern,
-                    'lineNumber': i + 1,
-                    'line': maskSensitiveData(line)
+            const regex = new RegExp(pattern, captureGroups ? 'g' : 'g');
+            let match;
+            
+            // Reset regex for each line
+            regex.lastIndex = 0;
+            
+            while ((match = regex.exec(line)) !== null) {
+                logger.debug({ lineNumber: i + 1, pattern, matchText: match[0] }, 'Found pattern match');
+                
+                const startColumn = match.index + 1; // 1-based
+                const endColumn = startColumn + match[0].length;
+                
+                // Get context around the match
+                let context = line;
+                if (contextLength > 0 && contextLength < line.length) {
+                    const contextStart = Math.max(0, match.index - Math.floor(contextLength / 2));
+                    const contextEnd = Math.min(line.length, match.index + match[0].length + Math.floor(contextLength / 2));
+                    context = line.substring(contextStart, contextEnd);
+                    
+                    // Add ellipsis if we're showing partial context
+                    if (contextStart > 0) context = '...' + context;
+                    if (contextEnd < line.length) context = context + '...';
+                }
+                
+                const enhancedMatch = {
+                    pattern: pattern,
+                    match: match[0],
+                    range: {
+                        start: { line: i + 1, column: startColumn },
+                        end: { line: i + 1, column: endColumn }
+                    },
+                    context: maskSensitiveData(context),
+                    groups: captureGroups && match.length > 1 ? match.slice(1) : undefined
                 };
-                analysis.push(match);
+                
+                enhancedMatches.push(enhancedMatch);
+                
+                // For global regex, prevent infinite loop
+                if (!regex.global || regex.lastIndex === 0) {
+                    break;
+                }
             }
         }
     }
 
-    const resultLength = result.result.length;
-    const analysisLength = analysis.length;
-    if (analysisLength > 0) {
-        logger.warn({ filePath, analysis }, 'Found issues in file analysis');
+    // Enhanced result format only
+    result.matches = enhancedMatches;
+    result.summary = {
+        totalMatches: enhancedMatches.length,
+        patterns: checkPatterns,
+        hasPositionData: true,
+        captureGroups: captureGroups,
+        contextLength: contextLength
+    };
 
-        //preallocate the array to the correct length
-        result.result.length = resultLength + analysisLength;
-        for (let i = 0; i < analysisLength; i++) {
-            const fileAnalysis = analysis[i];
-            result.result[resultLength + i] = fileAnalysis[i];
-        }  
-    }
-
-    result.result = analysis;
+    // For backward compatibility with existing code that expects result array
+    result.result = enhancedMatches.map((match: any) => ({
+        match: match.pattern,
+        lineNumber: match.range.start.line,
+        line: match.context
+    }));
 
     almanac.addRuntimeFact(params.resultFact, result.result);
 

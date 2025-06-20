@@ -33,6 +33,9 @@ export interface ILogger {
   /** Check if a log level is enabled */
   isLevelEnabled(level: LogLevel): boolean;
   
+  /** Flush any pending log entries */
+  flush?(): Promise<void>;
+  
   /** Dispose of logger resources (if applicable) */
   dispose?(): void;
 }

@@ -1,4 +1,4 @@
-import { globalFileAnalysis } from './globalFileAnalysisFacts';
+import { globalFileAnalysis, analysisCache } from './globalFileAnalysisFacts';
 import { logger } from '@x-fidelity/core';
 import { maskSensitiveData } from '@x-fidelity/core';
 
@@ -18,6 +18,8 @@ describe('globalFileAnalysis', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        // Clear the cache before each test
+        analysisCache.clear();
         mockAlmanac = {
             factValue: jest.fn(),
             addRuntimeFact: jest.fn(),
@@ -170,7 +172,7 @@ describe('globalFileAnalysis', () => {
 
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
-        expect(logger.error).toHaveBeenCalledWith(`Error in globalFileAnalysis: Error: Test error`);
+        expect(logger.error).toHaveBeenCalledWith(`[rule-using-sdkUsageAnalysis] Error in globalFileAnalysis: Error: Test error`);
         expect(result).toEqual({ patternData: [], fileResults: [] });
     });
 
@@ -184,7 +186,7 @@ describe('globalFileAnalysis', () => {
 
         const result = await globalFileAnalysis.fn(params, mockAlmanac);
 
-        expect(logger.error).toHaveBeenCalledWith('Invalid globalFileMetadata');
+        expect(logger.error).toHaveBeenCalledWith('[rule-using-invalidDataAnalysis] Invalid globalFileMetadata');
         expect(result).toEqual({ patternData: [], fileResults: [] });
     });
 

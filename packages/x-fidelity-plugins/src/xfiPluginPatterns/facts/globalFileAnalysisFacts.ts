@@ -3,10 +3,52 @@ import { logger, repoDir, maskSensitiveData } from '@x-fidelity/core';
 import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
+
+// Result cache to avoid redundant processing
+export const analysisCache = new Map<string, any>();
+
+// Helper function to create cache key from parameters
+function createCacheKey(params: any): string {
+    const keyData = {
+        newPatterns: params.newPatterns || [],
+        legacyPatterns: params.legacyPatterns || [],
+        patterns: params.patterns || [],
+        fileFilter: params.fileFilter || '.*',
+        outputGrouping: params.outputGrouping || 'file',
+        captureGroups: params.captureGroups || false,
+        contextLength: params.contextLength || 50
+    };
+    return crypto.createHash('md5').update(JSON.stringify(keyData)).digest('hex');
+}
+
+// Helper function to get rule context
+function getRuleContext(almanac: any, params: any): string {
+    // Try to get rule name from various sources
+    let ruleContext = 'unknown-rule';
+    
+    try {
+        // Check if almanac has current rule context
+        if (almanac && almanac.currentRule && almanac.currentRule.name) {
+            ruleContext = almanac.currentRule.name;
+        } else if (params.resultFact) {
+            // Use resultFact as context hint
+            ruleContext = `rule-using-${params.resultFact}`;
+        } else if (params.ruleContext) {
+            // Direct rule context parameter
+            ruleContext = params.ruleContext;
+        }
+    } catch (error) {
+        // Fallback to parameter-based context
+        ruleContext = params.resultFact || 'unnamed-rule';
+    }
+    
+    return ruleContext;
+}
 
 export const globalFileAnalysis: FactDefn = {
     name: 'globalFileAnalysis',
-    description: 'Analyzes global file patterns and structure',
+    description: 'Analyzes global file patterns and structure with enhanced position tracking',
     fn: async (params: any, almanac: any) => {
         const result: any = { 
             patternData: [],
@@ -14,10 +56,29 @@ export const globalFileAnalysis: FactDefn = {
         };
         
         try {
+            // Get rule context for better logging
+            const ruleContext = getRuleContext(almanac, params);
+            
+            // Create cache key for result caching
+            const cacheKey = createCacheKey(params);
+            
+            // Check cache first
+            if (analysisCache.has(cacheKey)) {
+                logger.debug(`[${ruleContext}] Using cached global file analysis result (cache key: ${cacheKey.substring(0, 8)}...)`);
+                const cachedResult = analysisCache.get(cacheKey);
+                
+                // Add the result to the almanac even for cached results
+                if (params.resultFact) {
+                    almanac.addRuntimeFact(params.resultFact, cachedResult);
+                }
+                
+                return cachedResult;
+            }
+
             // Get all file data from the almanac
             const globalFileMetadata: FileData[] = await almanac.factValue('globalFileMetadata');
             if (!Array.isArray(globalFileMetadata)) {
-                logger.error('Invalid globalFileMetadata');
+                logger.error(`[${ruleContext}] Invalid globalFileMetadata`);
                 return result;
             }
 
@@ -33,17 +94,22 @@ export const globalFileAnalysis: FactDefn = {
             // parameter to control output format
             const outputGrouping = params.outputGrouping || 'file'; // 'pattern' or 'file'
             
+            // Enhanced parameters (always enabled)
+            const captureGroups = params.captureGroups || false;
+            const contextLength = params.contextLength || 50;
+            
             // Combine all patterns for processing
             const allPatterns = [...newPatterns, ...legacyPatterns, ...patterns];
             
-            logger.info(`Running global file analysis with ${newPatterns.length} new patterns, ${legacyPatterns.length} legacy patterns, and ${patterns.length} regular patterns across ${globalFileMetadata.length} files`);
+            // More specific logging with rule context and parameters
+            logger.info(`[${ruleContext}] Running global file analysis: ${newPatterns.length} new patterns, ${legacyPatterns.length} legacy patterns, ${patterns.length} regular patterns, filter: "${fileFilter}", across ${globalFileMetadata.length} files`);
             
             // Filter files based on fileFilter parameter
             const filteredFiles = globalFileMetadata.filter(file => 
                 file.fileName !== 'REPO_GLOBAL_CHECK' && fileFilterRegex.test(file.filePath)
             );
             
-            logger.info(`Analyzing ${filteredFiles.length} files after filtering`);
+            logger.debug(`[${ruleContext}] Analyzing ${filteredFiles.length} files after filtering with pattern: ${fileFilter}`);
             
             // Initialize match counts and file matches as arrays
             result.patternData = allPatterns.map((pattern: string) => ({
@@ -76,13 +142,46 @@ export const globalFileAnalysis: FactDefn = {
                     for (let i = 0; i < lines.length; i++) {
                         const line = lines[i];
                         let match;
+                        
+                        // Reset regex for each line
+                        regex.lastIndex = 0;
+                        
                         while ((match = regex.exec(line)) !== null) {
                             fileMatches++;
-                            matchDetails.push({
+                            
+                            const startColumn = match.index + 1; // 1-based
+                            const endColumn = startColumn + match[0].length;
+                            
+                            // Get enhanced context around the match
+                            let enhancedContext = line;
+                            if (contextLength > 0 && contextLength < line.length) {
+                                const contextStart = Math.max(0, match.index - Math.floor(contextLength / 2));
+                                const contextEnd = Math.min(line.length, match.index + match[0].length + Math.floor(contextLength / 2));
+                                enhancedContext = line.substring(contextStart, contextEnd);
+                                
+                                // Add ellipsis if we're showing partial context
+                                if (contextStart > 0) enhancedContext = '...' + enhancedContext;
+                                if (contextEnd < line.length) enhancedContext = enhancedContext + '...';
+                            }
+                            
+                            const matchInfo = {
                                 lineNumber: i + 1,
                                 match: pattern,
-                                context: maskSensitiveData(line.trim())
-                            });
+                                matchText: match[0],
+                                range: {
+                                    start: { line: i + 1, column: startColumn },
+                                    end: { line: i + 1, column: endColumn }
+                                },
+                                context: maskSensitiveData(enhancedContext),
+                                groups: captureGroups && match.length > 1 ? match.slice(1) : undefined
+                            };
+                            
+                            matchDetails.push(matchInfo);
+                            
+                            // For global regex, prevent infinite loop
+                            if (!regex.global || regex.lastIndex === 0) {
+                                break;
+                            }
                         }
                     }
                     
@@ -161,7 +260,14 @@ export const globalFileAnalysis: FactDefn = {
                     return counts;
                 }, {}),
                 newPatternsTotal: newPatternsTotal,
-                legacyPatternsTotal: legacyPatternsTotal
+                legacyPatternsTotal: legacyPatternsTotal,
+                // Enhanced summary info (always enabled)
+                hasPositionData: true,
+                captureGroups: captureGroups,
+                contextLength: contextLength,
+                // Add cache info
+                cacheKey: cacheKey.substring(0, 8),
+                ruleContext: ruleContext
             };
             
             // Add results based on the requested output grouping
@@ -174,14 +280,21 @@ export const globalFileAnalysis: FactDefn = {
                 delete result.fileResults;
             }
             
-            // Add the result to the almanac
-            almanac.addRuntimeFact(params.resultFact, result);
+            // Cache the result before adding to almanac
+            analysisCache.set(cacheKey, result);
             
-            logger.info(`Global file analysis complete: ${JSON.stringify(result.summary)}`);
+            // Add the result to the almanac
+            if (params.resultFact) {
+                almanac.addRuntimeFact(params.resultFact, result);
+            }
+            
+            // Change to debug level and include more specific information
+            logger.debug(`[${ruleContext}] Global file analysis complete - ${result.summary.totalMatches} matches across ${result.summary.totalFiles} files, cache key: ${cacheKey.substring(0, 8)}...`);
             
             return result;
         } catch (error: unknown) {
-            logger.error(`Error in globalFileAnalysis: ${error}`);
+            const ruleContext = getRuleContext(almanac, params);
+            logger.error(`[${ruleContext}] Error in globalFileAnalysis: ${error}`);
             return result;
         }
     }

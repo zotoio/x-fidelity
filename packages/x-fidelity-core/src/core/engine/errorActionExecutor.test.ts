@@ -1,6 +1,21 @@
 import { executeErrorAction } from './errorActionExecutor';
-import { logger, getLogPrefix, setLogPrefix } from '../../utils/logger';
+import { logger } from '../../utils/logger';
+import { LoggerProvider } from '../../utils/loggerProvider';
 import { sendTelemetry } from '../../utils/telemetry';
+
+// Mock child logger that captures calls - define before the jest.mock calls
+const mockChildLogger = {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    trace: jest.fn(),
+    fatal: jest.fn(),
+    child: jest.fn(),
+    setLevel: jest.fn(),
+    getLevel: jest.fn(),
+    isLevelEnabled: jest.fn()
+};
 
 jest.mock('../../utils/logger', () => ({
     logger: {
@@ -8,9 +23,23 @@ jest.mock('../../utils/logger', () => ({
         error: jest.fn(),
         warn: jest.fn(),
         debug: jest.fn(),
-    },
-    getLogPrefix: jest.fn().mockReturnValue('test-prefix'),
-    setLogPrefix: jest.fn(),
+        trace: jest.fn(),
+        fatal: jest.fn(),
+        child: jest.fn(),
+        setLevel: jest.fn(),
+        getLevel: jest.fn(),
+        isLevelEnabled: jest.fn()
+    }
+}));
+
+jest.mock('../../utils/loggerProvider', () => ({
+    LoggerProvider: {
+        createChildLogger: jest.fn(() => mockChildLogger),
+        getLogger: jest.fn(() => mockChildLogger),
+        setLogger: jest.fn(),
+        hasInjectedLogger: jest.fn(),
+        clearInjectedLogger: jest.fn()
+    }
 }));
 
 jest.mock('../../utils/telemetry');
@@ -18,6 +47,9 @@ jest.mock('../../utils/telemetry');
 describe('executeErrorAction', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        // Reset all mocks after each test
+        (LoggerProvider.createChildLogger as jest.Mock).mockReturnValue(mockChildLogger);
+        (LoggerProvider.getLogger as jest.Mock).mockReturnValue(mockChildLogger);
     });
 
     describe('Notification Actions', () => {
@@ -32,7 +64,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('sendNotification', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 notification: expect.objectContaining({
                     rule: 'test-rule',
                     level: 'error',
@@ -56,7 +88,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('sendNotification', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 notification: expect.objectContaining({
                     rule: 'test-rule',
                     level: 'error',
@@ -76,7 +108,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('sendNotification', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 notification: expect.objectContaining({
                     rule: 'test-rule',
                     level: 'error',
@@ -98,7 +130,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     rule: 'test-rule',
                     level: 'error',
@@ -123,7 +155,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     rule: 'test-rule',
                     level: 'error',
@@ -144,7 +176,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     rule: 'test-rule',
                     level: 'error',
@@ -166,6 +198,10 @@ describe('executeErrorAction', () => {
             };
 
             await expect(executeErrorAction('unknownAction', params)).rejects.toThrow('Unknown error action: unknownAction');
+            expect(mockChildLogger.error).toHaveBeenCalledWith('Error executing error action', {
+                actionName: 'unknownAction',
+                error: 'Unknown error action: unknownAction'
+            });
         });
 
         it('should handle null error object', async () => {
@@ -179,7 +215,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     rule: 'test-rule',
                     level: 'error',
@@ -203,7 +239,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     stack: error.stack
                 }),
@@ -225,7 +261,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     code: 'CUSTOM_ERROR',
                     details: { reason: 'test reason' }
@@ -247,7 +283,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     context: expect.objectContaining({
                         prop: 'value',
@@ -271,7 +307,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     data: expect.stringMatching(/^x{1000}$/)
                 }),
@@ -293,7 +329,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     func: '[Function]',
                     symbol: '[Symbol]'
@@ -316,7 +352,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     password: '[REDACTED]',
                     apiKey: '[REDACTED]'
@@ -344,7 +380,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     nested: expect.objectContaining({
                         level1: expect.objectContaining({
@@ -372,7 +408,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     items: [1, 2, 3, 4, 5],
                     nestedArrays: [[1, 2], [3, 4]]
@@ -397,7 +433,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     rule: 'test-rule',
                     level: 'error',
@@ -423,7 +459,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     rule: 'test-rule',
                     level: 'error',
@@ -443,7 +479,7 @@ describe('executeErrorAction', () => {
             };
 
             await executeErrorAction('logToFile', params);
-            expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockChildLogger.info).toHaveBeenCalledWith(expect.objectContaining({
                 errorLog: expect.objectContaining({
                     rule: 'test-rule',
                     level: 'error',

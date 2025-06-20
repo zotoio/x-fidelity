@@ -54,6 +54,99 @@ export interface RuleFailure {
     } | undefined;
 }
 
+// Enhanced position tracking types (Phase 1 - additive only, maintains backward compatibility)
+export interface Position {
+    /** 1-based line number */
+    line: number;
+    /** 1-based column number */
+    column: number;
+}
+
+export interface Range {
+    /** Start position of the range */
+    start: Position;
+    /** End position of the range */
+    end: Position;
+}
+
+export interface MatchDetails {
+    /** The pattern that was matched */
+    pattern: string;
+    /** The actual matched text */
+    match: string;
+    /** Precise range of the match */
+    range: Range;
+    /** Context around the match for user clarity */
+    context?: string;
+    /** Regex capture groups if available */
+    groups?: string[];
+}
+
+export interface EnhancedRuleFailureDetails {
+    message: string;
+    source?: 'operator' | 'fact' | 'plugin' | 'rule' | 'unknown';
+    originalError?: Error;
+    stack?: string;
+    
+    // Legacy position fields (maintained for backward compatibility)
+    lineNumber?: number;
+    columnNumber?: number;
+    startLine?: number;
+    endLine?: number;
+    startColumn?: number;
+    endColumn?: number;
+    length?: number;
+    
+    // Enhanced position fields (new)
+    position?: Position;
+    range?: Range;
+    matches?: MatchDetails[];
+    
+    // Enhanced metadata
+    hasPositionData?: boolean;
+    hasMultipleMatches?: boolean;
+    
+    // Existing fields
+    operatorThreshold?: {
+        operator: string;
+        value: any;
+    };
+    operatorValue?: any;
+    conditionDetails?: {
+        fact: string;
+        operator: string;
+        value: any;
+        params?: any;
+    };
+    allConditions?: Array<{
+        fact: string;
+        operator: string;
+        value: any;
+        params?: any;
+        path?: string;
+        priority?: number;
+    }>;
+    conditionType?: 'all' | 'any' | 'unknown';
+    ruleDescription?: string;
+    recommendations?: string[];
+    [key: string]: any;
+}
+
+export interface FactResult {
+    /** Array of matches found */
+    matches: MatchDetails[];
+    /** Summary information about the results */
+    summary: {
+        totalMatches: number;
+        patterns: string[];
+        hasPositionData: boolean;
+        filesAnalyzed?: number;
+        executionTime?: number;
+    };
+    /** Additional metadata for backward compatibility */
+    [key: string]: any;
+}
+
 export type ErrorLevel = 'warning' | 'error' | 'fatality' | 'exempt';
 
 export interface VersionData {

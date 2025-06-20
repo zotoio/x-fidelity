@@ -24,6 +24,12 @@ export * from './server';
 // Export logger types
 export * from './logger';
 
+// Export enhanced error handling types
+export * from './errorHandling';
+
+// Export developer experience types
+export * from './developerExperience';
+
 // Re-export commonly used types for convenience
 export type {
     // Core types

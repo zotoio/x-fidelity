@@ -675,7 +675,7 @@ export class ReportViewer implements vscode.Disposable {
             const location = line ? \`Line \${line}\${column ? \`:\${column}\` : ''}\` : '';
             
             return \`
-                <div class="issue-item" onclick="navigateToIssue('\${issue.filePath}', \${line || 1})">
+                <div class="issue-item" onclick="navigateToIssue('\${issue.filePath}', \${line || 1}, \${column || 1}, \${issue.details?.range})">
                     <div class="issue-header">
                         <span class="issue-severity \${issue.level || 'hint'}">\${(issue.level || 'hint').toUpperCase()}</span>
                         <span class="issue-rule">\${issue.ruleFailure}</span>
@@ -683,7 +683,7 @@ export class ReportViewer implements vscode.Disposable {
                     </div>
                     <div class="issue-message">\${issue.details?.message || issue.ruleFailure}</div>
                     <div class="issue-actions">
-                        <button class="btn btn-primary" onclick="event.stopPropagation(); navigateToIssue('\${issue.filePath}', \${line || 1})">
+                        <button class="btn btn-primary" onclick="event.stopPropagation(); navigateToIssue('\${issue.filePath}', \${line || 1}, \${column || 1}, \${issue.details?.range})">
                             Go to Issue
                         </button>
                         <button class="btn btn-secondary" onclick="event.stopPropagation(); showRuleInfo('\${issue.ruleFailure}')">
@@ -712,11 +712,13 @@ export class ReportViewer implements vscode.Disposable {
             // Issue items are handled by onclick in HTML
         }
         
-        function navigateToIssue(filePath, lineNumber) {
+        function navigateToIssue(filePath, lineNumber, columnNumber, range) {
             vscode.postMessage({
                 command: 'navigateToIssue',
                 filePath: filePath,
-                lineNumber: lineNumber
+                lineNumber: lineNumber,
+                columnNumber: columnNumber,
+                range: range
             });
         }
         
@@ -764,7 +766,7 @@ export class ReportViewer implements vscode.Disposable {
     const location = line ? `Line ${line}${column ? `:${column}` : ''}` : '';
     
     return `
-      <div class="issue-item" onclick="navigateToIssue('${filePath}', ${line || 1})">
+      <div class="issue-item" onclick="navigateToIssue('${filePath}', ${line || 1}, ${column || 1}, ${error.details?.range})">
         <div class="issue-header">
           <span class="issue-severity ${error.level || 'hint'}">${(error.level || 'hint').toUpperCase()}</span>
           <span class="issue-rule">${error.ruleFailure}</span>
@@ -772,7 +774,7 @@ export class ReportViewer implements vscode.Disposable {
         </div>
         <div class="issue-message">${error.details?.message || error.ruleFailure}</div>
         <div class="issue-actions">
-          <button class="btn btn-primary" onclick="event.stopPropagation(); navigateToIssue('${filePath}', ${line || 1})">
+          <button class="btn btn-primary" onclick="event.stopPropagation(); navigateToIssue('${filePath}', ${line || 1}, ${column || 1}, ${error.details?.range})">
             Go to Issue
           </button>
           <button class="btn btn-secondary" onclick="event.stopPropagation(); showRuleInfo('${error.ruleFailure}')">
@@ -786,7 +788,7 @@ export class ReportViewer implements vscode.Disposable {
   private async handleWebviewMessage(message: any): Promise<void> {
     switch (message.command) {
       case 'navigateToIssue':
-        await this.navigateToIssue(message.filePath, message.lineNumber);
+        await this.navigateToIssue(message.filePath, message.lineNumber, message.columnNumber, message.range);
         break;
         
       case 'showRuleInfo':
@@ -795,7 +797,7 @@ export class ReportViewer implements vscode.Disposable {
     }
   }
   
-  private async navigateToIssue(filePath: string, lineNumber: number): Promise<void> {
+  private async navigateToIssue(filePath: string, lineNumber: number, columnNumber?: number, range?: { start: { line: number; column: number }, end: { line: number; column: number } }): Promise<void> {
     try {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       if (!workspaceFolder) return;
@@ -813,12 +815,34 @@ export class ReportViewer implements vscode.Disposable {
       const document = await vscode.workspace.openTextDocument(fileUri);
       const editor = await vscode.window.showTextDocument(document);
       
-      // Navigate to the specific line
-      if (lineNumber > 0) {
-        const line = Math.max(0, lineNumber - 1);
-        const position = new vscode.Position(line, 0);
+      // Enhanced navigation with precise positioning
+      if (range) {
+        // Use enhanced range data for precise selection
+        const startPos = new vscode.Position(
+          Math.max(0, range.start.line - 1), // Convert to 0-based
+          Math.max(0, range.start.column - 1) // Convert to 0-based
+        );
+        const endPos = new vscode.Position(
+          Math.max(0, range.end.line - 1), // Convert to 0-based
+          Math.max(0, range.end.column - 1) // Convert to 0-based
+        );
+        
+        const selection = new vscode.Selection(startPos, endPos);
+        editor.selection = selection;
+        editor.revealRange(selection, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+      } else if (columnNumber && columnNumber > 0) {
+        // Use line and column for precise positioning
+        const position = new vscode.Position(
+          Math.max(0, lineNumber - 1), // Convert to 0-based
+          Math.max(0, columnNumber - 1) // Convert to 0-based
+        );
         editor.selection = new vscode.Selection(position, position);
-        editor.revealRange(new vscode.Range(position, position));
+        editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+      } else if (lineNumber > 0) {
+        // Fallback to line-only navigation
+        const position = new vscode.Position(Math.max(0, lineNumber - 1), 0);
+        editor.selection = new vscode.Selection(position, position);
+        editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
       }
       
     } catch (error) {

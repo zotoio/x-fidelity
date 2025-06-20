@@ -138,7 +138,7 @@ export class ConfigManager {
       customPlugins: workspaceConfig.get('customPlugins', []),
       ruleOverrides: workspaceConfig.get('ruleOverrides', {}),
       cacheResults: workspaceConfig.get('cacheResults', true),
-      cacheTTL: workspaceConfig.get('cacheTTL', 60), // 1 hour
+      cacheTTL: workspaceConfig.get('cacheTTL', 5), // 5 minutes for faster responsiveness
     };
   }
   
@@ -202,7 +202,7 @@ export class ConfigManager {
     }
     
     // 3. Extension's demoConfig directory
-    const extensionDemoConfigPath = path.join(this.context.extensionPath, 'config');
+    const extensionDemoConfigPath = path.join(this.context.extensionPath, 'dist', 'demoConfig');
     return extensionDemoConfigPath;
   }
 } 

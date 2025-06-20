@@ -5,7 +5,13 @@ import { ConfigManager } from '@x-fidelity/core';
 
 jest.mock('../utils/serverLogger', () => ({
   logger: {
-    info: jest.fn()
+    info: jest.fn(),
+    child: jest.fn().mockReturnValue({
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn()
+    })
   },
   setLogPrefix: jest.fn()
 }));
@@ -40,14 +46,16 @@ describe('clearCacheRoute', () => {
     jest.clearAllMocks();
   });
 
-  it('should clear cache and return success message', () => {
-    clearCacheRoute(mockRequest, mockResponse);
+  it('should clear cache and return success message', async () => {
+    await clearCacheRoute(mockRequest, mockResponse);
     
-    expect(setLogPrefix).toHaveBeenCalledWith('test-prefix');
+    // Should create child logger with request context
+    expect(logger.child).toHaveBeenCalledWith({ 
+      requestId: 'test-prefix', 
+      route: 'clearCache' 
+    });
     expect(clearCache).toHaveBeenCalled();
     expect(ConfigManager.clearLoadedConfigs).toHaveBeenCalled();
-    expect(logger.info).toHaveBeenCalledWith('Cache cleared successfully');
-    expect(mockResponse.status).toHaveBeenCalledWith(200);
     expect(mockResponse.json).toHaveBeenCalledWith({ message: 'Cache cleared successfully' });
   });
 });

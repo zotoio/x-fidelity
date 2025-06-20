@@ -66,15 +66,13 @@ export class AnalysisManager implements vscode.Disposable {
     });
     
     try {
-      // Check cache first
-      if (!options?.forceRefresh && config.cacheResults) {
-        this.logger.debug('Checking cache for existing results');
-        const cached = await this.cacheManager.getCachedResult(workspaceFolder.uri.fsPath);
-        if (cached) {
-          this.logger.info('Using cached analysis result');
-          this.onAnalysisComplete.fire(cached);
-          return cached;
-        }
+      // Check cache first (skip if force refresh is requested)
+      this.logger.debug('Checking cache for existing results', { forceRefresh: options?.forceRefresh });
+      const cached = await this.cacheManager.getCachedResult(workspaceFolder.uri.fsPath, options?.forceRefresh);
+      if (cached) {
+        this.logger.info('Using cached analysis result');
+        this.onAnalysisComplete.fire(cached);
+        return cached;
       }
       
       // Update state
@@ -259,10 +257,30 @@ export class AnalysisManager implements vscode.Disposable {
     diagnostic.source = 'X-Fidelity';
     diagnostic.code = error.ruleFailure;
     
-    // Add additional metadata for enhanced features
+    // Enhanced metadata for better navigation and context
     (diagnostic as any).ruleId = error.ruleFailure;
     (diagnostic as any).category = error.category || 'general';
     (diagnostic as any).fixable = error.fixable || false;
+    
+    // Enhanced position metadata
+    if (error.details) {
+      (diagnostic as any).enhancedPosition = {
+        hasPositionData: error.details.hasPositionData || false,
+        hasMultipleMatches: error.details.hasMultipleMatches || false,
+        range: error.details.range,
+        position: error.details.position,
+        matches: error.details.matches,
+        context: error.details.matches?.[0]?.context
+      };
+      
+      // Legacy position fields for backward compatibility
+      (diagnostic as any).lineNumber = error.details.lineNumber;
+      (diagnostic as any).columnNumber = error.details.columnNumber;
+      (diagnostic as any).startLine = error.details.startLine;
+      (diagnostic as any).endLine = error.details.endLine;
+      (diagnostic as any).startColumn = error.details.startColumn;
+      (diagnostic as any).endColumn = error.details.endColumn;
+    }
     
     return diagnostic;
   }
@@ -272,16 +290,72 @@ export class AnalysisManager implements vscode.Disposable {
   } {
     let line = 0, column = 0, endLine = 0, endColumn = 0;
     
-    // Try to extract from details first (more reliable)
-    if (details) {
-      if (typeof details.lineNumber === 'number') {
-        line = Math.max(0, details.lineNumber - 1);
+    // PRIORITY 1: Enhanced position data with range
+    if (details && details.range) {
+      const range = details.range;
+      if (range.start && typeof range.start.line === 'number' && typeof range.start.column === 'number') {
+        line = Math.max(0, range.start.line - 1); // Convert to 0-based
+        column = Math.max(0, range.start.column - 1); // Convert to 0-based
+        
+        if (range.end && typeof range.end.line === 'number' && typeof range.end.column === 'number') {
+          endLine = Math.max(0, range.end.line - 1); // Convert to 0-based
+          endColumn = Math.max(0, range.end.column - 1); // Convert to 0-based
+        } else {
+          endLine = line;
+          endColumn = column + 1;
+        }
+        
+        this.logger.debug('Using enhanced range position data', { 
+          originalRange: range, 
+          convertedRange: { line, column, endLine, endColumn }
+        });
+        return { line, column, endLine, endColumn };
+      }
+    }
+    
+    // PRIORITY 2: Enhanced position data with position field
+    if (details && details.position) {
+      const pos = details.position;
+      if (typeof pos.line === 'number' && typeof pos.column === 'number') {
+        line = Math.max(0, pos.line - 1); // Convert to 0-based
+        column = Math.max(0, pos.column - 1); // Convert to 0-based
         endLine = line;
+        endColumn = column + 1;
+        
+        this.logger.debug('Using enhanced position data', { 
+          originalPosition: pos, 
+          convertedRange: { line, column, endLine, endColumn }
+        });
+        return { line, column, endLine, endColumn };
       }
-      if (typeof details.columnNumber === 'number') {
-        column = Math.max(0, details.columnNumber - 1);
-        endColumn = column + (details.length || 1);
+    }
+    
+    // PRIORITY 3: Enhanced position data from first match in matches array
+    if (details && details.matches && Array.isArray(details.matches) && details.matches.length > 0) {
+      const firstMatch = details.matches[0];
+      if (firstMatch.range && firstMatch.range.start) {
+        line = Math.max(0, firstMatch.range.start.line - 1); // Convert to 0-based
+        column = Math.max(0, firstMatch.range.start.column - 1); // Convert to 0-based
+        
+        if (firstMatch.range.end) {
+          endLine = Math.max(0, firstMatch.range.end.line - 1); // Convert to 0-based
+          endColumn = Math.max(0, firstMatch.range.end.column - 1); // Convert to 0-based
+        } else {
+          endLine = line;
+          endColumn = column + firstMatch.match.length;
+        }
+        
+        this.logger.debug('Using enhanced match position data', { 
+          match: firstMatch, 
+          convertedRange: { line, column, endLine, endColumn }
+        });
+        return { line, column, endLine, endColumn };
       }
+    }
+    
+    // PRIORITY 4: Legacy position fields (for backward compatibility)
+    if (details) {
+      // New enhanced fields first
       if (typeof details.startLine === 'number') {
         line = Math.max(0, details.startLine - 1);
       }
@@ -289,33 +363,55 @@ export class AnalysisManager implements vscode.Disposable {
         endLine = Math.max(0, details.endLine - 1);
       }
       if (typeof details.startColumn === 'number') {
-        column = Math.max(0, details.startColumn);
+        column = Math.max(0, details.startColumn - 1);
       }
       if (typeof details.endColumn === 'number') {
-        endColumn = Math.max(0, details.endColumn);
+        endColumn = Math.max(0, details.endColumn - 1);
+      }
+      
+      // Legacy fields as fallback
+      if (line === 0 && typeof details.lineNumber === 'number') {
+        line = Math.max(0, details.lineNumber - 1);
+        endLine = line;
+      }
+      if (column === 0 && typeof details.columnNumber === 'number') {
+        column = Math.max(0, details.columnNumber - 1);
+        endColumn = column + (details.length || 1);
+      }
+      
+      if (line > 0 || column > 0) {
+        this.logger.debug('Using legacy position data', { 
+          details: { lineNumber: details.lineNumber, columnNumber: details.columnNumber, startLine: details.startLine, endLine: details.endLine, startColumn: details.startColumn, endColumn: details.endColumn },
+          convertedRange: { line, column, endLine, endColumn }
+        });
+        return { line, column, endLine, endColumn };
       }
     }
     
-    // Fallback: try to parse from message
-    if (line === 0 && column === 0) {
-      const patterns = [
-        /line\s+(\d+)(?:,?\s*column\s+(\d+))?/i,
-        /(\d+):(\d+)/,
-        /at\s+line\s+(\d+)/i,
-        /\((\d+),(\d+)\)/
-      ];
-      
-      for (const pattern of patterns) {
-        const match = message.match(pattern);
-        if (match) {
-          line = Math.max(0, parseInt(match[1], 10) - 1);
-          if (match[2]) {
-            column = Math.max(0, parseInt(match[2], 10) - 1);
-          }
-          endLine = line;
-          endColumn = column + 1;
-          break;
+    // PRIORITY 5: Fallback - parse from message text
+    const patterns = [
+      /line\s+(\d+)(?:,?\s*column\s+(\d+))?/i,
+      /(\d+):(\d+)/,
+      /at\s+line\s+(\d+)/i,
+      /\((\d+),(\d+)\)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = message.match(pattern);
+      if (match) {
+        line = Math.max(0, parseInt(match[1], 10) - 1);
+        if (match[2]) {
+          column = Math.max(0, parseInt(match[2], 10) - 1);
         }
+        endLine = line;
+        endColumn = column + 1;
+        
+        this.logger.debug('Using fallback message parsing', { 
+          message, 
+          pattern: pattern.source, 
+          convertedRange: { line, column, endLine, endColumn }
+        });
+        break;
       }
     }
     

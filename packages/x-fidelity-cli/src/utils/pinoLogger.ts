@@ -142,4 +142,15 @@ export class PinoLogger implements ILogger {
     wrapper.logger = childLogger;
     return wrapper;
   }
+
+  async flush(): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.logger.flush) {
+        this.logger.flush(() => resolve());
+      } else {
+        // If flush is not available, just resolve immediately
+        resolve();
+      }
+    });
+  }
 } 

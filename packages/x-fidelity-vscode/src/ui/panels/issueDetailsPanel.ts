@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { ConfigManager } from '../../configuration/configManager';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
+import { logger } from '../../utils/logger';
 
 export interface IssueFilter {
   severity: string[];
@@ -25,6 +26,7 @@ export interface ProcessedIssue {
   message: string;
   line?: number;
   column?: number;
+  range?: { start: { line: number; column: number }, end: { line: number; column: number } };
   category: string;
   fixable: boolean;
   exempted: boolean;
@@ -136,14 +138,36 @@ export class IssueDetailsPanel implements vscode.Disposable {
       for (const diag of diags) {
         if (diag.source !== 'X-Fidelity') continue;
         
+        // Extract enhanced position data if available
+        const enhancedPos = (diag as any).enhancedPosition;
+        let range = null;
+        let column = diag.range.start.character + 1; // Convert to 1-based
+        
+        if (enhancedPos) {
+          // Use enhanced range if available
+          if (enhancedPos.range) {
+            range = enhancedPos.range;
+          }
+          // Use enhanced position data for more accurate column
+          if (enhancedPos.position && enhancedPos.position.column) {
+            column = enhancedPos.position.column;
+          }
+          // Use first match range if available
+          else if (enhancedPos.matches && enhancedPos.matches.length > 0 && enhancedPos.matches[0].range) {
+            range = enhancedPos.matches[0].range;
+            column = enhancedPos.matches[0].range.start.column;
+          }
+        }
+        
         issues.push({
           id: `${uri.fsPath}-${diag.code}-${diag.range.start.line}`,
           file: vscode.workspace.asRelativePath(uri),
           rule: String(diag.code || 'unknown'),
           severity: this.mapSeverityToString(diag.severity),
           message: diag.message,
-          line: diag.range.start.line + 1,
-          column: diag.range.start.character + 1,
+          line: diag.range.start.line + 1, // Convert to 1-based
+          column: column,
+          range: range, // Enhanced range data
           category: (diag as any).category || 'general',
           fixable: (diag as any).fixable || false,
           exempted: false,
@@ -250,7 +274,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
 <body class="${isDark ? 'dark' : 'light'}">
     <div class="issue-explorer">
         <header class="explorer-header">
-            <h1>🔍 Issue Explorer</h1>
+            <h1>X-Fidelity Issue Explorer</h1>
             <div class="stats-bar">
                 <span class="stat">📊 ${this.filteredIssues.length} of ${this.issues.length} issues</span>
                 <span class="stat error">🔴 ${stats.errors}</span>
@@ -448,7 +472,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
             </div>
             <div class="issue-message">${issue.message}</div>
             <div class="issue-actions">
-                <button class="action-btn primary" onclick="navigateToIssue('${issue.file}', ${issue.line || 1})">
+                <button class="action-btn primary" onclick="navigateToIssue('${issue.file}', ${issue.line || 1}, ${issue.column || 0}, ${issue.range || null})">
                     Go to Issue
                 </button>
                 ${issue.fixable ? `
@@ -975,11 +999,13 @@ export class IssueDetailsPanel implements vscode.Disposable {
             });
         }
         
-        function navigateToIssue(file, line) {
+        function navigateToIssue(file, line, column, range) {
             vscode.postMessage({
                 command: 'navigateToIssue',
                 file: file,
-                line: line
+                line: line,
+                column: column,
+                range: range
             });
         }
         
@@ -1035,7 +1061,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
         break;
         
       case 'navigateToIssue':
-        await this.navigateToIssue(message.file, message.line);
+        await this.navigateToIssue(message.file, message.line, message.column, message.range);
         break;
         
       case 'bulkOperations':
@@ -1060,17 +1086,62 @@ export class IssueDetailsPanel implements vscode.Disposable {
     }
   }
   
-  private async navigateToIssue(file: string, line: number): Promise<void> {
+  private async navigateToIssue(file: string, line: number, column?: number, range?: { start: { line: number; column: number }, end: { line: number; column: number } }): Promise<void> {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) return;
     
-    const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, file);
-    const document = await vscode.workspace.openTextDocument(fileUri);
-    const editor = await vscode.window.showTextDocument(document);
-    
-    const position = new vscode.Position(Math.max(0, line - 1), 0);
-    editor.selection = new vscode.Selection(position, position);
-    editor.revealRange(new vscode.Range(position, position));
+    try {
+      let fileUri: vscode.Uri;
+      
+      // Handle absolute vs relative paths
+      if (file.startsWith('/') || file.includes(':')) {
+        fileUri = vscode.Uri.file(file);
+      } else {
+        fileUri = vscode.Uri.joinPath(workspaceFolder.uri, file);
+      }
+      
+      const document = await vscode.workspace.openTextDocument(fileUri);
+      const editor = await vscode.window.showTextDocument(document);
+      
+      // Enhanced navigation with precise positioning
+      if (range) {
+        // Use enhanced range data for precise selection
+        const startPos = new vscode.Position(
+          Math.max(0, range.start.line - 1), // Convert to 0-based
+          Math.max(0, range.start.column - 1) // Convert to 0-based
+        );
+        const endPos = new vscode.Position(
+          Math.max(0, range.end.line - 1), // Convert to 0-based
+          Math.max(0, range.end.column - 1) // Convert to 0-based
+        );
+        
+        const selection = new vscode.Selection(startPos, endPos);
+        editor.selection = selection;
+        editor.revealRange(selection, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+        
+        logger.debug('Navigated to issue with range', { file, range, selection });
+      } else if (column !== undefined && column > 0) {
+        // Use line and column for precise positioning
+        const position = new vscode.Position(
+          Math.max(0, line - 1), // Convert to 0-based
+          Math.max(0, column - 1) // Convert to 0-based
+        );
+        editor.selection = new vscode.Selection(position, position);
+        editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+        
+        logger.debug('Navigated to issue with line and column', { file, line, column, position });
+      } else {
+        // Fallback to line-only navigation
+        const position = new vscode.Position(Math.max(0, line - 1), 0);
+        editor.selection = new vscode.Selection(position, position);
+        editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+        
+        logger.debug('Navigated to issue with line only', { file, line, position });
+      }
+    } catch (error) {
+      logger.error('Failed to navigate to issue', { file, line, column, range, error });
+      vscode.window.showErrorMessage(`Failed to navigate to issue: ${error}`);
+    }
   }
   
   private async showBulkOperations(issueIds: string[]): Promise<void> {

@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import { axiosClient } from "../utils/axiosClient";
-import { logger, setLogPrefix } from "../utils/logger";
+import { logger } from "../utils/logger";
+import { LoggerProvider } from "../utils/loggerProvider";
 import {
     ArchetypeConfig,
     ExecutionConfig,
@@ -204,11 +205,12 @@ export class ConfigManager {
         const configServer = options.configServer;
         const localConfigPath = options.localConfigPath;
 
-        if (logPrefix) setLogPrefix(logPrefix);
+        // Use the standard logger since execution ID is already in prefix
+        const initLogger = logger;
         
-        logger.info(`Initializing config manager for archetype: ${archetype}`);
-        logger.debug(`Initialize params: ${JSON.stringify(params)}`);
-        logger.info(`Config server: ${configServer}, Local config path: ${localConfigPath}`);
+        initLogger.info(`Initializing config manager for archetype: ${archetype}`);
+        initLogger.debug(`Initialize params: ${JSON.stringify(params)}`);
+        initLogger.info(`Config server: ${configServer}, Local config path: ${localConfigPath}`);
 
         const config: ExecutionConfig = { 
             archetype: {} as ArchetypeConfig, 
@@ -407,8 +409,16 @@ export class ConfigManager {
                 path.join(__dirname, '../demoConfig', `${archetype}.json`),
                 // For VSCode extension bundled usage
                 path.join(__dirname, 'demoConfig', `${archetype}.json`),
+                // For CLI package usage - actual CLI demoConfig path
+                path.join(process.cwd(), 'packages/x-fidelity-cli/dist/demoConfig', `${archetype}.json`),
+                // For VSCode extension demoConfig path
+                path.join(process.cwd(), 'packages/x-fidelity-vscode/dist/demoConfig', `${archetype}.json`),
                 // For development/test environments
-                path.join(process.cwd(), 'packages/x-fidelity-core/dist/demoConfig', `${archetype}.json`)
+                path.join(process.cwd(), 'packages/x-fidelity-core/dist/demoConfig', `${archetype}.json`),
+                // Fallback to relative CLI path (when running from CLI context)
+                path.resolve(__dirname, '../../../x-fidelity-cli/dist/demoConfig', `${archetype}.json`),
+                // Fallback to relative VSCode path (when running from VSCode context)
+                path.resolve(__dirname, '../../../x-fidelity-vscode/dist/demoConfig', `${archetype}.json`)
             ];
             
             let configPath: string | null = null;
@@ -450,7 +460,9 @@ export class ConfigManager {
                 throw new Error('Invalid builtin archetype configuration');
             }
         } catch (error: any) {
-            logger.error(`Error loading builtin archetype config: ${error.message}`);
+            // Use standardized error handling
+            const { handleConfigurationError } = await import('../utils/standardErrorHandler');
+            await handleConfigurationError(error, archetype, 'builtin-config');
             throw error;
         }
     }

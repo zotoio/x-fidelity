@@ -4,6 +4,7 @@
  */
 
 export * from './mockCore';
+export * from './consistencyTesting';
 
 // Common test data
 export const mockFileData = {

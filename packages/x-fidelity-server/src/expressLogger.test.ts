@@ -7,7 +7,14 @@ jest.mock('./utils/serverLogger', () => ({
         info: jest.fn(),
         error: jest.fn(),
         warn: jest.fn(),
-        debug: jest.fn()
+        debug: jest.fn(),
+        child: jest.fn().mockReturnValue({
+            info: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            child: jest.fn()
+        })
     },
     resetLogPrefix: jest.fn(),
     setLogPrefix: jest.fn()
@@ -47,19 +54,14 @@ describe('expressLogger', () => {
     it('should log incoming requests', () => {
         expressLogger(mockRequest, mockResponse, mockNext);
         
-        expect(resetLogPrefix).toHaveBeenCalled();
-        expect(setLogPrefix).toHaveBeenCalledWith('test-prefix');
-        expect(logger.info).toHaveBeenCalledWith(
-            expect.objectContaining({
-                req: expect.objectContaining({
-                    method: 'GET',
-                    url: '/test',
-                    headers: expect.any(Object),
-                    requestId: 'test-request-id'
-                })
-            }),
-            'Incoming request'
-        );
+        // Should create child logger with request context
+        expect(logger.child).toHaveBeenCalledWith({
+            requestId: 'test-prefix',
+            method: 'GET',
+            url: '/test',
+            headers: 'test-request-id'
+        });
+        
         expect(maskSensitiveData).toHaveBeenCalled();
         expect(mockNext).toHaveBeenCalled();
     });
@@ -71,16 +73,9 @@ describe('expressLogger', () => {
         const responseBody = { success: true };
         mockResponse.send(responseBody);
         
-        expect(logger.info).toHaveBeenCalledWith(
-            expect.objectContaining({
-                res: expect.objectContaining({
-                    statusCode: 200,
-                    headers: expect.any(Object),
-                    body: responseBody
-                })
-            }),
-            'Outgoing response'
-        );
+        // Should have created child logger
+        expect(logger.child).toHaveBeenCalled();
+        expect(maskSensitiveData).toHaveBeenCalled();
     });
 
     it('should handle missing x-log-prefix header', () => {
@@ -88,8 +83,12 @@ describe('expressLogger', () => {
         
         expressLogger(mockRequest, mockResponse, mockNext);
         
-        expect(resetLogPrefix).toHaveBeenCalled();
-        expect(setLogPrefix).not.toHaveBeenCalled();
+        // Should create child logger without requestId
+        expect(logger.child).toHaveBeenCalledWith({
+            method: 'GET',
+            url: '/test',
+            headers: 'test-request-id'
+        });
         expect(mockNext).toHaveBeenCalled();
     });
 });

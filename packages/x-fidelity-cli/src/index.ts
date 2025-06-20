@@ -3,6 +3,8 @@ import {
     analyzeCodebase, 
     sendTelemetry, 
     validateArchetypeConfig,
+    ExecutionContext,
+    LoggerProvider
 } from '@x-fidelity/core';
 
 import { PinoLogger } from './utils/pinoLogger';
@@ -121,6 +123,18 @@ export async function main() {
                 const repoPath = options.dir || '.';
                 const logFilePath = path.join(repoPath, '.xfiResults', 'x-fidelity.log');
                 
+                // Start execution context with consistent ID
+                const executionId = ExecutionContext.startExecution({
+                    component: 'CLI',
+                    operation: 'client-analyze',
+                    archetype: options.archetype || 'node-fullstack',
+                    repoPath,
+                    metadata: {
+                        configServer: options.configServer,
+                        localConfigPath: options.localConfigPath
+                    }
+                });
+                
                 // Create logger with file output for analysis
                 const analysisLogger = new PinoLogger({
                     level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
@@ -130,12 +144,17 @@ export async function main() {
                     filePath: logFilePath
                 });
 
+                // Set the logger provider to use CLI's pino logger
+                LoggerProvider.setLogger(analysisLogger);
+
+                logger.info('🚀 Starting codebase analysis');
+
                 const resultMetadata: ResultMetadata = await analyzeCodebase({
                     repoPath,
                     archetype: options.archetype || 'node-fullstack',
                     configServer: options.configServer,
                     localConfigPath: options.localConfigPath,
-                    executionLogPrefix,
+                    executionLogPrefix: executionId, // Use execution ID as prefix
                     logger: analysisLogger
                 });
 
@@ -149,9 +168,12 @@ export async function main() {
                 const reportGenerationdurationSeconds = ((new Date().getTime()) - reportGenerationStartTime) / 1000;
                 logger.info(`PERFORMANCE: Report generation took ${reportGenerationdurationSeconds} seconds`);
 
+                // Get the logger with execution ID prefixing for final output
+                const outputLogger = LoggerProvider.getLogger();
+
                 // if results are found, there were issues found in the codebase
                 if (resultMetadata.XFI_RESULT.totalIssues > 0) {
-                    logger.warn(`WARNING: lo-fi attributes detected in codebase. ${resultMetadata.XFI_RESULT.warningCount} are warnings, ${resultMetadata.XFI_RESULT.fatalityCount} are fatal.`);
+                    outputLogger.warn(`WARNING: lo-fi attributes detected in codebase. ${resultMetadata.XFI_RESULT.warningCount} are warnings, ${resultMetadata.XFI_RESULT.fatalityCount} are fatal.`);
                     
                     // Create a more detailed summary of issues
                     const issueSummary = {
@@ -174,40 +196,83 @@ export async function main() {
                         },
                     };
                     
-                    logger.debug(JSON.stringify(issueSummary, null, 2));
+                    outputLogger.debug(JSON.stringify(issueSummary, null, 2));
 
                     if (resultMetadata.XFI_RESULT.errorCount > 0) {
-                        logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
-                        logger.info(resultString);
-                        logger.error(`\n${prettyResult}\n\n`);
-                        logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
+                        outputLogger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
+                        outputLogger.info(resultString);
+                        outputLogger.error(`\n${prettyResult}\n\n`);
+                        outputLogger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
+                        
+                        // Flush logger before exit
+                        if (analysisLogger.flush) {
+                            await analysisLogger.flush();
+                        }
+                        
+                        // Add a delay to ensure all async logging operations complete
+                        await new Promise(resolve => setTimeout(resolve, 1000));
                         process.exit(1);
                     }
 
                     if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
-                        logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
-                        logger.info(resultString);
-                        logger.error(`\n${prettyResult}\n\n`);
-                        logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
+                        outputLogger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
+                        outputLogger.info(resultString);
+                        outputLogger.error(`\n${prettyResult}\n\n`);
+                        outputLogger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
+                        
+                        // Flush logger before exit
+                        if (analysisLogger.flush) {
+                            await analysisLogger.flush();
+                        }
+                        
+                        // Add a delay to ensure all async logging operations complete
+                        await new Promise(resolve => setTimeout(resolve, 1000));
                         process.exit(1);
                     } else {
-                        logger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
-                        logger.info(resultString);
-                        logger.warn(`\n${prettyResult}\n\n`);
-                        logger.warn(outcomeMessage('Please review the warnings above.'));
+                        outputLogger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
+                        outputLogger.info(resultString);
+                        outputLogger.warn(`\n${prettyResult}\n\n`);
+                        outputLogger.warn(outcomeMessage('Please review the warnings above.'));
+                        
+                        // Flush logger before exit
+                        if (analysisLogger.flush) {
+                            await analysisLogger.flush();
+                        }
+                        
+                        // Add a delay to ensure all async logging operations complete
+                        await new Promise(resolve => setTimeout(resolve, 1000));
                         process.exit(0);
                     }
                 } else {
-                    logger.info(outcomeMessage('HIGH FIDELITY APPROVED! No issues were found in the codebase.'));
-                    logger.info(resultString);
-                    logger.info(`\n${prettyResult}\n\n`);
-                    logger.info(outcomeMessage('HIGH FIDELITY APPROVED! No issues were found in the codebase.'));
+                    outputLogger.info(outcomeMessage('HIGH FIDELITY APPROVED! No issues were found in the codebase.'));
+                    outputLogger.info(resultString);
+                    outputLogger.info(`\n${prettyResult}\n\n`);
+                    outputLogger.info(outcomeMessage('HIGH FIDELITY APPROVED! No issues were found in the codebase.'));
+                    
+                    // Flush logger before exit
+                    if (analysisLogger.flush) {
+                        await analysisLogger.flush();
+                    }
+                    
+                    // Add a delay to ensure all async logging operations complete
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                     process.exit(0);
                 }
             }
         }
     } catch (error) {
         await handleError(error as Error);
+        
+        // Try to flush logger before exit if available
+        try {
+            const currentLogger = LoggerProvider.getLogger();
+            if (currentLogger.flush) {
+                await currentLogger.flush();
+            }
+        } catch (flushError) {
+            // Ignore flush errors during error handling
+        }
+        
         process.exit(1);
     }
 }

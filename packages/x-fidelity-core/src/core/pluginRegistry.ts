@@ -29,7 +29,7 @@ export class XFiPluginRegistry implements PluginRegistry {
         }
 
         // Enhanced logging from v3.24.0
-        logger.info({
+        logger.debug({
             plugin: {
                 name: plugin.name,
                 version: plugin.version,

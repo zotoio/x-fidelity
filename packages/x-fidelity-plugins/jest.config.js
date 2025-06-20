@@ -11,7 +11,7 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  setupFilesAfterEnv: [],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
     '^@x-fidelity/types/(.*)$': '<rootDir>/../x-fidelity-types/src/$1',
     '^@x-fidelity/types$': '<rootDir>/../x-fidelity-types/src/index',

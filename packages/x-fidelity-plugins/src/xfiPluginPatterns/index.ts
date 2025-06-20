@@ -1,6 +1,7 @@
 import { XFiPlugin, PluginError, FactDefn, OperatorDefn } from '@x-fidelity/types';
 import { globalFileAnalysis } from './facts/globalFileAnalysisFacts';
 import { regexMatch } from './operators/regexMatch';
+import { regexMatchWithPosition } from './operators/regexMatchWithPosition';
 import { globalPatternCount } from './operators/globalPatternCount';
 import { globalPatternRatio } from './operators/globalPatternRatio';
 
@@ -9,7 +10,12 @@ export const xfiPluginPatterns: XFiPlugin = {
     version: '1.0.0',
     description: 'Plugin for pattern matching and regex analysis',
     facts: [globalFileAnalysis],
-    operators: [regexMatch, globalPatternCount, globalPatternRatio],
+    operators: [
+        regexMatch,
+        regexMatchWithPosition,
+        globalPatternCount,
+        globalPatternRatio
+    ],
     onError: (error: Error): PluginError => ({
         message: error.message,
         level: 'error',
@@ -28,6 +34,7 @@ export const facts: FactDefn[] = [
 
 export const operators: OperatorDefn[] = [
     regexMatch, 
+    regexMatchWithPosition,
     globalPatternCount, 
     globalPatternRatio
 ]; 

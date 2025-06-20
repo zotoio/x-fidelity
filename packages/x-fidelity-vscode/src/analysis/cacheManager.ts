@@ -15,10 +15,11 @@ export class CacheManager {
   private cache = new Map<string, CacheEntry>();
   private readonly CACHE_FILE = '.xfidelity-cache.json';
   
-  async getCachedResult(repoPath: string): Promise<AnalysisResult | null> {
+  async getCachedResult(repoPath: string, forceRefresh?: boolean): Promise<AnalysisResult | null> {
     const config = ConfigManager.getInstance().getConfig();
     
-    if (!config.cacheResults) {
+    // Skip cache if force refresh is requested or caching is disabled
+    if (!config.cacheResults || forceRefresh) {
       return null;
     }
     

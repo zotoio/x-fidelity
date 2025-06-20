@@ -58,6 +58,7 @@ export function resetLogPrefix(): void {
 }
 
 export function setLogPrefix(prefix: string): void {
+    console.warn('setLogPrefix is deprecated with the new logger provider pattern');
     logPrefix = prefix;
 }
 

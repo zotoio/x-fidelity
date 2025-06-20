@@ -17,7 +17,47 @@ const mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
 jest.mock('@x-fidelity/core', () => ({
     analyzeCodebase: jest.fn(),
     sendTelemetry: jest.fn(),
-    validateArchetypeConfig: jest.fn()
+    validateArchetypeConfig: jest.fn(),
+    ExecutionContext: {
+        startExecution: jest.fn().mockReturnValue('test-exec-id'),
+        getCurrentExecutionId: jest.fn().mockReturnValue('test-exec-id'),
+        getCurrentContext: jest.fn().mockReturnValue(null),
+        updateContext: jest.fn(),
+        endExecution: jest.fn(),
+        createLoggerBindings: jest.fn().mockReturnValue({}),
+        getExecutionPrefix: jest.fn().mockReturnValue('[test-exec-id]'),
+        isExecutionActive: jest.fn().mockReturnValue(true),
+        prefixMessage: jest.fn((msg) => `[test-exec-id] ${msg}`)
+    },
+    LoggerProvider: {
+        setLogger: jest.fn(),
+        getLogger: jest.fn().mockImplementation(() => ({
+            info: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+            debug: jest.fn(),
+            trace: jest.fn(),
+            fatal: jest.fn(),
+            setLevel: jest.fn(),
+            getLevel: jest.fn().mockReturnValue('info'),
+            isLevelEnabled: jest.fn().mockReturnValue(true),
+            child: jest.fn().mockReturnThis()
+        })),
+        hasInjectedLogger: jest.fn().mockReturnValue(false),
+        clearInjectedLogger: jest.fn(),
+        createChildLogger: jest.fn().mockImplementation(() => ({
+            info: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+            debug: jest.fn(),
+            trace: jest.fn(),
+            fatal: jest.fn(),
+            setLevel: jest.fn(),
+            getLevel: jest.fn().mockReturnValue('info'),
+            isLevelEnabled: jest.fn().mockReturnValue(true),
+            child: jest.fn().mockReturnThis()
+        }))
+    }
 }));
 
 // Mock the PinoLogger
@@ -28,10 +68,11 @@ jest.mock('./utils/pinoLogger', () => ({
         error: jest.fn(),
         debug: jest.fn(),
         trace: jest.fn(),
+        fatal: jest.fn(),
         setLevel: jest.fn(),
-        getLevel: jest.fn(),
-        isLevelEnabled: jest.fn(),
-        child: jest.fn()
+        getLevel: jest.fn().mockReturnValue('info'),
+        isLevelEnabled: jest.fn().mockReturnValue(true),
+        child: jest.fn().mockReturnThis()
     }))
 }));
 

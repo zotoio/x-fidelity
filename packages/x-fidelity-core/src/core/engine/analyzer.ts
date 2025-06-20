@@ -30,8 +30,30 @@ import { Engine } from 'json-rules-engine';
 import { options } from '../options';
 import { ScanResult, RuleFailure, ErrorLevel } from '@x-fidelity/types';
 import { createTimingTracker } from '../../utils/timingUtils';
+import { logger } from '../../utils/logger';
+import { ExecutionContext } from '../../utils/executionContext';
 
 export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<ResultMetadata> {
+    // Start execution context for consistent logging
+    const executionId = ExecutionContext.startExecution({
+        component: 'Core',
+        operation: 'analyzeCodebase',
+        archetype: params.archetype,
+        repoPath: params.repoPath,
+        metadata: {
+            configServer: params.configServer,
+            localConfigPath: params.localConfigPath
+        }
+    });
+
+    // Use the standard logger since execution ID is already in prefix
+    const execLogger = LoggerProvider.getLogger();
+
+    execLogger.info('🚀 Starting codebase analysis', {
+        repoPath: params.repoPath,
+        archetype: params.archetype
+    });
+
     const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '', executionLogPrefix = '', logger: injectedLogger } = params;
     
     // Use injected logger or create default logger
@@ -212,7 +234,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     // add xfiConfig as a fact
     engine.addFact('repoXFIConfig', repoXFIConfig);
 
-    logger.info('Added repoXFIConfig as fact', { repoXFIConfig });
+    logger.debug('Added repoXFIConfig as fact', { repoXFIConfig });
     timingTracker.recordTiming('fact_setup');
 
     const failures = await runEngineOnFiles({
@@ -306,6 +328,16 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         metadata: resultMetadata,
         timestamp: new Date().toISOString()
     });
+
+    // Log completion with execution ID
+    execLogger.info('✅ Codebase analysis completed', {
+        duration: (finishTime - telemetryData.startTime) / 1000,
+        totalIssues: totalFailureCount,
+        fileCount: fileData.length - 1
+    });
+
+    // End execution context
+    ExecutionContext.endExecution();
 
     return resultMetadata;
 }

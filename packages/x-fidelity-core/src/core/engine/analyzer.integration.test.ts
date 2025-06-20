@@ -1,4 +1,4 @@
-import { LoggerProvider } from '../../utils/loggerProvider';
+import { LoggerProvider, PrefixingLogger } from '../../utils/loggerProvider';
 import { ILogger } from '@x-fidelity/types';
 
 describe('Logger Injection Integration Test', () => {
@@ -48,7 +48,11 @@ describe('Logger Injection Integration Test', () => {
 
     // Verify logger was injected
     expect(LoggerProvider.hasInjectedLogger()).toBe(true);
-    expect(LoggerProvider.getLogger()).toBe(mockLogger);
+    
+    // getLogger() now returns PrefixingLogger wrapper, check base logger
+    const logger = LoggerProvider.getLogger();
+    expect(logger).toBeInstanceOf(PrefixingLogger);
+    expect(LoggerProvider.getBaseLogger()).toBe(mockLogger);
   });
 
   it('should use injected logger in core logger proxy', async () => {

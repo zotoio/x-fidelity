@@ -389,11 +389,39 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
         const dependencyData: any = await almanac.factValue('dependencyData');
         const safeDependencyData = dependencyData ? JSON.parse(JSON.stringify(dependencyData)) : {};
 
-        // Use rule-provided versions if they exist, otherwise use the ones from dependencyData
-        const versionsToCheck = params?.minimumDependencyVersions ? 
-            safeDependencyData.installedDependencyVersions.filter((versionData: VersionData) => 
-                params.minimumDependencyVersions[versionData.dep]) :
-            safeDependencyData.installedDependencyVersions;
+        // Handle both array and object formats for installedDependencyVersions
+        let versionsToCheck: VersionData[] = [];
+
+        if (safeDependencyData.installedDependencyVersions) {
+            // If it's already an array, use it directly
+            if (Array.isArray(safeDependencyData.installedDependencyVersions)) {
+                versionsToCheck = params?.minimumDependencyVersions ? 
+                    safeDependencyData.installedDependencyVersions.filter((versionData: VersionData) => 
+                        params.minimumDependencyVersions[versionData.dep]) :
+                    safeDependencyData.installedDependencyVersions;
+            } else if (typeof safeDependencyData.installedDependencyVersions === 'object') {
+                // If it's an object (like from Object.fromEntries), convert to array format
+                versionsToCheck = Object.entries(safeDependencyData.installedDependencyVersions).map(([name, version]) => ({
+                    dep: name,
+                    ver: version as string,
+                    min: '', // Will be filled from minimumDependencyVersions
+                    name,
+                    version: version as string
+                }));
+
+                // Filter by minimumDependencyVersions if provided
+                if (params?.minimumDependencyVersions) {
+                    versionsToCheck = versionsToCheck.filter((versionData: VersionData) => 
+                        params.minimumDependencyVersions[versionData.dep]);
+                }
+            } else {
+                logger.warn(`installedDependencyVersions is neither array nor object: ${typeof safeDependencyData.installedDependencyVersions}`);
+                return result;
+            }
+        } else {
+            logger.warn('No installedDependencyVersions found in dependencyData');
+            return result;
+        }
 
         versionsToCheck.forEach((versionData: VersionData) => { 
             logger.debug(`outdatedFramework: checking ${versionData.dep}`);
@@ -402,6 +430,11 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
                 // Check if the installed version satisfies the required version, supporting both ranges and specific versions
                 // Get required version from rule params if it exists, otherwise from archetype config
                 const requiredVersion = params?.minimumDependencyVersions?.[versionData.dep] || versionData.min;
+                
+                if (!requiredVersion) {
+                    logger.debug(`No required version found for ${versionData.dep}, skipping`);
+                    return;
+                }
                 
                 // Check if the installed version satisfies the required version
                 const isValid = semverValid(versionData.ver, requiredVersion);

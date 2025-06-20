@@ -74,6 +74,7 @@ export type {
 export * from './utils/logger';
 export * from './utils/loggerProvider';
 export * from './utils/defaultLogger';
+export * from './utils/executionContext';
 export * from './utils/utils';
 export * from './utils/openaiUtils';
 export * from './utils/telemetry';
@@ -84,7 +85,7 @@ export * from './utils/pathUtils';
 
 // Export core functionality
 export { logger, LoggerProvider } from './utils/logger';
-export { getLogPrefix, setLogLevel, setLogPrefix, setLogFilePath, getLogFilePath } from './utils/logger';
+export { getLogPrefix, setLogLevel, setLogFilePath, getLogFilePath } from './utils/logger';
 export { analyzeCodebase } from './core/engine/analyzer';
 export { sendTelemetry } from './utils/telemetry';
 

@@ -63,7 +63,7 @@ describe('ConfigManager Path Resolution Tests', () => {
           'customPlugins': [],
           'ruleOverrides': {},
           'cacheResults': true,
-          'cacheTTL': 60
+          'cacheTTL': 5
         };
         return defaults[key] ?? defaultValue;
       }),
@@ -166,7 +166,7 @@ describe('ConfigManager Path Resolution Tests', () => {
     delete process.env.XDG_CONFIG_HOME;
 
     const resolvedPath = configManager.getResolvedLocalConfigPath();
-    const expectedPath = path.join('/mock/extension/path', 'config');
+    const expectedPath = path.join('/mock/extension/path', 'dist', 'demoConfig');
     expect(resolvedPath).toBe(expectedPath);
   });
 
@@ -239,7 +239,7 @@ describe('ConfigManager Path Resolution Tests', () => {
     (configManager as any).loadConfiguration();
 
     const resolvedPath = configManager.getResolvedLocalConfigPath();
-    const expectedPath = path.join('/mock/extension/path', 'config');
+    const expectedPath = path.join('/mock/extension/path', 'dist', 'demoConfig');
     // Should fallback to extension config since ~/.config/x-fidelity doesn't exist
     expect(resolvedPath).toBe(expectedPath);
   });
@@ -306,7 +306,7 @@ describe('ConfigManager Path Resolution Tests', () => {
     (configManager as any).loadConfiguration();
 
     const resolvedPath = configManager.getResolvedLocalConfigPath();
-    const expectedPath = path.join('/mock/extension/path', 'config');
+    const expectedPath = path.join('/mock/extension/path', 'dist', 'demoConfig');
     expect(resolvedPath).toBe(expectedPath);
   });
 
@@ -332,7 +332,7 @@ describe('ConfigManager Path Resolution Tests', () => {
     (configManager as any).loadConfiguration();
 
     const resolvedPath = configManager.getResolvedLocalConfigPath();
-    const expectedPath = path.join('/mock/extension/path', 'config');
+    const expectedPath = path.join('/mock/extension/path', 'dist', 'demoConfig');
     expect(resolvedPath).toBe(expectedPath);
   });
 }); 

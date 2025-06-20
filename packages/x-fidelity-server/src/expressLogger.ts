@@ -1,18 +1,27 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger, resetLogPrefix, setLogPrefix } from './utils/serverLogger';
+import { logger } from './utils/serverLogger';
 import { maskSensitiveData } from '@x-fidelity/core';
 import { IncomingMessage, ServerResponse } from 'http';
 
 export const expressLogger = (req: Request, res: Response, next: NextFunction) => {
-    resetLogPrefix();
-
     const requestLogPrefix = req.headers['x-log-prefix'];
-    if (requestLogPrefix && typeof requestLogPrefix === 'string') {
-        setLogPrefix(requestLogPrefix);
-    }
+    
+    // Create a child logger with request context instead of using setLogPrefix
+    const requestLogger = requestLogPrefix && typeof requestLogPrefix === 'string' ? 
+        logger.child({ 
+            requestId: requestLogPrefix, 
+            method: req.method, 
+            url: req.url,
+            headers: req.headers['x-request-id'] || ''
+        }) : 
+        logger.child({ 
+            method: req.method, 
+            url: req.url,
+            headers: req.headers['x-request-id'] || ''
+        });
 
     // Log request
-    logger.info({
+    requestLogger.info({
         req: maskSensitiveData({
             method: req.method,
             url: req.url,
@@ -24,7 +33,7 @@ export const expressLogger = (req: Request, res: Response, next: NextFunction) =
     // Capture response
     const originalSend = res.send;
     res.send = function(body?: any): Response {
-        logger.info({
+        requestLogger.info({
             res: maskSensitiveData({
                 statusCode: res.statusCode,
                 headers: res.getHeaders(),

@@ -266,7 +266,7 @@
         },
         "xfidelity.cacheTTL": {
           "type": "number",
-          "default": 60,
+          "default": 5,
           "description": "Cache time-to-live in minutes."
         }
       }

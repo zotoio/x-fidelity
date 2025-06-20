@@ -1,7 +1,8 @@
 import { Engine, Event, RuleProperties } from 'json-rules-engine';
 import { SetupEngineParams, ArchetypeConfig, ExecutionConfig } from '@x-fidelity/types';
 import { loadRepoXFIConfig } from '../../utils/repoXFIConfigLoader';
-import { logger, getLogPrefix, setLogPrefix } from '../../utils/logger';
+import { logger } from '../../utils/logger';
+import { LoggerProvider } from '../../utils/loggerProvider';
 import { pluginRegistry } from '../pluginRegistry';
 import { registerRuleForTracking } from './engineRunner';
 import { isExempt } from '../../utils/exemptionUtils';
@@ -100,9 +101,10 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
 
         // Add event handler for rule violations and telemetry
         engine.on('success', async ({ type, params, name, conditions }: Event & { name?: string, conditions?: any }) => {
-            const originalLogPrefix = getLogPrefix();
             const ruleName = name || 'unknown-rule';
-            setLogPrefix(`${originalLogPrefix}:${ruleName}`);
+            
+            // Create a child logger without verbose bindings since execution ID is already in prefix
+            const childLogger = LoggerProvider.getLogger();
             
             // Extract condition details from conditions
             let conditionDetails: { fact: string; operator: string; value: any; params?: any } | undefined = undefined;
@@ -139,12 +141,12 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     }
                 }
             } catch (err) {
-                logger.debug(`Error extracting operator threshold: ${err}`);
+                childLogger.debug(`Error extracting operator threshold: ${err}`);
             }
             
             // Handle different event types with telemetry
             if (type === 'warning') {
-                logger.warn(`warning detected: ${JSON.stringify(params)}`);
+                childLogger.warn(`warning detected: ${JSON.stringify(params)}`);
                 await sendTelemetry({
                     eventType: 'warning',
                     metadata: {
@@ -161,7 +163,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
             }
             
             if (type === 'fatality') {
-                logger.error(`fatality detected: ${JSON.stringify(params)}`);
+                childLogger.error(`fatality detected: ${JSON.stringify(params)}`);
                 await sendTelemetry({
                     eventType: 'fatality',
                     metadata: {
@@ -178,7 +180,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
             }
             
             if (type === 'exempt') {
-                logger.error(`exemption detected: ${JSON.stringify(params)}`);
+                childLogger.error(`exemption detected: ${JSON.stringify(params)}`);
                 await sendTelemetry({
                     eventType: 'exempt',
                     metadata: {
@@ -193,9 +195,6 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                     timestamp: new Date().toISOString()
                 }, executionLogPrefix);
             }
-            
-            // Restore original log prefix
-            setLogPrefix(originalLogPrefix);
         });
 
         return engine;

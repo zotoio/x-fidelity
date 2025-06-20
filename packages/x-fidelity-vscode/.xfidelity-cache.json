@@ -21,20 +21,20 @@
             "arch": "x64",
             "cpus": 12,
             "totalMemory": 33270951936,
-            "freeMemory": 22440861696
+            "freeMemory": 16073474048
           },
           "userInfo": {
             "username": "andrewv",
             "homedir": "/home/andrewv",
             "shell": "/bin/bash"
           },
-          "startTime": 1750322485068
+          "startTime": 1750418425341
         },
         "memoryUsage": {
-          "heapTotal": 350171136,
-          "heapUsed": 312180988,
-          "external": 6961405,
-          "rss": 580861952
+          "heapTotal": 365699072,
+          "heapUsed": 333366212,
+          "external": 7441361,
+          "rss": 642379776
         },
         "factMetrics": {},
         "options": {
@@ -48,12 +48,12 @@
           "maxFileSize": 1048576,
           "timeout": 30000
         },
-        "startTime": 1750322485068,
-        "finishTime": 1750322485102,
-        "durationSeconds": 0.034,
+        "startTime": 1750418425341,
+        "finishTime": 1750418425366,
+        "durationSeconds": 0.025,
         "xfiVersion": "4.0.0",
         "archetype": "node-fullstack",
-        "fileCount": 46,
+        "fileCount": 45,
         "totalIssues": 0,
         "warningCount": 0,
         "errorCount": 0,
@@ -64,9 +64,9 @@
       }
     },
     "diagnostics": {},
-    "timestamp": 1750322485105,
-    "duration": 92
+    "timestamp": 1750418425368,
+    "duration": 141
   },
-  "timestamp": 1750322485106,
-  "hash": "6783d7ed4416a6bda41aad356be9873c"
+  "timestamp": 1750418425369,
+  "hash": "7b11f7257366a57cd31a05f10d1057ec"
 }

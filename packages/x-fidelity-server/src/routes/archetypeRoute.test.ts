@@ -5,11 +5,24 @@ import { getCachedData, setCachedData } from '../cacheManager';
 import { ConfigManager } from '@x-fidelity/core';
 import { validateArchetype } from '@x-fidelity/core';
 
+const mockChildLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  warn: jest.fn(),
+  trace: jest.fn(),
+  fatal: jest.fn()
+};
+
 jest.mock('../utils/serverLogger', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
-    debug: jest.fn()
+    debug: jest.fn(),
+    warn: jest.fn(),
+    trace: jest.fn(),
+    fatal: jest.fn(),
+    child: jest.fn(() => mockChildLogger)
   },
   setLogPrefix: jest.fn()
 }));
@@ -48,6 +61,8 @@ describe('archetypeRoute', () => {
     };
     
     jest.clearAllMocks();
+    // Clear mock child logger calls
+    Object.values(mockChildLogger).forEach(mock => (mock as jest.Mock).mockClear());
   });
 
   it('should return 400 when archetype name is invalid', async () => {
@@ -55,9 +70,8 @@ describe('archetypeRoute', () => {
     
     await archetypeRoute(mockRequest, mockResponse);
     
-    expect(setLogPrefix).toHaveBeenCalledWith('test-prefix');
     expect(validateUrlInput).toHaveBeenCalledWith('test-archetype');
-    expect(logger.error).toHaveBeenCalled();
+    expect(mockChildLogger.error).toHaveBeenCalled();
     expect(mockResponse.status).toHaveBeenCalledWith(400);
     expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid archetype name' });
   });
@@ -70,7 +84,7 @@ describe('archetypeRoute', () => {
     await archetypeRoute(mockRequest, mockResponse);
     
     expect(getCachedData).toHaveBeenCalledWith('archetype:test-archetype');
-    expect(logger.info).toHaveBeenCalledWith('serving cached archetype test-archetype');
+    expect(mockChildLogger.info).toHaveBeenCalledWith('serving cached archetype test-archetype');
     expect(mockResponse.json).toHaveBeenCalledWith(cachedArchetype);
     expect(ConfigManager.getConfig).not.toHaveBeenCalled();
   });
@@ -92,7 +106,7 @@ describe('archetypeRoute', () => {
     });
     expect(validateArchetype).toHaveBeenCalledWith(archetypeConfig);
     expect(setCachedData).toHaveBeenCalledWith('archetype:test-archetype', archetypeConfig);
-    expect(logger.info).toHaveBeenCalledWith('serving fresh archetype test-archetype');
+    expect(mockChildLogger.info).toHaveBeenCalledWith('serving fresh archetype test-archetype');
     expect(mockResponse.json).toHaveBeenCalledWith(archetypeConfig);
   });
 
@@ -106,7 +120,7 @@ describe('archetypeRoute', () => {
     
     await archetypeRoute(mockRequest, mockResponse);
     
-    expect(logger.error).toHaveBeenCalledWith('invalid archetype configuration for test-archetype');
+    expect(mockChildLogger.error).toHaveBeenCalledWith('invalid archetype configuration for test-archetype');
     expect(mockResponse.status).toHaveBeenCalledWith(400);
     expect(mockResponse.json).toHaveBeenCalledWith({ error: 'invalid archetype requested' });
   });
@@ -118,7 +132,7 @@ describe('archetypeRoute', () => {
     
     await archetypeRoute(mockRequest, mockResponse);
     
-    expect(logger.error).toHaveBeenCalledWith('error fetching archetype test-archetype: Error: Test error');
+    expect(mockChildLogger.error).toHaveBeenCalledWith('error fetching archetype test-archetype: Error: Test error');
     expect(mockResponse.status).toHaveBeenCalledWith(500);
     expect(mockResponse.json).toHaveBeenCalledWith({ error: 'internal server error' });
   });
