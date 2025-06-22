@@ -7,7 +7,8 @@
     "types": ["node", "jest", "vscode"],
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "noEmit": false
+    "noEmit": false,
+    "isolatedModules": true
   },
   "include": [
     "src/**/*.test.ts", 

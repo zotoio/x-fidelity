@@ -15,7 +15,7 @@ import {
 } from './config';
 
 // Re-export server-related types
-export {
+export type {
     StartServerParams,
     NotificationConfig,
     NotificationProvider,
