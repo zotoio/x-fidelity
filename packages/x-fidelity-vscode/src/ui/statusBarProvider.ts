@@ -91,9 +91,9 @@ export class StatusBarProvider implements vscode.Disposable {
     
     // Show issue counts
     if (summary.total === 0) {
-      this.statusBarItem.text = '$(check) X-Fidelity';
-      this.statusBarItem.tooltip = 'X-Fidelity: No issues found';
-      this.statusBarItem.backgroundColor = undefined;
+          this.statusBarItem.text = '$(zap) X-Fidelity';
+    this.statusBarItem.tooltip = 'X-Fidelity: No issues found';
+    this.statusBarItem.backgroundColor = undefined;
     } else {
       const issueText = this.formatIssueSummary(summary);
       this.statusBarItem.text = `$(warning) ${issueText}`;

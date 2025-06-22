@@ -10,6 +10,7 @@ import {
 import { PinoLogger } from './utils/pinoLogger';
 import { LogLevel } from '@x-fidelity/types';
 import path from 'path';
+import fs from 'fs/promises';
 
 import { startServer } from '@x-fidelity/server';
 
@@ -167,6 +168,31 @@ export async function main() {
 
                 const reportGenerationdurationSeconds = ((new Date().getTime()) - reportGenerationStartTime) / 1000;
                 logger.info(`PERFORMANCE: Report generation took ${reportGenerationdurationSeconds} seconds`);
+
+                // Handle structured output mode (completely additive - no impact on existing behavior)
+                if (options.outputFormat === 'json') {
+                    try {
+                        const outputPath = options.outputFile || path.join(repoPath, '.xfiResults', 'structured-output.json');
+                        
+                        // Ensure directory exists
+                        await fs.mkdir(path.dirname(outputPath), { recursive: true });
+                        
+                        // Write structured JSON output
+                        await fs.writeFile(outputPath, JSON.stringify(resultMetadata, null, 2));
+                        
+                        // If no output file specified, also write to stdout for programmatic use
+                        if (!options.outputFile) {
+                            console.log('STRUCTURED_OUTPUT_START');
+                            console.log(JSON.stringify(resultMetadata));
+                            console.log('STRUCTURED_OUTPUT_END');
+                        }
+                        
+                        logger.debug(`Structured output written to: ${outputPath}`);
+                    } catch (structuredOutputError) {
+                        // Don't fail the entire CLI if structured output fails - just warn
+                        logger.warn('Failed to write structured output:', structuredOutputError);
+                    }
+                }
 
                 // Get the logger with execution ID prefixing for final output
                 const outputLogger = LoggerProvider.getLogger();

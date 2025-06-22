@@ -98,6 +98,7 @@ export const MarkdownString = jest.fn(() => ({
   isTrusted: false,
 }));
 export const ThemeColor = jest.fn();
+export const ThemeIcon = jest.fn();
 export const DecorationRangeBehavior = {
   ClosedClosed: 3,
 };
@@ -203,6 +204,7 @@ export default {
   WorkspaceEdit,
   MarkdownString,
   ThemeColor,
+  ThemeIcon,
   DecorationRangeBehavior,
   EventEmitter,
   DiagnosticSeverity,

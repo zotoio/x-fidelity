@@ -7,6 +7,7 @@ import { XFidelityCodeActionProvider, handleAddExemption, handleBulkExemptions }
 import { StatusBarProvider } from '../ui/statusBarProvider';
 import { SettingsUIPanel, DashboardPanel, IssueDetailsPanel } from '../ui/panels';
 import { ControlCenterPanel } from '../ui/panels/controlCenterPanel';
+import { IssuesTreeViewManager } from '../ui/treeView/issuesTreeViewManager';
 import { logger } from '../utils/logger';
 
 export class ExtensionManager implements vscode.Disposable {
@@ -22,6 +23,9 @@ export class ExtensionManager implements vscode.Disposable {
   private issueDetailsPanel: IssueDetailsPanel;
   private controlCenterPanel: ControlCenterPanel;
   
+  // Tree View
+  private issuesTreeViewManager: IssuesTreeViewManager;
+  
   constructor(private context: vscode.ExtensionContext) {
     this.configManager = ConfigManager.getInstance(context);
     
@@ -35,6 +39,9 @@ export class ExtensionManager implements vscode.Disposable {
     this.dashboardPanel = new DashboardPanel(this.context, this.configManager, this.analysisManager, this.diagnosticProvider);
     this.issueDetailsPanel = new IssueDetailsPanel(this.context, this.configManager, this.diagnosticProvider);
     this.controlCenterPanel = new ControlCenterPanel(this.context, this.configManager, this.analysisManager, this.diagnosticProvider);
+    
+    // Initialize Tree View
+    this.issuesTreeViewManager = new IssuesTreeViewManager(this.context, this.diagnosticProvider, this.configManager);
     
     this.initialize();
   }
@@ -51,7 +58,8 @@ export class ExtensionManager implements vscode.Disposable {
         this.settingsUIPanel,
         this.dashboardPanel,
         this.issueDetailsPanel,
-        this.controlCenterPanel
+        this.controlCenterPanel,
+        this.issuesTreeViewManager
       );
       
       logger.debug('Components added to disposables');
@@ -98,6 +106,9 @@ export class ExtensionManager implements vscode.Disposable {
       }
       
       logger.info('X-Fidelity extension initialized successfully');
+      
+      // Set context to show tree view
+      vscode.commands.executeCommand('setContext', 'xfidelity.extensionActive', true);
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -432,6 +443,9 @@ export class ExtensionManager implements vscode.Disposable {
   private onAnalysisComplete(result: AnalysisResult): void {
     // Update diagnostics
     this.diagnosticProvider.updateDiagnostics(result);
+    
+    // Refresh tree view
+    this.issuesTreeViewManager.refresh();
     
     // Log results
     const summary = this.diagnosticProvider.getDiagnosticsSummary();
@@ -799,6 +813,9 @@ Average Warnings: ${Math.round(trends.warningCounts.reduce((a, b) => a + b, 0) /
   
   dispose(): void {
     logger.info('Disposing X-Fidelity extension...');
+    
+    // Unset context to hide tree view
+    vscode.commands.executeCommand('setContext', 'xfidelity.extensionActive', false);
     
     // Stop periodic analysis
     this.analysisManager?.stopPeriodicAnalysis();

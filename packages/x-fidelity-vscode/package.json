@@ -11,8 +11,7 @@
     "url": "https://github.com/zotoio/x-fidelity.git"
   },
   "engines": {
-    "vscode": "^1.80.0",
-    "node": ">=16.0.0"
+    "vscode": "^1.80.0"
   },
   "categories": [
     "Linters",
@@ -99,7 +98,48 @@
       },
       {
         "command": "xfidelity.showControlCenter",
-        "title": "X-Fidelity: Control Center"
+        "title": "X-Fidelity: Control Center",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "xfidelity.refreshIssuesTree",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "xfidelity.issuesTreeGroupBySeverity",
+        "title": "Group by Severity",
+        "icon": "$(symbol-color)"
+      },
+      {
+        "command": "xfidelity.issuesTreeGroupByRule",
+        "title": "Group by Rule",
+        "icon": "$(symbol-method)"
+      },
+      {
+        "command": "xfidelity.issuesTreeGroupByFile",
+        "title": "Group by File",
+        "icon": "$(symbol-file)"
+      },
+      {
+        "command": "xfidelity.issuesTreeGroupByCategory",
+        "title": "Group by Category",
+        "icon": "$(symbol-class)"
+      },
+      {
+        "command": "xfidelity.goToIssue",
+        "title": "Go to Issue",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "xfidelity.addIssueExemption",
+        "title": "Add Exemption",
+        "icon": "$(circle-slash)"
+      },
+      {
+        "command": "xfidelity.showIssueRuleInfo",
+        "title": "Show Rule Info",
+        "icon": "$(info)"
       }
     ],
     "configuration": {
@@ -270,6 +310,67 @@
           "description": "Cache time-to-live in minutes."
         }
       }
+    },
+    "views": {
+      "explorer": [
+        {
+          "icon": "$(warning)",
+          "id": "xfidelityIssuesTreeView",
+          "name": "X-Fidelity Issues",
+          "when": "xfidelity.extensionActive"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "xfidelity.refreshIssuesTree",
+          "when": "view == xfidelityIssuesTreeView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "xfidelity.showControlCenter",
+          "when": "view == xfidelityIssuesTreeView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "xfidelity.issuesTreeGroupBySeverity",
+          "when": "view == xfidelityIssuesTreeView",
+          "group": "1_grouping@1"
+        },
+        {
+          "command": "xfidelity.issuesTreeGroupByRule",
+          "when": "view == xfidelityIssuesTreeView",
+          "group": "1_grouping@2"
+        },
+        {
+          "command": "xfidelity.issuesTreeGroupByFile",
+          "when": "view == xfidelityIssuesTreeView",
+          "group": "1_grouping@3"
+        },
+        {
+          "command": "xfidelity.issuesTreeGroupByCategory",
+          "when": "view == xfidelityIssuesTreeView",
+          "group": "1_grouping@4"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "xfidelity.goToIssue",
+          "when": "view == xfidelityIssuesTreeView && viewItem == issue",
+          "group": "navigation@1"
+        },
+        {
+          "command": "xfidelity.addIssueExemption",
+          "when": "view == xfidelityIssuesTreeView && viewItem == issue",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "xfidelity.showIssueRuleInfo",
+          "when": "view == xfidelityIssuesTreeView && viewItem == issue",
+          "group": "1_actions@2"
+        }
+      ]
     }
   },
   "dependencies": {
@@ -331,7 +432,13 @@
     "debug": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --enable-proposed-api",
     "logs": "echo 'Check VSCode Output panel > X-Fidelity Debug for logs'",
     
+    "verify:all": "node scripts/verify-extension.js",
+    "verify:dev": "yarn dev:build && node scripts/verify-extension.js",
+    "verify:ci": "yarn build && node scripts/verify-extension.js",
+    "verify:extension": "node scripts/verify-extension.js",
+    "verify:quick": "yarn build:test && yarn test:unit && yarn verify:extension",
+    
     "quick-start": "echo '🚀 Quick Start: Press F5 to launch extension, then Ctrl+Shift+P > X-Fidelity: Control Center'",
-    "help": "echo '📖 Development Help:\\n  yarn dev - Start development\\n  yarn dev:fresh - Fresh profile\\n  yarn test:all - Run tests\\n  F5 in VSCode - Debug launch'"
+    "help": "echo '📖 Development Help:\\n  yarn dev - Start development\\n  yarn dev:fresh - Fresh profile\\n  yarn test:all - Run tests\\n  F5 in VSCode - Debug launch\\n  yarn verify:all - Full verification'"
   }
 }

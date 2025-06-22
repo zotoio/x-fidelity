@@ -32,6 +32,8 @@ export function initCLI(): void {
         .option('-j, --jsonTTL <minutes>', 'Set the server JSON cache TTL in minutes', '10')
         .option('-e, --extraPlugins <modules...>', 'Space-separated list of npm module names to load as extra plugins')
         .option('-x, --examine', 'Validate archetype config only')
+        .option('--output-format <format>', 'Output format: human (default) or json')
+        .option('--output-file <path>', 'Write structured output to file (works with --output-format json)')
         .parse(process.argv);
 
     const opts = program.opts();
@@ -47,7 +49,9 @@ export function initCLI(): void {
         port: opts.port ? parseInt(opts.port) : undefined,
         jsonTTL: opts.jsonTTL,
         extraPlugins: opts.extraPlugins || [],
-        examine: opts.examine
+        examine: opts.examine,
+        outputFormat: opts.outputFormat,
+        outputFile: opts.outputFile
     };
 
     // Update core options so they're available to other packages

@@ -22,17 +22,13 @@ async function parseFile(filePath: string): Promise<FileData> {
 
 async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeConfig): Promise<FileData[]> {
     const filesData: FileData[] = [];
-
-    logger.debug({ 
-        repoPath,
-        operation: 'collect-files'
-    }, 'Collecting repo file data');
     const visitedPaths = new Set();
+    
     const files = fs.readdirSync(repoPath);
-
     for (const file of files) {
         const baseDir = path.resolve(repoPath);
         const filePath = path.resolve(baseDir, file);
+        
         let realFilePath;
         try {
             realFilePath = fs.realpathSync(filePath);
@@ -49,23 +45,30 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
             continue;
         }
         visitedPaths.add(realFilePath);
+        
         logger.debug({ filePath }, 'Checking file');
         const statFn = fs.promises.stat || fs.promises.lstat;
         const stats = await statFn(filePath);
+        
         if (stats.isDirectory()) {
-            if (!isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns })) {
+            const isBlacklistedDir = isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns });
+            logger.debug({ filePath, isBlacklisted: isBlacklistedDir }, 'Checking file against blacklist patterns');
+            if (!isBlacklistedDir) {
                 const dirFilesData = await collectRepoFileData(filePath, archetypeConfig);
                 filesData.push(...dirFilesData);
             }    
         } else {
-            if (!isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns }) && isWhitelisted({ filePath, repoPath, whitelistPatterns: archetypeConfig.config.whitelistPatterns })) {
-                logger.debug({ filePath }, 'Adding file to analysis');
+            const isBlacklistedFile = isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns });
+            const isWhitelistedFile = isWhitelisted({ filePath, repoPath, whitelistPatterns: archetypeConfig.config.whitelistPatterns });
+            logger.debug({ filePath, isBlacklisted: isBlacklistedFile, isWhitelisted: isWhitelistedFile }, 'Checking file against blacklist patterns');
+            if (!isBlacklistedFile && isWhitelistedFile) {
                 const fileData = await parseFile(filePath);
                 fileData.relativePath = path.relative(repoPath, filePath);
                 filesData.push(fileData);
             }    
         }    
     }
+    
     return filesData;
 }
 

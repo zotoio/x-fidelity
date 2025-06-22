@@ -97,7 +97,7 @@ export class AnalysisManager implements vscode.Disposable {
       this.logger.info('Analysis completed', { 
         duration: analysisResult.duration,
         totalIssues: result.XFI_RESULT.totalIssues,
-        filesAnalyzed: result.XFI_RESULT.issueDetails.length
+        filesAnalyzed: result.XFI_RESULT.fileCount
       });
       
       // Cache result
@@ -192,27 +192,34 @@ export class AnalysisManager implements vscode.Disposable {
     }, async (progress) => {
       progress.report({ message: 'Initializing...', increment: 10 });
       
-      // Create .xfiResults directory and set up file logging
-      const resultsDir = path.join(workspaceFolder.uri.fsPath, '.xfiResults');
-      await vscode.workspace.fs.createDirectory(vscode.Uri.file(resultsDir));
-      const logFilePath = path.join(resultsDir, 'x-fidelity.log');
-      
-      // Create analysis-specific logger that reuses the existing output channel but adds file logging
-      const analysisLogger = new VSCodeLogger('X-Fidelity Analysis', logFilePath, '', this.logger.getOutputChannel());
-      
-      // Use resolved local config path that follows the specified resolution order
-      const resolvedLocalConfigPath = this.configManager.getResolvedLocalConfigPath();
-      
-      const result = await analyzeCodebase({
-        repoPath: workspaceFolder.uri.fsPath,
+      this.logger.info('Starting analysis', {
+        workspacePath: workspaceFolder.uri.fsPath,
+        workspaceName: workspaceFolder.name,
         archetype: config.archetype,
-        configServer: config.configServer,
-        localConfigPath: resolvedLocalConfigPath,
-        executionLogPrefix: `vscode-ext-${Date.now()}`,
-        logger: analysisLogger
+        configServer: config.configServer
       });
       
-      progress.report({ message: 'Analysis complete', increment: 90 });
+      const repoPath = workspaceFolder.uri.fsPath;
+      const configServer = config.configServer || undefined;
+      const localConfigPath = this.configManager.getResolvedLocalConfigPath();
+      
+      progress.report({ message: 'Running analysis...', increment: 30 });
+      
+      const result = await analyzeCodebase({
+        repoPath,
+        archetype: config.archetype,
+        configServer,
+        localConfigPath
+      });
+      
+      progress.report({ message: 'Processing results...', increment: 90 });
+      
+      this.logger.info('Analysis completed', {
+        duration: result.XFI_RESULT.durationSeconds,
+        totalIssues: result.XFI_RESULT.totalIssues,
+        filesAnalyzed: result.XFI_RESULT.fileCount
+      });
+      
       return result;
     });
   }

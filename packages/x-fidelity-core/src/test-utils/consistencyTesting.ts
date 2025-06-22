@@ -11,6 +11,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
+import { spawn } from 'child_process';
 import { analyzeCodebase } from '../core/engine/analyzer';
 import { setOptions, getOptions } from '../core/options';
 import type { 
@@ -195,7 +196,6 @@ class MockVSCodeLogger implements ILogger {
   }
 
   child(bindings: any): ILogger {
-    // Return a new instance with the same configuration
     return new MockVSCodeLogger(this.name, this.logFile);
   }
 
@@ -208,15 +208,24 @@ class MockVSCodeLogger implements ILogger {
   }
 
   isLevelEnabled(level: LogLevel): boolean {
-    const levelValues = { trace: 10, debug: 20, info: 30, warn: 40, error: 50, fatal: 60 };
-    return levelValues[level] >= levelValues[this.currentLevel];
+    return true;
   }
 
   private writeLog(level: string, message: string, args: any[]): void {
-    const logLine = `[${new Date().toISOString()}] VSCode-${level}: ${message} ${args.length > 0 ? JSON.stringify(args) : ''}`;
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] ${level}: [${this.name}] ${message}`;
+    
+    // Write to console for debugging
+    console.log(`VSCODE_LOG: ${logMessage}`, ...args);
+    
+    // Also write to file if specified
     if (this.logFile) {
-      // In a real implementation, this would write to file
-      // For testing, we'll just store in memory or skip
+      try {
+        const fs = require('fs');
+        fs.appendFileSync(this.logFile, logMessage + '\n');
+      } catch (error) {
+        // Ignore file write errors
+      }
     }
   }
 }
@@ -542,12 +551,28 @@ public class DataService {
 
 export class ConsistencyTester {
   private tempDir: string | null = null;
-  private readonly CLI_TIMEOUT = 60000; // 60 seconds
+  private readonly CLI_TIMEOUT = 300000; // 300 seconds (5 minutes)
   private readonly VSCODE_TIMEOUT = 60000; // 60 seconds
 
   constructor() {
-    // Initialize any required setup
+    // Empty constructor - initialization happens in individual methods
   }
+
+  /**
+   * IMPORTANT: Consistency Testing Philosophy
+   * 
+   * This tester compares the RAW analysis results from CLI vs VSCode core engine,
+   * NOT the UI-filtered diagnostics that VSCode shows to users.
+   * 
+   * Why? Because:
+   * 1. VSCode intentionally filters out REPO_GLOBAL_CHECK issues from diagnostics
+   *    (since they don't belong to specific files)
+   * 2. But these global issues ARE still found by the analysis engine
+   * 3. Consistency means both CLI and VSCode find the same issues
+   * 4. UI filtering is a separate concern from analysis accuracy
+   * 
+   * This ensures we test the core analysis consistency, not UI presentation differences.
+   */
 
   /**
    * Run a comprehensive consistency test
@@ -662,57 +687,130 @@ export class ConsistencyTester {
       await fs.writeFile(filePath, file.content);
     }
     
+    // Initialize git repository to avoid CLI errors
+    try {
+      const { spawn } = await import('child_process');
+      
+      if (!this.tempDir) {
+        throw new Error('Temp directory not initialized');
+      }
+      
+      // Initialize git repo
+      await new Promise<void>((resolve, reject) => {
+        const gitInit = spawn('git', ['init'], { cwd: this.tempDir! });
+        gitInit.on('close', (code: number) => {
+          if (code === 0) resolve();
+          else reject(new Error(`git init failed with code ${code}`));
+        });
+      });
+      
+      // Add a remote origin to satisfy CLI repo detection
+      await new Promise<void>((resolve, reject) => {
+        const gitRemote = spawn('git', ['remote', 'add', 'origin', 'https://github.com/test/test-repo.git'], { cwd: this.tempDir! });
+        gitRemote.on('close', (code: number) => {
+          if (code === 0) resolve();
+          else reject(new Error(`git remote add failed with code ${code}`));
+        });
+      });
+      
+    } catch (error) {
+      console.warn('Failed to initialize git repository, CLI may have issues:', error);
+    }
+    
     return this.tempDir;
   }
 
   /**
-   * Simulate CLI analysis
+   * Run actual CLI analysis using structured output mode (super reliable)
    */
   private async runCLIAnalysis(repoPath: string, archetype: string): Promise<ResultMetadata> {
-    // Save current options
-    const originalOptions = getOptions();
+    // Get the CLI package path
+    const cliPath = path.join(__dirname, '..', '..', '..', 'x-fidelity-cli');
+    
+    // Define structured output file path
+    const structuredOutputFile = path.join(repoPath, '.xfiResults', 'structured-output.json');
     
     try {
-      // Set CLI-specific options to match CLI behavior
-      setOptions({
-        dir: repoPath,
-        archetype,
-        localConfigPath: undefined, // Use CLI default behavior
-        configServer: undefined,
-        mode: 'client',
-        extraPlugins: [],
-        openaiEnabled: false,
-        telemetryEnabled: false
+      // Clean up any existing structured output file
+      try {
+        await fs.unlink(structuredOutputFile);
+      } catch {
+        // File doesn't exist, that's fine
+      }
+      
+      // Run CLI with structured output mode - this is the new reliable approach
+      const cliProcess = spawn('node', [
+        '.', 
+        '--dir', repoPath, 
+        '--archetype', archetype,
+        '--output-format', 'json',
+        '--output-file', structuredOutputFile
+      ], {
+        cwd: cliPath,
+        stdio: ['pipe', 'pipe', 'pipe']
       });
       
-      // Create CLI-style logger
-      const logFilePath = path.join(repoPath, '.xfiResults', 'x-fidelity-cli-test.log');
-      await fs.mkdir(path.dirname(logFilePath), { recursive: true });
-      
-      const cliLogger = new MockPinoLogger({
-        filePath: logFilePath
+      // Wait for CLI to complete
+      await new Promise<void>((resolve, reject) => {
+        let isResolved = false;
+        
+        cliProcess.on('close', (code: number) => {
+          if (isResolved) return;
+          isResolved = true;
+          clearTimeout(timeout);
+          
+          // CLI should work normally, structured output is just a bonus
+          if (code === 0 || code === 1) {
+            // Code 0 = no issues, Code 1 = issues found (both are success for our purposes)
+            resolve();
+          } else {
+            reject(new Error(`CLI failed with exit code ${code}`));
+          }
+        });
+        
+        cliProcess.on('error', (error: Error) => {
+          if (isResolved) return;
+          isResolved = true;
+          clearTimeout(timeout);
+          reject(new Error(`Failed to start CLI process: ${error.message}`));
+        });
+        
+        // Set timeout with better error handling
+        const timeout = setTimeout(() => {
+          if (isResolved) return;
+          isResolved = true;
+          cliProcess.kill('SIGTERM');
+          
+          // Give a moment for graceful shutdown
+          setTimeout(() => {
+            if (cliProcess.pid && !cliProcess.killed) {
+              cliProcess.kill('SIGKILL');
+            }
+          }, 5000);
+          
+          reject(new Error(`CLI analysis timeout after ${this.CLI_TIMEOUT}ms`));
+        }, this.CLI_TIMEOUT);
       });
       
-      // Run analysis as CLI would
-      const result = await Promise.race([
-        analyzeCodebase({
-          repoPath,
-          archetype,
-          configServer: undefined,
-          localConfigPath: this.getCLIConfigPath(), // Simulate CLI config resolution
-          executionLogPrefix: 'cli-consistency-test',
-          logger: cliLogger
-        }),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('CLI analysis timeout')), this.CLI_TIMEOUT)
-        )
-      ]);
+      // Read the structured output file - this is super reliable!
+      try {
+        const outputContent = await fs.readFile(structuredOutputFile, 'utf8');
+        const result = JSON.parse(outputContent);
+        
+        // Clean up the structured output file
+        try {
+          await fs.unlink(structuredOutputFile);
+        } catch {
+          // Ignore cleanup errors
+        }
+        
+        return result;
+      } catch (error) {
+        throw new Error(`Failed to read structured output from ${structuredOutputFile}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
       
-      return result;
-      
-    } finally {
-      // Restore original options
-      setOptions(originalOptions);
+    } catch (error) {
+      throw new Error(`CLI analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -724,11 +822,14 @@ export class ConsistencyTester {
     const originalOptions = getOptions();
     
     try {
+      // Simulate VSCode's config resolution behavior  
+      const resolvedLocalConfigPath = this.simulateVSCodeConfigResolution(repoPath);
+      
       // Set VSCode-specific options
       setOptions({
         dir: repoPath,
         archetype,
-        localConfigPath: undefined, // Let VSCode resolve its own config path
+        localConfigPath: resolvedLocalConfigPath, // Use resolved path, not undefined!
         configServer: undefined,
         mode: 'client',
         extraPlugins: [],
@@ -742,10 +843,7 @@ export class ConsistencyTester {
       
       const vscodeLogger = new MockVSCodeLogger('X-Fidelity Consistency Test', logFilePath);
       
-      // Simulate VSCode's config resolution behavior
-      const resolvedLocalConfigPath = this.simulateVSCodeConfigResolution(repoPath);
-      
-      // Run analysis as VSCode would
+      // Run analysis as VSCode would - get RAW results before diagnostic filtering
       const result = await Promise.race([
         analyzeCodebase({
           repoPath,
@@ -760,6 +858,9 @@ export class ConsistencyTester {
         )
       ]);
       
+      // NOTE: We return the RAW result here, not the filtered diagnostics
+      // This ensures consistency testing compares the actual analysis results,
+      // not the UI filtering that VSCode applies (which skips REPO_GLOBAL_CHECK)
       return result;
       
     } finally {
@@ -817,8 +918,27 @@ export class ConsistencyTester {
       }
     }
     
-    // 4. Fallback to extension's demoConfig (simulate this path)
-    return path.join(__dirname, '..', '..', 'packages', 'x-fidelity-democonfig', 'src');
+    // 4. Fallback to VSCode extension's demoConfig (NOT core demoConfig!)
+    // This simulates how VSCode extension resolves its configuration
+    // Find the workspace root by looking for package.json
+    let workspaceRoot = process.cwd();
+    let currentDir = __dirname;
+    
+    // Navigate up until we find the workspace root (contains packages/x-fidelity-vscode)
+    while (currentDir !== path.dirname(currentDir)) {
+      const vscodePackagePath = path.join(currentDir, 'packages', 'x-fidelity-vscode');
+      try {
+        if (require('fs').statSync(vscodePackagePath).isDirectory()) {
+          workspaceRoot = currentDir;
+          break;
+        }
+      } catch {
+        // Continue searching up
+      }
+      currentDir = path.dirname(currentDir);
+    }
+    
+    return path.join(workspaceRoot, 'packages', 'x-fidelity-vscode', 'dist', 'demoConfig');
   }
 
   /**

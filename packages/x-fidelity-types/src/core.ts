@@ -550,6 +550,8 @@ export interface CLIOptions {
     jsonTTL?: string;
     extensions?: string[];
     examine?: boolean;
+    outputFormat?: 'human' | 'json';
+    outputFile?: string;
 }
 
 // CodeOwner interface with v3.24.0 compatibility
