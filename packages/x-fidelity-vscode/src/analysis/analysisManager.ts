@@ -5,6 +5,7 @@ import { ConfigManager, type ExtensionConfig } from '../configuration/configMana
 import { CacheManager } from './cacheManager';
 import { ReportManager } from '../reports/reportManager';
 import { VSCodeLogger } from '../utils/vscodeLogger';
+import { getWorkspaceFolder, getAnalysisTargetDirectory, isXFidelityDevelopmentContext } from '../utils/workspaceUtils';
 import type { AnalysisResult, AnalysisState, ResultMetadata } from './types';
 
 // Re-export types for other modules
@@ -15,6 +16,7 @@ export class AnalysisManager implements vscode.Disposable {
   private isAnalyzing = false;
   private analysisTimeout?: NodeJS.Timeout;
   private periodicTimer?: NodeJS.Timeout;
+  private currentCancellationTokenSource?: vscode.CancellationTokenSource;
   private cacheManager: CacheManager;
   public reportManager: ReportManager; // Made public for ExtensionManager access
   private logger: VSCodeLogger;
@@ -39,6 +41,28 @@ export class AnalysisManager implements vscode.Disposable {
   get onDidAnalysisComplete(): vscode.Event<AnalysisResult> {
     return this.onAnalysisComplete.event;
   }
+
+  get isAnalysisRunning(): boolean {
+    return this.isAnalyzing;
+  }
+
+  async cancelAnalysis(): Promise<void> {
+    if (!this.isAnalyzing || !this.currentCancellationTokenSource) {
+      this.logger.info('No analysis to cancel');
+      return;
+    }
+
+    this.logger.info('Cancelling analysis...');
+    this.currentCancellationTokenSource.cancel();
+    
+    // Update state to cancelled
+    this.onAnalysisStateChanged.fire({
+      status: 'idle',
+      progress: 0
+    });
+
+    vscode.window.showInformationMessage('Analysis cancelled');
+  }
   
   async runAnalysis(options?: { forceRefresh?: boolean }): Promise<AnalysisResult | null> {
     if (this.isAnalyzing) {
@@ -48,28 +72,52 @@ export class AnalysisManager implements vscode.Disposable {
     }
     
     const config = this.configManager.getConfig();
-    const workspaceFolder = this.getWorkspaceFolder();
     
-    if (!workspaceFolder) {
-      this.logger.error('No workspace folder found for analysis');
-      vscode.window.showErrorMessage('No workspace folder found for analysis');
+    // Get the target directory for analysis (handles dev vs user context)
+    const analysisTargetPath = getAnalysisTargetDirectory();
+    if (!analysisTargetPath) {
+      this.logger.error('No valid analysis target found');
+      vscode.window.showErrorMessage('No workspace or analysis target found');
       return null;
     }
+
+    // Get workspace folder for UI purposes (what user sees in VSCode)
+    const workspaceFolder = getWorkspaceFolder();
+    const workspaceName = workspaceFolder?.name || path.basename(analysisTargetPath);
     
+    // Log context information
+    const isDevelopmentContext = isXFidelityDevelopmentContext();
+    this.logger.info('Analysis context determined', {
+      isDevelopmentContext,
+      analysisTargetPath,
+      workspaceDisplayPath: workspaceFolder?.uri.fsPath,
+      workspaceName
+    });
+
+    // Create cancellation token for this analysis
+    this.currentCancellationTokenSource = new vscode.CancellationTokenSource();
     this.isAnalyzing = true;
     const startTime = Date.now();
     
     this.logger.info('Starting analysis', { 
-      workspaceFolder: workspaceFolder.uri.fsPath, 
+      analysisTargetPath,
+      workspaceName,
       archetype: config.archetype,
-      forceRefresh: options?.forceRefresh 
+      forceRefresh: options?.forceRefresh,
+      context: isDevelopmentContext ? 'development' : 'user'
     });
     
     try {
+      // Check if cancelled before starting
+      if (this.currentCancellationTokenSource.token.isCancellationRequested) {
+        this.logger.info('Analysis cancelled before starting');
+        return null;
+      }
+
       // Check cache first (skip if force refresh is requested)
       this.logger.debug('Checking cache for existing results', { forceRefresh: options?.forceRefresh });
-      const cached = await this.cacheManager.getCachedResult(workspaceFolder.uri.fsPath, options?.forceRefresh);
-      if (cached) {
+      const cached = await this.cacheManager.getCachedResult(analysisTargetPath, options?.forceRefresh);
+      if (cached && !this.currentCancellationTokenSource.token.isCancellationRequested) {
         this.logger.info('Using cached analysis result');
         this.onAnalysisComplete.fire(cached);
         return cached;
@@ -81,11 +129,25 @@ export class AnalysisManager implements vscode.Disposable {
         progress: 0
       });
       
-      // Run X-Fidelity analysis
+      // Run X-Fidelity analysis with cancellation support
       this.logger.debug('Performing X-Fidelity analysis');
-      const result = await this.performAnalysis(workspaceFolder, config);
-      this.logger.debug('Converting results to diagnostics');
+      const result = await this.performAnalysis(analysisTargetPath, workspaceName, config, this.currentCancellationTokenSource.token);
+      
+      // Check if cancelled after analysis
+      if (this.currentCancellationTokenSource.token.isCancellationRequested) {
+        this.logger.info('Analysis was cancelled');
+        return null;
+      }
+
+      this.logger.debug('Converting results to diagnostics', { 
+        totalIssues: result.XFI_RESULT.totalIssues,
+        issueDetails: result.XFI_RESULT.issueDetails.length 
+      });
       const diagnostics = this.convertToDiagnostics(result);
+      this.logger.debug('Diagnostics created', { 
+        diagnosticsCount: diagnostics.size,
+        files: Array.from(diagnostics.keys())
+      });
       
       const analysisResult: AnalysisResult = {
         metadata: result,
@@ -101,15 +163,15 @@ export class AnalysisManager implements vscode.Disposable {
       });
       
       // Cache result
-      if (config.cacheResults) {
+      if (config.cacheResults && !this.currentCancellationTokenSource.token.isCancellationRequested) {
         this.logger.debug('Caching analysis result');
-        await this.cacheManager.cacheResult(workspaceFolder.uri.fsPath, analysisResult);
+        await this.cacheManager.cacheResult(analysisTargetPath, analysisResult);
       }
       
       // Generate reports
-      if (config.generateReports) {
+      if (config.generateReports && !this.currentCancellationTokenSource.token.isCancellationRequested) {
         this.logger.debug('Generating reports');
-        await this.reportManager.generateReports(result, workspaceFolder.uri.fsPath);
+        await this.reportManager.generateReports(result, analysisTargetPath);
       }
       
       // Update state
@@ -122,6 +184,15 @@ export class AnalysisManager implements vscode.Disposable {
       return analysisResult;
       
     } catch (error) {
+      if (this.currentCancellationTokenSource?.token.isCancellationRequested) {
+        this.logger.info('Analysis cancelled by user');
+        this.onAnalysisStateChanged.fire({
+          status: 'idle',
+          progress: 0
+        });
+        return null;
+      }
+
       const analysisError = error instanceof Error ? error : new Error(String(error));
       
       this.logger.error('Analysis failed', { error: analysisError.message, stack: analysisError.stack });
@@ -136,6 +207,8 @@ export class AnalysisManager implements vscode.Disposable {
       
     } finally {
       this.isAnalyzing = false;
+      this.currentCancellationTokenSource?.dispose();
+      this.currentCancellationTokenSource = undefined;
     }
   }
   
@@ -182,28 +255,38 @@ export class AnalysisManager implements vscode.Disposable {
   }
   
   private async performAnalysis(
-    workspaceFolder: vscode.WorkspaceFolder, 
-    config: ExtensionConfig
+    analysisTargetPath: string,
+    workspaceName: string, 
+    config: ExtensionConfig,
+    cancellationToken: vscode.CancellationToken
   ): Promise<ResultMetadata> {
     return await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
       title: 'X-Fidelity Analysis',
-      cancellable: false
-    }, async (progress) => {
+      cancellable: true
+    }, async (progress, token) => {
       progress.report({ message: 'Initializing...', increment: 10 });
       
       this.logger.info('Starting analysis', {
-        workspacePath: workspaceFolder.uri.fsPath,
-        workspaceName: workspaceFolder.name,
+        workspacePath: analysisTargetPath,
+        workspaceName: workspaceName,
         archetype: config.archetype,
         configServer: config.configServer
       });
       
-      const repoPath = workspaceFolder.uri.fsPath;
-      const configServer = config.configServer || undefined;
+      const repoPath = analysisTargetPath;
+      // Only pass configServer if it's a valid URL to prevent DNS lookup errors
+      const configServer = config.configServer && config.configServer.trim() && 
+        (config.configServer.startsWith('http://') || config.configServer.startsWith('https://')) 
+        ? config.configServer : undefined;
       const localConfigPath = this.configManager.getResolvedLocalConfigPath();
       
       progress.report({ message: 'Running analysis...', increment: 30 });
+      
+      // Check for cancellation before starting the core analysis
+      if (cancellationToken.isCancellationRequested || token.isCancellationRequested) {
+        throw new vscode.CancellationError();
+      }
       
       const result = await analyzeCodebase({
         repoPath,
@@ -212,13 +295,20 @@ export class AnalysisManager implements vscode.Disposable {
         localConfigPath
       });
       
-      progress.report({ message: 'Processing results...', increment: 90 });
+      // Check for cancellation after analysis
+      if (cancellationToken.isCancellationRequested || token.isCancellationRequested) {
+        throw new vscode.CancellationError();
+      }
+      
+      progress.report({ message: 'Processing results...', increment: 80 });
       
       this.logger.info('Analysis completed', {
         duration: result.XFI_RESULT.durationSeconds,
         totalIssues: result.XFI_RESULT.totalIssues,
         filesAnalyzed: result.XFI_RESULT.fileCount
       });
+      
+      progress.report({ message: 'Finalizing...', increment: 100 });
       
       return result;
     });
@@ -423,8 +513,8 @@ export class AnalysisManager implements vscode.Disposable {
     }
     
     // Ensure valid ranges
-    if (endLine < line) endLine = line;
-    if (endColumn <= column) endColumn = column + 1;
+    if (endLine < line) {endLine = line;}
+    if (endColumn <= column) {endColumn = column + 1;}
     
     return { line, column, endLine, endColumn };
   }
@@ -457,7 +547,7 @@ export class AnalysisManager implements vscode.Disposable {
   }
   
   private getWorkspaceFolder(): vscode.WorkspaceFolder | undefined {
-    return vscode.workspace.workspaceFolders?.[0];
+    return getWorkspaceFolder();
   }
   
   dispose(): void {
