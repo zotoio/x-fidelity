@@ -4,6 +4,21 @@ This is the VSCode extension for X-Fidelity, providing architectural analysis di
 
 ## Development
 
+### Development Mode Workspace Fallback
+
+The extension now supports **development mode** with automatic workspace fallback:
+
+- **🔧 Development Mode**: When no workspace folder is open, the extension automatically uses the `packages/x-fidelity-vscode` directory as the workspace
+- **📁 Fallback Behavior**: Perfect for extension development and testing without needing to open a separate project
+- **🔔 User Notification**: Shows a friendly notification when using fallback workspace mode
+- **⚡ Zero Configuration**: Works immediately for contributors and developers
+
+This makes it easy to:
+- Develop and test the extension itself
+- Debug extension features without a separate project
+- Run X-Fidelity analysis on the extension's own codebase
+- Contribute to the extension with minimal setup
+
 ### Quick Start
 
 From the workspace root, you can use these convenient commands:
