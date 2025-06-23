@@ -71,7 +71,6 @@ export class ControlCenterPanel implements vscode.Disposable {
   
   private async collectControlCenterData(): Promise<ControlCenterData> {
     const summary = this.diagnosticProvider.getDiagnosticsSummary();
-    const config = this.configManager.getConfig();
     
     // Check if analysis is currently running
     const isAnalysisRunning = this.analysisManager.isAnalysisRunning;

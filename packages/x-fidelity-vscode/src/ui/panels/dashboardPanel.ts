@@ -1,10 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import type { ResultMetadata } from '@x-fidelity/types';
 import { ConfigManager } from '../../configuration/configManager';
-import { AnalysisManager, type AnalysisResult, type AnalysisState } from '../../analysis/analysisManager';
+import { AnalysisManager } from '../../analysis/analysisManager';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
-import type { ReportHistoryEntry, TrendData } from '../../reports/reportHistoryManager';
+import type { TrendData } from '../../reports/reportHistoryManager';
 
 export interface DashboardData {
   projectInfo: {
@@ -292,7 +291,7 @@ export class DashboardPanel implements vscode.Disposable {
   private generateRecommendations(
     metrics: DashboardData['currentMetrics'],
     config: any,
-    healthScore: DashboardData['healthScore']
+    _healthScore: DashboardData['healthScore']
   ): DashboardData['recommendations'] {
     const recommendations = [];
     
