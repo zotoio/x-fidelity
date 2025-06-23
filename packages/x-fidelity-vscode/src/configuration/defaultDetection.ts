@@ -131,7 +131,7 @@ export class DefaultDetectionService {
         indicators
       };
       
-    } catch (error) {
+    } catch {
       return null;
     }
   }
