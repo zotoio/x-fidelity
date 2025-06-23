@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+// vscode import removed as it's not used in this utility module
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -20,19 +20,19 @@ export class DefaultDetectionService {
     
     // Detect Node.js projects
     const nodeDetection = await this.detectNodeProject();
-    if (nodeDetection) detections.push(nodeDetection);
+    if (nodeDetection) {detections.push(nodeDetection);}
     
     // Detect Java projects
     const javaDetection = await this.detectJavaProject();
-    if (javaDetection) detections.push(javaDetection);
+    if (javaDetection) {detections.push(javaDetection);}
     
     // Detect Python projects
     const pythonDetection = await this.detectPythonProject();
-    if (pythonDetection) detections.push(pythonDetection);
+    if (pythonDetection) {detections.push(pythonDetection);}
     
     // Detect .NET projects
     const dotnetDetection = await this.detectDotNetProject();
-    if (dotnetDetection) detections.push(dotnetDetection);
+    if (dotnetDetection) {detections.push(dotnetDetection);}
     
     // Sort by confidence
     return detections.sort((a, b) => b.confidence - a.confidence);

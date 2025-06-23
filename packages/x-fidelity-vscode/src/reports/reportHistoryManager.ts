@@ -106,7 +106,7 @@ export class ReportHistoryManager {
   
   async compareReports(workspaceRoot: string, currentId: string, previousId?: string): Promise<ComparisonResult | null> {
     const current = await this.getReportById(workspaceRoot, currentId);
-    if (!current) return null;
+    if (!current) {return null;}
     
     let previous: ReportHistoryEntry | null;
     
@@ -119,7 +119,7 @@ export class ReportHistoryManager {
       previous = currentIndex < history.length - 1 ? history[currentIndex + 1] : null;
     }
     
-    if (!previous) return null;
+    if (!previous) {return null;}
     
     return this.generateComparison(previous, current);
   }
@@ -141,7 +141,7 @@ export class ReportHistoryManager {
   
   async cleanupOldReports(workspaceRoot: string): Promise<void> {
     const config = this.configManager.getConfig();
-    if (config.reportRetentionDays <= 0) return;
+    if (config.reportRetentionDays <= 0) {return;}
     
     const cutoffTime = Date.now() - (config.reportRetentionDays * 24 * 60 * 60 * 1000);
     const history = await this.getReportHistory(workspaceRoot);
@@ -192,8 +192,8 @@ export class ReportHistoryManager {
     for (const detail of data.issueDetails) {
       for (const error of detail.errors) {
         const level = (error.level as string) || 'hint';
-        if (level === 'info' || level === 'information') infoCount++;
-        else if (level === 'hint') hintCount++;
+        if (level === 'info' || level === 'information') {infoCount++;}
+        else if (level === 'hint') {hintCount++;}
       }
     }
     

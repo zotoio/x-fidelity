@@ -55,7 +55,7 @@ export class ReportViewer implements vscode.Disposable {
   }
   
   private async updateContent(options: ReportViewerOptions): Promise<void> {
-    if (!this.panel) return;
+    if (!this.panel) {return;}
     
     const html = await this.generateWebviewHTML(options);
     this.panel.webview.html = html;
@@ -800,7 +800,7 @@ export class ReportViewer implements vscode.Disposable {
   private async navigateToIssue(filePath: string, lineNumber: number, columnNumber?: number, range?: { start: { line: number; column: number }, end: { line: number; column: number } }): Promise<void> {
     try {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      if (!workspaceFolder) return;
+      if (!workspaceFolder) {return;}
       
       let fileUri: vscode.Uri;
       

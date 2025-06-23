@@ -7,7 +7,7 @@ import { logger } from '../utils/logger';
 let astUtils: any = null;
 try {
   astUtils = require('@x-fidelity/plugins/src/sharedPluginUtils/astUtils');
-} catch (error) {
+} catch (_error) {
   logger.debug('AST utils not available for WASM integration');
 }
 

@@ -1,6 +1,4 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 
 export class XFidelityCodeActionProvider implements vscode.CodeActionProvider {
   public static readonly providedCodeActionKinds = [
@@ -12,7 +10,7 @@ export class XFidelityCodeActionProvider implements vscode.CodeActionProvider {
     document: vscode.TextDocument,
     range: vscode.Range | vscode.Selection,
     context: vscode.CodeActionContext,
-    token: vscode.CancellationToken
+    _token: vscode.CancellationToken
   ): vscode.ProviderResult<(vscode.CodeAction | vscode.Command)[]> {
     
     const actions: vscode.CodeAction[] = [];

@@ -221,7 +221,7 @@ export class ExportManager {
     // Issues by severity
     const severityGroups = this.groupIssuesBySeverity(data);
     for (const [severity, issues] of Object.entries(severityGroups)) {
-      if (issues.length === 0) continue;
+      if (issues.length === 0) {continue;}
       
       md += `## ${severity.toUpperCase()} Issues (${issues.length})\n\n`;
       
@@ -229,7 +229,7 @@ export class ExportManager {
         md += `### ${issue.file}\n\n`;
         md += `- **Rule:** \`${issue.rule}\`\n`;
         md += `- **Message:** ${issue.message}\n`;
-        if (issue.line) md += `- **Location:** Line ${issue.line}\n`;
+        if (issue.line) {md += `- **Location:** Line ${issue.line}\n`;}
         md += `\n`;
       }
     }
