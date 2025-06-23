@@ -293,14 +293,9 @@ export class AnalysisManager implements vscode.Disposable {
         archetype: config.archetype,
         configServer,
         localConfigPath,
-        // Ensure we pass the same options as CLI for consistency
-        options: {
-          openaiEnabled: config.openaiEnabled,
-          telemetryEnabled: config.telemetryEnabled,
-          maxFileSize: config.maxFileSize,
-          timeout: config.analysisTimeout,
-          logLevel: config.debugMode ? 'debug' : 'info'
-        }
+        // Pass additional options that are supported by analyzeCodebase
+        openaiEnabled: config.openaiEnabled,
+        telemetryEnabled: config.telemetryEnabled
       });
       
       // Check for cancellation after analysis

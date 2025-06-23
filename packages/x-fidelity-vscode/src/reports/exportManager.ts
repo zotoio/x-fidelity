@@ -285,7 +285,7 @@ export class ExportManager {
   
   private async exportExcel(result: ResultMetadata, _options: ExportOptions, filePath: string): Promise<void> {
     // For now, export as CSV with .xlsx extension and show a message
-    const csvContent = await this.exportCSV(result, options);
+    const csvContent = await this.exportCSV(result, _options);
     await fs.writeFile(filePath.replace('.xlsx', '.csv'), csvContent);
     
     vscode.window.showWarningMessage(
@@ -300,7 +300,7 @@ export class ExportManager {
   
   private async exportPDF(result: ResultMetadata, _options: ExportOptions, filePath: string): Promise<void> {
     // Generate HTML and show instructions for PDF conversion
-    const htmlContent = await this.exportHTML(result, {});
+    const htmlContent = await this.exportHTML(result, { format: 'html' });
     const htmlPath = filePath.replace('.pdf', '.html');
     await fs.writeFile(htmlPath, htmlContent);
     
