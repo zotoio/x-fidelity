@@ -63,38 +63,34 @@ export class ControlCenterPanel implements vscode.Disposable {
   }
   
   private async updateContent(): Promise<void> {
-    if (!this.panel) return;
+    if (!this.panel) {return;}
     
     const data = await this.collectControlCenterData();
     this.panel.webview.html = this.generateHTML(data);
   }
   
   private async collectControlCenterData(): Promise<ControlCenterData> {
-    // Get current diagnostics
-    const diagnostics = this.diagnosticProvider.getAllDiagnostics();
-    let errors = 0, warnings = 0, info = 0, hints = 0;
+    const summary = this.diagnosticProvider.getDiagnosticsSummary();
+    const config = this.configManager.getConfig();
     
-    diagnostics.forEach(([_, fileDiagnostics]) => {
-      fileDiagnostics.forEach(diagnostic => {
-        switch (diagnostic.severity) {
-          case vscode.DiagnosticSeverity.Error: errors++; break;
-          case vscode.DiagnosticSeverity.Warning: warnings++; break;
-          case vscode.DiagnosticSeverity.Information: info++; break;
-          case vscode.DiagnosticSeverity.Hint: hints++; break;
-        }
-      });
-    });
+    // Check if analysis is currently running
+    const isAnalysisRunning = this.analysisManager.isAnalysisRunning;
     
     return {
       lastAnalysis: undefined, // TODO: Track last analysis time
-      issueCount: { errors, warnings, info, hints },
-      wasmStatus: 'ready', // TODO: Get actual WASM status
+      issueCount: {
+        errors: summary.errors,
+        warnings: summary.warnings,
+        info: summary.info,
+        hints: summary.hints
+      },
+      wasmStatus: 'ready', // TODO: Check actual WASM status
       pluginStatus: {
-        loaded: 8, // TODO: Get actual plugin count
-        total: 9,
+        loaded: 5, // TODO: Get actual plugin count
+        total: 5,
         failed: []
       },
-      analysisStatus: 'idle' // TODO: Track analysis status
+      analysisStatus: isAnalysisRunning ? 'running' : 'idle'
     };
   }
   
@@ -125,10 +121,17 @@ export class ControlCenterPanel implements vscode.Disposable {
             <section class="section">
                 <h2>🚀 Quick Actions</h2>
                 <div class="action-grid">
+                    ${data.analysisStatus === 'running' ? `
+                    <button class="action-btn danger" onclick="cancelAnalysis()">
+                        <span class="icon">🛑</span>
+                        <span class="text">Cancel Analysis</span>
+                    </button>
+                    ` : `
                     <button class="action-btn primary" onclick="runAnalysis()">
                         <span class="icon">🔍</span>
                         <span class="text">Run Analysis</span>
                     </button>
+                    `}
                     <button class="action-btn" onclick="openSettings()">
                         <span class="icon">⚙️</span>
                         <span class="text">Settings</span>
@@ -331,7 +334,16 @@ export class ControlCenterPanel implements vscode.Disposable {
         .action-btn.primary {
             background: var(--accent-color);
             color: white;
-            border-color: var(--accent-color);
+        }
+        
+        .action-btn.danger {
+            background: var(--error-color);
+            color: white;
+        }
+        
+        .action-btn.primary:hover, .action-btn.danger:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
         
         .action-btn .icon, .panel-btn .icon {
@@ -487,6 +499,10 @@ export class ControlCenterPanel implements vscode.Disposable {
             vscode.postMessage({ command: 'exportLogs' });
         }
         
+        function cancelAnalysis() {
+            vscode.postMessage({ command: 'cancelAnalysis' });
+        }
+        
         // Auto-refresh every 30 seconds
         setInterval(() => {
             vscode.postMessage({ command: 'refresh' });
@@ -498,6 +514,10 @@ export class ControlCenterPanel implements vscode.Disposable {
     switch (message.command) {
       case 'runAnalysis':
         await vscode.commands.executeCommand('xfidelity.runAnalysis');
+        break;
+
+      case 'cancelAnalysis':
+        await vscode.commands.executeCommand('xfidelity.cancelAnalysis');
         break;
         
       case 'openSettings':
@@ -584,11 +604,11 @@ export class ControlCenterPanel implements vscode.Disposable {
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes} min ago`;
+    if (minutes < 1) {return 'Just now';}
+    if (minutes < 60) {return `${minutes} min ago`;}
     
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (hours < 24) {return `${hours} hour${hours > 1 ? 's' : ''} ago`;}
     
     const days = Math.floor(hours / 24);
     return `${days} day${days > 1 ? 's' : ''} ago`;

@@ -64,7 +64,7 @@ export class SettingsUIPanel implements vscode.Disposable {
   }
   
   private async updateContent(): Promise<void> {
-    if (!this.panel) return;
+    if (!this.panel) {return;}
     
     const config = this.configManager.getConfig();
     const categories = this.getSettingsCategories();

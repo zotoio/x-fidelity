@@ -129,7 +129,7 @@ export class DashboardPanel implements vscode.Disposable {
   }
   
   private async updateContent(): Promise<void> {
-    if (!this.panel) return;
+    if (!this.panel) {return;}
     
     try {
       const dashboardData = await this.collectDashboardData();
@@ -212,7 +212,7 @@ export class DashboardPanel implements vscode.Disposable {
   }
   
   private async getFileCount(workspacePath?: string): Promise<number> {
-    if (!workspacePath) return 0;
+    if (!workspacePath) {return 0;}
     
     try {
       const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**');
@@ -258,11 +258,11 @@ export class DashboardPanel implements vscode.Disposable {
     const weightedScore = factors.reduce((sum, factor) => sum + (factor.score * factor.weight), 0);
     
     let grade: 'A' | 'B' | 'C' | 'D' | 'F';
-    if (weightedScore >= 90) grade = 'A';
-    else if (weightedScore >= 80) grade = 'B';
-    else if (weightedScore >= 70) grade = 'C';
-    else if (weightedScore >= 60) grade = 'D';
-    else grade = 'F';
+    if (weightedScore >= 90) {grade = 'A';}
+    else if (weightedScore >= 80) {grade = 'B';}
+    else if (weightedScore >= 70) {grade = 'C';}
+    else if (weightedScore >= 60) {grade = 'D';}
+    else {grade = 'F';}
     
     return {
       score: Math.round(weightedScore),
@@ -272,20 +272,20 @@ export class DashboardPanel implements vscode.Disposable {
   }
   
   private calculateTrendScore(trendData: number[]): number {
-    if (trendData.length < 2) return 50;
+    if (trendData.length < 2) {return 50;}
     
     const recent = trendData.slice(-3).reduce((a, b) => a + b, 0) / 3;
     const older = trendData.slice(-6, -3).reduce((a, b) => a + b, 0) / 3;
     
-    if (recent < older) return 100; // Improving
-    if (recent === older) return 75; // Stable
+    if (recent < older) {return 100;} // Improving
+    if (recent === older) {return 75;} // Stable
     return Math.max(0, 50 - ((recent - older) * 2)); // Declining
   }
   
   private getTrendStatus(trendData: number[]): 'good' | 'warning' | 'critical' {
     const score = this.calculateTrendScore(trendData);
-    if (score >= 75) return 'good';
-    if (score >= 50) return 'warning';
+    if (score >= 75) {return 'good';}
+    if (score >= 50) {return 'warning';}
     return 'critical';
   }
   
@@ -501,13 +501,13 @@ export class DashboardPanel implements vscode.Disposable {
   }
   
   private getTrendIndicator(trendData: number[]): string {
-    if (trendData.length < 2) return '➖';
+    if (trendData.length < 2) {return '➖';}
     
     const recent = trendData[trendData.length - 1];
     const previous = trendData[trendData.length - 2];
     
-    if (recent < previous) return '📈'; // Improving (fewer issues)
-    if (recent > previous) return '📉'; // Declining (more issues)
+    if (recent < previous) {return '📈';} // Improving (fewer issues)
+    if (recent > previous) {return '📉';} // Declining (more issues)
     return '➖'; // Stable
   }
   
@@ -538,9 +538,9 @@ export class DashboardPanel implements vscode.Disposable {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
     
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
+    if (days > 0) {return `${days}d ago`;}
+    if (hours > 0) {return `${hours}h ago`;}
+    if (minutes > 0) {return `${minutes}m ago`;}
     return 'Just now';
   }
   
