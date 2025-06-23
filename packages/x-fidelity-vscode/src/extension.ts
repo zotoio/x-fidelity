@@ -13,7 +13,6 @@ export async function activate(context: vscode.ExtensionContext) {
   // Initialize the enhanced logger system with best practices configuration
   const isDevelopment = context.extensionMode === vscode.ExtensionMode.Development;
   const isTest = context.extensionMode === vscode.ExtensionMode.Test;
-  const config = vscode.workspace.getConfiguration('xfidelity');
   
   logger.info('X-Fidelity extension activation started...', {
     version: context.extension.packageJSON.version,

@@ -45,7 +45,7 @@ export function generateLogPrefix(): string {
         if (crypto.randomBytes) {
             return crypto.randomBytes(4).toString('hex');
         }
-    } catch (error) {
+    } catch {
         // Fall through to simple fallback
     }
     

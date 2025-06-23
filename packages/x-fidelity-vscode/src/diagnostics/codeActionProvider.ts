@@ -188,7 +188,6 @@ export class XFidelityCodeActionProvider implements vscode.CodeActionProvider {
     const edit = new vscode.WorkspaceEdit();
     
     // Find and remove the unused import line
-    const line = document.lineAt(diagnostic.range.start.line);
     const lineRange = new vscode.Range(
       diagnostic.range.start.line,
       0,

@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { ConfigManager } from '../configuration/configManager';
-import type { ReportHistoryEntry, TrendData } from './reportHistoryManager';
+import type { ReportHistoryEntry } from './reportHistoryManager';
 
 export interface ExportOptions {
   format: 'json' | 'csv' | 'excel' | 'pdf' | 'html' | 'markdown' | 'sarif';
@@ -283,7 +283,7 @@ export class ExportManager {
     return JSON.stringify(sarif, null, 2);
   }
   
-  private async exportExcel(result: ResultMetadata, options: ExportOptions, filePath: string): Promise<void> {
+  private async exportExcel(result: ResultMetadata, _options: ExportOptions, filePath: string): Promise<void> {
     // For now, export as CSV with .xlsx extension and show a message
     const csvContent = await this.exportCSV(result, options);
     await fs.writeFile(filePath.replace('.xlsx', '.csv'), csvContent);
@@ -298,9 +298,9 @@ export class ExportManager {
     });
   }
   
-  private async exportPDF(result: ResultMetadata, options: ExportOptions, filePath: string): Promise<void> {
+  private async exportPDF(result: ResultMetadata, _options: ExportOptions, filePath: string): Promise<void> {
     // Generate HTML and show instructions for PDF conversion
-    const htmlContent = await this.exportHTML(result, options);
+    const htmlContent = await this.exportHTML(result, {});
     const htmlPath = filePath.replace('.pdf', '.html');
     await fs.writeFile(htmlPath, htmlContent);
     

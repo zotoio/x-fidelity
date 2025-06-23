@@ -1,6 +1,5 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as vscode from 'vscode';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { ConfigManager } from '../configuration/configManager';
 
@@ -145,7 +144,6 @@ export class ReportHistoryManager {
     
     const cutoffTime = Date.now() - (config.reportRetentionDays * 24 * 60 * 60 * 1000);
     const history = await this.getReportHistory(workspaceRoot);
-    const resultsDir = path.join(workspaceRoot, '.xfiResults');
     
     // Filter out old entries and delete their files
     const filteredHistory = [];

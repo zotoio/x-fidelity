@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import type { ResultMetadata } from '@x-fidelity/types';
-import { ConfigManager, type ReportFormat } from '../configuration/configManager';
+import { ConfigManager } from '../configuration/configManager';
 import { ReportViewer } from './reportViewer';
 import { ReportHistoryManager } from './reportHistoryManager';
 import { ExportManager, type ExportOptions, type ShareOptions } from './exportManager';
@@ -38,7 +38,7 @@ export class ReportManager {
       await fs.mkdir(outputDir, { recursive: true });
       
       // Add to history first
-      const reportId = await this.historyManager.addReportToHistory(result, workspaceRoot);
+      await this.historyManager.addReportToHistory(result, workspaceRoot);
       
       // Generate reports in requested formats
       const promises: Promise<void>[] = [];
@@ -308,7 +308,7 @@ export class ReportManager {
           await fs.unlink(filepath);
         }
       }
-    } catch (error) {
+    } catch {
       // Ignore cleanup errors
     }
   }

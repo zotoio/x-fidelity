@@ -160,7 +160,7 @@ export class DefaultDetectionService {
           indicators.push('Microservices');
           confidence += 10;
         }
-      } catch (error) {
+      } catch {
         // Ignore parsing errors
       }
     }
@@ -248,7 +248,7 @@ export class DefaultDetectionService {
           confidence += 15;
         }
       }
-    } catch (error) {
+    } catch {
       // Ignore parsing errors
     }
     
@@ -260,7 +260,7 @@ export class DefaultDetectionService {
         indicators.push(`${pyFiles.length} Python files`);
         confidence += Math.min(pyFiles.length * 2, 10);
       }
-    } catch (error) {
+    } catch {
       // Ignore directory read errors
     }
     
@@ -288,7 +288,7 @@ export class DefaultDetectionService {
         indicators.push(`${csprojFiles.length} .csproj files`);
         confidence += 40;
       }
-    } catch (error) {
+    } catch {
       // Ignore directory read errors
     }
     
