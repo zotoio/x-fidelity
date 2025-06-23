@@ -292,7 +292,15 @@ export class AnalysisManager implements vscode.Disposable {
         repoPath,
         archetype: config.archetype,
         configServer,
-        localConfigPath
+        localConfigPath,
+        // Ensure we pass the same options as CLI for consistency
+        options: {
+          openaiEnabled: config.openaiEnabled,
+          telemetryEnabled: config.telemetryEnabled,
+          maxFileSize: config.maxFileSize,
+          timeout: config.analysisTimeout,
+          logLevel: config.debugMode ? 'debug' : 'info'
+        }
       });
       
       // Check for cancellation after analysis
@@ -316,19 +324,18 @@ export class AnalysisManager implements vscode.Disposable {
   
   private convertToDiagnostics(result: ResultMetadata): Map<string, vscode.Diagnostic[]> {
     const diagnosticsMap = new Map<string, vscode.Diagnostic[]>();
-    const config = this.configManager.getConfig();
     
     for (const detail of result.XFI_RESULT.issueDetails) {
-      if (detail.filePath === 'REPO_GLOBAL_CHECK') {
-        continue; // Skip global issues for diagnostics
-      }
-      
+      // Include all issues, including global ones, but handle them appropriately
       const diagnostics: vscode.Diagnostic[] = detail.errors
-        .filter(error => this.shouldIncludeError(error, config))
         .map(error => this.createDiagnostic(error));
       
       if (diagnostics.length > 0) {
-        diagnosticsMap.set(detail.filePath, diagnostics);
+        // For global issues, use a special file path that VSCode can handle
+        const filePath = detail.filePath === 'REPO_GLOBAL_CHECK' 
+          ? 'README.md' // Use README.md as a fallback for global issues
+          : detail.filePath;
+        diagnosticsMap.set(filePath, diagnostics);
       }
     }
     
@@ -336,9 +343,8 @@ export class AnalysisManager implements vscode.Disposable {
   }
   
   private shouldIncludeError(error: any, config: ExtensionConfig): boolean {
-    const severity = this.mapErrorLevelToSeverity(error.level);
-    const severityLevel = this.mapSeverityToLevel(severity);
-    return config.highlightSeverity.includes(severityLevel as any);
+    // Always include all errors for accurate reporting - filtering should only affect display
+    return true;
   }
   
   private createDiagnostic(error: any): vscode.Diagnostic {

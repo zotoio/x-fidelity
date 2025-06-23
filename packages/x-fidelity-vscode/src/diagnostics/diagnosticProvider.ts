@@ -16,12 +16,8 @@ export class DiagnosticProvider implements vscode.Disposable {
   updateDiagnostics(result: AnalysisResult): void {
     this.clearDiagnostics();
     
-    const config = this.configManager.getConfig();
-    if (!config.showInlineDecorations) {
-      return;
-    }
-    
-    // Update diagnostics for each file
+    // Always update diagnostics regardless of decoration settings
+    // This ensures Problems panel shows all issues even if inline decorations are disabled
     for (const [filePath, diagnostics] of result.diagnostics) {
       const fileUri = this.getFileUri(filePath);
       if (fileUri) {
@@ -29,7 +25,7 @@ export class DiagnosticProvider implements vscode.Disposable {
       }
     }
     
-    // Update decorations for visible editors
+    // Update decorations for visible editors (respects showInlineDecorations setting)
     this.updateDecorations();
   }
   
@@ -120,6 +116,11 @@ export class DiagnosticProvider implements vscode.Disposable {
   }
   
   private shouldShowDecoration(diagnostic: vscode.Diagnostic, config: any): boolean {
+    // Only filter decorations, not the diagnostics themselves
+    const config2 = this.configManager.getConfig();
+    if (!config2.showInlineDecorations) {
+      return false;
+    }
     const severityLevel = this.mapSeverityToLevel(diagnostic.severity);
     return config.highlightSeverity.includes(severityLevel);
   }
