@@ -292,10 +292,7 @@ export class AnalysisManager implements vscode.Disposable {
         repoPath,
         archetype: config.archetype,
         configServer,
-        localConfigPath,
-        // Pass additional options that are supported by analyzeCodebase
-        openaiEnabled: config.openaiEnabled,
-        telemetryEnabled: config.telemetryEnabled
+        localConfigPath
       });
       
       // Check for cancellation after analysis
