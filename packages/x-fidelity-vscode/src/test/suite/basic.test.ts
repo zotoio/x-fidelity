@@ -143,4 +143,84 @@ suite('Basic Extension Tests (Monorepo Workspace)', () => {
 		// In development context, analysis target should be monorepo root
 		assert.strictEqual(analysisTarget, monorepoRoot, 'Analysis target should be monorepo root in development context');
 	});
-}); 
+}); import * as assert from 'assert';
+import * as vscode from 'vscode';
+import { before, after, describe, it } from 'mocha';
+
+suite('Basic Extension Test Suite', () => {
+    let extension: vscode.Extension<any>;
+    
+    before(async function() {
+        this.timeout(30000);
+        
+        // Get the extension
+        extension = vscode.extensions.getExtension('zotoio.x-fidelity-vscode')!;
+        assert.ok(extension, 'Extension should be present');
+        
+        // Activate the extension
+        if (!extension.isActive) {
+            await extension.activate();
+        }
+        
+        // Wait for activation to complete
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    });
+
+    describe('Extension Activation', () => {
+        it('should be present and activated', () => {
+            assert.ok(extension);
+            assert.ok(extension.isActive);
+        });
+
+        it('should have correct package information', () => {
+            const packageJson = extension.packageJSON;
+            assert.strictEqual(packageJson.name, 'x-fidelity-vscode');
+            assert.ok(packageJson.displayName);
+            assert.ok(packageJson.description);
+            assert.ok(packageJson.version);
+        });
+    });
+
+    describe('Basic Commands', () => {
+        it('should register test command', async function() {
+            this.timeout(5000);
+            
+            const commands = await vscode.commands.getCommands();
+            assert.ok(commands.includes('xfidelity.test'), 'Test command should be registered');
+        });
+
+        it('should execute test command without errors', async function() {
+            this.timeout(5000);
+            
+            try {
+                await vscode.commands.executeCommand('xfidelity.test');
+                assert.ok(true, 'Test command executed successfully');
+            } catch (error) {
+                assert.fail(`Test command failed: ${error}`);
+            }
+        });
+    });
+
+    describe('Extension Configuration', () => {
+        it('should have default configuration values', () => {
+            const config = vscode.workspace.getConfiguration('xfidelity');
+            
+            // Test that configuration exists and has expected types
+            const archetype = config.get('archetype');
+            assert.ok(typeof archetype === 'string', 'Archetype should be a string');
+            
+            const runInterval = config.get('runInterval');
+            assert.ok(typeof runInterval === 'number', 'Run interval should be a number');
+            
+            const autoAnalyzeOnSave = config.get('autoAnalyzeOnSave');
+            assert.ok(typeof autoAnalyzeOnSave === 'boolean', 'Auto analyze on save should be a boolean');
+        });
+    });
+
+    after(async function() {
+        this.timeout(5000);
+        
+        // Clean up any open editors
+        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    });
+});
