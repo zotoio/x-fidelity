@@ -1507,7 +1507,7 @@
   resolved "https://registry.yarnpkg.com/@semantic-release/error/-/error-4.0.0.tgz#692810288239637f74396976a9340fbc0aa9f6f9"
   integrity sha512-mgdxrHTLOjOddRVYIYDo0fR3/v61GNN1YGkfbrjuIKg/uMgCd+Qzo3UAXJ+woLQQpos4pl5Esuw5A7AoNlzjUQ==
 
-"@semantic-release/exec@^6.0.6":
+"@semantic-release/exec@^7.1.0":
   version "7.1.0"
   resolved "https://registry.yarnpkg.com/@semantic-release/exec/-/exec-7.1.0.tgz#cfaffe85a589aa0f385eede256904ce70acb829f"
   integrity sha512-4ycZ2atgEUutspPZ2hxO6z8JoQt4+y/kkHvfZ1cZxgl9WKJId1xPj+UadwInj+gMn2Gsv+fLnbrZ4s+6tK2TFQ==
@@ -3372,7 +3372,7 @@ commander@^14.0.0:
   resolved "https://registry.yarnpkg.com/commander/-/commander-14.0.0.tgz#f244fc74a92343514e56229f16ef5c5e22ced5e9"
   integrity sha512-2uM9rYjPvyq39NwLRqaiLtWHyDC1FvryJDa2ATTVims5YAS4PupsEQsDvP14FqhFr0P49CYDugi59xaxJlTXRA==
 
-commitizen@^4.0.3, commitizen@^4.3.0, commitizen@^4.3.2:
+commitizen@^4.0.3, commitizen@^4.3.1:
   version "4.3.1"
   resolved "https://registry.yarnpkg.com/commitizen/-/commitizen-4.3.1.tgz#f0e0e4b7ae3fafc92e444bbb78f2ded5a1d4311a"
   integrity sha512-gwAPAVTy/j5YcOOebcCRIijn+mSjWJC+IYKivTu6aG8Ei/scoXgfsMRnuAk6b0GRste2J4NGxVdMN3ZpfNaVaw==

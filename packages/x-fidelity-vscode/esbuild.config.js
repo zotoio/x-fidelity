@@ -33,11 +33,11 @@ async function main() {
       // Add bundle size analyzer
       bundleAnalyzerPlugin,
     ],
-    // Enhanced alias resolution - use source paths for bundling
+    // Enhanced alias resolution - use built packages for better dependency resolution
     alias: {
-      '@x-fidelity/core': path.resolve(__dirname, '../x-fidelity-core/src/index.ts'),
-      '@x-fidelity/types': path.resolve(__dirname, '../x-fidelity-types/src/index.ts'),
-      '@x-fidelity/plugins': path.resolve(__dirname, '../x-fidelity-plugins/src/index.ts'),
+      '@x-fidelity/core': path.resolve(__dirname, '../x-fidelity-core/dist/index.js'),
+      '@x-fidelity/types': path.resolve(__dirname, '../x-fidelity-types/dist/index.js'),
+      '@x-fidelity/plugins': path.resolve(__dirname, '../x-fidelity-plugins/dist/index.js'),
     },
     // Include node_modules dependencies that X-Fidelity needs
     define: {
