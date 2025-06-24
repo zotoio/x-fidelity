@@ -180,6 +180,8 @@ package-lock.json
 .aider*
 .aider.*
 .vscode/
+!.vscode/launch.json
+!.vscode/tasks.json
 *.swp
 
 build/
@@ -192,3 +194,4 @@ vscode-extension/*.vsix
 temp/
 
 .xfiResults
+

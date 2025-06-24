@@ -1,0 +1,126 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "vscode:build-dev",
+            "type": "shell",
+            "command": "yarn",
+            "args": ["workspace", "x-fidelity-vscode", "dev:build"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": ["$tsc"]
+        },
+        {
+            "label": "vscode:build-test",
+            "type": "shell",
+            "command": "yarn",
+            "args": ["workspace", "x-fidelity-vscode", "build:test"],
+            "group": "build",
+            "problemMatcher": ["$tsc"]
+        },
+        {
+            "label": "vscode:watch",
+            "type": "shell",
+            "command": "yarn",
+            "args": ["workspace", "x-fidelity-vscode", "dev:watch"],
+            "group": "build",
+            "isBackground": true,
+            "problemMatcher": ["$tsc-watch"]
+        },
+        {
+            "label": "vscode:dev-complete",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "vscode:build-deps",
+                "vscode:build-dev"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "vscode:build-deps",
+            "type": "shell",
+            "command": "yarn",
+            "args": ["workspace", "x-fidelity-vscode", "build:deps"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "🧪 Run Extension Tests",
+            "type": "shell",
+            "command": "yarn",
+            "args": ["workspace", "x-fidelity-vscode", "test"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "📦 Package Extension",
+            "type": "shell",
+            "command": "yarn",
+            "args": ["workspace", "x-fidelity-vscode", "package"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "🧹 Clean Extension",
+            "type": "shell",
+            "command": "yarn",
+            "args": ["workspace", "x-fidelity-vscode", "clean"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "🏗️ Build All Packages",
+            "type": "shell",
+            "command": "yarn",
+            "args": ["build"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "🧪 Test All Packages",
+            "type": "shell",
+            "command": "yarn",
+            "args": ["test"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        }
+    ]
+} 
