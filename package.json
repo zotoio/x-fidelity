@@ -32,7 +32,7 @@
     "test:consistency:validate": "yarn build && cd packages/x-fidelity-core && node dist/test-utils/consistencyTestingCLI.js validate"
   },
   "devDependencies": {
-    "commitizen": "^4.3.0",
+    "commitizen": "^4.3.1",
     "cz-conventional-changelog": "^3.3.0",
     "typescript": "^5.8.2"
   },
