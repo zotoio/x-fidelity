@@ -108,13 +108,7 @@ class ArchetypeValidator {
       }
     }
 
-    // Check if it's a git repository
-    const gitDir = path.join(archetypeDir, '.git');
-    try {
-      await fs.access(gitDir);
-    } catch {
-      throw new Error(`Not a git repository: missing .git directory`);
-    }
+    // Note: Git repository is not required for fixtures testing
   }
 
   async runCLIAnalysis(archetypeDir, archetype) {
