@@ -5,6 +5,7 @@ import { ConfigManager, type ExtensionConfig } from '../configuration/configMana
 import { CacheManager } from './cacheManager';
 import { ReportManager } from '../reports/reportManager';
 import { VSCodeLogger } from '../utils/vscodeLogger';
+import { ProgressManager, ProgressReporter } from '../utils/progressManager';
 import { getWorkspaceFolder, getAnalysisTargetDirectory, isXFidelityDevelopmentContext } from '../utils/workspaceUtils';
 import type { AnalysisResult, AnalysisState, ResultMetadata } from './types';
 
@@ -20,6 +21,8 @@ export class AnalysisManager implements vscode.Disposable {
   private cacheManager: CacheManager;
   public reportManager: ReportManager; // Made public for ExtensionManager access
   private logger: VSCodeLogger;
+  private progressManager: ProgressManager;
+  private lastAnalysisResult: AnalysisResult | null = null; // Store last result for testing
   
   private readonly onAnalysisStateChanged = new vscode.EventEmitter<AnalysisState>();
   private readonly onAnalysisComplete = new vscode.EventEmitter<AnalysisResult>();
@@ -31,6 +34,7 @@ export class AnalysisManager implements vscode.Disposable {
     this.logger = new VSCodeLogger('X-Fidelity Analysis');
     this.cacheManager = new CacheManager();
     this.reportManager = new ReportManager(configManager, context!);
+    this.progressManager = new ProgressManager();
     this.setupEventListeners();
   }
   
@@ -44,6 +48,15 @@ export class AnalysisManager implements vscode.Disposable {
 
   get isAnalysisRunning(): boolean {
     return this.isAnalyzing;
+  }
+
+  // Method to get current analysis results for testing
+  getCurrentResults(): AnalysisResult | null {
+    return this.lastAnalysisResult;
+  }
+
+  getLogger(): VSCodeLogger {
+    return this.logger;
   }
 
   async cancelAnalysis(): Promise<void> {
@@ -129,9 +142,9 @@ export class AnalysisManager implements vscode.Disposable {
         progress: 0
       });
       
-      // Run X-Fidelity analysis with cancellation support
-      this.logger.debug('Performing X-Fidelity analysis');
-      const result = await this.performAnalysis(analysisTargetPath, workspaceName, config, this.currentCancellationTokenSource.token);
+      // Run X-Fidelity analysis with enhanced progress tracking
+      this.logger.debug('Performing X-Fidelity analysis with progress tracking');
+      const result = await this.performAnalysisWithProgress(analysisTargetPath, workspaceName, config, this.currentCancellationTokenSource.token);
       
       // Check if cancelled after analysis
       if (this.currentCancellationTokenSource.token.isCancellationRequested) {
@@ -153,7 +166,13 @@ export class AnalysisManager implements vscode.Disposable {
         metadata: result,
         diagnostics,
         timestamp: Date.now(),
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
+        summary: {
+          totalIssues: result.XFI_RESULT.totalIssues,
+          filesAnalyzed: result.XFI_RESULT.fileCount,
+          analysisTimeMs: Date.now() - startTime,
+          issuesByLevel: this.calculateIssuesByLevel(result)
+        }
       };
       
       this.logger.info('Analysis completed', { 
@@ -180,6 +199,7 @@ export class AnalysisManager implements vscode.Disposable {
         progress: 100
       });
       
+      this.lastAnalysisResult = analysisResult;
       this.onAnalysisComplete.fire(analysisResult);
       return analysisResult;
       
@@ -254,6 +274,84 @@ export class AnalysisManager implements vscode.Disposable {
     );
   }
   
+  private async performAnalysisWithProgress(
+    analysisTargetPath: string,
+    workspaceName: string, 
+    config: ExtensionConfig,
+    cancellationToken: vscode.CancellationToken
+  ): Promise<ResultMetadata> {
+    return await this.progressManager.runWithProgress(
+      'X-Fidelity Analysis',
+      async (reporter: ProgressReporter, token: vscode.CancellationToken) => {
+        // Phase 1: Initializing
+        reporter.updatePhaseProgress(50, 'Setting up analysis environment...');
+        
+        this.logger.info('Starting enhanced analysis', {
+          workspacePath: analysisTargetPath,
+          workspaceName: workspaceName,
+          archetype: config.archetype,
+          configServer: config.configServer
+        });
+        
+        reporter.updatePhaseProgress(100, 'Analysis environment ready');
+        
+        // Phase 2: Scanning Files
+        reporter.nextPhase('Scanning project files...');
+        const repoPath = analysisTargetPath;
+        const configServer = config.configServer && config.configServer.trim() && 
+          (config.configServer.startsWith('http://') || config.configServer.startsWith('https://')) 
+          ? config.configServer : undefined;
+        const localConfigPath = this.configManager.getResolvedLocalConfigPath();
+        
+        reporter.updatePhaseProgress(100, 'File scan complete');
+        
+        // Phase 3: Loading Plugins
+        reporter.nextPhase('Initializing analysis plugins...');
+        
+        // Check for cancellation before starting the core analysis
+        if (cancellationToken.isCancellationRequested || token.isCancellationRequested) {
+          throw new vscode.CancellationError();
+        }
+        
+        reporter.updatePhaseProgress(100, 'Plugins loaded successfully');
+        
+        // Phase 4: Running Analysis (main work)
+        reporter.nextPhase('Executing code quality analysis...');
+        
+        const result = await analyzeCodebase({
+          repoPath,
+          archetype: config.archetype,
+          configServer,
+          localConfigPath
+        });
+        
+        // Check for cancellation after analysis
+        if (cancellationToken.isCancellationRequested || token.isCancellationRequested) {
+          throw new vscode.CancellationError();
+        }
+        
+        reporter.updatePhaseProgress(100, 'Analysis execution complete');
+        
+        // Phase 5: Processing Results
+        reporter.nextPhase('Converting analysis results...');
+        
+        this.logger.info('Analysis completed', {
+          duration: result.XFI_RESULT.durationSeconds,
+          totalIssues: result.XFI_RESULT.totalIssues,
+          filesAnalyzed: result.XFI_RESULT.fileCount
+        });
+        
+        reporter.updatePhaseProgress(100, 'Results processed successfully');
+        
+        // Phase 6: Finalizing
+        reporter.nextPhase('Completing analysis...');
+        reporter.updatePhaseProgress(100, 'Analysis complete');
+        
+        return result;
+      }
+    ) || await this.performAnalysis(analysisTargetPath, workspaceName, config, cancellationToken);
+  }
+  
   private async performAnalysis(
     analysisTargetPath: string,
     workspaceName: string, 
@@ -317,16 +415,46 @@ export class AnalysisManager implements vscode.Disposable {
   private convertToDiagnostics(result: ResultMetadata): Map<string, vscode.Diagnostic[]> {
     const diagnosticsMap = new Map<string, vscode.Diagnostic[]>();
     
+    // Get workspace folder to make paths relative
+    const workspaceFolder = getWorkspaceFolder();
+    const workspacePath = workspaceFolder?.uri.fsPath;
+    
     for (const detail of result.XFI_RESULT.issueDetails) {
       // Include all issues, including global ones, but handle them appropriately
       const diagnostics: vscode.Diagnostic[] = detail.errors
         .map(error => this.createDiagnostic(error));
       
       if (diagnostics.length > 0) {
+        let filePath: string;
+        
         // For global issues, use a special file path that VSCode can handle
-        const filePath = detail.filePath === 'REPO_GLOBAL_CHECK' 
-          ? 'README.md' // Use README.md as a fallback for global issues
-          : detail.filePath;
+        if (detail.filePath === 'REPO_GLOBAL_CHECK') {
+          filePath = 'README.md'; // Use README.md as a fallback for global issues
+        } else {
+          // Convert absolute paths to relative paths within the workspace
+          if (workspacePath && detail.filePath.startsWith(workspacePath)) {
+            filePath = path.relative(workspacePath, detail.filePath);
+          } else if (path.isAbsolute(detail.filePath)) {
+            // If absolute path doesn't contain workspace path, try to extract relative part
+            const analysisTargetPath = getAnalysisTargetDirectory();
+            if (analysisTargetPath && detail.filePath.startsWith(analysisTargetPath)) {
+              filePath = path.relative(analysisTargetPath, detail.filePath);
+            } else {
+              // Fallback: use just the filename portion
+              filePath = path.basename(detail.filePath);
+            }
+          } else {
+            // Already relative
+            filePath = detail.filePath;
+          }
+        }
+        
+        this.logger.debug('Converting file path for diagnostics', { 
+          originalPath: detail.filePath,
+          workspacePath,
+          convertedPath: filePath
+        });
+        
         diagnosticsMap.set(filePath, diagnostics);
       }
     }
@@ -334,7 +462,7 @@ export class AnalysisManager implements vscode.Disposable {
     return diagnosticsMap;
   }
   
-  private shouldIncludeError(error: any, config: ExtensionConfig): boolean {
+  private shouldIncludeError(_error: any, _config: ExtensionConfig): boolean {
     // Always include all errors for accurate reporting - filtering should only affect display
     return true;
   }
@@ -545,7 +673,20 @@ export class AnalysisManager implements vscode.Disposable {
   }
   
   private getWorkspaceFolder(): vscode.WorkspaceFolder | undefined {
-    return getWorkspaceFolder();
+    return vscode.workspace.workspaceFolders?.[0];
+  }
+  
+  private calculateIssuesByLevel(result: ResultMetadata): Record<string, number> {
+    const issuesByLevel: Record<string, number> = {};
+    
+    for (const detail of result.XFI_RESULT.issueDetails) {
+      for (const error of detail.errors) {
+        const level = error.level || 'unknown';
+        issuesByLevel[level] = (issuesByLevel[level] || 0) + 1;
+      }
+    }
+    
+    return issuesByLevel;
   }
   
   dispose(): void {
