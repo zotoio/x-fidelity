@@ -21,7 +21,7 @@ x-fidelity is an advanced CLI tool and paired config server designed to perform 
 This is a monorepo containing the following packages:
 
 - `packages/x-fidelity`: The core X-Fidelity package containing the CLI tool and analysis engine
-- `packages/x-fidelity-vscode`: VSCode extension for X-Fidelity integration
+- `packages/x-fidelity-vscode`: VSCode extension for X-Fidelity integration with professional UI and debugging capabilities
 
 ## Development Setup
 
@@ -45,7 +45,44 @@ yarn workspaces run build
      ```bash
      # In packages/x-fidelity-vscode
      yarn dev
+     # Or press F5 in VSCode for debug launch
      ```
+
+## Dependency Management
+
+X-Fidelity uses **Renovate** for automated dependency management across all packages in the monorepo. Renovate automatically:
+
+- 🔍 Scans all `package.json` files for outdated dependencies
+- 📦 Creates grouped pull requests for related updates
+- 🛡️ Handles security vulnerabilities with priority
+- ✅ Auto-merges safe patch updates for stable packages
+
+For detailed information about Renovate configuration, usage, and troubleshooting, see **[RENOVATE.md](RENOVATE.md)**.
+
+## VSCode Extension
+
+The X-Fidelity VSCode extension provides a comprehensive development experience with:
+
+### Features
+- **Dedicated Activity Bar**: X-Fidelity sidebar with organized tree views
+- **Issues Tree View**: Grouped by severity, rule, file, or category
+- **Control Center**: Quick access to all X-Fidelity functionality
+- **Real-time Analysis**: Automatic analysis on file save with progress tracking
+- **Debug Capabilities**: Enhanced logging and workspace path verification
+- **Professional UI**: Following VSCode extension best practices
+
+### Quick Start with VSCode Extension
+1. **Press F5** in VSCode to launch the extension in debug mode
+2. **Look for the X-Fidelity icon** in the activity bar (sidebar)
+3. **Use the Control Center** for quick access to all features
+4. **Run analysis** and view results in the Issues tree view
+5. **Check Output panel** (X-Fidelity Debug) for detailed logs
+
+### Extension Commands
+- `X-Fidelity: Run Analysis Now` - Standard analysis
+- `X-Fidelity: Debug Analysis with --dir` - Debug with explicit workspace path
+- `X-Fidelity: Control Center` - Open main control panel
+- `X-Fidelity: Settings` - Configure extension settings
 
 ## Testing
 

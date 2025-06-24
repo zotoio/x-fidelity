@@ -117,7 +117,7 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
         required: true,
         validation: {
           type: 'enum',
-          validator: ['node-fullstack', 'react-spa', 'java-microservice', 'python-service', 'dotnet-service'],
+          validator: ['node-fullstack', 'java-microservice', 'python-service', 'dotnet-service'],
           message: 'Please select a valid archetype',
           severity: 'error'
         },
@@ -141,7 +141,7 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
           {
             title: 'React SPA',
             description: 'For single-page applications built with React',
-            value: 'react-spa',
+            value: 'node-fullstack',
             useCase: 'Client-side React applications'
           },
           {
@@ -187,7 +187,7 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
   }
 
   private async updateContent(): Promise<void> {
-    if (!this.panel) return;
+    if (!this.panel) {return;}
 
     const currentStep = this.configurationSteps[this.currentStepIndex];
     const hints = currentStep?.hints || [];
@@ -315,7 +315,6 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
             <select id="archetypeSelect" onchange="handleInputChange('${step.id}', this.value)">
                 <option value="">Choose an archetype...</option>
                 <option value="node-fullstack" ${currentValue === 'node-fullstack' ? 'selected' : ''}>Node.js Full-Stack</option>
-                <option value="react-spa" ${currentValue === 'react-spa' ? 'selected' : ''}>React SPA</option>
                 <option value="java-microservice" ${currentValue === 'java-microservice' ? 'selected' : ''}>Java Microservice</option>
                 <option value="python-service" ${currentValue === 'python-service' ? 'selected' : ''}>Python Service</option>
                 <option value="dotnet-service" ${currentValue === 'dotnet-service' ? 'selected' : ''}.NET Service</option>

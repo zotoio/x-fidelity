@@ -12,7 +12,8 @@ export let options: CLIOptions = {
     extraPlugins: []
 };
 
-export const DEMO_CONFIG_PATH = path.resolve(__dirname, 'demoConfig');
+// Point to the x-fidelity-democonfig package src directory
+export const DEMO_CONFIG_PATH = path.resolve(__dirname, '..', '..', 'x-fidelity-democonfig', 'src');
 
 export function initCLI(): void {
     const program = new Command();

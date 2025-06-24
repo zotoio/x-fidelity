@@ -11,7 +11,8 @@
     "url": "https://github.com/zotoio/x-fidelity.git"
   },
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.101.0",
+    "node": ">=22.16.0"
   },
   "categories": [
     "Linters",
@@ -35,6 +36,15 @@
       {
         "command": "xfidelity.runAnalysis",
         "title": "X-Fidelity: Run Analysis Now"
+      },
+      {
+        "command": "xfidelity.cancelAnalysis",
+        "title": "X-Fidelity: Cancel Analysis",
+        "icon": "$(stop)"
+      },
+      {
+        "command": "xfidelity.runAnalysisWithDir",
+        "title": "X-Fidelity: Debug Analysis with --dir"
       },
       {
         "command": "xfidelity.openSettings",
@@ -102,6 +112,11 @@
         "icon": "$(settings-gear)"
       },
       {
+        "command": "xfidelity.showOutput",
+        "title": "X-Fidelity: Show Output Channel",
+        "icon": "$(output)"
+      },
+      {
         "command": "xfidelity.refreshIssuesTree",
         "title": "Refresh",
         "icon": "$(refresh)"
@@ -147,23 +162,30 @@
       "properties": {
         "xfidelity.runInterval": {
           "type": "number",
-          "default": 300,
-          "description": "Interval (in seconds) for running background analysis. Set to 0 to disable periodic runs."
+          "default": 0,
+          "description": "Interval (in seconds) for running background analysis. Set to 0 to disable periodic runs. WARNING: Setting this to low values can cause performance issues."
         },
         "xfidelity.autoAnalyzeOnSave": {
           "type": "boolean",
-          "default": true,
-          "description": "Automatically run analysis when files are saved."
+          "default": false,
+          "description": "Automatically run analysis when files are saved. WARNING: This can cause performance issues with frequent saves."
         },
         "xfidelity.autoAnalyzeOnFileChange": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically run analysis when files are changed (debounced)."
+          "description": "Automatically run analysis when files are changed (debounced). WARNING: This can cause performance issues with frequent file changes."
         },
         "xfidelity.archetype": {
           "type": "string",
           "default": "node-fullstack",
-          "enum": ["node-fullstack", "react-spa", "next-fullstack", "java-microservice", "python-service", "dotnet-service"],
+          "enum": [
+            "node-fullstack",
+            "react-spa",
+            "next-fullstack",
+            "java-microservice",
+            "python-service",
+            "dotnet-service"
+          ],
           "description": "The X-Fidelity archetype to use for analysis."
         },
         "xfidelity.configServer": {
@@ -205,9 +227,17 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["json", "md", "html", "csv"]
+            "enum": [
+              "json",
+              "md",
+              "html",
+              "csv"
+            ]
           },
-          "default": ["json", "md"],
+          "default": [
+            "json",
+            "md"
+          ],
           "description": "Report formats to generate."
         },
         "xfidelity.showReportAfterAnalysis": {
@@ -229,9 +259,17 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["error", "warning", "info", "hint"]
+            "enum": [
+              "error",
+              "warning",
+              "info",
+              "hint"
+            ]
           },
-          "default": ["error", "warning"],
+          "default": [
+            "error",
+            "warning"
+          ],
           "description": "Which issue severities to highlight."
         },
         "xfidelity.statusBarVisibility": {
@@ -241,7 +279,12 @@
         },
         "xfidelity.problemsPanelGrouping": {
           "type": "string",
-          "enum": ["file", "severity", "rule", "category"],
+          "enum": [
+            "file",
+            "severity",
+            "rule",
+            "category"
+          ],
           "default": "file",
           "description": "How to group issues in the Problems panel."
         },
@@ -265,7 +308,10 @@
           "items": {
             "type": "string"
           },
-          "default": ["node_modules/**", ".git/**"],
+          "default": [
+            "node_modules/**",
+            ".git/**"
+          ],
           "description": "Glob patterns for files to exclude from analysis."
         },
         "xfidelity.includePatterns": {
@@ -311,13 +357,39 @@
         }
       }
     },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "xfidelity",
+          "title": "X-Fidelity",
+          "icon": "$(zap)"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "xfidelity": [
         {
           "icon": "$(warning)",
           "id": "xfidelityIssuesTreeView",
+          "name": "Issues",
+          "when": "true",
+          "visibility": "visible"
+        },
+        {
+          "icon": "$(dashboard)",
+          "id": "xfidelityControlCenterView",
+          "name": "Control Center",
+          "when": "true",
+          "visibility": "visible"
+        }
+      ],
+      "explorer": [
+        {
+          "icon": "$(warning)",
+          "id": "xfidelityIssuesTreeViewExplorer",
           "name": "X-Fidelity Issues",
-          "when": "xfidelity.extensionActive"
+          "when": "true",
+          "visibility": "collapsed"
         }
       ]
     },
@@ -325,119 +397,143 @@
       "view/title": [
         {
           "command": "xfidelity.refreshIssuesTree",
-          "when": "view == xfidelityIssuesTreeView",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
           "group": "navigation@1"
         },
         {
-          "command": "xfidelity.showControlCenter",
-          "when": "view == xfidelityIssuesTreeView",
+          "command": "xfidelity.cancelAnalysis",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && xfidelity.analysisRunning",
           "group": "navigation@2"
         },
         {
+          "command": "xfidelity.showControlCenter",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "group": "navigation@3"
+        },
+        {
           "command": "xfidelity.issuesTreeGroupBySeverity",
-          "when": "view == xfidelityIssuesTreeView",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
           "group": "1_grouping@1"
         },
         {
           "command": "xfidelity.issuesTreeGroupByRule",
-          "when": "view == xfidelityIssuesTreeView",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
           "group": "1_grouping@2"
         },
         {
           "command": "xfidelity.issuesTreeGroupByFile",
-          "when": "view == xfidelityIssuesTreeView",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
           "group": "1_grouping@3"
         },
         {
           "command": "xfidelity.issuesTreeGroupByCategory",
-          "when": "view == xfidelityIssuesTreeView",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
           "group": "1_grouping@4"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "xfidelity.cancelAnalysis",
+          "when": "xfidelity.analysisRunning"
         }
       ],
       "view/item/context": [
         {
           "command": "xfidelity.goToIssue",
-          "when": "view == xfidelityIssuesTreeView && viewItem == issue",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
           "group": "navigation@1"
         },
         {
           "command": "xfidelity.addIssueExemption",
-          "when": "view == xfidelityIssuesTreeView && viewItem == issue",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
           "group": "1_actions@1"
         },
         {
           "command": "xfidelity.showIssueRuleInfo",
-          "when": "view == xfidelityIssuesTreeView && viewItem == issue",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
           "group": "1_actions@2"
         }
       ]
-    }
+    },
+    "viewsWelcome": [
+      {
+        "view": "xfidelityIssuesTreeView",
+        "contents": "Welcome to X-Fidelity! 🚀\n\nNo issues found yet. Run analysis to detect architectural problems in your code.\n\n[Run Analysis](command:xfidelity.runAnalysis)\n\n[Open Control Center](command:xfidelity.showControlCenter)\n\n[Configure Settings](command:xfidelity.openSettings)"
+      },
+      {
+        "view": "xfidelityIssuesTreeViewExplorer",
+        "contents": "No X-Fidelity issues found! ✅\n\n[Run Analysis](command:xfidelity.runAnalysis)\n\n[View Dashboard](command:xfidelity.showDashboard)"
+      },
+      {
+        "view": "xfidelityControlCenterView",
+        "contents": "X-Fidelity Control Center 🎛️\n\nManage your code analysis from here.\n\n[Run Analysis](command:xfidelity.runAnalysis)\n\n[Open Settings](command:xfidelity.openSettings)\n\n[View Documentation](https://github.com/zotoio/x-fidelity)"
+      }
+    ]
   },
   "dependencies": {
     "@x-fidelity/core": "4.0.0",
-    "@x-fidelity/types": "4.0.0",
-    "@x-fidelity/plugins": "4.0.0",
     "@x-fidelity/democonfig": "4.0.0",
+    "@x-fidelity/plugins": "4.0.0",
+    "@x-fidelity/types": "4.0.0",
+    "tree-sitter-javascript": "^0.23.1",
+    "tree-sitter-typescript": "^0.23.2",
     "vscode-languageclient": "^9.0.1",
     "web-tree-sitter": "^0.25.6",
-    "tree-sitter-javascript": "^0.23.1",
-    "tree-sitter-typescript": "^0.23.2"
+    "yarn": "^1.22.22"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
-    "@types/jest": "^29.5.12",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^18.x",
-    "@types/sinon": "^17.0.3",
-    "@types/vscode": "^1.80.0",
-    "@typescript-eslint/eslint-plugin": "^7.3.1",
-    "@typescript-eslint/parser": "^7.3.1",
-    "@vscode/test-electron": "^2.3.9",
-    "@vscode/vsce": "^3.3.2",
-    "esbuild": "^0.20.1",
-    "eslint": "^9.0.0-beta.2",
-    "glob": "^10.3.10",
-    "jest": "^29.7.0",
-    "mocha": "^10.3.0",
-    "rimraf": "^5.0.5",
-    "sinon": "^17.0.1",
-    "ts-jest": "^29.1.2",
-    "typescript": "^5.4.3"
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.x",
+    "@types/vscode": "^1.101.0",
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.5.0",
+    "esbuild": "^0.25.5",
+    "eslint": "^9.29.0",
+    "glob": "^11.0.3",
+    "mocha": "^11.7.0",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3"
   },
   "scripts": {
-    "build": "tsc && yarn copy:demoConfig && node esbuild.config.js",
-    "copy:demoConfig": "mkdir -p dist/demoConfig && cp -r ../x-fidelity-democonfig/src/* dist/demoConfig/",
+    "vscode:prepublish": "npm run compile",
+    "compile": "npm run build",
+    "build": "node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
+    "watch": "node --no-warnings=ExperimentalWarning esbuild.config.js --watch",
+    "package": "npm run build && vsce package --yarn",
+    "pretest": "npm run compile && npm run lint",
+    "test": "vscode-test",
+    "test:unit": "vscode-test --label=unitTests",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "build:production": "npm run check-types && node --no-warnings=ExperimentalWarning esbuild.config.js --production",
+    "check-types": "tsc --noEmit",
     "build:test": "tsc -p tsconfig.test.json",
     "clean": "rimraf dist dist-test config *.tsbuildinfo .vscode-test .vscode-test-profile",
-    "lint": "eslint .",
-    "watch": "node esbuild.config.js --watch",
-    "package": "yarn clean && yarn build --production && vsce package",
-    "package:dev": "yarn clean && yarn build && vsce package --pre-release",
-    "publish": "yarn package && vsce publish",
+    "publish": "npm run package && vsce publish",
     "install-vsix": "code --install-extension *.vsix",
-    
-    "dev:build": "yarn clean && yarn build:deps && tsc && yarn copy:demoConfig && node esbuild.config.js",
+    "dev:build": "yarn clean && yarn build:deps && tsc && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "build:deps": "cd ../../ && yarn build",
-    "dev": "yarn dev:build && code --extensionDevelopmentPath=. --new-window .",
     "dev:fresh": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --user-data-dir=./.vscode-test-profile .",
     "dev:watch": "yarn dev:build && (yarn watch &) && sleep 2 && code --extensionDevelopmentPath=. --new-window .",
     "dev:complete": "./scripts/dev-complete.sh",
-    
-    "test": "yarn build:test && jest --detectOpenHandles",
-    "test:unit": "yarn build:test && jest --detectOpenHandles --testPathPattern=unit",
-    "test:integration": "yarn build:test && jest --detectOpenHandles --testPathPattern=integration",
-    "test:all": "yarn test:unit && yarn test:integration",
-    "test:watch": "yarn build:test && jest --watch",
-    
+    "test:integration": "vscode-test --label integrationTests",
+    "test:e2e": "vscode-test --label e2eTests",
+    "test:consistency": "vscode-test --label consistencyTests",
+    "test:all": "yarn test:unit && yarn test:integration && yarn test:e2e && yarn test:consistency",
+    "test:watch": "vscode-test --label unitTests --watch",
     "debug": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --enable-proposed-api",
     "logs": "echo 'Check VSCode Output panel > X-Fidelity Debug for logs'",
-    
     "verify:all": "node scripts/verify-extension.js",
     "verify:dev": "yarn dev:build && node scripts/verify-extension.js",
     "verify:ci": "yarn build && node scripts/verify-extension.js",
     "verify:extension": "node scripts/verify-extension.js",
     "verify:quick": "yarn build:test && yarn test:unit && yarn verify:extension",
-    
     "quick-start": "echo '🚀 Quick Start: Press F5 to launch extension, then Ctrl+Shift+P > X-Fidelity: Control Center'",
     "help": "echo '📖 Development Help:\\n  yarn dev - Start development\\n  yarn dev:fresh - Fresh profile\\n  yarn test:all - Run tests\\n  F5 in VSCode - Debug launch\\n  yarn verify:all - Full verification'"
   }

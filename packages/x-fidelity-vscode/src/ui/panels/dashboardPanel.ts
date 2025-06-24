@@ -76,7 +76,7 @@ export class DashboardPanel implements vscode.Disposable {
       {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'resources')]
+        localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionUri.fsPath, 'resources'))]
       }
     );
     
@@ -293,7 +293,7 @@ export class DashboardPanel implements vscode.Disposable {
     config: any,
     _healthScore: DashboardData['healthScore']
   ): DashboardData['recommendations'] {
-    const recommendations = [];
+    const recommendations: DashboardData['recommendations'] = [];
     
     // High error count
     if (metrics.errorCount > 5) {

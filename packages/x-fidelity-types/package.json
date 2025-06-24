@@ -26,19 +26,22 @@
   "author": "wyvern8 <io@zoto.io>",
   "license": "MIT",
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=22.16.0",
     "yarn": ">=1.22.0"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.14",
-    "@types/node": "^22.13.8",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.10.5",
     "@typescript-eslint/eslint-plugin": "^8.25.0",
     "@typescript-eslint/parser": "^8.25.0",
     "eslint": "^9.21.0",
-    "jest": "^29.7.0",
+    "jest": "^30.0.2",
     "rimraf": "^6.0.1",
-    "ts-jest": "^29.3.4",
-    "typescript": "^5.8.2"
+    "ts-jest": "^29.4.0",
+    "typescript": "^5.7.2",
+    "ts-node": "^10.9.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "ajv": "^8.17.1"
+  }
 } 

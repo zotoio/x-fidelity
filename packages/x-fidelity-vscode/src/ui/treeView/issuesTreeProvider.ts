@@ -20,8 +20,8 @@ export interface IssueTreeItem {
 }
 
 export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem> {
-  private _onDidChangeTreeData: vscode.EventEmitter<IssueTreeItem | undefined | null | void> = new vscode.EventEmitter<IssueTreeItem | undefined | null | void>();
-  readonly onDidChangeTreeData: vscode.Event<IssueTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
+  private _onDidChangeTreeData: vscode.EventEmitter<IssueTreeItem | undefined | null> = new vscode.EventEmitter<IssueTreeItem | undefined | null>();
+  readonly onDidChangeTreeData: vscode.Event<IssueTreeItem | undefined | null> = this._onDidChangeTreeData.event;
 
   private issues: ProcessedIssue[] = [];
   private groupingMode: GroupingMode = 'severity';
@@ -33,7 +33,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
 
   refresh(): void {
     this.buildTreeData();
-    this._onDidChangeTreeData.fire();
+    this._onDidChangeTreeData.fire(null);
   }
 
   setIssues(issues: ProcessedIssue[]): void {
@@ -195,7 +195,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
       .sort((a, b) => {
         // Sort by file first, then by line number
         const fileCompare = a.file.localeCompare(b.file);
-        if (fileCompare !== 0) return fileCompare;
+        if (fileCompare !== 0) {return fileCompare;}
         
         return (a.line || 0) - (b.line || 0);
       })
@@ -253,13 +253,13 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
   private getSeverityIcon(severity: string): vscode.ThemeIcon {
     switch (severity.toLowerCase()) {
       case 'error':
-        return new vscode.ThemeIcon('error', new vscode.ThemeColor('errorForeground'));
+        return new vscode.ThemeIcon('error');
       case 'warning':
-        return new vscode.ThemeIcon('warning', new vscode.ThemeColor('warningForeground'));
+        return new vscode.ThemeIcon('warning');
       case 'info':
-        return new vscode.ThemeIcon('info', new vscode.ThemeColor('notificationsInfoIcon.foreground'));
+        return new vscode.ThemeIcon('info');
       case 'hint':
-        return new vscode.ThemeIcon('lightbulb', new vscode.ThemeColor('editorLightBulb.foreground'));
+        return new vscode.ThemeIcon('lightbulb');
       default:
         return new vscode.ThemeIcon('circle-outline');
     }
@@ -307,8 +307,8 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
         case 'hint': stats.hint++; break;
       }
       
-      if (issue.fixable) stats.fixable++;
-      if (issue.exempted) stats.exempted++;
+      if (issue.fixable) {stats.fixable++;}
+      if (issue.exempted) {stats.exempted++;}
     }
 
     return stats;

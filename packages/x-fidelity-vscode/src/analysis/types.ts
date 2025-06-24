@@ -6,6 +6,12 @@ export interface AnalysisResult {
   diagnostics: Map<string, vscode.Diagnostic[]>;
   timestamp: number;
   duration: number;
+  summary: {
+    totalIssues: number;
+    filesAnalyzed: number;
+    analysisTimeMs: number;
+    issuesByLevel?: Record<string, number>;
+  };
 }
 
 export interface AnalysisState {
@@ -15,5 +21,8 @@ export interface AnalysisState {
   totalFiles?: number;
   error?: Error;
 }
+
+// Add string union type for simpler state management
+export type AnalysisStateType = 'idle' | 'running' | 'cancelling' | 'completed' | 'error';
 
 export { ResultMetadata }; 

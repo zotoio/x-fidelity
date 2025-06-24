@@ -918,17 +918,17 @@ export class ConsistencyTester {
       }
     }
     
-    // 4. Fallback to VSCode extension's demoConfig (NOT core demoConfig!)
+    // 4. Fallback to x-fidelity-democonfig package (same as CLI)
     // This simulates how VSCode extension resolves its configuration
     // Find the workspace root by looking for package.json
     let workspaceRoot = process.cwd();
     let currentDir = __dirname;
     
-    // Navigate up until we find the workspace root (contains packages/x-fidelity-vscode)
+    // Navigate up until we find the workspace root (contains packages/x-fidelity-democonfig)
     while (currentDir !== path.dirname(currentDir)) {
-      const vscodePackagePath = path.join(currentDir, 'packages', 'x-fidelity-vscode');
+      const demoConfigPackagePath = path.join(currentDir, 'packages', 'x-fidelity-democonfig');
       try {
-        if (require('fs').statSync(vscodePackagePath).isDirectory()) {
+        if (require('fs').statSync(demoConfigPackagePath).isDirectory()) {
           workspaceRoot = currentDir;
           break;
         }
@@ -938,7 +938,7 @@ export class ConsistencyTester {
       currentDir = path.dirname(currentDir);
     }
     
-    return path.join(workspaceRoot, 'packages', 'x-fidelity-vscode', 'dist', 'demoConfig');
+    return path.join(workspaceRoot, 'packages', 'x-fidelity-democonfig', 'src');
   }
 
   /**

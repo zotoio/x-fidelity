@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { ConfigManager } from '../../configuration/configManager';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
@@ -73,7 +74,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
       {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'resources')]
+        localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionUri.fsPath, 'resources'))]
       }
     );
     
@@ -136,11 +137,11 @@ export class IssueDetailsPanel implements vscode.Disposable {
     
     for (const [uri, diags] of diagnostics) {
       for (const diag of diags) {
-        if (diag.source !== 'X-Fidelity') continue;
+        if (diag.source !== 'X-Fidelity') {continue;}
         
         // Extract enhanced position data if available
         const enhancedPos = (diag as any).enhancedPosition;
-        let range = null;
+        let range: { start: { line: number; column: number }, end: { line: number; column: number } } | undefined = undefined;
         let column = diag.range.start.character + 1; // Convert to 1-based
         
         if (enhancedPos) {
@@ -249,7 +250,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
   }
   
   private updateContent(): void {
-    if (!this.panel) return;
+    if (!this.panel) {return;}
     
     this.panel.webview.html = this.generateHTML();
   }
@@ -1088,7 +1089,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
   
   private async navigateToIssue(file: string, line: number, column?: number, range?: { start: { line: number; column: number }, end: { line: number; column: number } }): Promise<void> {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    if (!workspaceFolder) return;
+    if (!workspaceFolder) {return;}
     
     try {
       let fileUri: vscode.Uri;
@@ -1097,7 +1098,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
       if (file.startsWith('/') || file.includes(':')) {
         fileUri = vscode.Uri.file(file);
       } else {
-        fileUri = vscode.Uri.joinPath(workspaceFolder.uri, file);
+        fileUri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, file));
       }
       
       const document = await vscode.workspace.openTextDocument(fileUri);
@@ -1153,7 +1154,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
       placeHolder: `Select action for ${issueIds.length} issues`
     });
     
-    if (!action) return;
+    if (!action) {return;}
     
     switch (action.value) {
       case 'exempt':
@@ -1177,7 +1178,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
   
   private async quickFix(issueId: string): Promise<void> {
     const issue = this.issues.find(i => i.id === issueId);
-    if (!issue) return;
+    if (!issue) {return;}
     
     // This would integrate with the CodeActionProvider
     vscode.window.showInformationMessage(`Quick fix for ${issue.rule} - ${issue.message}`);
@@ -1185,7 +1186,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
   
   private async addExemption(issueId: string): Promise<void> {
     const issue = this.issues.find(i => i.id === issueId);
-    if (!issue) return;
+    if (!issue) {return;}
     
     vscode.commands.executeCommand('xfidelity.addExemption', 
       vscode.Uri.file(issue.file), 

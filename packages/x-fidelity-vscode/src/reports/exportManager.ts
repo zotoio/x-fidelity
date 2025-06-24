@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { ConfigManager } from '../configuration/configManager';
-import type { ReportHistoryEntry } from './reportHistoryManager';
+// import type { ReportHistoryEntry } from './reportHistoryManager';
 
 export interface ExportOptions {
   format: 'json' | 'csv' | 'excel' | 'pdf' | 'html' | 'markdown' | 'sarif';
@@ -323,7 +323,7 @@ export class ExportManager {
     await vscode.env.openExternal(vscode.Uri.parse(mailto));
   }
   
-  private async shareViaSlack(result: ResultMetadata, options: ShareOptions): Promise<void> {
+  private async shareViaSlack(result: ResultMetadata, _options: ShareOptions): Promise<void> {
     const summary = this.generateSummary(result);
     const message = this.generateSlackMessage(result, summary);
     
@@ -339,7 +339,7 @@ export class ExportManager {
     });
   }
   
-  private async shareViaTeams(result: ResultMetadata, options: ShareOptions): Promise<void> {
+  private async shareViaTeams(result: ResultMetadata, _options: ShareOptions): Promise<void> {
     const summary = this.generateSummary(result);
     const message = this.generateTeamsMessage(result, summary);
     
@@ -354,7 +354,7 @@ export class ExportManager {
     });
   }
   
-  private async shareViaGitHub(result: ResultMetadata, options: ShareOptions): Promise<void> {
+  private async shareViaGitHub(result: ResultMetadata, _options: ShareOptions): Promise<void> {
     const summary = this.generateSummary(result);
     const issueBody = this.generateGitHubIssueBody(result, summary);
     

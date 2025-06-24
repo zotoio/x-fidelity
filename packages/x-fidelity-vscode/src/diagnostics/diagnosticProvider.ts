@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import type { AnalysisResult } from '../analysis/analysisManager';
 import { ConfigManager } from '../configuration/configManager';
 
@@ -225,7 +226,7 @@ export class DiagnosticProvider implements vscode.Disposable {
       // Handle relative paths
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       if (workspaceFolder) {
-        return vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+        return vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, filePath));
       }
       
       return null;

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs/promises';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
@@ -97,9 +97,9 @@ export class ConfigManager {
     const workspaceConfig = vscode.workspace.getConfiguration('xfidelity');
     
     this.config = {
-      // Core Analysis Settings
-      runInterval: workspaceConfig.get('runInterval', 300),
-      autoAnalyzeOnSave: workspaceConfig.get('autoAnalyzeOnSave', true),
+      // Core Analysis Settings - Performance optimized defaults
+      runInterval: workspaceConfig.get('runInterval', 0), // Disabled by default to prevent performance issues
+      autoAnalyzeOnSave: workspaceConfig.get('autoAnalyzeOnSave', false), // Disabled by default to prevent performance issues
       autoAnalyzeOnFileChange: workspaceConfig.get('autoAnalyzeOnFileChange', false),
       archetype: workspaceConfig.get('archetype', 'node-fullstack'),
       
@@ -159,9 +159,10 @@ export class ConfigManager {
 
   /**
    * Get the resolved local config path following the specified resolution order:
-   * 1. home dir ~/.config/x-fidelity (XDG_CONFIG_HOME/x-fidelity)
-   * 2. env var XFI_CONFIG_PATH
-   * 3. demoConfig dir provided by the extension
+   * 1. Explicit user configuration (configServer or localConfigPath)
+   * 2. Home directory ~/.config/x-fidelity (XDG_CONFIG_HOME/x-fidelity)
+   * 3. Environment variable XFI_CONFIG_PATH
+   * 4. Default to x-fidelity-democonfig package
    */
   getResolvedLocalConfigPath(): string {
     const config = this.getConfig();
@@ -171,38 +172,40 @@ export class ConfigManager {
       return config.localConfigPath;
     }
     
-    // Resolution order for fallback when no remote config server or localconfig path is set
+    // Resolution order for fallback when no remote config server or local config path is set
     
-    // 1. Home directory XDG_CONFIG_HOME/x-fidelity or ~/.config/x-fidelity
-    const xdgConfigHome = process.env.XDG_CONFIG_HOME;
-    const homeConfigPath = xdgConfigHome && xdgConfigHome.startsWith('/') 
-      ? path.join(xdgConfigHome, 'x-fidelity')
-      : path.join(os.homedir(), '.config', 'x-fidelity');
+    // 1. Check home directory ~/.config/x-fidelity (XDG_CONFIG_HOME/x-fidelity)
+    const homeDir = os.homedir();
+    const xdgConfigHome = process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
+    const homeConfigPath = path.join(xdgConfigHome, 'x-fidelity');
     
-    try {
-      const stats = require('fs').statSync(homeConfigPath);
-      if (stats.isDirectory()) {
-        return homeConfigPath;
-      }
-    } catch {
-      // Directory doesn't exist, continue to next option
+    if (fs.existsSync(homeConfigPath)) {
+      return homeConfigPath;
     }
     
-    // 2. Environment variable
-    const envConfigPath = process.env.XFI_CONFIG_PATH;
-    if (envConfigPath) {
-      try {
-        const stats = require('fs').statSync(envConfigPath);
-        if (stats.isDirectory()) {
-          return envConfigPath;
-        }
-      } catch {
-        // Path doesn't exist or isn't accessible, continue to next option
-      }
+    // 2. Check environment variable
+    if (process.env.XFI_CONFIG_PATH && fs.existsSync(process.env.XFI_CONFIG_PATH)) {
+      return process.env.XFI_CONFIG_PATH;
     }
     
-    // 3. Extension's demoConfig directory
-    const extensionDemoConfigPath = path.join(this.context.extensionPath, 'dist', 'demoConfig');
-    return extensionDemoConfigPath;
+    // 3. Default to x-fidelity-democonfig package
+    // For VSCode extension, this will be relative to the extension's location
+    const extensionPath = this.context?.extensionPath || '';
+    const demoConfigPath = path.resolve(extensionPath, '..', 'x-fidelity-democonfig', 'src');
+    
+    // Check if we're in the monorepo development environment
+    if (fs.existsSync(demoConfigPath)) {
+      return demoConfigPath;
+    }
+    
+    // Fallback for packaged extension - look for bundled demoConfig
+    const bundledDemoConfigPath = path.join(extensionPath, 'dist', 'demoConfig');
+    if (fs.existsSync(bundledDemoConfigPath)) {
+      return bundledDemoConfigPath;
+    }
+    
+    // Final fallback - return the calculated democonfig path even if it doesn't exist
+    // This will allow the system to give a proper error message
+    return demoConfigPath;
   }
 } 

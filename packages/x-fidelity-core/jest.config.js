@@ -14,7 +14,7 @@ module.exports = {
     "**/__tests__/**/*.+(ts|tsx|js)",
     "**/?(*.)+(spec|test).+(ts|tsx|js)"
   ],
-  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node", "mts", "cts"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   // Improve test cleanup and prevent hanging
   testTimeout: 15000,
@@ -23,5 +23,9 @@ module.exports = {
   // Reset modules and mocks between tests
   clearMocks: true,
   resetMocks: true,
-  restoreMocks: true
+  restoreMocks: true,
+  // Jest 30 performance improvements
+  testEnvironmentOptions: {
+    globalsCleanup: 'soft'
+  }
 };

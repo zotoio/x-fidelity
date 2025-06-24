@@ -9,33 +9,12 @@ let loglevel = process.env.XFI_LOG_LEVEL ||
 let logPrefix: string = generateLogPrefix();
 let logFilePath: string = 'x-fidelity.log'; // Default log file path
 
-// Initialize logger and prefix immediately
-export function initializeLogger() {
-    logPrefix = generateLogPrefix();
-    return getLogger();
-}
-
-// Function to set the log file path (should be called with workspace root)
-export function setLogFilePath(filePath: string): void {
-    logFilePath = filePath;
-    // Force logger recreation to use new file path
-    if (loggerInstance) {
-        loggerInstance = undefined;
-        getLogger(true);
-    }
-}
-
-// Function to get current log file path
-export function getLogFilePath(): string {
-    return logFilePath;
-}
-
 /**
  * Generate a unique log prefix for this logger instance
  * This is used to correlate log messages from the same execution
  * @returns {string} A unique prefix for log messages
  */
-export function generateLogPrefix(): string {
+function generateLogPrefix(): string {
     try {
         // Try to use crypto.randomUUID if available (Node.js 14.17.0+)
         if (crypto.randomUUID) {
@@ -51,33 +30,6 @@ export function generateLogPrefix(): string {
     
     // Simple fallback for test environments or when crypto is not available
     return Math.random().toString(36).substring(2, 10);
-}
-
-export function resetLogPrefix(): void {
-    logPrefix = generateLogPrefix();
-}
-
-export function setLogPrefix(prefix: string): void {
-    console.warn('setLogPrefix is deprecated with the new logger provider pattern');
-    logPrefix = prefix;
-}
-
-export function getLogPrefix(): string {
-    return logPrefix;
-}
-
-export function appendLogPrefix(suffix: string): void {
-    logPrefix = `${logPrefix}:${suffix}`;
-}
-
-export function withLogPrefix<T>(prefix: string, fn: () => T): T {
-    const originalPrefix = getLogPrefix();
-    setLogPrefix(`${originalPrefix}:${prefix}`);
-    try {
-        return fn();
-    } finally {
-        setLogPrefix(originalPrefix);
-    }
 }
 
 // VSCode-specific logger implementation that avoids transport issues
@@ -164,15 +116,4 @@ function getLogger(force?: boolean): pino.Logger {
 }
 
 // Export the logger instance
-export const logger: pino.Logger = getLogger();
-
-// Add a way to reset the logger (mainly for testing)
-export function resetLogger(): void {
-    loggerInstance = getLogger(true);
-}
-
-export function setLogLevel(level: string): void {
-    if (loggerInstance) {
-        loggerInstance.level = level.toLowerCase();
-    }
-} 
+export const logger: pino.Logger = getLogger(); 

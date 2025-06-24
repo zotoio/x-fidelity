@@ -146,7 +146,7 @@ export class ReportHistoryManager {
     const history = await this.getReportHistory(workspaceRoot);
     
     // Filter out old entries and delete their files
-    const filteredHistory = [];
+    const filteredHistory: ReportHistoryEntry[] = [];
     for (const entry of history) {
       if (entry.timestamp >= cutoffTime) {
         filteredHistory.push(entry);

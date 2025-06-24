@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { ConfigManager } from '../../configuration/configManager';
 import { AnalysisManager } from '../../analysis/analysisManager';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
@@ -29,7 +30,17 @@ export class ControlCenterPanel implements vscode.Disposable {
     private configManager: ConfigManager,
     private analysisManager: AnalysisManager,
     private diagnosticProvider: DiagnosticProvider
-  ) {}
+  ) {
+    // Listen for analysis state changes to refresh the panel
+    this.analysisManager.onDidAnalysisStateChange(_state => {
+      this.refreshPanel();
+    }, null, this.disposables);
+
+    // Listen for analysis completion
+    this.analysisManager.onDidAnalysisComplete(_result => {
+      this.refreshPanel();
+    }, null, this.disposables);
+  }
   
   async show(): Promise<void> {
     if (this.panel) {
@@ -45,7 +56,7 @@ export class ControlCenterPanel implements vscode.Disposable {
       {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'resources')]
+        localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionUri.fsPath, 'resources'))]
       }
     );
     
@@ -68,6 +79,12 @@ export class ControlCenterPanel implements vscode.Disposable {
     const data = await this.collectControlCenterData();
     this.panel.webview.html = this.generateHTML(data);
   }
+
+  private async refreshPanel(): Promise<void> {
+    if (this.panel) {
+      await this.updateContent();
+    }
+  }
   
   private async collectControlCenterData(): Promise<ControlCenterData> {
     const summary = this.diagnosticProvider.getDiagnosticsSummary();
@@ -75,20 +92,22 @@ export class ControlCenterPanel implements vscode.Disposable {
     // Check if analysis is currently running
     const isAnalysisRunning = this.analysisManager.isAnalysisRunning;
     
+    // Get actual WASM status
+    const wasmStatus = this.getWasmStatus();
+    
+    // Get actual plugin count
+    const pluginStatus = this.getPluginStatus();
+    
     return {
-      lastAnalysis: undefined, // TODO: Track last analysis time
+      lastAnalysis: this.getLastAnalysisTime(),
       issueCount: {
         errors: summary.errors,
         warnings: summary.warnings,
         info: summary.info,
         hints: summary.hints
       },
-      wasmStatus: 'ready', // TODO: Check actual WASM status
-      pluginStatus: {
-        loaded: 5, // TODO: Get actual plugin count
-        total: 5,
-        failed: []
-      },
+      wasmStatus,
+      pluginStatus,
       analysisStatus: isAnalysisRunning ? 'running' : 'idle'
     };
   }
@@ -594,8 +613,31 @@ export class ControlCenterPanel implements vscode.Disposable {
   }
   
   private async exportLogs(): Promise<void> {
-    // TODO: Implement log export functionality
-    await vscode.window.showInformationMessage('Log export functionality coming soon!');
+    try {
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) {
+        await vscode.window.showWarningMessage('No workspace folder available for log export');
+        return;
+      }
+      
+      const logPath = path.join(workspaceFolder.uri.fsPath, 'x-fidelity.log');
+      const exportPath = await vscode.window.showSaveDialog({
+        defaultUri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, `x-fidelity-logs-${new Date().toISOString().split('T')[0]}.log`)),
+        filters: { 'Log files': ['log'], 'All files': ['*'] }
+      });
+      
+      if (exportPath) {
+        const fs = require('fs');
+        if (fs.existsSync(logPath)) {
+          fs.copyFileSync(logPath, exportPath.fsPath);
+          await vscode.window.showInformationMessage(`Logs exported to: ${exportPath.fsPath}`);
+        } else {
+          await vscode.window.showWarningMessage('No log file found to export');
+        }
+      }
+    } catch (error) {
+      await vscode.window.showErrorMessage(`Failed to export logs: ${error}`);
+    }
   }
   
   private formatTime(date: Date): string {
@@ -620,6 +662,45 @@ export class ControlCenterPanel implements vscode.Disposable {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
+  }
+
+  private getLastAnalysisTime(): Date | undefined {
+    // Try to get the last analysis time from the analysis manager
+    const lastResult = this.analysisManager.getCurrentResults();
+    if (lastResult?.timestamp) {
+      return new Date(lastResult.timestamp);
+    }
+    return undefined;
+  }
+
+  private getWasmStatus(): 'ready' | 'loading' | 'error' | 'unavailable' {
+    try {
+      // Import the WASM utils to check status
+      const { isWasmTreeSitterReady } = require('../../utils/wasmAstUtils');
+      return isWasmTreeSitterReady() ? 'ready' : 'unavailable';
+    } catch {
+      return 'unavailable';
+    }
+  }
+
+  private getPluginStatus(): { loaded: number; total: number; failed: string[] } {
+    try {
+      // Try to get plugin information from the core
+      const { pluginRegistry } = require('@x-fidelity/core');
+      const loadedPlugins = pluginRegistry.getLoadedPlugins?.() || [];
+      return {
+        loaded: loadedPlugins.length,
+        total: loadedPlugins.length, // Assume all available plugins are loaded
+        failed: []
+      };
+    } catch {
+      // Fallback to default values if plugin registry is not available
+      return {
+        loaded: 0,
+        total: 0,
+        failed: []
+      };
+    }
   }
   
   dispose(): void {

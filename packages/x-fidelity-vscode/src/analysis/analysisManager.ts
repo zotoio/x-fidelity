@@ -250,11 +250,26 @@ export class AnalysisManager implements vscode.Disposable {
     }
     
     if (config.runInterval > 0) {
+      // Add safeguards to prevent performance issues
+      const minInterval = 60; // Minimum 1 minute between periodic runs
+      const actualInterval = Math.max(config.runInterval, minInterval);
+      
+      if (actualInterval !== config.runInterval) {
+        this.logger.warn(`Periodic analysis interval increased from ${config.runInterval}s to ${actualInterval}s to prevent performance issues`);
+      }
+      
       this.periodicTimer = setInterval(() => {
         if (!this.isAnalyzing) {
+          this.logger.info('Running periodic analysis...');
           this.runAnalysis();
+        } else {
+          this.logger.debug('Skipping periodic analysis - analysis already in progress');
         }
-      }, config.runInterval * 1000);
+      }, actualInterval * 1000);
+      
+      this.logger.info(`Periodic analysis started with interval: ${actualInterval}s`);
+    } else {
+      this.logger.info('Periodic analysis disabled (runInterval = 0)');
     }
   }
   

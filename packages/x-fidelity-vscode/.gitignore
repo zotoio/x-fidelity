@@ -1,0 +1,13 @@
+dist/
+out/
+node_modules/
+.vscode-test/
+.vscode-test-profile/
+*.vsix
+*.tgz
+.DS_Store
+*.log
+.npm-debug.log*
+.env
+config/
+docs-archive/ 

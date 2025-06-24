@@ -33,7 +33,7 @@ export class ReportViewer implements vscode.Disposable {
         enableScripts: true,
         retainContextWhenHidden: true,
         localResourceRoots: [
-          vscode.Uri.joinPath(this.context.extensionUri, 'resources')
+          vscode.Uri.file(path.join(this.context.extensionUri.fsPath, 'resources'))
         ]
       }
     );
@@ -808,7 +808,7 @@ export class ReportViewer implements vscode.Disposable {
         fileUri = vscode.Uri.file(filePath);
       } else {
         // Handle relative paths
-        fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+        fileUri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, filePath));
       }
       
       const document = await vscode.workspace.openTextDocument(fileUri);

@@ -1,3 +1,4 @@
+/** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
@@ -19,5 +20,10 @@ module.exports = {
     '^@x-fidelity/core$': '<rootDir>/../x-fidelity-core/src/index',
     '^@x-fidelity/plugins/(.*)$': '<rootDir>/src/$1',
     '^@x-fidelity/plugins$': '<rootDir>/src/index'
+  },
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node", "mts", "cts"],
+  // Jest 30 performance improvements
+  testEnvironmentOptions: {
+    globalsCleanup: 'soft'
   }
 }; 

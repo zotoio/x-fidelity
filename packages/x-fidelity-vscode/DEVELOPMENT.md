@@ -1,27 +1,239 @@
 # 🚀 X-Fidelity VSCode Extension Development Guide
 
-## Quick Start
+## 🚀 Quick Start (F5 Debug Workflow)
 
-### 🏃 One-Command Development Setup
+**The fastest way to develop and test the extension:**
 
-```bash
-# From the x-fidelity-vscode directory
-yarn dev:complete
+1. **Open Extension in VSCode**
+   ```bash
+   cd packages/x-fidelity-vscode
+   code .
+   ```
+
+2. **Press F5** 
+   - Automatically builds the extension
+   - Opens new VSCode window with extension loaded
+   - Extension analyzes the workspace automatically
+   - Issues appear in tree view with ⚡ lightning icon
+
+3. **Test Core Features**
+   - Open Command Palette (`Ctrl+Shift+P`)
+   - Type "X-Fidelity" to see all commands
+   - Click lightning ⚡ icon in Activity Bar
+   - View issues in tree view
+   - Use Control Center for settings
+
+## 🏗️ Architecture Overview
+
+### Zero-Configuration Design
+- **Auto-detects** project archetype on startup
+- **Fallback** to `node-fullstack` if detection fails  
+- **No manual setup** required - works like `xfidelity .` CLI
+- **Progress indicators** based on file count
+- **5-minute timeout** configurable per user requirements
+
+### Core Components
+```
+Extension Manager          - Main coordinator
+├── Auto-Detection        - Archetype detection with fallback
+├── Analysis Manager      - Runs X-Fidelity core analysis
+├── Diagnostic Provider   - Converts issues to VSCode diagnostics
+├── Tree View Manager     - Shows issues in sidebar (⚡ icon)
+├── Control Center        - Settings and actions panel
+└── Status Bar Provider   - Shows analysis status
 ```
 
-This single command will:
-- Build all workspace dependencies
-- Build the VSCode extension
-- Set up test directories
-- Provide clear next steps
+### CLI-Extension Consistency
+- **Exact match** requirement between `yarn build-run` and extension
+- **Blocking CI** check on PR reviews
+- **Automatic reporting** of any discrepancies
 
-### ⚡ F5 Debug Launch
+## 🧪 Testing Framework
 
-1. Open VSCode in the `x-fidelity-vscode` directory
-2. Press **F5** to launch the extension host
-3. In the extension host window, press **Ctrl+Shift+P**
-4. Type: **"X-Fidelity: Control Center"**
-5. Access all extension functionality from the unified Control Center
+### Consolidated Testing (VSCode Test Runner Only)
+```bash
+# Unit tests (fast, no VSCode API)
+yarn test:unit
+
+# Integration tests (with VSCode API)  
+yarn test:integration
+
+# CLI-Extension consistency (5min timeout)
+yarn test:consistency
+
+# All tests
+yarn test:all
+
+# Watch mode for development
+yarn test:watch
+```
+
+### Test Structure
+```
+src/test/
+├── suite/                 # VSCode extension tests
+│   ├── extension.test.ts  # Core extension functionality
+│   ├── consistency.test.ts # CLI-Extension consistency
+│   └── workspaceUtils.test.ts # Utility functions
+└── integration/           # Future integration tests
+```
+
+## 📋 Essential Commands (Reduced from 27+ to 16)
+
+### Core Commands (Always Available)
+- `X-Fidelity: Test Extension` - Debug helper
+- `X-Fidelity: Run Analysis Now` - Manual analysis trigger
+- `X-Fidelity: Control Center` - Main settings interface
+- `X-Fidelity: Refresh Issues` - Reload issue tree
+
+### Settings & Configuration (Submenu)
+- `X-Fidelity Settings: Open Settings`
+- `X-Fidelity Settings: Detect Project Archetype`
+- `X-Fidelity Settings: Reset Configuration`
+- `X-Fidelity Settings: Advanced Settings`
+
+### Reports & Analysis (Submenu)
+- `X-Fidelity Reports: Open Reports Folder`
+- `X-Fidelity Reports: Export Current Report`
+- `X-Fidelity Reports: Show Report History`
+- `X-Fidelity Reports: View Issue Trends`
+
+### Context Menu Only (Issue Items)
+- `Go to Issue` - Navigate to issue location
+- `Add Exemption` - Exempt specific issue
+- `Show Rule Info` - View rule documentation
+- `Add Bulk Exemptions` - Exempt multiple issues
+
+## 🔧 Development Scripts
+
+### Build & Development
+```bash
+# Clean build for development
+yarn dev:build
+
+# Start extension with F5 workflow
+yarn dev
+
+# Fresh profile (clean VSCode settings)
+yarn dev:fresh
+
+# Watch mode (auto-rebuild on changes)
+yarn dev:watch
+```
+
+### Testing & Verification
+```bash
+# Quick verification (unit tests + extension check)
+yarn verify:quick
+
+# Full verification (all tests + packaging)
+yarn verify:all
+
+# CI verification (for automated testing)
+yarn verify:ci
+```
+
+### Packaging & Distribution
+```bash
+# Development package
+yarn package:dev
+
+# Production package
+yarn package
+
+# Install locally for testing
+yarn install-vsix
+```
+
+## 🤖 CI/CD Pipeline
+
+### GitHub Actions (ubuntu-latest, headless)
+- **Triggers**: PR reviews, publish events
+- **Headless Testing**: Xvfb for VSCode extension tests
+- **Consistency Check**: CLI vs Extension exact match
+- **Artifact Storage**: 30-day retention for consistency reports
+- **Blocking**: Fails build on timeout or inconsistency
+
+### Workflow Jobs
+1. **test-extension** - Run all extension tests
+2. **consistency-check** - Verify CLI-Extension parity
+3. **publish-check** - Package verification (on label)
+
+## 🛠️ Debugging & Troubleshooting
+
+### F5 Debug Launch Options
+- **"Run Extension"** - Standard development debugging
+- **"Extension Tests"** - Debug test suite
+- **"Extension Tests (Fresh Profile)"** - Clean environment testing
+- **"Consistency Tests"** - Debug CLI-Extension consistency
+- **"Extension + Tests"** - Compound launch (both extension and tests)
+
+### Common Issues & Solutions
+
+**Extension not finding issues:**
+1. Check workspace has recognizable project files
+2. Verify archetype detection worked (see notification)
+3. Check Output panel > X-Fidelity Debug for logs
+4. Run `X-Fidelity: Test Extension` command
+
+**Tests hanging:**
+1. Tests have 5-minute timeout as specified
+2. Check Xvfb setup for headless environments
+3. Verify workspace folder is properly set
+4. Use fresh profile if state issues persist
+
+**CLI-Extension inconsistency:**
+1. Check that both use same archetype
+2. Verify workspace root is identical
+3. Review consistency report artifacts
+4. Ensure all dependencies are built (`yarn build`)
+
+### Performance Monitoring
+- **File count progress** - Shows analysis progress
+- **5-minute timeout** - Configurable analysis limit
+- **Progress indicators** - Visual feedback during analysis
+- **Diagnostic logging** - Detailed execution tracking
+
+## 📁 File Structure
+```
+packages/x-fidelity-vscode/
+├── .vscode/                # F5 debug configuration
+│   ├── launch.json        # Debug launch configurations
+│   └── tasks.json         # Build and test tasks
+├── src/
+│   ├── core/              # Extension manager and coordination
+│   ├── analysis/          # X-Fidelity core integration
+│   ├── configuration/     # Auto-detection and settings
+│   ├── diagnostics/       # Issue to VSCode diagnostic conversion
+│   ├── ui/                # Tree views, panels, status bar
+│   │   ├── treeView/      # Issues tree (⚡ icon) and Control Center
+│   │   └── panels/        # Settings and dashboard panels
+│   ├── test/              # VSCode extension tests
+│   └── utils/             # Utility functions
+├── docs-archive/          # Outdated documentation (git-ignored)
+├── .vscode-test.js        # VSCode test configuration
+├── package.json           # Dependencies and scripts
+└── README.md              # User installation guide
+```
+
+## 🎯 Success Criteria
+
+**F5 Launch → Extension Works → Issues Display → Lightning Icon ⚡**
+
+A successful development session should achieve:
+- ✅ F5 launches extension without errors
+- ✅ Auto-detects archetype (or uses node-fullstack fallback)
+- ✅ Shows same issues as `yarn build-run` CLI command
+- ✅ Lightning ⚡ icon visible in Activity Bar
+- ✅ Issues tree view populated and functional
+- ✅ All tests pass (unit + integration + consistency)
+- ✅ Zero configuration required by user
+
+**Need Help?**
+- Press F5 → Extension launches → Use Control Center
+- Check Output panel → X-Fidelity Debug for detailed logs  
+- Run `yarn help` for available commands
+- See GitHub Actions artifacts for CI consistency reports
 
 ## 🎛️ Control Center
 

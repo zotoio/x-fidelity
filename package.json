@@ -2,9 +2,16 @@
   "name": "x-fidelity-monorepo",
   "version": "4.0.0",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ],
+    "nohoist": [
+      "**/x-fidelity-vscode",
+      "**/x-fidelity-vscode/**",
+      "**/x-fidelity-fixtures/**"
+    ]
+  },
   "scripts": {
     "clean": "yarn workspaces run clean && rm -rf dist *.tsbuildinfo",
     "clean:artifacts": "find . -name '*.d.ts' -o -name '*.map' -o -name '*.js.map' | grep -v node_modules | grep -v dist | xargs rm -f || true",
@@ -19,7 +26,7 @@
     "vscode:dev:fresh": "yarn workspace x-fidelity-vscode dev:fresh",
     "vscode:dev:watch": "yarn workspace x-fidelity-vscode dev:watch",
     "vscode:package": "yarn workspace x-fidelity-vscode package",
-    "test:consistency": "yarn build && cd packages/x-fidelity-core && npm test -- --testPathPattern=consistencyTesting.test.ts --verbose",
+    "test:consistency": "yarn build && cd packages/x-fidelity-core && npm test -- --testPathPatterns=consistencyTesting.test.ts --verbose",
     "test:consistency:quick": "yarn build && cd packages/x-fidelity-core && node -e \"require('./dist/test-utils/consistencyTesting.js').runManualConsistencyTest().catch(console.error)\"",
     "test:consistency:baseline": "yarn build && cd packages/x-fidelity-core && node -e \"require('./dist/test-utils/consistencyTesting.js').generateBaselineReport().then(r => require('fs').writeFileSync('../../consistency-baseline.txt', r))\"",
     "test:consistency:validate": "yarn build && cd packages/x-fidelity-core && node dist/test-utils/consistencyTestingCLI.js validate"

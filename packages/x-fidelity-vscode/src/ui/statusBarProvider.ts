@@ -1,162 +1,197 @@
 import * as vscode from 'vscode';
-import type { AnalysisState } from '../analysis/analysisManager';
-import type { DiagnosticProvider } from '../diagnostics/diagnosticProvider';
-import { ConfigManager } from '../configuration/configManager';
+import { AnalysisManager } from '../analysis/analysisManager';
+import { VSCodeLogger } from '../utils/vscodeLogger';
+import type { AnalysisState, AnalysisResult, AnalysisStateType } from '../analysis/types';
 
 export class StatusBarProvider implements vscode.Disposable {
   private statusBarItem: vscode.StatusBarItem;
   private disposables: vscode.Disposable[] = [];
+  private logger: VSCodeLogger;
+  private currentState: AnalysisStateType = 'idle';
+  private lastResult: AnalysisResult | null = null;
   
-  constructor(
-    private configManager: ConfigManager,
-    private diagnosticProvider: DiagnosticProvider
-  ) {
+  constructor(private analysisManager: AnalysisManager) {
+    this.logger = new VSCodeLogger('StatusBar');
+    
     this.statusBarItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Left,
       100
     );
     
-    this.setupStatusBar();
-    this.setupEventListeners();
-  }
-  
-  private setupStatusBar(): void {
-    const config = this.configManager.getConfig();
-    
-    if (!config.statusBarVisibility) {
-      this.statusBarItem.hide();
-      return;
-    }
-    
-    this.statusBarItem.text = '$(search) X-Fidelity';
-    this.statusBarItem.tooltip = 'X-Fidelity Analysis Status';
+    // Use lightning (zap) icon instead of check
+    this.statusBarItem.text = '$(zap) X-Fidelity';
+    this.statusBarItem.tooltip = 'X-Fidelity - Click to run analysis';
     this.statusBarItem.command = 'xfidelity.runAnalysis';
     this.statusBarItem.show();
     
-    this.updateStatusBar();
+    this.setupEventListeners();
+    this.updateDisplay();
   }
   
   private setupEventListeners(): void {
-    // Update when configuration changes
+    // Listen to analysis state changes
     this.disposables.push(
-      this.configManager.onConfigurationChanged.event(() => {
-        this.setupStatusBar();
+      this.analysisManager.onDidAnalysisStateChange((state: AnalysisState) => {
+        this.currentState = this.mapAnalysisStateToStateType(state);
+        this.updateDisplay();
+      })
+    );
+    
+    // Listen to analysis completion
+    this.disposables.push(
+      this.analysisManager.onDidAnalysisComplete((result: AnalysisResult) => {
+        this.lastResult = result;
+        this.updateDisplay();
       })
     );
   }
   
-  updateAnalysisState(state: AnalysisState): void {
-    const config = this.configManager.getConfig();
-    
-    if (!config.statusBarVisibility) {
-      return;
-    }
-    
+  private mapAnalysisStateToStateType(state: AnalysisState): AnalysisStateType {
     switch (state.status) {
-      case 'idle':
-        this.statusBarItem.text = '$(search) X-Fidelity';
-        this.statusBarItem.tooltip = 'X-Fidelity: Ready';
-        this.statusBarItem.backgroundColor = undefined;
-        break;
-        
-      case 'analyzing':
-        const progress = state.progress ? ` ${state.progress}%` : '';
-        this.statusBarItem.text = `$(sync~spin) X-Fidelity${progress}`;
-        this.statusBarItem.tooltip = state.currentFile 
-          ? `X-Fidelity: Analyzing ${state.currentFile}` 
-          : 'X-Fidelity: Analysis in progress...';
-        this.statusBarItem.backgroundColor = undefined;
-        break;
-        
-      case 'complete':
-        this.updateStatusBar();
-        break;
-        
-      case 'error':
-        this.statusBarItem.text = '$(error) X-Fidelity';
-        this.statusBarItem.tooltip = `X-Fidelity: Error - ${state.error?.message || 'Unknown error'}`;
-        this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
-        break;
+      case 'idle': return 'idle';
+      case 'analyzing': return 'running';
+      case 'complete': return 'completed';
+      case 'error': return 'error';
+      default: return 'idle';
     }
   }
   
-  private updateStatusBar(): void {
-    const summary = this.diagnosticProvider.getDiagnosticsSummary();
-    const config = this.configManager.getConfig();
-    
-    if (!config.statusBarVisibility) {
-      this.statusBarItem.hide();
-      return;
+  private updateDisplay(): void {
+    try {
+      switch (this.currentState) {
+        case 'idle':
+          this.updateIdleState();
+          break;
+        case 'running':
+          this.updateRunningState();
+          break;
+        case 'cancelling':
+          this.updateCancellingState();
+          break;
+        case 'completed':
+          this.updateCompletedState();
+          break;
+        case 'error':
+          this.updateErrorState();
+          break;
+        default:
+          this.logger.warn('Unknown analysis state', { state: this.currentState });
+          this.updateIdleState();
+      }
+    } catch (error) {
+      this.logger.error('Error updating status bar display', { error });
+      this.statusBarItem.text = '$(zap) X-Fidelity (Error)';
+      this.statusBarItem.tooltip = 'X-Fidelity - Error updating display';
+    }
+  }
+  
+  private updateIdleState(): void {
+    this.statusBarItem.text = '$(zap) X-Fidelity';
+    this.statusBarItem.tooltip = 'X-Fidelity - Click to run analysis';
+    this.statusBarItem.command = 'xfidelity.runAnalysis';
+    this.statusBarItem.backgroundColor = undefined;
+  }
+  
+  private updateRunningState(): void {
+    this.statusBarItem.text = '$(loading~spin) X-Fidelity';
+    this.statusBarItem.tooltip = 'X-Fidelity - Analysis running... Click to cancel';
+    this.statusBarItem.command = 'xfidelity.cancelAnalysis';
+    this.statusBarItem.backgroundColor = undefined;
+  }
+  
+  private updateCancellingState(): void {
+    this.statusBarItem.text = '$(loading~spin) Cancelling...';
+    this.statusBarItem.tooltip = 'X-Fidelity - Cancelling analysis...';
+    this.statusBarItem.command = undefined;
+    this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+  }
+  
+  private updateCompletedState(): void {
+    if (this.lastResult) {
+      const issueCount = this.lastResult.summary.totalIssues;
+      const iconAndText = issueCount > 0 
+        ? `$(warning) X-Fi: ${issueCount} issues`
+        : '$(check) X-Fi: No issues';
+        
+      this.statusBarItem.text = iconAndText;
+      this.statusBarItem.tooltip = this.buildCompletedTooltip();
+      this.statusBarItem.command = 'xfidelity.showControlCenter';
+      
+      // Color coding based on issue severity
+      if (issueCount === 0) {
+        this.statusBarItem.backgroundColor = undefined;
+      } else if (this.hasHighSeverityIssues()) {
+        this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+      } else {
+        this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+      }
+    } else {
+      this.statusBarItem.text = '$(check) X-Fidelity';
+      this.statusBarItem.tooltip = 'X-Fidelity - Analysis completed';
+      this.statusBarItem.command = 'xfidelity.runAnalysis';
+      this.statusBarItem.backgroundColor = undefined;
+    }
+  }
+  
+  private updateErrorState(): void {
+    this.statusBarItem.text = '$(error) X-Fidelity';
+    this.statusBarItem.tooltip = 'X-Fidelity - Analysis failed. Click to retry';
+    this.statusBarItem.command = 'xfidelity.runAnalysis';
+    this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+  }
+  
+  private buildCompletedTooltip(): string {
+    if (!this.lastResult) {
+      return 'X-Fidelity - Analysis completed';
     }
     
-    // Show issue counts
-    if (summary.total === 0) {
-          this.statusBarItem.text = '$(zap) X-Fidelity';
-    this.statusBarItem.tooltip = 'X-Fidelity: No issues found';
-    this.statusBarItem.backgroundColor = undefined;
-    } else {
-      const issueText = this.formatIssueSummary(summary);
-      this.statusBarItem.text = `$(warning) ${issueText}`;
-      this.statusBarItem.tooltip = this.formatTooltip(summary);
-      
-      // Color based on severity
-      if (summary.errors > 0) {
-        this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
-      } else if (summary.warnings > 0) {
-        this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-      } else {
-        this.statusBarItem.backgroundColor = undefined;
+    const summary = this.lastResult.summary;
+    const details = [
+      `Total Issues: ${summary.totalIssues}`,
+      `Files Analyzed: ${summary.filesAnalyzed}`,
+      `Duration: ${summary.analysisTimeMs ? Math.round(summary.analysisTimeMs / 1000) : 'N/A'}s`
+    ];
+    
+    if (summary.issuesByLevel) {
+      const levels = Object.entries(summary.issuesByLevel)
+        .filter(([_, count]) => (count as number) > 0)
+        .map(([level, count]) => `${level}: ${count}`)
+        .join(', ');
+      if (levels) {
+        details.push(`Breakdown: ${levels}`);
       }
     }
     
-    this.statusBarItem.show();
+    return `X-Fidelity Analysis Results\n${details.join('\n')}\n\nClick to view details`;
   }
   
-  private formatIssueSummary(summary: { total: number; errors: number; warnings: number; info: number; hints: number }): string {
-    const parts: string[] = [];
-    
-    if (summary.errors > 0) {
-      parts.push(`${summary.errors}E`);
+  private hasHighSeverityIssues(): boolean {
+    if (!this.lastResult?.summary.issuesByLevel) {
+      return false;
     }
     
-    if (summary.warnings > 0) {
-      parts.push(`${summary.warnings}W`);
-    }
-    
-    if (summary.info > 0) {
-      parts.push(`${summary.info}I`);
-    }
-    
-    if (summary.hints > 0) {
-      parts.push(`${summary.hints}H`);
-    }
-    
-    return parts.length > 0 ? parts.join(' ') : `${summary.total}`;
+    const highSeverityLevels = ['error', 'critical', 'high'];
+    return highSeverityLevels.some(level => 
+      (this.lastResult!.summary.issuesByLevel![level] || 0) > 0
+    );
   }
   
-  private formatTooltip(summary: { total: number; errors: number; warnings: number; info: number; hints: number }): string {
-    const lines: string[] = ['X-Fidelity Issues:'];
-    
-    if (summary.errors > 0) {
-      lines.push(`🔴 Errors: ${summary.errors}`);
+  /**
+   * Update status bar with real-time progress information
+   */
+  updateProgress(phase: string, progress: number, message?: string): void {
+    if (this.currentState === 'running') {
+      const progressText = `$(loading~spin) ${phase} (${Math.round(progress)}%)`;
+      this.statusBarItem.text = progressText;
+      this.statusBarItem.tooltip = message || `X-Fidelity - ${phase}... ${Math.round(progress)}%`;
     }
-    
-    if (summary.warnings > 0) {
-      lines.push(`🟡 Warnings: ${summary.warnings}`);
-    }
-    
-    if (summary.info > 0) {
-      lines.push(`🔵 Info: ${summary.info}`);
-    }
-    
-    if (summary.hints > 0) {
-      lines.push(`💡 Hints: ${summary.hints}`);
-    }
-    
-    lines.push('');
-    lines.push('Click to run analysis');
-    
-    return lines.join('\n');
+  }
+  
+  /**
+   * Trigger a manual refresh of the display
+   */
+  refresh(): void {
+    this.updateDisplay();
   }
   
   dispose(): void {

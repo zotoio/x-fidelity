@@ -11,7 +11,7 @@ export class XFidelityCodeActionProvider implements vscode.CodeActionProvider {
     range: vscode.Range | vscode.Selection,
     context: vscode.CodeActionContext,
     _token: vscode.CancellationToken
-  ): vscode.ProviderResult<(vscode.CodeAction | vscode.Command)[]> {
+  ): vscode.ProviderResult<vscode.CodeAction[]> {
     
     const actions: vscode.CodeAction[] = [];
     
@@ -270,8 +270,8 @@ export async function handleAddExemption(
   ruleId: string
 ): Promise<void> {
   try {
-    const document = await vscode.workspace.openTextDocument(uri);
-    const line = document.lineAt(range.start.line);
+    // const document = await vscode.workspace.openTextDocument(uri);
+    // const line = document.lineAt(range.start.line);
     
     // Choose exemption type
     const exemptionType = await vscode.window.showQuickPick([

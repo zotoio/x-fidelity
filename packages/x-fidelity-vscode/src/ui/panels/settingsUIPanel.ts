@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { ConfigManager, type ExtensionConfig } from '../../configuration/configManager';
 import { DefaultDetectionService } from '../../configuration/defaultDetection';
 
@@ -45,7 +46,7 @@ export class SettingsUIPanel implements vscode.Disposable {
       {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'resources')]
+        localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionUri.fsPath, 'resources'))]
       }
     );
     
@@ -85,7 +86,7 @@ export class SettingsUIPanel implements vscode.Disposable {
             description: 'The X-Fidelity archetype that best matches your project',
             type: 'enum',
             default: 'node-fullstack',
-            options: ['node-fullstack', 'react-spa', 'next-fullstack', 'java-microservice', 'python-service', 'dotnet-service']
+            options: ['node-fullstack', 'next-fullstack', 'java-microservice', 'python-service', 'dotnet-service']
           },
           {
             key: 'runInterval',

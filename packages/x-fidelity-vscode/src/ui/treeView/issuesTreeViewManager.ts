@@ -1,11 +1,16 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { IssuesTreeProvider, type GroupingMode, type IssueTreeItem } from './issuesTreeProvider';
 import type { ProcessedIssue } from '../panels/issueDetailsPanel';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
 import { ConfigManager } from '../../configuration/configManager';
 import { logger } from '../../utils/logger';
+import { getWorkspaceFolder } from '../../utils/workspaceUtils';
 
 export class IssuesTreeViewManager implements vscode.Disposable {
+  private static commandsRegistered = false;
+  private static globalDisposables: vscode.Disposable[] = [];
+  
   private disposables: vscode.Disposable[] = [];
   private treeDataProvider: IssuesTreeProvider;
   private treeView: vscode.TreeView<IssueTreeItem>;
@@ -14,13 +19,14 @@ export class IssuesTreeViewManager implements vscode.Disposable {
   constructor(
     private context: vscode.ExtensionContext,
     private diagnosticProvider: DiagnosticProvider,
-    private configManager: ConfigManager
+    private configManager: ConfigManager,
+    private viewId?: string
   ) {
     // Initialize tree data provider
     this.treeDataProvider = new IssuesTreeProvider();
     
     // Create tree view
-    this.treeView = vscode.window.createTreeView('xfidelityIssuesTreeView', {
+    this.treeView = vscode.window.createTreeView(this.viewId || 'xfidelityIssuesTreeView', {
       treeDataProvider: this.treeDataProvider,
       showCollapseAll: true,
       canSelectMany: false
@@ -43,56 +49,62 @@ export class IssuesTreeViewManager implements vscode.Disposable {
   }
 
   private registerCommands(): void {
-    // Refresh command
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.refreshIssuesTree', () => {
-        this.refreshIssues();
-      })
-    );
+    // Only register commands once globally, not per instance
+    if (!IssuesTreeViewManager.commandsRegistered) {
+      IssuesTreeViewManager.commandsRegistered = true;
+      
+      // Refresh command - delegate to active instance
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand('xfidelity.refreshIssuesTree', () => {
+          // Find the active tree view and refresh it
+          this.refreshIssues();
+        })
+      );
 
-    // Grouping commands
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.issuesTreeGroupBySeverity', () => {
-        this.setGroupingMode('severity');
-      })
-    );
+      // Grouping commands - delegate to active instance
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand('xfidelity.issuesTreeGroupBySeverity', () => {
+          this.setGroupingMode('severity');
+        })
+      );
 
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.issuesTreeGroupByRule', () => {
-        this.setGroupingMode('rule');
-      })
-    );
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand('xfidelity.issuesTreeGroupByRule', () => {
+          this.setGroupingMode('rule');
+        })
+      );
 
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.issuesTreeGroupByFile', () => {
-        this.setGroupingMode('file');
-      })
-    );
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand('xfidelity.issuesTreeGroupByFile', () => {
+          this.setGroupingMode('file');
+        })
+      );
 
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.issuesTreeGroupByCategory', () => {
-        this.setGroupingMode('category');
-      })
-    );
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand('xfidelity.issuesTreeGroupByCategory', () => {
+          this.setGroupingMode('category');
+        })
+      );
 
-    // Issue action commands
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.goToIssue', async (issue: ProcessedIssue | IssueTreeItem) => {
-        await this.goToIssue(issue);
-      })
-    );
+      // Issue action commands - delegate to active instance
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand('xfidelity.goToIssue', async (issue: ProcessedIssue | IssueTreeItem) => {
+          await this.goToIssue(issue);
+        })
+      );
 
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.addIssueExemption', async (item: IssueTreeItem) => {
-        await this.addIssueExemption(item);
-      })
-    );
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand('xfidelity.addIssueExemption', async (item: IssueTreeItem) => {
+          await this.addIssueExemption(item);
+        })
+      );
 
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.showIssueRuleInfo', async (item: IssueTreeItem) => {
-        await this.showIssueRuleInfo(item);
-      })
-    );
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand('xfidelity.showIssueRuleInfo', async (item: IssueTreeItem) => {
+          await this.showIssueRuleInfo(item);
+        })
+      );
+    }
   }
 
   private setupEventListeners(): void {
@@ -147,11 +159,11 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     
     for (const [uri, diags] of diagnostics) {
       for (const diag of diags) {
-        if (diag.source !== 'X-Fidelity') continue;
+        if (diag.source !== 'X-Fidelity') {continue;}
         
         // Extract enhanced position data if available
         const enhancedPos = (diag as any).enhancedPosition;
-        let range = null;
+        let range: { start: { line: number; column: number }, end: { line: number; column: number } } | undefined = undefined;
         let column = diag.range.start.character + 1; // Convert to 1-based
         
         if (enhancedPos) {
@@ -247,7 +259,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       }
 
       // Get the workspace folder
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      const workspaceFolder = getWorkspaceFolder();
       if (!workspaceFolder) {
         vscode.window.showWarningMessage('No workspace folder found');
         return;
@@ -258,7 +270,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       if (vscode.Uri.file(issue.file).scheme === 'file') {
         filePath = issue.file;
       } else {
-        filePath = vscode.Uri.joinPath(workspaceFolder.uri, issue.file).fsPath;
+        filePath = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, issue.file)).fsPath;
       }
 
       const uri = vscode.Uri.file(filePath);
@@ -353,5 +365,11 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
   dispose(): void {
     this.disposables.forEach(d => d.dispose());
+  }
+
+  static disposeGlobalCommands(): void {
+    IssuesTreeViewManager.globalDisposables.forEach(d => d.dispose());
+    IssuesTreeViewManager.globalDisposables = [];
+    IssuesTreeViewManager.commandsRegistered = false;
   }
 } 

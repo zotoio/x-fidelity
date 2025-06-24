@@ -1,4 +1,4 @@
-import { FileData } from '@x-fidelity/types';
+// import { FileData } from '@x-fidelity/types';
 import * as vscode from 'vscode';
 import { logger } from './logger';
 import * as path from 'path';
@@ -11,7 +11,7 @@ let wasmInitializationFailed = false;
 let ParserClass: any = null;
 
 export async function initializeWasmTreeSitter(extensionContext: vscode.ExtensionContext): Promise<void> {
-  if (isInitialized || wasmInitializationFailed) return;
+  if (isInitialized || wasmInitializationFailed) {return;}
   
   try {
     logger.info('[X-Fidelity VSCode] Initializing WASM Tree-sitter...');
@@ -49,21 +49,37 @@ export async function initializeWasmTreeSitter(extensionContext: vscode.Extensio
       }
     }
     
-    // Initialize Parser with correct WASM path
-    if (ParserClass.init) {
-      await ParserClass.init({
-        locateFile: (scriptName: string, scriptDirectory: string) => {
-          logger.info(`[X-Fidelity VSCode] Locating file: ${scriptName} in ${scriptDirectory}`);
-          if (scriptName === 'tree-sitter.wasm') {
-            return wasmPath;
+    // Initialize Parser with correct WASM path - handle different web-tree-sitter versions
+    try {
+      if (typeof ParserClass.init === 'function') {
+        await ParserClass.init({
+          locateFile: (scriptName: string, scriptDirectory: string) => {
+            logger.info(`[X-Fidelity VSCode] Locating file: ${scriptName} in ${scriptDirectory}`);
+            if (scriptName === 'tree-sitter.wasm') {
+              return wasmPath;
+            }
+            return path.join(scriptDirectory, scriptName);
           }
-          return path.join(scriptDirectory, scriptName);
+        });
+        logger.info('[X-Fidelity VSCode] Parser initialized successfully with Parser.init()');
+      } else if (typeof ParserClass === 'function') {
+        // Some versions don't require explicit init - try direct instantiation
+        logger.info('[X-Fidelity VSCode] Parser.init not available, trying direct instantiation');
+        // Set the module path for WASM loading
+        if (ParserClass.setWasmLocateFile) {
+          ParserClass.setWasmLocateFile((scriptName: string) => {
+            if (scriptName === 'tree-sitter.wasm') {
+              return wasmPath;
+            }
+            return path.join(extensionContext.extensionPath, 'dist', scriptName);
+          });
         }
-      });
-      logger.info('[X-Fidelity VSCode] Parser initialized successfully');
-    } else {
-      logger.error('[X-Fidelity VSCode] Parser.init not available');
-      throw new Error('Parser.init not available');
+      } else {
+        logger.warn('[X-Fidelity VSCode] Unknown Parser class structure - attempting graceful degradation');
+      }
+    } catch (initError) {
+      logger.warn(`[X-Fidelity VSCode] Parser initialization method failed: ${initError} - attempting fallback`);
+      // Continue with language loading - some versions work without explicit init
     }
     
     // Load JavaScript language
@@ -107,93 +123,6 @@ export async function initializeWasmTreeSitter(extensionContext: vscode.Extensio
   }
 }
 
-export interface WasmAstResult {
-  tree: any;
-  rootNode?: any;
-}
-
-export async function generateWasmAst(fileData: FileData): Promise<WasmAstResult> {
-  try {
-    if (!isInitialized) {
-      throw new Error('WASM Tree-sitter not initialized. Call initializeWasmTreeSitter first.');
-    }
-    
-    logger.info(`[X-Fidelity VSCode] Generating WASM AST for: ${fileData?.fileName}`);
-    
-    if (!fileData?.fileContent || fileData.fileName === 'REPO_GLOBAL_CHECK') {
-      logger.info('[X-Fidelity VSCode] Skipping AST generation - no content or REPO_GLOBAL_CHECK');
-      return { tree: null };
-    }
-
-    const parser = new ParserClass();
-    
-    // Select appropriate language based on file extension
-    if (fileData.fileName.endsWith('.ts') || fileData.fileName.endsWith('.tsx')) {
-      if (!tsLanguage) {
-        throw new Error('TypeScript language not loaded');
-      }
-      parser.setLanguage(tsLanguage);
-      logger.info(`[X-Fidelity VSCode] Using TypeScript parser for: ${fileData.fileName}`);
-    } else if (fileData.fileName.endsWith('.js') || fileData.fileName.endsWith('.jsx')) {
-      if (!jsLanguage) {
-        throw new Error('JavaScript language not loaded');
-      }
-      parser.setLanguage(jsLanguage);
-      logger.info(`[X-Fidelity VSCode] Using JavaScript parser for: ${fileData.fileName}`);
-    } else {
-      logger.info(`[X-Fidelity VSCode] Unsupported file type for AST: ${fileData.fileName}`);
-      return { tree: null };
-    }
-
-    const tree = parser.parse(fileData.fileContent);
-    const rootNode = tree?.rootNode;
-    
-    logger.info(`[X-Fidelity VSCode] Generated WASM AST for ${fileData.fileName}:`, {
-      rootType: rootNode?.type,
-      childCount: rootNode?.childCount,
-      startPosition: rootNode?.startPosition,
-      endPosition: rootNode?.endPosition
-    });
-    
-    return { 
-      tree: rootNode,
-      rootNode: rootNode
-    };
-  } catch (error) {
-    logger.error(`[X-Fidelity VSCode] Error generating WASM AST for ${fileData?.fileName}:`, error);
-    return { tree: null };
-  }
-}
-
 export function isWasmTreeSitterReady(): boolean {
   return isInitialized && !wasmInitializationFailed && jsLanguage !== null && tsLanguage !== null && ParserClass !== null;
-}
-
-export function generateAstFromCode(code: string, fileData: FileData): { tree: any } | null {
-  if (!isWasmTreeSitterReady()) {
-    logger.debug('[X-Fidelity VSCode] WASM Tree-sitter not ready, cannot generate AST');
-    return null;
-  }
-  
-  try {
-    const parser = new ParserClass();
-    
-    // Determine language based on file extension
-    const isTypeScript = fileData.fileName.endsWith('.ts') || fileData.fileName.endsWith('.tsx');
-    const language = isTypeScript ? tsLanguage : jsLanguage;
-    
-    if (!language) {
-      logger.debug(`[X-Fidelity VSCode] Language not available for ${fileData.fileName}`);
-      return null;
-    }
-    
-    parser.setLanguage(language);
-    const tree = parser.parse(code);
-    
-    logger.debug(`[X-Fidelity VSCode] AST generated successfully for ${fileData.fileName}`);
-    return { tree };
-  } catch (error) {
-    logger.error(`[X-Fidelity VSCode] Error generating AST for ${fileData.fileName}: ${error}`);
-    return null;
-  }
 } 

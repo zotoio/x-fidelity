@@ -16,26 +16,63 @@ export class DefaultDetectionService {
   }
   
   async detectArchetype(): Promise<ProjectDetection[]> {
+    try {
+      // Add timeout to prevent hanging
+      const detectionPromise = this.performDetections();
+      const timeoutPromise = new Promise<ProjectDetection[]>((_, reject) => {
+        setTimeout(() => reject(new Error('Archetype detection timeout')), 10000); // 10 second timeout
+      });
+      
+      const results = await Promise.race([detectionPromise, timeoutPromise]);
+      return results.sort((a, b) => b.confidence - a.confidence);
+      
+    } catch (error) {
+      console.warn('Archetype detection failed:', error);
+      // Return default fallback detection
+      return [{
+        archetype: 'node-fullstack',
+        confidence: 30,
+        indicators: ['fallback - detection failed']
+      }];
+    }
+  }
+  
+  private async performDetections(): Promise<ProjectDetection[]> {
     const detections: ProjectDetection[] = [];
     
     // Detect Node.js projects
-    const nodeDetection = await this.detectNodeProject();
-    if (nodeDetection) {detections.push(nodeDetection);}
+    try {
+      const nodeDetection = await this.detectNodeProject();
+      if (nodeDetection) {detections.push(nodeDetection);}
+    } catch (error) {
+      console.warn('Node.js detection failed:', error);
+    }
     
     // Detect Java projects
-    const javaDetection = await this.detectJavaProject();
-    if (javaDetection) {detections.push(javaDetection);}
+    try {
+      const javaDetection = await this.detectJavaProject();
+      if (javaDetection) {detections.push(javaDetection);}
+    } catch (error) {
+      console.warn('Java detection failed:', error);
+    }
     
     // Detect Python projects
-    const pythonDetection = await this.detectPythonProject();
-    if (pythonDetection) {detections.push(pythonDetection);}
+    try {
+      const pythonDetection = await this.detectPythonProject();
+      if (pythonDetection) {detections.push(pythonDetection);}
+    } catch (error) {
+      console.warn('Python detection failed:', error);
+    }
     
     // Detect .NET projects
-    const dotnetDetection = await this.detectDotNetProject();
-    if (dotnetDetection) {detections.push(dotnetDetection);}
+    try {
+      const dotnetDetection = await this.detectDotNetProject();
+      if (dotnetDetection) {detections.push(dotnetDetection);}
+    } catch (error) {
+      console.warn('.NET detection failed:', error);
+    }
     
-    // Sort by confidence
-    return detections.sort((a, b) => b.confidence - a.confidence);
+    return detections;
   }
   
   private async detectNodeProject(): Promise<ProjectDetection | null> {
@@ -74,7 +111,7 @@ export class DefaultDetectionService {
         }
         
         return {
-          archetype: 'react-spa',
+          archetype: 'node-fullstack',
           confidence,
           indicators: [...indicators, 'React SPA']
         };
@@ -321,20 +358,28 @@ export class DefaultDetectionService {
     return null;
   }
   
-  private async fileExists(filePath: string): Promise<boolean> {
+    private async fileExists(filePath: string): Promise<boolean> {
     try {
       await fs.access(filePath);
       return true;
-    } catch {
+    } catch (error) {
+      // Only log if it's not a simple "file not found" error
+      if (error && typeof error === 'object' && 'code' in error && error.code !== 'ENOENT') {
+        console.warn(`File access error for ${filePath}:`, error);
+      }
       return false;
     }
   }
-  
+
   private async directoryExists(dirPath: string): Promise<boolean> {
     try {
       const stat = await fs.stat(dirPath);
       return stat.isDirectory();
-    } catch {
+    } catch (error) {
+      // Only log if it's not a simple "file not found" error
+      if (error && typeof error === 'object' && 'code' in error && error.code !== 'ENOENT') {
+        console.warn(`Directory access error for ${dirPath}:`, error);
+      }
       return false;
     }
   }

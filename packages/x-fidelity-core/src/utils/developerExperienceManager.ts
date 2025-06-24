@@ -505,7 +505,7 @@ class ConfigurationWizard {
         required: true,
         validation: {
           type: 'enum',
-          validator: ['node-fullstack', 'react-spa', 'java-microservice', 'python-service'],
+          validator: ['node-fullstack', 'java-microservice', 'python-service'],
           message: 'Please select a valid archetype',
           severity: 'error'
         },

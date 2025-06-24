@@ -12,5 +12,10 @@ module.exports = {
   },
   moduleNameMapper: {
     '^x-fidelity$': '<rootDir>/node_modules/x-fidelity/dist'
+  },
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node", "mts", "cts"],
+  // Jest 30 performance improvements
+  testEnvironmentOptions: {
+    globalsCleanup: 'soft'
   }
 };

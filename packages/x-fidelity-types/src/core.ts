@@ -165,10 +165,11 @@ export interface MinimumDepVersions {
     [propertyName: string]: string;
 }
 
+// Break recursive type chain to prevent TypeScript stack overflow
 export interface LocalDependencies {
     name: string;
     version: string;
-    dependencies?: LocalDependencies[];
+    dependencies?: Array<Pick<LocalDependencies, 'name' | 'version'> & { dependencies?: any[] }>;
 }
 
 export interface ExecutionConfig {

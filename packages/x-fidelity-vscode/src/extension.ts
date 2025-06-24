@@ -10,6 +10,9 @@ let extensionManager: ExtensionManager | undefined;
 
 // Initialize the extension with enhanced logging best practices
 export async function activate(context: vscode.ExtensionContext) {
+  // SET CONTEXT IMMEDIATELY - before any other initialization
+  await vscode.commands.executeCommand('setContext', 'xfidelity.extensionActive', true);
+  
   // Initialize the enhanced logger system with best practices configuration
   const isDevelopment = context.extensionMode === vscode.ExtensionMode.Development;
   const isTest = context.extensionMode === vscode.ExtensionMode.Test;
