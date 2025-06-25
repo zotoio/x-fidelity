@@ -785,6 +785,18 @@ export class ConsistencyTester {
         stdio: ['pipe', 'pipe', 'pipe']
       });
       
+      // Capture stdout and stderr for debugging
+      let stdout = '';
+      let stderr = '';
+      
+      cliProcess.stdout?.on('data', (data) => {
+        stdout += data.toString();
+      });
+      
+      cliProcess.stderr?.on('data', (data) => {
+        stderr += data.toString();
+      });
+      
       // Wait for CLI to complete
       await new Promise<void>((resolve, reject) => {
         let isResolved = false;
@@ -799,7 +811,13 @@ export class ConsistencyTester {
             // Code 0 = no issues, Code 1 = issues found (both are success for our purposes)
             resolve();
           } else {
-            reject(new Error(`CLI failed with exit code ${code}`));
+            // Include stdout/stderr in error for debugging
+            const errorMessage = [
+              `CLI failed with exit code ${code}`,
+              stdout ? `STDOUT: ${stdout.trim()}` : '',
+              stderr ? `STDERR: ${stderr.trim()}` : ''
+            ].filter(Boolean).join('\n');
+            reject(new Error(errorMessage));
           }
         });
         
@@ -823,12 +841,34 @@ export class ConsistencyTester {
             }
           }, 5000);
           
-          reject(new Error(`CLI analysis timeout after ${this.CLI_TIMEOUT}ms`));
+          const timeoutMessage = [
+            `CLI analysis timeout after ${this.CLI_TIMEOUT}ms`,
+            stdout ? `STDOUT: ${stdout.trim()}` : '',
+            stderr ? `STDERR: ${stderr.trim()}` : ''
+          ].filter(Boolean).join('\n');
+          reject(new Error(timeoutMessage));
         }, this.CLI_TIMEOUT);
       });
       
       // Read the structured output file - this is super reliable!
       try {
+        // First check if the file exists
+        try {
+          await fs.access(structuredOutputFile);
+        } catch (accessError) {
+          // File doesn't exist, let's debug what was created
+          const xfiResultsDir = path.join(repoPath, '.xfiResults');
+          let dirContents = '';
+          try {
+            const files = await fs.readdir(xfiResultsDir);
+            dirContents = `Contents of ${xfiResultsDir}: ${files.join(', ')}`;
+          } catch {
+            dirContents = `Directory ${xfiResultsDir} does not exist`;
+          }
+          
+          throw new Error(`Structured output file ${structuredOutputFile} does not exist. ${dirContents}. CLI stdout: ${stdout.trim()}. CLI stderr: ${stderr.trim()}`);
+        }
+        
         const outputContent = await fs.readFile(structuredOutputFile, 'utf8');
         const result = JSON.parse(outputContent);
         
