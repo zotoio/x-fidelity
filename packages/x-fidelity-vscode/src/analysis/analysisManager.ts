@@ -241,7 +241,9 @@ export class AnalysisManager implements vscode.Disposable {
         operationId, 
         error: analysisError.message, 
         totalTime,
-        stack: analysisError.stack 
+        stack: analysisError.stack,
+        analysisTargetPath,
+        workspaceName
       });
       
       this.onAnalysisStateChanged.fire({
