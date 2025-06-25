@@ -654,15 +654,22 @@ export class ConsistencyTester {
         duration: Date.now() - startTime
       };
       
-      // Clean up unless using custom repo path
-      if (!options.customRepoPath && this.tempDir) {
+      // Clean up unless using custom repo path or in CI (for debugging)
+      if (!options.customRepoPath && this.tempDir && !process.env.CI) {
         await this.cleanup();
+      } else if (process.env.CI) {
+        console.log(`🔍 CI detected - preserving test directory for debugging: ${testPath}`);
       }
       
       return result;
       
     } catch (error) {
-      await this.cleanup();
+      // In CI, preserve temp directory for debugging
+      if (!process.env.CI) {
+        await this.cleanup();
+      } else {
+        console.log(`❌ Test failed in CI - preserving temp directory for debugging: ${this.tempDir}`);
+      }
       throw error;
     }
   }
@@ -707,11 +714,24 @@ export class ConsistencyTester {
    * Create a test repository on disk
    */
   private async createTestRepository(repo: TestRepository): Promise<string> {
-    // Use workspace-relative temp directory instead of system /tmp
+    // Use workspace-relative temp directory with consistent naming
     const workspaceRoot = this.findWorkspaceRoot();
     const tempDirBase = path.join(workspaceRoot, '.temp', 'consistency-tests');
     await fs.mkdir(tempDirBase, { recursive: true });
-    this.tempDir = await fs.mkdtemp(path.join(tempDirBase, 'xfi-consistency-test-'));
+    
+    // Use consistent directory name based on repo name instead of random
+    const consistentDirName = `xfi-test-${repo.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+    this.tempDir = path.join(tempDirBase, consistentDirName);
+    
+    // Clean up existing directory if it exists
+    try {
+      await fs.rm(this.tempDir, { recursive: true, force: true });
+    } catch {
+      // Directory doesn't exist, that's fine
+    }
+    
+    // Create the directory
+    await fs.mkdir(this.tempDir, { recursive: true });
     
     // Create directory structure and files
     for (const file of repo.files) {
@@ -762,8 +782,12 @@ export class ConsistencyTester {
     // Get the CLI package path
     const cliPath = path.join(__dirname, '..', '..', '..', 'x-fidelity-cli');
     
+    // Ensure .xfiResults directory exists
+    const xfiResultsDir = path.join(repoPath, '.xfiResults');
+    await fs.mkdir(xfiResultsDir, { recursive: true });
+    
     // Define structured output file path
-    const structuredOutputFile = path.join(repoPath, '.xfiResults', 'structured-output.json');
+    const structuredOutputFile = path.join(xfiResultsDir, 'structured-output.json');
     
     try {
       // Clean up any existing structured output file
