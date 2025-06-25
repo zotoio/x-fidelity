@@ -624,8 +624,15 @@ export class ConsistencyTester {
       
       const testPath = options.customRepoPath || await this.createTestRepository(repo);
       
-      console.log(`🧪 Running consistency test: ${repo.name}`);
-      console.log(`📁 Test path: ${testPath}`);
+          console.log(`🧪 Running consistency test: ${repo.name}`);
+    console.log(`📁 Test path: ${testPath}`);
+    
+    if (process.env.CI) {
+      console.log(`🔧 CI Environment detected:`);
+      console.log(`   GITHUB_WORKSPACE: ${process.env.GITHUB_WORKSPACE}`);
+      console.log(`   Working directory: ${process.cwd()}`);
+      console.log(`   Workspace root: ${this.findWorkspaceRoot()}`);
+    }
       
       // Run CLI analysis
       console.log('🖥️  Running CLI analysis...');
@@ -716,8 +723,14 @@ export class ConsistencyTester {
   private async createTestRepository(repo: TestRepository): Promise<string> {
     // Use workspace-relative temp directory with consistent naming
     const workspaceRoot = this.findWorkspaceRoot();
-    const tempDirBase = path.join(workspaceRoot, '.temp', 'consistency-tests');
-    await fs.mkdir(tempDirBase, { recursive: true });
+    
+    // For CI environments, use a more reliable temp directory location
+    const tempDirBase = process.env.CI 
+      ? path.join(process.env.GITHUB_WORKSPACE || workspaceRoot, '.temp', 'consistency-tests')
+      : path.join(workspaceRoot, '.temp', 'consistency-tests');
+    
+    // Ensure temp directory exists with proper permissions for CI
+    await fs.mkdir(tempDirBase, { recursive: true, mode: 0o755 });
     
     // Use consistent directory name based on repo name instead of random
     const consistentDirName = `xfi-test-${repo.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
@@ -730,16 +743,16 @@ export class ConsistencyTester {
       // Directory doesn't exist, that's fine
     }
     
-    // Create the directory
-    await fs.mkdir(this.tempDir, { recursive: true });
+    // Create the directory with proper permissions for CI environments
+    await fs.mkdir(this.tempDir, { recursive: true, mode: 0o755 });
     
     // Create directory structure and files
     for (const file of repo.files) {
       const filePath = path.join(this.tempDir, file.path);
       const dirPath = path.dirname(filePath);
       
-      await fs.mkdir(dirPath, { recursive: true });
-      await fs.writeFile(filePath, file.content);
+      await fs.mkdir(dirPath, { recursive: true, mode: 0o755 });
+      await fs.writeFile(filePath, file.content, { mode: 0o644 });
     }
     
     // Initialize git repository to avoid CLI errors
@@ -782,9 +795,9 @@ export class ConsistencyTester {
     // Get the CLI package path
     const cliPath = path.join(__dirname, '..', '..', '..', 'x-fidelity-cli');
     
-    // Ensure .xfiResults directory exists
+    // Ensure .xfiResults directory exists with proper permissions
     const xfiResultsDir = path.join(repoPath, '.xfiResults');
-    await fs.mkdir(xfiResultsDir, { recursive: true });
+    await fs.mkdir(xfiResultsDir, { recursive: true, mode: 0o755 });
     
     // Define structured output file path
     const structuredOutputFile = path.join(xfiResultsDir, 'structured-output.json');
@@ -797,16 +810,25 @@ export class ConsistencyTester {
         // File doesn't exist, that's fine
       }
       
-      // Run CLI with structured output mode - this is the new reliable approach
+      // Check if CLI is built and available
+      const cliEntryPoint = path.join(cliPath, 'dist', 'index.js');
+      try {
+        await fs.access(cliEntryPoint);
+      } catch {
+        throw new Error(`CLI not built: ${cliEntryPoint} does not exist. Run 'yarn build' first.`);
+      }
+      
+      // Run CLI with structured output mode using explicit path to built CLI
       const cliProcess = spawn('node', [
-        '.', 
+        cliEntryPoint,
         '--dir', repoPath, 
         '--archetype', archetype,
         '--output-format', 'json',
         '--output-file', structuredOutputFile
       ], {
         cwd: cliPath,
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, NODE_ENV: 'test' }
       });
       
       // Capture stdout and stderr for debugging
@@ -883,6 +905,8 @@ export class ConsistencyTester {
           // File doesn't exist, let's debug what was created
           const xfiResultsDir = path.join(repoPath, '.xfiResults');
           let dirContents = '';
+          let repoContents = '';
+          
           try {
             const files = await fs.readdir(xfiResultsDir);
             dirContents = `Contents of ${xfiResultsDir}: ${files.join(', ')}`;
@@ -890,7 +914,33 @@ export class ConsistencyTester {
             dirContents = `Directory ${xfiResultsDir} does not exist`;
           }
           
-          throw new Error(`Structured output file ${structuredOutputFile} does not exist. ${dirContents}. CLI stdout: ${stdout.trim()}. CLI stderr: ${stderr.trim()}`);
+          try {
+            const repoFiles = await fs.readdir(repoPath);
+            repoContents = `Contents of ${repoPath}: ${repoFiles.join(', ')}`;
+          } catch {
+            repoContents = `Cannot read repo directory ${repoPath}`;
+          }
+          
+          // Check CLI executable
+          const cliEntryPoint = path.join(cliPath, 'dist', 'index.js');
+          let cliStatus = '';
+          try {
+            await fs.access(cliEntryPoint);
+            cliStatus = `CLI exists at ${cliEntryPoint}`;
+          } catch {
+            cliStatus = `CLI missing at ${cliEntryPoint}`;
+          }
+          
+          throw new Error([
+            `Structured output file ${structuredOutputFile} does not exist.`,
+            dirContents,
+            repoContents,
+            cliStatus,
+            `CLI CWD: ${cliPath}`,
+            `CLI stdout: ${stdout.trim()}`,
+            `CLI stderr: ${stderr.trim()}`,
+            `Environment: CI=${process.env.CI}, NODE_ENV=${process.env.NODE_ENV}`
+          ].join('\n'));
         }
         
         const outputContent = await fs.readFile(structuredOutputFile, 'utf8');
