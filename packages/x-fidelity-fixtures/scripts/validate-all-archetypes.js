@@ -17,15 +17,28 @@ const chalk = require('chalk');
 
 class ArchetypeValidator {
   constructor() {
-    this.fixturesDir = __dirname.replace('/scripts', '');
-    this.cliPath = path.join(this.fixturesDir, '..', 'x-fidelity-cli', 'dist', 'index.js');
+    // More robust path resolution
+    this.fixturesDir = path.resolve(__dirname, '..');
+    this.cliPath = path.resolve(this.fixturesDir, '..', 'x-fidelity-cli', 'dist', 'index.js');
     this.results = {};
+    
+    // Add debugging for CI
+    if (process.env.CI) {
+      console.log(`🔧 CI Environment detected:`);
+      console.log(`   Script dir: ${__dirname}`);
+      console.log(`   Fixtures dir: ${this.fixturesDir}`);
+      console.log(`   CLI path: ${this.cliPath}`);
+      console.log(`   Working dir: ${process.cwd()}`);
+    }
   }
 
   async run() {
     console.log(chalk.blue.bold('🧪 Validating All X-Fidelity Archetype Fixtures\n'));
 
     try {
+      // Validate basic setup first
+      await this.validateSetup();
+      
       // Get all archetype directories
       const archetypes = await this.getArchetypes();
       console.log(chalk.gray(`Found ${archetypes.length} archetype(s): ${archetypes.join(', ')}\n`));
@@ -45,6 +58,22 @@ class ArchetypeValidator {
     } catch (error) {
       console.error(chalk.red.bold('❌ Validation failed:'), error.message);
       process.exit(1);
+    }
+  }
+
+  async validateSetup() {
+    // Check if fixtures directory exists
+    try {
+      await fs.access(this.fixturesDir);
+    } catch {
+      throw new Error(`Fixtures directory not found: ${this.fixturesDir}`);
+    }
+    
+    // Check if CLI exists
+    try {
+      await fs.access(this.cliPath);
+    } catch {
+      throw new Error(`CLI not found: ${this.cliPath}. Run 'yarn build' first.`);
     }
   }
 
@@ -99,12 +128,29 @@ class ArchetypeValidator {
   async validateArchetypeStructure(archetypeDir, archetype) {
     const requiredFiles = ['package.json', 'README.md'];
     
+    // Add debugging for CI
+    if (process.env.CI) {
+      console.log(`   Checking archetype dir: ${archetypeDir}`);
+      try {
+        const files = await fs.readdir(archetypeDir);
+        console.log(`   Found files: ${files.join(', ')}`);
+      } catch (error) {
+        console.log(`   Error reading directory: ${error.message}`);
+      }
+    }
+    
     for (const file of requiredFiles) {
       const filePath = path.join(archetypeDir, file);
       try {
-        await fs.access(filePath);
-      } catch {
-        throw new Error(`Missing required file: ${file}`);
+        await fs.access(filePath, fs.constants.F_OK | fs.constants.R_OK);
+        if (process.env.CI) {
+          console.log(`   ✓ Found ${file}`);
+        }
+      } catch (error) {
+        // Enhanced error reporting for CI
+        const debugInfo = process.env.CI ? 
+          ` (Path: ${filePath}, Error: ${error.code}, Message: ${error.message})` : '';
+        throw new Error(`Missing required file: ${file}${debugInfo}`);
       }
     }
 
