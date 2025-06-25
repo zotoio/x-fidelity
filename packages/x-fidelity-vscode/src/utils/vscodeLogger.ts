@@ -10,7 +10,12 @@ export class VSCodeLogger implements ILogger {
   private prefix: string;
   private ownsChannel: boolean = true;
 
-  constructor(name: string = 'X-Fidelity', logFilePath?: string, prefix: string = '', existingChannel?: vscode.OutputChannel) {
+  constructor(
+    name: string = 'X-Fidelity',
+    logFilePath?: string,
+    prefix: string = '',
+    existingChannel?: vscode.OutputChannel
+  ) {
     if (existingChannel) {
       this.outputChannel = existingChannel;
       this.ownsChannel = false;
@@ -21,22 +26,24 @@ export class VSCodeLogger implements ILogger {
       } catch (error) {
         // If creating output channel fails, create a fallback that logs to console
         // This can happen in test environments or when VSCode API is not available
-        console.warn(`Failed to create VSCode output channel "${name}": ${error}. Falling back to console logging.`);
+        console.warn(
+          `Failed to create VSCode output channel "${name}": ${error}. Falling back to console logging.`
+        );
         this.outputChannel = this.createFallbackChannel(name);
         this.ownsChannel = true;
       }
     }
-    
+
     this.logFilePath = logFilePath;
     this.prefix = prefix;
-    
+
     // Ensure log directory exists and clear log file at start of execution
     if (this.logFilePath) {
       const logDir = path.dirname(this.logFilePath);
       if (!fs.existsSync(logDir)) {
         fs.mkdirSync(logDir, { recursive: true });
       }
-      
+
       // Clear the log file at the start of each execution
       try {
         fs.writeFileSync(this.logFilePath, '');
@@ -56,7 +63,7 @@ export class VSCodeLogger implements ILogger {
       show: () => console.log(`[${name}] Show requested`),
       hide: () => console.log(`[${name}] Hide requested`),
       dispose: () => console.log(`[${name}] Dispose requested`),
-      replace: () => console.log(`[${name}] Replace requested`),
+      replace: () => console.log(`[${name}] Replace requested`)
     } as vscode.OutputChannel;
   }
 
@@ -74,13 +81,17 @@ export class VSCodeLogger implements ILogger {
     return checkLevelValue >= currentLevelValue;
   }
 
-  private formatMessage(level: LogLevel, msgOrMeta: string | any, metaOrMsg?: any): string {
+  private formatMessage(
+    level: LogLevel,
+    msgOrMeta: string | any,
+    metaOrMsg?: any
+  ): string {
     const timestamp = new Date().toISOString();
     const levelStr = level.toUpperCase().padEnd(5);
-    
+
     let message: string;
     let meta: any;
-    
+
     if (typeof msgOrMeta === 'string') {
       message = msgOrMeta;
       meta = metaOrMsg;
@@ -88,16 +99,16 @@ export class VSCodeLogger implements ILogger {
       message = metaOrMsg || JSON.stringify(msgOrMeta);
       meta = msgOrMeta;
     }
-    
+
     const prefixStr = this.prefix ? `[${this.prefix}] ` : '';
     let logLine = `${timestamp} ${levelStr} ${prefixStr}${message}`;
-    
+
     if (meta && typeof meta === 'object') {
       logLine += ` ${JSON.stringify(meta)}`;
     } else if (meta) {
       logLine += ` ${meta}`;
     }
-    
+
     return logLine;
   }
 
@@ -107,10 +118,10 @@ export class VSCodeLogger implements ILogger {
     }
 
     const formattedMessage = this.formatMessage(level, msgOrMeta, metaOrMsg);
-    
+
     // Output to VSCode output channel
     this.outputChannel.appendLine(formattedMessage);
-    
+
     // Write to file if configured
     if (this.logFilePath) {
       try {
@@ -151,14 +162,16 @@ export class VSCodeLogger implements ILogger {
     const bindingsStr = Object.entries(bindings)
       .map(([key, value]) => `${key}=${value}`)
       .join(' ');
-    const childPrefix = this.prefix ? `${this.prefix}[${bindingsStr}]` : bindingsStr;
-    
+    const childPrefix = this.prefix
+      ? `${this.prefix}[${bindingsStr}]`
+      : bindingsStr;
+
     // Create a child logger that shares the same output channel
     return new VSCodeLogger(
       this.outputChannel.name,
       this.logFilePath,
       childPrefix,
-      this.outputChannel  // Pass the existing channel to share it
+      this.outputChannel // Pass the existing channel to share it
     );
   }
 
@@ -176,4 +189,4 @@ export class VSCodeLogger implements ILogger {
   getOutputChannel(): vscode.OutputChannel {
     return this.outputChannel;
   }
-} 
+}

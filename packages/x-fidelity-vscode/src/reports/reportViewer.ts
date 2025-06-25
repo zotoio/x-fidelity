@@ -12,19 +12,19 @@ export interface ReportViewerOptions {
 export class ReportViewer implements vscode.Disposable {
   private panel?: vscode.WebviewPanel;
   private disposables: vscode.Disposable[] = [];
-  
+
   constructor(
     private context: vscode.ExtensionContext,
     private configManager: ConfigManager
   ) {}
-  
+
   async showReport(options: ReportViewerOptions): Promise<void> {
     if (this.panel) {
       this.panel.reveal();
       await this.updateContent(options);
       return;
     }
-    
+
     this.panel = vscode.window.createWebviewPanel(
       'xfidelityReport',
       'X-Fidelity Analysis Report',
@@ -33,42 +33,53 @@ export class ReportViewer implements vscode.Disposable {
         enableScripts: true,
         retainContextWhenHidden: true,
         localResourceRoots: [
-          vscode.Uri.file(path.join(this.context.extensionUri.fsPath, 'resources'))
+          vscode.Uri.file(
+            path.join(this.context.extensionUri.fsPath, 'resources')
+          )
         ]
       }
     );
-    
+
     // Handle panel disposal
-    this.panel.onDidDispose(() => {
-      this.panel = undefined;
-    }, null, this.disposables);
-    
+    this.panel.onDidDispose(
+      () => {
+        this.panel = undefined;
+      },
+      null,
+      this.disposables
+    );
+
     // Handle messages from webview
     this.panel.webview.onDidReceiveMessage(
       message => this.handleWebviewMessage(message),
       undefined,
       this.disposables
     );
-    
+
     await this.updateContent(options);
   }
-  
+
   private async updateContent(options: ReportViewerOptions): Promise<void> {
-    if (!this.panel) {return;}
-    
+    if (!this.panel) {
+      return;
+    }
+
     const html = await this.generateWebviewHTML(options);
     this.panel.webview.html = html;
   }
-  
-  private async generateWebviewHTML(options: ReportViewerOptions): Promise<string> {
+
+  private async generateWebviewHTML(
+    options: ReportViewerOptions
+  ): Promise<string> {
     const data = options.reportData.XFI_RESULT;
     const theme = options.theme || 'auto';
     const nonce = this.getNonce();
-    
+
     // Get VS Code theme colors
-    const isDark = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
+    const isDark =
+      vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
     const themeClass = theme === 'auto' ? (isDark ? 'dark' : 'light') : theme;
-    
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -501,7 +512,7 @@ export class ReportViewer implements vscode.Disposable {
         }
     </style>`;
   }
-  
+
   private getJavaScript(data: any): string {
     return `
         const vscode = acquireVsCodeApi();
@@ -732,17 +743,18 @@ export class ReportViewer implements vscode.Disposable {
         applyFilters();
     `;
   }
-  
+
   private generateIssuesHTML(data: any): string {
     if (data.issueDetails.length === 0) {
       return '<div class="empty-state">🎉 No issues found! Your code looks great.</div>';
     }
-    
-    return data.issueDetails.map((detail: any) => {
-      const issueCount = detail.errors.length;
-      const groupId = `group-${detail.filePath.replace(/[^a-zA-Z0-9]/g, '-')}`;
-      
-      return `
+
+    return data.issueDetails
+      .map((detail: any) => {
+        const issueCount = detail.errors.length;
+        const groupId = `group-${detail.filePath.replace(/[^a-zA-Z0-9]/g, '-')}`;
+
+        return `
         <div class="file-group">
           <div class="file-header" onclick="toggleGroup('${groupId}')">
             <div>
@@ -756,14 +768,15 @@ export class ReportViewer implements vscode.Disposable {
           </div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
   }
-  
+
   private generateIssueItemHTML(error: any, filePath: string): string {
     const line = error.details?.lineNumber || '';
     const column = error.details?.columnNumber || '';
     const location = line ? `Line ${line}${column ? `:${column}` : ''}` : '';
-    
+
     return `
       <div class="issue-item" onclick="navigateToIssue('${filePath}', ${line || 1}, ${column || 1}, ${error.details?.range})">
         <div class="issue-header">
@@ -783,37 +796,54 @@ export class ReportViewer implements vscode.Disposable {
       </div>
     `;
   }
-  
+
   private async handleWebviewMessage(message: any): Promise<void> {
     switch (message.command) {
       case 'navigateToIssue':
-        await this.navigateToIssue(message.filePath, message.lineNumber, message.columnNumber, message.range);
+        await this.navigateToIssue(
+          message.filePath,
+          message.lineNumber,
+          message.columnNumber,
+          message.range
+        );
         break;
-        
+
       case 'showRuleInfo':
         await this.showRuleInfo(message.ruleId);
         break;
     }
   }
-  
-  private async navigateToIssue(filePath: string, lineNumber: number, columnNumber?: number, range?: { start: { line: number; column: number }, end: { line: number; column: number } }): Promise<void> {
+
+  private async navigateToIssue(
+    filePath: string,
+    lineNumber: number,
+    columnNumber?: number,
+    range?: {
+      start: { line: number; column: number };
+      end: { line: number; column: number };
+    }
+  ): Promise<void> {
     try {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      if (!workspaceFolder) {return;}
-      
+      if (!workspaceFolder) {
+        return;
+      }
+
       let fileUri: vscode.Uri;
-      
+
       // Handle absolute paths
       if (path.isAbsolute(filePath)) {
         fileUri = vscode.Uri.file(filePath);
       } else {
         // Handle relative paths
-        fileUri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, filePath));
+        fileUri = vscode.Uri.file(
+          path.join(workspaceFolder.uri.fsPath, filePath)
+        );
       }
-      
+
       const document = await vscode.workspace.openTextDocument(fileUri);
       const editor = await vscode.window.showTextDocument(document);
-      
+
       // Enhanced navigation with precise positioning
       if (range) {
         // Use enhanced range data for precise selection
@@ -825,10 +855,13 @@ export class ReportViewer implements vscode.Disposable {
           Math.max(0, range.end.line - 1), // Convert to 0-based
           Math.max(0, range.end.column - 1) // Convert to 0-based
         );
-        
+
         const selection = new vscode.Selection(startPos, endPos);
         editor.selection = selection;
-        editor.revealRange(selection, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+        editor.revealRange(
+          selection,
+          vscode.TextEditorRevealType.InCenterIfOutsideViewport
+        );
       } else if (columnNumber && columnNumber > 0) {
         // Use line and column for precise positioning
         const position = new vscode.Position(
@@ -836,35 +869,41 @@ export class ReportViewer implements vscode.Disposable {
           Math.max(0, columnNumber - 1) // Convert to 0-based
         );
         editor.selection = new vscode.Selection(position, position);
-        editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+        editor.revealRange(
+          new vscode.Range(position, position),
+          vscode.TextEditorRevealType.InCenterIfOutsideViewport
+        );
       } else if (lineNumber > 0) {
         // Fallback to line-only navigation
         const position = new vscode.Position(Math.max(0, lineNumber - 1), 0);
         editor.selection = new vscode.Selection(position, position);
-        editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+        editor.revealRange(
+          new vscode.Range(position, position),
+          vscode.TextEditorRevealType.InCenterIfOutsideViewport
+        );
       }
-      
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to open file: ${error}`);
     }
   }
-  
+
   private async showRuleInfo(ruleId: string): Promise<void> {
     const url = `https://github.com/zotoio/x-fidelity/blob/main/docs/rules/${ruleId}.md`;
     await vscode.env.openExternal(vscode.Uri.parse(url));
   }
-  
+
   private getNonce(): string {
     let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const possible =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     for (let i = 0; i < 32; i++) {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
   }
-  
+
   dispose(): void {
     this.panel?.dispose();
     this.disposables.forEach(d => d.dispose());
   }
-} 
+}

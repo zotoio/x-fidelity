@@ -12,83 +12,84 @@ export class DiagnosticProvider implements vscode.Disposable {
   private readonly DECORATION_UPDATE_DELAY = 100; // ms
   private lastUpdateTime = 0;
   private logger: VSCodeLogger;
-  
+
   constructor(private configManager: ConfigManager) {
     this.logger = new VSCodeLogger('DiagnosticProvider');
-    this.diagnosticCollection = vscode.languages.createDiagnosticCollection('x-fidelity');
+    this.diagnosticCollection =
+      vscode.languages.createDiagnosticCollection('x-fidelity');
     this.setupDecorations();
     this.setupEventListeners();
   }
-  
+
   updateDiagnostics(result: AnalysisResult): void {
     const startTime = performance.now();
     const operationId = result.operationId || `diagnostics-${Date.now()}`;
-    
-    this.logger.debug('Updating diagnostics', { 
-      operationId, 
-      totalFiles: result.diagnostics.size 
+
+    this.logger.debug('Updating diagnostics', {
+      operationId,
+      totalFiles: result.diagnostics.size
     });
-    
+
     // Clear existing diagnostics efficiently
     this.clearDiagnostics();
-    
+
     // Batch update diagnostics for better performance
     const diagnosticUpdates: Array<[vscode.Uri, vscode.Diagnostic[]]> = [];
-    
+
     for (const [filePath, diagnostics] of result.diagnostics) {
       const fileUri = this.getFileUri(filePath);
       if (fileUri) {
         diagnosticUpdates.push([fileUri, diagnostics]);
       }
     }
-    
+
     // Apply all updates at once
     for (const [uri, diagnostics] of diagnosticUpdates) {
       this.diagnosticCollection.set(uri, diagnostics);
     }
-    
+
     const updateTime = performance.now() - startTime;
-    this.logger.debug('Diagnostics updated', { 
-      operationId, 
-      updateTime, 
-      filesUpdated: diagnosticUpdates.length 
+    this.logger.debug('Diagnostics updated', {
+      operationId,
+      updateTime,
+      filesUpdated: diagnosticUpdates.length
     });
-    
+
     // Debounce decoration updates to prevent excessive redraws
     this.scheduleDecorationUpdate();
-    
+
     // Track performance
     if (updateTime > 500) {
-      this.logger.warn('Slow diagnostics update detected', { 
-        operationId, 
-        updateTime, 
-        filesUpdated: diagnosticUpdates.length 
+      this.logger.warn('Slow diagnostics update detected', {
+        operationId,
+        updateTime,
+        filesUpdated: diagnosticUpdates.length
       });
     }
   }
-  
+
   clearDiagnostics(): void {
     this.diagnosticCollection.clear();
   }
-  
+
   private setupDecorations(): void {
     const config = this.configManager.getConfig();
-    
+
     if (!config.showInlineDecorations) {
       return;
     }
-    
+
     // Create decoration type for enhanced visual feedback
     this.decorationType = vscode.window.createTextEditorDecorationType({
       after: {
         margin: '0 0 0 1em',
         fontStyle: 'italic',
-        color: new vscode.ThemeColor('editorCodeLens.foreground'),
+        color: new vscode.ThemeColor('editorCodeLens.foreground')
       },
-      rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+      rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
     });
   }
-  
+
   private setupEventListeners(): void {
     // Update decorations when active editor changes
     this.disposables.push(
@@ -96,14 +97,14 @@ export class DiagnosticProvider implements vscode.Disposable {
         this.updateDecorations();
       })
     );
-    
+
     // Update decorations when visible editors change
     this.disposables.push(
       vscode.window.onDidChangeVisibleTextEditors(() => {
         this.updateDecorations();
       })
     );
-    
+
     // Refresh decorations when configuration changes
     this.disposables.push(
       this.configManager.onConfigurationChanged.event(() => {
@@ -112,13 +113,13 @@ export class DiagnosticProvider implements vscode.Disposable {
       })
     );
   }
-  
+
   // Add this new method:
   private scheduleDecorationUpdate(): void {
     if (this.decorationUpdateDebouncer) {
       clearTimeout(this.decorationUpdateDebouncer);
     }
-    
+
     this.decorationUpdateDebouncer = setTimeout(() => {
       this.updateDecorations();
     }, this.DECORATION_UPDATE_DELAY);
@@ -128,27 +129,27 @@ export class DiagnosticProvider implements vscode.Disposable {
   private updateDecorations(): void {
     const startTime = performance.now();
     const config = this.configManager.getConfig();
-    
+
     if (!config.showInlineDecorations || !this.decorationType) {
       return;
     }
-    
+
     const visibleEditors = vscode.window.visibleTextEditors;
     let totalDecorations = 0;
-    
+
     for (const editor of visibleEditors) {
       const decorationStart = performance.now();
-      
+
       const diagnostics = this.diagnosticCollection.get(editor.document.uri);
       if (!diagnostics || diagnostics.length === 0) {
         editor.setDecorations(this.decorationType, []);
         continue;
       }
-      
+
       // Limit decorations for performance (max 100 per file)
       const maxDecorations = 100;
       const limitedDiagnostics = diagnostics.slice(0, maxDecorations);
-      
+
       if (diagnostics.length > maxDecorations) {
         this.logger.warn('Too many diagnostics, limiting decorations', {
           file: editor.document.uri.fsPath,
@@ -156,31 +157,31 @@ export class DiagnosticProvider implements vscode.Disposable {
           limited: maxDecorations
         });
       }
-      
+
       const decorations: vscode.DecorationOptions[] = [];
-      
+
       for (const diagnostic of limitedDiagnostics) {
         if (!this.shouldShowDecoration(diagnostic, config)) {
           continue;
         }
-        
+
         const decoration: vscode.DecorationOptions = {
           range: diagnostic.range,
           renderOptions: {
             after: {
               contentText: this.getDecorationText(diagnostic),
-              color: this.getDecorationColor(diagnostic),
+              color: this.getDecorationColor(diagnostic)
             }
           },
           hoverMessage: this.getHoverMessage(diagnostic)
         };
-        
+
         decorations.push(decoration);
       }
-      
+
       editor.setDecorations(this.decorationType, decorations);
       totalDecorations += decorations.length;
-      
+
       const decorationTime = performance.now() - decorationStart;
       if (decorationTime > 50) {
         this.logger.warn('Slow decoration update for file', {
@@ -190,16 +191,19 @@ export class DiagnosticProvider implements vscode.Disposable {
         });
       }
     }
-    
+
     const totalTime = performance.now() - startTime;
-    this.logger.debug('Decorations updated', { 
-      totalTime, 
+    this.logger.debug('Decorations updated', {
+      totalTime,
       editorsProcessed: visibleEditors.length,
-      totalDecorations 
+      totalDecorations
     });
   }
-  
-  private shouldShowDecoration(diagnostic: vscode.Diagnostic, config: any): boolean {
+
+  private shouldShowDecoration(
+    diagnostic: vscode.Diagnostic,
+    config: any
+  ): boolean {
     // Only filter decorations, not the diagnostics themselves
     const config2 = this.configManager.getConfig();
     if (!config2.showInlineDecorations) {
@@ -208,12 +212,12 @@ export class DiagnosticProvider implements vscode.Disposable {
     const severityLevel = this.mapSeverityToLevel(diagnostic.severity);
     return config.highlightSeverity.includes(severityLevel);
   }
-  
+
   private getDecorationText(diagnostic: vscode.Diagnostic): string {
     const ruleId = (diagnostic as any).ruleId;
     return ruleId ? ` [${ruleId}]` : '';
   }
-  
+
   private getDecorationColor(diagnostic: vscode.Diagnostic): string {
     switch (diagnostic.severity) {
       case vscode.DiagnosticSeverity.Error:
@@ -228,47 +232,53 @@ export class DiagnosticProvider implements vscode.Disposable {
         return '#999999';
     }
   }
-  
-  private getHoverMessage(diagnostic: vscode.Diagnostic): vscode.MarkdownString {
+
+  private getHoverMessage(
+    diagnostic: vscode.Diagnostic
+  ): vscode.MarkdownString {
     const config = this.configManager.getConfig();
     const ruleId = (diagnostic as any).ruleId;
     const category = (diagnostic as any).category;
-    
+
     const markdown = new vscode.MarkdownString();
     markdown.isTrusted = true;
-    
+
     // Main message
     markdown.appendMarkdown(`**X-Fidelity: ${diagnostic.message}**\n\n`);
-    
+
     // Rule information
     if (ruleId) {
       markdown.appendMarkdown(`**Rule:** \`${ruleId}\`\n\n`);
     }
-    
+
     if (category) {
       markdown.appendMarkdown(`**Category:** ${category}\n\n`);
     }
-    
+
     // Severity
     const severityText = this.getSeverityText(diagnostic.severity);
     markdown.appendMarkdown(`**Severity:** ${severityText}\n\n`);
-    
+
     // Rule documentation link (if enabled)
     if (config.showRuleDocumentation && ruleId) {
-      markdown.appendMarkdown(`[View Rule Documentation](command:xfidelity.showRuleDocumentation?${encodeURIComponent(JSON.stringify([ruleId]))})\n\n`);
+      markdown.appendMarkdown(
+        `[View Rule Documentation](command:xfidelity.showRuleDocumentation?${encodeURIComponent(JSON.stringify([ruleId]))})\n\n`
+      );
     }
-    
+
     // Quick actions
     if ((diagnostic as any).fixable) {
       markdown.appendMarkdown(`💡 **Quick Fix Available**\n\n`);
     }
-    
+
     // Exemption option
-    markdown.appendMarkdown(`[Add Exemption](command:xfidelity.addExemption?${encodeURIComponent(JSON.stringify([ruleId, diagnostic.range]))})`);
-    
+    markdown.appendMarkdown(
+      `[Add Exemption](command:xfidelity.addExemption?${encodeURIComponent(JSON.stringify([ruleId, diagnostic.range]))})`
+    );
+
     return markdown;
   }
-  
+
   private getSeverityText(severity: vscode.DiagnosticSeverity): string {
     switch (severity) {
       case vscode.DiagnosticSeverity.Error:
@@ -283,7 +293,7 @@ export class DiagnosticProvider implements vscode.Disposable {
         return 'Unknown';
     }
   }
-  
+
   private mapSeverityToLevel(severity: vscode.DiagnosticSeverity): string {
     switch (severity) {
       case vscode.DiagnosticSeverity.Error:
@@ -298,31 +308,31 @@ export class DiagnosticProvider implements vscode.Disposable {
         return 'hint';
     }
   }
-  
+
   private getFileUri(filePath: string): vscode.Uri | null {
     try {
       // Handle absolute paths
       if (filePath.startsWith('/') || filePath.includes(':')) {
         return vscode.Uri.file(filePath);
       }
-      
+
       // Handle relative paths
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       if (workspaceFolder) {
         return vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, filePath));
       }
-      
+
       return null;
     } catch {
       return null;
     }
   }
-  
+
   // Public API for other components
   getDiagnosticsForFile(uri: vscode.Uri): readonly vscode.Diagnostic[] {
     return this.diagnosticCollection.get(uri) || [];
   }
-  
+
   getAllDiagnostics(): [vscode.Uri, vscode.Diagnostic[]][] {
     const result: [vscode.Uri, vscode.Diagnostic[]][] = [];
     this.diagnosticCollection.forEach((uri, diagnostics) => {
@@ -330,10 +340,20 @@ export class DiagnosticProvider implements vscode.Disposable {
     });
     return result;
   }
-  
-  getDiagnosticsSummary(): { total: number; errors: number; warnings: number; info: number; hints: number } {
-    let total = 0, errors = 0, warnings = 0, info = 0, hints = 0;
-    
+
+  getDiagnosticsSummary(): {
+    total: number;
+    errors: number;
+    warnings: number;
+    info: number;
+    hints: number;
+  } {
+    let total = 0,
+      errors = 0,
+      warnings = 0,
+      info = 0,
+      hints = 0;
+
     this.diagnosticCollection.forEach((uri, diagnostics) => {
       total += diagnostics.length;
       for (const diagnostic of diagnostics) {
@@ -353,10 +373,10 @@ export class DiagnosticProvider implements vscode.Disposable {
         }
       }
     });
-    
+
     return { total, errors, warnings, info, hints };
   }
-  
+
   dispose(): void {
     if (this.decorationUpdateDebouncer) {
       clearTimeout(this.decorationUpdateDebouncer);
@@ -365,4 +385,4 @@ export class DiagnosticProvider implements vscode.Disposable {
     this.decorationType?.dispose();
     this.disposables.forEach(d => d.dispose());
   }
-} 
+}

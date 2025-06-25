@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { performance } from 'perf_hooks';
 import { VSCodeLogger } from '../utils/vscodeLogger';
 
-const logger = new VSCodeLogger('AST Manager');
+//const logger = new VSCodeLogger('AST Manager');
 
 export interface ASTNode {
   type: string;
@@ -18,7 +18,10 @@ export interface ASTParseResult {
 }
 
 export class ASTManager implements vscode.Disposable {
-  private astCache = new Map<string, { ast: ASTNode; timestamp: number; version: number }>();
+  private astCache = new Map<
+    string,
+    { ast: ASTNode; timestamp: number; version: number }
+  >();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   private readonly MAX_CACHE_SIZE = 100;
   private logger: VSCodeLogger;
@@ -35,8 +38,8 @@ export class ASTManager implements vscode.Disposable {
       vscode.workspace.onDidChangeTextDocument(event => {
         const key = event.document.uri.toString();
         if (this.astCache.has(key)) {
-          this.logger.debug('Invalidating AST cache for changed document', { 
-            file: event.document.uri.fsPath 
+          this.logger.debug('Invalidating AST cache for changed document', {
+            file: event.document.uri.fsPath
           });
           this.astCache.delete(key);
         }
@@ -49,12 +52,14 @@ export class ASTManager implements vscode.Disposable {
     }, 60000); // Every minute
   }
 
-  async parseDocument(document: vscode.TextDocument): Promise<ASTParseResult | null> {
+  async parseDocument(
+    document: vscode.TextDocument
+  ): Promise<ASTParseResult | null> {
     const startTime = performance.now();
     const key = document.uri.toString();
     const operationId = `ast-parse-${Date.now()}`;
 
-    this.logger.debug('AST parse requested', { 
+    this.logger.debug('AST parse requested', {
       operationId,
       file: document.uri.fsPath,
       language: document.languageId,
@@ -66,7 +71,7 @@ export class ASTManager implements vscode.Disposable {
     if (cached && cached.version === document.version) {
       const cacheTime = performance.now() - startTime;
       this.logger.debug('AST cache hit', { operationId, cacheTime });
-      
+
       return {
         ast: cached.ast,
         parseTime: cacheTime,
@@ -76,15 +81,15 @@ export class ASTManager implements vscode.Disposable {
 
     try {
       // Parse based on language
-      const parseResult = await this.parseByLanguage(document, operationId);
-      
+      const parseResult = await this.parseByLanguage(document);
+
       if (parseResult) {
         // Cache the result
         this.cacheAST(key, parseResult.ast, document.version);
-        
+
         const totalTime = performance.now() - startTime;
-        this.logger.debug('AST parse completed', { 
-          operationId, 
+        this.logger.debug('AST parse completed', {
+          operationId,
           totalTime,
           nodeCount: this.countNodes(parseResult.ast)
         });
@@ -96,11 +101,10 @@ export class ASTManager implements vscode.Disposable {
       }
 
       return null;
-
     } catch (error) {
       const errorTime = performance.now() - startTime;
-      this.logger.error('AST parse failed', { 
-        operationId, 
+      this.logger.error('AST parse failed', {
+        operationId,
         errorTime,
         error: error instanceof Error ? error.message : String(error)
       });
@@ -114,42 +118,44 @@ export class ASTManager implements vscode.Disposable {
   }
 
   private async parseByLanguage(
-    document: vscode.TextDocument, 
-    operationId: string
+    document: vscode.TextDocument
   ): Promise<{ ast: ASTNode; errors: string[] } | null> {
     const language = document.languageId;
-    
+
     switch (language) {
       case 'typescript':
       case 'javascript':
-        return this.parseTypeScript(document, operationId);
+        return this.parseTypeScript(document);
       case 'python':
-        return this.parsePython(document, operationId);
+        return this.parsePython(document);
       case 'java':
-        return this.parseJava(document, operationId);
+        return this.parseJava(document);
       default:
-        this.logger.debug('Unsupported language for AST parsing', { 
-          operationId, 
-          language 
+        this.logger.debug('Unsupported language for AST parsing', {
+          language
         });
         return null;
     }
   }
 
   private async parseTypeScript(
-    document: vscode.TextDocument, 
-    operationId: string
+    document: vscode.TextDocument
   ): Promise<{ ast: ASTNode; errors: string[] }> {
     // Implement TypeScript AST parsing using tree-sitter or TypeScript compiler API
     // This is a placeholder - implement based on your AST parsing needs
-    
+
     const text = document.getText();
     const lines = text.split('\n');
-    
+
     // Simple mock AST for demonstration
     const ast: ASTNode = {
       type: 'Program',
-      range: new vscode.Range(0, 0, lines.length - 1, lines[lines.length - 1]?.length || 0),
+      range: new vscode.Range(
+        0,
+        0,
+        lines.length - 1,
+        lines[lines.length - 1]?.length || 0
+      ),
       children: []
     };
 
@@ -157,17 +163,21 @@ export class ASTManager implements vscode.Disposable {
   }
 
   private async parsePython(
-    document: vscode.TextDocument, 
-    operationId: string
+    document: vscode.TextDocument
   ): Promise<{ ast: ASTNode; errors: string[] }> {
     // Implement Python AST parsing
     // Placeholder implementation
     const text = document.getText();
     const lines = text.split('\n');
-    
+
     const ast: ASTNode = {
       type: 'Module',
-      range: new vscode.Range(0, 0, lines.length - 1, lines[lines.length - 1]?.length || 0),
+      range: new vscode.Range(
+        0,
+        0,
+        lines.length - 1,
+        lines[lines.length - 1]?.length || 0
+      ),
       children: []
     };
 
@@ -175,17 +185,21 @@ export class ASTManager implements vscode.Disposable {
   }
 
   private async parseJava(
-    document: vscode.TextDocument, 
-    operationId: string
+    document: vscode.TextDocument
   ): Promise<{ ast: ASTNode; errors: string[] }> {
     // Implement Java AST parsing
     // Placeholder implementation
     const text = document.getText();
     const lines = text.split('\n');
-    
+
     const ast: ASTNode = {
       type: 'CompilationUnit',
-      range: new vscode.Range(0, 0, lines.length - 1, lines[lines.length - 1]?.length || 0),
+      range: new vscode.Range(
+        0,
+        0,
+        lines.length - 1,
+        lines[lines.length - 1]?.length || 0
+      ),
       children: []
     };
 
@@ -223,9 +237,9 @@ export class ASTManager implements vscode.Disposable {
     }
 
     if (keysToDelete.length > 0) {
-      this.logger.debug('Cleaned up expired AST cache entries', { 
+      this.logger.debug('Cleaned up expired AST cache entries', {
         cleaned: keysToDelete.length,
-        remaining: this.astCache.size 
+        remaining: this.astCache.size
       });
     }
   }

@@ -24,7 +24,7 @@ export interface ShareOptions {
 
 export class ExportManager {
   constructor(private configManager: ConfigManager) {}
-  
+
   async exportReport(
     result: ResultMetadata,
     options: ExportOptions,
@@ -34,13 +34,14 @@ export class ExportManager {
     if (!workspaceFolder) {
       throw new Error('No workspace folder found');
     }
-    
+
     const timestamp = this.getTimestamp();
     const filename = `xfi-export-${timestamp}.${this.getFileExtension(options.format)}`;
-    const filePath = outputPath || path.join(workspaceFolder.uri.fsPath, filename);
-    
+    const filePath =
+      outputPath || path.join(workspaceFolder.uri.fsPath, filename);
+
     let content: string;
-    
+
     switch (options.format) {
       case 'json':
         content = await this.exportJSON(result, options);
@@ -66,14 +67,14 @@ export class ExportManager {
       default:
         throw new Error(`Unsupported export format: ${options.format}`);
     }
-    
+
     // Handle different destinations
     switch (options.destination) {
       case 'clipboard':
         await vscode.env.clipboard.writeText(content);
         vscode.window.showInformationMessage('Report copied to clipboard');
         return 'clipboard';
-        
+
       case 'file':
       default:
         await fs.writeFile(filePath, content);
@@ -81,7 +82,7 @@ export class ExportManager {
         return filePath;
     }
   }
-  
+
   async shareReport(
     result: ResultMetadata,
     options: ShareOptions
@@ -103,7 +104,7 @@ export class ExportManager {
         throw new Error(`Unsupported sharing platform: ${options.platform}`);
     }
   }
-  
+
   async generateBatchReport(
     results: ResultMetadata[],
     options: ExportOptions
@@ -112,13 +113,13 @@ export class ExportManager {
     if (!workspaceFolder) {
       throw new Error('No workspace folder found');
     }
-    
+
     const timestamp = this.getTimestamp();
     const filename = `xfi-batch-report-${timestamp}.${this.getFileExtension(options.format)}`;
     const filePath = path.join(workspaceFolder.uri.fsPath, filename);
-    
+
     let content: string;
-    
+
     switch (options.format) {
       case 'csv':
         content = this.generateBatchCSV(results);
@@ -127,31 +128,42 @@ export class ExportManager {
         content = this.generateBatchHTML(results);
         break;
       default:
-        throw new Error(`Batch export not supported for format: ${options.format}`);
+        throw new Error(
+          `Batch export not supported for format: ${options.format}`
+        );
     }
-    
+
     await fs.writeFile(filePath, content);
     return filePath;
   }
-  
-  private async exportJSON(result: ResultMetadata, options: ExportOptions): Promise<string> {
+
+  private async exportJSON(
+    result: ResultMetadata,
+    options: ExportOptions
+  ): Promise<string> {
     const exportData: any = {
       timestamp: Date.now(),
       result
     };
-    
+
     if (options.filterSeverity?.length) {
-      exportData.result = this.filterResultBySeverity(result, options.filterSeverity);
+      exportData.result = this.filterResultBySeverity(
+        result,
+        options.filterSeverity
+      );
     }
-    
+
     return JSON.stringify(exportData, null, 2);
   }
-  
-  private async exportCSV(result: ResultMetadata, options: ExportOptions): Promise<string> {
-    const data = options.filterSeverity?.length 
+
+  private async exportCSV(
+    result: ResultMetadata,
+    options: ExportOptions
+  ): Promise<string> {
+    const data = options.filterSeverity?.length
       ? this.filterResultBySeverity(result, options.filterSeverity)
       : result;
-    
+
     const headers = [
       'File',
       'Rule',
@@ -162,9 +174,9 @@ export class ExportManager {
       'Category',
       'Fixable'
     ];
-    
+
     const rows: string[][] = [];
-    
+
     for (const detail of data.XFI_RESULT.issueDetails) {
       for (const error of detail.errors) {
         rows.push([
@@ -179,36 +191,42 @@ export class ExportManager {
         ]);
       }
     }
-    
+
     return [headers, ...rows]
       .map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
       .join('\n');
   }
-  
-  private async exportHTML(result: ResultMetadata, options: ExportOptions): Promise<string> {
-    const data = options.filterSeverity?.length 
+
+  private async exportHTML(
+    result: ResultMetadata,
+    options: ExportOptions
+  ): Promise<string> {
+    const data = options.filterSeverity?.length
       ? this.filterResultBySeverity(result, options.filterSeverity)
       : result;
-    
+
     const template = options.customTemplate || this.getDefaultHTMLTemplate();
-    
+
     return this.renderTemplate(template, {
       data: data.XFI_RESULT,
       timestamp: new Date().toISOString(),
       options
     });
   }
-  
-  private async exportMarkdown(result: ResultMetadata, options: ExportOptions): Promise<string> {
-    const data = options.filterSeverity?.length 
+
+  private async exportMarkdown(
+    result: ResultMetadata,
+    options: ExportOptions
+  ): Promise<string> {
+    const data = options.filterSeverity?.length
       ? this.filterResultBySeverity(result, options.filterSeverity)
       : result;
-    
+
     let md = `# X-Fidelity Analysis Report\n\n`;
     md += `**Generated:** ${new Date().toISOString()}\n`;
     md += `**Repository:** ${data.XFI_RESULT.repoPath}\n`;
     md += `**Archetype:** ${data.XFI_RESULT.archetype}\n\n`;
-    
+
     // Summary
     md += `## Summary\n\n`;
     md += `| Metric | Count |\n`;
@@ -217,46 +235,55 @@ export class ExportManager {
     md += `| Errors | ${data.XFI_RESULT.errorCount} |\n`;
     md += `| Warnings | ${data.XFI_RESULT.warningCount} |\n`;
     md += `| Fatal | ${data.XFI_RESULT.fatalityCount} |\n\n`;
-    
+
     // Issues by severity
     const severityGroups = this.groupIssuesBySeverity(data);
     for (const [severity, issues] of Object.entries(severityGroups)) {
-      if (issues.length === 0) {continue;}
-      
+      if (issues.length === 0) {
+        continue;
+      }
+
       md += `## ${severity.toUpperCase()} Issues (${issues.length})\n\n`;
-      
+
       for (const issue of issues) {
         md += `### ${issue.file}\n\n`;
         md += `- **Rule:** \`${issue.rule}\`\n`;
         md += `- **Message:** ${issue.message}\n`;
-        if (issue.line) {md += `- **Location:** Line ${issue.line}\n`;}
+        if (issue.line) {
+          md += `- **Location:** Line ${issue.line}\n`;
+        }
         md += `\n`;
       }
     }
-    
+
     return md;
   }
-  
-  private async exportSARIF(result: ResultMetadata, options: ExportOptions): Promise<string> {
-    const data = options.filterSeverity?.length 
+
+  private async exportSARIF(
+    result: ResultMetadata,
+    options: ExportOptions
+  ): Promise<string> {
+    const data = options.filterSeverity?.length
       ? this.filterResultBySeverity(result, options.filterSeverity)
       : result;
-    
+
     const sarif = {
       $schema: 'https://json.schemastore.org/sarif-2.1.0.json',
       version: '2.1.0',
-      runs: [{
-        tool: {
-          driver: {
-            name: 'X-Fidelity',
-            version: '4.0.0',
-            informationUri: 'https://github.com/zotoio/x-fidelity'
-          }
-        },
-        results: [] as any[]
-      }]
+      runs: [
+        {
+          tool: {
+            driver: {
+              name: 'X-Fidelity',
+              version: '4.0.0',
+              informationUri: 'https://github.com/zotoio/x-fidelity'
+            }
+          },
+          results: [] as any[]
+        }
+      ]
     };
-    
+
     for (const detail of data.XFI_RESULT.issueDetails) {
       for (const error of detail.errors) {
         sarif.runs[0].results.push({
@@ -265,137 +292,184 @@ export class ExportManager {
           message: {
             text: error.details?.message || error.ruleFailure
           },
-          locations: [{
-            physicalLocation: {
-              artifactLocation: {
-                uri: detail.filePath
-              },
-              region: {
-                startLine: error.details?.lineNumber || 1,
-                startColumn: error.details?.columnNumber || 1
+          locations: [
+            {
+              physicalLocation: {
+                artifactLocation: {
+                  uri: detail.filePath
+                },
+                region: {
+                  startLine: error.details?.lineNumber || 1,
+                  startColumn: error.details?.columnNumber || 1
+                }
               }
             }
-          }]
+          ]
         });
       }
     }
-    
+
     return JSON.stringify(sarif, null, 2);
   }
-  
-  private async exportExcel(result: ResultMetadata, _options: ExportOptions, filePath: string): Promise<void> {
+
+  private async exportExcel(
+    result: ResultMetadata,
+    _options: ExportOptions,
+    filePath: string
+  ): Promise<void> {
     // For now, export as CSV with .xlsx extension and show a message
     const csvContent = await this.exportCSV(result, _options);
     await fs.writeFile(filePath.replace('.xlsx', '.csv'), csvContent);
-    
-    vscode.window.showWarningMessage(
-      'Excel export saved as CSV. Install a proper Excel library for native .xlsx support.',
-      'View File'
-    ).then(choice => {
-      if (choice === 'View File') {
-        vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(filePath.replace('.xlsx', '.csv')));
-      }
-    });
+
+    vscode.window
+      .showWarningMessage(
+        'Excel export saved as CSV. Install a proper Excel library for native .xlsx support.',
+        'View File'
+      )
+      .then(choice => {
+        if (choice === 'View File') {
+          vscode.commands.executeCommand(
+            'revealFileInOS',
+            vscode.Uri.file(filePath.replace('.xlsx', '.csv'))
+          );
+        }
+      });
   }
-  
-  private async exportPDF(result: ResultMetadata, _options: ExportOptions, filePath: string): Promise<void> {
+
+  private async exportPDF(
+    result: ResultMetadata,
+    _options: ExportOptions,
+    filePath: string
+  ): Promise<void> {
     // Generate HTML and show instructions for PDF conversion
     const htmlContent = await this.exportHTML(result, { format: 'html' });
     const htmlPath = filePath.replace('.pdf', '.html');
     await fs.writeFile(htmlPath, htmlContent);
-    
-    vscode.window.showInformationMessage(
-      'HTML report generated. Use browser\'s "Print to PDF" feature for PDF export.',
-      'Open HTML'
-    ).then(choice => {
-      if (choice === 'Open HTML') {
-        vscode.env.openExternal(vscode.Uri.file(htmlPath));
-      }
-    });
+
+    vscode.window
+      .showInformationMessage(
+        'HTML report generated. Use browser\'s "Print to PDF" feature for PDF export.',
+        'Open HTML'
+      )
+      .then(choice => {
+        if (choice === 'Open HTML') {
+          vscode.env.openExternal(vscode.Uri.file(htmlPath));
+        }
+      });
   }
-  
-  private async shareViaEmail(result: ResultMetadata, options: ShareOptions): Promise<void> {
+
+  private async shareViaEmail(
+    result: ResultMetadata,
+    options: ShareOptions
+  ): Promise<void> {
     const summary = this.generateSummary(result);
     const subject = `X-Fidelity Analysis Report - ${result.XFI_RESULT.repoPath}`;
     const body = this.generateEmailBody(result, summary);
-    
+
     const mailto = `mailto:${options.recipients?.join(';') || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     await vscode.env.openExternal(vscode.Uri.parse(mailto));
   }
-  
-  private async shareViaSlack(result: ResultMetadata, _options: ShareOptions): Promise<void> {
+
+  private async shareViaSlack(
+    result: ResultMetadata,
+    _options: ShareOptions
+  ): Promise<void> {
     const summary = this.generateSummary(result);
     const message = this.generateSlackMessage(result, summary);
-    
+
     // Copy to clipboard for manual sharing
     await vscode.env.clipboard.writeText(message);
-    vscode.window.showInformationMessage(
-      'Slack message copied to clipboard. Paste it in your Slack channel.',
-      'Open Slack'
-    ).then(choice => {
-      if (choice === 'Open Slack') {
-        vscode.env.openExternal(vscode.Uri.parse('https://slack.com'));
-      }
-    });
+    vscode.window
+      .showInformationMessage(
+        'Slack message copied to clipboard. Paste it in your Slack channel.',
+        'Open Slack'
+      )
+      .then(choice => {
+        if (choice === 'Open Slack') {
+          vscode.env.openExternal(vscode.Uri.parse('https://slack.com'));
+        }
+      });
   }
-  
-  private async shareViaTeams(result: ResultMetadata, _options: ShareOptions): Promise<void> {
+
+  private async shareViaTeams(
+    result: ResultMetadata,
+    _options: ShareOptions
+  ): Promise<void> {
     const summary = this.generateSummary(result);
     const message = this.generateTeamsMessage(result, summary);
-    
+
     await vscode.env.clipboard.writeText(message);
-    vscode.window.showInformationMessage(
-      'Teams message copied to clipboard. Paste it in your Teams channel.',
-      'Open Teams'
-    ).then(choice => {
-      if (choice === 'Open Teams') {
-        vscode.env.openExternal(vscode.Uri.parse('https://teams.microsoft.com'));
-      }
-    });
+    vscode.window
+      .showInformationMessage(
+        'Teams message copied to clipboard. Paste it in your Teams channel.',
+        'Open Teams'
+      )
+      .then(choice => {
+        if (choice === 'Open Teams') {
+          vscode.env.openExternal(
+            vscode.Uri.parse('https://teams.microsoft.com')
+          );
+        }
+      });
   }
-  
-  private async shareViaGitHub(result: ResultMetadata, _options: ShareOptions): Promise<void> {
+
+  private async shareViaGitHub(
+    result: ResultMetadata,
+    _options: ShareOptions
+  ): Promise<void> {
     const summary = this.generateSummary(result);
     const issueBody = this.generateGitHubIssueBody(result, summary);
-    
+
     await vscode.env.clipboard.writeText(issueBody);
-    vscode.window.showInformationMessage(
-      'GitHub issue template copied to clipboard.',
-      'Open GitHub'
-    ).then(choice => {
-      if (choice === 'Open GitHub') {
-        vscode.env.openExternal(vscode.Uri.parse('https://github.com'));
-      }
-    });
+    vscode.window
+      .showInformationMessage(
+        'GitHub issue template copied to clipboard.',
+        'Open GitHub'
+      )
+      .then(choice => {
+        if (choice === 'Open GitHub') {
+          vscode.env.openExternal(vscode.Uri.parse('https://github.com'));
+        }
+      });
   }
-  
-  private filterResultBySeverity(result: ResultMetadata, severities: string[]): ResultMetadata {
+
+  private filterResultBySeverity(
+    result: ResultMetadata,
+    severities: string[]
+  ): ResultMetadata {
     const filtered = JSON.parse(JSON.stringify(result));
-    
+
     filtered.XFI_RESULT.issueDetails = filtered.XFI_RESULT.issueDetails
       .map((detail: any) => ({
         ...detail,
-        errors: detail.errors.filter((error: any) => 
+        errors: detail.errors.filter((error: any) =>
           severities.includes(error.level || 'hint')
         )
       }))
       .filter((detail: any) => detail.errors.length > 0);
-    
+
     // Recalculate counts
-    filtered.XFI_RESULT.totalIssues = filtered.XFI_RESULT.issueDetails
-      .reduce((sum: number, detail: any) => sum + detail.errors.length, 0);
-    
+    filtered.XFI_RESULT.totalIssues = filtered.XFI_RESULT.issueDetails.reduce(
+      (sum: number, detail: any) => sum + detail.errors.length,
+      0
+    );
+
     return filtered;
   }
-  
-  private groupIssuesBySeverity(result: ResultMetadata): Record<string, Array<{file: string, rule: string, message: string, line?: number}>> {
+
+  private groupIssuesBySeverity(
+    result: ResultMetadata
+  ): Record<
+    string,
+    Array<{ file: string; rule: string; message: string; line?: number }>
+  > {
     const groups: Record<string, any[]> = {
       error: [],
       warning: [],
       info: [],
       hint: []
     };
-    
+
     for (const detail of result.XFI_RESULT.issueDetails) {
       for (const error of detail.errors) {
         const severity = error.level || 'hint';
@@ -407,15 +481,15 @@ export class ExportManager {
         });
       }
     }
-    
+
     return groups;
   }
-  
+
   private generateSummary(result: ResultMetadata): string {
     const data = result.XFI_RESULT;
     return `${data.totalIssues} issues found (${data.errorCount} errors, ${data.warningCount} warnings)`;
   }
-  
+
   private generateEmailBody(result: ResultMetadata, summary: string): string {
     return `X-Fidelity Analysis Report
 
@@ -427,8 +501,11 @@ Summary: ${summary}
 
 Please see the attached detailed report for more information.`;
   }
-  
-  private generateSlackMessage(result: ResultMetadata, summary: string): string {
+
+  private generateSlackMessage(
+    result: ResultMetadata,
+    summary: string
+  ): string {
     const data = result.XFI_RESULT;
     return `🔍 *X-Fidelity Analysis Report*
 
@@ -442,12 +519,18 @@ ${data.errorCount > 0 ? `🔴 ${data.errorCount} errors` : ''}
 ${data.warningCount > 0 ? `🟡 ${data.warningCount} warnings` : ''}
 ${data.totalIssues === 0 ? '✅ No issues found!' : ''}`;
   }
-  
-  private generateTeamsMessage(result: ResultMetadata, summary: string): string {
+
+  private generateTeamsMessage(
+    result: ResultMetadata,
+    summary: string
+  ): string {
     return this.generateSlackMessage(result, summary); // Similar format
   }
-  
-  private generateGitHubIssueBody(result: ResultMetadata, summary: string): string {
+
+  private generateGitHubIssueBody(
+    result: ResultMetadata,
+    summary: string
+  ): string {
     const data = result.XFI_RESULT;
     return `## X-Fidelity Analysis Report
 
@@ -471,9 +554,18 @@ ${summary}
 
 *Generated by X-Fidelity VS Code Extension*`;
   }
-  
+
   private generateBatchCSV(results: ResultMetadata[]): string {
-    const headers = ['Timestamp', 'Repository', 'Archetype', 'Total Issues', 'Errors', 'Warnings', 'Fatal', 'Files'];
+    const headers = [
+      'Timestamp',
+      'Repository',
+      'Archetype',
+      'Total Issues',
+      'Errors',
+      'Warnings',
+      'Fatal',
+      'Files'
+    ];
     const rows = results.map(result => [
       new Date().toISOString(),
       result.XFI_RESULT.repoPath,
@@ -484,12 +576,12 @@ ${summary}
       result.XFI_RESULT.fatalityCount.toString(),
       result.XFI_RESULT.fileCount.toString()
     ]);
-    
+
     return [headers, ...rows]
       .map(row => row.map(cell => `"${cell}"`).join(','))
       .join('\n');
   }
-  
+
   private generateBatchHTML(results: ResultMetadata[]): string {
     return `<!DOCTYPE html>
 <html>
@@ -519,7 +611,9 @@ ${summary}
             </tr>
         </thead>
         <tbody>
-            ${results.map(result => `
+            ${results
+              .map(
+                result => `
                 <tr>
                     <td>${result.XFI_RESULT.repoPath}</td>
                     <td>${result.XFI_RESULT.archetype}</td>
@@ -528,13 +622,15 @@ ${summary}
                     <td>${result.XFI_RESULT.warningCount}</td>
                     <td>${result.XFI_RESULT.fileCount}</td>
                 </tr>
-            `).join('')}
+            `
+              )
+              .join('')}
         </tbody>
     </table>
 </body>
 </html>`;
   }
-  
+
   private getDefaultHTMLTemplate(): string {
     return `<!DOCTYPE html>
 <html>
@@ -577,14 +673,16 @@ ${summary}
 </body>
 </html>`;
   }
-  
+
   private renderTemplate(template: string, data: any): string {
     return template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-      const value = key.split('.').reduce((obj: any, k: string) => obj?.[k], data);
+      const value = key
+        .split('.')
+        .reduce((obj: any, k: string) => obj?.[k], data);
       return value !== undefined ? String(value) : match;
     });
   }
-  
+
   private mapSeverityToSARIF(severity: string): string {
     switch (severity) {
       case 'error':
@@ -598,7 +696,7 @@ ${summary}
         return 'note';
     }
   }
-  
+
   private getFileExtension(format: string): string {
     const extensions: Record<string, string> = {
       json: 'json',
@@ -611,11 +709,15 @@ ${summary}
     };
     return extensions[format] || 'txt';
   }
-  
+
   private getTimestamp(): string {
     const now = new Date();
-    const formatted = now.toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '-');
+    const formatted = now
+      .toISOString()
+      .slice(0, 19)
+      .replace(/[:-]/g, '')
+      .replace('T', '-');
     const timestamp = now.getTime();
     return `${formatted}-${timestamp}`;
   }
-} 
+}

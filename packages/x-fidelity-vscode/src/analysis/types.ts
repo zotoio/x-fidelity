@@ -25,6 +25,11 @@ export interface AnalysisState {
 }
 
 // Add string union type for simpler state management
-export type AnalysisStateType = 'idle' | 'running' | 'cancelling' | 'completed' | 'error';
+export type AnalysisStateType =
+  | 'idle'
+  | 'running'
+  | 'cancelling'
+  | 'completed'
+  | 'error';
 
-export { ResultMetadata }; 
+export { ResultMetadata };

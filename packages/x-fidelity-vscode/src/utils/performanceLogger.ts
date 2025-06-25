@@ -17,18 +17,21 @@ export class PerformanceLogger {
     this.logger = new VSCodeLogger(`Performance-${component}`);
   }
 
-  startOperation(operation: string, metadata?: Record<string, any>): () => void {
+  startOperation(
+    operation: string,
+    metadata?: Record<string, any>
+  ): () => void {
     const startTime = performance.now();
     const operationId = `${operation}-${Date.now()}`;
-    
-    this.logger.debug(`Operation started: ${operation}`, { 
-      operationId, 
-      ...metadata 
+
+    this.logger.debug(`Operation started: ${operation}`, {
+      operationId,
+      ...metadata
     });
 
     return () => {
       const duration = performance.now() - startTime;
-      
+
       this.recordMetric({
         operation,
         duration,
@@ -36,18 +39,18 @@ export class PerformanceLogger {
         metadata: { ...metadata, operationId }
       });
 
-      this.logger.debug(`Operation completed: ${operation}`, { 
-        operationId, 
-        duration, 
-        ...metadata 
+      this.logger.debug(`Operation completed: ${operation}`, {
+        operationId,
+        duration,
+        ...metadata
       });
 
       // Warn about slow operations
       if (duration > 1000) {
-        this.logger.warn(`Slow operation detected: ${operation}`, { 
-          operationId, 
-          duration, 
-          ...metadata 
+        this.logger.warn(`Slow operation detected: ${operation}`, {
+          operationId,
+          duration,
+          ...metadata
         });
       }
     };
@@ -55,7 +58,7 @@ export class PerformanceLogger {
 
   private recordMetric(metric: PerformanceMetric): void {
     this.metrics.push(metric);
-    
+
     // Keep only recent metrics
     if (this.metrics.length > this.MAX_METRICS) {
       this.metrics = this.metrics.slice(-this.MAX_METRICS);
@@ -71,8 +74,10 @@ export class PerformanceLogger {
 
   getAverageTime(operation: string): number {
     const operationMetrics = this.getMetrics(operation);
-    if (operationMetrics.length === 0) return 0;
-    
+    if (operationMetrics.length === 0) {
+      return 0;
+    }
+
     const total = operationMetrics.reduce((sum, m) => sum + m.duration, 0);
     return total / operationMetrics.length;
   }
