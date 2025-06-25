@@ -11,7 +11,12 @@ module.exports = {
     }]
   },
   moduleNameMapper: {
-    '^x-fidelity$': '<rootDir>/node_modules/x-fidelity/dist'
+    '^x-fidelity$': '<rootDir>/node_modules/x-fidelity/dist',
+    '^@x-fidelity/types(.*)$': '<rootDir>/../x-fidelity-types/src$1',
+    '^@x-fidelity/core(.*)$': '<rootDir>/../x-fidelity-core/src$1',
+    '^@x-fidelity/plugins(.*)$': '<rootDir>/../x-fidelity-plugins/src$1',
+    '^@x-fidelity/server(.*)$': '<rootDir>/../x-fidelity-server/src$1',
+    '^@x-fidelity/democonfig(.*)$': '<rootDir>/../x-fidelity-democonfig/src$1'
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node", "mts", "cts"],
   // Jest 30 performance improvements
