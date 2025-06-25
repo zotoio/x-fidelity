@@ -12,6 +12,7 @@ export interface AnalysisResult {
     analysisTimeMs: number;
     issuesByLevel?: Record<string, number>;
   };
+  operationId?: string;
 }
 
 export interface AnalysisState {
@@ -20,6 +21,7 @@ export interface AnalysisState {
   currentFile?: string;
   totalFiles?: number;
   error?: Error;
+  operationId?: string;
 }
 
 // Add string union type for simpler state management

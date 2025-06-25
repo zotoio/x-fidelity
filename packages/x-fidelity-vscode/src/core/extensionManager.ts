@@ -374,117 +374,117 @@ export class ExtensionManager implements vscode.Disposable {
     
     // Configuration commands
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.openSettings', () => {
+      registerMonitoredCommand('xfidelity.openSettings', () => {
         return vscode.commands.executeCommand('workbench.action.openSettings', '@ext:zotoio.x-fidelity-vscode');
-      })
+      }, 'ui')
     );
     
     // Report commands
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.openReports', () => {
+      registerMonitoredCommand('xfidelity.openReports', () => {
         return this.openReportsFolder();
-      })
+      }, 'ui')
     );
     
     // Archetype detection command
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.detectArchetype', async () => {
+      registerMonitoredCommand('xfidelity.detectArchetype', async () => {
         await this.performArchetypeDetection(true);
-      })
+      }, 'config')
     );
     
     // Configuration reset command
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.resetConfiguration', async () => {
+      registerMonitoredCommand('xfidelity.resetConfiguration', async () => {
         await this.resetConfiguration();
-      })
+      }, 'config')
     );
     
     // Code action command handlers
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.addExemption', handleAddExemption)
+      registerMonitoredCommand('xfidelity.addExemption', handleAddExemption, 'action')
     );
     
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.addBulkExemptions', handleBulkExemptions)
+      registerMonitoredCommand('xfidelity.addBulkExemptions', handleBulkExemptions, 'action')
     );
     
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.showRuleDocumentation', (ruleId: string) => {
+      registerMonitoredCommand('xfidelity.showRuleDocumentation', (ruleId: string) => {
         const url = `https://github.com/zotoio/x-fidelity/blob/main/docs/rules/${ruleId}.md`;
         vscode.env.openExternal(vscode.Uri.parse(url));
-      })
+      }, 'ui')
     );
     
     // Stage 3: Enhanced reporting commands
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.showReportHistory', async () => {
+      registerMonitoredCommand('xfidelity.showReportHistory', async () => {
         await this.showReportHistory();
-      })
+      }, 'report')
     );
     
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.exportReport', async () => {
+      registerMonitoredCommand('xfidelity.exportReport', async () => {
         await this.exportReport();
-      })
+      }, 'report')
     );
     
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.shareReport', async () => {
+      registerMonitoredCommand('xfidelity.shareReport', async () => {
         await this.shareReport();
-      })
+      }, 'report')
     );
     
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.compareReports', async () => {
+      registerMonitoredCommand('xfidelity.compareReports', async () => {
         await this.compareReports();
-      })
+      }, 'report')
     );
     
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.viewTrends', async () => {
+      registerMonitoredCommand('xfidelity.viewTrends', async () => {
         await this.viewTrends();
-      })
+      }, 'report')
     );
 
     // Debug command to run analysis with --dir option
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.runAnalysisWithDir', async () => {
+      registerMonitoredCommand('xfidelity.runAnalysisWithDir', async () => {
         await this.runAnalysisWithDir();
-      })
+      }, 'analysis')
     );
     
     // Stage 4: Advanced UI Panel commands
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.showAdvancedSettings', async () => {
+      registerMonitoredCommand('xfidelity.showAdvancedSettings', async () => {
         await this.settingsUIPanel.show();
-      })
+      }, 'ui')
     );
     
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.showDashboard', async () => {
+      registerMonitoredCommand('xfidelity.showDashboard', async () => {
         await this.dashboardPanel.show();
-      })
+      }, 'ui')
     );
     
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.showIssueExplorer', async () => {
+      registerMonitoredCommand('xfidelity.showIssueExplorer', async () => {
         await this.issueDetailsPanel.show();
-      })
+      }, 'ui')
     );
     
     // Control Center command - main entry point for all extension functionality
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.showControlCenter', async () => {
+      registerMonitoredCommand('xfidelity.showControlCenter', async () => {
         await this.controlCenterPanel.show();
-      })
+      }, 'ui')
     );
 
     // Show output channel command for debugging
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.showOutput', () => {
+      registerMonitoredCommand('xfidelity.showOutput', () => {
         this.analysisManager.getLogger().show();
-      })
+      }, 'ui')
     );
   }
   

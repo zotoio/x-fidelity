@@ -22,9 +22,9 @@ export class DiagnosticProvider implements vscode.Disposable {
   
   updateDiagnostics(result: AnalysisResult): void {
     const startTime = performance.now();
-    const operationId = (result as any).operationId || `diagnostics-${Date.now()}`;
+    const operationId = result.operationId || `diagnostics-${Date.now()}`;
     
-    logger.debug('Updating diagnostics', { 
+    this.logger.debug('Updating diagnostics', { 
       operationId, 
       totalFiles: result.diagnostics.size 
     });
@@ -48,7 +48,7 @@ export class DiagnosticProvider implements vscode.Disposable {
     }
     
     const updateTime = performance.now() - startTime;
-    logger.debug('Diagnostics updated', { 
+    this.logger.debug('Diagnostics updated', { 
       operationId, 
       updateTime, 
       filesUpdated: diagnosticUpdates.length 
@@ -59,7 +59,7 @@ export class DiagnosticProvider implements vscode.Disposable {
     
     // Track performance
     if (updateTime > 500) {
-      logger.warn('Slow diagnostics update detected', { 
+      this.logger.warn('Slow diagnostics update detected', { 
         operationId, 
         updateTime, 
         filesUpdated: diagnosticUpdates.length 
@@ -150,7 +150,7 @@ export class DiagnosticProvider implements vscode.Disposable {
       const limitedDiagnostics = diagnostics.slice(0, maxDecorations);
       
       if (diagnostics.length > maxDecorations) {
-        logger.warn('Too many diagnostics, limiting decorations', {
+        this.logger.warn('Too many diagnostics, limiting decorations', {
           file: editor.document.uri.fsPath,
           total: diagnostics.length,
           limited: maxDecorations
@@ -183,7 +183,7 @@ export class DiagnosticProvider implements vscode.Disposable {
       
       const decorationTime = performance.now() - decorationStart;
       if (decorationTime > 50) {
-        logger.warn('Slow decoration update for file', {
+        this.logger.warn('Slow decoration update for file', {
           file: editor.document.uri.fsPath,
           decorationTime,
           decorationCount: decorations.length
@@ -192,7 +192,7 @@ export class DiagnosticProvider implements vscode.Disposable {
     }
     
     const totalTime = performance.now() - startTime;
-    logger.debug('Decorations updated', { 
+    this.logger.debug('Decorations updated', { 
       totalTime, 
       editorsProcessed: visibleEditors.length,
       totalDecorations 

@@ -196,7 +196,9 @@ export class ASTManager implements vscode.Disposable {
     // Implement LRU cache eviction
     if (this.astCache.size >= this.MAX_CACHE_SIZE) {
       const oldestKey = this.astCache.keys().next().value;
-      this.astCache.delete(oldestKey);
+      if (oldestKey) {
+        this.astCache.delete(oldestKey);
+      }
     }
 
     this.astCache.set(key, {
