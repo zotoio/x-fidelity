@@ -3,7 +3,11 @@ module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
   moduleNameMapper: {
-    "^@x-fidelity/core/(.*)$": "<rootDir>/src/$1"
+    "^@x-fidelity/core/(.*)$": "<rootDir>/src/$1",
+    "^@x-fidelity/types/(.*)$": "<rootDir>/../x-fidelity-types/src/$1",
+    "^@x-fidelity/types$": "<rootDir>/../x-fidelity-types/src/index",
+    "^@x-fidelity/plugins/(.*)$": "<rootDir>/../x-fidelity-plugins/src/$1",
+    "^@x-fidelity/plugins$": "<rootDir>/../x-fidelity-plugins/src/index"
   },
   transform: {
     "^.+\\.tsx?$": ["ts-jest", {
