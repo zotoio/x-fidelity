@@ -195,4 +195,5 @@ temp/
 
 .xfiResults
 
-**/*.vsix
+**/*.vsix# Consistency testing temp directories
+.temp/

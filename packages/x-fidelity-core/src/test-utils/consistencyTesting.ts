@@ -559,6 +559,37 @@ export class ConsistencyTester {
   }
 
   /**
+   * Find the workspace root directory
+   * @private
+   */
+  private findWorkspaceRoot(): string {
+    let currentDir = __dirname;
+    
+    // Navigate up until we find the workspace root (contains packages/ and package.json)
+    while (currentDir !== path.dirname(currentDir)) {
+      try {
+        const packageJsonPath = path.join(currentDir, 'package.json');
+        const packagesPath = path.join(currentDir, 'packages');
+        
+        if (require('fs').existsSync(packageJsonPath) && require('fs').existsSync(packagesPath)) {
+          const packageJson = JSON.parse(require('fs').readFileSync(packageJsonPath, 'utf8'));
+          // Check if this looks like the monorepo root
+          if (packageJson.workspaces && packageJson.name === 'x-fidelity-monorepo') {
+            return currentDir;
+          }
+        }
+      } catch {
+        // Continue searching up
+      }
+      currentDir = path.dirname(currentDir);
+    }
+    
+    // Fallback to current working directory if workspace root not found
+    console.warn('Could not find workspace root, using current directory');
+    return process.cwd();
+  }
+
+  /**
    * IMPORTANT: Consistency Testing Philosophy
    * 
    * This tester compares the RAW analysis results from CLI vs VSCode core engine,
@@ -676,7 +707,11 @@ export class ConsistencyTester {
    * Create a test repository on disk
    */
   private async createTestRepository(repo: TestRepository): Promise<string> {
-    this.tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'xfi-consistency-test-'));
+    // Use workspace-relative temp directory instead of system /tmp
+    const workspaceRoot = this.findWorkspaceRoot();
+    const tempDirBase = path.join(workspaceRoot, '.temp', 'consistency-tests');
+    await fs.mkdir(tempDirBase, { recursive: true });
+    this.tempDir = await fs.mkdtemp(path.join(tempDirBase, 'xfi-consistency-test-'));
     
     // Create directory structure and files
     for (const file of repo.files) {

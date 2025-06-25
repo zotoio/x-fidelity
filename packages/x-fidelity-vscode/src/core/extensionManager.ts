@@ -371,6 +371,7 @@ export class ExtensionManager implements vscode.Disposable {
         logger.info('Analysis cancellation requested...');
         await this.analysisManager.cancelAnalysis();
       }, 'analysis'),
+    );
     
     // Configuration commands
     this.disposables.push(
