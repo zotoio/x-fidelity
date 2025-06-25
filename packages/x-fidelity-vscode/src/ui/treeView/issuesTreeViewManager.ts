@@ -161,24 +161,34 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       for (const diag of diags) {
         if (diag.source !== 'X-Fidelity') {continue;}
         
-        // Extract enhanced position data if available
+        // Extract enhanced position data if available - use original XFI core data (1-based)
         const enhancedPos = (diag as any).enhancedPosition;
         let range: { start: { line: number; column: number }, end: { line: number; column: number } } | undefined = undefined;
-        let column = diag.range.start.character + 1; // Convert to 1-based
+        let line = diag.range.start.line + 1; // Convert VSCode 0-based back to 1-based for display
+        let column = diag.range.start.character + 1; // Convert VSCode 0-based back to 1-based for display
         
         if (enhancedPos) {
-          // Use enhanced range if available
-          if (enhancedPos.range) {
-            range = enhancedPos.range;
+          // Use original XFI core range data (1-based) for accurate display
+          if (enhancedPos.originalRange) {
+            range = enhancedPos.originalRange;
+            line = enhancedPos.originalRange.start.line;
+            column = enhancedPos.originalRange.start.column;
           }
-          // Use enhanced position data for more accurate column
-          if (enhancedPos.position && enhancedPos.position.column) {
-            column = enhancedPos.position.column;
+          // Use original position data for more accurate positioning
+          else if (enhancedPos.originalPosition) {
+            line = enhancedPos.originalPosition.line;
+            column = enhancedPos.originalPosition.column;
           }
-          // Use first match range if available
-          else if (enhancedPos.matches && enhancedPos.matches.length > 0 && enhancedPos.matches[0].range) {
-            range = enhancedPos.matches[0].range;
-            column = enhancedPos.matches[0].range.start.column;
+          // Use first match range if available (original XFI core data)
+          else if (enhancedPos.originalMatches && enhancedPos.originalMatches.length > 0 && enhancedPos.originalMatches[0].range) {
+            range = enhancedPos.originalMatches[0].range;
+            line = enhancedPos.originalMatches[0].range.start.line;
+            column = enhancedPos.originalMatches[0].range.start.column;
+          }
+          // Fallback to legacy fields (original 1-based values)
+          else if ((diag as any).lineNumber) {
+            line = (diag as any).lineNumber;
+            column = (diag as any).columnNumber || 1;
           }
         }
         
@@ -188,9 +198,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
           rule: String(diag.code || 'unknown'),
           severity: this.mapSeverityToString(diag.severity),
           message: diag.message,
-          line: diag.range.start.line + 1, // Convert to 1-based
-          column: column,
-          range: range, // Enhanced range data
+          line: line, // 1-based line number from XFI core
+          column: column, // 1-based column number from XFI core
+          range: range, // Original XFI core range data (1-based)
           category: (diag as any).category || 'general',
           fixable: (diag as any).fixable || false,
           exempted: false,
@@ -281,19 +291,33 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       
       // Navigate to the issue location
       if (issue.line) {
-        const line = Math.max(0, issue.line - 1); // Convert to 0-based
-        const column = Math.max(0, (issue.column || 1) - 1); // Convert to 0-based
+        // Issue line/column are 1-based from XFI core, convert to 0-based for VSCode
+        const line = Math.max(0, issue.line - 1);
+        const column = Math.max(0, (issue.column || 1) - 1);
         
-        const position = new vscode.Position(line, column);
-        const range = new vscode.Range(position, position);
+        let startPos = new vscode.Position(line, column);
+        let endPos = startPos;
         
-        editor.selection = new vscode.Selection(position, position);
+        // If we have enhanced range data, use it for more precise selection
+        if (issue.range) {
+          const startLine = Math.max(0, issue.range.start.line - 1); // Convert 1-based to 0-based
+          const startCol = Math.max(0, issue.range.start.column - 1); // Convert 1-based to 0-based
+          const endLine = Math.max(0, issue.range.end.line - 1); // Convert 1-based to 0-based
+          const endCol = Math.max(0, issue.range.end.column - 1); // Convert 1-based to 0-based
+          
+          startPos = new vscode.Position(startLine, startCol);
+          endPos = new vscode.Position(endLine, endCol);
+        }
+        
+        const range = new vscode.Range(startPos, endPos);
+        
+        editor.selection = new vscode.Selection(startPos, endPos);
         editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
         
-        // Highlight the line briefly
+        // Highlight the range briefly
         const decorationType = vscode.window.createTextEditorDecorationType({
           backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
-          isWholeLine: true
+          isWholeLine: startPos.line === endPos.line && startPos.character === endPos.character
         });
         
         editor.setDecorations(decorationType, [range]);
@@ -301,6 +325,14 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         setTimeout(() => {
           decorationType.dispose();
         }, 2000);
+        
+        logger.debug('Navigated to issue', {
+          file: issue.file,
+          xfiLine: issue.line,
+          xfiColumn: issue.column,
+          vscodeRange: { startPos, endPos },
+          hasEnhancedRange: !!issue.range
+        });
       }
     } catch (error) {
       logger.error('Failed to navigate to issue', { error, issue: issueOrItem });

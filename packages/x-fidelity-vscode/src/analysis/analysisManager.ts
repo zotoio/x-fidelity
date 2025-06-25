@@ -566,18 +566,32 @@ export class AnalysisManager implements vscode.Disposable {
     (diagnostic as any).category = error.category || 'general';
     (diagnostic as any).fixable = error.fixable || false;
     
-    // Enhanced position metadata
+    // Enhanced position metadata - preserve original XFI core data for reference
     if (error.details) {
       (diagnostic as any).enhancedPosition = {
         hasPositionData: error.details.hasPositionData || false,
         hasMultipleMatches: error.details.hasMultipleMatches || false,
-        range: error.details.range,
+        // Preserve original XFI core range data (1-based)
+        originalRange: error.details.range,
+        originalPosition: error.details.position,
+        originalMatches: error.details.matches,
+        // Also include converted range for consistency
+        range: error.details.range ? {
+          start: {
+            line: error.details.range.start?.line || 1,
+            column: error.details.range.start?.column || 1
+          },
+          end: {
+            line: error.details.range.end?.line || error.details.range.start?.line || 1,
+            column: error.details.range.end?.column || error.details.range.start?.column || 1
+          }
+        } : undefined,
         position: error.details.position,
         matches: error.details.matches,
         context: error.details.matches?.[0]?.context
       };
       
-      // Legacy position fields for backward compatibility
+      // Legacy position fields for backward compatibility (preserve original 1-based values)
       (diagnostic as any).lineNumber = error.details.lineNumber;
       (diagnostic as any).columnNumber = error.details.columnNumber;
       (diagnostic as any).startLine = error.details.startLine;
@@ -594,105 +608,127 @@ export class AnalysisManager implements vscode.Disposable {
   } {
     let line = 0, column = 0, endLine = 0, endColumn = 0;
     
-    // PRIORITY 1: Enhanced position data with range
+    // PRIORITY 1: Enhanced position data with range (XFI core provides 1-based, convert to 0-based for VSCode)
     if (details && details.range) {
       const range = details.range;
       if (range.start && typeof range.start.line === 'number' && typeof range.start.column === 'number') {
-        line = Math.max(0, range.start.line - 1); // Convert to 0-based
-        column = Math.max(0, range.start.column - 1); // Convert to 0-based
+        // XFI core provides 1-based line/column numbers, VSCode expects 0-based
+        line = Math.max(0, range.start.line - 1);
+        column = Math.max(0, range.start.column - 1);
         
         if (range.end && typeof range.end.line === 'number' && typeof range.end.column === 'number') {
-          endLine = Math.max(0, range.end.line - 1); // Convert to 0-based
-          endColumn = Math.max(0, range.end.column - 1); // Convert to 0-based
+          endLine = Math.max(0, range.end.line - 1);
+          endColumn = Math.max(0, range.end.column - 1);
         } else {
           endLine = line;
           endColumn = column + 1;
         }
         
         this.logger.debug('Using enhanced range position data', { 
-          originalRange: range, 
-          convertedRange: { line, column, endLine, endColumn }
+          xfiRange: range, 
+          vscodeRange: { line, column, endLine, endColumn }
         });
         return { line, column, endLine, endColumn };
       }
     }
     
-    // PRIORITY 2: Enhanced position data with position field
+    // PRIORITY 2: Enhanced position data with position field (XFI core provides 1-based)
     if (details && details.position) {
       const pos = details.position;
       if (typeof pos.line === 'number' && typeof pos.column === 'number') {
-        line = Math.max(0, pos.line - 1); // Convert to 0-based
-        column = Math.max(0, pos.column - 1); // Convert to 0-based
+        // XFI core provides 1-based line/column numbers, VSCode expects 0-based
+        line = Math.max(0, pos.line - 1);
+        column = Math.max(0, pos.column - 1);
         endLine = line;
         endColumn = column + 1;
         
         this.logger.debug('Using enhanced position data', { 
-          originalPosition: pos, 
-          convertedRange: { line, column, endLine, endColumn }
+          xfiPosition: pos, 
+          vscodeRange: { line, column, endLine, endColumn }
         });
         return { line, column, endLine, endColumn };
       }
     }
     
-    // PRIORITY 3: Enhanced position data from first match in matches array
+    // PRIORITY 3: Enhanced position data from first match in matches array (XFI core provides 1-based)
     if (details && details.matches && Array.isArray(details.matches) && details.matches.length > 0) {
       const firstMatch = details.matches[0];
       if (firstMatch.range && firstMatch.range.start) {
-        line = Math.max(0, firstMatch.range.start.line - 1); // Convert to 0-based
-        column = Math.max(0, firstMatch.range.start.column - 1); // Convert to 0-based
+        // XFI core provides 1-based line/column numbers, VSCode expects 0-based
+        line = Math.max(0, firstMatch.range.start.line - 1);
+        column = Math.max(0, firstMatch.range.start.column - 1);
         
         if (firstMatch.range.end) {
-          endLine = Math.max(0, firstMatch.range.end.line - 1); // Convert to 0-based
-          endColumn = Math.max(0, firstMatch.range.end.column - 1); // Convert to 0-based
+          endLine = Math.max(0, firstMatch.range.end.line - 1);
+          endColumn = Math.max(0, firstMatch.range.end.column - 1);
         } else {
           endLine = line;
-          endColumn = column + firstMatch.match.length;
+          endColumn = column + (firstMatch.match ? firstMatch.match.length : 1);
         }
         
         this.logger.debug('Using enhanced match position data', { 
-          match: firstMatch, 
-          convertedRange: { line, column, endLine, endColumn }
+          xfiMatch: firstMatch, 
+          vscodeRange: { line, column, endLine, endColumn }
         });
         return { line, column, endLine, endColumn };
       }
     }
     
-    // PRIORITY 4: Legacy position fields (for backward compatibility)
+    // PRIORITY 4: Legacy position fields (XFI core provides 1-based, convert to 0-based)
     if (details) {
-      // New enhanced fields first
-      if (typeof details.startLine === 'number') {
-        line = Math.max(0, details.startLine - 1);
+      let hasLegacyData = false;
+      
+      // Enhanced fields first (1-based from XFI core)
+      if (typeof details.startLine === 'number' && details.startLine > 0) {
+        line = details.startLine - 1;
+        hasLegacyData = true;
       }
-      if (typeof details.endLine === 'number') {
-        endLine = Math.max(0, details.endLine - 1);
+      if (typeof details.endLine === 'number' && details.endLine > 0) {
+        endLine = details.endLine - 1;
+        hasLegacyData = true;
       }
-      if (typeof details.startColumn === 'number') {
-        column = Math.max(0, details.startColumn - 1);
+      if (typeof details.startColumn === 'number' && details.startColumn > 0) {
+        column = details.startColumn - 1;
+        hasLegacyData = true;
       }
-      if (typeof details.endColumn === 'number') {
-        endColumn = Math.max(0, details.endColumn - 1);
+      if (typeof details.endColumn === 'number' && details.endColumn > 0) {
+        endColumn = details.endColumn - 1;
+        hasLegacyData = true;
       }
       
-      // Legacy fields as fallback
-      if (line === 0 && typeof details.lineNumber === 'number') {
-        line = Math.max(0, details.lineNumber - 1);
+      // Legacy fields as fallback (1-based from XFI core)
+      if (!hasLegacyData && typeof details.lineNumber === 'number' && details.lineNumber > 0) {
+        line = details.lineNumber - 1;
         endLine = line;
+        hasLegacyData = true;
       }
-      if (column === 0 && typeof details.columnNumber === 'number') {
-        column = Math.max(0, details.columnNumber - 1);
+      if (!hasLegacyData && typeof details.columnNumber === 'number' && details.columnNumber > 0) {
+        column = details.columnNumber - 1;
         endColumn = column + (details.length || 1);
+        hasLegacyData = true;
       }
       
-      if (line > 0 || column > 0) {
+      if (hasLegacyData) {
+        // Ensure we have valid end positions
+        if (endLine === 0 && line > 0) {endLine = line;}
+        if (endColumn === 0 && column >= 0) {endColumn = column + 1;}
+        
         this.logger.debug('Using legacy position data', { 
-          details: { lineNumber: details.lineNumber, columnNumber: details.columnNumber, startLine: details.startLine, endLine: details.endLine, startColumn: details.startColumn, endColumn: details.endColumn },
-          convertedRange: { line, column, endLine, endColumn }
+          xfiDetails: { 
+            lineNumber: details.lineNumber, 
+            columnNumber: details.columnNumber, 
+            startLine: details.startLine, 
+            endLine: details.endLine, 
+            startColumn: details.startColumn, 
+            endColumn: details.endColumn 
+          },
+          vscodeRange: { line, column, endLine, endColumn }
         });
         return { line, column, endLine, endColumn };
       }
     }
     
-    // PRIORITY 5: Fallback - parse from message text
+    // PRIORITY 5: Fallback - parse from message text (assume 1-based in message, convert to 0-based)
     const patterns = [
       /line\s+(\d+)(?:,?\s*column\s+(\d+))?/i,
       /(\d+):(\d+)/,
@@ -703,25 +739,34 @@ export class AnalysisManager implements vscode.Disposable {
     for (const pattern of patterns) {
       const match = message.match(pattern);
       if (match) {
-        line = Math.max(0, parseInt(match[1], 10) - 1);
-        if (match[2]) {
-          column = Math.max(0, parseInt(match[2], 10) - 1);
+        const parsedLine = parseInt(match[1], 10);
+        const parsedColumn = match[2] ? parseInt(match[2], 10) : 1;
+        
+        if (parsedLine > 0) {
+          line = parsedLine - 1; // Convert 1-based to 0-based
+          endLine = line;
         }
-        endLine = line;
-        endColumn = column + 1;
+        if (parsedColumn > 0) {
+          column = parsedColumn - 1; // Convert 1-based to 0-based
+          endColumn = column + 1;
+        }
         
         this.logger.debug('Using fallback message parsing', { 
           message, 
-          pattern: pattern.source, 
-          convertedRange: { line, column, endLine, endColumn }
+          pattern: pattern.source,
+          parsedLine,
+          parsedColumn,
+          vscodeRange: { line, column, endLine, endColumn }
         });
         break;
       }
     }
     
-    // Ensure valid ranges
-    if (endLine < line) {endLine = line;}
-    if (endColumn <= column) {endColumn = column + 1;}
+    // Ensure valid ranges (all should be 0-based for VSCode)
+    line = Math.max(0, line);
+    column = Math.max(0, column);
+    endLine = Math.max(line, endLine);
+    endColumn = Math.max(column + 1, endColumn);
     
     return { line, column, endLine, endColumn };
   }

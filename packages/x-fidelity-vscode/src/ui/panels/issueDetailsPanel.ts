@@ -1105,39 +1105,53 @@ export class IssueDetailsPanel implements vscode.Disposable {
       const editor = await vscode.window.showTextDocument(document);
       
       // Enhanced navigation with precise positioning
+      // Note: line/column parameters are 1-based from XFI core, range is also 1-based
       if (range) {
-        // Use enhanced range data for precise selection
+        // Use enhanced range data for precise selection (convert 1-based to 0-based)
         const startPos = new vscode.Position(
-          Math.max(0, range.start.line - 1), // Convert to 0-based
-          Math.max(0, range.start.column - 1) // Convert to 0-based
+          Math.max(0, range.start.line - 1), // Convert XFI 1-based to VSCode 0-based
+          Math.max(0, range.start.column - 1) // Convert XFI 1-based to VSCode 0-based
         );
         const endPos = new vscode.Position(
-          Math.max(0, range.end.line - 1), // Convert to 0-based
-          Math.max(0, range.end.column - 1) // Convert to 0-based
+          Math.max(0, range.end.line - 1), // Convert XFI 1-based to VSCode 0-based
+          Math.max(0, range.end.column - 1) // Convert XFI 1-based to VSCode 0-based
         );
         
         const selection = new vscode.Selection(startPos, endPos);
         editor.selection = selection;
         editor.revealRange(selection, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
         
-        logger.debug('Navigated to issue with range', { file, range, selection });
+        logger.debug('Navigated to issue with XFI range', { 
+          file, 
+          xfiRange: range, 
+          vscodeSelection: { startPos, endPos } 
+        });
       } else if (column !== undefined && column > 0) {
-        // Use line and column for precise positioning
+        // Use line and column for precise positioning (convert 1-based to 0-based)
         const position = new vscode.Position(
-          Math.max(0, line - 1), // Convert to 0-based
-          Math.max(0, column - 1) // Convert to 0-based
+          Math.max(0, line - 1), // Convert XFI 1-based to VSCode 0-based
+          Math.max(0, column - 1) // Convert XFI 1-based to VSCode 0-based
         );
         editor.selection = new vscode.Selection(position, position);
         editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
         
-        logger.debug('Navigated to issue with line and column', { file, line, column, position });
+        logger.debug('Navigated to issue with XFI line and column', { 
+          file, 
+          xfiLine: line, 
+          xfiColumn: column, 
+          vscodePosition: position 
+        });
       } else {
-        // Fallback to line-only navigation
+        // Fallback to line-only navigation (convert 1-based to 0-based)
         const position = new vscode.Position(Math.max(0, line - 1), 0);
         editor.selection = new vscode.Selection(position, position);
         editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
         
-        logger.debug('Navigated to issue with line only', { file, line, position });
+        logger.debug('Navigated to issue with XFI line only', { 
+          file, 
+          xfiLine: line, 
+          vscodePosition: position 
+        });
       }
     } catch (error) {
       logger.error('Failed to navigate to issue', { file, line, column, range, error });
