@@ -1,5 +1,5 @@
 import * as path from 'path';
-import * as Mocha from 'mocha';
+import Mocha from 'mocha';
 import { glob } from 'glob';
 
 export function run(): Promise<void> {
@@ -16,14 +16,14 @@ export function run(): Promise<void> {
 	return new Promise(async (c, e) => {
 		try {
 			const files = await glob('**/**.test.js', { cwd: testsRoot, absolute: false });
-f
+
 			// Add files to the test suite
 			for (const f of files) {
 				mocha.addFile(path.resolve(testsRoot, f));
 			}
 
 			// Run the mocha test
-			mocha.run(failures => {
+			mocha.run((failures: number) => {
 				if (failures > 0) {
 					e(new Error(`${failures} tests failed.`));
 				} else {
@@ -199,7 +199,8 @@ suite('Comprehensive VSCode Extension Test Suite', () => {
         );
         
       } catch (error) {
-        assert.fail(`Archetype detection failed: ${error}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        assert.fail(`Archetype detection failed: ${errorMessage}`);
       }
     });
 
@@ -230,7 +231,8 @@ suite('Comprehensive VSCode Extension Test Suite', () => {
         await new Promise(resolve => setTimeout(resolve, 3000));
         console.log('Analysis with directory completed');
       } catch (error) {
-        console.log('Analysis with directory failed as expected:', error.message);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log('Analysis with directory failed as expected:', errorMessage);
       }
     });
 
@@ -243,7 +245,8 @@ suite('Comprehensive VSCode Extension Test Suite', () => {
         await new Promise(resolve => setTimeout(resolve, 2000));
         console.log('Control Center opened successfully');
       } catch (error) {
-        console.log('Control Center failed as expected:', error.message);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log('Control Center failed as expected:', errorMessage);
       }
       
       // Test Issues Tree refresh
@@ -252,7 +255,8 @@ suite('Comprehensive VSCode Extension Test Suite', () => {
         await new Promise(resolve => setTimeout(resolve, 2000));
         console.log('Issues Tree refreshed successfully');
       } catch (error) {
-        console.log('Issues Tree refresh failed as expected:', error.message);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log('Issues Tree refresh failed as expected:', errorMessage);
       }
       
       // Test status bar (should be available after extension activation)
@@ -269,7 +273,8 @@ suite('Comprehensive VSCode Extension Test Suite', () => {
       } catch (error) {
         assert.ok(error instanceof Error, 'Should throw proper Error objects');
         assert.ok(error.message.length > 0, 'Error messages should not be empty');
-        console.log('Invalid directory handled correctly:', error.message);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log('Invalid directory handled correctly:', errorMessage);
       }
       
       // Test with no workspace
@@ -278,7 +283,8 @@ suite('Comprehensive VSCode Extension Test Suite', () => {
         await vscode.commands.executeCommand('xfidelity.runAnalysis');
       } catch (error) {
         assert.ok(error instanceof Error, 'Should throw proper Error objects');
-        console.log('No workspace handled correctly:', error.message);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log('No workspace handled correctly:', errorMessage);
       }
     });
   });
@@ -301,7 +307,8 @@ suite('Comprehensive VSCode Extension Test Suite', () => {
         console.log(`  Exemptions: ${extensionResult.XFI_RESULT.exemptCount}`);
         
       } catch (error) {
-        assert.fail(`Extension analysis failed: ${error}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        assert.fail(`Extension analysis failed: ${errorMessage}`);
       }
     });
   });
@@ -408,7 +415,8 @@ suite('Comprehensive VSCode Extension Test Suite', () => {
     try {
       await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     } catch (error) {
-      console.log('Cleanup error (expected):', error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.log('Cleanup error (expected):', errorMessage);
     }
   });
 });
