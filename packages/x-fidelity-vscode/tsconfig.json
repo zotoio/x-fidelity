@@ -6,6 +6,12 @@
     "rootDir": "src",
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "types": ["node", "vscode"],
+    "baseUrl": ".",
+    "paths": {
+      "@x-fidelity/types": ["../x-fidelity-types/dist/index"],
+      "@x-fidelity/core": ["../x-fidelity-core/dist/index"],
+      "@x-fidelity/plugins": ["../x-fidelity-plugins/dist/index"]
+    },
     "noEmitOnError": true,
     "target": "ES2022",
     "lib": ["ES2022"],

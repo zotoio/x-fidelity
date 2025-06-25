@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "chalk": "^4.1.2",
-    "glob": "^8.1.0"
+    "glob": "11.0.3"
   },
   "engines": {
     "node": ">=22.16.0",

@@ -31,6 +31,10 @@
     "test:consistency:baseline": "yarn build && cd packages/x-fidelity-core && node -e \"require('./dist/test-utils/consistencyTesting.js').generateBaselineReport().then(r => require('fs').writeFileSync('../../consistency-baseline.txt', r))\"",
     "test:consistency:validate": "yarn build && cd packages/x-fidelity-core && node dist/test-utils/consistencyTestingCLI.js validate"
   },
+  "dependencies": {
+    "@types/node": "22",
+    "ajv": "^8.17.1"
+  },
   "devDependencies": {
     "commitizen": "^4.3.1",
     "cz-conventional-changelog": "^3.3.0",
