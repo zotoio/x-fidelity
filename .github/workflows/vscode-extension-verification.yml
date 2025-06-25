@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       test_insiders:
-        description: 'Test against VSCode Insiders'
+        description: 'Test against VSCode Insiders.'
         required: false
         default: false
         type: boolean
