@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import type { AnalysisResult } from '../analysis/analysisManager';
 import { ConfigManager } from '../configuration/configManager';
+import { VSCodeLogger } from '../utils/vscodeLogger';
 
 export class DiagnosticProvider implements vscode.Disposable {
   private diagnosticCollection: vscode.DiagnosticCollection;
@@ -10,8 +11,10 @@ export class DiagnosticProvider implements vscode.Disposable {
   private decorationUpdateDebouncer?: NodeJS.Timeout;
   private readonly DECORATION_UPDATE_DELAY = 100; // ms
   private lastUpdateTime = 0;
+  private logger: VSCodeLogger;
   
   constructor(private configManager: ConfigManager) {
+    this.logger = new VSCodeLogger('DiagnosticProvider');
     this.diagnosticCollection = vscode.languages.createDiagnosticCollection('x-fidelity');
     this.setupDecorations();
     this.setupEventListeners();
