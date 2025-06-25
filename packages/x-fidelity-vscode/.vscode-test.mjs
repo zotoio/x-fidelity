@@ -14,13 +14,17 @@ export default defineConfig([
     },
     env: {
       NODE_ENV: 'test',
-      DISPLAY: ':99'
+      DISPLAY: ':99',
+      XVFB: '1'
     },
     launchArgs: [
       '--no-sandbox',
       '--disable-gpu',
       '--disable-dev-shm-usage',
-      '--disable-extensions-except=zotoio.x-fidelity-vscode'
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor',
+      '--disable-extensions-except=zotoio.x-fidelity-vscode',
+      '--user-data-dir=/tmp/vscode-test-user-data'
     ]
   },
   {
@@ -36,13 +40,17 @@ export default defineConfig([
     },
     env: {
       NODE_ENV: 'test',
-      DISPLAY: ':99'
+      DISPLAY: ':99',
+      XVFB: '1'
     },
     launchArgs: [
       '--no-sandbox',
       '--disable-gpu',
       '--disable-dev-shm-usage',
-      '--disable-extensions-except=zotoio.x-fidelity-vscode'
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor',
+      '--disable-extensions-except=zotoio.x-fidelity-vscode',
+      '--user-data-dir=/tmp/vscode-test-user-data'
     ]
   },
   {
@@ -60,13 +68,17 @@ export default defineConfig([
     env: {
       NODE_ENV: 'test',
       DISPLAY: ':99',
+      XVFB: '1',
       SCREENSHOTS: process.env.SCREENSHOTS || 'false'
     },
     launchArgs: [
       '--no-sandbox',
       '--disable-gpu',
       '--disable-dev-shm-usage',
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor',
       '--disable-extensions-except=zotoio.x-fidelity-vscode',
+      '--user-data-dir=/tmp/vscode-test-user-data',
       '--new-window'
     ]
   },
@@ -83,13 +95,17 @@ export default defineConfig([
     },
     env: {
       NODE_ENV: 'test',
-      DISPLAY: ':99'
+      DISPLAY: ':99',
+      XVFB: '1'
     },
     launchArgs: [
       '--no-sandbox',
       '--disable-gpu',
       '--disable-dev-shm-usage',
-      '--disable-extensions-except=zotoio.x-fidelity-vscode'
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor',
+      '--disable-extensions-except=zotoio.x-fidelity-vscode',
+      '--user-data-dir=/tmp/vscode-test-user-data'
     ]
   },
   {

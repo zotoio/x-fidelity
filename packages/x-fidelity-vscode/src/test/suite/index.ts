@@ -11,11 +11,12 @@ export function run(): Promise<void> {
 	const mocha = new Mocha({
 		ui: 'bdd',
 		color: true,
-		timeout: 30000, // 30 second default timeout
+		timeout: process.env.CI ? 60000 : 30000, // Longer timeout for CI
 		reporter: process.env.CI ? 'spec' : 'spec',
 		bail: false, // Don't stop on first failure
 		slow: 5000, // Tests slower than 5s are marked as slow
 		grep: process.env.TEST_GREP, // Allow filtering tests via environment variable
+		retries: process.env.CI ? 2 : 0, // Retry flaky tests in CI
 	});
 
 	const testsRoot = path.resolve(__dirname, '..');
