@@ -1,0 +1,35 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs  
+dist/
+build/
+out/
+coverage/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# X-Fidelity outputs
+.xfiResults/
+x-fidelity-*.log
+
+# Test outputs
+*.log
+test-results/
+
+# Temporary files
+tmp/
+temp/
+*.tmp 

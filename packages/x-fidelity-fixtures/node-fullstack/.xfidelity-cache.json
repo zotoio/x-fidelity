@@ -1,0 +1,774 @@
+{
+  "result": {
+    "metadata": {
+      "XFI_RESULT": {
+        "repoXFIConfig": {
+          "sensitiveFileFalsePositives": [
+            "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/src/fixtures/example-config.js"
+          ],
+          "additionalPlugins": [
+            "xfiPluginSimpleExample"
+          ],
+          "additionalFacts": [
+            "customFact"
+          ],
+          "additionalOperators": [
+            "customOperator"
+          ],
+          "additionalRules": [
+            {
+              "name": "fixtures-custom-rule",
+              "conditions": {
+                "all": [
+                  {
+                    "fact": "fileData",
+                    "path": "$.fileName",
+                    "operator": "equal",
+                    "value": "REPO_GLOBAL_CHECK"
+                  },
+                  {
+                    "fact": "customFact",
+                    "operator": "customOperator",
+                    "value": "custom fact data"
+                  }
+                ]
+              },
+              "event": {
+                "type": "warning",
+                "params": {
+                  "message": "Custom rule detected in fixtures - this tests plugin functionality",
+                  "details": {
+                    "fact": "customFact"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "issueDetails": [
+          {
+            "filePath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/src/components/UserAuth.tsx",
+            "errors": [
+              {
+                "ruleFailure": "sensitiveLogging-iterative",
+                "level": "warning",
+                "details": {
+                  "message": "Potential sensitive data detected. This must not be logged or exposed. Note: You can exclude files from this check by adding their relative paths to the 'sensitiveFileFalsePositives' array in .xfi-config.json.",
+                  "conditionDetails": {
+                    "fact": "fileData",
+                    "operator": "notEqual",
+                    "value": "REPO_GLOBAL_CHECK"
+                  },
+                  "allConditions": [
+                    {
+                      "fact": "fileData",
+                      "operator": "notEqual",
+                      "value": "REPO_GLOBAL_CHECK",
+                      "path": "$.fileName"
+                    },
+                    {
+                      "fact": "repoFileAnalysis",
+                      "operator": "fileContains",
+                      "value": true,
+                      "params": {
+                        "checkPattern": [
+                          "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                          "(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)",
+                          "(private[_-]?key|ssh[_-]?key)",
+                          "(oauth[_-]?token|jwt[_-]?token)",
+                          "db[_-]?password"
+                        ],
+                        "resultFact": "fileResults"
+                      }
+                    }
+                  ],
+                  "conditionType": "all",
+                  "ruleDescription": "No description available",
+                  "filePath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/src/components/UserAuth.tsx",
+                  "fileName": "UserAuth.tsx",
+                  "details": [
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 9,
+                      "line": "  api_*** se..."
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 15,
+                      "line": "  cons***tat..."
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 25,
+                      "line": "      ***', ..."
+                    },
+                    {
+                      "match": "db[_-]?password",
+                      "lineNumber": 26,
+                      "line": "      *** //..."
+                    },
+                    {
+                      "match": "(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)",
+                      "lineNumber": 27,
+                      "line": "      aws_access_key_id: 'AKIA1234567890',  // T..."
+                    },
+                    {
+                      "match": "(private[_-]?key|ssh[_-]?key)",
+                      "lineNumber": 33,
+                      "line": "...ole***e_k..."
+                    },
+                    {
+                      "match": "(private[_-]?key|ssh[_-]?key)",
+                      "lineNumber": 33,
+                      "line": "...iva***ive..."
+                    },
+                    {
+                      "match": "(oauth[_-]?token|jwt[_-]?token)",
+                      "lineNumber": 34,
+                      "line": "...ein***ive..."
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 35,
+                      "line": "...th ***ive..."
+                    },
+                    {
+                      "match": "(oauth[_-]?token|jwt[_-]?token)",
+                      "lineNumber": 35,
+                      "line": "...uth***ive..."
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 40,
+                      "line": "      ***// ..."
+                    },
+                    {
+                      "match": "(private[_-]?key|ssh[_-]?key)",
+                      "lineNumber": 45,
+                      "line": "...err***// ..."
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 76,
+                      "line": "      ***token}"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 83,
+                      "line": "... ha***n })}>"
+                    }
+                  ]
+                }
+              },
+              {
+                "ruleFailure": "noDatabases-iterative",
+                "level": "warning",
+                "details": {
+                  "message": "code must not directly call databases",
+                  "conditionDetails": {
+                    "fact": "fileData",
+                    "operator": "notEqual",
+                    "value": "REPO_GLOBAL_CHECK"
+                  },
+                  "allConditions": [
+                    {
+                      "fact": "fileData",
+                      "operator": "notEqual",
+                      "value": "REPO_GLOBAL_CHECK",
+                      "path": "$.fileName"
+                    },
+                    {
+                      "fact": "repoFileAnalysis",
+                      "operator": "fileContains",
+                      "value": true,
+                      "params": {
+                        "checkPattern": [
+                          "[\\s\\'\\\"\\.](oracle)[\\s\\'\\\"\\.]",
+                          "[\\s\\'\\\"\\.](postgres)[\\s\\'\\\"\\.]",
+                          "[\\s\\'\\\"\\.](mongodb)[\\s\\'\\\"\\.]"
+                        ],
+                        "resultFact": "fileResultsDB"
+                      }
+                    }
+                  ],
+                  "conditionType": "all",
+                  "ruleDescription": "No description available",
+                  "filePath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/src/components/UserAuth.tsx",
+                  "fileName": "UserAuth.tsx",
+                  "details": [
+                    {
+                      "match": "[\\s\\'\\\"\\.](oracle)[\\s\\'\\\"\\.]",
+                      "lineNumber": 20,
+                      "line": "...ole.log('About to require oracle database package...');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](postgres)[\\s\\'\\\"\\.]",
+                      "lineNumber": 21,
+                      "line": "...ole.log('About to require postgres database package...');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](mongodb)[\\s\\'\\\"\\.]",
+                      "lineNumber": 22,
+                      "line": "...ole.log('About to require mongodb database package...');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](oracle)[\\s\\'\\\"\\.]",
+                      "lineNumber": 52,
+                      "line": "...console.log('Initializing oracle connection...');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](postgres)[\\s\\'\\\"\\.]",
+                      "lineNumber": 53,
+                      "line": "...  console.log('Setting up postgres database...');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](mongodb)[\\s\\'\\\"\\.]",
+                      "lineNumber": 54,
+                      "line": "... console.log('Configuring mongodb instance...');"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "filePath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/src/utils/database.js",
+            "errors": [
+              {
+                "ruleFailure": "sensitiveLogging-iterative",
+                "level": "warning",
+                "details": {
+                  "message": "Potential sensitive data detected. This must not be logged or exposed. Note: You can exclude files from this check by adding their relative paths to the 'sensitiveFileFalsePositives' array in .xfi-config.json.",
+                  "conditionDetails": {
+                    "fact": "fileData",
+                    "operator": "notEqual",
+                    "value": "REPO_GLOBAL_CHECK"
+                  },
+                  "allConditions": [
+                    {
+                      "fact": "fileData",
+                      "operator": "notEqual",
+                      "value": "REPO_GLOBAL_CHECK",
+                      "path": "$.fileName"
+                    },
+                    {
+                      "fact": "repoFileAnalysis",
+                      "operator": "fileContains",
+                      "value": true,
+                      "params": {
+                        "checkPattern": [
+                          "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                          "(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)",
+                          "(private[_-]?key|ssh[_-]?key)",
+                          "(oauth[_-]?token|jwt[_-]?token)",
+                          "db[_-]?password"
+                        ],
+                        "resultFact": "fileResults"
+                      }
+                    }
+                  ],
+                  "conditionType": "all",
+                  "ruleDescription": "No description available",
+                  "filePath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/src/utils/database.js",
+                  "fileName": "database.js",
+                  "details": [
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 12,
+                      "line": "      ***2345',"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 12,
+                      "line": "      ***2345',"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 13,
+                      "line": "      ***V1Q..."
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 14,
+                      "line": "      ***2E7..."
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 15,
+                      "line": "      ***-key',"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 15,
+                      "line": "      ***-key',"
+                    },
+                    {
+                      "match": "(private[_-]?key|ssh[_-]?key)",
+                      "lineNumber": 16,
+                      "line": "      ***ATE..."
+                    },
+                    {
+                      "match": "(private[_-]?key|ssh[_-]?key)",
+                      "lineNumber": 17,
+                      "line": "      ***yc2..."
+                    },
+                    {
+                      "match": "(oauth[_-]?token|jwt[_-]?token)",
+                      "lineNumber": 18,
+                      "line": "      ***sIn..."
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 19,
+                      "line": "      ***f...',"
+                    },
+                    {
+                      "match": "(oauth[_-]?token|jwt[_-]?token)",
+                      "lineNumber": 19,
+                      "line": "      ***f...',"
+                    },
+                    {
+                      "match": "db[_-]?password",
+                      "lineNumber": 20,
+                      "line": "      ***swo..."
+                    },
+                    {
+                      "match": "db[_-]?password",
+                      "lineNumber": 20,
+                      "line": "..._pa***2023',"
+                    },
+                    {
+                      "match": "(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)",
+                      "lineNumber": 21,
+                      "line": "      aws_access_key_id: 'AKIAIOSFODNN7EXAMPLE',"
+                    },
+                    {
+                      "match": "(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)",
+                      "lineNumber": 22,
+                      "line": "      aws_secret_access_key: 'wJalrXUtnFEMI/K7MDENG/..."
+                    },
+                    {
+                      "match": "db[_-]?password",
+                      "lineNumber": 35,
+                      "line": "...   ***xpo..."
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 39,
+                      "line": "...nec***_key);"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 39,
+                      "line": "...h api_key:', this.config.api_key);"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 46,
+                      "line": "    co***con..."
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 46,
+                      "line": "... postgres:', this.config.auth_token);"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 52,
+                      "line": "...'Po***_ke..."
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 52,
+                      "line": "...ecret_key:', this.config.secret_key);"
+                    },
+                    {
+                      "match": "(private[_-]?key|ssh[_-]?key)",
+                      "lineNumber": 59,
+                      "line": "....lo***e_k..."
+                    },
+                    {
+                      "match": "(private[_-]?key|ssh[_-]?key)",
+                      "lineNumber": 59,
+                      "line": "...ivate_key:', this.config.private_key);"
+                    },
+                    {
+                      "match": "db[_-]?password",
+                      "lineNumber": 66,
+                      "line": "      ***ssword"
+                    },
+                    {
+                      "match": "(oauth[_-]?token|jwt[_-]?token)",
+                      "lineNumber": 71,
+                      "line": "...('M***ken..."
+                    },
+                    {
+                      "match": "(oauth[_-]?token|jwt[_-]?token)",
+                      "lineNumber": 71,
+                      "line": "...jwt_token:', this.config.jwt_token);"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 78,
+                      "line": "    co***_key);"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 79,
+                      "line": "...uth***oken);"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 80,
+                      "line": "...ess***oken);"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 81,
+                      "line": "...ecr***_key);"
+                    },
+                    {
+                      "match": "(private[_-]?key|ssh[_-]?key)",
+                      "lineNumber": 82,
+                      "line": "...iva***_key);"
+                    },
+                    {
+                      "match": "(private[_-]?key|ssh[_-]?key)",
+                      "lineNumber": 83,
+                      "line": "    co***_key);"
+                    },
+                    {
+                      "match": "(oauth[_-]?token|jwt[_-]?token)",
+                      "lineNumber": 84,
+                      "line": "...JWT***oken);"
+                    },
+                    {
+                      "match": "(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)",
+                      "lineNumber": 85,
+                      "line": "...th ***oken);"
+                    },
+                    {
+                      "match": "(oauth[_-]?token|jwt[_-]?token)",
+                      "lineNumber": 85,
+                      "line": "...uth***oken);"
+                    },
+                    {
+                      "match": "db[_-]?password",
+                      "lineNumber": 86,
+                      "line": "... Pa***word);"
+                    },
+                    {
+                      "match": "(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)",
+                      "lineNumber": 87,
+                      "line": "...ss Key ID:', this.config.aws_access_key_id);"
+                    },
+                    {
+                      "match": "(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)",
+                      "lineNumber": 88,
+                      "line": "...ccess Key:', this.config.aws_secret_access_key);"
+                    }
+                  ]
+                }
+              },
+              {
+                "ruleFailure": "noDatabases-iterative",
+                "level": "warning",
+                "details": {
+                  "message": "code must not directly call databases",
+                  "conditionDetails": {
+                    "fact": "fileData",
+                    "operator": "notEqual",
+                    "value": "REPO_GLOBAL_CHECK"
+                  },
+                  "allConditions": [
+                    {
+                      "fact": "fileData",
+                      "operator": "notEqual",
+                      "value": "REPO_GLOBAL_CHECK",
+                      "path": "$.fileName"
+                    },
+                    {
+                      "fact": "repoFileAnalysis",
+                      "operator": "fileContains",
+                      "value": true,
+                      "params": {
+                        "checkPattern": [
+                          "[\\s\\'\\\"\\.](oracle)[\\s\\'\\\"\\.]",
+                          "[\\s\\'\\\"\\.](postgres)[\\s\\'\\\"\\.]",
+                          "[\\s\\'\\\"\\.](mongodb)[\\s\\'\\\"\\.]"
+                        ],
+                        "resultFact": "fileResultsDB"
+                      }
+                    }
+                  ],
+                  "conditionType": "all",
+                  "ruleDescription": "No description available",
+                  "filePath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/src/utils/database.js",
+                  "fileName": "database.js",
+                  "details": [
+                    {
+                      "match": "[\\s\\'\\\"\\.](oracle)[\\s\\'\\\"\\.]",
+                      "lineNumber": 31,
+                      "line": "    const oracle = require('oracle');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](oracle)[\\s\\'\\\"\\.]",
+                      "lineNumber": 31,
+                      "line": "    const oracle = require('oracle');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](oracle)[\\s\\'\\\"\\.]",
+                      "lineNumber": 33,
+                      "line": "... const connection = await oracle.createConnection({"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](postgres)[\\s\\'\\\"\\.]",
+                      "lineNumber": 45,
+                      "line": "...  console.log('Setting up postgres connection...');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](postgres)[\\s\\'\\\"\\.]",
+                      "lineNumber": 49,
+                      "line": "    const postgres = require('postgres');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](postgres)[\\s\\'\\\"\\.]",
+                      "lineNumber": 49,
+                      "line": "    const postgres = require('postgres');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](mongodb)[\\s\\'\\\"\\.]",
+                      "lineNumber": 58,
+                      "line": "...console.log('Initializing mongodb connection...');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](mongodb)[\\s\\'\\\"\\.]",
+                      "lineNumber": 62,
+                      "line": "    const mongodb = require('mongodb');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](mongodb)[\\s\\'\\\"\\.]",
+                      "lineNumber": 62,
+                      "line": "    const mongodb = require('mongodb');"
+                    },
+                    {
+                      "match": "[\\s\\'\\\"\\.](mongodb)[\\s\\'\\\"\\.]",
+                      "lineNumber": 63,
+                      "line": "    const client = new mongodb.MongoClient('mongodb://lo..."
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "filePath": "REPO_GLOBAL_CHECK",
+            "errors": [
+              {
+                "ruleFailure": "missingRequiredFiles-global",
+                "level": "fatality",
+                "details": {
+                  "message": "Required files are missing from the repository",
+                  "conditionDetails": {
+                    "fact": "fileData",
+                    "operator": "equal",
+                    "value": "REPO_GLOBAL_CHECK"
+                  },
+                  "allConditions": [
+                    {
+                      "fact": "fileData",
+                      "operator": "equal",
+                      "value": "REPO_GLOBAL_CHECK",
+                      "path": "$.fileName"
+                    },
+                    {
+                      "fact": "missingRequiredFiles",
+                      "operator": "missingRequiredFiles",
+                      "value": true,
+                      "params": {
+                        "requiredFiles": [
+                          "/README.md",
+                          "../../src/\\core//cli&.ts",
+                          "missingRequiredFiles-testing.js"
+                        ],
+                        "resultFact": "missingRequiredFilesResult"
+                      }
+                    }
+                  ],
+                  "conditionType": "all",
+                  "ruleDescription": "No description available",
+                  "filePath": "REPO_GLOBAL_CHECK",
+                  "fileName": "REPO_GLOBAL_CHECK"
+                }
+              }
+            ]
+          }
+        ],
+        "telemetryData": {
+          "repoUrl": "",
+          "configServer": "none",
+          "hostInfo": {
+            "platform": "linux",
+            "release": "6.11.0-26-generic",
+            "type": "Linux",
+            "arch": "x64",
+            "cpus": 12,
+            "totalMemory": 33270951936,
+            "freeMemory": 16796459008
+          },
+          "userInfo": {
+            "username": "andrewv",
+            "homedir": "/home/andrewv",
+            "shell": "/bin/bash"
+          },
+          "startTime": 1750758712154
+        },
+        "memoryUsage": {
+          "heapTotal": 111370240,
+          "heapUsed": 103858776,
+          "external": 31688315,
+          "rss": 344096768
+        },
+        "factMetrics": {
+          "repoFileAnalysis": {
+            "executionCount": 12,
+            "totalExecutionTime": 0.0919,
+            "longestExecutionTime": 0.0201,
+            "averageExecutionTime": 0.0077
+          },
+          "repoDependencyAnalysis": {
+            "executionCount": 4,
+            "totalExecutionTime": 0.036,
+            "longestExecutionTime": 0.0194,
+            "averageExecutionTime": 0.009
+          }
+        },
+        "options": {
+          "jsonTTL": "60",
+          "archetype": "node-fullstack",
+          "mode": "analyze",
+          "extraPlugins": [],
+          "openaiEnabled": false,
+          "logLevel": "info",
+          "telemetryEnabled": true,
+          "maxFileSize": 1048576,
+          "timeout": 30000
+        },
+        "startTime": 1750758712154,
+        "finishTime": 1750758712334,
+        "durationSeconds": 0.18,
+        "xfiVersion": "4.0.0",
+        "archetype": "node-fullstack",
+        "fileCount": 3,
+        "totalIssues": 5,
+        "warningCount": 4,
+        "errorCount": 0,
+        "fatalityCount": 1,
+        "exemptCount": 0,
+        "repoPath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack",
+        "repoUrl": ""
+      }
+    },
+    "diagnostics": {
+      "src/components/UserAuth.tsx": [
+        {
+          "severity": "Warning",
+          "message": "Potential sensitive data detected. This must not be logged or exposed. Note: You can exclude files from this check by adding their relative paths to the 'sensitiveFileFalsePositives' array in .xfi-config.json.",
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 0,
+              "character": 1
+            }
+          ],
+          "source": "X-Fidelity",
+          "code": "sensitiveLogging-iterative"
+        },
+        {
+          "severity": "Warning",
+          "message": "code must not directly call databases",
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 0,
+              "character": 1
+            }
+          ],
+          "source": "X-Fidelity",
+          "code": "noDatabases-iterative"
+        }
+      ],
+      "src/utils/database.js": [
+        {
+          "severity": "Warning",
+          "message": "Potential sensitive data detected. This must not be logged or exposed. Note: You can exclude files from this check by adding their relative paths to the 'sensitiveFileFalsePositives' array in .xfi-config.json.",
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 0,
+              "character": 1
+            }
+          ],
+          "source": "X-Fidelity",
+          "code": "sensitiveLogging-iterative"
+        },
+        {
+          "severity": "Warning",
+          "message": "code must not directly call databases",
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 0,
+              "character": 1
+            }
+          ],
+          "source": "X-Fidelity",
+          "code": "noDatabases-iterative"
+        }
+      ],
+      "README.md": [
+        {
+          "severity": "Hint",
+          "message": "Required files are missing from the repository",
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 0,
+              "character": 1
+            }
+          ],
+          "source": "X-Fidelity",
+          "code": "missingRequiredFiles-global"
+        }
+      ]
+    },
+    "timestamp": 1750758712362,
+    "duration": 239,
+    "summary": {
+      "totalIssues": 5,
+      "filesAnalyzed": 3,
+      "analysisTimeMs": 239,
+      "issuesByLevel": {
+        "warning": 4,
+        "fatality": 1
+      }
+    }
+  },
+  "timestamp": 1750758712370,
+  "hash": "076cf452072193ba8bf35f1c9c47e23e"
+}
