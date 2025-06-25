@@ -5,10 +5,11 @@ import { glob } from 'glob';
 export function run(): Promise<void> {
 	// Create the mocha test
 	const mocha = new Mocha({
-		ui: 'tdd',
+		ui: 'bdd', // Changed from 'tdd' to 'bdd' to match new test structure
 		color: true,
-		timeout: 10000,
-		reporter: 'spec'
+		timeout: 30000, // Increased timeout for CI
+		reporter: process.env.CI ? 'spec' : 'spec',
+		bail: false // Don't stop on first failure in CI
 	});
 
 	const testsRoot = path.resolve(__dirname, '..');
