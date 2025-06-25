@@ -21,7 +21,7 @@
   "activationEvents": [
     "onStartupFinished",
     "workspaceContains:**/package.json",
-    "workspaceContains:**/pom.xml", 
+    "workspaceContains:**/pom.xml",
     "workspaceContains:**/build.gradle",
     "workspaceContains:**/requirements.txt",
     "workspaceContains:**/*.csproj",
@@ -362,7 +362,7 @@
           "description": "Maximum number of concurrent analysis operations"
         },
         "xfidelity.performance.enableDetailedLogging": {
-          "type": "boolean", 
+          "type": "boolean",
           "default": false,
           "description": "Enable detailed performance logging (may impact performance)"
         },
@@ -516,6 +516,7 @@
     "glob": "11.0.3",
     "mocha": "^11.7.0",
     "npm-run-all": "^4.1.5",
+    "prettier": "^3.6.1",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3"
   },
