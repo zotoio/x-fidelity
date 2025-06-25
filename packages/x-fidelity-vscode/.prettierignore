@@ -1,0 +1,29 @@
+# Build outputs
+dist/
+dist-test/
+out/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.d.ts
+*.map
+
+# Test outputs
+coverage/
+.nyc_output/
+
+# VSCode specific
+.vscode-test/
+.vscode-test-profile/
+*.vsix
+
+# Logs
+*.log
+
+# Config files that should maintain their formatting
+package.json
+tsconfig*.json
+.vscode-test.mjs
