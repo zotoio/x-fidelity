@@ -21,10 +21,11 @@
   "activationEvents": [
     "onStartupFinished",
     "workspaceContains:**/package.json",
-    "workspaceContains:**/pom.xml",
+    "workspaceContains:**/pom.xml", 
     "workspaceContains:**/build.gradle",
     "workspaceContains:**/requirements.txt",
-    "workspaceContains:**/*.csproj"
+    "workspaceContains:**/*.csproj",
+    "onCommand:xfidelity.runAnalysis"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -354,6 +355,26 @@
           "type": "number",
           "default": 5,
           "description": "Cache time-to-live in minutes."
+        },
+        "xfidelity.performance.maxConcurrentOperations": {
+          "type": "number",
+          "default": 2,
+          "description": "Maximum number of concurrent analysis operations"
+        },
+        "xfidelity.performance.enableDetailedLogging": {
+          "type": "boolean", 
+          "default": false,
+          "description": "Enable detailed performance logging (may impact performance)"
+        },
+        "xfidelity.performance.astCacheSize": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum number of AST trees to cache"
+        },
+        "xfidelity.performance.decorationLimit": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum number of inline decorations per file"
         }
       }
     },

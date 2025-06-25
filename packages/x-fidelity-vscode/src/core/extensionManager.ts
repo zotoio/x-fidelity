@@ -279,66 +279,98 @@ export class ExtensionManager implements vscode.Disposable {
   }
   
   private registerCommands(): void {
-    // Test command to verify extension is working
+    // Wrap all commands with performance monitoring
+    const registerMonitoredCommand = (
+      commandId: string, 
+      handler: (...args: any[]) => any,
+      category: string = 'general'
+    ) => {
+      return vscode.commands.registerCommand(commandId, async (...args) => {
+        const startTime = performance.now();
+        const operationId = `${commandId}-${Date.now()}`;
+        
+        logger.debug(`Command started: ${commandId}`, { operationId, args: args.length });
+        
+        try {
+          const result = await handler(...args);
+          const duration = performance.now() - startTime;
+          
+          logger.debug(`Command completed: ${commandId}`, { 
+            operationId, 
+            duration, 
+            category 
+          });
+          
+          // Warn about slow commands
+          if (duration > 1000) {
+            logger.warn(`Slow command detected: ${commandId}`, { 
+              operationId, 
+              duration, 
+              category 
+            });
+          }
+          
+          return result;
+          
+        } catch (error) {
+          const duration = performance.now() - startTime;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          
+          logger.error(`Command failed: ${commandId}`, { 
+            operationId, 
+            duration, 
+            error: errorMessage,
+            category 
+          });
+          
+          // Show user-friendly error for UI commands
+          if (category === 'ui') {
+            vscode.window.showErrorMessage(`${commandId} failed: ${errorMessage}`);
+          }
+          
+          throw error;
+        }
+      });
+    };
+
+    // Register commands with monitoring
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.test', () => {
+      registerMonitoredCommand('xfidelity.test', () => {
         vscode.window.showInformationMessage('X-Fidelity extension is working!');
-      })
-    );
-    
-    // Test command to get current analysis results for testing - returns complete ResultMetadata
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.getTestResults', () => {
+      }, 'test'),
+      
+      registerMonitoredCommand('xfidelity.getTestResults', () => {
         const results = this.analysisManager.getCurrentResults();
         if (results) {
           // Return the complete ResultMetadata object for consistency testing
           return results.metadata;
         }
         return null;
-      })
-    );
-    
-    // Main analysis command
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.runAnalysis', async () => {
-        try {
-          logger.info('Manual analysis triggered...');
-          
-          // Show the analysis output channel to make logs visible
-          this.analysisManager.getLogger().show();
-          
-          vscode.window.showInformationMessage('Starting X-Fidelity analysis...');
-          
-          const result = await this.analysisManager.runAnalysis({ forceRefresh: true });
-          if (result) {
-            logger.info('Analysis completed:', { diagnostics: result.diagnostics.size });
-            vscode.window.showInformationMessage(
-              `Analysis complete: Found ${result.metadata.XFI_RESULT.totalIssues} issues`
-            );
-          } else {
-            vscode.window.showWarningMessage('Analysis completed but no results were returned');
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          logger.error('Analysis failed:', { error: errorMessage });
-          vscode.window.showErrorMessage(`Analysis failed: ${errorMessage}`);
+      }, 'test'),
+      
+      registerMonitoredCommand('xfidelity.runAnalysis', async () => {
+        logger.info('Manual analysis triggered...');
+        
+        // Show the analysis output channel to make logs visible
+        this.analysisManager.getLogger().show();
+        
+        vscode.window.showInformationMessage('Starting X-Fidelity analysis...');
+        
+        const result = await this.analysisManager.runAnalysis({ forceRefresh: true });
+        if (result) {
+          logger.info('Analysis completed:', { diagnostics: result.diagnostics.size });
+          vscode.window.showInformationMessage(
+            `Analysis complete: Found ${result.metadata.XFI_RESULT.totalIssues} issues`
+          );
+        } else {
+          vscode.window.showWarningMessage('Analysis completed but no results were returned');
         }
-      })
-    );
+      }, 'analysis'),
     
-    // Cancel analysis command
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.cancelAnalysis', async () => {
-        try {
-          logger.info('Analysis cancellation requested...');
-          await this.analysisManager.cancelAnalysis();
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          logger.error('Failed to cancel analysis:', { error: errorMessage });
-          vscode.window.showErrorMessage(`Failed to cancel analysis: ${errorMessage}`);
-        }
-      })
-    );
+      registerMonitoredCommand('xfidelity.cancelAnalysis', async () => {
+        logger.info('Analysis cancellation requested...');
+        await this.analysisManager.cancelAnalysis();
+      }, 'analysis'),
     
     // Configuration commands
     this.disposables.push(

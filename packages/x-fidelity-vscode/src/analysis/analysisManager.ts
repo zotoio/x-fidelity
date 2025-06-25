@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { performance } from 'perf_hooks';
 import { analyzeCodebase } from '@x-fidelity/core';
 import { ConfigManager, type ExtensionConfig } from '../configuration/configManager';
 import { CacheManager } from './cacheManager';
@@ -78,18 +79,20 @@ export class AnalysisManager implements vscode.Disposable {
   }
   
   async runAnalysis(options?: { forceRefresh?: boolean }): Promise<AnalysisResult | null> {
+    const operationId = `analysis-${Date.now()}`;
+    const startTime = performance.now();
+    
     if (this.isAnalyzing) {
-      this.logger.info('Analysis already in progress, skipping request');
+      this.logger.warn('Analysis already in progress, skipping request', { operationId });
       vscode.window.showInformationMessage('Analysis already in progress...');
       return null;
     }
     
     const config = this.configManager.getConfig();
-    
-    // Get the target directory for analysis (handles dev vs user context)
     const analysisTargetPath = getAnalysisTargetDirectory();
+    
     if (!analysisTargetPath) {
-      this.logger.error('No valid analysis target found');
+      this.logger.error('No valid analysis target found', { operationId });
       vscode.window.showErrorMessage('No workspace or analysis target found');
       return null;
     }
@@ -101,102 +104,119 @@ export class AnalysisManager implements vscode.Disposable {
     // Log context information
     const isDevelopmentContext = isXFidelityDevelopmentContext();
     this.logger.info('Analysis context determined', {
+      operationId,
       isDevelopmentContext,
       analysisTargetPath,
       workspaceDisplayPath: workspaceFolder?.uri.fsPath,
       workspaceName
     });
 
-    // Create cancellation token for this analysis
+    // Create cancellation token with timeout
     this.currentCancellationTokenSource = new vscode.CancellationTokenSource();
+    const timeoutHandle = setTimeout(() => {
+      this.logger.warn('Analysis timeout reached, cancelling', { 
+        operationId, 
+        timeout: config.analysisTimeout 
+      });
+      this.currentCancellationTokenSource?.cancel();
+    }, config.analysisTimeout);
+
     this.isAnalyzing = true;
-    const startTime = Date.now();
     
     this.logger.info('Starting analysis', { 
+      operationId,
       analysisTargetPath,
       workspaceName,
       archetype: config.archetype,
       forceRefresh: options?.forceRefresh,
-      context: isDevelopmentContext ? 'development' : 'user'
+      context: isDevelopmentContext ? 'development' : 'user',
+      startTime
     });
     
     try {
-      // Check if cancelled before starting
-      if (this.currentCancellationTokenSource.token.isCancellationRequested) {
-        this.logger.info('Analysis cancelled before starting');
-        return null;
-      }
-
-      // Check cache first (skip if force refresh is requested)
-      this.logger.debug('Checking cache for existing results', { forceRefresh: options?.forceRefresh });
+      // Performance checkpoint: Cache check
+      const cacheCheckStart = performance.now();
       const cached = await this.cacheManager.getCachedResult(analysisTargetPath, options?.forceRefresh);
+      const cacheCheckTime = performance.now() - cacheCheckStart;
+      
+      this.logger.debug('Cache check completed', { 
+        operationId, 
+        cacheCheckTime, 
+        cacheHit: !!cached 
+      });
+      
       if (cached && !this.currentCancellationTokenSource.token.isCancellationRequested) {
-        this.logger.info('Using cached analysis result');
+        this.logger.info('Using cached analysis result', { operationId, cacheCheckTime });
         this.onAnalysisComplete.fire(cached);
         return cached;
       }
       
-      // Update state
+      // Update state with progress tracking
       this.onAnalysisStateChanged.fire({
         status: 'analyzing',
-        progress: 0
+        progress: 0,
+        operationId
       });
       
-      // Run X-Fidelity analysis with enhanced progress tracking
-      this.logger.debug('Performing X-Fidelity analysis with progress tracking');
-      const result = await this.performAnalysisWithProgress(analysisTargetPath, workspaceName, config, this.currentCancellationTokenSource.token);
+      // Run analysis with comprehensive progress tracking
+      const result = await this.performAnalysisWithProgress(
+        analysisTargetPath, 
+        workspaceName,
+        config, 
+        this.currentCancellationTokenSource.token,
+        operationId
+      );
       
-      // Check if cancelled after analysis
-      if (this.currentCancellationTokenSource.token.isCancellationRequested) {
-        this.logger.info('Analysis was cancelled');
-        return null;
-      }
-
-      this.logger.debug('Converting results to diagnostics', { 
-        totalIssues: result.XFI_RESULT.totalIssues,
-        issueDetails: result.XFI_RESULT.issueDetails.length 
-      });
+      // Performance checkpoint: Diagnostics conversion
+      const diagnosticsStart = performance.now();
       const diagnostics = this.convertToDiagnostics(result);
-      this.logger.debug('Diagnostics created', { 
-        diagnosticsCount: diagnostics.size,
-        files: Array.from(diagnostics.keys())
+      const diagnosticsTime = performance.now() - diagnosticsStart;
+      
+      this.logger.debug('Diagnostics conversion completed', { 
+        operationId, 
+        diagnosticsTime,
+        diagnosticsCount: diagnostics.size 
       });
       
+      const totalTime = performance.now() - startTime;
       const analysisResult: AnalysisResult = {
         metadata: result,
         diagnostics,
         timestamp: Date.now(),
-        duration: Date.now() - startTime,
+        duration: totalTime,
         summary: {
           totalIssues: result.XFI_RESULT.totalIssues,
           filesAnalyzed: result.XFI_RESULT.fileCount,
-          analysisTimeMs: Date.now() - startTime,
+          analysisTimeMs: totalTime,
           issuesByLevel: this.calculateIssuesByLevel(result)
-        }
+        },
+        operationId
       };
       
-      this.logger.info('Analysis completed', { 
-        duration: analysisResult.duration,
+      // Performance monitoring
+      if (totalTime > 10000) { // 10 seconds
+        this.logger.warn('Slow analysis detected', { 
+          operationId, 
+          totalTime, 
+          filesAnalyzed: result.XFI_RESULT.fileCount 
+        });
+      }
+      
+      this.logger.info('Analysis completed successfully', { 
+        operationId,
+        duration: totalTime,
         totalIssues: result.XFI_RESULT.totalIssues,
         filesAnalyzed: result.XFI_RESULT.fileCount
       });
       
-      // Cache result
-      if (config.cacheResults && !this.currentCancellationTokenSource.token.isCancellationRequested) {
-        this.logger.debug('Caching analysis result');
-        await this.cacheManager.cacheResult(analysisTargetPath, analysisResult);
-      }
-      
-      // Generate reports
-      if (config.generateReports && !this.currentCancellationTokenSource.token.isCancellationRequested) {
-        this.logger.debug('Generating reports');
-        await this.reportManager.generateReports(result, analysisTargetPath);
-      }
+      // Cache and generate reports asynchronously
+      this.performPostAnalysisOperations(analysisTargetPath, analysisResult, config, operationId);
       
       // Update state
       this.onAnalysisStateChanged.fire({
         status: 'complete',
-        progress: 100
+        progress: 100,
+        operationId
       });
       
       this.lastAnalysisResult = analysisResult;
@@ -204,31 +224,43 @@ export class AnalysisManager implements vscode.Disposable {
       return analysisResult;
       
     } catch (error) {
+      const totalTime = performance.now() - startTime;
+      
       if (this.currentCancellationTokenSource?.token.isCancellationRequested) {
-        this.logger.info('Analysis cancelled by user');
+        this.logger.info('Analysis cancelled by user', { operationId, totalTime });
         this.onAnalysisStateChanged.fire({
           status: 'idle',
-          progress: 0
+          progress: 0,
+          operationId
         });
         return null;
       }
 
       const analysisError = error instanceof Error ? error : new Error(String(error));
-      
-      this.logger.error('Analysis failed', { error: analysisError.message, stack: analysisError.stack });
+      this.logger.error('Analysis failed', { 
+        operationId, 
+        error: analysisError.message, 
+        totalTime,
+        stack: analysisError.stack 
+      });
       
       this.onAnalysisStateChanged.fire({
         status: 'error',
-        error: analysisError
+        error: analysisError,
+        operationId
       });
       
       vscode.window.showErrorMessage(`Analysis failed: ${analysisError.message}`);
       return null;
       
     } finally {
+      clearTimeout(timeoutHandle);
       this.isAnalyzing = false;
       this.currentCancellationTokenSource?.dispose();
       this.currentCancellationTokenSource = undefined;
+      
+      const finalTime = performance.now() - startTime;
+      this.logger.debug('Analysis cleanup completed', { operationId, finalTime });
     }
   }
   
@@ -289,11 +321,44 @@ export class AnalysisManager implements vscode.Disposable {
     );
   }
   
+  // Add this new method for async post-processing:
+  private async performPostAnalysisOperations(
+    analysisTargetPath: string,
+    analysisResult: AnalysisResult,
+    config: ExtensionConfig,
+    operationId: string
+  ): Promise<void> {
+    try {
+      // Cache result asynchronously
+      if (config.cacheResults) {
+        const cacheStart = performance.now();
+        await this.cacheManager.cacheResult(analysisTargetPath, analysisResult);
+        const cacheTime = performance.now() - cacheStart;
+        this.logger.debug('Result cached', { operationId, cacheTime });
+      }
+      
+      // Generate reports asynchronously
+      if (config.generateReports) {
+        const reportStart = performance.now();
+        await this.reportManager.generateReports(analysisResult.metadata, analysisTargetPath);
+        const reportTime = performance.now() - reportStart;
+        this.logger.debug('Reports generated', { operationId, reportTime });
+      }
+      
+    } catch (error) {
+      this.logger.error('Post-analysis operations failed', { 
+        operationId, 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  }
+
   private async performAnalysisWithProgress(
     analysisTargetPath: string,
     workspaceName: string, 
     config: ExtensionConfig,
-    cancellationToken: vscode.CancellationToken
+    cancellationToken: vscode.CancellationToken,
+    operationId: string
   ): Promise<ResultMetadata> {
     return await this.progressManager.runWithProgress(
       'X-Fidelity Analysis',
@@ -371,7 +436,8 @@ export class AnalysisManager implements vscode.Disposable {
     analysisTargetPath: string,
     workspaceName: string, 
     config: ExtensionConfig,
-    cancellationToken: vscode.CancellationToken
+    cancellationToken: vscode.CancellationToken,
+    operationId?: string
   ): Promise<ResultMetadata> {
     return await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,

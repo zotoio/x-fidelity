@@ -7,6 +7,9 @@ export class DiagnosticProvider implements vscode.Disposable {
   private diagnosticCollection: vscode.DiagnosticCollection;
   private decorationType?: vscode.TextEditorDecorationType;
   private disposables: vscode.Disposable[] = [];
+  private decorationUpdateDebouncer?: NodeJS.Timeout;
+  private readonly DECORATION_UPDATE_DELAY = 100; // ms
+  private lastUpdateTime = 0;
   
   constructor(private configManager: ConfigManager) {
     this.diagnosticCollection = vscode.languages.createDiagnosticCollection('x-fidelity');
@@ -15,19 +18,50 @@ export class DiagnosticProvider implements vscode.Disposable {
   }
   
   updateDiagnostics(result: AnalysisResult): void {
+    const startTime = performance.now();
+    const operationId = (result as any).operationId || `diagnostics-${Date.now()}`;
+    
+    logger.debug('Updating diagnostics', { 
+      operationId, 
+      totalFiles: result.diagnostics.size 
+    });
+    
+    // Clear existing diagnostics efficiently
     this.clearDiagnostics();
     
-    // Always update diagnostics regardless of decoration settings
-    // This ensures Problems panel shows all issues even if inline decorations are disabled
+    // Batch update diagnostics for better performance
+    const diagnosticUpdates: Array<[vscode.Uri, vscode.Diagnostic[]]> = [];
+    
     for (const [filePath, diagnostics] of result.diagnostics) {
       const fileUri = this.getFileUri(filePath);
       if (fileUri) {
-        this.diagnosticCollection.set(fileUri, diagnostics);
+        diagnosticUpdates.push([fileUri, diagnostics]);
       }
     }
     
-    // Update decorations for visible editors (respects showInlineDecorations setting)
-    this.updateDecorations();
+    // Apply all updates at once
+    for (const [uri, diagnostics] of diagnosticUpdates) {
+      this.diagnosticCollection.set(uri, diagnostics);
+    }
+    
+    const updateTime = performance.now() - startTime;
+    logger.debug('Diagnostics updated', { 
+      operationId, 
+      updateTime, 
+      filesUpdated: diagnosticUpdates.length 
+    });
+    
+    // Debounce decoration updates to prevent excessive redraws
+    this.scheduleDecorationUpdate();
+    
+    // Track performance
+    if (updateTime > 500) {
+      logger.warn('Slow diagnostics update detected', { 
+        operationId, 
+        updateTime, 
+        filesUpdated: diagnosticUpdates.length 
+      });
+    }
   }
   
   clearDiagnostics(): void {
@@ -76,24 +110,53 @@ export class DiagnosticProvider implements vscode.Disposable {
     );
   }
   
+  // Add this new method:
+  private scheduleDecorationUpdate(): void {
+    if (this.decorationUpdateDebouncer) {
+      clearTimeout(this.decorationUpdateDebouncer);
+    }
+    
+    this.decorationUpdateDebouncer = setTimeout(() => {
+      this.updateDecorations();
+    }, this.DECORATION_UPDATE_DELAY);
+  }
+
+  // Optimize updateDecorations method:
   private updateDecorations(): void {
+    const startTime = performance.now();
     const config = this.configManager.getConfig();
     
     if (!config.showInlineDecorations || !this.decorationType) {
       return;
     }
     
-    for (const editor of vscode.window.visibleTextEditors) {
+    const visibleEditors = vscode.window.visibleTextEditors;
+    let totalDecorations = 0;
+    
+    for (const editor of visibleEditors) {
+      const decorationStart = performance.now();
+      
       const diagnostics = this.diagnosticCollection.get(editor.document.uri);
       if (!diagnostics || diagnostics.length === 0) {
         editor.setDecorations(this.decorationType, []);
         continue;
       }
       
+      // Limit decorations for performance (max 100 per file)
+      const maxDecorations = 100;
+      const limitedDiagnostics = diagnostics.slice(0, maxDecorations);
+      
+      if (diagnostics.length > maxDecorations) {
+        logger.warn('Too many diagnostics, limiting decorations', {
+          file: editor.document.uri.fsPath,
+          total: diagnostics.length,
+          limited: maxDecorations
+        });
+      }
+      
       const decorations: vscode.DecorationOptions[] = [];
       
-      for (const diagnostic of diagnostics) {
-        // Only show decorations for configured severity levels
+      for (const diagnostic of limitedDiagnostics) {
         if (!this.shouldShowDecoration(diagnostic, config)) {
           continue;
         }
@@ -113,7 +176,24 @@ export class DiagnosticProvider implements vscode.Disposable {
       }
       
       editor.setDecorations(this.decorationType, decorations);
+      totalDecorations += decorations.length;
+      
+      const decorationTime = performance.now() - decorationStart;
+      if (decorationTime > 50) {
+        logger.warn('Slow decoration update for file', {
+          file: editor.document.uri.fsPath,
+          decorationTime,
+          decorationCount: decorations.length
+        });
+      }
     }
+    
+    const totalTime = performance.now() - startTime;
+    logger.debug('Decorations updated', { 
+      totalTime, 
+      editorsProcessed: visibleEditors.length,
+      totalDecorations 
+    });
   }
   
   private shouldShowDecoration(diagnostic: vscode.Diagnostic, config: any): boolean {
@@ -275,6 +355,9 @@ export class DiagnosticProvider implements vscode.Disposable {
   }
   
   dispose(): void {
+    if (this.decorationUpdateDebouncer) {
+      clearTimeout(this.decorationUpdateDebouncer);
+    }
     this.diagnosticCollection.dispose();
     this.decorationType?.dispose();
     this.disposables.forEach(d => d.dispose());
