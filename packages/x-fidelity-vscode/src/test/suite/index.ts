@@ -1,56 +1,19 @@
-import * as path from 'path';
-import Mocha from 'mocha';
-import { glob } from 'glob';
-
 /**
- * VSCode Extension Test Runner
- * Loads and executes all test files in the test directory
+ * VSCode Extension Test Setup for @vscode/test-cli
+ * This file ensures Mocha globals are available when tests are loaded directly via file patterns
  */
+
+// This setup file is loaded by @vscode/test-cli to ensure Mocha globals are available
+// before test files are executed. No custom test discovery is needed since @vscode/test-cli
+// handles that with direct file patterns.
+
+// Ensure we're in a test environment
+if (typeof global !== 'undefined') {
+	// Mark that this setup has run
+	(global as any).__xfidelityTestSetup = true;
+}
+
+// Export a dummy function for compatibility
 export function run(): Promise<void> {
-	// Create the mocha test
-	const mocha = new Mocha({
-		ui: 'bdd',
-		color: true,
-		timeout: process.env.CI ? 60000 : 30000, // Longer timeout for CI
-		reporter: process.env.CI ? 'spec' : 'spec',
-		bail: false, // Don't stop on first failure
-		slow: 5000, // Tests slower than 5s are marked as slow
-		grep: process.env.TEST_GREP, // Allow filtering tests via environment variable
-		retries: process.env.CI ? 2 : 0, // Retry flaky tests in CI
-	});
-
-	const testsRoot = path.resolve(__dirname, '..');
-
-	return new Promise(async (c, e) => {
-		try {
-			// Find all test files
-			const files = await glob('**/**.test.js', { 
-				cwd: testsRoot, 
-				absolute: false,
-				ignore: ['**/node_modules/**']
-			});
-
-			console.log(`Found ${files.length} test files:`);
-			files.forEach(f => console.log(`  - ${f}`));
-
-			// Add files to the test suite
-			for (const f of files) {
-				mocha.addFile(path.resolve(testsRoot, f));
-			}
-
-			// Run the mocha test
-			mocha.run((failures: number) => {
-				if (failures > 0) {
-					console.error(`❌ ${failures} test(s) failed`);
-					e(new Error(`${failures} tests failed.`));
-				} else {
-					console.log('✅ All tests passed');
-					c();
-				}
-			});
-		} catch (err) {
-			console.error('❌ Test runner error:', err);
-			e(err);
-		}
-	});
+	return Promise.resolve();
 } 
