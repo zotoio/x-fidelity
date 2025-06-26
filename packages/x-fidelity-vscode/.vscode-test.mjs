@@ -6,6 +6,14 @@ export default defineConfig([
     files: 'out/test/test/unit/**/*.test.js',
     version: 'stable',
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
+    extensionDevelopmentPath: '.',
+    extensionTestsPath: './out/test/suite/index.js',
+    mocha: {
+      ui: 'bdd',
+      timeout: 30000,
+      color: true,
+      reporter: process.env.CI ? 'spec' : 'spec'
+    },
     env: {
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
@@ -27,6 +35,8 @@ export default defineConfig([
     files: 'out/test/test/integration/**/*.test.js',
     version: 'stable',
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
+    extensionDevelopmentPath: '.',
+    extensionTestsPath: './out/test/suite/index.js',
     mocha: {
       ui: 'bdd',
       timeout: 45000,
