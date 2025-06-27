@@ -3,23 +3,17 @@ import { defineConfig } from '@vscode/test-cli';
 export default defineConfig([
   {
     label: 'unitTests',
-    files: 'out/test/test/unit/**/*.test.js',
     version: 'stable',
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
     extensionDevelopmentPath: '.',
     extensionTestsPath: './out/test/suite/index.js',
-    mocha: {
-      ui: 'bdd',
-      timeout: 30000,
-      color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
-    },
     env: {
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
       XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp'
+      TMPDIR: '/tmp',
+      TEST_PATTERN: 'out/test/test/unit/**/*.test.js'
     },
     launchArgs: [
       '--no-sandbox',
@@ -32,23 +26,18 @@ export default defineConfig([
   },
   {
     label: 'integrationTests', 
-    files: 'out/test/test/integration/**/*.test.js',
     version: 'stable',
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
     extensionDevelopmentPath: '.',
     extensionTestsPath: './out/test/suite/index.js',
-    mocha: {
-      ui: 'bdd',
-      timeout: 45000,
-      color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
-    },
     env: {
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
       XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp'
+      TMPDIR: '/tmp',
+      TEST_PATTERN: 'out/test/test/integration/**/*.test.js',
+      TEST_TIMEOUT: '45000'
     },
     launchArgs: [
       '--no-sandbox',
@@ -61,22 +50,19 @@ export default defineConfig([
   },
   {
     label: 'comprehensiveTests',
-    files: 'out/test/test/suite/comprehensive.test.js',
     version: 'stable',
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    mocha: {
-      ui: 'bdd',
-      timeout: 120000,
-      color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
-    },
+    extensionDevelopmentPath: '.',
+    extensionTestsPath: './out/test/suite/index.js',
     env: {
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
       XDG_RUNTIME_DIR: '/tmp',
       TMPDIR: '/tmp',
-      SCREENSHOTS: process.env.SCREENSHOTS || 'false'
+      SCREENSHOTS: process.env.SCREENSHOTS || 'false',
+      TEST_PATTERN: 'out/test/test/suite/comprehensive.test.js',
+      TEST_TIMEOUT: '120000'
     },
     launchArgs: [
       '--no-sandbox',
@@ -89,21 +75,18 @@ export default defineConfig([
   },
   {
     label: 'progressTests',
-    files: 'out/test/test/suite/progressManager.test.js',
     version: 'stable',
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    mocha: {
-      ui: 'bdd',
-      timeout: 60000,
-      color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
-    },
+    extensionDevelopmentPath: '.',
+    extensionTestsPath: './out/test/suite/index.js',
     env: {
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
       XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp'
+      TMPDIR: '/tmp',
+      TEST_PATTERN: 'out/test/test/suite/progressManager.test.js',
+      TEST_TIMEOUT: '60000'
     },
     launchArgs: [
       '--no-sandbox',
@@ -116,21 +99,18 @@ export default defineConfig([
   },
   {
     label: 'e2eTests',
-    files: 'out/test/test/e2e/**/*.test.js',
     version: 'stable',
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    mocha: {
-      ui: 'bdd',
-      timeout: 60000,
-      color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
-    },
+    extensionDevelopmentPath: '.',
+    extensionTestsPath: './out/test/suite/index.js',
     env: {
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
       XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp'
+      TMPDIR: '/tmp',
+      TEST_PATTERN: 'out/test/test/e2e/**/*.test.js',
+      TEST_TIMEOUT: '60000'
     },
     launchArgs: [
       '--no-sandbox',
@@ -143,21 +123,18 @@ export default defineConfig([
   },
   {
     label: 'consistencyTests',
-    files: 'out/test/test-utils/**/*.test.js',
     version: 'stable',
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    mocha: {
-      ui: 'bdd',
-      timeout: 60000,
-      color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
-    },
+    extensionDevelopmentPath: '.',
+    extensionTestsPath: './out/test/suite/index.js',
     env: {
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
       XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp'
+      TMPDIR: '/tmp',
+      TEST_PATTERN: 'out/test/test-utils/**/*.test.js',
+      TEST_TIMEOUT: '60000'
     },
     launchArgs: [
       '--no-sandbox',

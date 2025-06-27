@@ -7,11 +7,15 @@ import { glob } from 'glob';
  * Loads and executes all test files in the test directory
  */
 export function run(): Promise<void> {
+	// Get test configuration from environment
+	const testPattern = process.env.TEST_PATTERN || '**/**.test.js';
+	const testTimeout = parseInt(process.env.TEST_TIMEOUT || '30000', 10);
+	
 	// Create the mocha test
 	const mocha = new Mocha({
 		ui: 'bdd',
 		color: true,
-		timeout: process.env.CI ? 60000 : 30000, // Longer timeout for CI
+		timeout: testTimeout,
 		reporter: process.env.CI ? 'spec' : 'spec',
 		bail: false, // Don't stop on first failure
 		slow: 5000, // Tests slower than 5s are marked as slow
@@ -23,15 +27,21 @@ export function run(): Promise<void> {
 
 	return new Promise(async (c, e) => {
 		try {
-			// Find all test files
-			const files = await glob('**/**.test.js', { 
+			// Find test files based on pattern
+			const files = await glob(testPattern, { 
 				cwd: testsRoot, 
 				absolute: false,
 				ignore: ['**/node_modules/**']
 			});
 
-			console.log(`Found ${files.length} test files:`);
+			console.log(`Found ${files.length} test files matching pattern "${testPattern}":`);
 			files.forEach(f => console.log(`  - ${f}`));
+
+			if (files.length === 0) {
+				console.log('✅ No test files found - skipping');
+				c();
+				return;
+			}
 
 			// Add files to the test suite
 			for (const f of files) {
