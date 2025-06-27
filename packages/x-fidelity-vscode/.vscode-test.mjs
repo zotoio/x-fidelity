@@ -147,22 +147,19 @@ export default defineConfig([
   },
   {
     label: 'allTests',
-    files: 'out/test/test/**/*.test.js',
     version: 'stable',
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    mocha: {
-      ui: 'bdd',
-      timeout: 120000,
-      color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
-    },
+    extensionDevelopmentPath: '.',
+    extensionTestsPath: './out/test/suite/index.js',
     env: {
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
       XDG_RUNTIME_DIR: '/tmp',
       TMPDIR: '/tmp',
-      SCREENSHOTS: process.env.SCREENSHOTS || 'false'
+      SCREENSHOTS: process.env.SCREENSHOTS || 'false',
+      TEST_PATTERN: 'out/test/test/**/*.test.js',
+      TEST_TIMEOUT: '120000'
     },
     launchArgs: [
       '--no-sandbox',
