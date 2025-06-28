@@ -1292,6 +1292,13 @@ Average Warnings: ${Math.round(trends.warningCounts.reduce((a, b) => a + b, 0) /
       })
     );
 
+    // Show output command
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.showOutput', () => {
+        vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+      })
+    );
+
     // Add other essential commands with fallback behavior
     const fallbackCommands = [
       'xfidelity.detectArchetype',
@@ -1299,7 +1306,17 @@ Average Warnings: ${Math.round(trends.warningCounts.reduce((a, b) => a + b, 0) /
       'xfidelity.openReports',
       'xfidelity.showDashboard',
       'xfidelity.showIssueExplorer',
-      'xfidelity.showAdvancedSettings'
+      'xfidelity.showAdvancedSettings',
+      'xfidelity.runAnalysisWithDir',
+      'xfidelity.cancelAnalysis',
+      'xfidelity.addExemption',
+      'xfidelity.addBulkExemptions',
+      'xfidelity.showRuleDocumentation',
+      'xfidelity.showReportHistory',
+      'xfidelity.exportReport',
+      'xfidelity.shareReport',
+      'xfidelity.compareReports',
+      'xfidelity.viewTrends'
     ];
 
     fallbackCommands.forEach(commandId => {

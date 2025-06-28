@@ -24,8 +24,7 @@
     "workspaceContains:**/pom.xml",
     "workspaceContains:**/build.gradle",
     "workspaceContains:**/requirements.txt",
-    "workspaceContains:**/*.csproj",
-    "onCommand:xfidelity.runAnalysis"
+    "workspaceContains:**/*.csproj"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -62,6 +61,10 @@
       {
         "command": "xfidelity.resetConfiguration",
         "title": "X-Fidelity: Reset Configuration"
+      },
+      {
+        "command": "xfidelity.showReportHistory",
+        "title": "X-Fidelity: Show Report History"
       },
       {
         "command": "xfidelity.addExemption",
@@ -182,7 +185,6 @@
           "enum": [
             "node-fullstack",
             "react-spa",
-            "next-fullstack",
             "java-microservice",
             "python-service",
             "dotnet-service"
@@ -511,7 +513,7 @@
     "@typescript-eslint/parser": "^8.35.0",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.5.0",
+    "@vscode/vsce": "^3.6.0",
     "esbuild": "^0.25.5",
     "eslint": "^9.29.0",
     "glob": "11.0.3",
@@ -531,11 +533,11 @@
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
     "watch": "node --no-warnings=ExperimentalWarning esbuild.config.js --watch",
     "package": "npm run build && vsce package --yarn",
-    "pretest": "npm run compile && npm run lint && npm run clean:test-artifacts",
-    "test": "yarn lint:fix && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset' vscode-test --config .vscode-test.mjs",
-    "test:unit": "xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset' vscode-test --config .vscode-test.mjs --label=unitTests",
-    "test:screenshots": "SCREENSHOTS=true xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset' vscode-test --config .vscode-test.mjs --label=comprehensiveTests",
-    "test:ci": "xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset' vscode-test --config .vscode-test.mjs",
+    "pretest": "npm run compile && npm run lint && npm run clean:test-artifacts && mkdir -p ./vscode-test-user-data",
+    "test": "yarn lint:fix && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label allTests ./out/test/suite/index.js",
+    "test:unit": "mkdir -p ./vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label=unitTests ./out/test/suite/index.js",
+    "test:screenshots": "mkdir -p ./vscode-test-user-data && SCREENSHOTS=true xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label=comprehensiveTests ./out/test/suite/index.js",
+    "test:ci": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label allTests ./out/test/suite/index.js",
     "test:debug": "yarn build:test && code --extensionDevelopmentPath=. --extensionTestsPath=./out/test/suite",
     "lint": "eslint src --ext ts && prettier --check src/**/*.ts",
     "lint:fix": "eslint src --ext ts --fix && prettier --write src/**/*.ts",
@@ -545,7 +547,7 @@
     "check-types": "tsc --noEmit",
     "build:test": "tsc -p tsconfig.test.json",
     "clean": "rimraf dist dist-test config *.tsbuildinfo .vscode-test .vscode-test-profile",
-    "clean:test-artifacts": "rm -rf .vscode-test/user-data/Crashpad/pending/*.lock .vscode-test/user-data/logs/* /tmp/vscode-test-user-data || true",
+    "clean:test-artifacts": "rm -rf .vscode-test/user-data/Crashpad/pending/*.lock .vscode-test/user-data/logs/* ./.vscode-test-user-data || true",
     "publish": "npm run package && vsce publish",
     "install-vsix": "code --install-extension *.vsix",
     "dev:build": "yarn clean && yarn build:deps && tsc && node --no-warnings=ExperimentalWarning esbuild.config.js",
@@ -553,11 +555,11 @@
     "dev:fresh": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --user-data-dir=./.vscode-test-profile .",
     "dev:watch": "yarn dev:build && (yarn watch &) && sleep 2 && code --extensionDevelopmentPath=. --new-window .",
     "dev:complete": "./scripts/dev-complete.sh",
-    "test:integration": "xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset' vscode-test --config .vscode-test.mjs --label integrationTests",
-    "test:e2e": "xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset' vscode-test --config .vscode-test.mjs --label e2eTests",
-    "test:consistency": "xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset' vscode-test --config .vscode-test.mjs --label consistencyTests",
+    "test:integration": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label integrationTests ./out/test/suite/index.js",
+    "test:e2e": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label e2eTests ./out/test/suite/index.js",
+    "test:consistency": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label consistencyTests ./out/test/suite/index.js",
     "test:all": "yarn test:unit && yarn test:integration && yarn test:e2e && yarn test:consistency",
-    "test:watch": "xvfb-run -a vscode-test --config .vscode-test.mjs --label unitTests --watch",
+    "test:watch": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label unitTests --watch ./out/test/suite/index.js",
     "debug": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --enable-proposed-api",
     "logs": "echo 'Check VSCode Output panel > X-Fidelity Debug for logs'",
     "verify:all": "node scripts/verify-extension.js",
@@ -565,7 +567,7 @@
     "verify:ci": "yarn build && node scripts/verify-extension.js",
     "verify:extension": "node scripts/verify-extension.js",
     "verify:quick": "yarn build:test && yarn test:unit && yarn verify:extension",
-    "quick-start": "echo '🚀 Quick Start: Press F5 to launch extension, then Ctrl+Shift+P > X-Fidelity: Control Center'",
-    "help": "echo '📖 Development Help:\\n  yarn dev - Start development\\n  yarn dev:fresh - Fresh profile\\n  yarn test:all - Run tests\\n  F5 in VSCode - Debug launch\\n  yarn verify:all - Full verification'"
+    "quick-start": "echo '🚀 Quick Start: Press F5 to launch extension, then Ctrl+Shift-P > X-Fidelity: Control Center'",
+    "help": "echo '📖 Development Help:\n  yarn dev - Start development\n  yarn dev:fresh - Fresh profile\n  yarn test:all - Run tests\n  F5 in VSCode - Debug launch\n  yarn verify:all - Full verification'"
   }
 }

@@ -1,9 +1,9 @@
 import * as assert from 'assert';
-import * as vscode from 'vscode';
-import * as fs from 'fs';
+import * as vscode from 'vscode';  
 import * as path from 'path';
-import { spawn } from 'child_process';
 import type { ResultMetadata } from '@x-fidelity/types';
+import { ScreenshotHelper } from '../helpers/screenshotHelper';
+import { runCLIAnalysis, runExtensionAnalysis, getTestWorkspace, ensureExtensionActivated } from '../helpers/testHelpers';
 
 // Add explicit type aliases to help TypeScript inference
 type ExtensionType = vscode.Extension<any>;
@@ -23,21 +23,23 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
   suiteSetup(async function() {
     this.timeout(120000); // 2 minutes for setup
     
-    // Ensure we have a workspace
-    if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
-      throw new Error('No workspace folder available for comprehensive testing');
-    }
+    // Setup screenshot capability
+    await ScreenshotHelper.setupScreenshotDir();
+    await ScreenshotHelper.cleanupOldSessions();
     
-    testWorkspace = vscode.workspace.workspaceFolders[0];
+    // Get test workspace
+    testWorkspace = getTestWorkspace();
     
     // Ensure extension is activated
-    extension = vscode.extensions.getExtension('zotoio.x-fidelity-vscode')!;
-    if (!extension.isActive) {
-      await extension.activate();
-    }
+    extension = await ensureExtensionActivated();
     
     // Wait for extension to fully initialize
     await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    // Take initial screenshot
+    await ScreenshotHelper.captureVSCodeWindow('setup-complete', {
+      description: 'extension-activated'
+    });
   });
 
   suite('1. Extension Activation & Registration Tests', () => {
@@ -175,7 +177,8 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
         
         console.log(`✅ Archetype detected: ${detectedArchetype}`);
       } catch (error) {
-        console.log(`⚠️ Archetype detection failed (may be expected): ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`⚠️ Archetype detection failed (may be expected): ${errorMessage}`);
       }
     });
   });
@@ -227,7 +230,8 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
         await new Promise(resolve => setTimeout(resolve, 5000));
         console.log('✅ Analysis with directory completed successfully');
       } catch (error) {
-        console.log(`⚠️ Analysis with directory failed (may be expected): ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`⚠️ Analysis with directory failed (may be expected): ${errorMessage}`);
       }
     });
   });
@@ -237,11 +241,14 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
       this.timeout(30000);
       
       try {
-        await vscode.commands.executeCommand('xfidelity.showControlCenter');
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await ScreenshotHelper.captureAfterCommand('xfidelity.showControlCenter', 'control-center-test', {
+          description: 'control-center-opened'
+        });
         console.log('✅ Control Center opened successfully');
       } catch (error) {
-        console.log(`⚠️ Control Center failed (may be expected): ${error.message}`);
+        await ScreenshotHelper.captureVSCodeWindow('control-center-failed');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`⚠️ Control Center failed (may be expected): ${errorMessage}`);
       }
     });
 
@@ -253,7 +260,8 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
         await new Promise(resolve => setTimeout(resolve, 2000));
         console.log('✅ Issues Tree refreshed successfully');
       } catch (error) {
-        console.log(`⚠️ Issues Tree refresh failed (may be expected): ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`⚠️ Issues Tree refresh failed (may be expected): ${errorMessage}`);
       }
     });
 
@@ -265,7 +273,8 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
         await new Promise(resolve => setTimeout(resolve, 2000));
         console.log('✅ Settings opened successfully');
       } catch (error) {
-        console.log(`⚠️ Settings failed (may be expected): ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`⚠️ Settings failed (may be expected): ${errorMessage}`);
       }
     });
 
@@ -288,7 +297,8 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
       } catch (error) {
         assert.ok(error instanceof Error, 'Should throw proper Error objects');
         assert.ok(error.message.length > 0, 'Error messages should not be empty');
-        console.log(`✅ Invalid directory handled correctly: ${error.message.substring(0, 100)}...`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`✅ Invalid directory handled correctly: ${errorMessage.substring(0, 100)}...`);
       }
     });
 
@@ -301,7 +311,8 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
         console.log(`✅ getTestResults handled gracefully, result: ${result ? 'has data' : 'null'}`);
       } catch (error) {
         assert.ok(error instanceof Error, 'Should throw proper Error objects');
-        console.log(`✅ Command failed gracefully: ${error.message.substring(0, 100)}...`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`✅ Command failed gracefully: ${errorMessage.substring(0, 100)}...`);
       }
     });
   });
@@ -451,7 +462,7 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
 
       try {
         const testUri = vscode.Uri.file('/test/file.ts');
-        const testDiagnostics = []; // Empty array for testing
+        const testDiagnostics: any[] = []; // Empty array for testing
         await vscode.commands.executeCommand('xfidelity.addBulkExemptions', testUri, testDiagnostics);
         console.log('✅ Add bulk exemptions command executed');
       } catch (error) {
@@ -470,6 +481,9 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
       console.log('🚀 Starting CLI analysis...');
       cliStartTime = Date.now();
       
+      // Capture initial state before CLI test
+      await ScreenshotHelper.captureVSCodeWindow('cli-analysis-start');
+      
       try {
         cliResult = await runCLIAnalysis(testWorkspace.uri.fsPath);
         cliEndTime = Date.now();
@@ -480,10 +494,16 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
         const cliDuration = (cliEndTime - cliStartTime) / 1000;
         console.log(`✅ CLI completed in ${cliDuration.toFixed(2)}s with ${cliResult.XFI_RESULT.totalIssues} issues`);
         
-          } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      assert.fail(`CLI analysis failed: ${errorMessage}`);
-    }
+        // Capture completion state
+        await ScreenshotHelper.captureVSCodeWindow('cli-analysis-complete', {
+          description: `${cliResult.XFI_RESULT.totalIssues}-issues-found`
+        });
+        
+      } catch (error) {
+        await ScreenshotHelper.captureVSCodeWindow('cli-analysis-failed');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        assert.fail(`CLI analysis failed: ${errorMessage}`);
+      }
     });
 
     test('should run extension analysis and measure performance', async function() {
@@ -491,6 +511,13 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
       
       console.log('🚀 Starting Extension analysis...');
       extensionStartTime = Date.now();
+      
+      // Capture UI state during extension workflow
+      await ScreenshotHelper.captureWorkflow('extension-analysis', [
+        { description: 'before-analysis' },
+        { command: 'xfidelity.runAnalysis', description: 'analysis-triggered', delay: 3000 },
+        { description: 'analysis-in-progress', delay: 2000 }
+      ]);
       
       try {
         extensionResult = await runExtensionAnalysis();
@@ -502,8 +529,15 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
         const extensionDuration = (extensionEndTime - extensionStartTime) / 1000;
         console.log(`✅ Extension completed in ${extensionDuration.toFixed(2)}s with ${extensionResult.XFI_RESULT.totalIssues} issues`);
         
+        // Capture final state with results
+        await ScreenshotHelper.captureAfterCommand('xfidelity.refreshIssuesTree', 'extension-analysis-complete', {
+          description: `${extensionResult.XFI_RESULT.totalIssues}-issues-in-tree`
+        });
+        
       } catch (error) {
-        assert.fail(`Extension analysis failed: ${error}`);
+        await ScreenshotHelper.captureVSCodeWindow('extension-analysis-failed');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        assert.fail(`Extension analysis failed: ${errorMessage}`);
       }
     });
 
@@ -595,138 +629,4 @@ suite('Comprehensive VSCode Extension Feature Testing', () => {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     console.log('Cleanup completed');
   });
-});
-
-// Helper function to run CLI analysis and return ResultMetadata
-async function runCLIAnalysis(workspacePath: string): Promise<ResultMetadata> {
-  return new Promise((resolve, reject) => {
-    const cliPath = path.resolve(__dirname, '../../../../../x-fidelity-cli/dist/index.js');
-    
-    if (!fs.existsSync(cliPath)) {
-      reject(new Error(`CLI not found at ${cliPath}`));
-      return;
-    }
-    
-    const child = spawn('node', [cliPath, '--dir', workspacePath, '--output-format', 'json'], {
-      cwd: path.dirname(cliPath),
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 60000 // 60 second timeout
-    });
-    
-    let stdout = '';
-    let stderr = '';
-    
-    child.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-    
-    child.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-    
-    child.on('close', (code) => {
-      if (code !== 0 && code !== 1) { // CLI can exit with 1 for fatal issues
-        reject(new Error(`CLI process exited with code ${code}: ${stderr}`));
-        return;
-      }
-      
-      try {
-        // Parse the JSON output from CLI
-        const lines = stdout.split('\n');
-        let resultLine = '';
-        
-        // Look for XFI_RESULT JSON line
-        for (const line of lines) {
-          if (line.includes('XFI_RESULT') && line.includes('{')) {
-            // Extract JSON from log line
-            const jsonStart = line.indexOf('{');
-            if (jsonStart !== -1) {
-              resultLine = line.substring(jsonStart);
-              break;
-            }
-          }
-        }
-        
-        if (!resultLine) {
-          // Fallback: look for any valid JSON object
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('{') && trimmed.includes('XFI_RESULT')) {
-              resultLine = trimmed;
-              break;
-            }
-          }
-        }
-        
-        if (!resultLine) {
-          reject(new Error(`No XFI_RESULT JSON found in CLI output. STDOUT: ${stdout.substring(0, 500)}...`));
-          return;
-        }
-        
-        const result = JSON.parse(resultLine) as ResultMetadata;
-        
-        if (!result.XFI_RESULT) {
-          reject(new Error('Parsed result does not have XFI_RESULT property'));
-          return;
-        }
-        
-        resolve(result);
-      } catch (error) {
-        reject(new Error(`Failed to parse CLI JSON output: ${error}. STDOUT: ${stdout.substring(0, 500)}...`));
-      }
-    });
-    
-    child.on('error', (error) => {
-      reject(new Error(`CLI process error: ${error.message}`));
-    });
-  });
-}
-
-// Helper function to run extension analysis and return ResultMetadata
-async function runExtensionAnalysis(): Promise<ResultMetadata> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Trigger extension analysis
-      await vscode.commands.executeCommand('xfidelity.runAnalysis');
-      
-      // Wait for analysis to complete and get results
-      let attempts = 0;
-      const maxAttempts = 60; // 60 seconds total wait time
-      
-      const checkAnalysis = async () => {
-        attempts++;
-        
-        try {
-          // Get analysis results from extension using the test command
-          const results = await vscode.commands.executeCommand('xfidelity.getTestResults') as ResultMetadata;
-          
-          if (results && results.XFI_RESULT && typeof results.XFI_RESULT.totalIssues === 'number') {
-            console.log('Extension analysis results obtained successfully');
-            resolve(results);
-            return;
-          }
-          
-          if (attempts >= maxAttempts) {
-            reject(new Error(`Extension analysis failed to complete after ${maxAttempts} seconds`));
-            return;
-          }
-          
-          // Check again in 1 second
-          setTimeout(checkAnalysis, 1000);
-          
-        } catch (error) {
-          if (attempts >= maxAttempts) {
-            reject(new Error(`Extension analysis failed after ${maxAttempts} attempts: ${error}`));
-          } else {
-            setTimeout(checkAnalysis, 1000);
-          }
-        }
-      };
-      
-      checkAnalysis();
-      
-    } catch (error) {
-      reject(new Error(`Failed to start extension analysis: ${error}`));
-    }
-  });
-} 
+}); 

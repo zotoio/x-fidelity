@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { getExtension, ensureExtensionActivated, assertCommandExists } from '../helpers/testHelpers';
+import { ensureExtensionActivated, assertCommandExists } from '../helpers/testHelpers';
 
 suite('Extension Activation Tests', () => {
   let extension: vscode.Extension<any>;

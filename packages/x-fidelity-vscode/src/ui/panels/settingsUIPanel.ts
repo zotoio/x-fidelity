@@ -86,7 +86,7 @@ export class SettingsUIPanel implements vscode.Disposable {
             description: 'The X-Fidelity archetype that best matches your project',
             type: 'enum',
             default: 'node-fullstack',
-            options: ['node-fullstack', 'next-fullstack', 'java-microservice', 'python-service', 'dotnet-service']
+            options: ['node-fullstack', 'java-microservice', 'python-service', 'dotnet-service']
           },
           {
             key: 'runInterval',

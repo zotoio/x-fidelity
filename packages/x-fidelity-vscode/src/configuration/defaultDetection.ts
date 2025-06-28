@@ -108,14 +108,6 @@ export class DefaultDetectionService {
         indicators.push('React dependencies');
         confidence += 20;
 
-        if (dependencies.next || dependencies['next']) {
-          return {
-            archetype: 'next-fullstack',
-            confidence: confidence + 10,
-            indicators: [...indicators, 'Next.js']
-          };
-        }
-
         if (dependencies['react-native']) {
           return {
             archetype: 'react-native',

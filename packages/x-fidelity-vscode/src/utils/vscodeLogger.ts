@@ -116,56 +116,66 @@ export class VSCodeLogger implements ILogger {
     if (obj === null || obj === undefined) {
       return String(obj);
     }
-    
-    if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') {
+
+    if (
+      typeof obj === 'string' ||
+      typeof obj === 'number' ||
+      typeof obj === 'boolean'
+    ) {
       return String(obj);
     }
-    
+
     if (typeof obj === 'function') {
       return '[Function]';
     }
-    
+
     if (obj instanceof Error) {
       return `Error: ${obj.message}`;
     }
-    
+
     if (typeof obj === 'object') {
       try {
         // Use a replacer function to handle circular references and non-serializable objects
-        return JSON.stringify(obj, (key, value) => {
-          // Handle circular references
-          if (typeof value === 'object' && value !== null) {
-            if (this.hasCircularReference(value)) {
-              return '[Circular Reference]';
-            }
-          }
-          
-          // Handle functions
-          if (typeof value === 'function') {
-            return '[Function]';
-          }
-          
-          // Handle VSCode objects that might not serialize well
-          if (value && typeof value === 'object') {
-            if (value.constructor && value.constructor.name) {
-              const constructorName = value.constructor.name;
-              if (constructorName.includes('Uri') || 
-                  constructorName.includes('Range') || 
-                  constructorName.includes('Position') ||
-                  constructorName.includes('Diagnostic') ||
-                  constructorName.includes('OutputChannel')) {
-                return `[${constructorName}]`;
+        return JSON.stringify(
+          obj,
+          (key, value) => {
+            // Handle circular references
+            if (typeof value === 'object' && value !== null) {
+              if (this.hasCircularReference(value)) {
+                return '[Circular Reference]';
               }
             }
-          }
-          
-          return value;
-        }, 2);
+
+            // Handle functions
+            if (typeof value === 'function') {
+              return '[Function]';
+            }
+
+            // Handle VSCode objects that might not serialize well
+            if (value && typeof value === 'object') {
+              if (value.constructor && value.constructor.name) {
+                const constructorName = value.constructor.name;
+                if (
+                  constructorName.includes('Uri') ||
+                  constructorName.includes('Range') ||
+                  constructorName.includes('Position') ||
+                  constructorName.includes('Diagnostic') ||
+                  constructorName.includes('OutputChannel')
+                ) {
+                  return `[${constructorName}]`;
+                }
+              }
+            }
+
+            return value;
+          },
+          2
+        );
       } catch (error) {
         return `[Object - Serialization Failed: ${error}]`;
       }
     }
-    
+
     return String(obj);
   }
 
@@ -173,16 +183,19 @@ export class VSCodeLogger implements ILogger {
     if (obj === null || typeof obj !== 'object') {
       return false;
     }
-    
+
     if (seen.has(obj)) {
       return true;
     }
-    
+
     seen.add(obj);
-    
+
     try {
       for (const key in obj) {
-        if (obj.hasOwnProperty(key) && this.hasCircularReference(obj[key], seen)) {
+        if (
+          obj.hasOwnProperty(key) &&
+          this.hasCircularReference(obj[key], seen)
+        ) {
           return true;
         }
       }
@@ -190,7 +203,7 @@ export class VSCodeLogger implements ILogger {
       // If we can't iterate over the object, assume it might be problematic
       return true;
     }
-    
+
     return false;
   }
 
