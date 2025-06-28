@@ -197,3 +197,6 @@ temp/
 
 **/*.vsix# Consistency testing temp directories
 .temp/
+.vscode-test-user-data/
+.xfi-cache.json
+.xfidelity-cache.json

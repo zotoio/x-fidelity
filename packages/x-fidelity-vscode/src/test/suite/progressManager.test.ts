@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
+import { suite, test, setup } from 'mocha';
 import { ProgressManager, ProgressReporter, ProgressPhase } from '../../utils/progressManager';
 
 suite('ProgressManager Tests', () => {

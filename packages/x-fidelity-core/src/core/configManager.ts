@@ -416,9 +416,9 @@ export class ConfigManager {
                 // For development/test environments
                 path.join(process.cwd(), 'packages/x-fidelity-core/dist/demoConfig', `${archetype}.json`),
                 // Fallback to relative CLI path (when running from CLI context)
-                path.resolve(__dirname, '../../../x-fidelity-cli/dist/demoConfig', `${archetype}.json`),
+                path.resolve(__dirname, '../../../../x-fidelity-cli/dist/demoConfig', `${archetype}.json`),
                 // Fallback to relative VSCode path (when running from VSCode context)
-                path.resolve(__dirname, '../../../x-fidelity-vscode/dist/demoConfig', `${archetype}.json`)
+                path.resolve(__dirname, '../../../../x-fidelity-vscode/dist/demoConfig', `${archetype}.json`)
             ];
             
             let configPath: string | null = null;

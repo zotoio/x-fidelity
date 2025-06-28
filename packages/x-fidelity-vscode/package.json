@@ -63,10 +63,6 @@
         "title": "X-Fidelity: Reset Configuration"
       },
       {
-        "command": "xfidelity.showReportHistory",
-        "title": "X-Fidelity: Show Report History"
-      },
-      {
         "command": "xfidelity.addExemption",
         "title": "X-Fidelity: Add Exemption"
       },
@@ -301,6 +297,11 @@
           "default": 1048576,
           "description": "Maximum file size to analyze (in bytes)."
         },
+        "xfidelity.forceFallbackMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Force the extension to use fallback CLI mode instead of the integrated extension manager. Useful for debugging or when the extension manager has issues."
+        },
         "xfidelity.analysisTimeout": {
           "type": "number",
           "default": 30000,
@@ -523,9 +524,6 @@
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3"
   },
-  "optionalDependencies": {
-    "scrot": "^1.0.0"
-  },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "npm run build",
@@ -533,11 +531,14 @@
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
     "watch": "node --no-warnings=ExperimentalWarning esbuild.config.js --watch",
     "package": "npm run build && vsce package --yarn",
-    "pretest": "npm run compile && npm run lint && npm run clean:test-artifacts && mkdir -p ./vscode-test-user-data",
-    "test": "yarn lint:fix && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label allTests ./out/test/suite/index.js",
-    "test:unit": "mkdir -p ./vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label=unitTests ./out/test/suite/index.js",
-    "test:screenshots": "mkdir -p ./vscode-test-user-data && SCREENSHOTS=true xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label=comprehensiveTests ./out/test/suite/index.js",
-    "test:ci": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label allTests ./out/test/suite/index.js",
+    "pretest": "npm run compile && npm run lint && npm run clean:test-artifacts && mkdir -p ./vscode-test-user-data && cd ../x-fidelity-cli && yarn build && cd ../../packages/x-fidelity-vscode",
+    "test": "yarn lint:fix && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label all",
+    "test:unit": "mkdir -p ./vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label unit",
+    "test:integration": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label integration",
+    "test:e2e": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label e2e",
+    "test:ci": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label all",
+    
+    "test:simple": "vscode-test --config .vscode-test.mjs --label all",
     "test:debug": "yarn build:test && code --extensionDevelopmentPath=. --extensionTestsPath=./out/test/suite",
     "lint": "eslint src --ext ts && prettier --check src/**/*.ts",
     "lint:fix": "eslint src --ext ts --fix && prettier --write src/**/*.ts",
@@ -555,11 +556,8 @@
     "dev:fresh": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --user-data-dir=./.vscode-test-profile .",
     "dev:watch": "yarn dev:build && (yarn watch &) && sleep 2 && code --extensionDevelopmentPath=. --new-window .",
     "dev:complete": "./scripts/dev-complete.sh",
-    "test:integration": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label integrationTests ./out/test/suite/index.js",
-    "test:e2e": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label e2eTests ./out/test/suite/index.js",
-    "test:consistency": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label consistencyTests ./out/test/suite/index.js",
-    "test:all": "yarn test:unit && yarn test:integration && yarn test:e2e && yarn test:consistency",
-    "test:watch": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label unitTests --watch ./out/test/suite/index.js",
+    "test:all": "yarn test:unit && yarn test:integration && yarn test:e2e",
+    "test:watch": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label unit --watch",
     "debug": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --enable-proposed-api",
     "logs": "echo 'Check VSCode Output panel > X-Fidelity Debug for logs'",
     "verify:all": "node scripts/verify-extension.js",

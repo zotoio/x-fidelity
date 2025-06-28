@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
+import { suite, test, suiteSetup } from 'mocha';
 import { ensureExtensionActivated, executeCommandSafely } from '../helpers/testHelpers';
 
 suite('Error Handling Integration Tests', () => {
