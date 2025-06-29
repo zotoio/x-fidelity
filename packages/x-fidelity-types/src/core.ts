@@ -1,5 +1,6 @@
 import { Engine, OperatorEvaluator } from 'json-rules-engine';
 import { JSONSchemaType } from 'ajv';
+import { RepoXFIConfig } from './config';
 
 export type OperatorDefn = {
     name: string,
