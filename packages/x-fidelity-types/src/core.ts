@@ -457,55 +457,13 @@ export interface RuleReference {
   url?: string;   // Remote URL to fetch rule from
 }
 
-export interface RepoXFIConfig {
-  sensitiveFileFalsePositives?: string[];
-  additionalRules?: (RuleConfig | RuleReference)[];
-  additionalFacts?: string[];
-  additionalOperators?: string[];
-  additionalPlugins?: string[];
-  notifications?: {
-    recipients?: {
-      email?: string[];
-      slack?: string[];
-      teams?: string[];
-    };
-    codeOwners?: boolean;
-    notifyOnSuccess?: boolean;
-    notifyOnFailure?: boolean;
-  };
-  [key: string]: any;  // Allow for additional properties
-}
+// RepoXFIConfig moved to config.ts to avoid duplication
+export type { RepoXFIConfig } from './config';
 
 export type RepoXFIConfigSchema = JSONSchemaType<RepoXFIConfig>;
 
-export interface PluginError {
-  message: string;
-  level: ErrorLevel;
-  details?: any;
-}
-
-export interface PluginResult {
-  success: boolean;
-  data: any;
-  error?: PluginError;
-}
-
-export interface XFiPlugin {
-  name: string;
-  version: string;
-  facts?: FactDefn[];
-  operators?: OperatorDefn[];
-  onError?: (error: Error) => PluginError;
-  [key: string]: any; // Allow for additional properties
-}
-
-export interface PluginRegistry {
-  registerPlugin: (plugin: XFiPlugin) => void;
-  getPlugin: (name: string) => XFiPlugin | undefined;  // V4 enhancement - useful for plugin management
-  getPluginFacts: () => FactDefn[];
-  getPluginOperators: () => OperatorDefn[];
-  executePluginFunction: (pluginName: string, functionName: string, ...args: any[]) => PluginResult;
-}
+// Plugin types moved to plugins.ts to avoid duplication
+export type { PluginError, PluginResult, XFiPlugin, PluginRegistry } from './plugins';
 
 export interface AiSuggestionCodeSnippet {
   filePath: string;
@@ -562,22 +520,8 @@ export interface CodeOwner {
   pattern?: string; // v3.24.0 compatibility
 }
 
-// Notification interfaces (from v3.24.0 notificationTypes.ts)
-export interface NotificationProvider {
-  name: string;
-  send(notification: Notification): Promise<void>;  // V4 implementation returns void, not boolean
-}
-
-export interface Notification {
-  recipients: string[];
-  subject: string;
-  content: string;
-  metadata?: Record<string, any>;
-  // v3.24.0 compatibility properties
-  type?: string;
-  title?: string;
-  message?: string;
-}
+// Notification types moved to notifications.ts to avoid duplication
+export type { NotificationProvider, Notification } from './notifications';
 
 export interface ErrorActionParams {
     error: Error;

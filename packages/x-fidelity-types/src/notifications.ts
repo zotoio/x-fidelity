@@ -1,6 +1,6 @@
 export interface NotificationProvider {
   name: string;
-  send(notification: Notification): Promise<boolean>;
+  send(notification: Notification): Promise<void>;  // V4 implementation returns void, not boolean
 }
 
 export interface Notification {
@@ -8,6 +8,10 @@ export interface Notification {
   subject: string;
   content: string;
   metadata?: Record<string, any>;
+  // v3.24.0 compatibility properties
+  type?: string;
+  title?: string;
+  message?: string;
 }
 
 export interface NotificationConfig {

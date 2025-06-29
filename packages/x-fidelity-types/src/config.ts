@@ -69,7 +69,16 @@ export interface RepoXFIConfig {
     archetype?: string;  // Make optional to match core.ts definition
     configServer?: string;
     localConfigPath?: string;
-    notifications?: NotificationConfig;
+    notifications?: NotificationConfig & {
+        recipients?: {
+            email?: string[];
+            slack?: string[];
+            teams?: string[];
+        };
+        codeOwners?: boolean;
+        notifyOnSuccess?: boolean;
+        notifyOnFailure?: boolean;
+    };
     [key: string]: any;  // For backward compatibility
 }
 

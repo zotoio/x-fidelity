@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { RuleProperties } from 'json-rules-engine';
 import { logger, setLogPrefix } from '../utils/serverLogger';
-import { validateUrlInput } from '@x-fidelity/core';
 import { getRuleListCache, setRuleListCache } from '../cacheManager';
 import { ConfigManager } from '@x-fidelity/core';
 import { options } from '@x-fidelity/core';
@@ -12,10 +11,6 @@ export async function archetypeRulesRoute(req: Request, res: Response) {
     const archetype = req.params.archetype;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
-    if (!validateUrlInput(archetype)) {
-        logger.error(`invalid archetype name: ${archetype}`);
-        return res.status(400).json({ error: 'invalid archetype' });
-    }
     const cachedRules = getRuleListCache(archetype);
     if (cachedRules) {
         logger.info(`serving cached rule list for archetype: ${archetype}`);

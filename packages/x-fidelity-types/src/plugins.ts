@@ -37,6 +37,7 @@ export interface XFiPlugin {
 // Plugin registry interface
 export interface PluginRegistry {
     registerPlugin: (plugin: XFiPlugin) => void;
+    getPlugin: (name: string) => XFiPlugin | undefined;  // V4 enhancement - useful for plugin management
     getPluginFacts: () => FactDefn[];
     getPluginOperators: () => OperatorDefn[];
     executePluginFunction: (pluginName: string, functionName: string, ...args: any[]) => PluginResult;
