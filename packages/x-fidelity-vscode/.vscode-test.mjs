@@ -8,7 +8,7 @@ export default defineConfig([
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
     extensionDevelopmentPath: '.',
     mocha: {
-      ui: 'bdd',
+      ui: 'tdd',
       timeout: 30000,
       color: true,
       reporter: 'spec'
@@ -17,8 +17,8 @@ export default defineConfig([
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
-      XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp'
+      XDG_RUNTIME_DIR: './.vscode-test-user-data',
+      TMPDIR: './.vscode-test-user-data'
     },
     launchArgs: [
       '--no-sandbox',
@@ -36,7 +36,7 @@ export default defineConfig([
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
     extensionDevelopmentPath: '.',
     mocha: {
-      ui: 'bdd',
+      ui: 'tdd',
       timeout: 30000,
       color: true,
       reporter: process.env.CI ? 'spec' : 'spec'
@@ -45,8 +45,8 @@ export default defineConfig([
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
-      XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp'
+      XDG_RUNTIME_DIR: './.vscode-test-user-data',
+      TMPDIR: './.vscode-test-user-data'
     },
     launchArgs: [
       '--no-sandbox',
@@ -64,7 +64,7 @@ export default defineConfig([
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
     extensionDevelopmentPath: '.',
     mocha: {
-      ui: 'bdd',
+      ui: 'tdd',
       timeout: 45000,
       color: true,
       reporter: process.env.CI ? 'spec' : 'spec'
@@ -73,8 +73,8 @@ export default defineConfig([
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
-      XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp'
+      XDG_RUNTIME_DIR: './.vscode-test-user-data',
+      TMPDIR: './.vscode-test-user-data'
     },
     launchArgs: [
       '--no-sandbox',
@@ -92,7 +92,7 @@ export default defineConfig([
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
     extensionDevelopmentPath: '.',
     mocha: {
-      ui: 'bdd',
+      ui: 'tdd',
       timeout: 120000,
       color: true,
       reporter: process.env.CI ? 'spec' : 'spec'
@@ -101,8 +101,8 @@ export default defineConfig([
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
-      XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp',
+      XDG_RUNTIME_DIR: './.vscode-test-user-data',
+      TMPDIR: './.vscode-test-user-data',
       SCREENSHOTS: process.env.SCREENSHOTS || 'false'
     },
     launchArgs: [
@@ -121,7 +121,7 @@ export default defineConfig([
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
     extensionDevelopmentPath: '.',
     mocha: {
-      ui: 'bdd',
+      ui: 'tdd',
       timeout: 60000,
       color: true,
       reporter: process.env.CI ? 'spec' : 'spec'
@@ -130,8 +130,8 @@ export default defineConfig([
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
-      XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp'
+      XDG_RUNTIME_DIR: './.vscode-test-user-data',
+      TMPDIR: './.vscode-test-user-data'
     },
     launchArgs: [
       '--no-sandbox',
@@ -149,7 +149,7 @@ export default defineConfig([
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
     extensionDevelopmentPath: '.',
     mocha: {
-      ui: 'bdd',
+      ui: 'tdd',
       timeout: 60000,
       color: true,
       reporter: process.env.CI ? 'spec' : 'spec'
@@ -158,8 +158,8 @@ export default defineConfig([
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
-      XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp'
+      XDG_RUNTIME_DIR: './.vscode-test-user-data',
+      TMPDIR: './.vscode-test-user-data'
     },
     launchArgs: [
       '--no-sandbox',
@@ -177,7 +177,7 @@ export default defineConfig([
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
     extensionDevelopmentPath: '.',
     mocha: {
-      ui: 'bdd',
+      ui: 'tdd',
       timeout: 60000,
       color: true,
       reporter: process.env.CI ? 'spec' : 'spec'
@@ -186,8 +186,8 @@ export default defineConfig([
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
-      XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp'
+      XDG_RUNTIME_DIR: './.vscode-test-user-data',
+      TMPDIR: './.vscode-test-user-data'
     },
     launchArgs: [
       '--no-sandbox',
@@ -205,7 +205,7 @@ export default defineConfig([
     workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
     extensionDevelopmentPath: '.',
     mocha: {
-      ui: 'bdd',
+      ui: 'tdd',
       timeout: 120000,
       color: true,
       reporter: process.env.CI ? 'spec' : 'spec'
@@ -214,8 +214,8 @@ export default defineConfig([
       NODE_ENV: 'test',
       DISPLAY: process.env.DISPLAY || ':99',
       XVFB: '1',
-      XDG_RUNTIME_DIR: '/tmp',
-      TMPDIR: '/tmp',
+      XDG_RUNTIME_DIR: './.vscode-test-user-data',
+      TMPDIR: './.vscode-test-user-data',
       SCREENSHOTS: process.env.SCREENSHOTS || 'false'
     },
     launchArgs: [

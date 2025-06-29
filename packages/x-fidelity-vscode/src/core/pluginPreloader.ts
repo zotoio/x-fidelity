@@ -1,18 +1,6 @@
 import { pluginRegistry, ConfigManager } from '@x-fidelity/core';
 import * as vscode from 'vscode';
-import {
-  initializeWasmTreeSitter,
-  isWasmTreeSitterReady
-} from '../utils/wasmAstUtils';
 import { logger } from '../utils/logger';
-
-// Import the AST utils to set up WASM integration
-let astUtils: any = null;
-try {
-  astUtils = require('@x-fidelity/plugins/src/sharedPluginUtils/astUtils');
-} catch {
-  logger.debug('AST utils not available for WASM integration');
-}
 
 /**
  * Pre-loads X-Fidelity plugins into the plugin registry with WASM tree-sitter support
@@ -20,7 +8,7 @@ try {
  * This is necessary for bundled VSCode extensions where dynamic imports don't work at runtime.
  */
 export async function preloadDefaultPlugins(
-  extensionContext: vscode.ExtensionContext
+  _extensionContext: vscode.ExtensionContext
 ): Promise<void> {
   // Skip in test environment where pluginRegistry might be mocked
   if (process.env.NODE_ENV === 'test') {
@@ -40,43 +28,9 @@ export async function preloadDefaultPlugins(
   let loadedCount = 0;
   let loadedPluginsMap: Record<string, any> = {};
 
-  // First, try to initialize WASM Tree-sitter for AST support
-  let wasmTreeSitterReady = false;
-  try {
-    logger.info(
-      `[X-Fidelity VSCode] Attempting WASM Tree-sitter initialization...`
-    );
-    await initializeWasmTreeSitter(extensionContext);
-    wasmTreeSitterReady = isWasmTreeSitterReady();
-    logger.info(
-      `[X-Fidelity VSCode] WASM Tree-sitter ready: ${wasmTreeSitterReady}`
-    );
-
-    // If WASM is ready, set up the utils for the AST plugin
-    if (wasmTreeSitterReady && astUtils && astUtils.setVSCodeWasmUtils) {
-      const wasmAstUtils = require('../utils/wasmAstUtils');
-      astUtils.setVSCodeWasmUtils(wasmAstUtils);
-      logger.info(`[X-Fidelity VSCode] WASM utils configured for AST plugin`);
-    }
-  } catch (error: unknown) {
-    const errorObj = error as Error;
-    logger.error(
-      `[X-Fidelity VSCode] WASM Tree-sitter initialization failed with error: ${errorObj?.message || 'Unknown error'}`,
-      {
-        message: errorObj?.message || 'Unknown error',
-        stack: errorObj?.stack || 'No stack trace available',
-        name: errorObj?.name || 'Unknown error type',
-        extensionPath: extensionContext?.extensionPath
-      }
-    );
-    logger.info(
-      `[X-Fidelity VSCode] AST plugin will load with limited functionality (no AST analysis)`
-    );
-  }
-
-  // Define all plugins - AST plugin with graceful degradation
+  // Define all plugins - all plugins work the same way now with centralized worker
   const allPluginNames = [
-    'xfiPluginAst', // Always include AST plugin
+    'xfiPluginAst', // Uses centralized Tree-sitter worker
     'xfiPluginDependency',
     'xfiPluginFilesystem',
     'xfiPluginOpenAI',
@@ -87,16 +41,9 @@ export async function preloadDefaultPlugins(
     'xfiPluginSimpleExample'
   ];
 
-  // Log AST plugin status
-  if (wasmTreeSitterReady) {
-    logger.info(
-      `[X-Fidelity VSCode] AST plugin will be loaded with WASM support`
-    );
-  } else {
-    logger.info(
-      `[X-Fidelity VSCode] AST plugin will be loaded with limited functionality (no WASM)`
-    );
-  }
+  logger.info(
+    `[X-Fidelity VSCode] Loading plugins with centralized worker support`
+  );
 
   // Import plugins with error handling
   try {
@@ -190,10 +137,7 @@ export async function preloadDefaultPlugins(
     return originalDynamicImport(modulePath);
   };
 
-  const astStatus = wasmTreeSitterReady
-    ? 'with AST support (WASM available)'
-    : 'with AST graceful degradation (WASM unavailable)';
   logger.info(
-    `[X-Fidelity VSCode] Pre-loaded ${loadedCount} plugins ${astStatus} and overrode dynamic imports`
+    `[X-Fidelity VSCode] Pre-loaded ${loadedCount} plugins with centralized AST worker support and overrode dynamic imports`
   );
 }

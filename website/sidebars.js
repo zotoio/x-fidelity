@@ -18,10 +18,6 @@ module.exports = {
       label: 'Packages',
       items: [
         'packages/core',
-        'packages/cli',
-        'packages/server',
-        'packages/plugins',
-        'packages/types',
       ],
     },
     {

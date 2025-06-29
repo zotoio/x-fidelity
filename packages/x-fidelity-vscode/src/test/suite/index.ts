@@ -1,5 +1,5 @@
 import * as path from 'path';
-import * as Mocha from 'mocha';
+import Mocha from 'mocha';
 import { glob } from 'glob';
 
 /**
@@ -12,7 +12,7 @@ import { glob } from 'glob';
 export function run(): Promise<void> {
 	// Create the mocha test
 	const mocha = new Mocha({
-		ui: 'tdd',
+		ui: 'bdd',
 		color: true,
 		timeout: 20000, // 20 second timeout for integration tests
 		slow: 5000, // Mark tests as slow if they take more than 5 seconds
@@ -42,19 +42,19 @@ export function run(): Promise<void> {
 		});
 
 		// Track test results
-		mocha.suite.on('test', (test) => {
+		mocha.suite.on('test', (test: any) => {
 			testCount++;
 			console.log(`🏃 Running: ${test.title}`);
 		});
 
-		mocha.suite.on('pass', (test) => {
+		mocha.suite.on('pass', (test: any) => {
 			passCount++;
 			const duration = test.duration || 0;
 			const icon = duration > (mocha.options.slow || 5000) ? '🐌' : '✅';
 			console.log(`${icon} Passed: ${test.title} (${duration}ms)`);
 		});
 
-		mocha.suite.on('fail', (test, err) => {
+		mocha.suite.on('fail', (test: any, err: any) => {
 			failCount++;
 			console.log(`❌ Failed: ${test.title}`);
 			console.log(`   Error: ${err.message}`);
@@ -76,7 +76,7 @@ export function run(): Promise<void> {
         });
 
         // Run the mocha test
-			mocha.run(failures => {
+			mocha.run((failures: number) => {
 				const endTime = Date.now();
 				const totalTime = endTime - startTime;
 				

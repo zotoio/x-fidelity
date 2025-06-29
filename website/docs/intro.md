@@ -123,7 +123,7 @@ xfidelity .
 
 ## Next Steps
 
-- **[Getting Started Guide](./getting-started)** - Comprehensive setup instructions
-- **[VSCode Extension](./vscode-extension/overview)** - Full-featured development experience  
-- **[Key Concepts](./key-concepts)** - Understanding archetypes, rules, and facts
-- **[Plugin Development](./plugins/overview)** - Extending X-Fidelity functionality
+- **[Getting Started Guide](/docs/getting-started)** - Comprehensive setup instructions
+- **[VSCode Extension](/docs/vscode-extension/overview)** - Full-featured development experience  
+- **[Key Concepts](/docs/key-concepts)** - Understanding archetypes, rules, and facts
+- **[Plugin Development](/docs/plugins/overview)** - Extending X-Fidelity functionality

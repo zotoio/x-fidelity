@@ -142,7 +142,7 @@ export class SpeedOptimizer {
             return file;
           }
           return null;
-        } catch (_error) {
+        } catch {
           // File might be deleted or inaccessible
           this.fileChangeTracker.deletedFiles.add(file);
           return null;
@@ -203,7 +203,7 @@ export class SpeedOptimizer {
       else if (stats.size > 100000) {
         priority -= 20;
       } // Large files later
-    } catch (_error) {
+    } catch {
       // File might not exist
     }
 

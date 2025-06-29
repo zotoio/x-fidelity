@@ -6,6 +6,38 @@ const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
 
 async function main() {
+  // Build TreeSitter worker first
+  const workerCtx = await esbuild.context({
+    entryPoints: ['../x-fidelity-plugins/src/xfiPluginAst/worker/treeSitterWorker.ts'],
+    bundle: true,
+    format: 'cjs',
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: 'node',
+    outfile: 'dist/treeSitterWorker.js',
+    external: [
+      'vscode',
+      'electron',
+      'original-fs',
+      // Keep tree-sitter modules external to use rebuilt versions
+      'tree-sitter',
+      'tree-sitter-javascript',
+      'tree-sitter-typescript'
+    ],
+    logLevel: 'info',
+    alias: {
+      '@x-fidelity/core': path.resolve(__dirname, '../x-fidelity-core/dist/index.js'),
+      '@x-fidelity/types': path.resolve(__dirname, '../x-fidelity-types/dist/index.js'),
+    },
+    target: 'node18',
+    treeShaking: true,
+    loader: {
+      '.json': 'json',
+      '.node': 'file',
+    },
+  });
+
   // Build main extension
   const ctx = await esbuild.context({
     entryPoints: ['src/extension.ts'],
@@ -29,7 +61,6 @@ async function main() {
     logLevel: 'info',
     plugins: [
       esbuildProblemMatcherPlugin,
-      copyWasmFilesPlugin,
       copyXFidelityAssetsPlugin,
       // Add bundle size analyzer
       bundleAnalyzerPlugin,
@@ -61,7 +92,6 @@ async function main() {
     // Loader for JSON files
     loader: {
       '.json': 'json',
-      '.wasm': 'file',
       '.node': 'file',
     },
     // Bundle splitting for better performance
@@ -70,63 +100,34 @@ async function main() {
     metafile: true,
   });
 
-  // Build worker thread
-  const workerCtx = await esbuild.context({
-    entryPoints: ['src/workers/analysisWorker.ts'],
-    bundle: true,
-    format: 'cjs',
-    minify: production,
-    sourcemap: !production,
-    sourcesContent: false,
-    platform: 'node',
-    outfile: 'dist/worker.js',
-    external: [
-      'vscode', // Worker won't have access to VSCode API
-      // Native tree-sitter packages - external for worker
-      'tree-sitter',
-      'tree-sitter-javascript', 
-      'tree-sitter-typescript',
-      'electron',
-      'original-fs'
-    ],
-    logLevel: 'info',
-    target: 'node18',
-    treeShaking: true,
-    define: {
-      'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development'),
-      'global': 'globalThis',
-    },
-    resolveExtensions: ['.ts', '.js', '.json'],
-    mainFields: ['main', 'module'],
-    conditions: ['node'],
-    drop: production ? ['console', 'debugger'] : [],
-    loader: {
-      '.json': 'json',
-      '.wasm': 'file',
-      '.node': 'file',
-    },
-    metafile: true,
-  });
+
 
   if (watch) {
     console.log('[watch] Starting watch mode...');
-    await ctx.watch();
-    await workerCtx.watch();
+    await Promise.all([
+      workerCtx.watch(),
+      ctx.watch()
+    ]);
     console.log('[watch] Watching for changes...');
   } else {
-    const result = await ctx.rebuild();
-    const workerResult = await workerCtx.rebuild();
+    // Build worker and extension
+    const [workerResult, extensionResult] = await Promise.all([
+      workerCtx.rebuild(),
+      ctx.rebuild()
+    ]);
     
-    if (result.metafile) {
+    if (extensionResult.metafile) {
       // Log bundle information
-      const bundleSize = fs.statSync('dist/extension.js').size;
-      const workerSize = fs.statSync('dist/worker.js').size;
-      console.log(`[build] Main bundle size: ${Math.round(bundleSize / 1024)}KB`);
+      const extensionSize = fs.statSync('dist/extension.js').size;
+      const workerSize = fs.statSync('dist/treeSitterWorker.js').size;
+      console.log(`[build] Extension bundle size: ${Math.round(extensionSize / 1024)}KB`);
       console.log(`[build] Worker bundle size: ${Math.round(workerSize / 1024)}KB`);
     }
     
-    await ctx.dispose();
-    await workerCtx.dispose();
+    await Promise.all([
+      workerCtx.dispose(),
+      ctx.dispose()
+    ]);
   }
 }
 
@@ -218,76 +219,12 @@ const copyXFidelityAssetsPlugin = {
         buildTime: new Date().toISOString(),
         components: {
           demoConfig: fs.existsSync(demoConfigDest),
-          plugins: fs.existsSync(pluginsDest),
-          wasm: {
-            treeSitter: fs.existsSync('dist/tree-sitter.wasm'),
-            javascript: fs.existsSync('dist/tree-sitter-javascript.wasm'),
-            typescript: fs.existsSync('dist/tree-sitter-typescript.wasm')
-          }
+          plugins: fs.existsSync(pluginsDest)
         }
       };
 
       fs.writeFileSync('dist/xfidelity-manifest.json', JSON.stringify(manifest, null, 2));
       console.log(`[xfidelity] ✓ Created manifest file`);
-    });
-  }
-};
-
-/**
- * Enhanced WASM files plugin with better error handling
- */
-const copyWasmFilesPlugin = {
-  name: 'copy-wasm-files',
-  setup(build) {
-    build.onEnd(() => {
-      // Ensure dist directory exists
-      if (!fs.existsSync('dist')) {
-        fs.mkdirSync('dist', { recursive: true });
-      }
-
-      // Copy WASM files - check multiple possible locations
-      const wasmFiles = [
-        {
-          src: [
-            '../../node_modules/web-tree-sitter/tree-sitter.wasm',
-            'node_modules/web-tree-sitter/tree-sitter.wasm'
-          ],
-          dest: 'dist/tree-sitter.wasm'
-        },
-        {
-          src: [
-            '../../node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm',
-            'node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm'
-          ],
-          dest: 'dist/tree-sitter-javascript.wasm'
-        },
-        {
-          src: [
-            '../../node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm',
-            'node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm'
-          ],
-          dest: 'dist/tree-sitter-typescript.wasm'
-        }
-      ];
-
-      wasmFiles.forEach(({ src, dest }) => {
-        let copied = false;
-        for (const srcPath of src) {
-          try {
-            if (fs.existsSync(srcPath)) {
-              fs.copyFileSync(srcPath, dest);
-              console.log(`[wasm] ✓ Copied ${srcPath} to ${dest}`);
-              copied = true;
-              break;
-            }
-          } catch (error) {
-            console.warn(`[wasm] ⚠ Failed to copy ${srcPath}:`, error.message);
-          }
-        }
-        if (!copied) {
-          console.warn(`[wasm] ⚠ Warning: Could not find WASM file for ${dest}`);
-        }
-      });
     });
   }
 };

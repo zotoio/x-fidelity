@@ -182,7 +182,7 @@ yarn workspace @x-fidelity/core build:watch
 
 ## Related Packages
 
-- **[x-fidelity-cli](./cli.md)**: Command-line interface that uses the core engine
+- **[x-fidelity-cli](../getting-started.md#command-line-interface)**: Command-line interface that uses the core engine
 - **[x-fidelity-vscode](../vscode-extension/overview.md)**: VSCode extension built on core
-- **[x-fidelity-plugins](./plugins.md)**: Plugin implementations that extend core
-- **[x-fidelity-server](./server.md)**: Configuration server using core utilities
+- **[x-fidelity-plugins](../plugins/overview.md)**: Plugin implementations that extend core
+- **[x-fidelity-server](../config-server.md)**: Configuration server using core utilities

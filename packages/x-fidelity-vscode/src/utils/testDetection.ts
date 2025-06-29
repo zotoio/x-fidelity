@@ -36,7 +36,7 @@ export function isTestEnvironment(): boolean {
         return true;
       }
     }
-  } catch (_error) {
+  } catch {
     // Ignore errors in context detection
   }
 

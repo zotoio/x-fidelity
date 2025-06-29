@@ -6,7 +6,6 @@ import { StatusBarProvider } from '../ui/statusBarProvider';
 import { IssuesTreeProvider } from '../ui/treeView/issuesTreeProvider';
 import { VSCodeLogger } from '../utils/vscodeLogger';
 import { getWorkspaceFolder } from '../utils/workspaceUtils';
-import { initializeTreeSitter } from '../utils/astUtils';
 
 export class ExtensionManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
@@ -45,10 +44,10 @@ export class ExtensionManager implements vscode.Disposable {
     this.logger.info('Initializing X-Fidelity extension...');
 
     try {
-      // Initialize tree-sitter asynchronously (don't block extension startup)
-      initializeTreeSitter(this.context).catch(error => {
-        this.logger.warn('Tree-sitter initialization failed:', error);
-      });
+      // Preload plugins first - essential for runtime functionality
+      const { preloadDefaultPlugins } = await import('./pluginPreloader');
+      await preloadDefaultPlugins(this.context);
+      this.logger.info('Plugin preloading completed');
 
       // Set up event listeners
       this.setupEventListeners();

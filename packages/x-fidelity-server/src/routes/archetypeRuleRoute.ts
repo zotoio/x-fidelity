@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { logger, setLogPrefix } from '../utils/serverLogger';
 import { getCachedData, setCachedData } from '../cacheManager';
-import { ConfigManager } from '@x-fidelity/core';
+import { ConfigManager, validateUrlInput } from '@x-fidelity/core';
 import { validateRule } from '@x-fidelity/core';
 import { RuleConfig } from '@x-fidelity/types';
 
@@ -10,6 +10,11 @@ export async function archetypeRuleRoute(req: Request, res: Response) {
     const rule = req.params.rule;
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
+    
+    if (!validateUrlInput(archetype) || !validateUrlInput(rule)) {
+        logger.error(`invalid archetype or rule name: ${archetype}/${rule}`);
+        return res.status(400).json({ error: 'invalid archetype or rule name' });
+    }
     const cacheKey = `rule:${archetype}:${rule}`;
     const cachedData = getCachedData(cacheKey);
     if (cachedData) {

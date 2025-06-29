@@ -472,8 +472,7 @@
     "tree-sitter-javascript": "^0.23.1",
     "tree-sitter-typescript": "^0.23.2",
     "vscode-languageclient": "^9.0.1",
-    "web-tree-sitter": "^0.25.6",
-    "yarn": "^1.22.22"
+    "yaml": "^2.6.0"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
@@ -485,6 +484,7 @@
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.6.0",
+    "@electron/rebuild": "^3.6.2",
     "esbuild": "^0.25.5",
     "eslint": "^9.29.0",
     "glob": "11.0.3",
@@ -501,7 +501,9 @@
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
     "watch": "node --no-warnings=ExperimentalWarning esbuild.config.js --watch",
     "package": "npm run build && vsce package --yarn",
-    "pretest": "npm run compile && npm run lint && npm run clean:test-artifacts && mkdir -p ./vscode-test-user-data && cd ../x-fidelity-cli && yarn build && cd ../../packages/x-fidelity-vscode",
+    "rebuild-native": "npm rebuild --runtime=electron --target=35.5.1 --cache=.npm --disturl=https://electronjs.org/headers",
+    "rebuild-native:check": "node -e \"try { require('tree-sitter'); console.log('✅ Native modules OK'); } catch(e) { console.log('❌ Native rebuild needed:', e.message); process.exit(1); }\"",
+    "pretest": "npm run compile && npm run rebuild-native:check || npm run rebuild-native && npm run lint && npm run clean:test-artifacts && mkdir -p ./vscode-test-user-data && cd ../x-fidelity-cli && yarn build && cd ../../packages/x-fidelity-vscode",
     "test": "yarn lint:fix && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label all",
     "test:unit": "mkdir -p ./vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label unit",
     "test:integration": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label integration",
@@ -521,7 +523,7 @@
     "clean:test-artifacts": "rm -rf .vscode-test/user-data/Crashpad/pending/*.lock .vscode-test/user-data/logs/* ./.vscode-test-user-data || true",
     "publish": "npm run package && vsce publish",
     "install-vsix": "code --install-extension *.vsix",
-    "dev:build": "yarn clean && yarn build:deps && tsc && node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "dev:build": "yarn clean && yarn build:deps && (yarn rebuild-native:check || yarn rebuild-native) && tsc && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "build:deps": "cd ../../ && yarn build",
     "dev:fresh": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --user-data-dir=./.vscode-test-profile .",
     "dev:watch": "yarn dev:build && (yarn watch &) && sleep 2 && code --extensionDevelopmentPath=. --new-window .",
@@ -536,6 +538,6 @@
     "verify:extension": "node scripts/verify-extension.js",
     "verify:quick": "yarn build:test && yarn test:unit && yarn verify:extension",
     "quick-start": "echo '🚀 Quick Start: Press F5 to launch extension, then Ctrl+Shift-P > X-Fidelity: Control Center'",
-    "help": "echo '📖 Development Help:\n  yarn dev - Start development\n  yarn dev:fresh - Fresh profile\n  yarn test:all - Run tests\n  F5 in VSCode - Debug launch\n  yarn verify:all - Full verification'"
+    "help": "echo '📖 Development Help:\n  yarn dev - Start development\n  yarn dev:fresh - Fresh profile\n  yarn test:all - Run tests\n  yarn rebuild-native - Fix Electron native modules\n  F5 in VSCode - Debug launch\n  yarn verify:all - Full verification'"
   }
 }

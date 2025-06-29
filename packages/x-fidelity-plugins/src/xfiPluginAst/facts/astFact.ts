@@ -4,7 +4,7 @@ import { generateAst } from '../../sharedPluginUtils/astUtils';
 
 export const astFact: FactDefn = {
     name: 'ast',
-    description: 'Generates AST for code analysis',
+    description: 'Generates AST for code analysis using centralized Tree-sitter worker',
     fn: async (params: any, almanac: any) => {
         const startTime = Date.now();
         try {

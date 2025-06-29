@@ -674,13 +674,10 @@ export class ControlCenterPanel implements vscode.Disposable {
   }
 
   private getWasmStatus(): 'ready' | 'loading' | 'error' | 'unavailable' {
-    try {
-      // Import the WASM utils to check status
-      const { isWasmTreeSitterReady } = require('../../utils/wasmAstUtils');
-      return isWasmTreeSitterReady() ? 'ready' : 'unavailable';
-    } catch {
-      return 'unavailable';
-    }
+    // AST operations are now handled by centralized worker system
+    // WASM status is no longer directly accessible from the VSCode extension
+    // AST processing is handled transparently through the plugin system
+    return 'unavailable';
   }
 
   private getPluginStatus(): { loaded: number; total: number; failed: string[] } {
