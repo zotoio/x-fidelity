@@ -1,9 +1,29 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import type { AnalysisResult } from '../analysis/analysisManager';
+import type { AnalysisResult } from '../analysis/types';
 import { ConfigManager } from '../configuration/configManager';
 import { VSCodeLogger } from '../utils/vscodeLogger';
+import type { ResultMetadata } from '@x-fidelity/types';
 
+export interface DiagnosticIssue {
+  file: string;
+  line: number;
+  column: number;
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+  ruleId: string;
+  category?: string;
+  code?: string;
+  source?: string;
+  tags?: vscode.DiagnosticTag[];
+}
+
+/**
+ * Enhanced Diagnostic Provider implementing VS Code best practices
+ * - Native integration with Problems panel
+ * - Precise line/column navigation
+ * - Comprehensive diagnostic information
+ * - Performance optimized with batched updates
+ */
 export class DiagnosticProvider implements vscode.Disposable {
   private diagnosticCollection: vscode.DiagnosticCollection;
   private decorationType?: vscode.TextEditorDecorationType;
@@ -12,6 +32,7 @@ export class DiagnosticProvider implements vscode.Disposable {
   private readonly DECORATION_UPDATE_DELAY = 100; // ms
   private lastUpdateTime = 0;
   private logger: VSCodeLogger;
+  private issueCount = 0;
 
   constructor(private configManager: ConfigManager) {
     this.logger = new VSCodeLogger('DiagnosticProvider');
@@ -19,57 +40,421 @@ export class DiagnosticProvider implements vscode.Disposable {
       vscode.languages.createDiagnosticCollection('x-fidelity');
     this.setupDecorations();
     this.setupEventListeners();
+    this.disposables.push(this.diagnosticCollection);
+
+    this.logger.info('Enhanced Diagnostic Provider initialized');
   }
 
-  updateDiagnostics(result: AnalysisResult): void {
+  /**
+   * Update diagnostics from analysis result
+   * Converts X-Fidelity issues to VS Code diagnostics for Problems panel integration
+   */
+  public async updateDiagnostics(
+    result: AnalysisResult | ResultMetadata
+  ): Promise<void> {
     const startTime = performance.now();
-    const operationId = result.operationId || `diagnostics-${Date.now()}`;
 
-    this.logger.debug('Updating diagnostics', {
-      operationId,
-      totalFiles: result.diagnostics.size
-    });
+    try {
+      // Clear existing diagnostics
+      this.diagnosticCollection.clear();
 
-    // Clear existing diagnostics efficiently
-    this.clearDiagnostics();
+      // Extract issues from result
+      const issues = this.extractIssuesFromResult(result);
+      this.logger.info('Extracted issues for diagnostics', {
+        count: issues.length
+      });
 
-    // Batch update diagnostics for better performance
-    const diagnosticUpdates: Array<[vscode.Uri, vscode.Diagnostic[]]> = [];
+      if (issues.length === 0) {
+        this.issueCount = 0;
+        this.lastUpdateTime = performance.now() - startTime;
+        return;
+      }
 
-    for (const [filePath, diagnostics] of result.diagnostics) {
-      const fileUri = this.getFileUri(filePath);
-      if (fileUri) {
-        diagnosticUpdates.push([fileUri, diagnostics]);
+      // Convert to VS Code diagnostics and group by file
+      const diagnosticsByFile = await this.convertToDiagnosticsMap(issues);
+
+      // Batch update diagnostics for all files
+      for (const [fileUri, diagnostics] of diagnosticsByFile) {
+        this.diagnosticCollection.set(fileUri, diagnostics);
+      }
+
+      this.issueCount = issues.length;
+      this.lastUpdateTime = performance.now() - startTime;
+
+      this.logger.info('Diagnostics updated successfully', {
+        issueCount: this.issueCount,
+        fileCount: diagnosticsByFile.size,
+        updateTime: `${this.lastUpdateTime.toFixed(2)}ms`
+      });
+
+      // Show success notification with action to view results
+      vscode.window
+        .showInformationMessage(
+          `X-Fidelity: ${this.issueCount} issues found across ${diagnosticsByFile.size} files`,
+          'View Problems',
+          'Focus Editor'
+        )
+        .then(choice => {
+          if (choice === 'View Problems') {
+            vscode.commands.executeCommand(
+              'workbench.panel.markers.view.focus'
+            );
+          } else if (choice === 'Focus Editor' && diagnosticsByFile.size > 0) {
+            // Open first file with issues
+            const firstFile = Array.from(diagnosticsByFile.keys())[0];
+            vscode.window.showTextDocument(firstFile);
+          }
+        });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error('Failed to update diagnostics', {
+        error: errorMessage
+      });
+
+      vscode.window
+        .showErrorMessage(
+          `Failed to update diagnostics: ${errorMessage}`,
+          'Show Output'
+        )
+        .then(choice => {
+          if (choice === 'Show Output') {
+            vscode.commands.executeCommand(
+              'workbench.action.output.toggleOutput'
+            );
+          }
+        });
+    }
+  }
+
+  /**
+   * Extract issues from analysis result in a standardized format
+   */
+  private extractIssuesFromResult(
+    result: AnalysisResult | ResultMetadata
+  ): DiagnosticIssue[] {
+    const issues: DiagnosticIssue[] = [];
+
+    try {
+      // Handle different result formats
+      const xfiResult = 'XFI_RESULT' in result ? result.XFI_RESULT : result;
+
+      if (!xfiResult || typeof xfiResult !== 'object') {
+        this.logger.warn('No detailed results found in analysis result');
+        return issues;
+      }
+
+      // Check for detailedResults property with proper type checking
+      const detailedResults =
+        (xfiResult as any).detailedResults || (xfiResult as any).issueDetails;
+      if (!detailedResults) {
+        this.logger.warn(
+          'No detailed results or issue details found in analysis result'
+        );
+        return issues;
+      }
+
+      // Process each file's results
+      for (const [filePath, fileResults] of Object.entries(detailedResults)) {
+        if (!fileResults || typeof fileResults !== 'object') {
+          continue;
+        }
+
+        // Handle both detailedResults format and issueDetails format
+        const issuesArray =
+          (fileResults as any).issues ||
+          (Array.isArray(fileResults) ? fileResults : []);
+        if (!Array.isArray(issuesArray)) {
+          continue;
+        }
+
+        for (const issue of issuesArray) {
+          const diagnosticIssue: DiagnosticIssue = {
+            file: filePath,
+            line: Math.max(0, (issue.line || 1) - 1), // VS Code uses 0-based line numbers
+            column: Math.max(0, (issue.column || 1) - 1), // VS Code uses 0-based column numbers
+            message: issue.message || 'Unknown issue',
+            severity: this.mapSeverity(issue.severity),
+            ruleId: issue.ruleId || 'unknown-rule',
+            category: issue.category,
+            code: issue.code,
+            source: 'X-Fidelity'
+          };
+
+          // Add diagnostic tags for deprecated code, etc.
+          if (issue.tags) {
+            diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
+          }
+
+          issues.push(diagnosticIssue);
+        }
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error('Error extracting issues from result', {
+        error: errorMessage
+      });
+    }
+
+    return issues;
+  }
+
+  /**
+   * Convert diagnostic issues to VS Code diagnostics grouped by file
+   */
+  private async convertToDiagnosticsMap(
+    issues: DiagnosticIssue[]
+  ): Promise<Map<vscode.Uri, vscode.Diagnostic[]>> {
+    const diagnosticsByFile = new Map<vscode.Uri, vscode.Diagnostic[]>();
+
+    for (const issue of issues) {
+      try {
+        // Resolve file path to URI
+        const fileUri = await this.resolveFileUri(issue.file);
+        if (!fileUri) {
+          this.logger.warn('Could not resolve file URI', { file: issue.file });
+          continue;
+        }
+
+        // Create VS Code diagnostic
+        const diagnostic = this.createVSCodeDiagnostic(issue);
+
+        // Group by file
+        if (!diagnosticsByFile.has(fileUri)) {
+          diagnosticsByFile.set(fileUri, []);
+        }
+        diagnosticsByFile.get(fileUri)!.push(diagnostic);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        this.logger.warn('Error processing issue for diagnostics', {
+          issue: issue.file,
+          error: errorMessage
+        });
       }
     }
 
-    // Apply all updates at once
-    for (const [uri, diagnostics] of diagnosticUpdates) {
-      this.diagnosticCollection.set(uri, diagnostics);
+    return diagnosticsByFile;
+  }
+
+  /**
+   * Create a VS Code diagnostic from a diagnostic issue
+   */
+  private createVSCodeDiagnostic(issue: DiagnosticIssue): vscode.Diagnostic {
+    const range = new vscode.Range(
+      issue.line,
+      issue.column,
+      issue.line,
+      issue.column + 1 // Highlight at least one character
+    );
+
+    const diagnostic = new vscode.Diagnostic(
+      range,
+      issue.message,
+      this.mapToVSCodeSeverity(issue.severity)
+    );
+
+    // Set diagnostic source and code
+    diagnostic.source = issue.source || 'X-Fidelity';
+    diagnostic.code = issue.code || issue.ruleId;
+
+    // Add tags if present
+    if (issue.tags) {
+      diagnostic.tags = issue.tags;
     }
 
-    const updateTime = performance.now() - startTime;
-    this.logger.debug('Diagnostics updated', {
-      operationId,
-      updateTime,
-      filesUpdated: diagnosticUpdates.length
-    });
+    // Add related information with rule details
+    if (issue.ruleId && issue.category) {
+      diagnostic.relatedInformation = [
+        new vscode.DiagnosticRelatedInformation(
+          new vscode.Location(vscode.Uri.parse('file:///rule-info'), range),
+          `Rule: ${issue.ruleId} (Category: ${issue.category})`
+        )
+      ];
+    }
 
-    // Debounce decoration updates to prevent excessive redraws
-    this.scheduleDecorationUpdate();
+    return diagnostic;
+  }
 
-    // Track performance
-    if (updateTime > 500) {
-      this.logger.warn('Slow diagnostics update detected', {
-        operationId,
-        updateTime,
-        filesUpdated: diagnosticUpdates.length
-      });
+  /**
+   * Resolve file path to VS Code URI
+   */
+  private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
+    try {
+      // Handle absolute paths
+      if (require('path').isAbsolute(filePath)) {
+        return vscode.Uri.file(filePath);
+      }
+
+      // Handle relative paths - resolve against workspace root
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (workspaceFolder) {
+        const absolutePath = require('path').resolve(
+          workspaceFolder.uri.fsPath,
+          filePath
+        );
+        return vscode.Uri.file(absolutePath);
+      }
+
+      // Fallback: try to parse as URI
+      return vscode.Uri.parse(filePath);
+    } catch (error) {
+      this.logger.warn('Failed to resolve file URI', { filePath, error });
+      return null;
     }
   }
 
-  clearDiagnostics(): void {
+  /**
+   * Map X-Fidelity severity to diagnostic severity
+   */
+  private mapSeverity(severity?: string): 'error' | 'warning' | 'info' {
+    switch (severity?.toLowerCase()) {
+      case 'error':
+      case 'critical':
+      case 'high':
+        return 'error';
+      case 'warning':
+      case 'medium':
+        return 'warning';
+      case 'info':
+      case 'low':
+      default:
+        return 'info';
+    }
+  }
+
+  /**
+   * Map X-Fidelity severity to VS Code diagnostic severity
+   */
+  private mapToVSCodeSeverity(
+    severity: 'error' | 'warning' | 'info'
+  ): vscode.DiagnosticSeverity {
+    switch (severity) {
+      case 'error':
+        return vscode.DiagnosticSeverity.Error;
+      case 'warning':
+        return vscode.DiagnosticSeverity.Warning;
+      case 'info':
+      default:
+        return vscode.DiagnosticSeverity.Information;
+    }
+  }
+
+  /**
+   * Map issue tags to VS Code diagnostic tags
+   */
+  private mapDiagnosticTags(tags: string[]): vscode.DiagnosticTag[] {
+    const vscTags: vscode.DiagnosticTag[] = [];
+
+    for (const tag of tags) {
+      switch (tag.toLowerCase()) {
+        case 'deprecated':
+          vscTags.push(vscode.DiagnosticTag.Deprecated);
+          break;
+        case 'unnecessary':
+          vscTags.push(vscode.DiagnosticTag.Unnecessary);
+          break;
+      }
+    }
+
+    return vscTags;
+  }
+
+  /**
+   * Clear all diagnostics
+   */
+  public clearDiagnostics(): void {
     this.diagnosticCollection.clear();
+    this.issueCount = 0;
+    this.logger.info('Diagnostics cleared');
+  }
+
+  /**
+   * Get current diagnostics statistics
+   */
+  public getStats(): { issueCount: number; lastUpdateTime: number } {
+    return {
+      issueCount: this.issueCount,
+      lastUpdateTime: this.lastUpdateTime
+    };
+  }
+
+  /**
+   * Open file at specific issue location
+   */
+  public async openIssueLocation(issue: DiagnosticIssue): Promise<void> {
+    try {
+      const fileUri = await this.resolveFileUri(issue.file);
+      if (!fileUri) {
+        throw new Error(`Cannot resolve file: ${issue.file}`);
+      }
+
+      const range = new vscode.Range(
+        issue.line,
+        issue.column,
+        issue.line,
+        issue.column
+      );
+      const options: vscode.TextDocumentShowOptions = {
+        selection: range,
+        viewColumn: vscode.ViewColumn.Active
+      };
+
+      await vscode.window.showTextDocument(fileUri, options);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error('Failed to open issue location', {
+        issue,
+        error: errorMessage
+      });
+
+      vscode.window.showErrorMessage(
+        `Failed to open ${issue.file}: ${errorMessage}`
+      );
+    }
+  }
+
+  /**
+   * Export diagnostics to external format
+   */
+  public exportDiagnostics(): any[] {
+    const exports: any[] = [];
+
+    this.diagnosticCollection.forEach((uri, diagnostics) => {
+      for (const diagnostic of diagnostics) {
+        exports.push({
+          file: uri.fsPath,
+          line: diagnostic.range.start.line + 1, // Convert back to 1-based
+          column: diagnostic.range.start.character + 1, // Convert back to 1-based
+          message: diagnostic.message,
+          severity: this.mapFromVSCodeSeverity(diagnostic.severity),
+          source: diagnostic.source,
+          code: diagnostic.code
+        });
+      }
+    });
+
+    return exports;
+  }
+
+  /**
+   * Map VS Code severity back to string
+   */
+  private mapFromVSCodeSeverity(severity: vscode.DiagnosticSeverity): string {
+    switch (severity) {
+      case vscode.DiagnosticSeverity.Error:
+        return 'error';
+      case vscode.DiagnosticSeverity.Warning:
+        return 'warning';
+      case vscode.DiagnosticSeverity.Information:
+        return 'info';
+      case vscode.DiagnosticSeverity.Hint:
+        return 'hint';
+      default:
+        return 'info';
+    }
   }
 
   private setupDecorations(): void {
@@ -309,25 +694,6 @@ export class DiagnosticProvider implements vscode.Disposable {
     }
   }
 
-  private getFileUri(filePath: string): vscode.Uri | null {
-    try {
-      // Handle absolute paths
-      if (filePath.startsWith('/') || filePath.includes(':')) {
-        return vscode.Uri.file(filePath);
-      }
-
-      // Handle relative paths
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      if (workspaceFolder) {
-        return vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, filePath));
-      }
-
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
   // Public API for other components
   getDiagnosticsForFile(uri: vscode.Uri): readonly vscode.Diagnostic[] {
     return this.diagnosticCollection.get(uri) || [];
@@ -384,5 +750,7 @@ export class DiagnosticProvider implements vscode.Disposable {
     this.diagnosticCollection.dispose();
     this.decorationType?.dispose();
     this.disposables.forEach(d => d.dispose());
+    this.disposables.length = 0;
+    this.logger.info('Disposing Diagnostic Provider');
   }
 }

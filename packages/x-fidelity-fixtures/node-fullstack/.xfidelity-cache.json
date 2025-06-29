@@ -47,6 +47,55 @@
         },
         "issueDetails": [
           {
+            "filePath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/README.md",
+            "errors": [
+              {
+                "ruleFailure": "noDatabases-iterative",
+                "level": "exempt",
+                "details": {
+                  "message": "code must not directly call databases",
+                  "conditionDetails": {
+                    "fact": "fileData",
+                    "operator": "notEqual",
+                    "value": "REPO_GLOBAL_CHECK"
+                  },
+                  "allConditions": [
+                    {
+                      "fact": "fileData",
+                      "operator": "notEqual",
+                      "value": "REPO_GLOBAL_CHECK",
+                      "path": "$.fileName"
+                    },
+                    {
+                      "fact": "repoFileAnalysis",
+                      "operator": "fileContains",
+                      "value": true,
+                      "params": {
+                        "checkPattern": [
+                          "[\\s\\'\\\"\\.](oracle)[\\s\\'\\\"\\.]",
+                          "[\\s\\'\\\"\\.](postgres)[\\s\\'\\\"\\.]",
+                          "[\\s\\'\\\"\\.](mongodb)[\\s\\'\\\"\\.]"
+                        ],
+                        "resultFact": "fileResultsDB"
+                      }
+                    }
+                  ],
+                  "conditionType": "all",
+                  "ruleDescription": "No description available",
+                  "filePath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/README.md",
+                  "fileName": "README.md",
+                  "details": [
+                    {
+                      "match": "[\\s\\'\\\"\\.](mongodb)[\\s\\'\\\"\\.]",
+                      "lineNumber": 21,
+                      "line": "...se.js` (oracle, postgres, mongodb patterns)"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
             "filePath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/src/components/UserAuth.tsx",
             "errors": [
               {
@@ -162,7 +211,7 @@
               },
               {
                 "ruleFailure": "noDatabases-iterative",
-                "level": "warning",
+                "level": "exempt",
                 "details": {
                   "message": "code must not directly call databases",
                   "conditionDetails": {
@@ -472,7 +521,7 @@
               },
               {
                 "ruleFailure": "noDatabases-iterative",
-                "level": "warning",
+                "level": "exempt",
                 "details": {
                   "message": "code must not directly call databases",
                   "conditionDetails": {
@@ -562,6 +611,56 @@
             ]
           },
           {
+            "filePath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/src/xfiTestMatch.json",
+            "errors": [
+              {
+                "ruleFailure": "invalidSystemIdConfigured",
+                "level": "fatality",
+                "details": {
+                  "message": "One or more of the extracted strings failed remote validation.",
+                  "conditionDetails": {
+                    "fact": "fileData",
+                    "operator": "equal",
+                    "value": "xfiTestMatch.json"
+                  },
+                  "allConditions": [
+                    {
+                      "fact": "fileData",
+                      "operator": "equal",
+                      "value": "xfiTestMatch.json",
+                      "path": "$.fileName"
+                    },
+                    {
+                      "fact": "remoteSubstringValidation",
+                      "operator": "invalidRemoteValidation",
+                      "value": true,
+                      "params": {
+                        "pattern": "\"systemId\":[\\s]*\"([a-z]*)\"",
+                        "flags": "gi",
+                        "validationParams": {
+                          "url": "http://localhost:4200/systemIdValidator",
+                          "method": "POST",
+                          "headers": {
+                            "Content-Type": "application/json"
+                          },
+                          "body": {
+                            "systemId": "#MATCH#"
+                          },
+                          "checkJsonPath": "$.validSystems[?(@.id == '#MATCH#')]"
+                        },
+                        "resultFact": "remoteCheckResultFact"
+                      }
+                    }
+                  ],
+                  "conditionType": "all",
+                  "ruleDescription": "No description available",
+                  "filePath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack/src/xfiTestMatch.json",
+                  "fileName": "xfiTestMatch.json"
+                }
+              }
+            ]
+          },
+          {
             "filePath": "REPO_GLOBAL_CHECK",
             "errors": [
               {
@@ -605,7 +704,7 @@
           }
         ],
         "telemetryData": {
-          "repoUrl": "",
+          "repoUrl": "git@github.com:zotoio/x-fidelity.git",
           "configServer": "none",
           "hostInfo": {
             "platform": "linux",
@@ -614,33 +713,33 @@
             "arch": "x64",
             "cpus": 12,
             "totalMemory": 33270951936,
-            "freeMemory": 16796459008
+            "freeMemory": 13672091648
           },
           "userInfo": {
             "username": "andrewv",
             "homedir": "/home/andrewv",
             "shell": "/bin/bash"
           },
-          "startTime": 1750758712154
+          "startTime": 1751179528102
         },
         "memoryUsage": {
-          "heapTotal": 111370240,
-          "heapUsed": 103858776,
-          "external": 31688315,
-          "rss": 344096768
+          "heapTotal": 124477440,
+          "heapUsed": 64715260,
+          "external": 4293249,
+          "rss": 307548160
         },
         "factMetrics": {
           "repoFileAnalysis": {
-            "executionCount": 12,
-            "totalExecutionTime": 0.0919,
-            "longestExecutionTime": 0.0201,
-            "averageExecutionTime": 0.0077
+            "executionCount": 39,
+            "totalExecutionTime": 0.1081,
+            "longestExecutionTime": 0.0164,
+            "averageExecutionTime": 0.0028
           },
           "repoDependencyAnalysis": {
-            "executionCount": 4,
-            "totalExecutionTime": 0.036,
-            "longestExecutionTime": 0.0194,
-            "averageExecutionTime": 0.009
+            "executionCount": 13,
+            "totalExecutionTime": 0.0416,
+            "longestExecutionTime": 0.0159,
+            "averageExecutionTime": 0.0032
           }
         },
         "options": {
@@ -654,22 +753,40 @@
           "maxFileSize": 1048576,
           "timeout": 30000
         },
-        "startTime": 1750758712154,
-        "finishTime": 1750758712334,
-        "durationSeconds": 0.18,
+        "startTime": 1751179528102,
+        "finishTime": 1751179528658,
+        "durationSeconds": 0.556,
         "xfiVersion": "4.0.0",
         "archetype": "node-fullstack",
-        "fileCount": 3,
-        "totalIssues": 5,
-        "warningCount": 4,
+        "fileCount": 12,
+        "totalIssues": 7,
+        "warningCount": 2,
         "errorCount": 0,
-        "fatalityCount": 1,
-        "exemptCount": 0,
+        "fatalityCount": 2,
+        "exemptCount": 3,
         "repoPath": "/home/andrewv/git/cursor/x-fidelity/packages/x-fidelity-fixtures/node-fullstack",
-        "repoUrl": ""
+        "repoUrl": "git@github.com:zotoio/x-fidelity.git"
       }
     },
     "diagnostics": {
+      "README.md": [
+        {
+          "severity": "Hint",
+          "message": "Required files are missing from the repository",
+          "range": [
+            {
+              "line": 0,
+              "character": 0
+            },
+            {
+              "line": 0,
+              "character": 1
+            }
+          ],
+          "source": "X-Fidelity",
+          "code": "missingRequiredFiles-global"
+        }
+      ],
       "src/components/UserAuth.tsx": [
         {
           "severity": "Warning",
@@ -688,7 +805,7 @@
           "code": "sensitiveLogging-iterative"
         },
         {
-          "severity": "Warning",
+          "severity": "Hint",
           "message": "code must not directly call databases",
           "range": [
             {
@@ -722,7 +839,7 @@
           "code": "sensitiveLogging-iterative"
         },
         {
-          "severity": "Warning",
+          "severity": "Hint",
           "message": "code must not directly call databases",
           "range": [
             {
@@ -738,10 +855,10 @@
           "code": "noDatabases-iterative"
         }
       ],
-      "README.md": [
+      "src/xfiTestMatch.json": [
         {
           "severity": "Hint",
-          "message": "Required files are missing from the repository",
+          "message": "One or more of the extracted strings failed remote validation.",
           "range": [
             {
               "line": 0,
@@ -753,22 +870,24 @@
             }
           ],
           "source": "X-Fidelity",
-          "code": "missingRequiredFiles-global"
+          "code": "invalidSystemIdConfigured"
         }
       ]
     },
-    "timestamp": 1750758712362,
-    "duration": 239,
+    "timestamp": 1751179528667,
+    "duration": 584.0673430000024,
     "summary": {
-      "totalIssues": 5,
-      "filesAnalyzed": 3,
-      "analysisTimeMs": 239,
+      "totalIssues": 7,
+      "filesAnalyzed": 12,
+      "analysisTimeMs": 584.0673430000024,
       "issuesByLevel": {
-        "warning": 4,
-        "fatality": 1
+        "exempt": 3,
+        "warning": 2,
+        "fatality": 2
       }
-    }
+    },
+    "operationId": "analysis-1751179528083"
   },
-  "timestamp": 1750758712370,
-  "hash": "076cf452072193ba8bf35f1c9c47e23e"
+  "timestamp": 1751179528681,
+  "hash": "acee55e6f2f35e699f5e4b58773fde9a"
 }

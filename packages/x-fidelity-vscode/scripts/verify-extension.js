@@ -330,8 +330,7 @@ class ExtensionVerifier {
         'xfidelity.test',
         'xfidelity.runAnalysis',
         'xfidelity.openSettings',
-        'xfidelity.showControlCenter',
-        'xfidelity.detectArchetype'
+        'xfidelity.showControlCenter'
       ];
 
       expectedCommands.forEach(cmdId => {

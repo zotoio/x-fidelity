@@ -21,6 +21,7 @@ node_modules/**
 .vscode-test-profile/
 .vscode-test-user-data/
 *.vsix
+.xfiResults/
 
 # Build configuration
 esbuild.config.js

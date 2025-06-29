@@ -36,35 +36,21 @@ suite('Extension Activation Tests', () => {
 		
 		console.log(`Found ${xfidelityCommands.length} X-Fidelity commands:`, xfidelityCommands);
 		
-		// Essential commands that must be available
+		// Essential commands that must be available (optimized list)
 		const essentialCommands = [
 			'xfidelity.test',
-			'xfidelity.runAnalysis',
-			'xfidelity.showControlCenter',
-			'xfidelity.refreshIssuesTree',
-			'xfidelity.detectArchetype',
-			'xfidelity.runAnalysisWithDir',
 			'xfidelity.getTestResults',
-			'xfidelity.openSettings',
+			'xfidelity.runAnalysis',
 			'xfidelity.cancelAnalysis',
-			'xfidelity.openReports',
-			'xfidelity.resetConfiguration',
-			'xfidelity.addExemption',
-			'xfidelity.addBulkExemptions',
-			'xfidelity.showRuleDocumentation',
-			'xfidelity.showReportHistory',
-			'xfidelity.exportReport',
-			'xfidelity.shareReport',
-			'xfidelity.compareReports',
-			'xfidelity.viewTrends',
-			'xfidelity.showAdvancedSettings',
-			'xfidelity.showDashboard',
-			'xfidelity.showIssueExplorer',
+			'xfidelity.openSettings',
 			'xfidelity.showOutput',
+			'xfidelity.refreshIssuesTree',
 			'xfidelity.issuesTreeGroupBySeverity',
 			'xfidelity.issuesTreeGroupByRule',
 			'xfidelity.issuesTreeGroupByFile',
-			'xfidelity.issuesTreeGroupByCategory'
+			'xfidelity.issuesTreeGroupByCategory',
+			'xfidelity.goToIssue',
+			'xfidelity.showPerformanceMetrics'
 		];
 		
 		for (const command of essentialCommands) {

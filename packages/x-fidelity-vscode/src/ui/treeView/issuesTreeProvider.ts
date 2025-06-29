@@ -19,29 +19,77 @@ export interface IssueTreeItem {
   readonly count?: number;
 }
 
+// Virtual tree node for efficient rendering
+interface VirtualTreeNode {
+  id: string;
+  parent?: VirtualTreeNode;
+  children: VirtualTreeNode[];
+  data: IssueTreeItem;
+  visible: boolean;
+  expanded: boolean;
+}
+
 export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem> {
-  private _onDidChangeTreeData: vscode.EventEmitter<IssueTreeItem | undefined | null> = new vscode.EventEmitter<IssueTreeItem | undefined | null>();
-  readonly onDidChangeTreeData: vscode.Event<IssueTreeItem | undefined | null> = this._onDidChangeTreeData.event;
+  private _onDidChangeTreeData: vscode.EventEmitter<IssueTreeItem | undefined | null> = 
+    new vscode.EventEmitter<IssueTreeItem | undefined | null>();
+  readonly onDidChangeTreeData: vscode.Event<IssueTreeItem | undefined | null> = 
+    this._onDidChangeTreeData.event;
 
   private issues: ProcessedIssue[] = [];
   private groupingMode: GroupingMode = 'severity';
-  private treeData: IssueTreeItem[] = [];
+  private virtualTree: VirtualTreeNode[] = [];
+  private nodeMap = new Map<string, VirtualTreeNode>();
+  
+  // Performance optimization flags
+  private updatePending = false;
+  private lastUpdateTime = 0;
+  private readonly UPDATE_DEBOUNCE_MS = 100;
 
   constructor() {
-    this.refresh();
+    this.rebuildTree();
   }
 
   refresh(): void {
-    this.buildTreeData();
+    // Debounce updates to prevent excessive rebuilds
+    if (this.updatePending) {
+      return;
+    }
+    
+    this.updatePending = true;
+    const now = Date.now();
+    
+    if (now - this.lastUpdateTime < this.UPDATE_DEBOUNCE_MS) {
+      setTimeout(() => {
+        this.performRefresh();
+      }, this.UPDATE_DEBOUNCE_MS);
+    } else {
+      this.performRefresh();
+    }
+  }
+
+  private performRefresh(): void {
+    this.updatePending = false;
+    this.lastUpdateTime = Date.now();
+    this.rebuildTree();
     this._onDidChangeTreeData.fire(null);
   }
 
   setIssues(issues: ProcessedIssue[]): void {
+    // Quick check if issues actually changed
+    if (this.issues.length === issues.length && 
+        this.issues.every((issue, index) => issue.id === issues[index]?.id)) {
+      return; // No changes, skip update
+    }
+    
     this.issues = issues;
     this.refresh();
   }
 
   setGroupingMode(mode: GroupingMode): void {
+    if (this.groupingMode === mode) {
+      return; // No change, skip update
+    }
+    
     this.groupingMode = mode;
     this.refresh();
   }
@@ -67,20 +115,28 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
 
   getChildren(element?: IssueTreeItem): Thenable<IssueTreeItem[]> {
     if (!element) {
-      // Root level - return top-level groups or issues
-      return Promise.resolve(this.treeData);
-    } else if (element.children) {
-      // Return children of a group
-      return Promise.resolve(element.children);
-    } else {
-      // Leaf node - no children
-      return Promise.resolve([]);
+      // Root level - return visible top-level nodes
+      return Promise.resolve(this.virtualTree.filter(node => node.visible).map(node => node.data));
     }
+    
+    // Find node in virtual tree and return visible children
+    const node = this.nodeMap.get(element.id);
+    if (node && node.expanded) {
+      return Promise.resolve(
+        node.children.filter(child => child.visible).map(child => child.data)
+      );
+    }
+    
+    return Promise.resolve([]);
   }
 
-  private buildTreeData(): void {
+  private rebuildTree(): void {
+    // Clear existing tree
+    this.virtualTree = [];
+    this.nodeMap.clear();
+    
     if (this.issues.length === 0) {
-      this.treeData = [{
+      const noIssuesNode = this.createVirtualNode({
         id: 'no-issues',
         label: '✅ No issues found',
         tooltip: 'Great! Your code looks good. Click to run analysis again.',
@@ -90,136 +146,164 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
           command: 'xfidelity.runAnalysis',
           title: 'Run Analysis'
         }
-      }];
+      });
+      this.virtualTree.push(noIssuesNode);
       return;
     }
 
+    // Build tree based on grouping mode
     switch (this.groupingMode) {
       case 'severity':
-        this.treeData = this.buildSeverityTree();
+        this.buildSeverityTree();
         break;
       case 'rule':
-        this.treeData = this.buildRuleTree();
+        this.buildRuleTree();
         break;
       case 'file':
-        this.treeData = this.buildFileTree();
+        this.buildFileTree();
         break;
       case 'category':
-        this.treeData = this.buildCategoryTree();
+        this.buildCategoryTree();
         break;
-      default:
-        this.treeData = this.buildSeverityTree();
     }
   }
 
-  private buildSeverityTree(): IssueTreeItem[] {
+  private createVirtualNode(data: IssueTreeItem, parent?: VirtualTreeNode): VirtualTreeNode {
+    const node: VirtualTreeNode = {
+      id: data.id,
+      parent,
+      children: [],
+      data,
+      visible: true,
+      expanded: data.collapsibleState === vscode.TreeItemCollapsibleState.Expanded
+    };
+    
+    this.nodeMap.set(data.id, node);
+    return node;
+  }
+
+  private buildSeverityTree(): void {
     const severityGroups = this.groupBy(this.issues, issue => issue.severity);
     const severityOrder = ['error', 'warning', 'info', 'hint'];
     
-    return severityOrder
-      .filter(severity => severityGroups[severity]?.length > 0)
-      .map(severity => {
-        const issues = severityGroups[severity];
-        const icon = this.getSeverityIcon(severity);
-        
-        return {
-          id: `severity-${severity}`,
-          label: severity.toUpperCase(),
-          description: `${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
-          tooltip: `${severity.toUpperCase()}: ${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
-          iconPath: icon,
-          collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
-          children: this.buildIssueItems(issues),
-          groupKey: severity,
-          count: issues.length
-        };
+    for (const severity of severityOrder) {
+      if (!severityGroups[severity]?.length) {
+        continue;
+      }
+      
+      const issues = severityGroups[severity];
+      const groupNode = this.createVirtualNode({
+        id: `severity-${severity}`,
+        label: severity.toUpperCase(),
+        description: `${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
+        tooltip: `${severity.toUpperCase()}: ${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
+        iconPath: this.getSeverityIcon(severity),
+        collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
+        groupKey: severity,
+        count: issues.length
       });
+      
+      this.addIssueChildren(groupNode, issues);
+      this.virtualTree.push(groupNode);
+    }
   }
 
-  private buildRuleTree(): IssueTreeItem[] {
+  private buildRuleTree(): void {
     const ruleGroups = this.groupBy(this.issues, issue => issue.rule);
+    const sortedRules = Object.keys(ruleGroups).sort();
     
-    return Object.entries(ruleGroups)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([rule, issues]) => ({
+    for (const rule of sortedRules) {
+      const issues = ruleGroups[rule];
+      const groupNode = this.createVirtualNode({
         id: `rule-${rule}`,
         label: rule,
         description: `${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
-        tooltip: `Rule: ${rule}\n${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
+        tooltip: `Rule: ${rule}\\n${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
         iconPath: new vscode.ThemeIcon('symbol-method'),
         collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
-        children: this.buildIssueItems(issues),
         groupKey: rule,
         count: issues.length
-      }));
+      });
+      
+      this.addIssueChildren(groupNode, issues);
+      this.virtualTree.push(groupNode);
+    }
   }
 
-  private buildFileTree(): IssueTreeItem[] {
+  private buildFileTree(): void {
     const fileGroups = this.groupBy(this.issues, issue => issue.file);
+    const sortedFiles = Object.keys(fileGroups).sort();
     
-    return Object.entries(fileGroups)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([file, issues]) => ({
+    for (const file of sortedFiles) {
+      const issues = fileGroups[file];
+      const groupNode = this.createVirtualNode({
         id: `file-${file}`,
         label: path.basename(file),
         description: path.dirname(file),
-        tooltip: `File: ${file}\n${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
+        tooltip: `File: ${file}\\n${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
         iconPath: vscode.ThemeIcon.File,
         collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
-        children: this.buildIssueItems(issues),
         groupKey: file,
         count: issues.length
-      }));
+      });
+      
+      this.addIssueChildren(groupNode, issues);
+      this.virtualTree.push(groupNode);
+    }
   }
 
-  private buildCategoryTree(): IssueTreeItem[] {
+  private buildCategoryTree(): void {
     const categoryGroups = this.groupBy(this.issues, issue => issue.category || 'General');
+    const sortedCategories = Object.keys(categoryGroups).sort();
     
-    return Object.entries(categoryGroups)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([category, issues]) => ({
+    for (const category of sortedCategories) {
+      const issues = categoryGroups[category];
+      const groupNode = this.createVirtualNode({
         id: `category-${category}`,
         label: category,
         description: `${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
-        tooltip: `Category: ${category}\n${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
+        tooltip: `Category: ${category}\\n${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
         iconPath: new vscode.ThemeIcon('symbol-class'),
         collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
-        children: this.buildIssueItems(issues),
         groupKey: category,
         count: issues.length
-      }));
+      });
+      
+      this.addIssueChildren(groupNode, issues);
+      this.virtualTree.push(groupNode);
+    }
   }
 
-  private buildIssueItems(issues: ProcessedIssue[]): IssueTreeItem[] {
-    return issues
-      .sort((a, b) => {
-        // Sort by file first, then by line number
-        const fileCompare = a.file.localeCompare(b.file);
-        if (fileCompare !== 0) {return fileCompare;}
-        
-        return (a.line || 0) - (b.line || 0);
-      })
-      .map(issue => {
-        const icon = this.getSeverityIcon(issue.severity);
-        const location = issue.line ? `:${issue.line}` : '';
-        const fileName = this.groupingMode === 'file' ? '' : ` in ${path.basename(issue.file)}`;
-        
-        return {
-          id: issue.id,
-          label: issue.message,
-          description: `${issue.rule}${fileName}${location}`,
-          tooltip: this.buildIssueTooltip(issue),
-          iconPath: icon,
-          contextValue: 'issue',
-          collapsibleState: vscode.TreeItemCollapsibleState.None,
-          command: {
-            command: 'xfidelity.goToIssue',
-            title: 'Go to Issue',
-            arguments: [issue]
-          },
-          issue: issue
-        };
-      });
+  private addIssueChildren(parentNode: VirtualTreeNode, issues: ProcessedIssue[]): void {
+    // Sort issues efficiently
+    const sortedIssues = issues.sort((a, b) => {
+      const fileCompare = a.file.localeCompare(b.file);
+      return fileCompare !== 0 ? fileCompare : (a.line || 0) - (b.line || 0);
+    });
+    
+    for (const issue of sortedIssues) {
+      const icon = this.getSeverityIcon(issue.severity);
+      const location = issue.line ? `:${issue.line}` : '';
+      const fileName = this.groupingMode === 'file' ? '' : ` in ${path.basename(issue.file)}`;
+      
+      const issueNode = this.createVirtualNode({
+        id: issue.id,
+        label: issue.message,
+        description: `${issue.rule}${fileName}${location}`,
+        tooltip: this.buildIssueTooltip(issue),
+        iconPath: icon,
+        contextValue: 'issue',
+        collapsibleState: vscode.TreeItemCollapsibleState.None,
+        command: {
+          command: 'xfidelity.goToIssue',
+          title: 'Go to Issue',
+          arguments: [issue]
+        },
+        issue: issue
+      }, parentNode);
+      
+      parentNode.children.push(issueNode);
+    }
   }
 
   private buildIssueTooltip(issue: ProcessedIssue): string {
@@ -247,7 +331,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
     
     parts.push('', issue.message);
     
-    return parts.join('\n');
+    return parts.join('\\n');
   }
 
   private getSeverityIcon(severity: string): vscode.ThemeIcon {
@@ -282,12 +366,11 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
     return result;
   }
 
-  // Method to find issue by ID (useful for commands)
+  // Optimized methods for external access
   findIssueById(id: string): ProcessedIssue | undefined {
     return this.issues.find(issue => issue.id === id);
   }
 
-  // Method to get statistics
   getStatistics() {
     const stats = {
       total: this.issues.length,
@@ -307,10 +390,27 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
         case 'hint': stats.hint++; break;
       }
       
-      if (issue.fixable) {stats.fixable++;}
-      if (issue.exempted) {stats.exempted++;}
+      if (issue.fixable) { stats.fixable++; }
+      if (issue.exempted) { stats.exempted++; }
     }
 
     return stats;
   }
-} 
+
+  // Filter issues for large datasets
+  setFilter(predicate: (issue: ProcessedIssue) => boolean): void {
+    for (const node of this.nodeMap.values()) {
+      if (node.data.issue) {
+        node.visible = predicate(node.data.issue);
+      }
+    }
+    this._onDidChangeTreeData.fire(null);
+  }
+
+  clearFilter(): void {
+    for (const node of this.nodeMap.values()) {
+      node.visible = true;
+    }
+    this._onDidChangeTreeData.fire(null);
+  }
+}

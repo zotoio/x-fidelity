@@ -5,6 +5,27 @@ module.exports = {
     'key-concepts',
     {
       type: 'category',
+      label: 'VSCode Extension',
+      items: [
+        'vscode-extension/overview',
+        'vscode-extension/installation',
+        'vscode-extension/features',
+        'vscode-extension/development',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Packages',
+      items: [
+        'packages/core',
+        'packages/cli',
+        'packages/server',
+        'packages/plugins',
+        'packages/types',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Core Features',
       items: [
         'archetypes',

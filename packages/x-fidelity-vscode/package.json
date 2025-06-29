@@ -20,22 +20,19 @@
   ],
   "activationEvents": [
     "onStartupFinished",
-    "workspaceContains:**/package.json",
-    "workspaceContains:**/pom.xml",
-    "workspaceContains:**/build.gradle",
-    "workspaceContains:**/requirements.txt",
-    "workspaceContains:**/*.csproj"
+    "onLanguage:typescript",
+    "onLanguage:javascript",
+    "onLanguage:java",
+    "onLanguage:python",
+    "onLanguage:csharp"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "xfidelity.test",
-        "title": "X-Fidelity: Test Extension"
-      },
-      {
         "command": "xfidelity.runAnalysis",
-        "title": "X-Fidelity: Run Analysis Now"
+        "title": "X-Fidelity: Run Analysis Now",
+        "icon": "$(play)"
       },
       {
         "command": "xfidelity.cancelAnalysis",
@@ -43,78 +40,35 @@
         "icon": "$(stop)"
       },
       {
-        "command": "xfidelity.runAnalysisWithDir",
-        "title": "X-Fidelity: Debug Analysis with --dir"
-      },
-      {
-        "command": "xfidelity.openSettings",
-        "title": "X-Fidelity: Open Settings"
-      },
-      {
-        "command": "xfidelity.openReports",
-        "title": "X-Fidelity: Open Reports Folder"
-      },
-      {
-        "command": "xfidelity.detectArchetype",
-        "title": "X-Fidelity: Detect Project Archetype"
-      },
-      {
-        "command": "xfidelity.resetConfiguration",
-        "title": "X-Fidelity: Reset Configuration"
-      },
-      {
-        "command": "xfidelity.addExemption",
-        "title": "X-Fidelity: Add Exemption"
-      },
-      {
-        "command": "xfidelity.addBulkExemptions",
-        "title": "X-Fidelity: Add Bulk Exemptions"
-      },
-      {
-        "command": "xfidelity.showRuleDocumentation",
-        "title": "X-Fidelity: Show Rule Documentation"
-      },
-      {
-        "command": "xfidelity.showReportHistory",
-        "title": "X-Fidelity: Show Report History"
-      },
-      {
-        "command": "xfidelity.exportReport",
-        "title": "X-Fidelity: Export Report"
-      },
-      {
-        "command": "xfidelity.shareReport",
-        "title": "X-Fidelity: Share Report"
-      },
-      {
-        "command": "xfidelity.compareReports",
-        "title": "X-Fidelity: Compare Reports"
-      },
-      {
-        "command": "xfidelity.viewTrends",
-        "title": "X-Fidelity: View Trends"
-      },
-      {
-        "command": "xfidelity.showAdvancedSettings",
-        "title": "X-Fidelity: Advanced Settings"
-      },
-      {
-        "command": "xfidelity.showDashboard",
-        "title": "X-Fidelity: Show Dashboard"
-      },
-      {
-        "command": "xfidelity.showIssueExplorer",
-        "title": "X-Fidelity: Issue Explorer"
-      },
-      {
         "command": "xfidelity.showControlCenter",
         "title": "X-Fidelity: Control Center",
         "icon": "$(settings-gear)"
       },
       {
+        "command": "xfidelity.openSettings",
+        "title": "X-Fidelity: Open Settings",
+        "icon": "$(gear)"
+      },
+
+      {
         "command": "xfidelity.showOutput",
         "title": "X-Fidelity: Show Output Channel",
         "icon": "$(output)"
+      },
+      {
+        "command": "xfidelity.showWasmStatus",
+        "title": "X-Fidelity: Show WASM Status",
+        "icon": "$(info)"
+      },
+      {
+        "command": "xfidelity.showPerformanceReport",
+        "title": "X-Fidelity: Show Performance Report",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "xfidelity.showWorkerStats",
+        "title": "X-Fidelity: Worker Statistics",
+        "icon": "$(graph)"
       },
       {
         "command": "xfidelity.refreshIssuesTree",
@@ -124,22 +78,22 @@
       {
         "command": "xfidelity.issuesTreeGroupBySeverity",
         "title": "Group by Severity",
-        "icon": "$(symbol-color)"
+        "icon": "$(symbol-operator)"
       },
       {
-        "command": "xfidelity.issuesTreeGroupByRule",
+        "command": "xfidelity.issuesTreeGroupByRule", 
         "title": "Group by Rule",
-        "icon": "$(symbol-method)"
+        "icon": "$(symbol-rule)"
       },
       {
         "command": "xfidelity.issuesTreeGroupByFile",
-        "title": "Group by File",
+        "title": "Group by File", 
         "icon": "$(symbol-file)"
       },
       {
         "command": "xfidelity.issuesTreeGroupByCategory",
         "title": "Group by Category",
-        "icon": "$(symbol-class)"
+        "icon": "$(symbol-namespace)"
       },
       {
         "command": "xfidelity.goToIssue",
@@ -155,6 +109,26 @@
         "command": "xfidelity.showIssueRuleInfo",
         "title": "Show Rule Info",
         "icon": "$(info)"
+      },
+      {
+        "command": "xfidelity.detectArchetype",
+        "title": "X-Fidelity: Detect Project Archetype",
+        "icon": "$(search)"
+      },
+      {
+        "command": "xfidelity.test",
+        "title": "X-Fidelity: Test Extension",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "xfidelity.getTestResults",
+        "title": "X-Fidelity: Get Test Results",
+        "icon": "$(json)"
+      },
+      {
+        "command": "xfidelity.showPerformanceMetrics",
+        "title": "X-Fidelity: Show Performance Metrics",
+        "icon": "$(dashboard)"
       }
     ],
     "configuration": {
@@ -297,11 +271,7 @@
           "default": 1048576,
           "description": "Maximum file size to analyze (in bytes)."
         },
-        "xfidelity.forceFallbackMode": {
-          "type": "boolean",
-          "default": false,
-          "description": "Force the extension to use fallback CLI mode instead of the integrated extension manager. Useful for debugging or when the extension manager has issues."
-        },
+
         "xfidelity.analysisTimeout": {
           "type": "number",
           "default": 30000,

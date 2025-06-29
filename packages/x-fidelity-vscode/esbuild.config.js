@@ -6,6 +6,7 @@ const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
 
 async function main() {
+  // Build main extension
   const ctx = await esbuild.context({
     entryPoints: ['src/extension.ts'],
     bundle: true,
@@ -61,6 +62,7 @@ async function main() {
     loader: {
       '.json': 'json',
       '.wasm': 'file',
+      '.node': 'file',
     },
     // Bundle splitting for better performance
     splitting: false, // VSCode extensions can't use splitting
@@ -68,18 +70,63 @@ async function main() {
     metafile: true,
   });
 
+  // Build worker thread
+  const workerCtx = await esbuild.context({
+    entryPoints: ['src/workers/analysisWorker.ts'],
+    bundle: true,
+    format: 'cjs',
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: 'node',
+    outfile: 'dist/worker.js',
+    external: [
+      'vscode', // Worker won't have access to VSCode API
+      // Native tree-sitter packages - external for worker
+      'tree-sitter',
+      'tree-sitter-javascript', 
+      'tree-sitter-typescript',
+      'electron',
+      'original-fs'
+    ],
+    logLevel: 'info',
+    target: 'node18',
+    treeShaking: true,
+    define: {
+      'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development'),
+      'global': 'globalThis',
+    },
+    resolveExtensions: ['.ts', '.js', '.json'],
+    mainFields: ['main', 'module'],
+    conditions: ['node'],
+    drop: production ? ['console', 'debugger'] : [],
+    loader: {
+      '.json': 'json',
+      '.wasm': 'file',
+      '.node': 'file',
+    },
+    metafile: true,
+  });
+
   if (watch) {
     console.log('[watch] Starting watch mode...');
     await ctx.watch();
+    await workerCtx.watch();
     console.log('[watch] Watching for changes...');
   } else {
     const result = await ctx.rebuild();
+    const workerResult = await workerCtx.rebuild();
+    
     if (result.metafile) {
       // Log bundle information
       const bundleSize = fs.statSync('dist/extension.js').size;
-      console.log(`[build] Bundle size: ${Math.round(bundleSize / 1024)}KB`);
+      const workerSize = fs.statSync('dist/worker.js').size;
+      console.log(`[build] Main bundle size: ${Math.round(bundleSize / 1024)}KB`);
+      console.log(`[build] Worker bundle size: ${Math.round(workerSize / 1024)}KB`);
     }
+    
     await ctx.dispose();
+    await workerCtx.dispose();
   }
 }
 
