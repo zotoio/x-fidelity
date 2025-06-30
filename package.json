@@ -9,6 +9,7 @@
     "nohoist": [
       "**/x-fidelity-vscode",
       "**/x-fidelity-vscode/**",
+      "**/x-fidelity-fixtures",
       "**/x-fidelity-fixtures/**"
     ]
   },

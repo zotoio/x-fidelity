@@ -1,15 +1,18 @@
+import { XFiPlugin, PluginError } from '@x-fidelity/types';
 import { remoteSubstringValidationFact } from './facts/remoteSubstringValidation';
 import { invalidRemoteValidationOperator } from './operators/invalidRemoteValidation';
-import { FactDefn, OperatorDefn } from '@x-fidelity/types';
 
-export { xfiPluginRemoteStringValidator as default } from './xfiPluginRemoteStringValidator';
-export { xfiPluginRemoteStringValidator } from './xfiPluginRemoteStringValidator';
-
-// Export individual facts and operators for direct use
-export const facts: FactDefn[] = [
-    remoteSubstringValidationFact
-];
-
-export const operators: OperatorDefn[] = [
-    invalidRemoteValidationOperator
-];
+export const xfiPluginRemoteStringValidator: XFiPlugin = {
+    name: 'xfi-plugin-remote-string-validator',
+    version: '1.0.0',
+    description: 'Plugin for remote string validation',
+    facts: [remoteSubstringValidationFact],
+    operators: [invalidRemoteValidationOperator],
+    onError: (error: Error): PluginError => ({
+        message: error.message,
+        level: 'error',
+        severity: 'error',
+        source: 'xfi-plugin-remote-string-validator',
+        details: error.stack
+    })
+};

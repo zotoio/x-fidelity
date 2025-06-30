@@ -13,6 +13,10 @@ export type FactDefn = {
     fn: (params: any, almanac: any) => Promise<any>
     priority?: number
     description?: string
+    type?: 'global' | 'global-function' | 'iterative-function'  // Enhanced type system for generic engine
+    // 'global': precomputed once and cached as static data
+    // 'global-function': function that runs once per repo (e.g., OpenAI with different prompts per rule)  
+    // 'iterative-function': function that runs once per file (default behavior)
 }
 
 export interface ScanResult {
@@ -444,6 +448,21 @@ export interface FileData {
     fileAst?: Record<string, any> | null;  // More specific than any, allows for structured AST objects
     relativePath?: string;
     content?: string;  // v3.24.0 compatibility - alias for fileContent
+    // ✅ Enhanced AST preprocessing support
+    ast?: AstResult;  // Precomputed AST result from repoFilesystemFacts
+    astGenerationTime?: number;  // Time taken to generate AST in milliseconds
+    astGenerationReason?: string;  // Reason if AST generation failed or was skipped
+}
+
+// Enhanced AST result interface for preprocessing optimization
+export interface AstResult {
+    tree: any;  // The Tree-sitter tree object
+    rootNode?: any;  // Root node for convenience
+    reason?: string;  // Reason if AST generation failed
+    language?: string;  // Detected/used language for parsing
+    hasErrors?: boolean;  // Whether the AST contains parsing errors
+    errorCount?: number;  // Number of parsing errors
+    generationTime?: number;  // Time taken to generate AST in milliseconds
 }
 
 export interface ValidationResult {

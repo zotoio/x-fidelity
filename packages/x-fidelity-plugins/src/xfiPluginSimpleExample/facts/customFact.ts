@@ -17,6 +17,8 @@ interface CustomFactAlmanac {
 export const customFact: FactDefn = {
     name: 'customFact',
     description: 'A simple example fact',
+    type: 'iterative-function',  // ✅ Iterative-function fact - runs once per file (default behavior)
+    priority: 1,                 // ✅ Default priority for iterative functions
     fn: async (params: unknown, almanac?: unknown): Promise<boolean> => {
         try {
             const factParams = params as CustomFactParams;

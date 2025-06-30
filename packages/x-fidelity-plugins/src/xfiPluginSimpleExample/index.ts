@@ -1,15 +1,18 @@
+import { XFiPlugin, PluginError } from '@x-fidelity/types';
 import { customFact } from './facts/customFact';
 import { customOperator } from './operators/customOperator';
-import { FactDefn, OperatorDefn } from '@x-fidelity/types';
 
-export { xfiPluginSimpleExample as default } from './xfiPluginSimpleExample';
-export { xfiPluginSimpleExample } from './xfiPluginSimpleExample';
-
-// Export individual facts and operators for direct use
-export const facts: FactDefn[] = [
-    customFact
-];
-
-export const operators: OperatorDefn[] = [
-    customOperator
-];
+export const xfiPluginSimpleExample: XFiPlugin = {
+    name: 'xfi-plugin-simple-example',
+    version: '1.0.0',
+    description: 'Simple example plugin for x-fidelity',
+    facts: [customFact],
+    operators: [customOperator],
+    onError: (error: Error): PluginError => ({
+        message: error.message,
+        level: 'error',
+        severity: 'error',
+        source: 'xfi-plugin-simple-example',
+        details: error.stack
+    })
+};

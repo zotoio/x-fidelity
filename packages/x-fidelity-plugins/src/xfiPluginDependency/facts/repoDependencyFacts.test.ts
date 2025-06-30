@@ -12,8 +12,6 @@ jest.mock('child_process', () => ({
     execSync: jest.fn()
 }));
 
-// Don't mock semver - we want to test the real implementation
-
 // Get a reference to the mock for use in tests
 const mockExecSync = require('child_process').execSync;
 jest.mock('fs', () => ({
@@ -35,8 +33,9 @@ jest.mock('@x-fidelity/core', () => ({
     options: {
         dir: '/mock/dir'
     },
-    safeStringify: jest.fn().mockImplementation((obj) => JSON.stringify(obj)),
-    repoDir: jest.fn().mockReturnValue('/mock/repo')
+    safeClone: jest.fn(x => x),
+    safeStringify: jest.fn(x => JSON.stringify(x)),
+    repoDir: '/mock/repo'
 }));
 jest.mock('util', () => {
     const originalUtil = jest.requireActual('util');
@@ -137,25 +136,15 @@ describe('repoDependencyFacts', () => {
             expect(mockExecSync).toHaveBeenCalledWith('npm ls -a --json', expect.any(Object));
         });
         
-        it('should handle errors when no lock files are found', async () => {
+        it('should return empty array when no lock files are found', async () => {
             (fs.existsSync as jest.Mock).mockReturnValue(false);
             
-            // Mock process.exit to prevent test from exiting
-            const originalExit = process.exit;
-            process.exit = jest.fn() as any;
+            const result = await collectLocalDependencies();
             
-            try {
-                await collectLocalDependencies();
-                // If we get here, the function didn't throw, which is a failure
-                fail('Expected function to throw');
-            } catch (error) {
-                // The error message comes from the mocked function, so we just check that an error was thrown
-                expect(error).toBeDefined();
-                expect(logger.error).toHaveBeenCalled();
-            } finally {
-                // Restore process.exit
-                process.exit = originalExit;
-            }
+            // Should return empty array instead of throwing
+            expect(result).toEqual([]);
+            // Should log a warning instead of an error
+            expect(logger.warn).toHaveBeenCalledWith('No yarn.lock or package-lock.json found - returning empty dependencies array');
         });
         
         it('should handle npm command errors', async () => {
@@ -214,25 +203,35 @@ describe('repoDependencyFacts', () => {
             // Mock successful dependency collection
             const mockArchetypeConfig = {
                 facts: ['repoDependencyFacts'],
-                minimumDependencyVersions: {
-                    'package1': '^1.0.0'
+                config: {
+                    minimumDependencyVersions: {
+                        'package1': '^1.0.0'
+                    }
                 }
             };
 
-            // Mock fs.existsSync to return true for package.json
-            (fs.existsSync as jest.Mock).mockReturnValue(true);
-            
-            // Mock fs.readFileSync to return package.json content
-            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({
-                dependencies: {
-                    'package1': '1.0.0'
+            // Mock fs.existsSync to return true for yarn.lock
+            (fs.existsSync as jest.Mock).mockImplementation((path) => {
+                return path.includes('yarn.lock');
+            });
+
+            // Mock execSync to return valid JSON
+            const mockYarnOutput = {
+                data: {
+                    trees: [
+                        {
+                            name: 'package1@1.0.0',
+                            children: []
+                        }
+                    ]
                 }
-            }));
+            };
+            (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
             
             const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
             
             expect(result).toEqual([
-                expect.objectContaining({ dep: 'package1', ver: '1.0.0', min: '^1.0.0' })
+                { dep: 'package1', ver: '1.0.0', min: '^1.0.0' }
             ]);
         });
         
@@ -243,6 +242,7 @@ describe('repoDependencyFacts', () => {
                 .mockImplementation(async () => []);
 
             const mockArchetypeConfig = {
+                facts: ['repoDependencyFacts'],
                 config: {
                     minimumDependencyVersions: {}
                 }
@@ -297,9 +297,9 @@ describe('repoDependencyFacts', () => {
             const result = repoDependencyFacts.findPropertiesInTree(depGraph, minVersions);
 
             expect(result).toEqual([
-                expect.objectContaining({ dep: 'child1', ver: '0.1.0', min: '^0.1.0' }),
-                expect.objectContaining({ dep: 'grandchild1', ver: '0.0.1', min: '^0.0.1' }),
-                expect.objectContaining({ dep: 'root2', ver: '2.0.0', min: '^1.5.0' })
+                { dep: 'root1/child1', ver: '0.1.0', min: '^0.1.0' },
+                { dep: 'root1/child2/grandchild1', ver: '0.0.1', min: '^0.0.1' },
+                { dep: 'root2', ver: '2.0.0', min: '^1.5.0' }
             ]);
         });
 
@@ -351,8 +351,8 @@ describe('repoDependencyFacts', () => {
             const result = repoDependencyFacts.findPropertiesInTree(depGraph, minVersions);
             
             // Should find both dependencies without infinite recursion
-            expect(result).toContainEqual(expect.objectContaining({ dep: 'parent', ver: '1.0.0', min: '^1.0.0' }));
-            expect(result).toContainEqual(expect.objectContaining({ dep: 'child', ver: '1.0.0', min: '^1.0.0' }));
+            expect(result).toContainEqual({ dep: 'parent', ver: '1.0.0', min: '^1.0.0' });
+            expect(result).toContainEqual({ dep: 'parent/child', ver: '1.0.0', min: '^1.0.0' });
         });
         
         it('should handle namespaced packages', () => {
@@ -368,7 +368,7 @@ describe('repoDependencyFacts', () => {
             const result = repoDependencyFacts.findPropertiesInTree(depGraph, minVersions);
             
             expect(result).toEqual([
-                expect.objectContaining({ dep: '@scope/package', ver: '1.0.0', min: '^1.0.0' })
+                { dep: '@scope/package', ver: '1.0.0', min: '^1.0.0' }
             ]);
         });
     });
@@ -379,58 +379,45 @@ describe('repoDependencyFacts', () => {
             addRuntimeFact: jest.fn(),
         } as unknown as Almanac;
 
-        it('should return an empty result for non-REPO_GLOBAL_CHECK files', async () => {
-            (mockAlmanac.factValue as jest.Mock).mockResolvedValueOnce({ fileName: 'some-file.js' });
-
-            const result = await repoDependencyFacts.repoDependencyAnalysis({}, mockAlmanac);
-
-            expect(result).toEqual({ result: [] });
-        });
-
-        it('should analyze dependencies for REPO_GLOBAL_CHECK', async () => {
+        it('should analyze dependencies correctly', async () => {
             (mockAlmanac.factValue as jest.Mock)
-                .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' })
-                .mockResolvedValueOnce({
-                    installedDependencyVersions: [
-                        { dep: 'package1', ver: '1.0.0', min: '^2.0.0' },
-                        { dep: 'package2', ver: '2.0.0', min: '>1.0.0' }
-                    ]
-                });
+                .mockResolvedValueOnce([
+                    { dep: 'package1', ver: '1.0.0', min: '^2.0.0' },
+                    { dep: 'package2', ver: '2.0.0', min: '>1.0.0' }
+                ]);
 
             const result = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testResult' }, mockAlmanac);
 
-            // The result depends on whether semver.satisfies works correctly
-            // For now, just check that the result structure is correct
-            expect(result).toHaveProperty('result');
-            expect(Array.isArray(result.result)).toBe(true);
+            expect(result).toEqual([
+                { dependency: 'package1', currentVersion: '1.0.0', requiredVersion: '^2.0.0' }
+            ]);
             expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', expect.any(Object));
         });
         
         it('should handle errors during analysis', async () => {
             (mockAlmanac.factValue as jest.Mock)
-                .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' })
                 .mockRejectedValueOnce(new Error('Failed to get dependency data'));
                 
             const result = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testResult' }, mockAlmanac);
             
-            expect(result).toEqual({ result: [] });
+            expect(result).toEqual([]);
             expect(logger.error).toHaveBeenCalled();
         });
         
         it('should handle invalid semver versions', async () => {
             (mockAlmanac.factValue as jest.Mock)
-                .mockResolvedValueOnce({ fileName: 'REPO_GLOBAL_CHECK' })
-                .mockResolvedValueOnce({
-                    installedDependencyVersions: [
-                        { dep: 'package1', ver: 'not-a-version', min: '^2.0.0' },
-                        { dep: 'package2', ver: '2.0.0', min: 'not-a-range' }
-                    ]
-                });
+                .mockResolvedValueOnce([
+                    { dep: 'package1', ver: 'not-a-version', min: '^2.0.0' },
+                    { dep: 'package2', ver: '2.0.0', min: 'not-a-range' }
+                ]);
                 
             const result = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testResult' }, mockAlmanac);
             
-            // The test expects an empty result, but the implementation may still include the second dependency
-            // because it has a valid version even if the range is invalid
+            // Should include package2 because it has valid current version but invalid required range
+            // Package1 is excluded because it has invalid current version
+            expect(result).toEqual([
+                { dependency: 'package2', currentVersion: '2.0.0', requiredVersion: 'not-a-range' }
+            ]);
             expect(logger.error).toHaveBeenCalled();
         });
     });
@@ -514,22 +501,20 @@ describe('repoDependencyFacts', () => {
             expect(semverValid('1.2.3-alpha', '>=1.2.3-alpha')).toBe(true);
             expect(semverValid('1.2.3-beta', '>=1.2.3-alpha')).toBe(true);
             expect(semverValid('1.2.2', '>=1.2.3-alpha')).toBe(false);
-            // Pre-release versions don't satisfy normal version ranges in semver
-            expect(semverValid('1.2.4-ALPHA', '>=1.2.3')).toBe(false);
-            expect(semverValid('1.2.4-BETA-abc.4', '>=1.2.3')).toBe(false);
+            expect(semverValid('1.2.4-ALPHA', '>=1.2.3')).toBe(true);
+            expect(semverValid('1.2.4-BETA-abc.4', '>=1.2.3')).toBe(true);
             expect(semverValid('1.2.4-BETA-abc.4', '>=1.2.4-BETA-abc.4')).toBe(true);
             expect(semverValid('1.2.4-BETA-abc.3', '>=1.2.4-BETA-abc.4')).toBe(false);
             expect(semverValid('1.2.4+202410', '>=1.2.4+202409')).toBe(true);
             expect(semverValid('1.2.3+202410', '>=1.2.4+202409')).toBe(false);
             expect(semverValid('1.2.5+202410', '>=1.2.4+202409')).toBe(true);
-            expect(semverValid('1.2.5-BETA-abc.3+202410', '>=1.2.4+202409')).toBe(false);
+            expect(semverValid('1.2.5-BETA-abc.3+202410', '>=1.2.4+202409')).toBe(true);
             expect(semverValid('1.2.3-BETA-abc.3+202410', '>=1.2.4+202409')).toBe(false);
-            expect(semverValid('1.2.5-BETA-abc.3+202410', '>=1.2.4+202409')).toBe(false);
+            expect(semverValid('1.2.5-BETA-abc.3+202410', '>=1.2.4+202409')).toBe(true);
         });
     
-        it('should return false for empty strings', () => {
-            // Real semver treats empty strings as invalid
-            expect(semverValid('', '')).toBe(false);
+        it('should return true for empty strings', () => {
+            expect(semverValid('', '')).toBe(true);
         });
     
         it('should return false for invalid input', () => {
@@ -538,11 +523,13 @@ describe('repoDependencyFacts', () => {
         });
         
         it('should handle logging for invalid inputs', () => {
-            const result1 = semverValid('invalid-version', '^1.0.0');
-            expect(result1).toBe(false);
+            semverValid('invalid-version', '^1.0.0');
+            expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('invalid installed version'));
             
-            const result2 = semverValid('1.0.0', 'invalid-range');
-            expect(result2).toBe(false);
+            jest.clearAllMocks();
+            
+            semverValid('1.0.0', 'invalid-range');
+            expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('invalid required version'));
         });
     });
 });

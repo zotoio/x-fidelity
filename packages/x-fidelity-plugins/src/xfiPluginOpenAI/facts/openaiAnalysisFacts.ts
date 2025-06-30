@@ -1,6 +1,6 @@
 import { logger, isOpenAIEnabled, aiSuggestionsSchema } from '@x-fidelity/core';
 import { OpenAI } from 'openai';
-import { FileData } from '@x-fidelity/types';
+import { FileData, FactDefn } from '@x-fidelity/types';
 import { ChatCompletionCreateParams } from 'openai/resources/chat/completions';
 import { Almanac } from 'json-rules-engine';
 import { ResponseFormatJSONSchema } from 'openai/resources';
@@ -13,21 +13,22 @@ if (isOpenAIEnabled()) {
     openai = new OpenAI(configuration); 
 }
 
-const openaiAnalysis = async function (params: any, almanac: Almanac) {
+// ✅ Export the function for testing - defined first to avoid circular reference
+export const openaiAnalysisFn = async (params: any, almanac: Almanac) => {
+   
     let result: object = {'result': []};
     const model = process.env.OPENAI_MODEL || 'gpt-4o';
     
     try {
-        if (!openai) {
-            throw new Error('OpenAI client is not initialized');
+        if (!openai || !isOpenAIEnabled()) {
+            logger.debug('OpenAI is not enabled or client not initialized');
+            return result;  // Early return when OpenAI is disabled
         }
 
         const openaiSystemPrompt: string = await almanac.factValue('openaiSystemPrompt');
         const fileData: FileData = await almanac.factValue('fileData');
 
-        if (fileData.fileName !== 'REPO_GLOBAL_CHECK') {
-            return result;
-        }
+        // ✅ REMOVED: No longer need REPO_GLOBAL_CHECK since this is now a global fact that runs once per repo
 
         const responseFormat: ResponseFormatJSONSchema.JSONSchema = {
             name: 'aiSuggestions', 
@@ -133,6 +134,15 @@ const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
         logger.debug(`systemPrompt: ${systemPrompt}`);
 
     return systemPrompt;
-}    
+}
+
+// ✅ Define the FactDefn after the function to avoid circular reference
+const openaiAnalysis: FactDefn = {
+    name: 'openaiAnalysis',
+    description: 'Analyzes the codebase using OpenAI',
+    type: 'global-function',  // ✅ Global-function fact - runs once per repo with different params per rule
+    priority: 3,              // ✅ Lower priority since it depends on other facts
+    fn: openaiAnalysisFn
+};
 
 export { collectOpenaiAnalysisFacts, openaiAnalysis };

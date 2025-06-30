@@ -1,4 +1,4 @@
-import { XFiPlugin, PluginError, FactDefn, OperatorDefn } from '@x-fidelity/types';
+import { XFiPlugin, PluginError } from '@x-fidelity/types';
 import { repoFilesFact, repoFileAnalysisFact } from './facts/repoFilesystemFacts';
 import { fileContains } from './operators/fileContains';
 import { fileContainsWithPosition } from './operators/fileContainsWithPosition';
@@ -6,7 +6,7 @@ import { nonStandardDirectoryStructure } from './operators/nonStandardDirectoryS
 import { hasFilesWithMultiplePatterns } from './operators/hasFilesWithMultiplePatterns';
 
 export const xfiPluginFilesystem: XFiPlugin = {
-    name: 'xfi-plugin-filesystem',
+    name: 'xfiPluginFilesystem',
     version: '1.0.0',
     description: 'Plugin for filesystem operations and file analysis',
     facts: [repoFilesFact, repoFileAnalysisFact],
@@ -20,22 +20,7 @@ export const xfiPluginFilesystem: XFiPlugin = {
         message: error.message,
         level: 'error',
         severity: 'error',
-        source: 'xfi-plugin-filesystem',
+        source: 'xfiPluginFilesystem',
         details: error.stack
     })
 };
-
-export default xfiPluginFilesystem;
-
-// Export individual facts and operators for direct use
-export const facts: FactDefn[] = [
-    repoFilesFact, 
-    repoFileAnalysisFact
-];
-
-export const operators: OperatorDefn[] = [
-    fileContains,
-    fileContainsWithPosition,
-    nonStandardDirectoryStructure,
-    hasFilesWithMultiplePatterns
-]; 

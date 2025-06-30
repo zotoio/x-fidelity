@@ -49,6 +49,8 @@ function getRuleContext(almanac: any, params: any): string {
 export const globalFileAnalysis: FactDefn = {
     name: 'globalFileAnalysis',
     description: 'Analyzes global file patterns and structure with enhanced position tracking',
+    type: 'iterative-function',  // ✅ Iterative-function fact - runs once per file (default behavior)
+    priority: 2,                 // ✅ Medium priority for pattern analysis
     fn: async (params: any, almanac: any) => {
         const result: any = { 
             patternData: [],

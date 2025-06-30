@@ -4,7 +4,9 @@ import { logger } from '@x-fidelity/core';
 
 export const hookDependencyFact: FactDefn = {
     name: 'hookDependency',
-    description: 'Analyzes React hook dependencies',
+    description: 'Analyzes React hook dependencies using precomputed AST',
+    type: 'iterative-function',  // ✅ Iterative function - runs once per file (default behavior)
+    priority: 2,                 // ✅ Lower priority than AST fact (depends on AST)
     fn: async (params: unknown, almanac?: unknown) => {
         try {
             const fileData = params as FileData;

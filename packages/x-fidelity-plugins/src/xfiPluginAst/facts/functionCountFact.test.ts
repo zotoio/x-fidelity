@@ -17,7 +17,7 @@ describe('functionCountFact', () => {
 
     it('should have correct metadata', () => {
         expect(functionCountFact.name).toBe('functionCount');
-        expect(functionCountFact.description).toBe('Counts the number of functions in a file');
+        expect(functionCountFact.description).toBe('Counts the number of functions in a file using precomputed AST');
         expect(typeof functionCountFact.fn).toBe('function');
     });
 

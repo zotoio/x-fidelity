@@ -36,13 +36,15 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
         
         // Only add facts that don't depend on fileData at engine setup time
         // File-dependent facts (AST-based) will be available through plugin registry during execution
-        const globalFacts = pluginFacts.filter(fact => 
-            !['ast', 'functionComplexity', 'functionCount', 'codeRhythm'].includes(fact.name)
+        // Exclude facts with type: 'global' since they are pre-computed in analyzer.ts
+        const nonGlobalFacts = pluginFacts.filter(fact => 
+            !['ast', 'functionComplexity', 'functionCount', 'codeRhythm'].includes(fact.name) &&
+            fact.type !== 'global'
         );
         
-        logger.info(`Adding ${globalFacts.length} global facts to engine: ${globalFacts.map(f => f.name).join(', ')}`);
-        for (const fact of globalFacts) {
-            logger.debug(`Adding global fact to engine: ${fact.name}`);
+        logger.info(`Adding ${nonGlobalFacts.length} non-global facts to engine: ${nonGlobalFacts.map(f => f.name).join(', ')}`);
+        for (const fact of nonGlobalFacts) {
+            logger.debug(`Adding non-global fact to engine: ${fact.name}`);
             engine.addFact(fact.name, fact.fn, { priority: fact.priority || 1 });
         }
 

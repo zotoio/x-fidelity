@@ -1,16 +1,21 @@
+import { XFiPlugin, PluginError } from '@x-fidelity/types';
 import { effectCleanupFact } from './facts/effectCleanupFact';
 import { hookDependencyFact } from './facts/hookDependencyFact';
-import { FactDefn, OperatorDefn } from '@x-fidelity/types';
 
-export { xfiPluginReactPatterns as default } from './xfiPluginReactPatterns';
-export { xfiPluginReactPatterns } from './xfiPluginReactPatterns';
-
-// Export individual facts and operators for direct use
-export const facts: FactDefn[] = [
-    effectCleanupFact,
-    hookDependencyFact
-];
-
-export const operators: OperatorDefn[] = [
-    // No operators in this plugin currently
-];
+export const xfiPluginReactPatterns: XFiPlugin = {
+    name: 'xfiPluginReactPatterns',
+    version: '1.0.0',
+    description: 'Plugin for analyzing React patterns',
+    facts: [
+        effectCleanupFact,
+        hookDependencyFact
+    ],
+    operators: [],
+    onError: (error: Error): PluginError => ({
+        message: error.message,
+        level: 'error',
+        severity: 'error',
+        source: 'xfiPluginReactPatterns',
+        details: error.stack
+    })
+};

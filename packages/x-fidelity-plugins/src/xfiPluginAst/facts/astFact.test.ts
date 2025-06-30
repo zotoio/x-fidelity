@@ -26,7 +26,7 @@ describe('astFact', () => {
 
     it('should have correct metadata', () => {
         expect(astFact.name).toBe('ast');
-        expect(astFact.description).toBe('Generates AST for code analysis using centralized Tree-sitter worker');
+        expect(astFact.description).toBe('Uses precomputed AST from file preprocessing or generates AST for code analysis using centralized Tree-sitter worker');
         expect(typeof astFact.fn).toBe('function');
     });
 
@@ -135,7 +135,7 @@ describe('astFact', () => {
 
         await astFact.fn(params, mockAlmanac);
 
-        expect(mockLogger.debug).toHaveBeenCalledWith('Adding AST to almanac:', 'myAstResult');
+        expect(mockLogger.debug).toHaveBeenCalledWith('Adding generated AST to almanac:', 'myAstResult');
         expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('myAstResult', mockResult);
     });
 

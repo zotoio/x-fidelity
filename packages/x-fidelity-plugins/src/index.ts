@@ -12,17 +12,6 @@ export { xfiPluginRemoteStringValidator } from './xfiPluginRemoteStringValidator
 export { xfiPluginRequiredFiles } from './xfiPluginRequiredFiles';
 export { xfiPluginSimpleExample } from './xfiPluginSimpleExample';
 
-// Also export as default exports for compatibility
-export { default as xfiPluginAstDefault } from './xfiPluginAst';
-export { default as xfiPluginDependencyDefault } from './xfiPluginDependency';
-export { default as xfiPluginFilesystemDefault } from './xfiPluginFilesystem';
-export { default as xfiPluginOpenAIDefault } from './xfiPluginOpenAI';
-export { default as xfiPluginPatternsDefault } from './xfiPluginPatterns';
-export { default as xfiPluginReactPatternsDefault } from './xfiPluginReactPatterns';
-export { default as xfiPluginRemoteStringValidatorDefault } from './xfiPluginRemoteStringValidator';
-export { default as xfiPluginRequiredFilesDefault } from './xfiPluginRequiredFiles';
-export { default as xfiPluginSimpleExampleDefault } from './xfiPluginSimpleExample';
-
 // Create a registry of all available plugins for dynamic loading
 export const availablePlugins = {
     xfiPluginAst: () => import('./xfiPluginAst').then(m => m.xfiPluginAst),

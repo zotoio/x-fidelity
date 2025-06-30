@@ -9,16 +9,7 @@
                 "value": "REPO_GLOBAL_CHECK"
             },
             {
-                "fact": "repoDependencyAnalysis", 
-                "params": {
-                    "resultFact": "repoDependencyResults",
-                    "minimumDependencyVersions": {
-                        "typescript": "5.0.0",
-                        "node": "18.0.0",
-                        "react": "18.2.0",
-                        "next": "13.0.0"
-                    }
-                },
+                "fact": "repoDependencyAnalysis",
                 "operator": "outdatedFramework",
                 "value": true
             }
@@ -29,7 +20,7 @@
         "params": {
             "message": "Core framework dependencies do not meet minimum version requirements! Please update your dependencies to the required versions.",
             "details": {
-                "fact": "repoDependencyResults"
+                "fact": "repoDependencyAnalysis"
             }
         }
     },

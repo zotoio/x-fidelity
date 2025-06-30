@@ -8,6 +8,8 @@ export interface DiagnosticIssue {
   file: string;
   line: number;
   column: number;
+  endLine?: number;
+  endColumn?: number;
   message: string;
   severity: 'error' | 'warning' | 'info';
   ruleId: string;
@@ -163,30 +165,65 @@ export class DiagnosticProvider implements vscode.Disposable {
         // Handle both detailedResults format and issueDetails format
         const issuesArray =
           (fileResults as any).issues ||
+          (fileResults as any).errors ||
           (Array.isArray(fileResults) ? fileResults : []);
         if (!Array.isArray(issuesArray)) {
           continue;
         }
 
         for (const issue of issuesArray) {
-          const diagnosticIssue: DiagnosticIssue = {
-            file: filePath,
-            line: Math.max(0, (issue.line || 1) - 1), // VS Code uses 0-based line numbers
-            column: Math.max(0, (issue.column || 1) - 1), // VS Code uses 0-based column numbers
-            message: issue.message || 'Unknown issue',
-            severity: this.mapSeverity(issue.severity),
-            ruleId: issue.ruleId || 'unknown-rule',
-            category: issue.category,
-            code: issue.code,
-            source: 'X-Fidelity'
-          };
+          // Extract location information from multiple possible formats
+          const locationInfo = this.extractLocationInfo(issue);
 
-          // Add diagnostic tags for deprecated code, etc.
-          if (issue.tags) {
-            diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
+          // Create multiple diagnostics for complex issues with multiple locations
+          if (locationInfo.locations && locationInfo.locations.length > 0) {
+            // Handle multiple locations (e.g., function complexity with multiple functions)
+            for (const location of locationInfo.locations) {
+              const diagnosticIssue: DiagnosticIssue = {
+                file: filePath,
+                line: location.line,
+                column: location.column,
+                endLine: location.endLine,
+                endColumn: location.endColumn,
+                message: this.formatComplexMessage(issue, location),
+                severity: this.mapSeverity(issue.level || issue.severity),
+                ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
+                category: issue.category,
+                code: issue.code,
+                source: 'X-Fidelity'
+              };
+
+              // Add diagnostic tags for deprecated code, etc.
+              if (issue.tags) {
+                diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
+              }
+
+              issues.push(diagnosticIssue);
+            }
+          } else {
+            // Handle simple single location
+            const diagnosticIssue: DiagnosticIssue = {
+              file: filePath,
+              line: locationInfo.line,
+              column: locationInfo.column,
+              endLine: locationInfo.endLine,
+              endColumn: locationInfo.endColumn,
+              message:
+                issue.details?.message || issue.message || 'Unknown issue',
+              severity: this.mapSeverity(issue.level || issue.severity),
+              ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
+              category: issue.category,
+              code: issue.code,
+              source: 'X-Fidelity'
+            };
+
+            // Add diagnostic tags for deprecated code, etc.
+            if (issue.tags) {
+              diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
+            }
+
+            issues.push(diagnosticIssue);
           }
-
-          issues.push(diagnosticIssue);
         }
       }
     } catch (error) {
@@ -198,6 +235,136 @@ export class DiagnosticProvider implements vscode.Disposable {
     }
 
     return issues;
+  }
+
+  /**
+   * Extract location information from various X-Fidelity issue formats
+   */
+  private extractLocationInfo(issue: any): {
+    line: number;
+    column: number;
+    endLine?: number;
+    endColumn?: number;
+    locations?: Array<{
+      line: number;
+      column: number;
+      endLine?: number;
+      endColumn?: number;
+      context?: any;
+    }>;
+  } {
+    // Default location (0-based for VSCode)
+    let line = 0;
+    let column = 0;
+    let endLine: number | undefined;
+    let endColumn: number | undefined;
+    const locations: Array<{
+      line: number;
+      column: number;
+      endLine?: number;
+      endColumn?: number;
+      context?: any;
+    }> = [];
+
+    // Check for simple lineNumber format
+    if (issue.lineNumber && typeof issue.lineNumber === 'number') {
+      line = Math.max(0, issue.lineNumber - 1); // Convert to 0-based
+      column = Math.max(0, (issue.column || 1) - 1); // Convert to 0-based
+    }
+
+    // Check for details array with line information (e.g., sensitive logging)
+    if (issue.details && Array.isArray(issue.details)) {
+      for (const detail of issue.details) {
+        if (detail.lineNumber && typeof detail.lineNumber === 'number') {
+          locations.push({
+            line: Math.max(0, detail.lineNumber - 1), // Convert to 0-based
+            column: 0, // No column info in simple format
+            context: detail
+          });
+        }
+      }
+    }
+
+    // Check for AST-based location information (e.g., function complexity)
+    if (
+      issue.details &&
+      issue.details.complexities &&
+      Array.isArray(issue.details.complexities)
+    ) {
+      for (const complexity of issue.details.complexities) {
+        if (complexity.metrics && complexity.metrics.location) {
+          const loc = complexity.metrics.location;
+          locations.push({
+            line: Math.max(0, (loc.startLine || 1) - 1), // Convert to 0-based
+            column: Math.max(0, (loc.startColumn || 1) - 1), // Convert to 0-based
+            endLine: loc.endLine ? Math.max(0, loc.endLine - 1) : undefined, // Convert to 0-based
+            endColumn: loc.endColumn
+              ? Math.max(0, loc.endColumn - 1)
+              : undefined, // Convert to 0-based
+            context: complexity
+          });
+        }
+      }
+    }
+
+    // Check for direct location object
+    if (issue.location) {
+      const loc = issue.location;
+      line = Math.max(0, (loc.startLine || loc.line || 1) - 1); // Convert to 0-based
+      column = Math.max(0, (loc.startColumn || loc.column || 1) - 1); // Convert to 0-based
+      endLine = loc.endLine ? Math.max(0, loc.endLine - 1) : undefined; // Convert to 0-based
+      endColumn = loc.endColumn ? Math.max(0, loc.endColumn - 1) : undefined; // Convert to 0-based
+    }
+
+    // If we have multiple locations, use the first one as primary and return all
+    if (locations.length > 0) {
+      const primaryLocation = locations[0];
+      return {
+        line: primaryLocation.line,
+        column: primaryLocation.column,
+        endLine: primaryLocation.endLine,
+        endColumn: primaryLocation.endColumn,
+        locations
+      };
+    }
+
+    return { line, column, endLine, endColumn };
+  }
+
+  /**
+   * Format message for complex issues with specific location context
+   */
+  private formatComplexMessage(issue: any, location: any): string {
+    const baseMessage =
+      issue.details?.message || issue.message || 'Unknown issue';
+
+    // Add context for function complexity issues
+    if (location.context && location.context.metrics) {
+      const metrics = location.context.metrics;
+      const functionName =
+        metrics.name !== 'anonymous' ? metrics.name : 'anonymous function';
+
+      let complexityInfo = `${functionName}`;
+      if (metrics.cyclomaticComplexity) {
+        complexityInfo += ` (Cyclomatic: ${metrics.cyclomaticComplexity}`;
+      }
+      if (metrics.cognitiveComplexity) {
+        complexityInfo += `, Cognitive: ${metrics.cognitiveComplexity}`;
+      }
+      if (metrics.nestingDepth) {
+        complexityInfo += `, Nesting: ${metrics.nestingDepth}`;
+      }
+      complexityInfo += ')';
+
+      return `${baseMessage} - ${complexityInfo}`;
+    }
+
+    // Add context for pattern matching issues
+    if (location.context && location.context.match) {
+      return `${baseMessage} - Found: ${location.context.match}`;
+    }
+
+    return baseMessage;
   }
 
   /**
@@ -242,11 +409,18 @@ export class DiagnosticProvider implements vscode.Disposable {
    * Create a VS Code diagnostic from a diagnostic issue
    */
   private createVSCodeDiagnostic(issue: DiagnosticIssue): vscode.Diagnostic {
+    // Create range using enhanced location information
+    const startLine = issue.line;
+    const startColumn = issue.column;
+    const endLine = issue.endLine !== undefined ? issue.endLine : issue.line;
+    const endColumn =
+      issue.endColumn !== undefined ? issue.endColumn : issue.column + 1;
+
     const range = new vscode.Range(
-      issue.line,
-      issue.column,
-      issue.line,
-      issue.column + 1 // Highlight at least one character
+      startLine,
+      startColumn,
+      endLine,
+      Math.max(startColumn + 1, endColumn) // Ensure range spans at least one character
     );
 
     const diagnostic = new vscode.Diagnostic(
@@ -390,12 +564,20 @@ export class DiagnosticProvider implements vscode.Disposable {
         throw new Error(`Cannot resolve file: ${issue.file}`);
       }
 
+      // Create range using enhanced location information
+      const startLine = issue.line;
+      const startColumn = issue.column;
+      const endLine = issue.endLine !== undefined ? issue.endLine : issue.line;
+      const endColumn =
+        issue.endColumn !== undefined ? issue.endColumn : issue.column + 1;
+
       const range = new vscode.Range(
-        issue.line,
-        issue.column,
-        issue.line,
-        issue.column
+        startLine,
+        startColumn,
+        endLine,
+        Math.max(startColumn + 1, endColumn)
       );
+
       const options: vscode.TextDocumentShowOptions = {
         selection: range,
         viewColumn: vscode.ViewColumn.Active
@@ -428,6 +610,8 @@ export class DiagnosticProvider implements vscode.Disposable {
           file: uri.fsPath,
           line: diagnostic.range.start.line + 1, // Convert back to 1-based
           column: diagnostic.range.start.character + 1, // Convert back to 1-based
+          endLine: diagnostic.range.end.line + 1, // Convert back to 1-based
+          endColumn: diagnostic.range.end.character + 1, // Convert back to 1-based
           message: diagnostic.message,
           severity: this.mapFromVSCodeSeverity(diagnostic.severity),
           source: diagnostic.source,

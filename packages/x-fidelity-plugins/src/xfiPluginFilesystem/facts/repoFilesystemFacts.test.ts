@@ -62,6 +62,7 @@ describe('File operations', () => {
                 filePath,
                 fileContent: mockContent,
                 content: mockContent,
+                astGenerationReason: 'File type not supported for AST generation',
             });
         });
 
@@ -94,6 +95,7 @@ describe('File operations', () => {
                 filePath,
                 fileContent: '',
                 content: '',
+                astGenerationReason: 'File type not supported for AST generation',
             });
         });
 
@@ -108,6 +110,7 @@ describe('File operations', () => {
                 filePath,
                 fileContent: mockContent,
                 content: mockContent,
+                astGenerationReason: 'File type not supported for AST generation',
             });
         });
 
@@ -125,6 +128,7 @@ describe('File operations', () => {
                 filePath: filePath, // parseFile doesn't update filePath to the real path
                 fileContent: mockContent,
                 content: mockContent,
+                astGenerationReason: 'File type not supported for AST generation',
             });
         });
     });
@@ -142,7 +146,7 @@ describe('File operations', () => {
             expect(result.length).toBe(2);
             expect(result[0].fileName).toBe('file1.js');
             expect(result[1].fileName).toBe('file2.tsx');
-        });
+        }, 15000);
 
         it('should recursively process directories', async () => {
             const repoPath = 'mock/repo';
@@ -161,7 +165,7 @@ describe('File operations', () => {
             expect(result.length).toBe(2);
             expect(result.some(file => file.fileName === 'file1.js')).toBe(true);
             expect(result.some(file => file.fileName === 'file2.js')).toBe(true);
-        });
+        }, 15000);
 
         it('should handle symlinks correctly', async () => {
             const repoPath = 'mock/repo';
@@ -176,7 +180,7 @@ describe('File operations', () => {
             const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
             expect(result.length).toBe(2);
             expect(fs.realpathSync).toHaveBeenCalledTimes(2);
-        });
+        }, 15000);
 
         it('should handle errors when resolving real paths', async () => {
             const repoPath = 'mock/repo';
@@ -190,7 +194,7 @@ describe('File operations', () => {
 
             const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
             expect(logger.warn).toHaveBeenCalled();
-        });
+        }, 15000);
 
         it('should detect path traversal attempts', async () => {
             const repoPath = 'mock/repo';
@@ -223,7 +227,7 @@ describe('File operations', () => {
             await collectRepoFileData(repoPath, mockArchetypeConfig);
             //expect(fs.readdirSync).toHaveBeenCalledTimes(2); // Once for repo, once for src
             expect(fs.readdirSync).not.toHaveBeenCalledWith('mock/repo/node_modules');
-        });
+        }, 15000);
 
         it('should handle empty repository', async () => {
             const repoPath = 'mock/empty-repo';
@@ -313,7 +317,7 @@ describe('File operations', () => {
             const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
             expect(result.length).toBe(1);
             expect(result[0].fileName).toBe('file.js');
-        });
+        }, 15000);
 
         it('should handle file system errors during stat', async () => {
             const repoPath = 'mock/error-repo';

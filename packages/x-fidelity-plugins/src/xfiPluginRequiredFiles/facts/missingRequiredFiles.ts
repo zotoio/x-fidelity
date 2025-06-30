@@ -6,6 +6,7 @@ import { join } from 'path';
 export const missingRequiredFilesFact: FactDefn = {
     name: 'missingRequiredFiles',
     description: 'Checks for required files in the repository',
+    type: 'global',
     fn: async (params: unknown, almanac?: unknown) => {
         try {
             const fileData = params as FileData;

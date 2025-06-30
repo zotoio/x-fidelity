@@ -4,7 +4,9 @@ import { logger } from '@x-fidelity/core';
 
 export const effectCleanupFact: FactDefn = {
     name: 'effectCleanup',
-    description: 'Checks if useEffect hooks have cleanup functions',
+    description: 'Checks if useEffect hooks have cleanup functions using precomputed AST',
+    type: 'iterative-function',  // ✅ Iterative function - runs once per file (default behavior)
+    priority: 2,                 // ✅ Lower priority than AST fact (depends on AST)
     fn: async (params: unknown, almanac?: any) => {
         try {
             const fileData = params as FileData;

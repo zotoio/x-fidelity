@@ -120,10 +120,13 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         const pluginFacts = pluginRegistry.getPluginFacts();
         timingTracker.recordTiming('plugin_facts_loading');
         
-        // Find and call dependency version facts
+        // Get minimum dependency versions from archetype config early
+        const dependencyVersionRequirements = archetypeConfig.minimumDependencyVersions || {};
+        
+        // Find and call dependency version facts with proper parameters
         const dependencyFact = pluginFacts.find(f => f.name === 'repoDependencyVersions');
         const installedDependencyVersions = dependencyFact 
-            ? await dependencyFact.fn({ archetypeConfig }, undefined)
+            ? await dependencyFact.fn({ repoPath, archetypeConfig }, undefined)
             : [];
         timingTracker.recordTiming('dependency_analysis');
         
@@ -158,8 +161,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         }
         timingTracker.recordTiming('additional_plugins_loading');
         
-        // Get minimum dependency versions from archetype config
-        const minimumDependencyVersions = archetypeConfig.minimumDependencyVersions || {};
+        // Get standard structure setting from archetype config
         const standardStructure = archetypeConfig.config?.standardStructure || false;
         timingTracker.recordTiming('config_merging');
 
@@ -195,43 +197,105 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         }
         timingTracker.recordTiming('additional_rules_loading');
 
-        if (isOpenAIEnabled()) {
-            logger.info(`adding additional openai facts to engine..`);
-            // Add fact execution tracking wrapper for openaiAnalysis
-            const openaiAnalysisFact = pluginFacts.find(f => f.name === 'openaiAnalysis');
-            if (openaiAnalysisFact) {
-                engine.addFact('openaiAnalysis', async (params: any, almanac: any) => {
-                    return factMetricsTracker.trackFactExecution('openaiAnalysis', 
-                        () => openaiAnalysisFact.fn(params, almanac)
-                    );
-                }, { priority: openaiAnalysisFact.priority || 1 });
+        // ✅ NEW: Enhanced generic fact handling system
+        logger.info('Processing facts by type...');
+        
+        // Separate facts by their execution pattern
+        const globalPrecomputedFacts = pluginFacts.filter(f => f.type === 'global');
+        const globalFunctionFacts = pluginFacts.filter(f => f.type === 'global-function');
+        const iterativeFunctionFacts = pluginFacts.filter(f => f.type === 'iterative-function' || !f.type); // Default to iterative-function for backward compatibility
+        
+        const globalFactResults: { [name: string]: any } = {};
+        
+        // Create a minimal almanac for global fact computation
+        const globalAlmanac = {
+            factValue: async (factName: string) => {
+                // Provide access to basic global data for fact computation
+                switch (factName) {
+                    case 'fileData':
+                        return { fileName: 'REPO_GLOBAL_CHECK' }; // Global context marker
+                    case 'dependencyData':
+                        return {
+                            installedDependencyVersions: Object.fromEntries(installedDependencyVersions.map((v: any) => [v.name, v.version])),
+                            minimumDependencyVersions: dependencyVersionRequirements
+                        };
+                    case 'globalFileMetadata':
+                        return fileData;
+                    case 'openaiSystemPrompt':
+                        // Special case for OpenAI system prompt
+                        const collectOpenaiAnalysisFacts = pluginFacts.find(f => f.name === 'collectOpenaiAnalysisFacts');
+                        if (collectOpenaiAnalysisFacts) {
+                            return await collectOpenaiAnalysisFacts.fn(fileData, undefined);
+                        }
+                        return null;
+                    default:
+                        return globalFactResults[factName] || null;
+                }
+            },
+            addRuntimeFact: (name: string, value: any) => {
+                globalFactResults[name] = value;
             }
+        };
+
+        // 1️⃣ Handle 'global' facts: precompute once and cache as static data
+        for (const fact of globalPrecomputedFacts) {
+            try {
+                logger.debug(`Precomputing global fact: ${fact.name}`);
+                // ✅ Pass correct parameters structure for global facts
+                const globalParams = { repoPath, archetypeConfig };
+                const result = await factMetricsTracker.trackFactExecution(fact.name, 
+                    () => fact.fn(globalParams, globalAlmanac)
+                );
+                globalFactResults[fact.name] = result;
+                
+                // Add the precomputed result as static data to the engine with priority
+                engine.addFact(fact.name, result, { priority: fact.priority || 1 });
+                logger.debug(`✅ Global fact ${fact.name} precomputed and cached`);
+            } catch (error) {
+                logger.error(`❌ Failed to precompute global fact ${fact.name}:`, error);
+                // Add empty result to prevent failures
+                engine.addFact(fact.name, { result: [] }, { priority: fact.priority || 1 });
+            }
+        }
+
+        // 2️⃣ Handle 'global-function' facts: functions that run once per repo but with different params per rule
+        for (const fact of globalFunctionFacts) {
+            logger.debug(`Adding global-function fact: ${fact.name}`);
+            engine.addFact(fact.name, async (params: any, almanac: any) => {
+                return factMetricsTracker.trackFactExecution(fact.name, 
+                    () => fact.fn(params, almanac)
+                );
+            }, { priority: fact.priority || 1 });
+            logger.debug(`✅ Global-function fact ${fact.name} added to engine`);
+        }
+
+        // Special case: Add OpenAI system prompt for global-function facts
+        if (isOpenAIEnabled()) {
+            logger.info(`Adding OpenAI facts to engine...`);
+            // Add OpenAI system prompt if available
+            const openaiSystemPrompt = globalFactResults['openaiSystemPrompt'] || 
+                await (async () => {
+                    const collectOpenaiAnalysisFacts = pluginFacts.find(f => f.name === 'collectOpenaiAnalysisFacts');
+                    if (collectOpenaiAnalysisFacts) {
+                        return await collectOpenaiAnalysisFacts.fn(fileData, undefined);
+                    }
+                    return null;
+                })();
             
-            // Add OpenAI system prompt from plugin if available
-            const collectOpenaiAnalysisFacts = pluginFacts.find(f => f.name === 'collectOpenaiAnalysisFacts');
-            if (collectOpenaiAnalysisFacts) {
-                const openaiSystemPrompt = await collectOpenaiAnalysisFacts.fn(fileData, undefined);
+            if (openaiSystemPrompt) {
                 engine.addFact('openaiSystemPrompt', openaiSystemPrompt);
             }
         }
         
-        // Add fact execution tracking wrappers for core analysis facts
-        const repoDependencyAnalysisFact = pluginFacts.find(f => f.name === 'repoDependencyAnalysis');
-        if (repoDependencyAnalysisFact) {
-            engine.addFact('repoDependencyAnalysis', async (params: any, almanac: any) => {
-                return factMetricsTracker.trackFactExecution('repoDependencyAnalysis', 
-                    () => repoDependencyAnalysisFact.fn(params, almanac)
+        // 3️⃣ Handle 'iterative-function' facts: functions that run once per file (default behavior)
+        for (const fact of iterativeFunctionFacts) {
+            logger.debug(`Adding iterative-function fact: ${fact.name}`);
+            engine.addFact(fact.name, async (params: any, almanac: any) => {
+                return factMetricsTracker.trackFactExecution(fact.name, 
+                    () => fact.fn(params, almanac)
                 );
-            }, { priority: repoDependencyAnalysisFact.priority || 1 });
-        }
-        
-        const repoFileAnalysisFact = pluginFacts.find(f => f.name === 'repoFileAnalysis');
-        if (repoFileAnalysisFact) {
-            engine.addFact('repoFileAnalysis', async (params: any, almanac: any) => {
-                return factMetricsTracker.trackFactExecution('repoFileAnalysis', 
-                    () => repoFileAnalysisFact.fn(params, almanac)
-                );
-            }, { priority: repoFileAnalysisFact.priority || 1 });
+            }, { priority: fact.priority || 1 });
+            logger.debug(`✅ Iterative-function fact ${fact.name} added to engine`);
         }
         
         timingTracker.recordTiming('openai_setup');
@@ -251,7 +315,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             engine,
             fileData,
             installedDependencyVersions: Object.fromEntries(installedDependencyVersions.map((v: any) => [v.name, v.version])),
-            minimumDependencyVersions,
+            minimumDependencyVersions: dependencyVersionRequirements,
             standardStructure,
             repoUrl
         });

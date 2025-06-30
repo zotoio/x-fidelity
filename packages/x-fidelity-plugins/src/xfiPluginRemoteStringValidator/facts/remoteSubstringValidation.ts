@@ -7,6 +7,8 @@ import { JSONPath as jp } from 'jsonpath-plus';
 export const remoteSubstringValidationFact: FactDefn = {
     name: 'remoteSubstringValidation',
     description: 'Validates strings against a remote service',
+    type: 'iterative-function',  // ✅ Iterative-function fact - runs once per file (default behavior)
+    priority: 1,                 // ✅ Default priority for iterative functions
     fn: async (params: unknown): Promise<RemoteValidationResult> => {
         const validationParams = params as RemoteValidationParams;
         const { content, pattern, options } = validationParams;

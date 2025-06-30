@@ -1,11 +1,13 @@
 import { XFiPlugin, PluginError } from '@x-fidelity/types';
+import { openaiAnalysis } from './facts/openaiAnalysisFacts';    
+import { openaiAnalysisHighSeverity } from './operators/openaiAnalysisHighSeverity';
 
 export const xfiPluginOpenAI: XFiPlugin = {
     name: 'xfi-plugin-openai',
     version: '1.0.0',
     description: 'Plugin for AI-powered code analysis using OpenAI',
-    facts: [],
-    operators: [],
+    facts: [openaiAnalysis],
+    operators: [openaiAnalysisHighSeverity],
     onError: (error: Error): PluginError => ({
         message: error.message,
         level: 'error',
@@ -14,14 +16,3 @@ export const xfiPluginOpenAI: XFiPlugin = {
         details: error.stack
     })
 };
-
-export default xfiPluginOpenAI; 
-
-// Export individual facts and operators for direct use
-export const facts: any[] = [
-    // No facts implemented yet
-];
-
-export const operators: any[] = [
-    // No operators implemented yet
-]; 

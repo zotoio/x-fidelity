@@ -1,4 +1,4 @@
-import { openaiAnalysis, collectOpenaiAnalysisFacts } from './openaiAnalysisFacts';
+import { openaiAnalysisFn, collectOpenaiAnalysisFacts } from './openaiAnalysisFacts';
 import { Almanac } from 'json-rules-engine';
 import { OpenAI } from 'openai';
 import { logger } from '@x-fidelity/core';
@@ -35,7 +35,7 @@ jest.mock('openai', () => {
     };
 });
 
-describe('openaiAnalysis', () => {
+describe('openaiAnalysisFn', () => {
     const mockAlmanac: Almanac = {
         factValue: jest.fn(),
         addRuntimeFact: jest.fn(),
@@ -45,14 +45,16 @@ describe('openaiAnalysis', () => {
         jest.clearAllMocks();
     });
 
-    it('should return an empty result if fileName is not REPO_GLOBAL_CHECK', async () => {
-        (mockAlmanac.factValue as jest.Mock)
-            .mockResolvedValueOnce('some prompt')
-            .mockResolvedValueOnce({ fileName: 'someFile' });
-
-        const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
+    it('should return an empty result when OpenAI is not enabled', async () => {
+        // Mock isOpenAIEnabled to return false for this test
+        (isOpenAIEnabled as jest.Mock).mockReturnValue(false);
+        
+        const result = await openaiAnalysisFn({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
         expect(result).toEqual({ result: [] });
+        
+        // Restore the mock for other tests
+        (isOpenAIEnabled as jest.Mock).mockReturnValue(true);
     });
 
     it('should log an error if OpenAI request fails', async () => {
@@ -63,7 +65,7 @@ describe('openaiAnalysis', () => {
             
         ((new OpenAI()).chat.completions.create as jest.Mock).mockRejectedValue(new Error('mock error'));
 
-        const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
+        const result = await openaiAnalysisFn({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
         expect(result).toEqual({ result: [] });
         expect(logger.error).toHaveBeenCalledWith('openaiAnalysis: Error analyzing facts with OpenAI: mock error');
@@ -86,7 +88,7 @@ describe('openaiAnalysis', () => {
 
         ((new OpenAI()).chat.completions.create as jest.Mock).mockResolvedValue(mockResponse);
 
-        const result = await openaiAnalysis({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
+        const result = await openaiAnalysisFn({ prompt: 'test prompt', resultFact: 'testResult' }, mockAlmanac);
 
         expect(result).toEqual({ result: [] });
         expect(logger.error).toHaveBeenCalledWith('openaiAnalysis: Error analyzing facts with OpenAI: OpenAI response is empty');

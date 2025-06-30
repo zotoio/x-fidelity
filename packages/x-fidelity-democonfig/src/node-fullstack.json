@@ -20,7 +20,10 @@
     "config": {
         "minimumDependencyVersions": {
             "@types/react": ">=18.0.0",
-            "react": "~17.0.0",
+            "react": "18.2.0",
+            "typescript": "5.0.0",
+            "next": "13.0.0",
+            "node": "18.0.0",
             "@yarnpkg/lockfile": "<1.2.0",
             "commander": ">=2.0.0 <13.0.0",
             "nodemon": ">4.9.0",
