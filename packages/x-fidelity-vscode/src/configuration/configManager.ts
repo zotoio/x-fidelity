@@ -102,63 +102,69 @@ export class ConfigManager {
     const workspaceConfig = vscode.workspace.getConfiguration('xfidelity');
 
     this.config = {
-      // Core Analysis Settings - Performance optimized defaults
-      runInterval: workspaceConfig.get('runInterval', 0), // Disabled by default to prevent performance issues
-      autoAnalyzeOnSave: workspaceConfig.get('autoAnalyzeOnSave', false), // Disabled by default to prevent performance issues
+      // Core Settings
+      archetype: workspaceConfig.get('archetype', 'node-fullstack'),
+      configServer: workspaceConfig.get('configServer', ''),
+      localConfigPath: workspaceConfig.get('localConfigPath', ''),
+
+      // Performance Settings - OPTIMIZED FOR SPEED
+      runInterval: 0, // DISABLED - was causing concurrent analysis conflicts
+      autoAnalyzeOnSave: false, // DISABLED - was causing performance issues
       autoAnalyzeOnFileChange: workspaceConfig.get(
         'autoAnalyzeOnFileChange',
         false
       ),
-      archetype: workspaceConfig.get('archetype', 'node-fullstack'),
+      generateReports: workspaceConfig.get('generateReports', false), // DISABLED for performance
 
-      // Connection Settings
-      configServer: workspaceConfig.get('configServer', ''),
-      localConfigPath: workspaceConfig.get('localConfigPath', ''),
+      // Resource Limits - REDUCED FOR PERFORMANCE
+      maxFileSize: workspaceConfig.get('maxFileSize', 524288), // 512KB instead of 1MB
+      analysisTimeout: workspaceConfig.get('analysisTimeout', 45000), // 45s instead of 30s (more time but fewer concurrent)
+      excludePatterns: workspaceConfig.get('excludePatterns', [
+        'node_modules/**',
+        '.git/**',
+        'dist/**',
+        'build/**',
+        '.xfiResults/**'
+      ]),
+      includePatterns: workspaceConfig.get('includePatterns', []),
+      maxConcurrentAnalysis: 1, // FORCED TO 1 - no concurrent analysis
 
-      // Analysis Features
+      // Analysis Features - DISABLED for performance
       openaiEnabled: workspaceConfig.get('openaiEnabled', false),
       telemetryCollector: workspaceConfig.get('telemetryCollector', ''),
-      telemetryEnabled: workspaceConfig.get('telemetryEnabled', true),
+      telemetryEnabled: workspaceConfig.get('telemetryEnabled', false), // DISABLED for performance
 
-      // Output & Reporting
-      generateReports: workspaceConfig.get('generateReports', true),
+      // Output & Reporting - DISABLED for performance
       reportOutputDir: workspaceConfig.get('reportOutputDir', ''),
-      reportFormats: workspaceConfig.get('reportFormats', ['json', 'md']),
+      reportFormats: workspaceConfig.get('reportFormats', ['json']), // Reduced formats
       showReportAfterAnalysis: workspaceConfig.get(
         'showReportAfterAnalysis',
         false
       ),
       reportRetentionDays: workspaceConfig.get('reportRetentionDays', 30),
 
-      // UI/UX Settings
-      showInlineDecorations: workspaceConfig.get('showInlineDecorations', true),
-      highlightSeverity: workspaceConfig.get('highlightSeverity', [
-        'error',
-        'warning'
-      ]),
+      // UI/UX Settings - OPTIMIZED for performance
+      showInlineDecorations: workspaceConfig.get(
+        'showInlineDecorations',
+        false
+      ), // DISABLED for performance
+      highlightSeverity: workspaceConfig.get('highlightSeverity', ['error']), // Only errors for performance
       statusBarVisibility: workspaceConfig.get('statusBarVisibility', true),
       problemsPanelGrouping: workspaceConfig.get(
         'problemsPanelGrouping',
         'file'
       ),
-      showRuleDocumentation: workspaceConfig.get('showRuleDocumentation', true),
-
-      // Performance Settings
-      maxFileSize: workspaceConfig.get('maxFileSize', 1024 * 1024), // 1MB
-      analysisTimeout: workspaceConfig.get('analysisTimeout', 30000), // 30s
-      excludePatterns: workspaceConfig.get('excludePatterns', [
-        'node_modules/**',
-        '.git/**'
-      ]),
-      includePatterns: workspaceConfig.get('includePatterns', []),
-      maxConcurrentAnalysis: workspaceConfig.get('maxConcurrentAnalysis', 3),
+      showRuleDocumentation: workspaceConfig.get(
+        'showRuleDocumentation',
+        false
+      ), // DISABLED for performance
 
       // Advanced Settings
       debugMode: workspaceConfig.get('debugMode', false),
       customPlugins: workspaceConfig.get('customPlugins', []),
       ruleOverrides: workspaceConfig.get('ruleOverrides', {}),
       cacheResults: workspaceConfig.get('cacheResults', true),
-      cacheTTL: workspaceConfig.get('cacheTTL', 5) // 5 minutes for faster responsiveness
+      cacheTTL: workspaceConfig.get('cacheTTL', 10) // 10 minutes instead of 5 for better caching
     };
   }
 

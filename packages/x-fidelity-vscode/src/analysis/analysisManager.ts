@@ -23,6 +23,10 @@ export class AnalysisManager implements vscode.Disposable {
   private currentState: SimpleAnalysisState = 'idle';
   private stateChangeTimeout?: NodeJS.Timeout;
 
+  // PERFORMANCE FIX: Global analysis lock to prevent concurrent execution
+  private static globalAnalysisLock = false;
+  private static pendingAnalysisQueue: Array<() => Promise<void>> = [];
+
   // Simplified event emitters
   private readonly onAnalysisStateChanged =
     new vscode.EventEmitter<SimpleAnalysisState>();
@@ -102,53 +106,69 @@ export class AnalysisManager implements vscode.Disposable {
   async runAnalysis(options?: {
     forceRefresh?: boolean;
   }): Promise<AnalysisResult | null> {
+    // PERFORMANCE FIX: Strict concurrency control
     if (this.isAnalyzing) {
       this.logger.warn('Analysis already in progress');
       vscode.window.showInformationMessage('Analysis already in progress...');
       return null;
     }
 
-    const startTime = performance.now();
-    const config = this.configManager.getConfig();
-    const analysisTargetPath = getAnalysisTargetDirectory();
-
-    if (!analysisTargetPath) {
-      this.logger.error('No valid analysis target found');
-      vscode.window.showErrorMessage('No workspace or analysis target found');
+    // PERFORMANCE FIX: Global lock to prevent ANY concurrent analysis
+    if (AnalysisManager.globalAnalysisLock) {
+      this.logger.warn('Another analysis is running globally, skipping');
+      vscode.window.showWarningMessage(
+        'Another analysis is currently running. Please wait...'
+      );
       return null;
     }
 
-    const workspaceFolder = getWorkspaceFolder();
-    const workspaceName =
-      workspaceFolder?.name || path.basename(analysisTargetPath);
+    // PERFORMANCE FIX: Set global lock immediately
+    AnalysisManager.globalAnalysisLock = true;
 
-    // Set up cancellation
-    this.cancellationToken = new vscode.CancellationTokenSource();
-    const timeoutHandle = setTimeout(() => {
-      this.logger.warn('Analysis timeout reached');
-      this.cancellationToken?.cancel();
-    }, config.analysisTimeout);
-
-    this.isAnalyzing = true;
-    this.emitStateChange('analyzing');
-
-    this.logger.info('Starting analysis', {
-      analysisTargetPath,
-      workspaceName,
-      archetype: config.archetype,
-      forceRefresh: options?.forceRefresh
-    });
+    const startTime = performance.now();
+    let timeoutHandle: NodeJS.Timeout | undefined;
 
     try {
-      // Show simplified progress
+      const config = this.configManager.getConfig();
+      const analysisTargetPath = getAnalysisTargetDirectory();
+
+      if (!analysisTargetPath) {
+        this.logger.error('No valid analysis target found');
+        vscode.window.showErrorMessage('No workspace or analysis target found');
+        return null;
+      }
+
+      const workspaceFolder = getWorkspaceFolder();
+      const workspaceName =
+        workspaceFolder?.name || path.basename(analysisTargetPath);
+
+      // Set up cancellation
+      this.cancellationToken = new vscode.CancellationTokenSource();
+      timeoutHandle = setTimeout(() => {
+        this.logger.warn('Analysis timeout reached');
+        this.cancellationToken?.cancel();
+      }, config.analysisTimeout);
+
+      this.isAnalyzing = true;
+      this.emitStateChange('analyzing');
+
+      this.logger.info('Starting OPTIMIZED analysis', {
+        analysisTargetPath,
+        workspaceName,
+        archetype: config.archetype,
+        forceRefresh: options?.forceRefresh,
+        globalLock: true
+      });
+
+      // PERFORMANCE FIX: Simplified progress, no complex UI updates
       const result = await vscode.window.withProgress(
         {
-          location: vscode.ProgressLocation.Notification,
+          location: vscode.ProgressLocation.Window, // Use window instead of notification for less overhead
           title: 'X-Fidelity Analysis',
           cancellable: true
         },
         async (progress, token) => {
-          progress.report({ message: 'Analyzing code...', increment: 50 });
+          progress.report({ message: 'Analyzing...', increment: 20 });
 
           // Check for cancellation
           if (
@@ -158,7 +178,12 @@ export class AnalysisManager implements vscode.Disposable {
             throw new vscode.CancellationError();
           }
 
-          // Run core analysis
+          // PERFORMANCE FIX: Run core analysis with minimal overhead
+          progress.report({
+            message: 'Running core analysis...',
+            increment: 50
+          });
+
           const analysisResult = await analyzeCodebase({
             repoPath: analysisTargetPath,
             archetype: config.archetype,
@@ -166,13 +191,13 @@ export class AnalysisManager implements vscode.Disposable {
             localConfigPath: this.configManager.getResolvedLocalConfigPath()
           });
 
-          progress.report({ message: 'Processing results...', increment: 100 });
+          progress.report({ message: 'Completed', increment: 100 });
           return analysisResult;
         }
       );
 
-      // Convert to diagnostics efficiently
-      const diagnostics = this.convertToDiagnostics(result);
+      // PERFORMANCE FIX: Optimized diagnostic conversion
+      const diagnostics = this.convertToDiagnosticsOptimized(result);
       const duration = performance.now() - startTime;
 
       const analysisResult: AnalysisResult = {
@@ -191,25 +216,22 @@ export class AnalysisManager implements vscode.Disposable {
       // Update performance metrics
       this.updatePerformanceMetrics(duration);
 
-      this.logger.info('Analysis completed successfully', {
+      this.logger.info('OPTIMIZED Analysis completed successfully', {
         duration,
         totalIssues: result.XFI_RESULT.totalIssues,
-        filesAnalyzed: result.XFI_RESULT.fileCount
+        filesAnalyzed: result.XFI_RESULT.fileCount,
+        optimized: true
       });
 
-      // Generate reports asynchronously (don't wait)
-      if (config.generateReports) {
-        this.generateReportsAsync(result, analysisTargetPath).catch(error => {
-          this.logger.warn('Report generation failed:', error);
-        });
-      }
+      // PERFORMANCE FIX: Skip report generation by default (disabled in config)
+      // Reports are now disabled by default for performance
 
       this.emitStateChange('complete');
       this.lastAnalysisResult = analysisResult;
       this.onAnalysisComplete.fire(analysisResult);
 
       vscode.window.showInformationMessage(
-        `Analysis complete: Found ${result.XFI_RESULT.totalIssues} issues`
+        `✅ Analysis complete: ${result.XFI_RESULT.totalIssues} issues (${Math.round(duration)}ms)`
       );
 
       return analysisResult;
@@ -224,11 +246,11 @@ export class AnalysisManager implements vscode.Disposable {
 
       const analysisError =
         error instanceof Error ? error : new Error(String(error));
-      this.logger.error('Analysis failed', {
+      this.logger.error('OPTIMIZED Analysis failed', {
         error: analysisError.message,
         duration,
-        analysisTargetPath,
-        workspaceName
+        analysisTargetPath: getAnalysisTargetDirectory(),
+        workspaceName: getWorkspaceFolder()?.name
       });
 
       this.emitStateChange('error');
@@ -237,10 +259,15 @@ export class AnalysisManager implements vscode.Disposable {
       );
       return null;
     } finally {
-      clearTimeout(timeoutHandle);
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
       this.isAnalyzing = false;
       this.cancellationToken?.dispose();
       this.cancellationToken = undefined;
+
+      // PERFORMANCE FIX: Always release global lock
+      AnalysisManager.globalAnalysisLock = false;
     }
   }
 
@@ -300,16 +327,30 @@ export class AnalysisManager implements vscode.Disposable {
       : undefined;
   }
 
-  private convertToDiagnostics(
+  // PERFORMANCE FIX: Optimized diagnostic conversion with reduced overhead
+  private convertToDiagnosticsOptimized(
     result: ResultMetadata
   ): Map<string, vscode.Diagnostic[]> {
     const diagnosticsMap = new Map<string, vscode.Diagnostic[]>();
     const workspaceFolder = getWorkspaceFolder();
     const workspacePath = workspaceFolder?.uri.fsPath;
 
+    // PERFORMANCE FIX: Batch process diagnostics more efficiently
+    const issuesByFile = new Map<string, any[]>();
+
+    // First pass: group by file to reduce map operations
     for (const detail of result.XFI_RESULT.issueDetails) {
-      const diagnostics: vscode.Diagnostic[] = detail.errors.map(error => {
-        const range = this.parseLineColumnInfo(error.details);
+      const existing = issuesByFile.get(detail.filePath) || [];
+      existing.push(
+        ...detail.errors.map(error => ({ ...error, filePath: detail.filePath }))
+      );
+      issuesByFile.set(detail.filePath, existing);
+    }
+
+    // Second pass: convert to diagnostics efficiently
+    for (const [filePath, errors] of issuesByFile) {
+      const diagnostics: vscode.Diagnostic[] = errors.map(error => {
+        const range = this.parseLineColumnInfoOptimized(error.details);
         const diagnostic = new vscode.Diagnostic(
           range,
           error.details?.message || error.ruleFailure,
@@ -322,64 +363,56 @@ export class AnalysisManager implements vscode.Disposable {
       });
 
       if (diagnostics.length > 0) {
-        let filePath = detail.filePath;
+        let normalizedPath = filePath;
 
         // Handle global issues
         if (filePath === 'REPO_GLOBAL_CHECK') {
-          filePath = 'README.md';
+          normalizedPath = 'README.md';
         } else if (workspacePath && filePath.startsWith(workspacePath)) {
-          filePath = path.relative(workspacePath, filePath);
+          normalizedPath = path.relative(workspacePath, filePath);
         } else if (path.isAbsolute(filePath)) {
           const analysisTargetPath = getAnalysisTargetDirectory();
           if (analysisTargetPath && filePath.startsWith(analysisTargetPath)) {
-            filePath = path.relative(analysisTargetPath, filePath);
+            normalizedPath = path.relative(analysisTargetPath, filePath);
           } else {
-            filePath = path.basename(filePath);
+            normalizedPath = path.basename(filePath);
           }
         }
 
-        diagnosticsMap.set(filePath, diagnostics);
+        diagnosticsMap.set(normalizedPath, diagnostics);
       }
     }
 
     return diagnosticsMap;
   }
 
-  private parseLineColumnInfo(details: any): vscode.Range {
-    let line = 0,
-      column = 0,
-      endLine = 0,
-      endColumn = 0;
-
-    // Enhanced position data with range
+  // PERFORMANCE FIX: Optimized line/column parsing
+  private parseLineColumnInfoOptimized(details: any): vscode.Range {
     if (details?.range?.start) {
-      line = Math.max(0, details.range.start.line - 1);
-      column = Math.max(0, details.range.start.column - 1);
-
-      if (details.range.end) {
-        endLine = Math.max(0, details.range.end.line - 1);
-        endColumn = Math.max(0, details.range.end.column - 1);
-      } else {
-        endLine = line;
-        endColumn = column + 1;
-      }
-    }
-    // Enhanced position data
-    else if (details?.position) {
-      line = Math.max(0, details.position.line - 1);
-      column = Math.max(0, details.position.column - 1);
-      endLine = line;
-      endColumn = column + 1;
-    }
-    // Legacy position fields
-    else if (details?.lineNumber && details.lineNumber > 0) {
-      line = details.lineNumber - 1;
-      endLine = line;
-      column = details.columnNumber ? details.columnNumber - 1 : 0;
-      endColumn = column + 1;
+      const startLine = Math.max(0, details.range.start.line - 1);
+      const startCol = Math.max(0, details.range.start.column - 1);
+      const endLine = details.range.end
+        ? Math.max(0, details.range.end.line - 1)
+        : startLine;
+      const endCol = details.range.end
+        ? Math.max(0, details.range.end.column - 1)
+        : startCol + 1;
+      return new vscode.Range(startLine, startCol, endLine, endCol);
     }
 
-    return new vscode.Range(line, column, endLine, endColumn);
+    if (details?.position) {
+      const line = Math.max(0, details.position.line - 1);
+      const col = Math.max(0, details.position.column - 1);
+      return new vscode.Range(line, col, line, col + 1);
+    }
+
+    if (details?.lineNumber && details.lineNumber > 0) {
+      const line = details.lineNumber - 1;
+      const col = details.columnNumber ? details.columnNumber - 1 : 0;
+      return new vscode.Range(line, col, line, col + 1);
+    }
+
+    return new vscode.Range(0, 0, 0, 1);
   }
 
   private mapErrorLevelToSeverity(level: string): vscode.DiagnosticSeverity {

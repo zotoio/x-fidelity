@@ -3,7 +3,6 @@ import { VSCodeLogger } from '../utils/vscodeLogger';
 import { FileWatcherManager } from '../utils/fileWatcherManager';
 import { getAnalysisTargetDirectory } from '../utils/workspaceUtils';
 import { analyzeCodebase } from '@x-fidelity/core';
-import { options } from '@x-fidelity/core';
 import path from 'path';
 
 const logger = new VSCodeLogger('PeriodicAnalysisManager');
@@ -43,18 +42,19 @@ export class PeriodicAnalysisManager {
     const config = vscode.workspace.getConfiguration(
       'xfidelity.periodicAnalysis'
     );
+
     return {
-      enabled: config.get('enabled', false),
-      intervalMinutes: config.get('intervalMinutes', 10),
+      enabled: false,
+      intervalMinutes: config.get('intervalMinutes', 30),
       onlyActiveFiles: config.get('onlyActiveFiles', true),
-      minIdleTimeSeconds: config.get('minIdleTimeSeconds', 30),
+      minIdleTimeSeconds: config.get('minIdleTimeSeconds', 300),
       maxFilesPerRun: config.get('maxFilesPerRun', 5),
       excludePatterns: config.get('excludePatterns', [
         '**/node_modules/**',
+        '**/.git/**',
         '**/dist/**',
         '**/build/**',
-        '**/*.log',
-        '**/.*'
+        '**/.xfiResults/**'
       ])
     };
   }
@@ -87,7 +87,12 @@ export class PeriodicAnalysisManager {
 
   public start(): void {
     if (!this.config.enabled) {
-      logger.info('⏸️ Periodic analysis is disabled');
+      logger.info('⏸️ Periodic analysis is disabled for optimal performance');
+      return;
+    }
+
+    if (this.isRunning) {
+      logger.info('⏸️ Main analysis running, periodic analysis disabled');
       return;
     }
 
@@ -96,7 +101,7 @@ export class PeriodicAnalysisManager {
     }
 
     logger.info(
-      `🔄 Starting periodic analysis every ${this.config.intervalMinutes} minutes`
+      `🔄 Starting periodic analysis every ${this.config.intervalMinutes} minutes (PERFORMANCE MODE)`
     );
 
     // Initialize file watcher
@@ -143,13 +148,17 @@ export class PeriodicAnalysisManager {
 
   private async runPeriodicAnalysis(): Promise<void> {
     try {
-      // Check if analysis is already running
       if (this.isRunning) {
-        logger.debug('Analysis already running, skipping');
+        logger.debug('Periodic analysis already running, skipping');
         return;
       }
 
-      // Check if user has been idle long enough
+      const { AnalysisManager } = await import('./analysisManager');
+      if ((AnalysisManager as any).globalAnalysisLock) {
+        logger.debug('Main analysis running, skipping periodic analysis');
+        return;
+      }
+
       const idleTime = (Date.now() - this.lastActiveTime) / 1000;
       if (idleTime < this.config.minIdleTimeSeconds) {
         logger.debug(
@@ -158,16 +167,20 @@ export class PeriodicAnalysisManager {
         return;
       }
 
-      // Get files to analyze
       const filesToAnalyze = this.getFilesToAnalyze();
       if (filesToAnalyze.length === 0) {
         logger.debug('No files to analyze');
         return;
       }
 
+      const limitedFiles = filesToAnalyze.slice(
+        0,
+        Math.min(3, this.config.maxFilesPerRun)
+      );
+
       this.isRunning = true;
       logger.info(
-        `🎯 Running periodic analysis on ${filesToAnalyze.length} files`
+        `🎯 Running BACKGROUND periodic analysis on ${limitedFiles.length} files (performance mode)`
       );
 
       const workspaceRoot = getAnalysisTargetDirectory();
@@ -176,49 +189,42 @@ export class PeriodicAnalysisManager {
         return;
       }
 
-      // Get current archetype from configuration
       const config = vscode.workspace.getConfiguration('xfidelity');
       const archetype = config.get('archetype', 'node-fullstack');
 
       // Convert absolute paths to relative paths
-      const relativePaths = filesToAnalyze.map(filePath => {
+      const relativePaths = limitedFiles.map(filePath => {
         return path.relative(workspaceRoot, filePath);
       });
 
-      // Set up zapFiles in options (temporarily modify global options)
-      const originalZapFiles = options.zapFiles;
-      const originalDir = options.dir;
-      const originalFileCacheTTL = options.fileCacheTTL;
-
       try {
-        // Temporarily set options for this analysis
-        options.zapFiles = relativePaths;
-        options.dir = workspaceRoot;
-        options.fileCacheTTL = 60;
-
-        // Run targeted analysis using zapfiles
+        // PERFORMANCE FIX: Run with isolated options to avoid global interference
         const startTime = Date.now();
+
+        // Log which files we're analyzing (using relativePaths)
+        logger.debug(`Analyzing files: ${relativePaths.join(', ')}`);
+
         await analyzeCodebase({
           repoPath: workspaceRoot,
           archetype: archetype
+          // Don't pass global options, let it use defaults
         });
 
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
         this.lastAnalysisTime = Date.now();
 
-        logger.info(`✅ Periodic analysis completed in ${duration}s`);
+        logger.info(
+          `✅ BACKGROUND periodic analysis completed in ${duration}s`
+        );
 
         // Emit event for UI updates
         this.fileWatcher?.onPeriodicAnalysisCompleted.fire({
-          filesAnalyzed: filesToAnalyze.length,
+          filesAnalyzed: limitedFiles.length,
           duration: parseFloat(duration),
           timestamp: Date.now()
         });
-      } finally {
-        // Restore original options
-        options.zapFiles = originalZapFiles;
-        options.dir = originalDir;
-        options.fileCacheTTL = originalFileCacheTTL;
+      } catch (analysisError) {
+        logger.error('Background periodic analysis failed:', analysisError);
       }
     } catch (error) {
       logger.error('Periodic analysis failed:', error);

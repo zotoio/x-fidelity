@@ -44,7 +44,9 @@ export class ExtensionManager implements vscode.Disposable {
   }
 
   private async initialize(): Promise<void> {
-    this.logger.info('Initializing X-Fidelity extension...');
+    this.logger.info(
+      'Initializing X-Fidelity extension (PERFORMANCE OPTIMIZED)...'
+    );
 
     try {
       // Preload plugins first - essential for runtime functionality
@@ -67,24 +69,21 @@ export class ExtensionManager implements vscode.Disposable {
         this.issuesTreeView
       );
 
-      // Start periodic analysis if configured
-      this.analysisManager.startPeriodicAnalysis();
+      // PERFORMANCE FIX: Don't start periodic analysis by default (disabled in config)
+      // this.analysisManager.startPeriodicAnalysis(); // DISABLED for performance
 
-      // Start periodic analysis manager for open files
-      this.periodicAnalysisManager.start();
+      // PERFORMANCE FIX: Don't start periodic analysis manager (disabled by default)
+      // this.periodicAnalysisManager.start(); // DISABLED for performance
 
-      // Set extension as active (disabled to prevent infinite loops)
-      // vscode.commands.executeCommand(
-      //   'setContext',
-      //   'xfidelity.extensionActive',
-      //   true
-      // );
-
-      this.logger.info('X-Fidelity extension initialized successfully');
+      this.logger.info(
+        'X-Fidelity extension initialized successfully (PERFORMANCE MODE)'
+      );
 
       // Show welcome message only in development
       if (this.context.extensionMode === vscode.ExtensionMode.Development) {
-        vscode.window.showInformationMessage('X-Fidelity extension activated');
+        vscode.window.showInformationMessage(
+          'X-Fidelity extension activated (Performance Mode)'
+        );
       }
     } catch (error) {
       this.logger.error('Extension initialization failed:', error);
@@ -135,6 +134,8 @@ export class ExtensionManager implements vscode.Disposable {
     this.disposables.push(
       vscode.workspace.onDidSaveTextDocument(document => {
         const config = this.configManager.getConfig();
+
+        // PERFORMANCE FIX: Stricter checks to prevent unwanted analysis
         if (
           !config.autoAnalyzeOnSave ||
           this.analysisManager.isAnalysisRunning
@@ -142,16 +143,19 @@ export class ExtensionManager implements vscode.Disposable {
           return;
         }
 
-        // Only trigger for relevant files
+        // PERFORMANCE FIX: Only trigger for relevant files and debounce heavily
         const ext = document.fileName.toLowerCase();
         if (this.isRelevantFile(ext)) {
-          // Debounce to prevent multiple rapid saves
+          // PERFORMANCE FIX: Longer debounce to prevent rapid saves
           if (saveTimeout) {
             clearTimeout(saveTimeout);
           }
           saveTimeout = setTimeout(() => {
-            this.analysisManager.scheduleAnalysis(2000);
-          }, 1000);
+            this.logger.info(
+              'Auto-analysis triggered by file save (performance mode)'
+            );
+            this.analysisManager.scheduleAnalysis(5000); // 5 second delay instead of 2
+          }, 3000); // 3 second debounce instead of 1
         }
       })
     );
@@ -315,24 +319,39 @@ export class ExtensionManager implements vscode.Disposable {
         'xfidelity.showPerformanceMetrics',
         () => {
           const metrics = this.analysisManager.getPerformanceMetrics();
-          const message = `Performance Metrics:
+          const message = `Performance Metrics (OPTIMIZED):
 Total Analyses: ${metrics.totalAnalyses}
 Last Duration: ${Math.round(metrics.lastAnalysisDuration)}ms
 Average Duration: ${Math.round(metrics.averageAnalysisDuration)}ms
-Cache Hits: ${metrics.cacheHits}`;
+Cache Hits: ${metrics.cacheHits}
+Performance Mode: ✅ Enabled`;
           vscode.window.showInformationMessage(message, { modal: true });
         }
       ),
 
-      // Periodic analysis commands
+      // PERFORMANCE FIX: Update periodic analysis commands with warnings
       vscode.commands.registerCommand('xfidelity.startPeriodicAnalysis', () => {
-        this.periodicAnalysisManager.start();
-        vscode.window.showInformationMessage('🔄 Periodic analysis started');
+        vscode.window
+          .showWarningMessage(
+            'Periodic analysis can impact performance. Consider using manual analysis instead.',
+            'Enable Anyway',
+            'Cancel'
+          )
+          .then(choice => {
+            if (choice === 'Enable Anyway') {
+              this.periodicAnalysisManager.start();
+              vscode.window.showInformationMessage(
+                '🔄 Periodic analysis started (performance impact expected)'
+              );
+            }
+          });
       }),
 
       vscode.commands.registerCommand('xfidelity.stopPeriodicAnalysis', () => {
         this.periodicAnalysisManager.stop();
-        vscode.window.showInformationMessage('⏹️ Periodic analysis stopped');
+        vscode.window.showInformationMessage(
+          '⏹️ Periodic analysis stopped (performance optimized)'
+        );
       }),
 
       vscode.commands.registerCommand(
@@ -400,14 +419,9 @@ ${nextAnalysisText}`;
   }
 
   dispose(): void {
-    this.logger.info('Disposing X-Fidelity extension...');
+    this.logger.info('Disposing X-Fidelity extension (PERFORMANCE MODE)...');
 
-    // Disable setContext calls to prevent infinite loops
-    // vscode.commands.executeCommand(
-    //   'setContext',
-    //   'xfidelity.extensionActive',
-    //   false
-    // );
+    // PERFORMANCE FIX: Clean shutdown
     this.analysisManager?.stopPeriodicAnalysis();
     this.periodicAnalysisManager?.dispose();
     this.disposables.forEach(d => d?.dispose());

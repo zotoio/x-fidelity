@@ -49,7 +49,6 @@
         "title": "X-Fidelity: Open Settings",
         "icon": "$(gear)"
       },
-
       {
         "command": "xfidelity.showOutput",
         "title": "X-Fidelity: Show Output Channel",
@@ -81,13 +80,13 @@
         "icon": "$(symbol-operator)"
       },
       {
-        "command": "xfidelity.issuesTreeGroupByRule", 
+        "command": "xfidelity.issuesTreeGroupByRule",
         "title": "Group by Rule",
         "icon": "$(symbol-rule)"
       },
       {
         "command": "xfidelity.issuesTreeGroupByFile",
-        "title": "Group by File", 
+        "title": "Group by File",
         "icon": "$(symbol-file)"
       },
       {
@@ -157,17 +156,17 @@
         "xfidelity.runInterval": {
           "type": "number",
           "default": 0,
-          "description": "Interval (in seconds) for running background analysis. Set to 0 to disable periodic runs. WARNING: Setting this to low values can cause performance issues."
+          "description": "Auto-analysis interval in seconds (0 = disabled for performance)."
         },
         "xfidelity.autoAnalyzeOnSave": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically run analysis when files are saved. WARNING: This can cause performance issues with frequent saves."
+          "description": "Automatically run analysis when files are saved (disabled for performance)."
         },
         "xfidelity.autoAnalyzeOnFileChange": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically run analysis when files are changed (debounced). WARNING: This can cause performance issues with frequent file changes."
+          "description": "Automatically run analysis when files change (disabled for performance)."
         },
         "xfidelity.archetype": {
           "type": "string",
@@ -208,8 +207,8 @@
         },
         "xfidelity.generateReports": {
           "type": "boolean",
-          "default": true,
-          "description": "Automatically generate reports after analysis."
+          "default": false,
+          "description": "Generate analysis reports (disabled for performance)."
         },
         "xfidelity.reportOutputDir": {
           "type": "string",
@@ -288,14 +287,13 @@
         },
         "xfidelity.maxFileSize": {
           "type": "number",
-          "default": 1048576,
-          "description": "Maximum file size to analyze (in bytes)."
+          "default": 524288,
+          "description": "Maximum file size to analyze in bytes (512KB for performance)."
         },
-
         "xfidelity.analysisTimeout": {
           "type": "number",
-          "default": 30000,
-          "description": "Analysis timeout in milliseconds."
+          "default": 45000,
+          "description": "Analysis timeout in milliseconds (45s for performance)."
         },
         "xfidelity.excludePatterns": {
           "type": "array",
@@ -304,9 +302,12 @@
           },
           "default": [
             "node_modules/**",
-            ".git/**"
+            ".git/**",
+            "dist/**",
+            "build/**",
+            ".xfiResults/**"
           ],
-          "description": "Glob patterns for files to exclude from analysis."
+          "description": "File patterns to exclude from analysis."
         },
         "xfidelity.includePatterns": {
           "type": "array",
@@ -314,12 +315,12 @@
             "type": "string"
           },
           "default": [],
-          "description": "Glob patterns for files to include in analysis (empty = all)."
+          "description": "File patterns to include in analysis (empty = all files)."
         },
         "xfidelity.maxConcurrentAnalysis": {
           "type": "number",
-          "default": 3,
-          "description": "Maximum number of concurrent analysis operations."
+          "default": 1,
+          "description": "Maximum number of concurrent analysis operations (1 for performance)."
         },
         "xfidelity.debugMode": {
           "type": "boolean",
@@ -346,59 +347,58 @@
         },
         "xfidelity.cacheTTL": {
           "type": "number",
-          "default": 5,
-          "description": "Cache time-to-live in minutes."
+          "default": 10,
+          "description": "Cache time-to-live in minutes (10 min for performance)."
         },
         "xfidelity.performance.maxConcurrentOperations": {
           "type": "number",
-          "default": 2,
-          "description": "Maximum number of concurrent analysis operations"
+          "default": 1,
+          "description": "Maximum number of concurrent analysis operations (1 for performance)"
         },
         "xfidelity.performance.enableDetailedLogging": {
           "type": "boolean",
           "default": false,
-          "description": "Enable detailed performance logging (may impact performance)"
+          "description": "Enable detailed performance logging (disabled for performance)"
         },
         "xfidelity.performance.astCacheSize": {
           "type": "number",
-          "default": 100,
-          "description": "Maximum number of AST trees to cache"
+          "default": 50,
+          "description": "Maximum number of AST trees to cache (reduced for performance)"
         },
         "xfidelity.performance.decorationLimit": {
           "type": "number",
-          "default": 100,
-          "description": "Maximum number of inline decorations per file"
+          "default": 50,
+          "description": "Maximum number of inline decorations per file (reduced for performance)"
+        },
+        "xfidelity.performance.hideOptimizationNotice": {
+          "type": "boolean",
+          "default": false,
+          "description": "Hide the performance optimization notice on activation"
         },
         "xfidelity.periodicAnalysis.enabled": {
           "type": "boolean",
           "default": false,
-          "description": "Enable periodic analysis of open files using zapfiles functionality."
+          "description": "Enable periodic background analysis (disabled for performance)."
         },
         "xfidelity.periodicAnalysis.intervalMinutes": {
           "type": "number",
-          "default": 10,
-          "minimum": 1,
-          "maximum": 60,
-          "description": "Interval in minutes for periodic analysis of open files."
+          "default": 30,
+          "description": "Interval between periodic analyses in minutes."
         },
         "xfidelity.periodicAnalysis.onlyActiveFiles": {
           "type": "boolean",
           "default": true,
-          "description": "Only analyze currently open and recently changed files."
+          "description": "Only analyze currently open/active files during periodic analysis."
         },
         "xfidelity.periodicAnalysis.minIdleTimeSeconds": {
           "type": "number",
-          "default": 30,
-          "minimum": 5,
-          "maximum": 300,
-          "description": "Minimum idle time in seconds before running periodic analysis."
+          "default": 300,
+          "description": "Minimum idle time before running periodic analysis (5 minutes)."
         },
         "xfidelity.periodicAnalysis.maxFilesPerRun": {
           "type": "number",
           "default": 5,
-          "minimum": 1,
-          "maximum": 20,
-          "description": "Maximum number of files to analyze in each periodic run."
+          "description": "Maximum files to analyze per periodic run (reduced for performance)."
         },
         "xfidelity.periodicAnalysis.excludePatterns": {
           "type": "array",
@@ -407,12 +407,12 @@
           },
           "default": [
             "**/node_modules/**",
+            "**/.git/**",
             "**/dist/**",
             "**/build/**",
-            "**/*.log",
-            "**/.*"
+            "**/.xfiResults/**"
           ],
-          "description": "Glob patterns for files to exclude from periodic analysis."
+          "description": "Patterns to exclude from periodic analysis."
         }
       }
     },
@@ -534,12 +534,14 @@
     "@x-fidelity/democonfig": "4.0.0",
     "@x-fidelity/plugins": "4.0.0",
     "@x-fidelity/types": "4.0.0",
+    "fs-extra": "^11.3.0",
     "tree-sitter-javascript": "^0.23.1",
     "tree-sitter-typescript": "^0.23.2",
     "vscode-languageclient": "^9.0.1",
     "yaml": "^2.6.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^3.6.2",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.x",
@@ -549,7 +551,6 @@
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.6.0",
-    "@electron/rebuild": "^3.6.2",
     "esbuild": "^0.25.5",
     "eslint": "^9.29.0",
     "glob": "11.0.3",
@@ -574,7 +575,6 @@
     "test:integration": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label integration",
     "test:e2e": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label e2e",
     "test:ci": "mkdir -p ./.vscode-test-user-data && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label all",
-    
     "test:simple": "vscode-test --config .vscode-test.mjs --label all",
     "test:debug": "yarn build:test && code --extensionDevelopmentPath=. --extensionTestsPath=./out/test/suite",
     "lint": "eslint src --ext ts && prettier --check src/**/*.ts",
