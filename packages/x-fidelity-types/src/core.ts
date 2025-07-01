@@ -531,6 +531,7 @@ export interface CLIOptions {
     examine?: boolean;
     outputFormat?: 'human' | 'json';
     outputFile?: string;
+    disableTreeSitterWorker?: boolean;  // ✅ Option to disable TreeSitter worker for performance testing (worker enabled by default)
 }
 
 // CodeOwner interface with v3.24.0 compatibility

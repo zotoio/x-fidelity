@@ -95,7 +95,7 @@ class GlobalLoggerManager {
         ? `${(duration / 1000).toFixed(1)}s`
         : `${Math.round(duration)}ms`;
 
-    this.mainLogger.info(
+    this.mainLogger.debug(
       `${icon} [${timestamp}] ${description} completed in ${durationStr}`,
       {
         command: commandId,

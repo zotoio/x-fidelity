@@ -12,11 +12,84 @@ import { FactDefn } from '@x-fidelity/types';
 // Create a properly typed promisified exec function
 const execPromise = util.promisify(exec);
 
+// ✅ Performance optimization: Add caching for dependency collection
+interface DependencyCache {
+    dependencies: LocalDependencies[];
+    cacheKey: string;
+    timestamp: number;
+}
+
+interface VersionDataCache {
+    versionData: VersionData[];
+    cacheKey: string;
+    timestamp: number;
+}
+
+// Simple in-memory cache for the current process
+const dependencyCache = new Map<string, DependencyCache>();
+const versionDataCache = new Map<string, VersionDataCache>();
+
 /**
- * Collects the local dependencies.
+ * Clears all dependency caches - useful for testing
+ */
+export function clearDependencyCache(): void {
+    dependencyCache.clear();
+    versionDataCache.clear();
+}
+
+/**
+ * Generates a cache key based on package manager files' modification times
+ */
+function getDependencyCacheKey(): string {
+    const repoPath = options.dir || process.cwd();
+    const files = [
+        path.join(repoPath, 'package.json'),
+        path.join(repoPath, 'yarn.lock'),
+        path.join(repoPath, 'package-lock.json'),
+        path.join(repoPath, 'npm-shrinkwrap.json')
+    ];
+    
+    const mtimes: string[] = [];
+    for (const file of files) {
+        try {
+            if (fs.existsSync(file)) {
+                const stats = fs.statSync(file);
+                mtimes.push(`${file}:${stats.mtime.getTime()}`);
+            }
+        } catch (error) {
+            // File doesn't exist or can't be accessed, skip
+        }
+    }
+    
+    return mtimes.join('|');
+}
+
+/**
+ * Generates a cache key for version data based on dependencies and archetype config
+ */
+function getVersionDataCacheKey(dependencyCacheKey: string, archetypeConfig: ArchetypeConfig): string {
+    const minDepsHash = JSON.stringify(archetypeConfig.config.minimumDependencyVersions || {});
+    return `${dependencyCacheKey}:${minDepsHash}`;
+}
+
+/**
+ * Collects the local dependencies with caching for performance.
  * @returns The local dependencies.
  */
 export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
+    const startTime = Date.now();
+    const cacheKey = getDependencyCacheKey();
+    
+    // Check cache first
+    const cached = dependencyCache.get(cacheKey);
+    if (cached && cached.cacheKey === cacheKey) {
+        const cacheAge = Date.now() - cached.timestamp;
+        logger.debug(`Using cached dependency data (age: ${cacheAge}ms)`);
+        return cached.dependencies;
+    }
+    
+    logger.debug('Cache miss, collecting dependencies from package manager...');
+    
     let result: LocalDependencies[] = [];
     if (fs.existsSync(path.join(options.dir || '', 'yarn.lock'))) {
         result = await collectNodeDependencies('yarn');
@@ -26,6 +99,16 @@ export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
         logger.warn('No yarn.lock or package-lock.json found - returning empty dependencies array');
         return []; // ✅ Return empty array instead of exiting process
     }
+    
+    // Cache the result
+    dependencyCache.set(cacheKey, {
+        dependencies: result,
+        cacheKey,
+        timestamp: Date.now()
+    });
+    
+    const executionTime = Date.now() - startTime;
+    logger.debug(`collectLocalDependencies completed in ${executionTime}ms (cache: ${cached ? 'HIT' : 'MISS'})`);
     logger.trace(`collectLocalDependencies: ${safeStringify(result)}`);
     return result;
 }
@@ -149,11 +232,24 @@ function processNpmDependencies(npmOutput: any): LocalDependencies[] {
 }
 
 /**
- * Gets the installed dependency versions.
+ * Gets the installed dependency versions with caching for performance.
  * @param archetypeConfig The archetype configuration.
  * @returns The installed dependency versions.
  */
 export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig): Promise<VersionData[]> {
+    const startTime = Date.now();
+    const dependencyCacheKey = getDependencyCacheKey();
+    const versionCacheKey = getVersionDataCacheKey(dependencyCacheKey, archetypeConfig);
+    
+    // Check cache first
+    const cached = versionDataCache.get(versionCacheKey);
+    if (cached && cached.cacheKey === versionCacheKey) {
+        const cacheAge = Date.now() - cached.timestamp;
+        logger.debug(`Using cached version data (age: ${cacheAge}ms)`);
+        return cached.versionData;
+    }
+    
+    logger.debug('Cache miss, computing dependency version facts...');
     
     const localDependencies = await collectLocalDependencies();
     const minimumDependencyVersions = archetypeConfig.config.minimumDependencyVersions;
@@ -164,6 +260,17 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
     }
 
     const installedDependencyVersions = findPropertiesInTree(localDependencies, minimumDependencyVersions);
+    
+    // Cache the result
+    versionDataCache.set(versionCacheKey, {
+        versionData: installedDependencyVersions,
+        cacheKey: versionCacheKey,
+        timestamp: Date.now()
+    });
+    
+    const executionTime = Date.now() - startTime;
+    logger.debug(`getDependencyVersionFacts completed in ${executionTime}ms (cache: ${cached ? 'HIT' : 'MISS'})`);
+    
     return installedDependencyVersions;
 }
 
@@ -344,16 +451,6 @@ export const dependencyVersionFact: FactDefn = {
         // ✅ Extract archetypeConfig from new parameter structure
         const { archetypeConfig } = params as { repoPath: string; archetypeConfig: any };
         return getDependencyVersionFacts(archetypeConfig);
-    }
-};
-
-export const localDependenciesFact: FactDefn = {
-    name: 'localDependencies',
-    description: 'Collects local project dependencies',
-    type: 'global',  // ✅ Global fact - precomputed once and cached
-    priority: 5,     // ✅ Medium-high priority for dependency collection
-    fn: async (params: unknown, almanac?: unknown) => {
-        return collectLocalDependencies();
     }
 };
 

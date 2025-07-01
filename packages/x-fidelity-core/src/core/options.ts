@@ -17,6 +17,7 @@ export interface CoreOptions {
     maxFileSize?: number;
     timeout?: number;
     examine?: boolean;
+    disableTreeSitterWorker?: boolean;
 }
 
 // Default options for core functionality
@@ -34,7 +35,8 @@ export let options: CoreOptions = {
     logLevel: 'info',
     telemetryEnabled: true,
     maxFileSize: 1024 * 1024, // 1MB
-    timeout: 30000 // 30 seconds
+    timeout: 30000, // 30 seconds
+    disableTreeSitterWorker: false
 };
 
 // Function to update options (used by CLI and other packages)

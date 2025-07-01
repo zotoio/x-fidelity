@@ -35,6 +35,7 @@ export function initCLI(): void {
         .option('-x, --examine', 'Validate archetype config only')
         .option('--output-format <format>', 'Output format: human (default) or json')
         .option('--output-file <path>', 'Write structured output to file (works with --output-format json)')
+        .option('--disableTreeSitterWorker', 'Disable TreeSitter worker for performance testing (worker enabled by default)')
         .parse(process.argv);
 
     const opts = program.opts();
@@ -52,7 +53,8 @@ export function initCLI(): void {
         extraPlugins: opts.extraPlugins || [],
         examine: opts.examine,
         outputFormat: opts.outputFormat,
-        outputFile: opts.outputFile
+        outputFile: opts.outputFile,
+        disableTreeSitterWorker: opts.disableTreeSitterWorker || false
     };
 
     // Update core options so they're available to other packages
@@ -66,7 +68,8 @@ export function initCLI(): void {
         mode: opts.mode || 'client',
         port: opts.port ? parseInt(opts.port) : undefined,
         jsonTTL: opts.jsonTTL,
-        extraPlugins: opts.extraPlugins || []
+        extraPlugins: opts.extraPlugins || [],
+        disableTreeSitterWorker: opts.disableTreeSitterWorker || false
     });
 
     logger.debug({ options }, 'CLI options parsed');

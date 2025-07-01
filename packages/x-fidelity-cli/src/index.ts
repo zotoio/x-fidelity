@@ -121,7 +121,7 @@ export async function main() {
                     executionLogPrefix 
                 });
             } else {
-                const repoPath = options.dir || '.';
+                const repoPath = path.resolve(options.dir || '.');
                 const logFilePath = path.join(repoPath, '.xfiResults', 'x-fidelity.log');
                 
                 // Start execution context with consistent ID

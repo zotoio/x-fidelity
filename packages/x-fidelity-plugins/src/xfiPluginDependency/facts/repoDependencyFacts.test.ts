@@ -3,7 +3,7 @@ import fs from 'fs';
 import { execSync } from 'child_process';
 import { Almanac } from 'json-rules-engine';
 import { LocalDependencies, MinimumDepVersions, VersionData } from '@x-fidelity/types';
-import { semverValid, normalizePackageName, collectLocalDependencies, getDependencyVersionFacts } from './repoDependencyFacts';
+import { semverValid, normalizePackageName, collectLocalDependencies, getDependencyVersionFacts, clearDependencyCache } from './repoDependencyFacts';
 import * as util from 'util';
 import { logger } from '@x-fidelity/core';
 
@@ -65,6 +65,7 @@ jest.setTimeout(30000); // 30 seconds
 describe('repoDependencyFacts', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        clearDependencyCache(); // Clear cache to ensure test isolation
     });
 
     describe('collectLocalDependencies', () => {

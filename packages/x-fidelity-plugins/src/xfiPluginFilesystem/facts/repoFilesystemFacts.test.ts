@@ -27,7 +27,20 @@ jest.mock('@x-fidelity/core', () => ({
         error: jest.fn(),
         trace: jest.fn(),
     },
-    maskSensitiveData: jest.fn(data => data)
+    maskSensitiveData: jest.fn(data => data),
+    getOptions: jest.fn(() => ({ disableTreeSitterWorker: false }))
+}));
+
+// Mock TreeSitterManager to prevent real AST processing that causes 15s timeouts
+jest.mock('../../xfiPluginAst/worker/treeSitterManager', () => ({
+    TreeSitterManager: {
+        getInstance: jest.fn(() => ({
+            parseCode: jest.fn().mockResolvedValue({
+                tree: { rootNode: { hasError: () => false } },
+                reason: null
+            })
+        }))
+    }
 }));
 
 const mockArchetypeConfig: ArchetypeConfig = {
@@ -112,6 +125,32 @@ describe('File operations', () => {
                 content: mockContent,
                 astGenerationReason: 'File type not supported for AST generation',
             });
+        });
+
+        it('should skip AST preprocessing when disableTreeSitterWorker is true', async () => {
+            const filePath = 'test/path/testFile.js';
+            const mockContent = 'const x = 1;';
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockContent);
+            
+            // Mock getOptions to return disableTreeSitterWorker: true
+            const mockGetOptions = require('@x-fidelity/core').getOptions as jest.Mock;
+            mockGetOptions.mockReturnValue({ disableTreeSitterWorker: true });
+
+            const result = await parseFile(filePath);
+            expect(result).toEqual({
+                fileName: path.basename(filePath),
+                filePath,
+                fileContent: mockContent,
+                content: mockContent,
+                astGenerationReason: 'File type not supported for AST generation',
+            });
+            
+            // Verify TreeSitterManager was not called
+            const TreeSitterManager = require('../../xfiPluginAst/worker/treeSitterManager').TreeSitterManager;
+            expect(TreeSitterManager.getInstance).not.toHaveBeenCalled();
+            
+            // Reset for subsequent tests
+            mockGetOptions.mockReturnValue({ disableTreeSitterWorker: false });
         });
 
         it('should handle symlinks', async () => {

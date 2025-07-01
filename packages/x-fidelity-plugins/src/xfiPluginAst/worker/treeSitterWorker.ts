@@ -1,4 +1,5 @@
 import { parentPort, isMainThread, workerData } from 'worker_threads';
+import { logger } from '@x-fidelity/core';
 
 export interface TreeSitterRequest {
   id: string;
@@ -67,9 +68,9 @@ async function initializeNativeTreeSitter(): Promise<void> {
     jsLanguage = JavaScript;
     tsLanguage = TreeSitterTypescript.typescript;
     
-    console.log('[TreeSitter Worker] Native Tree-sitter initialized successfully');
+    logger.info('[TreeSitter Worker] Native Tree-sitter initialized successfully');
   } catch (error) {
-    console.error('[TreeSitter Worker] Failed to initialize native Tree-sitter:', error);
+    logger.error('[TreeSitter Worker] Failed to initialize native Tree-sitter:', error);
     throw new Error(`Native Tree-sitter initialization failed: ${error}`);
   }
 }

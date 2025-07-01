@@ -149,7 +149,7 @@ describe('index', () => {
         mockAnalyzeCodebase.mockResolvedValue({
             XFI_RESULT: {
                 archetype: 'node-fullstack',
-                repoPath: '.',
+                repoPath: process.cwd(), // Use actual current working directory as absolute path
                 fileCount: 1,
                 totalIssues: 0,
                 warningCount: 0,
@@ -173,12 +173,16 @@ describe('index', () => {
         await main();
 
         expect(analyzeCodebase).toHaveBeenCalledWith(expect.objectContaining({
-            repoPath: '.',
+            repoPath: expect.any(String), // Now expects absolute path instead of '.'
             archetype: 'node-fullstack',
             configServer: undefined,
             localConfigPath: undefined,
             executionLogPrefix: expect.any(String)
         }));
+        
+        // Verify that repoPath is now an absolute path
+        const actualCall = mockAnalyzeCodebase.mock.calls[0][0];
+        expect(actualCall.repoPath).toMatch(/^\/.*x-fidelity-cli$/); // Should end with the CLI package directory
         // Check that the analysis completed successfully (exit code 0)
         expect(process.exit).toHaveBeenCalledWith(0);
     });
@@ -244,7 +248,7 @@ describe('index', () => {
                 metadata: expect.objectContaining({
                     errorMessage: 'Test error',
                     archetype: 'node-fullstack',
-                    repoPath: '.',
+                    repoPath: expect.any(String), // Now expects absolute path instead of '.'
                     options: expect.any(Object)
                 }),
                 timestamp: expect.any(String)
