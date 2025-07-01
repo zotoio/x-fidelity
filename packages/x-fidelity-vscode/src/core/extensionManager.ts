@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ConfigManager } from '../configuration/configManager';
 import { AnalysisManager } from '../analysis/analysisManager';
+import { PeriodicAnalysisManager } from '../analysis/periodicAnalysisManager';
 import { DiagnosticProvider } from '../diagnostics/diagnosticProvider';
 import { StatusBarProvider } from '../ui/statusBarProvider';
 import { IssuesTreeProvider } from '../ui/treeView/issuesTreeProvider';
@@ -11,6 +12,7 @@ export class ExtensionManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
   private configManager: ConfigManager;
   private analysisManager: AnalysisManager;
+  private periodicAnalysisManager: PeriodicAnalysisManager;
   private diagnosticProvider: DiagnosticProvider;
   private statusBarProvider: StatusBarProvider;
   private issuesTreeProvider: IssuesTreeProvider;
@@ -21,6 +23,7 @@ export class ExtensionManager implements vscode.Disposable {
     this.logger = new VSCodeLogger('ExtensionManager');
     this.configManager = ConfigManager.getInstance(context);
     this.analysisManager = new AnalysisManager(this.configManager);
+    this.periodicAnalysisManager = PeriodicAnalysisManager.getInstance();
     this.diagnosticProvider = new DiagnosticProvider(this.configManager);
     this.statusBarProvider = new StatusBarProvider(this.analysisManager);
     this.issuesTreeProvider = new IssuesTreeProvider();
@@ -58,6 +61,7 @@ export class ExtensionManager implements vscode.Disposable {
       // Add components to disposables
       this.disposables.push(
         this.analysisManager,
+        this.periodicAnalysisManager,
         this.diagnosticProvider,
         this.statusBarProvider,
         this.issuesTreeView
@@ -65,6 +69,9 @@ export class ExtensionManager implements vscode.Disposable {
 
       // Start periodic analysis if configured
       this.analysisManager.startPeriodicAnalysis();
+
+      // Start periodic analysis manager for open files
+      this.periodicAnalysisManager.start();
 
       // Set extension as active (disabled to prevent infinite loops)
       // vscode.commands.executeCommand(
@@ -315,6 +322,53 @@ Average Duration: ${Math.round(metrics.averageAnalysisDuration)}ms
 Cache Hits: ${metrics.cacheHits}`;
           vscode.window.showInformationMessage(message, { modal: true });
         }
+      ),
+
+      // Periodic analysis commands
+      vscode.commands.registerCommand('xfidelity.startPeriodicAnalysis', () => {
+        this.periodicAnalysisManager.start();
+        vscode.window.showInformationMessage('🔄 Periodic analysis started');
+      }),
+
+      vscode.commands.registerCommand('xfidelity.stopPeriodicAnalysis', () => {
+        this.periodicAnalysisManager.stop();
+        vscode.window.showInformationMessage('⏹️ Periodic analysis stopped');
+      }),
+
+      vscode.commands.registerCommand(
+        'xfidelity.restartPeriodicAnalysis',
+        () => {
+          this.periodicAnalysisManager.restart();
+          vscode.window.showInformationMessage(
+            '🔄 Periodic analysis restarted'
+          );
+        }
+      ),
+
+      vscode.commands.registerCommand(
+        'xfidelity.showPeriodicAnalysisStatus',
+        () => {
+          const status = this.periodicAnalysisManager.getStatus();
+          const nextAnalysisText =
+            status.nextAnalysisIn > 0
+              ? `Next analysis in: ${Math.ceil(status.nextAnalysisIn / 1000 / 60)} minutes`
+              : 'No analysis scheduled';
+
+          const lastAnalysisText =
+            status.lastAnalysisTime > 0
+              ? `Last analysis: ${new Date(status.lastAnalysisTime).toLocaleTimeString()}`
+              : 'No analysis run yet';
+
+          const message = `Periodic Analysis Status:
+Enabled: ${status.enabled ? '✅' : '❌'}
+Running: ${status.running ? '🔄' : '⏸️'}
+Interval: ${status.config.intervalMinutes} minutes
+Max files per run: ${status.config.maxFilesPerRun}
+${lastAnalysisText}
+${nextAnalysisText}`;
+
+          vscode.window.showInformationMessage(message, { modal: true });
+        }
       )
     ];
 
@@ -355,6 +409,7 @@ Cache Hits: ${metrics.cacheHits}`;
     //   false
     // );
     this.analysisManager?.stopPeriodicAnalysis();
+    this.periodicAnalysisManager?.dispose();
     this.disposables.forEach(d => d?.dispose());
     this.configManager?.dispose();
   }

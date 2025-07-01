@@ -11,275 +11,378 @@ export interface XFIResultFile {
   fullPath: string;
   timestamp: number;
   metadata: ResultMetadata;
+  fileType: string; // 'json', 'md', 'html', 'csv', etc.
+  prefix: string; // The file prefix like 'xfi-report', 'xfidelity-history', etc.
 }
 
+/**
+ * Enhanced result file manager with per-prefix retention and readable date formatting
+ */
 export class ResultFileManager {
   private static readonly RESULTS_DIR = '.xfiResults';
-  private static readonly MAX_RESULT_FILES = 10; // Keep only the latest 10 results
-  private static instance: ResultFileManager | null = null;
+  private static readonly MAX_FILES_PER_PREFIX = 10; // Keep 10 files per prefix type
+  private static readonly LATEST_RESULT_FILENAME = 'XFI_RESULT.json';
 
   /**
-   * Get singleton instance
+   * Generate a filename with readable date format
+   * Format: prefix-YYYY-MM-DD-timestamp.extension
    */
-  static getInstance(): ResultFileManager {
-    if (!this.instance) {
-      this.instance = new ResultFileManager();
+  private static generateTimestampedFilename(
+    prefix: string,
+    extension: string
+  ): string {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const timestamp = now.getTime();
+    return `${prefix}-${dateStr}-${timestamp}.${extension}`;
+  }
+
+  /**
+   * Extract prefix from filename
+   */
+  private static extractPrefix(filename: string): string {
+    // Match patterns like: prefix-YYYY-MM-DD-timestamp.ext or prefix-timestamp.ext
+    const match = filename.match(/^([a-zA-Z-]+?)(?:-\d{4}-\d{2}-\d{2})?-\d+\./);
+    return match ? match[1] : filename.split('-')[0] || filename.split('.')[0];
+  }
+
+  /**
+   * Extract timestamp from filename
+   */
+  private static extractTimestamp(filename: string): number {
+    // Look for timestamp pattern at end: -1234567890.ext
+    const match = filename.match(/-(\d+)\.[^.]+$/);
+    if (match) {
+      return parseInt(match[1], 10);
     }
-    return this.instance;
+
+    // Fallback to file stats if no timestamp in name
+    return 0;
   }
 
   /**
-   * Instance method to store a result
+   * Get file extension from filename
    */
-  async storeResult(result: any): Promise<string> {
-    return ResultFileManager.writeResultToFile(result);
+  private static getFileExtension(filename: string): string {
+    const parts = filename.split('.');
+    return parts.length > 1 ? parts[parts.length - 1] : '';
   }
 
   /**
-   * Write XFI analysis results to a file and return the filename
+   * Save a result file with proper naming and cleanup
    */
-  static writeResultToFile(metadata: ResultMetadata): string {
+  static async saveResultFile(
+    content: string,
+    prefix: string,
+    extension: string,
+    metadata: ResultMetadata,
+    targetDirectory?: string
+  ): Promise<XFIResultFile | null> {
     try {
-      const resultsDir = this.getResultsDirectory();
-      if (!resultsDir) {
-        throw new Error('No workspace found to write results');
+      const repoRoot = targetDirectory || getAnalysisTargetDirectory();
+      if (!repoRoot) {
+        logger.warn('No target directory available for saving results');
+        return null;
       }
+
+      const resultsDir = path.join(repoRoot, this.RESULTS_DIR);
 
       // Ensure results directory exists
       if (!fs.existsSync(resultsDir)) {
         fs.mkdirSync(resultsDir, { recursive: true });
-        logger.info(`Created XFI results directory: ${resultsDir}`);
       }
 
-      // Create unique filename with timestamp
-      const timestamp = Date.now();
-      const filename = `xfi-result-${timestamp}.json`;
-      const fullPath = path.join(resultsDir, filename);
+      // Generate timestamped filename
+      const filename = this.generateTimestampedFilename(prefix, extension);
+      const filePath = path.join(resultsDir, filename);
 
-      // Write the complete metadata to file
-      const resultData: XFIResultFile = {
+      // Write the file
+      fs.writeFileSync(filePath, content, 'utf8');
+
+      const resultFile: XFIResultFile = {
         filename,
-        fullPath,
-        timestamp,
-        metadata
+        fullPath: filePath,
+        timestamp: Date.now(),
+        metadata,
+        fileType: extension,
+        prefix
       };
 
-      fs.writeFileSync(fullPath, JSON.stringify(resultData, null, 2), 'utf8');
-      logger.info(`XFI results written to file: ${filename}`);
+      logger.info(`${extension.toUpperCase()} report saved: ${filename}`);
 
-      // Clean up old result files (async, don't wait)
-      this.cleanupOldResults(resultsDir).catch(error =>
-        logger.warn('Failed to cleanup old results', { error })
+      // Clean up old files for this prefix
+      await this.cleanupOldFilesByPrefix(resultsDir, prefix, extension);
+
+      return resultFile;
+    } catch (error) {
+      logger.error('Failed to save result file', { prefix, extension, error });
+      return null;
+    }
+  }
+
+  /**
+   * Save multiple report formats and update latest result
+   */
+  static async saveMultipleFormats(
+    reports: Array<{
+      content: string;
+      prefix: string;
+      extension: string;
+    }>,
+    metadata: ResultMetadata,
+    targetDirectory?: string
+  ): Promise<XFIResultFile[]> {
+    const savedFiles: XFIResultFile[] = [];
+
+    for (const report of reports) {
+      const savedFile = await this.saveResultFile(
+        report.content,
+        report.prefix,
+        report.extension,
+        metadata,
+        targetDirectory
       );
 
-      return filename;
-    } catch (error) {
-      logger.error('Failed to write XFI result to file', { error });
-      throw error;
+      if (savedFile) {
+        savedFiles.push(savedFile);
+      }
     }
+
+    // Update latest result file if we have a JSON report
+    const jsonFile = savedFiles.find(f => f.fileType === 'json');
+    if (jsonFile) {
+      await this.updateLatestResult(jsonFile, targetDirectory);
+    }
+
+    return savedFiles;
   }
 
   /**
-   * Read XFI analysis results from a filename
+   * Update the latest result file (always XFI_RESULT.json)
    */
-  static readResultFromFile(filename: string): ResultMetadata | null {
+  static async updateLatestResult(
+    sourceFile: XFIResultFile,
+    targetDirectory?: string
+  ): Promise<void> {
     try {
-      const resultsDir = this.getResultsDirectory();
-      if (!resultsDir) {
-        logger.warn('No workspace found to read results from');
-        return null;
+      const repoRoot = targetDirectory || getAnalysisTargetDirectory();
+      if (!repoRoot) {
+        return;
       }
 
-      const fullPath = path.join(resultsDir, filename);
+      const resultsDir = path.join(repoRoot, this.RESULTS_DIR);
+      const latestPath = path.join(resultsDir, this.LATEST_RESULT_FILENAME);
 
-      if (!fs.existsSync(fullPath)) {
-        logger.warn(`XFI result file not found: ${filename}`);
-        return null;
-      }
+      // Copy the source file content to the latest result file
+      const content = fs.readFileSync(sourceFile.fullPath, 'utf8');
+      fs.writeFileSync(latestPath, content, 'utf8');
 
-      const fileContent = fs.readFileSync(fullPath, 'utf8');
-      const resultData: XFIResultFile = JSON.parse(fileContent);
-
-      logger.debug(`XFI results read from file: ${filename}`);
-      return resultData.metadata;
+      logger.info(`Latest result updated: ${this.LATEST_RESULT_FILENAME}`);
     } catch (error) {
-      logger.error('Failed to read XFI result from file', { filename, error });
-      return null;
+      logger.error('Failed to update latest result', { error });
     }
   }
 
   /**
-   * Helper function for test utilities to read results from filename
+   * Clean up old files by prefix, keeping only the most recent MAX_FILES_PER_PREFIX
    */
-  static getResultsFromFilename(
-    filename: string | null
-  ): ResultMetadata | null {
-    if (!filename) {
-      return null;
-    }
-
-    return this.readResultFromFile(filename);
-  }
-
-  /**
-   * Get the latest result filename (for fallback scenarios)
-   */
-  static getLatestResultFilename(): string | null {
+  static async cleanupOldFilesByPrefix(
+    resultsDir: string,
+    prefix: string,
+    extension: string
+  ): Promise<void> {
     try {
-      const resultsDir = this.getResultsDirectory();
-      if (!resultsDir || !fs.existsSync(resultsDir)) {
-        return null;
+      if (!fs.existsSync(resultsDir)) {
+        return;
       }
 
-      const files = fs
-        .readdirSync(resultsDir)
-        .filter(
-          file => file.startsWith('xfi-result-') && file.endsWith('.json')
-        )
-        .sort((a, b) => {
-          // Sort by timestamp (newest first)
-          const timestampA = parseInt(
-            a.match(/xfi-result-(\d+)\.json/)?.[1] || '0'
-          );
-          const timestampB = parseInt(
-            b.match(/xfi-result-(\d+)\.json/)?.[1] || '0'
-          );
-          return timestampB - timestampA;
-        });
+      const files = fs.readdirSync(resultsDir);
 
-      return files[0] || null;
-    } catch (error) {
-      logger.error('Failed to get latest result filename', { error });
-      return null;
-    }
-  }
-
-  /**
-   * List all available result files
-   */
-  static listResultFiles(): XFIResultFile[] {
-    try {
-      const resultsDir = this.getResultsDirectory();
-      if (!resultsDir || !fs.existsSync(resultsDir)) {
-        return [];
-      }
-
-      const files = fs
-        .readdirSync(resultsDir)
-        .filter(
-          file => file.startsWith('xfi-result-') && file.endsWith('.json')
-        )
-        .map(filename => {
-          try {
-            const fullPath = path.join(resultsDir, filename);
-            const content = fs.readFileSync(fullPath, 'utf8');
-            return JSON.parse(content) as XFIResultFile;
-          } catch (error) {
-            logger.warn(`Failed to parse result file: ${filename}`, { error });
-            return null;
-          }
+      // Filter files by prefix and extension
+      const prefixFiles = files
+        .filter(file => {
+          const filePrefix = this.extractPrefix(file);
+          const fileExt = this.getFileExtension(file);
+          return filePrefix === prefix && fileExt === extension;
         })
-        .filter((file): file is XFIResultFile => file !== null)
-        .sort((a, b) => b.timestamp - a.timestamp); // Newest first
+        .map(file => {
+          const filePath = path.join(resultsDir, file);
+          const stats = fs.statSync(filePath);
+          const timestamp = this.extractTimestamp(file) || stats.mtimeMs;
 
-      return files;
-    } catch (error) {
-      logger.error('Failed to list result files', { error });
-      return [];
-    }
-  }
+          return {
+            filename: file,
+            fullPath: filePath,
+            timestamp,
+            mtime: stats.mtimeMs
+          };
+        })
+        .sort((a, b) => b.timestamp - a.timestamp); // Sort by timestamp descending (newest first)
 
-  /**
-   * Clean up old result files, keeping only the latest MAX_RESULT_FILES
-   */
-  private static async cleanupOldResults(_resultsDir: string): Promise<void> {
-    try {
-      const files = this.listResultFiles();
-
-      if (files.length > this.MAX_RESULT_FILES) {
-        const filesToDelete = files.slice(this.MAX_RESULT_FILES);
+      // Remove excess files (keep only MAX_FILES_PER_PREFIX)
+      if (prefixFiles.length > this.MAX_FILES_PER_PREFIX) {
+        const filesToDelete = prefixFiles.slice(this.MAX_FILES_PER_PREFIX);
 
         for (const file of filesToDelete) {
           try {
             fs.unlinkSync(file.fullPath);
-            logger.debug(`Cleaned up old result file: ${file.filename}`);
-          } catch (error) {
-            logger.warn(`Failed to delete old result file: ${file.filename}`, {
-              error
+            logger.debug(`Cleaned up old file: ${file.filename}`);
+          } catch (deleteError) {
+            logger.warn(`Failed to delete old file: ${file.filename}`, {
+              deleteError
             });
           }
         }
 
-        logger.info(`Cleaned up ${filesToDelete.length} old result files`);
+        logger.info(
+          `Cleaned up ${filesToDelete.length} old ${extension} files with prefix '${prefix}'`
+        );
       }
     } catch (error) {
-      logger.error('Failed to cleanup old results', { error });
+      logger.error('Failed to cleanup old files by prefix', {
+        prefix,
+        extension,
+        error
+      });
     }
   }
 
   /**
-   * Get the results directory path for the current workspace
+   * Get all result files grouped by prefix and type
    */
-  private static getResultsDirectory(): string | undefined {
-    const analysisTarget = getAnalysisTargetDirectory();
-    if (!analysisTarget) {
-      return undefined;
-    }
-
-    return path.join(analysisTarget, this.RESULTS_DIR);
-  }
-
-  /**
-   * Clear all result files (useful for testing or cleanup)
-   */
-  static clearAllResults(): void {
+  static getResultFiles(
+    targetDirectory?: string
+  ): Record<string, XFIResultFile[]> {
     try {
-      const resultsDir = this.getResultsDirectory();
-      if (!resultsDir || !fs.existsSync(resultsDir)) {
+      const repoRoot = targetDirectory || getAnalysisTargetDirectory();
+      if (!repoRoot) {
+        return {};
+      }
+
+      const resultsDir = path.join(repoRoot, this.RESULTS_DIR);
+      if (!fs.existsSync(resultsDir)) {
+        return {};
+      }
+
+      const files = fs.readdirSync(resultsDir);
+      const resultFiles: Record<string, XFIResultFile[]> = {};
+
+      for (const file of files) {
+        // Skip the latest result file and log files
+        if (file === this.LATEST_RESULT_FILENAME || file.endsWith('.log')) {
+          continue;
+        }
+
+        const filePath = path.join(resultsDir, file);
+        const stats = fs.statSync(filePath);
+        const prefix = this.extractPrefix(file);
+        const extension = this.getFileExtension(file);
+        const timestamp = this.extractTimestamp(file) || stats.mtimeMs;
+
+        const resultFile: XFIResultFile = {
+          filename: file,
+          fullPath: filePath,
+          timestamp,
+          metadata: {} as ResultMetadata, // Would need to read from file if needed
+          fileType: extension,
+          prefix
+        };
+
+        const key = `${prefix}-${extension}`;
+        if (!resultFiles[key]) {
+          resultFiles[key] = [];
+        }
+        resultFiles[key].push(resultFile);
+      }
+
+      // Sort each group by timestamp descending
+      for (const key in resultFiles) {
+        resultFiles[key].sort((a, b) => b.timestamp - a.timestamp);
+      }
+
+      return resultFiles;
+    } catch (error) {
+      logger.error('Failed to get result files', { error });
+      return {};
+    }
+  }
+
+  /**
+   * Get the latest result file content
+   */
+  static getLatestResult(targetDirectory?: string): string | null {
+    try {
+      const repoRoot = targetDirectory || getAnalysisTargetDirectory();
+      if (!repoRoot) {
+        return null;
+      }
+
+      const resultsDir = path.join(repoRoot, this.RESULTS_DIR);
+      const latestPath = path.join(resultsDir, this.LATEST_RESULT_FILENAME);
+
+      if (fs.existsSync(latestPath)) {
+        return fs.readFileSync(latestPath, 'utf8');
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Failed to get latest result', { error });
+      return null;
+    }
+  }
+
+  /**
+   * Ensure .gitignore contains .xfiResults entry
+   */
+  static async ensureGitIgnore(repoRoot: string): Promise<void> {
+    try {
+      const gitignorePath = path.join(repoRoot, '.gitignore');
+
+      let gitignoreContent = '';
+      if (fs.existsSync(gitignorePath)) {
+        gitignoreContent = fs.readFileSync(gitignorePath, 'utf8');
+      }
+
+      // Check if .xfiResults is already in .gitignore
+      if (!gitignoreContent.includes('.xfiResults')) {
+        const newContent =
+          gitignoreContent.trim() +
+          '\n\n# X-Fidelity analysis results\n.xfiResults/\n';
+        fs.writeFileSync(gitignorePath, newContent, 'utf8');
+        logger.info('Added .xfiResults/ to .gitignore');
+      }
+    } catch (error) {
+      logger.warn('Failed to update .gitignore', { error });
+    }
+  }
+
+  /**
+   * Clean up all old files across all prefixes (emergency cleanup)
+   */
+  static async cleanupAllOldFiles(targetDirectory?: string): Promise<void> {
+    try {
+      const repoRoot = targetDirectory || getAnalysisTargetDirectory();
+      if (!repoRoot) {
         return;
       }
 
-      const files = fs
-        .readdirSync(resultsDir)
-        .filter(
-          file => file.startsWith('xfi-result-') && file.endsWith('.json')
-        );
-
-      for (const file of files) {
-        const fullPath = path.join(resultsDir, file);
-        fs.unlinkSync(fullPath);
+      const resultsDir = path.join(repoRoot, this.RESULTS_DIR);
+      if (!fs.existsSync(resultsDir)) {
+        return;
       }
 
-      logger.info(`Cleared ${files.length} result files`);
+      const resultFiles = this.getResultFiles(targetDirectory);
+
+      for (const [key, files] of Object.entries(resultFiles)) {
+        const [prefix, extension] = key.split('-');
+        if (files.length > this.MAX_FILES_PER_PREFIX) {
+          await this.cleanupOldFilesByPrefix(resultsDir, prefix, extension);
+        }
+      }
+
+      logger.info('Completed cleanup of all old result files');
     } catch (error) {
-      logger.error('Failed to clear result files', { error });
+      logger.error('Failed to cleanup all old files', { error });
     }
-  }
-
-  /**
-   * Get result directory info for debugging
-   */
-  static getResultDirectoryInfo(): {
-    directory: string | undefined;
-    exists: boolean;
-    fileCount: number;
-  } {
-    const directory = this.getResultsDirectory();
-    const exists = directory ? fs.existsSync(directory) : false;
-    let fileCount = 0;
-
-    if (exists && directory) {
-      try {
-        fileCount = fs
-          .readdirSync(directory)
-          .filter(
-            file => file.startsWith('xfi-result-') && file.endsWith('.json')
-          ).length;
-      } catch (error) {
-        logger.warn('Failed to count result files', { error });
-      }
-    }
-
-    return { directory, exists, fileCount };
   }
 }

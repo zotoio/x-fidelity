@@ -532,6 +532,8 @@ export interface CLIOptions {
     outputFormat?: 'human' | 'json';
     outputFile?: string;
     disableTreeSitterWorker?: boolean;  // ✅ Option to disable TreeSitter worker for performance testing (worker enabled by default)
+    zapFiles?: string[];  // ✅ New option for targeted file analysis
+    fileCacheTTL?: number;  // ✅ TTL for file modification time cache in minutes (default: 60)
 }
 
 // CodeOwner interface with v3.24.0 compatibility

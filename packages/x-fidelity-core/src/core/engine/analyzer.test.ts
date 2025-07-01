@@ -112,33 +112,43 @@ describe('Analyzer', () => {
                 archetype: 'node-fullstack'
             });
 
-            expect(results.XFI_RESULT).toEqual(expect.objectContaining({
-                archetype: 'node-fullstack',
-                repoPath: 'mockRepoPath',
-                fileCount: expect.any(Number),
-                totalIssues: expect.any(Number),
-                warningCount: expect.any(Number),
-                fatalityCount: expect.any(Number),
-                errorCount: expect.any(Number),
-                exemptCount: expect.any(Number),
-                issueDetails: expect.any(Array),
-                durationSeconds: expect.any(Number),
-                finishTime: expect.any(Number),
-                startTime: expect.any(Number),
-                memoryUsage: expect.any(Object),
-                options: expect.any(Object), // Accept actual options structure
-                telemetryData: expect.objectContaining({
-                    configServer: 'none',
-                    hostInfo: expect.any(Object),
-                    repoUrl: '',
-                    startTime: expect.any(Number),
-                    userInfo: expect.any(Object),
-                }),
-                repoUrl: expect.any(String),
-                repoXFIConfig: expect.objectContaining({
-                    sensitiveFileFalsePositives: expect.any(Array),
-                })
-            }));
+            // Verify the analysis completed successfully
+            expect(results.XFI_RESULT).toBeDefined();
+            expect(results.XFI_RESULT.archetype).toBe('node-fullstack');
+            expect(results.XFI_RESULT.repoPath).toBe('mockRepoPath');
+            expect(typeof results.XFI_RESULT.fileCount).toBe('number');
+            expect(typeof results.XFI_RESULT.totalIssues).toBe('number');
+            expect(typeof results.XFI_RESULT.warningCount).toBe('number');
+            expect(typeof results.XFI_RESULT.fatalityCount).toBe('number');
+            expect(typeof results.XFI_RESULT.errorCount).toBe('number');
+            expect(typeof results.XFI_RESULT.exemptCount).toBe('number');
+            expect(Array.isArray(results.XFI_RESULT.issueDetails)).toBe(true);
+            expect(typeof results.XFI_RESULT.durationSeconds).toBe('number');
+            expect(typeof results.XFI_RESULT.finishTime).toBe('number');
+            expect(typeof results.XFI_RESULT.startTime).toBe('number');
+            expect(typeof results.XFI_RESULT.memoryUsage).toBe('object');
+            expect(typeof results.XFI_RESULT.repoUrl).toBe('string');
+            expect(typeof results.XFI_RESULT.xfiVersion).toBe('string');
+            expect(typeof results.XFI_RESULT.factMetrics).toBe('object');
+            
+            // Check options object
+            expect(typeof results.XFI_RESULT.options).toBe('object');
+            expect(typeof results.XFI_RESULT.options.archetype).toBe('string');
+            expect(typeof results.XFI_RESULT.options.fileCacheTTL).toBe('number');
+            expect(results.XFI_RESULT.options.zapFiles).toBeUndefined();
+            
+            // Check telemetry data
+            expect(typeof results.XFI_RESULT.telemetryData).toBe('object');
+            expect(results.XFI_RESULT.telemetryData.configServer).toBe('none');
+            expect(typeof results.XFI_RESULT.telemetryData.hostInfo).toBe('object');
+            expect(typeof results.XFI_RESULT.telemetryData.repoUrl).toBe('string');
+            expect(typeof results.XFI_RESULT.telemetryData.startTime).toBe('number');
+            expect(typeof results.XFI_RESULT.telemetryData.userInfo).toBe('object');
+            
+            // Check repoXFIConfig
+            expect(typeof results.XFI_RESULT.repoXFIConfig).toBe('object');
+            expect(Array.isArray(results.XFI_RESULT.repoXFIConfig.sensitiveFileFalsePositives)).toBe(true);
+
             expect(sendTelemetry).toHaveBeenCalledTimes(2); // Once for start, once for end
         });
 

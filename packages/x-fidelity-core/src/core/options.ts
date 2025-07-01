@@ -18,6 +18,8 @@ export interface CoreOptions {
     timeout?: number;
     examine?: boolean;
     disableTreeSitterWorker?: boolean;
+    zapFiles?: string[];
+    fileCacheTTL?: number;
 }
 
 // Default options for core functionality
@@ -36,7 +38,9 @@ export let options: CoreOptions = {
     telemetryEnabled: true,
     maxFileSize: 1024 * 1024, // 1MB
     timeout: 30000, // 30 seconds
-    disableTreeSitterWorker: false
+    disableTreeSitterWorker: false,
+    zapFiles: undefined,
+    fileCacheTTL: 60  // Default 60 minutes
 };
 
 // Function to update options (used by CLI and other packages)

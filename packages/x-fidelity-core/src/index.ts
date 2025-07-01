@@ -1,7 +1,15 @@
 // Core exports
-export * from './core/engine/analyzer';
 export * from './core/configManager';
-export { validateArchetypeConfig } from './core/validateConfig';
+export * from './core/engine/analyzer';
+export * from './core/engine/engineSetup';
+export * from './core/engine/engineRunner';
+export * from './core/engine/errorActionExecutor';
+export * from './core/engine/telemetryCollector';
+export * from './core/options';
+export * from './core/pluginRegistry';
+export * from './core/validateConfig';
+export * from './facts';
+export * from './operators';
 export * from './notifications';
 
 // Re-export types from the types package
@@ -70,18 +78,19 @@ export type {
     HealthCheckResponse
 } from '@x-fidelity/types';
 
-// Utility exports
+// Export utility classes and functions
+export * from './utils/defaultLogger';
 export * from './utils/logger';
 export * from './utils/loggerProvider';
-export * from './utils/defaultLogger';
-export * from './utils/executionContext';
-export * from './utils/utils';
+export * from './utils/maskSensitiveData';
 export * from './utils/openaiUtils';
 export * from './utils/telemetry';
-export * from './utils/timingUtils';
-export * from './utils/maskSensitiveData';
-export * from './utils/inputValidation';
+export * from './utils/utils';
 export * from './utils/pathUtils';
+export * from './utils/timingUtils';
+export * from './utils/inputValidation';
+export * from './utils/fileCacheManager';
+export * from './utils/executionContext';
 
 // Export core functionality
 export { logger, LoggerProvider } from './utils/logger';
@@ -95,10 +104,6 @@ export { options, setOptions, getOptions } from './core/options';
 // Export plugin registry and configuration manager
 export { pluginRegistry } from './core/pluginRegistry';
 export { ConfigManager } from './core/configManager';
-
-// Facts and operators are now provided by plugins through the plugin registry
-export { loadFacts } from './facts';
-export { loadOperators } from './operators';
 
 // Export validation functions
 export { validateArchetype, validateRule, validateXFIConfig, aiSuggestionsSchema } from './utils/jsonSchemas';

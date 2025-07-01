@@ -129,6 +129,26 @@
         "command": "xfidelity.showPerformanceMetrics",
         "title": "X-Fidelity: Show Performance Metrics",
         "icon": "$(dashboard)"
+      },
+      {
+        "command": "xfidelity.startPeriodicAnalysis",
+        "title": "X-Fidelity: Start Periodic Analysis",
+        "icon": "$(play)"
+      },
+      {
+        "command": "xfidelity.stopPeriodicAnalysis",
+        "title": "X-Fidelity: Stop Periodic Analysis",
+        "icon": "$(stop)"
+      },
+      {
+        "command": "xfidelity.restartPeriodicAnalysis",
+        "title": "X-Fidelity: Restart Periodic Analysis",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "xfidelity.showPeriodicAnalysisStatus",
+        "title": "X-Fidelity: Show Periodic Analysis Status",
+        "icon": "$(info)"
       }
     ],
     "configuration": {
@@ -348,6 +368,51 @@
           "type": "number",
           "default": 100,
           "description": "Maximum number of inline decorations per file"
+        },
+        "xfidelity.periodicAnalysis.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable periodic analysis of open files using zapfiles functionality."
+        },
+        "xfidelity.periodicAnalysis.intervalMinutes": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 60,
+          "description": "Interval in minutes for periodic analysis of open files."
+        },
+        "xfidelity.periodicAnalysis.onlyActiveFiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Only analyze currently open and recently changed files."
+        },
+        "xfidelity.periodicAnalysis.minIdleTimeSeconds": {
+          "type": "number",
+          "default": 30,
+          "minimum": 5,
+          "maximum": 300,
+          "description": "Minimum idle time in seconds before running periodic analysis."
+        },
+        "xfidelity.periodicAnalysis.maxFilesPerRun": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of files to analyze in each periodic run."
+        },
+        "xfidelity.periodicAnalysis.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/node_modules/**",
+            "**/dist/**",
+            "**/build/**",
+            "**/*.log",
+            "**/.*"
+          ],
+          "description": "Glob patterns for files to exclude from periodic analysis."
         }
       }
     },

@@ -33,12 +33,29 @@ export function initCLI(): void {
         .option('-j, --jsonTTL <minutes>', 'Set the server JSON cache TTL in minutes', '10')
         .option('-e, --extraPlugins <modules...>', 'Space-separated list of npm module names to load as extra plugins')
         .option('-x, --examine', 'Validate archetype config only')
+        .option('-z, --zap <files>', 'JSON array of specific files to analyze (relative to --dir or absolute paths)')
+        .option('--file-cache-ttl <minutes>', 'File modification cache TTL in minutes', '60')
         .option('--output-format <format>', 'Output format: human (default) or json')
         .option('--output-file <path>', 'Write structured output to file (works with --output-format json)')
         .option('--disableTreeSitterWorker', 'Disable TreeSitter worker for performance testing (worker enabled by default)')
         .parse(process.argv);
 
     const opts = program.opts();
+
+    // Parse zap files if provided
+    let zapFiles: string[] | undefined = undefined;
+    if (opts.zap) {
+        try {
+            zapFiles = JSON.parse(opts.zap);
+            if (!Array.isArray(zapFiles)) {
+                logger.error('--zap option must be a JSON array of file paths');
+                process.exit(1);
+            }
+        } catch (error) {
+            logger.error(`Invalid JSON in --zap option: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            process.exit(1);
+        }
+    }
 
     options = {
         dir: opts.dir || '.',
@@ -52,6 +69,8 @@ export function initCLI(): void {
         jsonTTL: opts.jsonTTL,
         extraPlugins: opts.extraPlugins || [],
         examine: opts.examine,
+        zapFiles,
+        fileCacheTTL: opts.fileCacheTTL ? parseInt(opts.fileCacheTTL) : 60,
         outputFormat: opts.outputFormat,
         outputFile: opts.outputFile,
         disableTreeSitterWorker: opts.disableTreeSitterWorker || false
@@ -69,7 +88,9 @@ export function initCLI(): void {
         port: opts.port ? parseInt(opts.port) : undefined,
         jsonTTL: opts.jsonTTL,
         extraPlugins: opts.extraPlugins || [],
-        disableTreeSitterWorker: opts.disableTreeSitterWorker || false
+        disableTreeSitterWorker: opts.disableTreeSitterWorker || false,
+        zapFiles,
+        fileCacheTTL: opts.fileCacheTTL ? parseInt(opts.fileCacheTTL) : 60
     });
 
     logger.debug({ options }, 'CLI options parsed');
