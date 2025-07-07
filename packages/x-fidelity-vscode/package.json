@@ -590,7 +590,7 @@
     "build:production": "yarn check-types && node --no-warnings=ExperimentalWarning esbuild.config.js --production",
     "check-types": "tsc --noEmit",
     "build:test": "tsc -p tsconfig.test.json",
-    "clean": "rimraf dist dist-test config *.tsbuildinfo .vscode-test .vscode-test-profile",
+    "clean": "rimraf dist dist-test config .vscode-test .vscode-test-profile && node -e \"try { require('fs').readdirSync('.').filter(f => f.endsWith('.tsbuildinfo')).forEach(f => require('fs').unlinkSync(f)); } catch(e) { /* ignore */ }\"",
     "clean:test-artifacts": "rm -rf .vscode-test/user-data/Crashpad/pending/*.lock .vscode-test/user-data/logs/* ./.vscode-test-user-data || true",
     "publish": "yarn package && vsce publish",
     "install-vsix": "code --install-extension $(ls *.vsix | head -1) --force",
