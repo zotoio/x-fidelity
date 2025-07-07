@@ -59,14 +59,7 @@ jobs:
           cd packages/x-fidelity-vscode
           yarn test:unit
 
-      - name: Run integration tests (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          cd packages/x-fidelity-vscode
-          xvfb-run -a yarn test:integration
-
-      - name: Run integration tests (Windows/macOS)
-        if: runner.os != 'Linux'
+      - name: Run integration tests
         run: |
           cd packages/x-fidelity-vscode
           yarn test:integration
@@ -76,13 +69,50 @@ jobs:
           cd packages/x-fidelity-vscode
           yarn package
 
+      - name: Install VSCode CLI (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          # Download and install VSCode CLI
+          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+          sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+          sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+          sudo apt-get update
+          sudo apt-get install -y code
+
       - name: Test VSIX installation
         if: runner.os == 'Linux'
         run: |
           cd packages/x-fidelity-vscode
+          # Verify VSIX file exists
+          vsix_file=$(ls *.vsix | head -1)
+          if [ -z "$vsix_file" ]; then
+            echo "Error: No VSIX file found"
+            exit 1
+          fi
+          echo "Found VSIX file: $vsix_file"
+          
+          # Test VSIX file integrity
+          unzip -t "$vsix_file" >/dev/null 2>&1
+          if [ $? -ne 0 ]; then
+            echo "Error: VSIX file is corrupted"
+            exit 1
+          fi
+          echo "VSIX file integrity check passed"
+          
           # Install extension and verify it can be activated
-          code --install-extension *.vsix --force
-          code --list-extensions | grep -q x-fidelity-vscode
+          echo "Installing extension..."
+          code --install-extension "$vsix_file" --force
+          
+          # Verify installation
+          echo "Verifying installation..."
+          if code --list-extensions | grep -q "zotoio.x-fidelity-vscode"; then
+            echo "✅ Extension successfully installed and listed"
+          else
+            echo "❌ Extension not found in installed extensions"
+            echo "Installed extensions:"
+            code --list-extensions
+            exit 1
+          fi
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
@@ -212,10 +242,20 @@ jobs:
           cd packages/x-fidelity-vscode
           yarn dev:build
 
+      - name: Install VSCode CLI for performance test
+        run: |
+          # Download and install VSCode CLI
+          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+          sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+          sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+          sudo apt-get update
+          sudo apt-get install -y code xvfb
+
       - name: Test extension startup performance
         run: |
           cd packages/x-fidelity-vscode
           # Measure extension activation time
+          echo "Testing extension startup performance..."
           timeout 30s xvfb-run -a code --profile-startup --extensionDevelopmentPath=. --new-window . || echo "Extension activated within timeout"
 
       - name: Check bundle size

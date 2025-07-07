@@ -4,8 +4,8 @@
   "description": "Demo configuration files for X-Fidelity including rules, archetypes, and exemptions",
   "scripts": {
     "clean": "rimraf dist/",
-    "prebuild": "yarn clean && mkdir -p dist",
-    "build": "cp -r src/* dist/",
+    "prebuild": "yarn clean && node -e \"require('fs').mkdirSync('dist', {recursive: true})\"",
+    "build": "node -e \"require('fs-extra').copySync('src', 'dist')\"",
     "build:watch": "yarn build && chokidar 'src/**/*' -c 'yarn build'",
     "test": "echo 'No tests for democonfig package'",
     "test:coverage": "echo 'No tests for democonfig package'",
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "chokidar-cli": "^3.0.0",
+    "fs-extra": "^11.3.0",
     "rimraf": "^6.0.1"
   },
   "files": [
