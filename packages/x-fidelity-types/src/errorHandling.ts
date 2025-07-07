@@ -59,7 +59,8 @@ export enum ErrorCode {
   INITIALIZATION_FAILED = 1601,
   DEPENDENCY_MISSING = 1602,
   MEMORY_ERROR = 1603,
-  UNEXPECTED_ERROR = 1699
+  UNEXPECTED_ERROR = 1699,
+  RUNTIME_ERROR
 }
 
 /** Enhanced error information with standardized structure */

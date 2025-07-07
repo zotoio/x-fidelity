@@ -9,7 +9,8 @@ module.exports = [
 			}
 		},
 		plugins: {
-			'@typescript-eslint': require('@typescript-eslint/eslint-plugin')
+			'@typescript-eslint': require('@typescript-eslint/eslint-plugin'),
+			'prettier': require('eslint-config-prettier')
 		},
 		rules: {
 			'curly': 'warn',

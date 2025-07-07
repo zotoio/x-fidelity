@@ -18,9 +18,13 @@ suite('Error Handling Integration Tests', () => {
     // Should either succeed (handled gracefully) or fail with proper error
     if (!result.success) {
       assert.ok(result.error && result.error.length > 0, 'Error messages should not be empty');
-      console.log(`✅ Invalid directory handled correctly: ${result.error.substring(0, 100)}...`);
+      if (global.isVerboseMode) {
+        global.testConsole.log(`✅ Invalid directory handled correctly: ${result.error.substring(0, 100)}...`);
+      }
     } else {
-      console.log('⚠️ Invalid directory was handled without throwing');
+      if (global.isVerboseMode) {
+        global.testConsole.log('⚠️ Invalid directory was handled without throwing');
+      }
     }
   });
 
@@ -30,7 +34,9 @@ suite('Error Handling Integration Tests', () => {
     // Most commands should handle this gracefully
     const result = await executeCommandSafely('xfidelity.getTestResults');
     
-    console.log(`✅ getTestResults handled gracefully, result: ${result.result ? 'has data' : 'null'}`);
+    if (global.isVerboseMode) {
+      global.testConsole.log(`✅ getTestResults handled gracefully, result: ${result.result ? 'has data' : 'null'}`);
+    }
   });
 
   test('should handle configuration and exemption commands gracefully', async function() {
@@ -38,17 +44,23 @@ suite('Error Handling Integration Tests', () => {
     
     // Test rule documentation command
     const ruleDocResult = await executeCommandSafely('xfidelity.showRuleDocumentation', 'test-rule');
-    console.log(`✅ Show rule documentation: ${ruleDocResult.success ? 'success' : 'handled gracefully'}`);
+    if (global.isVerboseMode) {
+      global.testConsole.log(`✅ Show rule documentation: ${ruleDocResult.success ? 'success' : 'handled gracefully'}`);
+    }
     
     // Test exemption commands (these will fail without proper context, which is expected)
     const testUri = vscode.Uri.file('/test/file.ts');
     const testRange = new vscode.Range(0, 0, 0, 10);
     
     const exemptionResult = await executeCommandSafely('xfidelity.addExemption', testUri, testRange, 'test-rule');
-    console.log(`✅ Add exemption: ${exemptionResult.success ? 'success' : 'handled gracefully'}`);
+    if (global.isVerboseMode) {
+      global.testConsole.log(`✅ Add exemption: ${exemptionResult.success ? 'success' : 'handled gracefully'}`);
+    }
     
     const bulkExemptionResult = await executeCommandSafely('xfidelity.addBulkExemptions', testUri, []);
-    console.log(`✅ Add bulk exemptions: ${bulkExemptionResult.success ? 'success' : 'handled gracefully'}`);
+    if (global.isVerboseMode) {
+      global.testConsole.log(`✅ Add bulk exemptions: ${bulkExemptionResult.success ? 'success' : 'handled gracefully'}`);
+    }
   });
 
   test('should handle report management commands gracefully', async function() {
@@ -65,7 +77,9 @@ suite('Error Handling Integration Tests', () => {
     
     for (const command of reportCommands) {
       const result = await executeCommandSafely(command);
-      console.log(`✅ ${command}: ${result.success ? 'success' : 'handled gracefully'}`);
+      if (global.isVerboseMode) {
+        global.testConsole.log(`✅ ${command}: ${result.success ? 'success' : 'handled gracefully'}`);
+      }
     }
   });
 
@@ -74,10 +88,14 @@ suite('Error Handling Integration Tests', () => {
     
     // Test cancel analysis (may not have anything to cancel)
     const cancelResult = await executeCommandSafely('xfidelity.cancelAnalysis');
-    console.log(`✅ Cancel analysis: ${cancelResult.success ? 'success' : 'handled gracefully'}`);
+    if (global.isVerboseMode) {
+      global.testConsole.log(`✅ Cancel analysis: ${cancelResult.success ? 'success' : 'handled gracefully'}`);
+    }
     
     // Test analysis commands
     const analysisResult = await executeCommandSafely('xfidelity.runAnalysis');
-    console.log(`✅ Run analysis: ${analysisResult.success ? 'success' : 'handled gracefully'}`);
+    if (global.isVerboseMode) {
+      global.testConsole.log(`✅ Run analysis: ${analysisResult.success ? 'success' : 'handled gracefully'}`);
+    }
   });
 });

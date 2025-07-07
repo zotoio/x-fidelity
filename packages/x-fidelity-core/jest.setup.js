@@ -34,12 +34,24 @@ class SilentLogger {
 
 // Set up silent logging for the LoggerProvider
 beforeEach(() => {
+  // Skip LoggerProvider setup for logger-related tests since they use their own mocks
+  const testPath = expect.getState().testPath;
+  if (testPath && (testPath.includes('logger') || testPath.includes('Logger'))) {
+    return;
+  }
+  
   // Import and configure the LoggerProvider to use silent logger
   const { LoggerProvider } = require('./src/utils/loggerProvider');
   LoggerProvider.setLogger(new SilentLogger());
 });
 
 afterEach(() => {
+  // Skip LoggerProvider cleanup for logger-related tests since they use their own mocks
+  const testPath = expect.getState().testPath;
+  if (testPath && (testPath.includes('logger') || testPath.includes('Logger'))) {
+    return;
+  }
+  
   // Clear any injected logger after each test
   const { LoggerProvider } = require('./src/utils/loggerProvider');
   LoggerProvider.clearInjectedLogger();

@@ -25,7 +25,9 @@ suite('Extension Activation Tests', () => {
 		assert.strictEqual(packageJson.name, 'x-fidelity-vscode', 'Extension name should match');
 		assert.ok(packageJson.version, 'Extension should have version');
 		
-		console.log(`✅ Extension activated: ${packageJson.displayName} v${packageJson.version}`);
+		if (global.isVerboseMode) {
+			global.testConsole.log(`✅ Extension activated: ${packageJson.displayName} v${packageJson.version}`);
+		}
 	});
 
 	test('should register all essential commands', async function () {
@@ -34,7 +36,9 @@ suite('Extension Activation Tests', () => {
 		const commands = await vscode.commands.getCommands(true);
 		const xfidelityCommands = commands.filter(cmd => cmd.startsWith('xfidelity.'));
 		
-		console.log(`Found ${xfidelityCommands.length} X-Fidelity commands:`, xfidelityCommands);
+		if (global.isVerboseMode) {
+			global.testConsole.log(`Found ${xfidelityCommands.length} X-Fidelity commands:`, xfidelityCommands);
+		}
 		
 		// Essential commands that must be available (optimized list)
 		const essentialCommands = [
@@ -57,7 +61,9 @@ suite('Extension Activation Tests', () => {
 			await assertCommandExists(command);
 		}
 		
-		console.log(`✅ All ${essentialCommands.length} essential commands registered`);
+		if (global.isVerboseMode) {
+			global.testConsole.log(`✅ All ${essentialCommands.length} essential commands registered`);
+		}
 	});
 
 	test('should execute test command successfully', async function () {
@@ -65,9 +71,11 @@ suite('Extension Activation Tests', () => {
 		
 		try {
 			await vscode.commands.executeCommand('xfidelity.test');
-			console.log('✅ Test command executed successfully');
+			if (global.isVerboseMode) {
+				global.testConsole.log('✅ Test command executed successfully');
+			}
 		} catch (error) {
 			assert.fail(`Test command failed: ${error}`);
 		}
 	});
-});
+}); 

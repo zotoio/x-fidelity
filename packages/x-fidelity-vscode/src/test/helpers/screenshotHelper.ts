@@ -28,7 +28,9 @@ export class ScreenshotHelper {
     
     try {
       await fs.mkdir(this.screenshotDir, { recursive: true });
-      console.log(`📸 Screenshot directory created: ${this.screenshotDir}`);
+      if (global.isVerboseMode) {
+        global.testConsole.log(`📸 Screenshot directory created: ${this.screenshotDir}`);
+      }
       
       // Create a test session directory
       const sessionDir = path.join(this.screenshotDir, `session-${this.testStartTime}`);
@@ -65,7 +67,9 @@ export class ScreenshotHelper {
       // Use scrot for screenshot capture in xvfb environment
       await execAsync(`scrot --quality 90 --silent "${filepath}"`);
       
-      console.log(`📸 Screenshot captured: ${filename}`);
+      if (global.isVerboseMode) {
+        global.testConsole.log(`📸 Screenshot captured: ${filename}`);
+      }
       
       // Update index file
       await this.updateScreenshotIndex(filename, testName, description);
@@ -337,7 +341,9 @@ export class ScreenshotHelper {
       for (const session of toDelete) {
         const sessionPath = path.join(baseDir, session.name);
         await fs.rm(sessionPath, { recursive: true, force: true });
-        console.log(`🗑️  Cleaned up old screenshot session: ${session.name}`);
+                    if (global.isVerboseMode) {
+              global.testConsole.log(`🗑️  Cleaned up old screenshot session: ${session.name}`);
+            }
       }
     } catch (error) {
       console.warn(`⚠️ Failed to cleanup old screenshot sessions: ${error}`);

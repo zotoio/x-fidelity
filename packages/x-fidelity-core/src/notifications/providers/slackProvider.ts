@@ -20,6 +20,18 @@ export class SlackProvider implements NotificationProvider {
   }
 
   public async send(notification: Notification): Promise<void> {
+    // Validate webhook URL
+    if (!this.config.webhookUrl || this.config.webhookUrl.trim() === '') {
+      throw new Error('Slack webhook URL is required');
+    }
+
+    // Basic URL validation
+    try {
+      new URL(this.config.webhookUrl);
+    } catch {
+      throw new Error('Invalid Slack webhook URL format');
+    }
+
     try {
       const payload = {
         channel: this.config.channel,

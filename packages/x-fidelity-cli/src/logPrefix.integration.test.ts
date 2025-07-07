@@ -218,7 +218,9 @@ describe('CLI Log Prefix Integration', () => {
                 });
 
                 const executionId = ExecutionContext.getCurrentExecutionId();
-                executionIds.add(executionId);
+                if (executionId) {
+                    executionIds.add(executionId);
+                }
 
                 LoggerProvider.setLogger(mockLogger);
                 const logger = LoggerProvider.getLogger();

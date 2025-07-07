@@ -37,7 +37,9 @@ suite('Configuration Management Tests', () => {
     assert.strictEqual(missingProperties.length, 0, 
       `Missing configuration properties: ${missingProperties.join(', ')}`);
     
-    console.log(`✅ All ${requiredProperties.length} configuration properties defined`);
+    if (global.isVerboseMode) {
+      global.testConsole.log(`✅ All ${requiredProperties.length} configuration properties defined`);
+    }
   });
 
   test('should detect archetype automatically', async function() {
@@ -64,9 +66,13 @@ suite('Configuration Management Tests', () => {
         `Detected archetype "${detectedArchetype}" should be valid`
       );
       
-      console.log(`✅ Archetype detected: ${detectedArchetype}`);
+      if (global.isVerboseMode) {
+        global.testConsole.log(`✅ Archetype detected: ${detectedArchetype}`);
+      }
     } else {
-      console.log(`⚠️ Archetype detection failed (may be expected): ${result.error}`);
+      if (global.isVerboseMode) {
+        global.testConsole.log(`⚠️ Archetype detection failed (may be expected): ${result.error}`);
+      }
     }
   });
 
@@ -92,6 +98,8 @@ suite('Configuration Management Tests', () => {
     const excludePatterns = config.get('excludePatterns') as string[];
     assert.ok(Array.isArray(excludePatterns), 'excludePatterns should be an array');
     
-    console.log('✅ Configuration values validated');
+    if (global.isVerboseMode) {
+      global.testConsole.log('✅ Configuration values validated');
+    }
   });
-});
+}); 

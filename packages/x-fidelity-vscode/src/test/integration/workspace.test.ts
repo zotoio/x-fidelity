@@ -34,7 +34,9 @@ suite('Workspace Integration Tests', () => {
     
     await validateWorkspaceStructure(expectedFiles, expectedDirs);
     
-    console.log(`✅ Workspace structure validated: ${workspacePath}`);
+    if (global.isVerboseMode) {
+      global.testConsole.log(`✅ Workspace structure validated: ${workspacePath}`);
+    }
   });
 
   test('should handle analysis with directory parameter', async function() {
@@ -44,10 +46,12 @@ suite('Workspace Integration Tests', () => {
     
     const result = await executeCommandSafely('xfidelity.runAnalysisWithDir', workspacePath);
     
-    if (result.success) {
-      console.log('✅ Analysis with directory completed successfully');
-    } else {
-      console.log(`⚠️ Analysis with directory failed (may be expected): ${result.error}`);
+    if (global.isVerboseMode) {
+      if (result.success) {
+        global.testConsole.log('✅ Analysis with directory completed successfully');
+      } else {
+        global.testConsole.log(`⚠️ Analysis with directory failed (may be expected): ${result.error}`);
+      }
     }
   });
 
@@ -67,9 +71,13 @@ suite('Workspace Integration Tests', () => {
         const fileUri = vscode.Uri.joinPath(testWorkspace.uri, file);
         const stat = await vscode.workspace.fs.stat(fileUri);
         assert.ok(stat.type === vscode.FileType.File, `${file} should be a file`);
-        console.log(`✅ Found critical file: ${file}`);
+        if (global.isVerboseMode) {
+          global.testConsole.log(`✅ Found critical file: ${file}`);
+        }
       } catch {
-        console.log(`⚠️ Critical file missing (may be expected): ${file}`);
+        if (global.isVerboseMode) {
+          global.testConsole.log(`⚠️ Critical file missing (may be expected): ${file}`);
+        }
       }
     }
   });
@@ -85,7 +93,9 @@ suite('Workspace Integration Tests', () => {
       assert.ok(packageJson.name, 'package.json should have a name');
       assert.ok(packageJson.version, 'package.json should have a version');
       
-      console.log(`✅ Workspace package: ${packageJson.name}@${packageJson.version}`);
+      if (global.isVerboseMode) {
+        global.testConsole.log(`✅ Workspace package: ${packageJson.name}@${packageJson.version}`);
+      }
     } catch (error) {
       assert.fail(`Failed to read workspace package.json: ${error}`);
     }

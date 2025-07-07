@@ -23,7 +23,8 @@ export class NotificationManager {
             notifyOnFailure: repoXFIConfig?.notifications?.notifyOnFailure ?? true,
             codeOwners: repoXFIConfig?.notifications?.codeOwners ?? false,
             recipients: repoXFIConfig?.notifications?.recipients,
-            providers: repoXFIConfig?.notifications?.providers
+            providers: repoXFIConfig?.notifications?.providers,
+            codeOwnersPath: repoXFIConfig?.notifications?.codeOwnersPath || '.github/CODEOWNERS'
         };
         this.loadCodeOwners();
     }
@@ -67,16 +68,16 @@ export class NotificationManager {
     }
 
     private async sendNotifications(notification: Notification): Promise<void> {
-        const promises = Array.from(this.providers.values()).map(provider => {
+        const promises = Array.from(this.providers.values()).map(async provider => {
             try {
-                return provider.send(notification);
+                await provider.send(notification);
             } catch (error) {
                 logger.error('Error sending notification:', error);
-                return Promise.resolve();
+                // Continue with other providers even if one fails
             }
         });
 
-        await Promise.all(promises);
+        await Promise.allSettled(promises);
     }
 
     private async loadCodeOwners(): Promise<void> {
@@ -244,7 +245,7 @@ export class NotificationManager {
 ${yamlAttachment}
 </pre>`;
 
-            const result = `<h1>🚨 Issues Detected</h1>
+            const result = `<h1>🚨 X-Fidelity Analysis - Issues Detected</h1>
 
 <p>X-Fidelity found issues in your codebase:</p>
 
@@ -271,7 +272,7 @@ ${yamlSection}
             return result
         } else {
             // Success template
-            return `<h1>✅ Success!</h1>
+            return `<h1>✅ X-Fidelity Analysis - Success!</h1>
 
 <p>Your codebase passed all X-Fidelity checks.</p>
 
@@ -289,14 +290,17 @@ ${yamlSection}
     async getRecipients(results: ResultMetadata): Promise<string[]> {
         const recipients: string[] = [];
         
-        // Add configured recipients
-        if (this.config.recipients?.email) {
+        // Add configured recipients - handle both array format and object format
+        if (Array.isArray(this.config.recipients)) {
+            recipients.push(...this.config.recipients);
+        } else if (this.config.recipients?.email) {
             recipients.push(...this.config.recipients.email);
         }
         
         // Add code owners if enabled
         if (this.config.codeOwners && this.codeOwners.length > 0) {
-            const codeOwnerEmails = this.codeOwners.flatMap(owner => owner.owners);
+            const affectedFiles = this.getAffectedFiles(results);
+            const codeOwnerEmails = this.getCodeOwnersForFiles(affectedFiles);
             recipients.push(...codeOwnerEmails);
         }
         

@@ -2,6 +2,22 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.test.ts',
+    '!src/**/*.spec.ts',
+    '!src/**/index.ts'
+  ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
+  coverageThreshold: {
+    global: {
+      statements: 75,
+      branches: 70,
+      functions: 75,
+      lines: 75
+    }
+  },
   moduleNameMapper: {
     "^@x-fidelity/core/(.*)$": "<rootDir>/src/$1",
     "^@x-fidelity/types/(.*)$": "<rootDir>/../x-fidelity-types/src/$1",

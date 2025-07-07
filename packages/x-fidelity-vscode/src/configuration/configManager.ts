@@ -80,6 +80,13 @@ export class ConfigManager {
     return ConfigManager.instance;
   }
 
+  static resetInstance(): void {
+    if (ConfigManager.instance) {
+      ConfigManager.instance.dispose();
+      ConfigManager.instance = undefined as any;
+    }
+  }
+
   getConfig(): ExtensionConfig {
     return { ...this.config };
   }

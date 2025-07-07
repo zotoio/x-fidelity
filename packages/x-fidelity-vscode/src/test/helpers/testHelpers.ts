@@ -117,7 +117,9 @@ export async function runExtensionAnalysis(): Promise<ExtensionResult> {
           const results = await vscode.commands.executeCommand('xfidelity.getTestResults') as ResultMetadata;
           
           if (results && results.XFI_RESULT && typeof results.XFI_RESULT.totalIssues === 'number') {
-            console.log('Extension analysis results obtained successfully');
+            if (global.isVerboseMode) {
+        global.testConsole.log('Extension analysis results obtained successfully');
+      }
             resolve(results);
             return;
           }

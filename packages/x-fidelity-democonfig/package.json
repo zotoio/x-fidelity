@@ -8,7 +8,9 @@
     "build": "cp -r src/* dist/",
     "build:watch": "yarn build && chokidar 'src/**/*' -c 'yarn build'",
     "test": "echo 'No tests for democonfig package'",
-    "lint": "echo 'No linting for democonfig package'"
+    "test:coverage": "echo 'No tests for democonfig package'",
+    "lint": "echo 'No linting for democonfig package'",
+    "lint:fix": "echo 'No linting for democonfig package'"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",

@@ -153,7 +153,14 @@ export class StandardErrorHandler {
     if (this.debugContext?.operation) {
       const operationCorrelationId = `op-${this.debugContext.operation}`;
       if (!this.correlations.has(operationCorrelationId)) {
-        this.createCorrelation(this.debugContext.operation);
+        // Create correlation with specific ID instead of generated one
+        const correlation: ErrorCorrelation = {
+          correlationId: operationCorrelationId,
+          sessionId: StandardErrorFactory['sessionId'],
+          operationId: this.debugContext.operation,
+          relatedErrors: []
+        };
+        this.correlations.set(operationCorrelationId, correlation);
       }
       this.addToCorrelation(operationCorrelationId, error.errorId);
     }

@@ -6,29 +6,46 @@ import { Almanac } from 'json-rules-engine';
 import { ResponseFormatJSONSchema } from 'openai/resources';
 
 let openai: OpenAI | undefined;
-if (isOpenAIEnabled()) {
-    const configuration = {
-        apiKey: process.env.OPENAI_API_KEY,
-    };
-    openai = new OpenAI(configuration); 
-}
+
+// Initialize OpenAI client function
+const initializeOpenAI = () => {
+    if (!openai && isOpenAIEnabled() && process.env.OPENAI_API_KEY) {
+        const configuration = {
+            apiKey: process.env.OPENAI_API_KEY,
+        };
+        openai = new OpenAI(configuration);
+    }
+    return openai;
+};
 
 // ✅ Export the function for testing - defined first to avoid circular reference
 export const openaiAnalysisFn = async (params: any, almanac: Almanac) => {
    
-    let result: object = {'result': []};
     const model = process.env.OPENAI_MODEL || 'gpt-4o';
+    const promptText = params?.prompt || 'unknown';
     
     try {
-        if (!openai || !isOpenAIEnabled()) {
-            logger.debug('OpenAI is not enabled or client not initialized');
-            return result;  // Early return when OpenAI is disabled
+        // Check if OpenAI is enabled first
+        if (!isOpenAIEnabled()) {
+            logger.debug('OpenAI is not enabled');
+            return { prompt: promptText, result: [] };
+        }
+
+        // Initialize OpenAI client
+        const client = initializeOpenAI();
+        if (!client) {
+            logger.debug('OpenAI client not initialized (missing API key)');
+            return { prompt: promptText, result: [] };
         }
 
         const openaiSystemPrompt: string = await almanac.factValue('openaiSystemPrompt');
         const fileData: FileData = await almanac.factValue('fileData');
 
-        // ✅ REMOVED: No longer need REPO_GLOBAL_CHECK since this is now a global fact that runs once per repo
+        // Check if we have required facts
+        if (!openaiSystemPrompt || !fileData) {
+            logger.debug('Missing required facts: openaiSystemPrompt or fileData');
+            return { prompt: promptText, result: [] };
+        }
 
         const responseFormat: ResponseFormatJSONSchema.JSONSchema = {
             name: 'aiSuggestions', 
@@ -37,10 +54,9 @@ export const openaiAnalysisFn = async (params: any, almanac: Almanac) => {
 
         const payload: ChatCompletionCreateParams = {
             model,
-            //reasoning_effort: 'high',
             messages: [
                 { role: 'system', content: openaiSystemPrompt },
-                { role: 'user', content: `${params.prompt} 
+                { role: 'user', content: `${promptText} 
                     IMPORTANT Guidelines:
                     1. respond with each suggestion as a valid JSON object in an array that can be parsed. 
                     2. each object should have the following fields:
@@ -61,35 +77,44 @@ export const openaiAnalysisFn = async (params: any, almanac: Almanac) => {
         logger.debug({ 
             payload,
             payloadLength: JSON.stringify(payload).length,
-            prompt: params.prompt
-        }, `Running OpenAI analysis for prompt "${params.prompt}"`);
+            prompt: promptText
+        }, `Running OpenAI analysis for prompt "${promptText}"`);
 
-        const response: OpenAI.Chat.Completions.ChatCompletion = await openai.chat.completions.create(payload);
-        logger.debug(response, `OpenAI response for prompt "${params.prompt}"`);
+        const response: OpenAI.Chat.Completions.ChatCompletion = await client.chat.completions.create(payload);
+        logger.debug(response, `OpenAI response for prompt "${promptText}"`);
 
-        logger.info(`openaiAnalysis: prompt: "${params.prompt}" OpenAI usage: ${JSON.stringify(response.usage)}`);
+        logger.info(`openaiAnalysis: prompt: "${promptText}" OpenAI usage: ${JSON.stringify(response.usage)}`);
 
         if (!response.choices[0].message.content) {
-            throw new Error('OpenAI response is empty');
+            logger.debug('OpenAI response is empty');
+            return { prompt: promptText, result: [] };
+        }
+
+        let issues = [];
+        try {
+            const parsed = JSON.parse(response.choices[0].message.content);
+            issues = parsed.issues || [];
+        } catch (parseError) {
+            logger.error('Failed to parse OpenAI response JSON:', parseError);
+            return { prompt: promptText, result: [] };
         }
 
         const analysis = {
-            'prompt': params.prompt,
-            'result': JSON.parse(response.choices[0].message.content).issues
+            'prompt': promptText,
+            'result': issues
         };
 
         almanac.addRuntimeFact(params.resultFact, analysis);
 
-        result = analysis;
+        return analysis;
     } catch (error) {
         if (error instanceof Error) {
-            logger.error(`openaiAnalysis: Error analyzing facts with OpenAI: ${error.message}`);
+            logger.error(`Error analyzing facts with OpenAI: ${error.message}`);
         } else {
-            logger.error(`openaiAnalysis: Unknown error occurred`);
+            logger.error(`Unknown error occurred`);
         }
+        return { prompt: promptText, result: [] };
     }
-
-    return result;
 }
 
 const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
@@ -97,16 +122,16 @@ const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
     const formattedFileData = fileData.map((file: FileData) => {     
         logger.debug(`formatting ${file.filePath} of length: ${file.fileContent.length}`);                                                                                                             
         if (!['REPO_GLOBAL_CHECK'].includes(file.fileName)) {
-            // remove tabs and newlines
-            //file.fileContent = file.fileContent.replace(/[\n\t]/g, "");
-            // remove consecutive spaces
-            file.fileContent = file.fileContent.replace(/ {2,}/g, " ");
-
-            return file;
+            // Create a copy to avoid modifying the original
+            const formattedFile = { ...file };
+            // Remove consecutive spaces (but keep single spaces)
+            formattedFile.fileContent = formattedFile.fileContent.replace(/ {2,}/g, " ");
+            return formattedFile;
         } else {
             logger.debug(file.filePath + ' skipped.');
+            return null;  // Return null for files to skip
         }                                                                                                         
-    }); 
+    }).filter(file => file !== null);  // Filter out null values (skipped files)
     
     const systemPrompt = `You are an expert software engineer with extensive experience in 
         software development, code analysis, and problem-solving. You have a deep understanding 
@@ -125,7 +150,7 @@ const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
 
         Here is the array of json objects representing the codebase:
         
-        ${JSON.stringify(formattedFileData, null)}
+        ${JSON.stringify(formattedFileData)}
         
         Based on the provided codebase and your expertise in software engineering, order your suggestions by 
         importance or severity decending and provide a detailed explanation for each suggestion. 

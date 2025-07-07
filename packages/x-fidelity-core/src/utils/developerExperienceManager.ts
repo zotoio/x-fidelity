@@ -498,6 +498,33 @@ class ConfigurationWizard {
   async getSteps(): Promise<ConfigurationStep[]> {
     return [
       {
+        id: 'basic-setup',
+        title: 'Basic Setup',
+        description: 'Set up basic project configuration',
+        category: 'archetype',
+        required: true,
+        validation: {
+          type: 'function',
+          validator: (value: any) => typeof value === 'object' && value !== null,
+          message: 'Please provide basic configuration',
+          severity: 'error'
+        },
+        hints: [
+          {
+            type: 'tip',
+            message: 'Start with basic project settings'
+          }
+        ],
+        examples: [
+          {
+            title: 'Basic Project Setup',
+            description: 'Standard configuration for most projects',
+            value: { projectName: 'my-project', version: '1.0.0' },
+            useCase: 'Standard project setup'
+          }
+        ]
+      },
+      {
         id: 'archetype',
         title: 'Select Project Archetype',
         description: 'Choose the archetype that best matches your project',
@@ -593,6 +620,27 @@ class OnboardingManager {
 
   async getSteps(): Promise<OnboardingStep[]> {
     return [
+      {
+        id: 'installation',
+        title: 'Installation & Setup',
+        description: 'Install and set up X-Fidelity',
+        type: 'setup',
+        estimatedTime: 10,
+        tasks: [
+          {
+            id: 'install-cli',
+            title: 'Install CLI',
+            description: 'Install the X-Fidelity CLI tool',
+            type: 'action'
+          },
+          {
+            id: 'verify-installation',
+            title: 'Verify Installation',
+            description: 'Verify that X-Fidelity is installed correctly',
+            type: 'verification'
+          }
+        ]
+      },
       {
         id: 'welcome',
         title: 'Welcome to X-Fidelity',

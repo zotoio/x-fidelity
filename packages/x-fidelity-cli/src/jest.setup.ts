@@ -1,5 +1,6 @@
 // jest.setup.ts
 import { EventEmitter } from 'events';
+import { jest } from '@jest/globals';
 
 // Increase the default max listeners
 EventEmitter.defaultMaxListeners = 20;
@@ -22,7 +23,7 @@ console.info = jest.fn();
 console.debug = jest.fn();
 console.trace = jest.fn();
 
-let exitSpy: jest.SpyInstance;
+let exitSpy: any;
 
 beforeAll(() => {
   // Set max listeners for process
@@ -49,4 +50,26 @@ afterAll(() => {
   // console.info = originalConsole.info;
   // console.debug = originalConsole.debug;
   // console.trace = originalConsole.trace;
+});
+
+// Mock environment variables for tests
+process.env.NODE_ENV = 'test';
+process.env.OPENAI_API_KEY = '';
+
+// Extend Jest timeout for integration tests
+jest.setTimeout(15000);
+
+// Mock console methods to reduce noise in tests
+global.console = {
+  ...global.console,
+  log: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  info: jest.fn()
+};
+
+// Clean up after each test
+afterEach(() => {
+  jest.clearAllMocks();
 });

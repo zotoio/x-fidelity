@@ -20,6 +20,18 @@ export class TeamsProvider implements NotificationProvider {
   }
 
   public async send(notification: Notification): Promise<void> {
+    // Validate webhook URL
+    if (!this.config.webhookUrl || this.config.webhookUrl.trim() === '') {
+      throw new Error('Teams webhook URL is required');
+    }
+
+    // Basic URL validation
+    try {
+      new URL(this.config.webhookUrl);
+    } catch {
+      throw new Error('Invalid Teams webhook URL format');
+    }
+
     try {
       const fatalityCount = notification.metadata?.results?.XFI_RESULT?.fatalityCount || 0;
       const warningCount = notification.metadata?.results?.XFI_RESULT?.warningCount || 0;

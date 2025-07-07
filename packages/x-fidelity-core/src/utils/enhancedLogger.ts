@@ -320,8 +320,8 @@ export class EnhancedLogger implements ILogger {
       structuredData['@error'] = entry.error;
     }
     
-    // Log through base logger
-    this.baseLogger[entry.level](structuredData, entry.message);
+    // Log through base logger (message first, then metadata)
+    this.baseLogger[entry.level](entry.message, structuredData);
   }
   
   private logFormatted(entry: LogEntry): void {
@@ -347,13 +347,13 @@ export class EnhancedLogger implements ILogger {
     // Format: [timestamp] LEVEL [component::function] message [timing]
     const formattedMessage = `[${this.getShortTimestamp(entry.timestamp)}] ${entry.level.toUpperCase().padEnd(5)} [${contextStr}] ${entry.message}${timingStr}`;
     
-    // Log through base logger with metadata
+    // Log through base logger with metadata (message first, then metadata)
     const logMetadata = entry.metadata || {};
     if (entry.error) {
       logMetadata.error = entry.error;
     }
     
-    this.baseLogger[entry.level](logMetadata, formattedMessage);
+    this.baseLogger[entry.level](formattedMessage, logMetadata);
   }
   
   private generateSessionId(): string {
