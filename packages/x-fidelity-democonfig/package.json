@@ -1,0 +1,31 @@
+{
+  "name": "@x-fidelity/democonfig",
+  "version": "4.0.0",
+  "description": "Demo configuration files for X-Fidelity including rules, archetypes, and exemptions",
+  "scripts": {
+    "clean": "rimraf dist/",
+    "prebuild": "yarn clean && node -e \"require('fs').mkdirSync('dist', {recursive: true})\"",
+    "build": "node -e \"require('fs-extra').copySync('src', 'dist')\"",
+    "build:watch": "yarn build && chokidar 'src/**/*' -c 'yarn build'",
+    "test": "echo 'No tests for democonfig package'",
+    "test:coverage": "echo 'No tests for democonfig package'",
+    "lint": "echo 'No linting for democonfig package'",
+    "lint:fix": "echo 'No linting for democonfig package'"
+  },
+  "repository": "git@github.com:zotoio/x-fidelity.git",
+  "author": "wyvern8 <io@zoto.io>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.16.0",
+    "yarn": ">=1.22.0"
+  },
+  "devDependencies": {
+    "chokidar-cli": "^3.0.0",
+    "fs-extra": "^11.3.0",
+    "rimraf": "^6.0.1"
+  },
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ]
+} 

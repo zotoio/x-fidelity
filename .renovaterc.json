@@ -1,0 +1,131 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separatePatchReleases",
+    "group:monorepos",
+    "group:recommended"
+  ],
+  "forkProcessing": "disabled",
+  "rangeStrategy": "bump",
+  "bumpVersion": "patch",
+  "semanticCommits": "enabled",
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "🔄 X-Fidelity Dependency Dashboard",
+  "schedule": ["before 6am on monday"],
+  "timezone": "UTC",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "branchPrefix": "renovate/",
+  "commitMessagePrefix": "chore(deps):",
+  "labels": ["dependencies", "renovate"],
+  "assignees": [],
+  "reviewers": [],
+  "packageRules": [
+    {
+      "description": "Group all TypeScript-related packages",
+      "groupName": "TypeScript",
+      "matchPackageNames": [
+        "typescript",
+        "@types/node",
+        "ts-node",
+        "ts-jest",
+        "@typescript-eslint/eslint-plugin",
+        "@typescript-eslint/parser"
+      ]
+    },
+    {
+      "description": "Group all Jest testing packages",
+      "groupName": "Jest Testing",
+      "matchPackageNames": [
+        "jest",
+        "@types/jest",
+        "ts-jest",
+        "jest-environment-node"
+      ]
+    },
+    {
+      "description": "Group all ESLint packages",
+      "groupName": "ESLint",
+      "matchPackageNames": [
+        "eslint",
+        "@eslint/js",
+        "@typescript-eslint/eslint-plugin",
+        "@typescript-eslint/parser",
+        "eslint-plugin-*"
+      ]
+    },
+    {
+      "description": "Group VSCode extension dependencies",
+      "groupName": "VSCode Extension",
+      "matchPackageNames": ["vscode", "@vscode/{/,}**"]
+    },
+    {
+      "description": "Group React/Docusaurus website dependencies",
+      "groupName": "Website",
+      "matchFileNames": ["website/package.json"],
+      "matchPackageNames": [
+        "@docusaurus/core",
+        "@docusaurus/preset-classic",
+        "@docusaurus/module-type-aliases",
+        "@docusaurus/tsconfig",
+        "react",
+        "react-dom",
+        "@types/react"
+      ]
+    },
+    {
+      "description": "Auto-merge patch updates for stable packages",
+      "matchUpdateTypes": ["patch"],
+      "matchPackageNames": [
+        "lodash",
+        "axios",
+        "express",
+        "cors",
+        "helmet",
+        "compression",
+        "pino"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "ignoreTests": true
+    },
+    {
+      "description": "Separate major updates for careful review",
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "renovate", "major-update"],
+      "automerge": false,
+      "prPriority": 10
+    },
+    {
+      "description": "Pin exact versions for critical dependencies",
+      "matchPackageNames": [
+        "typescript",
+        "@types/node",
+        "jest"
+      ],
+      "rangeStrategy": "pin"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security", "dependencies"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  },
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/temp/**",
+    "**/dist/**",
+    "**/build/**"
+  ],
+  "ignoreDeps": [],
+  "postUpdateOptions": ["yarnDedupeHighest"],
+  "constraints": {
+    "yarn": ">=1.22.0"
+  }
+} 

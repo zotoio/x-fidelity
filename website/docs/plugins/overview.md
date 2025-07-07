@@ -17,15 +17,47 @@ Plugins are Node.js modules that:
 
 ## Built-in Plugins
 
-x-fidelity comes with several built-in plugins:
+X-Fidelity comes with **9 built-in plugins** that provide comprehensive code analysis capabilities:
 
-### Remote String Validator Plugin
+### Core Analysis Plugins
 
-The `xfiPluginRemoteStringValidator` plugin provides:
-- Remote validation functionality
-- Pattern extraction
-- API integration
-- Custom HTTP methods
+#### 1. AST Analysis Plugin (`xfiPluginAst`)
+Advanced abstract syntax tree analysis for JavaScript/TypeScript:
+- **Facts**: `ast`, `codeRhythm`, `functionComplexity`, `functionCount`
+- **Operators**: `astComplexity`, `functionCount`
+- **Capabilities**: Code complexity analysis, function metrics, syntax tree parsing
+
+#### 2. Dependency Plugin (`xfiPluginDependency`)
+Package dependency version checking and analysis:
+- **Facts**: `repoDependencyVersions`, `repoDependencyFacts`, `dependencyData`, `repoDependencyAnalysis`
+- **Operators**: `outdatedFramework`
+- **Capabilities**: Semver validation, dependency audit, version compliance
+
+#### 3. Filesystem Plugin (`xfiPluginFilesystem`)
+File system operations and structure analysis:
+- **Facts**: `repoFilesystemFacts`, `repoFileAnalysis`
+- **Operators**: `fileContains`, `fileContainsWithPosition`, `nonStandardDirectoryStructure`, `hasFilesWithMultiplePatterns`
+- **Capabilities**: Directory structure validation, file content analysis, pattern matching
+
+#### 4. Pattern Matching Plugin (`xfiPluginPatterns`)
+Advanced pattern matching and regex analysis:
+- **Facts**: `globalFileAnalysis`
+- **Operators**: `regexMatch`, `regexMatchWithPosition`, `globalPatternCount`, `globalPatternRatio`
+- **Capabilities**: Global pattern analysis, regex matching, position tracking
+
+### Specialized Plugins
+
+#### 5. React Patterns Plugin (`xfiPluginReactPatterns`)
+React-specific code pattern detection:
+- **Facts**: `effectCleanupFact`, `hookDependencyFact`
+- **Operators**: (None currently implemented)
+- **Capabilities**: React hooks analysis, effect cleanup detection
+
+#### 6. Remote String Validator Plugin (`xfiPluginRemoteStringValidator`)
+External API validation for extracted values:
+- **Facts**: `remoteSubstringValidation`
+- **Operators**: `invalidRemoteValidation`
+- **Capabilities**: Remote validation, HTTP integration, pattern extraction
 
 Example usage:
 ```json
@@ -36,12 +68,8 @@ Example usage:
         "validationParams": {
             "url": "http://validator.example.com/check",
             "method": "POST",
-            "headers": {
-                "Content-Type": "application/json"
-            },
-            "body": {
-                "value": "#MATCH#"
-            },
+            "headers": {"Content-Type": "application/json"},
+            "body": {"value": "#MATCH#"},
             "checkJsonPath": "$.valid"
         },
         "resultFact": "validationResult"
@@ -51,13 +79,26 @@ Example usage:
 }
 ```
 
-### Simple Example Plugin
+#### 7. Required Files Plugin (`xfiPluginRequiredFiles`)
+Validates presence of required project files:
+- **Facts**: `missingRequiredFiles`
+- **Operators**: `missingRequiredFiles`
+- **Capabilities**: Required file checking, project structure validation
 
-The `xfiPluginSimpleExample` plugin demonstrates:
-- Basic plugin structure
-- Custom fact creation
-- Custom operator creation
-- Sample rule implementation
+#### 8. OpenAI Plugin (`xfiPluginOpenAI`)
+AI-powered code analysis using OpenAI's language models:
+- **Facts**: `openaiAnalysis` (when OpenAI is enabled)
+- **Operators**: `openaiAnalysisHighSeverity`
+- **Capabilities**: AI code review, pattern detection, best practice suggestions
+- **Note**: Requires `OPENAI_API_KEY` environment variable
+
+### Development Plugins
+
+#### 9. Simple Example Plugin (`xfiPluginSimpleExample`)
+Template plugin demonstrating plugin structure:
+- **Facts**: `customFact`
+- **Operators**: `customOperator`
+- **Capabilities**: Basic example implementation, plugin development template
 
 Example usage:
 ```json
@@ -70,36 +111,66 @@ Example usage:
 
 ## Using Plugins
 
-There are two ways to use plugins with x-fidelity:
+### Built-in Plugin Loading
 
-### 1. Via CLI Option
+All built-in plugins are automatically available and loaded as needed based on your archetype configuration. No additional installation is required for the 9 built-in plugins.
+
+### External Plugin Loading
+
+For custom or third-party plugins, there are three ways to load them:
+
+#### 1. Via CLI Option
 
 Install plugin packages and enable them when running x-fidelity:
 ```bash
-# Install plugins
-yarn add xfi-plugin-name
+# Install external plugins
+yarn global add xfi-custom-plugin another-plugin
 
 # Enable plugins via CLI
-xfidelity . -e xfi-plugin-name another-plugin
+xfidelity . -e xfi-custom-plugin another-plugin
 ```
 
-### 2. Via Archetype Configuration
+#### 2. Via Archetype Configuration
 
 Specify plugins directly in your archetype configuration:
 ```json
 {
     "name": "my-archetype",
     "plugins": [
-        "xfi-plugin-name",
-        "another-plugin"
+        "xfiPluginAst",
+        "xfiPluginDependency", 
+        "xfi-custom-plugin"
     ],
-    // other archetype properties...
+    "rules": ["myRule-global"],
+    "config": {
+        // archetype configuration...
+    }
 }
 ```
 
-When using an archetype with specified plugins, x-fidelity will automatically load them without requiring the `-e` flag.
+#### 3. Via Project Configuration
 
-**Note:** If you specify plugins both in the archetype and via CLI, all plugins will be loaded, with CLI-specified plugins loaded first.
+Add plugins to your project's `.xfi-config.json` file:
+```json
+{
+    "additionalPlugins": [
+        "xfi-custom-plugin",
+        "xfiPluginOpenAI"
+    ],
+    "sensitiveFileFalsePositives": [
+        "path/to/exclude/file.js"
+    ]
+}
+```
+
+### Plugin Loading Order
+
+When plugins are specified in multiple places, they are loaded in this order:
+1. CLI-specified plugins (`-e` flag)
+2. Archetype-specified plugins
+3. Project configuration plugins (`.xfi-config.json`)
+
+**Note:** Duplicate plugins are automatically deduplicated, so the same plugin won't be loaded multiple times.
 
 ## Plugin Features
 

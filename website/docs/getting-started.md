@@ -4,9 +4,32 @@ sidebar_position: 2
 
 # Getting Started
 
-This guide will help you get up and running with x-fidelity quickly.
+This guide will help you get up and running with X-Fidelity quickly. X-Fidelity is available as both a command-line tool and a VSCode extension.
 
-## Installation
+## Choose Your Interface
+
+### VSCode Extension (Recommended for Development)
+
+The VSCode extension provides the most comprehensive development experience with real-time analysis, visual tree views, and integrated debugging.
+
+**Quick Start:**
+1. Clone the repository: `git clone https://github.com/zotoio/x-fidelity.git`
+2. Install dependencies: `yarn install`
+3. Build packages: `yarn build`
+4. Launch extension: `yarn vscode:dev`
+
+[→ Learn more about the VSCode Extension](./vscode-extension/overview)
+
+### Command Line Interface
+
+The CLI provides programmatic access and is perfect for CI/CD integration and scripting.
+
+**Quick Start:**
+1. Install: `yarn global add x-fidelity`
+2. Set PATH: `export PATH="$PATH:$(yarn global bin)"`
+3. Run analysis: `xfidelity .`
+
+## CLI Installation
 
 Install x-fidelity using Node.js 18+ and Yarn:
 
@@ -17,18 +40,28 @@ export PATH="$PATH:$(yarn global bin)"
 
 For persistent access, add the PATH line to your `~/.bashrc` or `~/.zshrc` file.
 
-## run with demo config
+## Quick Start with CLI
 
-1. Run x-fidelity in your project directory:
+1. **Run with demo configuration** in your project directory:
 
 ```bash
 xfidelity .
 ```
 
-2. View the help documentation:
+2. **View available options**:
 
 ```bash
 xfidelity --help
+```
+
+3. **Analyze specific project types**:
+
+```bash
+# For Node.js/TypeScript projects
+xfidelity . -a node-fullstack
+
+# For Java microservices
+xfidelity . -a java-microservice
 ```
 
 ## Command Line Options
@@ -93,8 +126,86 @@ xfidelity . -l /path/to/config
 xfidelity . -e plugin1 plugin2
 ```
 
+## Monorepo Structure
+
+X-Fidelity is organized as a monorepo with the following packages:
+
+- **`x-fidelity-core`**: Core analysis engine and utilities
+- **`x-fidelity-vscode`**: VSCode extension for integrated development
+- **`x-fidelity-cli`**: Command-line interface
+- **`x-fidelity-server`**: Configuration server for centralized rule management
+- **`x-fidelity-plugins`**: Built-in plugins (AST, filesystem, dependency analysis, etc.)
+- **`x-fidelity-types`**: Shared TypeScript type definitions
+- **`x-fidelity-democonfig`**: Demo configurations and example rules
+- **`x-fidelity-fixtures`**: Test fixtures and example projects
+
+## Development Setup
+
+For contributing to X-Fidelity or extending its functionality:
+
+```bash
+# Clone the repository
+git clone https://github.com/zotoio/x-fidelity.git
+cd x-fidelity
+
+# Install all dependencies
+yarn install
+
+# Build all packages
+yarn build
+
+# Run tests
+yarn test
+
+# VSCode extension development
+yarn vscode:dev
+
+# Package the VSCode extension
+yarn vscode:package
+```
+
+## Configuration Options
+
+### Local Configuration
+
+Create a `.xfi-config.json` file in your project root for project-specific settings:
+
+```json
+{
+  "sensitiveFileFalsePositives": [
+    "path/to/exclude/file.js"
+  ],
+  "additionalPlugins": [
+    "xfiPluginSimpleExample"
+  ]
+}
+```
+
+### Remote Configuration
+
+Use a configuration server for centralized rule management:
+
+```bash
+# Connect to remote config server
+xfidelity . -c https://config-server.example.com
+
+# Run your own config server
+xfidelity -m server -p 8888 -l /path/to/config
+```
+
 ## Next Steps
 
-- Learn about [Archetypes](./archetypes)
-- Configure [Rules](./rules)
-- Set up [Remote Configuration](./remote-config)
+### For Developers
+- [VSCode Extension Guide](./vscode-extension/overview) - Comprehensive development experience
+- [Local Configuration](./local-config) - Project-specific setup
+- [Plugin Development](./plugins/overview) - Creating custom plugins
+
+### For Teams
+- [Remote Configuration](./remote-config) - Centralized rule management
+- [CI/CD Integration](./ci-cd/overview) - Automated analysis in pipelines
+- [Config Server Setup](./config-server) - Hosting your own configuration server
+
+### Core Concepts
+- [Archetypes](./archetypes) - Project templates and rule sets
+- [Rules](./rules) - Define your code quality standards
+- [Facts and Operators](./facts) - Understanding the analysis engine

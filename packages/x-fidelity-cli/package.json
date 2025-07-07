@@ -1,0 +1,101 @@
+{
+  "name": "x-fidelity",
+  "version": "4.0.0",
+  "description": "CLI tool for opinionated framework adherence checks",
+  "main": "dist/index",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "xfidelity": "./dist/xfidelity"
+  },
+  "module": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./*": "./dist/*"
+  },
+  "scripts": {
+    "clean": "rimraf dist/",
+    "prebuild": "yarn clean && node -e \"require('fs').mkdirSync('dist', {recursive: true})\"",
+    "build": "yarn build:deps && tsc && yarn copy-files",
+    "build:deps": "cd ../../ && yarn tsc -b",
+    "copy-files": "node -e \"const fs=require('fs-extra'); fs.mkdirSync('dist/demoConfig', {recursive: true}); fs.copySync('../x-fidelity-democonfig/src', 'dist/demoConfig'); fs.copyFileSync('dist/index.js', 'dist/xfidelity'); if (process.platform !== 'win32') { fs.chmodSync('dist/xfidelity', '755'); }\"",
+    "build:watch": "tsc --watch --sourceMap",
+    "start": "NODE_ENV=test OPENAI_API_KEY= jest --watch",
+    "test": "NODE_ENV=test yarn lint && NODE_ENV=test OPENAI_API_KEY= jest --testPathIgnorePatterns=vscode-extension",
+    "test:coverage": "NODE_ENV=test OPENAI_API_KEY= jest --coverage",
+    "commit": "yarn test && git-cz",
+    "release": "semantic-release",
+    "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
+    "build-run": "yarn build && node . --dir ../x-fidelity-fixtures/node-fullstack | jq -R -r '. as $line | try fromjson catch $line' ",
+    "build-run-with-stubs": "yarn build && yarn start-test-server && node . --dir ../node-fullstack | jq -R -r '. as $line | try fromjson catch $line' && kill-port 4200",
+    "start-server": "ts-node src/index.ts --mode server",
+    "start-test-server": "node -e \"require('http').createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(require('fs').readFileSync('src/plugins/xfiPluginRemoteStringValidator/sampleRules/xfiTestServerResponse.json')); }).listen(4200, () => console.log('Test server running on port 4200'));\" &",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "perftest:install": "global add artillery",
+    "perftest": "perftest:install && artillery run src/server/configServer.performance.test.yml",
+    "perftest:cloud": "perftest:install && echo 'expecting env var ARTILLERY_CLOUD_API_KEY from artillery.io' && artillery run src/server/configServer.performance.test.yml --record",
+    "bats:install": "cd ./cli-testing && ./installBatsTesting.sh",
+    "bats:test": "cd ./cli-testing && bats *.bats",
+    "validate-demo-config": "yarn build && node . --dir ../node-fullstack -x node-fullstack -o true"
+  },
+  "repository": "git@github.com:zotoio/x-fidelity.git",
+  "author": "wyvern8 <io@zoto.io>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.16.0",
+    "yarn": ">=1.22.0"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.0.2",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.3",
+    "@semantic-release/npm": "^12.0.1",
+    "@semantic-release/release-notes-generator": "^14.0.3",
+    "@types/cli-progress": "^3.11.6",
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^9.0.7",
+    "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/lodash": "^4.17.13",
+    "@types/node": "^22.10.5",
+    "@types/uuid": "^10.0.0",
+    "@types/yauzl": "^2.10.3",
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
+    "commitizen": "^4.3.1",
+    "conventional-changelog-conventionalcommits": "^8.0.0",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9.29.0",
+    "jest": "^30.0.2",
+    "nodemon": "^3.1.9",
+    "rimraf": "^6.0.1",
+    "semantic-release": "^24.2.5",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "commander": "^14.0.0",
+    "fs-extra": "^11.3.0",
+    "ora": "^8.2.0",
+    "prettyjson": "^1.2.5",
+    "pino": "^9.7.0",
+    "pino-pretty": "^13.0.0",
+    "@x-fidelity/core": "4.0.0",
+    "@x-fidelity/types": "4.0.0",
+    "@x-fidelity/plugins": "4.0.0",
+    "@x-fidelity/server": "4.0.0",
+    "@x-fidelity/democonfig": "4.0.0"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  }
+}

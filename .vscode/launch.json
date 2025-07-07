@@ -1,0 +1,96 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "🚀 Launch X-Fidelity Extension (Dev)",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/packages/x-fidelity-vscode",
+                "--new-window",
+                "${workspaceFolder}/packages/x-fidelity-fixtures/node-fullstack"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/packages/x-fidelity-vscode/dist/**/*.js"
+            ],
+            "preLaunchTask": "vscode:build-dev",
+            "sourceMaps": true,
+            "smartStep": true,
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "env": {
+                "NODE_ENV": "development",
+                "VSCODE_DEBUG": "true"
+            }
+        },
+        {
+            "name": "�� Launch Extension Tests",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/packages/x-fidelity-vscode",
+                "--extensionTestsPath=${workspaceFolder}/packages/x-fidelity-vscode/out/test/suite/index",
+                "${workspaceFolder}/packages/x-fidelity-fixtures/node-fullstack"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/packages/x-fidelity-vscode/out/**/*.js"
+            ],
+            "preLaunchTask": "vscode:build-test",
+            "env": {
+                "NODE_ENV": "test"
+            }
+        },
+        {
+            "name": "�� Launch Extension (Fresh Profile)",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/packages/x-fidelity-vscode",
+                "--user-data-dir=${workspaceFolder}/packages/x-fidelity-vscode/.vscode-test-profile",
+                "--new-window",
+                "${workspaceFolder}/packages/x-fidelity-fixtures/node-fullstack"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/packages/x-fidelity-vscode/dist/**/*.js"
+            ],
+            "preLaunchTask": "vscode:build-dev",
+            "env": {
+                "NODE_ENV": "development",
+                "VSCODE_FRESH_PROFILE": "true"
+            }
+        },
+        {
+            "name": "🐛 Attach to Extension Host",
+            "type": "node",
+            "request": "attach",
+            "port": 5870,
+            "sourceMaps": true,
+            "outFiles": [
+                "${workspaceFolder}/packages/x-fidelity-vscode/dist/**/*.js"
+            ]
+        },
+        {
+            "name": "�� Complete Dev Setup + Launch",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/packages/x-fidelity-vscode",
+                "--new-window",
+                "${workspaceFolder}/packages/x-fidelity-fixtures/node-fullstack"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/packages/x-fidelity-vscode/dist/**/*.js"
+            ],
+            "preLaunchTask": "vscode:dev-complete",
+            "sourceMaps": true,
+            "env": {
+                "NODE_ENV": "development",
+                "VSCODE_DEBUG": "true"
+            }
+        }
+    ]
+}

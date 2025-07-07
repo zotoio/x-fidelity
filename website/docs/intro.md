@@ -3,83 +3,127 @@ sidebar_position: 1
 slug: '/'
 ---
 
-# Introduction to x-fidelity
+# Introduction to X-Fidelity
 
-x-fidelity is an advanced CLI tool and paired config server designed to perform opinionated framework adherence checks within a codebase. It provides a flexible and extensible way to ensure your projects are using specific standards, tools and best practices.
+X-Fidelity is a comprehensive code analysis framework that provides opinionated adherence checks for your codebase. Available as both a command-line tool and VSCode extension, it offers a flexible and extensible way to ensure your projects follow specific standards, tools, and best practices.
 
 ## Key Features
 
+### Core Capabilities
 - **Flexible Archetype System**: Define custom project archetypes with specific rules and configurations
-- **Customizable Rules**: Create and apply rules for various aspects of your codebase
-- **Directory Structure Validation**: Ensure your project follows a predefined directory structure
-- **Dependency Version Checking**: Verify that your project uses up-to-date dependencies
-- **Content Analysis**: Search for specific patterns or strings within your codebase
-- **Remote Configuration**: Fetch configurations from a remote server for centralized management
-- **OpenAI Integration**: Leverage AI for advanced code analysis and suggestions
-- **Extensible Architecture**: Easily add new operators, facts, rules, and plugins
+- **Comprehensive Rule Engine**: Create and apply rules for various aspects of your codebase
+- **Advanced Analysis**: AST-based code analysis, dependency checking, and pattern matching
+- **Plugin Architecture**: 9 built-in plugins with support for custom extensions
+
+### User Interfaces
+- **VSCode Extension**: Real-time analysis with visual tree views and integrated debugging
+- **Command Line Interface**: Perfect for CI/CD pipelines and automated workflows
+- **Configuration Server**: Centralized rule management and distribution
+
+### Integration Features
+- **Remote Configuration**: Fetch configurations from a remote server for team consistency
+- **OpenAI Integration**: AI-powered code analysis and suggestions
+- **CI/CD Support**: Seamless integration with GitHub Actions, GitLab CI, and Jenkins
+- **Telemetry & Monitoring**: Built-in performance tracking and usage analytics
+
+## Monorepo Architecture
+
+X-Fidelity is organized as a monorepo with specialized packages:
+
+- **`x-fidelity-core`**: Core analysis engine and utilities
+- **`x-fidelity-vscode`**: VSCode extension for integrated development
+- **`x-fidelity-cli`**: Command-line interface
+- **`x-fidelity-server`**: Configuration server for centralized management
+- **`x-fidelity-plugins`**: 9 built-in plugins (AST, filesystem, dependency, etc.)
+- **`x-fidelity-types`**: Shared TypeScript type definitions
+- **`x-fidelity-democonfig`**: Demo configurations and example rules
+- **`x-fidelity-fixtures`**: Test fixtures and example projects
 
 ## System Architecture
 
 ```mermaid
 graph TD
-    subgraph "Client Environments"
+    subgraph "Development Environments"
+        VSCode[VSCode Extension]
         CI[CI Environment]
-        Local[Local Development]
+        Local[Local CLI]
     end
 
-    subgraph "x-fidelity Core"
-        Engine[Analysis Engine]
-        CLI[CLI Interface]
-        ConfigMgr[Config Manager]
-    end
-
-    subgraph "x-fidelity Infrastructure"
-        CS[Config Server]
-        TS[Telemetry Server]
+    subgraph "X-Fidelity Monorepo"
+        Core[x-fidelity-core<br/>Analysis Engine]
+        CLI[x-fidelity-cli<br/>CLI Interface]
+        VSExt[x-fidelity-vscode<br/>Extension Manager]
+        Plugins[x-fidelity-plugins<br/>9 Built-in Plugins]
+        Server[x-fidelity-server<br/>Config Server]
+        Types[x-fidelity-types<br/>Shared Types]
     end
 
     subgraph "External Services"
         GH[GitHub]
         OAI[OpenAI API]
+        Remote[Remote Config Server]
     end
 
     subgraph "Data Sources"
         Files[Repository Files]
         Deps[Dependencies]
+        Config[Configuration Files]
     end
 
-    CI -->|Use| Engine
-    Local -->|Use| Engine
-    CI -->|Use| CLI
-    Local -->|Use| CLI
+    VSCode -->|Uses| VSExt
+    CI -->|Uses| CLI
+    Local -->|Uses| CLI
 
-    CLI -->|Initialize| ConfigMgr
-    Engine -->|Use| ConfigMgr
+    VSExt -->|Integrates| Core
+    CLI -->|Uses| Core
+    Core -->|Loads| Plugins
+    Core -->|Uses| Types
 
-    ConfigMgr -->|Fetch config| CS
-    Engine -->|Send telemetry| TS
+    Server -->|Serves| Config
+    Core -->|Fetches from| Remote
+    Core -->|Analyzes| Files
+    Core -->|Checks| Deps
 
-    Engine -->|Analyze| Files
-    Engine -->|Check| Deps
+    Server -->|Webhooks| GH
+    Core -.->|Optional| OAI
 
-    CS -->|Optional: Fetch rules| GH
-    TS -->|Optional: Store data| GH
-
-    Engine -.->|Optional: AI analysis| OAI
-
+    classDef monorepo fill:#e1f5fe
     classDef optional stroke-dasharray: 5 5
+    classDef external fill:#fff3e0
+
+    class Core,CLI,VSExt,Plugins,Server,Types monorepo
     class OAI optional
+    class GH,OAI,Remote external
 ```
 
 ## Quick Start
 
+### Choose Your Interface
+
+#### VSCode Extension (Recommended for Development)
 ```bash
-# Install x-fidelity
+# Clone and setup for development
+git clone https://github.com/zotoio/x-fidelity.git
+cd x-fidelity
+yarn install && yarn build
+
+# Launch VSCode extension
+yarn vscode:dev
+```
+
+#### Command Line Interface
+```bash
+# Install CLI tool
 yarn global add x-fidelity
 export PATH="$PATH:$(yarn global bin)"
 
-# Run in current directory
+# Run analysis
 xfidelity .
 ```
 
-For more detailed information about getting started with x-fidelity, check out our [Getting Started](docs/getting-started) guide.
+## Next Steps
+
+- **[Getting Started Guide](/docs/getting-started)** - Comprehensive setup instructions
+- **[VSCode Extension](/docs/vscode-extension/overview)** - Full-featured development experience  
+- **[Key Concepts](/docs/key-concepts)** - Understanding archetypes, rules, and facts
+- **[Plugin Development](/docs/plugins/overview)** - Extending X-Fidelity functionality

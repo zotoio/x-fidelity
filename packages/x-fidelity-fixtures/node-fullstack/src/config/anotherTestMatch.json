@@ -1,0 +1,24 @@
+{
+  "systemId": "badSystemId999",
+  "environment": "staging",
+  "services": {
+    "auth": {
+      "enabled": true,
+      "timeout": 5000
+    },
+    "database": {
+      "enabled": false,
+      "retries": 3
+    }
+  },
+  "features": {
+    "enableLogging": true,
+    "enableMetrics": false,
+    "enableTracing": true
+  },
+  "metadata": {
+    "createdBy": "test-user",
+    "version": "2.1.0",
+    "lastModified": "2024-01-20T10:00:00Z"
+  }
+} 

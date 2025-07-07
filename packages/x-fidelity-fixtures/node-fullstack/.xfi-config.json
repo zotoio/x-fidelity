@@ -1,0 +1,43 @@
+{
+  "sensitiveFileFalsePositives": [
+    "src/fixtures/example-config.js"
+  ],
+  "additionalPlugins": [
+    "xfiPluginSimpleExample"
+  ],
+  "additionalFacts": [
+    "customFact"
+  ],
+  "additionalOperators": [
+    "customOperator"
+  ],
+  "additionalRules": [
+    {
+      "name": "fixtures-custom-rule",
+      "conditions": {
+        "all": [
+          {
+            "fact": "fileData",
+            "path": "$.fileName",
+            "operator": "equal",
+            "value": "REPO_GLOBAL_CHECK"
+          },
+          {
+            "fact": "customFact",
+            "operator": "customOperator",
+            "value": "custom fact data"
+          }
+        ]
+      },
+      "event": {
+        "type": "warning",
+        "params": {
+          "message": "Custom rule detected in fixtures - this tests plugin functionality",
+          "details": {
+            "fact": "customFact"
+          }
+        }
+      }
+    }
+  ]
+} 

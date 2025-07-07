@@ -14,15 +14,29 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
+        cache: 'yarn'
 
     - name: Install dependencies
-      run: yarn install
+      run: yarn install --frozen-lockfile
+
+    - name: Build all packages
+      run: yarn build
+
+    - name: Install xvfb for VSCode extension tests
+      run: sudo apt-get update && sudo apt-get install -y xvfb
 
     - name: Run tests
       run: yarn test
+      env:
+        DISPLAY: ':99.0'
+
+    - name: Run fixture validation
+      run: |
+        cd packages/x-fidelity-fixtures
+        yarn test

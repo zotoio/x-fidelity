@@ -1,0 +1,75 @@
+# Source files
+src/**
+*.ts
+*.map
+tsconfig*.json
+
+# Build artifacts
+out/
+dist-test/
+.tsbuildinfo
+
+# Dependencies that shouldn't be bundled
+node_modules/**
+!node_modules/web-tree-sitter/tree-sitter.wasm
+!node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm
+!node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm
+
+# Development files
+.vscode/
+.vscode-test/
+.vscode-test-profile/
+.vscode-test-user-data/
+*.vsix
+.xfiResults/
+
+# Build configuration
+esbuild.config.js
+webpack.config.js
+
+# Testing
+test/
+**/*.test.ts
+**/*.spec.ts
+.nyc_output/
+coverage/
+
+# Linting and formatting
+.eslintrc*
+eslint.config.js
+.prettierrc*
+
+# Documentation (keep README.md and CHANGELOG.md)
+docs/
+temp/
+*.md
+!README.md
+!CHANGELOG.md
+!LICENSE*
+
+# Scripts
+scripts/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env*
+
+# Cache
+.cache/ 

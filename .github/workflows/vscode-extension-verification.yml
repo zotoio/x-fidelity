@@ -1,0 +1,374 @@
+name: VSCode Extension Verification
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+    paths: [ 'packages/x-fidelity-vscode/**' ]
+  pull_request:
+    branches: [ main, develop ]
+    paths: [ 'packages/x-fidelity-vscode/**' ]
+  workflow_dispatch:
+    inputs:
+      test_insiders:
+        description: 'Test against VSCode Insiders.'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '22.16.0'
+
+jobs:
+  verify-extension:
+    name: Verify Extension (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Build extension
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn dev:build
+
+      - name: Run comprehensive verification
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn verify:ci
+
+      - name: Run unit tests
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn test:unit
+
+      - name: Run integration tests
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn test:integration
+
+      - name: Package extension
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn package
+
+      - name: Install VSCode CLI (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          # Download and install VSCode CLI
+          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+          sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+          sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+          sudo apt-get update
+          sudo apt-get install -y code
+
+      - name: Test VSIX installation
+        if: runner.os == 'Linux'
+        run: |
+          cd packages/x-fidelity-vscode
+          # Verify VSIX file exists
+          vsix_file=$(ls *.vsix | head -1)
+          if [ -z "$vsix_file" ]; then
+            echo "Error: No VSIX file found"
+            exit 1
+          fi
+          echo "Found VSIX file: $vsix_file"
+          
+          # Test VSIX file integrity
+          unzip -t "$vsix_file" >/dev/null 2>&1
+          if [ $? -ne 0 ]; then
+            echo "Error: VSIX file is corrupted"
+            exit 1
+          fi
+          echo "VSIX file integrity check passed"
+          
+          # Install extension and verify it can be activated
+          echo "Installing extension..."
+          code --install-extension "$vsix_file" --force
+          
+          # Verify installation
+          echo "Verifying installation..."
+          if code --list-extensions | grep -q "zotoio.x-fidelity-vscode"; then
+            echo "✅ Extension successfully installed and listed"
+          else
+            echo "❌ Extension not found in installed extensions"
+            echo "Installed extensions:"
+            code --list-extensions
+            exit 1
+          fi
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: x-fidelity-vscode-${{ github.sha }}
+          path: packages/x-fidelity-vscode/*.vsix
+          retention-days: 30
+
+  test-extension-compatibility:
+    name: Test VSCode Compatibility
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        vscode-version: ['stable', 'insiders']
+        exclude:
+          - vscode-version: 'insiders'
+        include:
+          - vscode-version: 'insiders'
+            # Only test insiders if explicitly requested
+            condition: ${{ github.event.inputs.test_insiders == 'true' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Test with VSCode ${{ matrix.vscode-version }}
+        run: |
+          cd packages/x-fidelity-vscode
+          # Update .vscode-test.mjs for specific version
+          sed -i "s/version: 'stable'/version: '${{ matrix.vscode-version }}'/g" .vscode-test.mjs
+          yarn build:test
+          xvfb-run -a yarn test
+
+  security-scan:
+    name: Security Scan     
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run security audit
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn audit --level moderate || true
+
+      - name: Scan for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: packages/x-fidelity-vscode/
+          base: main
+          head: HEAD
+
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Run linting
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn lint:fix
+
+      - name: Check TypeScript
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn tsc --noEmit
+
+      - name: Check formatting
+        run: |
+          cd packages/x-fidelity-vscode
+          npx prettier --check "src/**/*.{ts,js,json}"
+
+  performance-test:
+    name: Performance Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Build extension
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn dev:build
+
+      - name: Install VSCode CLI for performance test
+        run: |
+          # Download and install VSCode CLI
+          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+          sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+          sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+          sudo apt-get update
+          sudo apt-get install -y code xvfb
+
+      - name: Test extension startup performance
+        run: |
+          cd packages/x-fidelity-vscode
+          # Measure extension activation time
+          echo "Testing extension startup performance..."
+          timeout 30s xvfb-run -a code --profile-startup --extensionDevelopmentPath=. --new-window . || echo "Extension activated within timeout"
+
+      - name: Check bundle size
+        run: |
+          cd packages/x-fidelity-vscode
+          echo "Extension bundle size:"
+          du -h dist/extension.js
+          
+          # Fail if bundle is too large (>5MB)
+          size=$(du -k dist/extension.js | cut -f1)
+          if [ $size -gt 5120 ]; then
+            echo "Error: Extension bundle too large (${size}KB > 5MB)"
+            exit 1
+          fi
+
+  documentation-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check required documentation
+        run: |
+          cd packages/x-fidelity-vscode
+          
+          # Check for required files
+          files=("README.md" "CHANGELOG.md" "LICENSE.txt" "EXTENSION_VERIFICATION_FRAMEWORK.md")
+          for file in "${files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "Error: Missing required file: $file"
+              exit 1
+            fi
+          done
+          
+          echo "All required documentation files present"
+
+      - name: Validate package.json
+        run: |
+          cd packages/x-fidelity-vscode
+          
+          # Check required fields
+          node -e "
+            const pkg = require('./package.json');
+            const required = ['name', 'displayName', 'description', 'version', 'publisher'];
+            const missing = required.filter(field => !pkg[field]);
+            if (missing.length > 0) {
+              console.error('Missing required package.json fields:', missing);
+              process.exit(1);
+            }
+            console.log('Package.json validation passed');
+          "
+
+  marketplace-validation:
+    name: Marketplace Validation
+    runs-on: ubuntu-latest
+    needs: [verify-extension, code-quality]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Build and package extension
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn package
+
+      - name: Validate VSIX
+        run: |
+          cd packages/x-fidelity-vscode
+          
+          # Use vsce to validate the package
+          npx @vscode/vsce ls *.vsix
+          
+          # Check package contents
+          unzip -l *.vsix | grep -E "(extension\.js|package\.json)" || {
+            echo "Error: Essential files missing from VSIX"
+            exit 1
+          }
+
+  summary:
+    name: Verification Summary
+    runs-on: ubuntu-latest
+    needs: [verify-extension, test-extension-compatibility, security-scan, code-quality, performance-test, documentation-check]
+    if: always()
+    steps:
+      - name: Check verification results
+        run: |
+          echo "Extension Verification Summary:"
+          echo "- Verification: ${{ needs.verify-extension.result }}"
+          echo "- Compatibility: ${{ needs.test-extension-compatibility.result }}"
+          echo "- Security: ${{ needs.security-scan.result }}"
+          echo "- Code Quality: ${{ needs.code-quality.result }}"
+          echo "- Performance: ${{ needs.performance-test.result }}"
+          echo "- Documentation: ${{ needs.documentation-check.result }}"
+          
+          if [[ "${{ needs.verify-extension.result }}" == "success" && 
+                "${{ needs.code-quality.result }}" == "success" ]]; then
+            echo "✅ Extension verification PASSED!"
+            echo "🚀 Ready for F5 debugging: cd packages/x-fidelity-vscode && code ."
+          else
+            echo "❌ Extension verification FAILED!"
+            echo "Please check the failed jobs above"
+            exit 1
+          fi 

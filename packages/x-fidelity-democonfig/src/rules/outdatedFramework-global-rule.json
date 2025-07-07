@@ -1,0 +1,35 @@
+{
+    "name": "outdatedFramework-global",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "repoDependencyAnalysis",
+                "operator": "outdatedFramework",
+                "value": true
+            }
+        ]
+    },
+    "event": {
+        "type": "fatality",
+        "params": {
+            "message": "Core framework dependencies do not meet minimum version requirements! Please update your dependencies to the required versions.",
+            "details": {
+                "fact": "repoDependencyAnalysis"
+            }
+        }
+    },
+    "errorBehavior": "fatal",
+    "onError": {
+        "action": "sendNotification", 
+        "params": {
+            "channel": "security-alerts",
+            "priority": "high"
+        }
+    }
+}

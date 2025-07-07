@@ -1,0 +1,615 @@
+{
+  "name": "x-fidelity-vscode",
+  "displayName": "X-Fidelity Analyzer",
+  "description": "Provides X-Fidelity software architectural analysis within VS Code",
+  "version": "0.0.1",
+  "publisher": "zotoio",
+  "private": true,
+  "license": "MIT",
+  "icon": "icons/x-fidelity-icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zotoio/x-fidelity.git"
+  },
+  "engines": {
+    "vscode": "^1.101.0",
+    "node": ">=22.16.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:typescript",
+    "onLanguage:javascript",
+    "onLanguage:java",
+    "onLanguage:python",
+    "onLanguage:csharp"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "xfidelity.runAnalysis",
+        "title": "X-Fidelity: Run Analysis Now",
+        "icon": "$(play)"
+      },
+      {
+        "command": "xfidelity.cancelAnalysis",
+        "title": "X-Fidelity: Cancel Analysis",
+        "icon": "$(stop)"
+      },
+      {
+        "command": "xfidelity.showControlCenter",
+        "title": "X-Fidelity: Control Center",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "xfidelity.openSettings",
+        "title": "X-Fidelity: Open Settings",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "xfidelity.showOutput",
+        "title": "X-Fidelity: Show Output Channel",
+        "icon": "$(output)"
+      },
+      {
+        "command": "xfidelity.showWasmStatus",
+        "title": "X-Fidelity: Show WASM Status",
+        "icon": "$(info)"
+      },
+      {
+        "command": "xfidelity.showPerformanceReport",
+        "title": "X-Fidelity: Show Performance Report",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "xfidelity.showWorkerStats",
+        "title": "X-Fidelity: Worker Statistics",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "xfidelity.refreshIssuesTree",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "xfidelity.issuesTreeGroupBySeverity",
+        "title": "Group by Severity",
+        "icon": "$(symbol-operator)"
+      },
+      {
+        "command": "xfidelity.issuesTreeGroupByRule",
+        "title": "Group by Rule",
+        "icon": "$(symbol-rule)"
+      },
+      {
+        "command": "xfidelity.issuesTreeGroupByFile",
+        "title": "Group by File",
+        "icon": "$(symbol-file)"
+      },
+      {
+        "command": "xfidelity.issuesTreeGroupByCategory",
+        "title": "Group by Category",
+        "icon": "$(symbol-namespace)"
+      },
+      {
+        "command": "xfidelity.goToIssue",
+        "title": "Go to Issue",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "xfidelity.addIssueExemption",
+        "title": "Add Exemption",
+        "icon": "$(circle-slash)"
+      },
+      {
+        "command": "xfidelity.showIssueRuleInfo",
+        "title": "Show Rule Info",
+        "icon": "$(info)"
+      },
+      {
+        "command": "xfidelity.detectArchetype",
+        "title": "X-Fidelity: Detect Project Archetype",
+        "icon": "$(search)"
+      },
+      {
+        "command": "xfidelity.test",
+        "title": "X-Fidelity: Test Extension",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "xfidelity.getTestResults",
+        "title": "X-Fidelity: Get Test Results",
+        "icon": "$(json)"
+      },
+      {
+        "command": "xfidelity.showPerformanceMetrics",
+        "title": "X-Fidelity: Show Performance Metrics",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "xfidelity.startPeriodicAnalysis",
+        "title": "X-Fidelity: Start Periodic Analysis",
+        "icon": "$(play)"
+      },
+      {
+        "command": "xfidelity.stopPeriodicAnalysis",
+        "title": "X-Fidelity: Stop Periodic Analysis",
+        "icon": "$(stop)"
+      },
+      {
+        "command": "xfidelity.restartPeriodicAnalysis",
+        "title": "X-Fidelity: Restart Periodic Analysis",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "xfidelity.showPeriodicAnalysisStatus",
+        "title": "X-Fidelity: Show Periodic Analysis Status",
+        "icon": "$(info)"
+      }
+    ],
+    "configuration": {
+      "title": "X-Fidelity",
+      "properties": {
+        "xfidelity.runInterval": {
+          "type": "number",
+          "default": 0,
+          "description": "Auto-analysis interval in seconds (0 = disabled for performance)."
+        },
+        "xfidelity.autoAnalyzeOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically run analysis when files are saved (disabled for performance)."
+        },
+        "xfidelity.autoAnalyzeOnFileChange": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically run analysis when files change (disabled for performance)."
+        },
+        "xfidelity.archetype": {
+          "type": "string",
+          "default": "node-fullstack",
+          "enum": [
+            "node-fullstack",
+            "react-spa",
+            "java-microservice",
+            "python-service",
+            "dotnet-service"
+          ],
+          "description": "The X-Fidelity archetype to use for analysis."
+        },
+        "xfidelity.configServer": {
+          "type": "string",
+          "default": "",
+          "description": "URL of the X-Fidelity config server (optional)."
+        },
+        "xfidelity.localConfigPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to local X-Fidelity configuration (relative to workspace root, optional)."
+        },
+        "xfidelity.openaiEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable OpenAI analysis for advanced code insights (requires API key)."
+        },
+        "xfidelity.telemetryCollector": {
+          "type": "string",
+          "default": "",
+          "description": "URL where telemetry data will be sent (optional)."
+        },
+        "xfidelity.telemetryEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable telemetry collection for usage analytics."
+        },
+        "xfidelity.generateReports": {
+          "type": "boolean",
+          "default": false,
+          "description": "Generate analysis reports (disabled for performance)."
+        },
+        "xfidelity.reportOutputDir": {
+          "type": "string",
+          "default": "",
+          "description": "Directory for report output (default: workspace root)."
+        },
+        "xfidelity.reportFormats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "json",
+              "md",
+              "html",
+              "csv"
+            ]
+          },
+          "default": [
+            "json",
+            "md"
+          ],
+          "description": "Report formats to generate."
+        },
+        "xfidelity.showReportAfterAnalysis": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically open reports after generation."
+        },
+        "xfidelity.reportRetentionDays": {
+          "type": "number",
+          "default": 30,
+          "description": "Number of days to keep old reports."
+        },
+        "xfidelity.showInlineDecorations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline decorations (squiggly lines) for issues."
+        },
+        "xfidelity.highlightSeverity": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "info",
+              "hint"
+            ]
+          },
+          "default": [
+            "error",
+            "warning"
+          ],
+          "description": "Which issue severities to highlight."
+        },
+        "xfidelity.statusBarVisibility": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show X-Fidelity status in the status bar."
+        },
+        "xfidelity.problemsPanelGrouping": {
+          "type": "string",
+          "enum": [
+            "file",
+            "severity",
+            "rule",
+            "category"
+          ],
+          "default": "file",
+          "description": "How to group issues in the Problems panel."
+        },
+        "xfidelity.showRuleDocumentation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show rule documentation in hover tooltips."
+        },
+        "xfidelity.maxFileSize": {
+          "type": "number",
+          "default": 524288,
+          "description": "Maximum file size to analyze in bytes (512KB for performance)."
+        },
+        "xfidelity.analysisTimeout": {
+          "type": "number",
+          "default": 45000,
+          "description": "Analysis timeout in milliseconds (45s for performance)."
+        },
+        "xfidelity.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "node_modules/**",
+            ".git/**",
+            "dist/**",
+            "build/**",
+            ".xfiResults/**"
+          ],
+          "description": "File patterns to exclude from analysis."
+        },
+        "xfidelity.includePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "File patterns to include in analysis (empty = all files)."
+        },
+        "xfidelity.maxConcurrentAnalysis": {
+          "type": "number",
+          "default": 1,
+          "description": "Maximum number of concurrent analysis operations (1 for performance)."
+        },
+        "xfidelity.debugMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging for troubleshooting."
+        },
+        "xfidelity.customPlugins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Paths to custom X-Fidelity plugins."
+        },
+        "xfidelity.ruleOverrides": {
+          "type": "object",
+          "default": {},
+          "description": "Rule-specific configuration overrides."
+        },
+        "xfidelity.cacheResults": {
+          "type": "boolean",
+          "default": true,
+          "description": "Cache analysis results for better performance."
+        },
+        "xfidelity.cacheTTL": {
+          "type": "number",
+          "default": 10,
+          "description": "Cache time-to-live in minutes (10 min for performance)."
+        },
+        "xfidelity.performance.maxConcurrentOperations": {
+          "type": "number",
+          "default": 1,
+          "description": "Maximum number of concurrent analysis operations (1 for performance)"
+        },
+        "xfidelity.performance.enableDetailedLogging": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable detailed performance logging (disabled for performance)"
+        },
+        "xfidelity.performance.astCacheSize": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum number of AST trees to cache (reduced for performance)"
+        },
+        "xfidelity.performance.decorationLimit": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum number of inline decorations per file (reduced for performance)"
+        },
+        "xfidelity.performance.hideOptimizationNotice": {
+          "type": "boolean",
+          "default": false,
+          "description": "Hide the performance optimization notice on activation"
+        },
+        "xfidelity.periodicAnalysis.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable periodic background analysis (disabled for performance)."
+        },
+        "xfidelity.periodicAnalysis.intervalMinutes": {
+          "type": "number",
+          "default": 30,
+          "description": "Interval between periodic analyses in minutes."
+        },
+        "xfidelity.periodicAnalysis.onlyActiveFiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Only analyze currently open/active files during periodic analysis."
+        },
+        "xfidelity.periodicAnalysis.minIdleTimeSeconds": {
+          "type": "number",
+          "default": 300,
+          "description": "Minimum idle time before running periodic analysis (5 minutes)."
+        },
+        "xfidelity.periodicAnalysis.maxFilesPerRun": {
+          "type": "number",
+          "default": 5,
+          "description": "Maximum files to analyze per periodic run (reduced for performance)."
+        },
+        "xfidelity.periodicAnalysis.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/node_modules/**",
+            "**/.git/**",
+            "**/dist/**",
+            "**/build/**",
+            "**/.xfiResults/**"
+          ],
+          "description": "Patterns to exclude from periodic analysis."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "xfidelity",
+          "title": "X-Fidelity",
+          "icon": "$(zap)"
+        }
+      ]
+    },
+    "views": {
+      "xfidelity": [
+        {
+          "icon": "$(warning)",
+          "id": "xfidelityIssuesTreeView",
+          "name": "Issues",
+          "when": "true",
+          "visibility": "visible"
+        },
+        {
+          "icon": "$(dashboard)",
+          "id": "xfidelityControlCenterView",
+          "name": "Control Center",
+          "when": "true",
+          "visibility": "visible"
+        }
+      ],
+      "explorer": [
+        {
+          "icon": "$(warning)",
+          "id": "xfidelityIssuesTreeViewExplorer",
+          "name": "X-Fidelity Issues",
+          "when": "true",
+          "visibility": "collapsed"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "xfidelity.refreshIssuesTree",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "group": "navigation@1"
+        },
+        {
+          "command": "xfidelity.cancelAnalysis",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && xfidelity.analysisRunning",
+          "group": "navigation@2"
+        },
+        {
+          "command": "xfidelity.showControlCenter",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "group": "navigation@3"
+        },
+        {
+          "command": "xfidelity.issuesTreeGroupBySeverity",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "group": "1_grouping@1"
+        },
+        {
+          "command": "xfidelity.issuesTreeGroupByRule",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "group": "1_grouping@2"
+        },
+        {
+          "command": "xfidelity.issuesTreeGroupByFile",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "group": "1_grouping@3"
+        },
+        {
+          "command": "xfidelity.issuesTreeGroupByCategory",
+          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "group": "1_grouping@4"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "xfidelity.cancelAnalysis",
+          "when": "xfidelity.analysisRunning"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "xfidelity.goToIssue",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
+          "group": "navigation@1"
+        },
+        {
+          "command": "xfidelity.addIssueExemption",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "xfidelity.showIssueRuleInfo",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
+          "group": "1_actions@2"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "xfidelityIssuesTreeView",
+        "contents": "Welcome to X-Fidelity! 🚀\n\nNo issues found yet. Run analysis to detect architectural problems in your code.\n\n[Run Analysis](command:xfidelity.runAnalysis)\n\n[Open Control Center](command:xfidelity.showControlCenter)\n\n[Configure Settings](command:xfidelity.openSettings)"
+      },
+      {
+        "view": "xfidelityIssuesTreeViewExplorer",
+        "contents": "No X-Fidelity issues found! ✅\n\n[Run Analysis](command:xfidelity.runAnalysis)\n\n[View Dashboard](command:xfidelity.showDashboard)"
+      },
+      {
+        "view": "xfidelityControlCenterView",
+        "contents": "X-Fidelity Control Center 🎛️\n\nManage your code analysis from here.\n\n[Run Analysis](command:xfidelity.runAnalysis)\n\n[Open Settings](command:xfidelity.openSettings)\n\n[View Documentation](https://github.com/zotoio/x-fidelity)"
+      }
+    ]
+  },
+  "dependencies": {
+    "@x-fidelity/core": "4.0.0",
+    "@x-fidelity/democonfig": "4.0.0",
+    "@x-fidelity/plugins": "4.0.0",
+    "@x-fidelity/types": "4.0.0",
+    "fs-extra": "^11.3.0",
+    "tree-sitter-javascript": "^0.23.1",
+    "tree-sitter-typescript": "^0.23.2",
+    "vscode-languageclient": "^9.0.1",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.6.2",
+    "@types/glob": "^8.1.0",
+    "@types/jest": "^30.0.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.x",
+    "@types/vscode": "^1.101.0",
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.6.0",
+    "esbuild": "^0.25.5",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "glob": "11.0.3",
+    "jest": "^30.0.0",
+    "mocha": "^11.7.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.6.1",
+    "rimraf": "^6.0.1",
+    "ts-jest": "^29.2.6",
+    "typescript": "^5.8.3"
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn compile",
+    "compile": "yarn build",
+    "build": "node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
+    "watch": "node --no-warnings=ExperimentalWarning esbuild.config.js --watch",
+    "package": "yarn build && vsce package --yarn",
+    "rebuild-native": "yarn rebuild --runtime=electron --target=35.5.1 --cache=.npm --disturl=https://electronjs.org/headers",
+    "rebuild-native:check": "node -e \"try { require('tree-sitter'); console.log('✅ Native modules OK'); } catch(e) { console.log('❌ Native rebuild needed:', e.message); process.exit(1); }\"",
+    "pretest": "yarn compile && yarn rebuild-native:check || yarn rebuild-native && yarn lint && yarn clean:test-artifacts && node -e \"require('fs').mkdirSync('./vscode-test-user-data', {recursive: true})\" && cd ../x-fidelity-cli && yarn build && cd ../../packages/x-fidelity-vscode",
+    "test": "yarn test:unit && yarn test:integration",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest",
+    "test:integration": "node scripts/test-cross-platform.js integration",
+    "test:e2e": "node scripts/test-cross-platform.js e2e",
+    "test:ci": "node scripts/test-cross-platform.js comprehensive",
+    "test:simple": "vscode-test --config .vscode-test.mjs --label all",
+    "test:debug": "yarn build:test && code --extensionDevelopmentPath=. --extensionTestsPath=./out/test/suite",
+    "lint": "eslint src --ext ts && prettier --check src/**/*.ts",
+    "lint:fix": "eslint src --ext ts --fix && yarn format",
+    "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
+    "build:production": "yarn check-types && node --no-warnings=ExperimentalWarning esbuild.config.js --production",
+    "check-types": "tsc --noEmit",
+    "build:test": "tsc -p tsconfig.test.json",
+    "clean": "rimraf dist dist-test config .vscode-test .vscode-test-profile && node -e \"try { require('fs').readdirSync('.').filter(f => f.endsWith('.tsbuildinfo')).forEach(f => require('fs').unlinkSync(f)); } catch(e) { /* ignore */ }\"",
+    "clean:test-artifacts": "rm -rf .vscode-test/user-data/Crashpad/pending/*.lock .vscode-test/user-data/logs/* ./.vscode-test-user-data || true",
+    "publish": "yarn package && vsce publish",
+    "install-vsix": "code --install-extension $(ls *.vsix | head -1) --force",
+    "test:vsix": "node scripts/test-vsix-installation.js",
+    "dev:build": "yarn clean && yarn build:deps && (yarn rebuild-native:check || yarn rebuild-native) && tsc && node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "build:deps": "cd ../../ && yarn build",
+    "dev:fresh": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --user-data-dir=./.vscode-test-profile .",
+    "dev:watch": "yarn dev:build && (yarn watch &) && sleep 2 && code --extensionDevelopmentPath=. --new-window .",
+    "dev:complete": "./scripts/dev-complete.sh",
+    "test:all": "yarn test:unit && yarn test:integration && yarn test:e2e",
+    "test:watch": "node -e \"require('fs').mkdirSync('./.vscode-test-user-data', {recursive: true})\" && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label unit --watch",
+    "debug": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --enable-proposed-api",
+    "logs": "echo 'Check VSCode Output panel > X-Fidelity Debug for logs'",
+    "verify:all": "node scripts/verify-extension.js",
+    "verify:dev": "yarn dev:build && node scripts/verify-extension.js",
+    "verify:ci": "yarn build && node scripts/verify-extension.js",
+    "verify:extension": "node scripts/verify-extension.js",
+    "verify:quick": "yarn build:test && yarn test:unit && yarn verify:extension",
+    "quick-start": "echo '🚀 Quick Start: Press F5 to launch extension, then Ctrl+Shift-P > X-Fidelity: Control Center'",
+    "help": "echo '📖 Development Help:\n  yarn dev - Start development\n  yarn dev:fresh - Fresh profile\n  yarn test:all - Run tests\n  yarn rebuild-native - Fix Electron native modules\n  F5 in VSCode - Debug launch\n  yarn verify:all - Full verification'"
+  }
+}

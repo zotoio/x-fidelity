@@ -22,13 +22,28 @@ function getGitIgnorePatterns() {
 // Get patterns from .gitignore
 const gitIgnorePatterns = getGitIgnorePatterns();
 
-// Base ignores from the original config
-const baseIgnores = ["node_modules/", "dist/", "build/", "coverage/", "website/"];
+// Base ignores from the original config with proper glob patterns
+const baseIgnores = [
+  "node_modules/**",
+  "**/node_modules/**",
+  "dist/**",
+  "**/dist/**", 
+  "build/**",
+  "**/build/**",
+  "coverage/**",
+  "**/coverage/**",
+  "website/**"
+];
 
 // Combine all ignore patterns
 const allIgnores = [...baseIgnores, ...gitIgnorePatterns];
 
 module.exports = [
+  // Global ignores configuration - must be first
+  {
+    ignores: allIgnores
+  },
+  // TypeScript configuration
   {
     files: ["*.ts", "*.tsx"],
     languageOptions: {
@@ -52,8 +67,5 @@ module.exports = [
       "no-console": "warn",
       "no-debugger": "error"
     }
-  },
-  {
-    ignores: allIgnores,
   }
 ];

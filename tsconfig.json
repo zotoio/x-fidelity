@@ -1,29 +1,49 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "target": "es2020",
     "module": "commonjs",
-    "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "types": [
-      "node",
-      "jest"
-    ],
-    "typeRoots": [
-      "./node_modules/@types",
-      "./src/types"
-    ]
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "noEmitOnError": true
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.d.ts"
-  ],
+  "include": ["src/**/*"],
   "exclude": [
-    "node_modules",
-    ".vscode-test",
-    "vscode-extension"
+    "node_modules", 
+    "dist", 
+    "packages", 
+    "website", 
+    "vscode-extension",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "references": [
+    {
+      "path": "./packages/x-fidelity-types"
+    },
+    {
+      "path": "./packages/x-fidelity-core"
+    },
+    {
+      "path": "./packages/x-fidelity-plugins"
+    },
+    {
+      "path": "./packages/x-fidelity-server"
+    },
+    {
+      "path": "./packages/x-fidelity-cli"
+    },
+    {
+      "path": "./packages/x-fidelity-vscode"
+    }
   ]
 }

@@ -1,0 +1,64 @@
+name: Renovate
+on:
+  schedule:
+    # Run every Monday at 6:00 AM UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: false
+        default: 'info'
+        type: choice
+        options:
+          - info
+          - debug
+          - trace
+      dryRun:
+        description: 'Dry run (no changes made)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: write
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install Renovate
+        run: npm install -g renovate
+
+      - name: Run Renovate
+        env:
+          RENOVATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RENOVATE_GIT_AUTHOR: 'renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>'
+          LOG_LEVEL: ${{ inputs.logLevel || 'info' }}
+        run: |
+          if [ "${{ inputs.dryRun }}" = "true" ]; then
+            LOG_LEVEL="${LOG_LEVEL}" renovate \
+              --platform=github \
+              --token="${RENOVATE_TOKEN}" \
+              --git-author="${RENOVATE_GIT_AUTHOR}" \
+              --dry-run=full \
+              ${{ github.repository }}
+          else
+            LOG_LEVEL="${LOG_LEVEL}" renovate \
+              --platform=github \
+              --token="${RENOVATE_TOKEN}" \
+              --git-author="${RENOVATE_GIT_AUTHOR}" \
+              ${{ github.repository }}
+          fi 

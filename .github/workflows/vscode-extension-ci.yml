@@ -1,0 +1,186 @@
+name: VSCode Extension CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'packages/x-fidelity-vscode/**'
+      - 'packages/x-fidelity-core/**'
+      - 'packages/x-fidelity-types/**'
+      - 'packages/x-fidelity-plugins/**'
+      - '.github/workflows/vscode-extension-ci.yml'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  test-extension:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      matrix:
+        vscode-version: ['stable']
+        node-version: ['22.x']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+        
+      - name: Build all packages
+        run: yarn build
+        
+      - name: Setup Xvfb for headless testing
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          
+      - name: Lint extension
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn lint
+          
+      - name: Type check extension
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn check-types
+          
+      - name: Build VSCode extension
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn build
+          
+      - name: Run unit tests
+        run: |
+          cd packages/x-fidelity-vscode
+          xvfb-run -a yarn test:unit
+          
+      - name: Run integration tests
+        run: |
+          cd packages/x-fidelity-vscode
+          xvfb-run -a yarn test:integration
+          
+      - name: Run CLI-Extension consistency test
+        run: |
+          cd packages/x-fidelity-vscode
+          xvfb-run -a yarn test:consistency
+        env:
+          CI: true
+          
+      - name: Package extension
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn package
+          
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-extension-${{ matrix.vscode-version }}-node-${{ matrix.node-version }}
+          path: packages/x-fidelity-vscode/*.vsix
+          retention-days: 7
+          
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.vscode-version }}-node-${{ matrix.node-version }}
+          path: |
+            packages/x-fidelity-vscode/.vscode-test/
+            packages/x-fidelity-vscode/test-results/
+          retention-days: 7
+          
+  consistency-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [test-extension]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+          
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+        
+      - name: Build all packages
+        run: yarn build
+        
+      - name: Setup Xvfb for headless testing
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          
+      - name: Run CLI analysis for baseline
+        run: |
+          cd packages/x-fidelity-vscode
+          timeout 300 yarn --cwd ../.. build-run > cli-results.json || true
+          
+      - name: Run extension consistency test
+        run: |
+          cd packages/x-fidelity-vscode
+          xvfb-run -a yarn test --grep "CLI-Extension Consistency"
+        env:
+          CI: true
+          XFI_CONSISTENCY_CHECK: true
+          
+      - name: Upload consistency report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consistency-report
+          path: |
+            packages/x-fidelity-vscode/cli-results.json
+            packages/x-fidelity-vscode/consistency-report.txt
+          retention-days: 30
+
+  publish-check:
+    runs-on: ubuntu-latest
+    needs: [test-extension, consistency-check]
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'publish-extension')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+          
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+        
+      - name: Build all packages
+        run: yarn build
+        
+      - name: Build and package extension
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn build
+          yarn package
+          
+      - name: Verify extension package
+        run: |
+          cd packages/x-fidelity-vscode
+          node scripts/verify-extension.js
+          
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-release-candidate
+          path: packages/x-fidelity-vscode/*.vsix
+          retention-days: 30 
