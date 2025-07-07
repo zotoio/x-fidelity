@@ -155,7 +155,9 @@ class ExtensionVerifier {
     this.log('\n📝 Verifying TypeScript compilation...', COLORS.BOLD);
 
     return new Promise(resolve => {
-      const tsc = spawn('npx', ['tsc', '--noEmit'], {
+      // Use cross-platform npx command
+      const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+      const tsc = spawn(npxCmd, ['tsc', '--noEmit'], {
         cwd: path.join(__dirname, '..'),
         stdio: 'pipe'
       });
@@ -223,7 +225,9 @@ class ExtensionVerifier {
     this.log('\n🔬 Running unit tests...', COLORS.BOLD);
 
     return new Promise(resolve => {
-      const testProcess = spawn('yarn', ['test:unit'], {
+      // Use cross-platform yarn command
+      const yarnCmd = process.platform === 'win32' ? 'yarn.cmd' : 'yarn';
+      const testProcess = spawn(yarnCmd, ['test:unit'], {
         cwd: path.join(__dirname, '..'),
         stdio: 'pipe'
       });

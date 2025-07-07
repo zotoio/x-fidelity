@@ -316,7 +316,9 @@ class ExtensionDiagnostic {
 
     // Check for TypeScript compilation errors
     return new Promise(resolve => {
-      exec('npx tsc --noEmit', (error, stdout, stderr) => {
+      // Use cross-platform npx command
+      const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+      exec(`${npxCmd} tsc --noEmit`, (error, stdout, stderr) => {
         if (error) {
           this.fail(`TypeScript compilation errors detected`);
           if (stdout) this.info_log(`TypeScript stdout: ${stdout}`);
