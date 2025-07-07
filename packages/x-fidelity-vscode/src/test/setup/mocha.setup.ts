@@ -24,13 +24,17 @@ if (suppressConsole) {
 
 // Global test utilities available to all tests
 declare global {
-  var testConsole: typeof originalConsole;
-  var isVerboseMode: boolean;
+  namespace NodeJS {
+    interface Global {
+      testConsole: typeof originalConsole;
+      isVerboseMode: boolean;
+    }
+  }
 }
 
 // Make original console available to tests if they really need it
-global.testConsole = originalConsole;
-global.isVerboseMode = !suppressConsole;
+(global as any).testConsole = originalConsole;
+(global as any).isVerboseMode = !suppressConsole;
 
 // Cleanup after tests complete
 process.on('exit', () => {
@@ -42,3 +46,6 @@ process.on('exit', () => {
     console.error = originalConsole.error;
   }
 });
+
+// Export to make this a module for proper TypeScript compilation
+export {};
