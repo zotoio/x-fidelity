@@ -20,9 +20,10 @@ const testLabel = process.argv[2] || 'integration';
 console.log(`🧪 Running VSCode tests on ${platform} (CI: ${isCI})`);
 console.log(`📋 Test label: ${testLabel}`);
 
-// Base command
-const baseCmd = 'vscode-test';
-const baseArgs = ['--config', '.vscode-test.mjs', '--label', testLabel];
+// Base command - use npx to run locally installed vscode-test
+const npxCmd = platform === 'win32' ? 'npx.cmd' : 'npx';
+const baseCmd = npxCmd;
+const baseArgs = ['vscode-test', '--config', '.vscode-test.mjs', '--label', testLabel];
 
 let command, args;
 
@@ -78,7 +79,8 @@ require('fs').mkdirSync(userDataDir, { recursive: true });
 const child = spawn(command, args, {
   stdio: 'inherit',
   env,
-  cwd: process.cwd()
+  cwd: process.cwd(),
+  shell: platform === 'win32'
 });
 
 child.on('error', (error) => {
