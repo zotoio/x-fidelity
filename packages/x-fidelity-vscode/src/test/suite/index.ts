@@ -99,7 +99,8 @@ export function run(): Promise<void> {
 
 			// Run the tests
 			try {
-				const runner = mocha.run(failures => {
+				// Test runner events are handled by the built-in spec reporter
+				mocha.run(failures => {
 					// Restore console for final output
 					if (suppressConsole) {
 						Object.assign(console, originalConsole);
@@ -113,9 +114,6 @@ export function run(): Promise<void> {
 						resolve();
 					}
 				});
-
-				// Test runner events are handled by the built-in spec reporter
-				// No additional event handling needed
 
 			} catch (err) {
 				// Restore console on error

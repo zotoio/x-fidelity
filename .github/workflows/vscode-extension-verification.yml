@@ -123,13 +123,13 @@ jobs:
       - name: Test with VSCode ${{ matrix.vscode-version }}
         run: |
           cd packages/x-fidelity-vscode
-          # Update .vscode-test.js for specific version
-          sed -i "s/version: 'stable'/version: '${{ matrix.vscode-version }}'/g" .vscode-test.js
+          # Update .vscode-test.mjs for specific version
+          sed -i "s/version: 'stable'/version: '${{ matrix.vscode-version }}'/g" .vscode-test.mjs
           yarn build:test
           xvfb-run -a yarn test
 
   security-scan:
-    name: Security Scan
+    name: Security Scan     
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
