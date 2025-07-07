@@ -1,3 +1,35 @@
+# [3.25.0](https://github.com/zotoio/x-fidelity/compare/v3.24.0...v3.25.0) (2025-07-07)
+
+
+### Bug Fixes
+
+* add missing RepoXFIConfig type import in core.ts ([315fbd8](https://github.com/zotoio/x-fidelity/commit/315fbd8e2903d71029afb2a85550290ad6e4bd42))
+* add operationId to types and fix logger references ([b0b1921](https://github.com/zotoio/x-fidelity/commit/b0b192131e5e29c3295fd08183922ed817c91141))
+* add safe serialization to vscode logger to handle circular references ([d960b36](https://github.com/zotoio/x-fidelity/commit/d960b366b85fc227fb83c93ad84d723c879a40dd))
+* align vscode extension issue reporting with cli output ([1322beb](https://github.com/zotoio/x-fidelity/commit/1322beb8b6bdd84aa8f7918226173deb960a678f))
+* configure Mocha test runner and globals for VSCode extension tests ([bd514df](https://github.com/zotoio/x-fidelity/commit/bd514dfa4bb1b5ff2ba3a1e34183ac4d1276818c))
+* ensure consistent line/column conversion from XFI core to VSCode ([2d6ff95](https://github.com/zotoio/x-fidelity/commit/2d6ff9539c38e99940723760820dc5ccef047122))
+* improve error handling and type safety in test suite ([0db24dc](https://github.com/zotoio/x-fidelity/commit/0db24dc343c7343750d082f5b2fbdcae06a37677))
+* remove unsupported properties from analyzeCodebase call ([8b313ba](https://github.com/zotoio/x-fidelity/commit/8b313baccfb4c4219c24a8ff6eb7a47b445ae47c))
+* resolve TypeScript compilation errors in VSCode extension ([bae91ff](https://github.com/zotoio/x-fidelity/commit/bae91fffb397f1c946399cf71dba3678f199746c))
+* **tests:** dependency fixes ([c19da00](https://github.com/zotoio/x-fidelity/commit/c19da00faf0bda69f815a47c8ad13794ad521019))
+* update test configuration to use custom test runner ([b76204d](https://github.com/zotoio/x-fidelity/commit/b76204d0cca1d773b44776608f22dab29e127802))
+
+
+### Features
+
+* add analysis cancellation support and improve workspace handling ([b8ad620](https://github.com/zotoio/x-fidelity/commit/b8ad620df5ee070ebf330c7638da1543b0f829d6))
+* add analysis target path to error logging ([3903a94](https://github.com/zotoio/x-fidelity/commit/3903a94de261664f7df09f8cdd4d0d75ce88b783))
+* add logger to diagnostic provider ([5553cef](https://github.com/zotoio/x-fidelity/commit/5553cef81515ec7325abefeb56df62d0319f05c1))
+* add prettier configuration and scripts to vscode extension ([a92bce2](https://github.com/zotoio/x-fidelity/commit/a92bce2e567062869db0965a1583d7d0ba1937cb))
+* add vscode test configuration and xvfb support ([4c24a39](https://github.com/zotoio/x-fidelity/commit/4c24a39fc3a3861936ca301b50ebabedc29885ca))
+* add XVFB support and additional security flags for VSCode tests ([b8d9253](https://github.com/zotoio/x-fidelity/commit/b8d9253756a398958497f38685ec1f136011ebe3))
+* add xvfb support and update test dependencies for VSCode extension ([538d8f4](https://github.com/zotoio/x-fidelity/commit/538d8f457f1c063a31b39f8a71883025b3987069))
+* enhance test configuration for headless environments ([7466fd6](https://github.com/zotoio/x-fidelity/commit/7466fd6a5695043b1d98c63d3f03a3c579f7730e))
+* implement VSCode best practices and performance optimizations ([e9b3a2c](https://github.com/zotoio/x-fidelity/commit/e9b3a2c12185d065d3ef48b1207aba8bcbe8dc00))
+* improve CLI error handling with detailed stdout/stderr output ([1fed647](https://github.com/zotoio/x-fidelity/commit/1fed647f629469879fd622d9e879b63da490c0bd))
+* **monorepo:** foundational changes ([244cc51](https://github.com/zotoio/x-fidelity/commit/244cc519658bac476bd138ef1e3bab4df271bfef))
+
 # [3.24.0](https://github.com/zotoio/x-fidelity/compare/v3.23.0...v3.24.0) (2025-05-23)
 
 
