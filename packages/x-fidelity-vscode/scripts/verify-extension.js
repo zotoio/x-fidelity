@@ -159,7 +159,8 @@ class ExtensionVerifier {
       const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
       const tsc = spawn(npxCmd, ['tsc', '--noEmit'], {
         cwd: path.join(__dirname, '..'),
-        stdio: 'pipe'
+        stdio: 'pipe',
+        shell: process.platform === 'win32'
       });
 
       let output = '';
@@ -229,7 +230,8 @@ class ExtensionVerifier {
       const yarnCmd = process.platform === 'win32' ? 'yarn.cmd' : 'yarn';
       const testProcess = spawn(yarnCmd, ['test:unit'], {
         cwd: path.join(__dirname, '..'),
-        stdio: 'pipe'
+        stdio: 'pipe',
+        shell: process.platform === 'win32'
       });
 
       let output = '';
