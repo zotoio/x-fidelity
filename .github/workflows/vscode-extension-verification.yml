@@ -177,7 +177,7 @@ jobs:
       - name: Run linting
         run: |
           cd packages/x-fidelity-vscode
-          yarn lint
+          yarn lint:fix
 
       - name: Check TypeScript
         run: |

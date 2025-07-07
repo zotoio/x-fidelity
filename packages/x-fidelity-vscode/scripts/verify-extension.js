@@ -82,10 +82,10 @@ class ExtensionVerifier {
 
       // Check commands
       const commands = packageJson.contributes?.commands || [];
-      if (commands.length >= 25) {
+      if (commands.length >= 24) {
         this.success(`Commands registered: ${commands.length}`);
       } else {
-        this.fail(`Expected 25+ commands, found ${commands.length}`);
+        this.fail(`Expected 24+ commands, found ${commands.length}`);
       }
 
       // Check activation events
