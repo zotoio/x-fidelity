@@ -5,12 +5,13 @@
 **The fastest way to develop and test the extension:**
 
 1. **Open Extension in VSCode**
+
    ```bash
    cd packages/x-fidelity-vscode
    code .
    ```
 
-2. **Press F5** 
+2. **Press F5**
    - Automatically builds the extension
    - Opens new VSCode window with extension loaded
    - Extension analyzes the workspace automatically
@@ -26,13 +27,15 @@
 ## 🏗️ Architecture Overview
 
 ### Zero-Configuration Design
+
 - **Auto-detects** project archetype on startup
-- **Fallback** to `node-fullstack` if detection fails  
+- **Fallback** to `node-fullstack` if detection fails
 - **No manual setup** required - works like `xfidelity .` CLI
 - **Progress indicators** based on file count
 - **5-minute timeout** configurable per user requirements
 
 ### Core Components
+
 ```
 Extension Manager          - Main coordinator
 ├── Auto-Detection        - Archetype detection with fallback
@@ -44,6 +47,7 @@ Extension Manager          - Main coordinator
 ```
 
 ### CLI-Extension Consistency
+
 - **Exact match** requirement between `yarn build-run` and extension
 - **Blocking CI** check on PR reviews
 - **Automatic reporting** of any discrepancies
@@ -51,11 +55,12 @@ Extension Manager          - Main coordinator
 ## 🧪 Testing Framework
 
 ### Consolidated Testing (VSCode Test Runner Only)
+
 ```bash
 # Unit tests (fast, no VSCode API)
 yarn test:unit
 
-# Integration tests (with VSCode API)  
+# Integration tests (with VSCode API)
 yarn test:integration
 
 # CLI-Extension consistency (5min timeout)
@@ -69,6 +74,7 @@ yarn test:watch
 ```
 
 ### Test Structure
+
 ```
 src/test/
 ├── suite/                 # VSCode extension tests
@@ -81,24 +87,28 @@ src/test/
 ## 📋 Essential Commands (Reduced from 27+ to 16)
 
 ### Core Commands (Always Available)
+
 - `X-Fidelity: Test Extension` - Debug helper
 - `X-Fidelity: Run Analysis Now` - Manual analysis trigger
 - `X-Fidelity: Control Center` - Main settings interface
 - `X-Fidelity: Refresh Issues` - Reload issue tree
 
 ### Settings & Configuration (Submenu)
+
 - `X-Fidelity Settings: Open Settings`
 - `X-Fidelity Settings: Detect Project Archetype`
 - `X-Fidelity Settings: Reset Configuration`
 - `X-Fidelity Settings: Advanced Settings`
 
 ### Reports & Analysis (Submenu)
+
 - `X-Fidelity Reports: Open Reports Folder`
 - `X-Fidelity Reports: Export Current Report`
 - `X-Fidelity Reports: Show Report History`
 - `X-Fidelity Reports: View Issue Trends`
 
 ### Context Menu Only (Issue Items)
+
 - `Go to Issue` - Navigate to issue location
 - `Add Exemption` - Exempt specific issue
 - `Show Rule Info` - View rule documentation
@@ -107,6 +117,7 @@ src/test/
 ## 🔧 Development Scripts
 
 ### Build & Development
+
 ```bash
 # Clean build for development
 yarn dev:build
@@ -122,6 +133,7 @@ yarn dev:watch
 ```
 
 ### Testing & Verification
+
 ```bash
 # Quick verification (unit tests + extension check)
 yarn verify:quick
@@ -134,6 +146,7 @@ yarn verify:ci
 ```
 
 ### Packaging & Distribution
+
 ```bash
 # Development package
 yarn package:dev
@@ -148,6 +161,7 @@ yarn install-vsix
 ## 🤖 CI/CD Pipeline
 
 ### GitHub Actions (ubuntu-latest, headless)
+
 - **Triggers**: PR reviews, publish events
 - **Headless Testing**: Xvfb for VSCode extension tests
 - **Consistency Check**: CLI vs Extension exact match
@@ -155,6 +169,7 @@ yarn install-vsix
 - **Blocking**: Fails build on timeout or inconsistency
 
 ### Workflow Jobs
+
 1. **test-extension** - Run all extension tests
 2. **consistency-check** - Verify CLI-Extension parity
 3. **publish-check** - Package verification (on label)
@@ -162,6 +177,7 @@ yarn install-vsix
 ## 🛠️ Debugging & Troubleshooting
 
 ### F5 Debug Launch Options
+
 - **"Run Extension"** - Standard development debugging
 - **"Extension Tests"** - Debug test suite
 - **"Extension Tests (Fresh Profile)"** - Clean environment testing
@@ -171,30 +187,35 @@ yarn install-vsix
 ### Common Issues & Solutions
 
 **Extension not finding issues:**
+
 1. Check workspace has recognizable project files
 2. Verify archetype detection worked (see notification)
 3. Check Output panel > X-Fidelity Debug for logs
 4. Run `X-Fidelity: Test Extension` command
 
 **Tests hanging:**
+
 1. Tests have 5-minute timeout as specified
 2. Check Xvfb setup for headless environments
 3. Verify workspace folder is properly set
 4. Use fresh profile if state issues persist
 
 **CLI-Extension inconsistency:**
+
 1. Check that both use same archetype
 2. Verify workspace root is identical
 3. Review consistency report artifacts
 4. Ensure all dependencies are built (`yarn build`)
 
 ### Performance Monitoring
+
 - **File count progress** - Shows analysis progress
 - **5-minute timeout** - Configurable analysis limit
 - **Progress indicators** - Visual feedback during analysis
 - **Diagnostic logging** - Detailed execution tracking
 
 ## 📁 File Structure
+
 ```
 packages/x-fidelity-vscode/
 ├── .vscode/                # F5 debug configuration
@@ -221,6 +242,7 @@ packages/x-fidelity-vscode/
 **F5 Launch → Extension Works → Issues Display → Lightning Icon ⚡**
 
 A successful development session should achieve:
+
 - ✅ F5 launches extension without errors
 - ✅ Auto-detects archetype (or uses node-fullstack fallback)
 - ✅ Shows same issues as `yarn build-run` CLI command
@@ -230,8 +252,9 @@ A successful development session should achieve:
 - ✅ Zero configuration required by user
 
 **Need Help?**
+
 - Press F5 → Extension launches → Use Control Center
-- Check Output panel → X-Fidelity Debug for detailed logs  
+- Check Output panel → X-Fidelity Debug for detailed logs
 - Run `yarn help` for available commands
 - See GitHub Actions artifacts for CI consistency reports
 
@@ -240,24 +263,28 @@ A successful development session should achieve:
 The **Control Center** is your main hub for all X-Fidelity functionality:
 
 ### Quick Actions
+
 - **🔍 Run Analysis** - Analyze your codebase
 - **⚙️ Settings** - Open extension settings
 - **🧪 Test Extension** - Verify extension functionality
 - **📝 View Logs** - Check debug output
 
 ### Panel Launcher
+
 - **📋 Issue Explorer** - Browse and manage issues
 - **📈 Dashboard** - View analysis metrics
 - **📄 Reports** - Access generated reports
 - **🔧 Advanced Settings** - Configure detailed options
 
 ### Status Overview
+
 - Last analysis time
 - Issue counts (errors/warnings)
 - WASM status
 - Plugin loading status
 
 ### Development Tools
+
 - **🐛 Debug Info** - Copy debug information
 - **🧪 Run Tests** - Execute test suite
 - **🔄 Reload Extension** - Restart extension
@@ -266,6 +293,7 @@ The **Control Center** is your main hub for all X-Fidelity functionality:
 ## 🛠️ Development Commands
 
 ### Build & Development
+
 ```bash
 # Full development build
 yarn dev:build
@@ -281,6 +309,7 @@ yarn dev:complete
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 yarn test:all
@@ -296,6 +325,7 @@ yarn test:watch
 ```
 
 ### Packaging
+
 ```bash
 # Create production package
 yarn package
@@ -308,6 +338,7 @@ yarn install-vsix
 ```
 
 ### Utilities
+
 ```bash
 # Show development help
 yarn help
@@ -345,16 +376,19 @@ yarn logs
 ## 🔍 Debugging
 
 ### Debug Logging
+
 - Extension logs appear in **Output** panel > **"X-Fidelity Debug"**
 - Analysis logs appear in **Output** panel > **"X-Fidelity Analysis"**
 - File logs are written to `.xfiResults/x-fidelity.log`
 
 ### Debug Information
+
 - Use **Control Center** → **Development Tools** → **Debug Info**
 - Copies comprehensive debug information to clipboard
 - Includes extension version, VSCode version, workspace, plugin status
 
 ### Common Debug Steps
+
 1. Open **Control Center** (Ctrl+Shift+P → "X-Fidelity: Control Center")
 2. Check **Status Overview** for system status
 3. Use **View Logs** to see detailed output
@@ -364,6 +398,7 @@ yarn logs
 ## 🧪 Testing
 
 ### Running Tests
+
 ```bash
 # All tests
 yarn test
@@ -377,11 +412,13 @@ yarn test:watch
 ```
 
 ### Test Structure
+
 - **Unit Tests**: `src/test/suite/`
 - **Integration Tests**: `src/test/integration/`
 - **Mocks**: `src/__mocks__/`
 
 ### Writing Tests
+
 - Use Jest for unit tests
 - Mock VSCode APIs using `src/__mocks__/vscode.ts`
 - Follow existing test patterns in `src/test/suite/`
@@ -413,12 +450,14 @@ x-fidelity-vscode/
 ## 🎨 UI Development
 
 ### Control Center Panel
+
 - **File**: `src/ui/panels/controlCenterPanel.ts`
 - **Type**: Webview panel with HTML/CSS/JavaScript
 - **Features**: Responsive design, dark/light theme support
 - **Integration**: Connects to all extension functionality
 
 ### Adding New Panels
+
 1. Create panel class in `src/ui/panels/`
 2. Implement `vscode.Disposable` interface
 3. Add to `ExtensionManager` constructor
@@ -428,11 +467,13 @@ x-fidelity-vscode/
 ## 🔌 Plugin Development
 
 ### WASM Support
+
 - Tree-sitter WASM files automatically copied to `dist/`
 - Enhanced WASM initialization in `src/utils/wasmAstUtils.ts`
 - Graceful fallback when WASM unavailable
 
 ### Plugin Integration
+
 - Plugins preloaded in `src/core/pluginPreloader.ts`
 - AST plugin with enhanced error handling
 - Support for both CLI and VSCode environments
@@ -440,12 +481,14 @@ x-fidelity-vscode/
 ## 🚀 Deployment
 
 ### Creating Release
+
 1. Update version in `package.json`
 2. Run `yarn package`
 3. Test the generated `.vsix` file
 4. Publish to marketplace: `yarn publish`
 
 ### Installation
+
 ```bash
 # Install from VSIX
 code --install-extension x-fidelity-vscode-0.0.1.vsix
@@ -459,21 +502,25 @@ yarn install-vsix
 ### Common Issues
 
 **Extension not loading**
+
 - Check **Output** panel for errors
 - Verify all dependencies built: `yarn build:deps`
 - Try fresh profile: `yarn dev:fresh`
 
 **WASM errors**
+
 - Check if WASM files exist in `dist/`
 - Verify Tree-sitter initialization logs
 - Use Control Center to check WASM status
 
 **Analysis not running**
+
 - Open Control Center and check status
 - Verify workspace folder is open
 - Check configuration settings
 
 **Tests failing**
+
 - Ensure clean build: `yarn clean && yarn build`
 - Check mock implementations
 - Verify test environment setup
@@ -496,4 +543,4 @@ yarn install-vsix
 
 **Happy Coding! 🎉**
 
-*The Control Center makes X-Fidelity development faster and more intuitive than ever.* 
+_The Control Center makes X-Fidelity development faster and more intuitive than ever._

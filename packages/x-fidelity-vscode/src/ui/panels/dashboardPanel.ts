@@ -52,7 +52,7 @@ export class DashboardPanel implements vscode.Disposable {
   private panel?: vscode.WebviewPanel;
   private disposables: vscode.Disposable[] = [];
   private updateTimer?: NodeJS.Timeout;
-  
+
   constructor(
     private context: vscode.ExtensionContext,
     private configManager: ConfigManager,
@@ -61,14 +61,14 @@ export class DashboardPanel implements vscode.Disposable {
   ) {
     this.setupEventListeners();
   }
-  
+
   async show(): Promise<void> {
     if (this.panel) {
       this.panel.reveal();
       await this.updateContent();
       return;
     }
-    
+
     this.panel = vscode.window.createWebviewPanel(
       'xfidelityDashboard',
       'X-Fidelity Dashboard',
@@ -76,28 +76,36 @@ export class DashboardPanel implements vscode.Disposable {
       {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionUri.fsPath, 'resources'))]
+        localResourceRoots: [
+          vscode.Uri.file(
+            path.join(this.context.extensionUri.fsPath, 'resources')
+          )
+        ]
       }
     );
-    
-    this.panel.onDidDispose(() => {
-      this.panel = undefined;
-      if (this.updateTimer) {
-        clearInterval(this.updateTimer);
-        this.updateTimer = undefined;
-      }
-    }, null, this.disposables);
-    
+
+    this.panel.onDidDispose(
+      () => {
+        this.panel = undefined;
+        if (this.updateTimer) {
+          clearInterval(this.updateTimer);
+          this.updateTimer = undefined;
+        }
+      },
+      null,
+      this.disposables
+    );
+
     this.panel.webview.onDidReceiveMessage(
       message => this.handleMessage(message),
       undefined,
       this.disposables
     );
-    
+
     await this.updateContent();
     this.startAutoRefresh();
   }
-  
+
   private setupEventListeners(): void {
     // Listen for analysis completion to update dashboard
     this.disposables.push(
@@ -107,7 +115,7 @@ export class DashboardPanel implements vscode.Disposable {
         }
       })
     );
-    
+
     // Listen for configuration changes
     this.disposables.push(
       this.configManager.onConfigurationChanged.event(() => {
@@ -117,7 +125,7 @@ export class DashboardPanel implements vscode.Disposable {
       })
     );
   }
-  
+
   private startAutoRefresh(): void {
     // Update dashboard every 30 seconds
     this.updateTimer = setInterval(() => {
@@ -126,10 +134,12 @@ export class DashboardPanel implements vscode.Disposable {
       }
     }, 30000);
   }
-  
+
   private async updateContent(): Promise<void> {
-    if (!this.panel) {return;}
-    
+    if (!this.panel) {
+      return;
+    }
+
     try {
       const dashboardData = await this.collectDashboardData();
       this.panel.webview.html = this.generateHTML(dashboardData);
@@ -137,20 +147,22 @@ export class DashboardPanel implements vscode.Disposable {
       console.error('Failed to update dashboard:', error);
     }
   }
-  
+
   private async collectDashboardData(): Promise<DashboardData> {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     const config = this.configManager.getConfig();
     const diagnosticsSummary = this.diagnosticProvider.getDiagnosticsSummary();
-    
+
     // Project info
     const projectInfo = {
-      name: workspaceFolder ? path.basename(workspaceFolder.uri.fsPath) : 'No Workspace',
+      name: workspaceFolder
+        ? path.basename(workspaceFolder.uri.fsPath)
+        : 'No Workspace',
       archetype: config.archetype,
       filesCount: await this.getFileCount(workspaceFolder?.uri.fsPath),
       lastAnalysis: Date.now() // This would come from actual analysis data
     };
-    
+
     // Current metrics
     const currentMetrics = {
       totalIssues: diagnosticsSummary.total,
@@ -162,16 +174,19 @@ export class DashboardPanel implements vscode.Disposable {
       filesAnalyzed: 0, // Would come from analysis result
       duration: 0 // Would come from analysis result
     };
-    
+
     // Trends (mock data for now)
     const trends: TrendData = {
-      timestamps: Array.from({ length: 7 }, (_, i) => Date.now() - (6 - i) * 24 * 60 * 60 * 1000),
+      timestamps: Array.from(
+        { length: 7 },
+        (_, i) => Date.now() - (6 - i) * 24 * 60 * 60 * 1000
+      ),
       totalIssues: [45, 38, 42, 35, 41, 33, currentMetrics.totalIssues],
       errorCounts: [12, 8, 10, 7, 9, 6, currentMetrics.errorCount],
       warningCounts: [28, 25, 27, 23, 26, 21, currentMetrics.warningCount],
       filesCounts: [125, 128, 130, 132, 135, 138, 140]
     };
-    
+
     // Recent activity (mock data)
     const recentActivity = [
       {
@@ -193,13 +208,17 @@ export class DashboardPanel implements vscode.Disposable {
         impact: '3 issues exempted'
       }
     ];
-    
+
     // Health score calculation
     const healthScore = this.calculateHealthScore(currentMetrics, trends);
-    
+
     // Recommendations
-    const recommendations = this.generateRecommendations(currentMetrics, config, healthScore);
-    
+    const recommendations = this.generateRecommendations(
+      currentMetrics,
+      config,
+      healthScore
+    );
+
     return {
       projectInfo,
       currentMetrics,
@@ -209,19 +228,27 @@ export class DashboardPanel implements vscode.Disposable {
       recommendations
     };
   }
-  
+
   private async getFileCount(workspacePath?: string): Promise<number> {
-    if (!workspacePath) {return 0;}
-    
+    if (!workspacePath) {
+      return 0;
+    }
+
     try {
-      const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**');
+      const files = await vscode.workspace.findFiles(
+        '**/*',
+        '**/node_modules/**'
+      );
       return files.length;
     } catch {
       return 0;
     }
   }
-  
-  private calculateHealthScore(metrics: DashboardData['currentMetrics'], trends: TrendData): DashboardData['healthScore'] {
+
+  private calculateHealthScore(
+    metrics: DashboardData['currentMetrics'],
+    trends: TrendData
+  ): DashboardData['healthScore'] {
     const factors: Array<{
       name: string;
       score: number;
@@ -230,15 +257,31 @@ export class DashboardPanel implements vscode.Disposable {
     }> = [
       {
         name: 'Issue Count',
-        score: Math.max(0, 100 - (metrics.totalIssues * 2)), // 2 points per issue
+        score: Math.max(0, 100 - metrics.totalIssues * 2), // 2 points per issue
         weight: 0.4,
-        status: metrics.totalIssues === 0 ? 'good' : metrics.totalIssues < 10 ? 'warning' : 'critical'
+        status:
+          metrics.totalIssues === 0
+            ? 'good'
+            : metrics.totalIssues < 10
+              ? 'warning'
+              : 'critical'
       },
       {
         name: 'Error Ratio',
-        score: metrics.totalIssues === 0 ? 100 : Math.max(0, 100 - ((metrics.errorCount / metrics.totalIssues) * 100)),
+        score:
+          metrics.totalIssues === 0
+            ? 100
+            : Math.max(
+                0,
+                100 - (metrics.errorCount / metrics.totalIssues) * 100
+              ),
         weight: 0.3,
-        status: metrics.errorCount === 0 ? 'good' : (metrics.errorCount / Math.max(1, metrics.totalIssues)) < 0.2 ? 'warning' : 'critical'
+        status:
+          metrics.errorCount === 0
+            ? 'good'
+            : metrics.errorCount / Math.max(1, metrics.totalIssues) < 0.2
+              ? 'warning'
+              : 'critical'
       },
       {
         name: 'Trend Direction',
@@ -253,48 +296,67 @@ export class DashboardPanel implements vscode.Disposable {
         status: 'good'
       }
     ];
-    
-    const weightedScore = factors.reduce((sum, factor) => sum + (factor.score * factor.weight), 0);
-    
+
+    const weightedScore = factors.reduce(
+      (sum, factor) => sum + factor.score * factor.weight,
+      0
+    );
+
     let grade: 'A' | 'B' | 'C' | 'D' | 'F';
-    if (weightedScore >= 90) {grade = 'A';}
-    else if (weightedScore >= 80) {grade = 'B';}
-    else if (weightedScore >= 70) {grade = 'C';}
-    else if (weightedScore >= 60) {grade = 'D';}
-    else {grade = 'F';}
-    
+    if (weightedScore >= 90) {
+      grade = 'A';
+    } else if (weightedScore >= 80) {
+      grade = 'B';
+    } else if (weightedScore >= 70) {
+      grade = 'C';
+    } else if (weightedScore >= 60) {
+      grade = 'D';
+    } else {
+      grade = 'F';
+    }
+
     return {
       score: Math.round(weightedScore),
       grade,
       factors
     };
   }
-  
+
   private calculateTrendScore(trendData: number[]): number {
-    if (trendData.length < 2) {return 50;}
-    
+    if (trendData.length < 2) {
+      return 50;
+    }
+
     const recent = trendData.slice(-3).reduce((a, b) => a + b, 0) / 3;
     const older = trendData.slice(-6, -3).reduce((a, b) => a + b, 0) / 3;
-    
-    if (recent < older) {return 100;} // Improving
-    if (recent === older) {return 75;} // Stable
-    return Math.max(0, 50 - ((recent - older) * 2)); // Declining
+
+    if (recent < older) {
+      return 100;
+    } // Improving
+    if (recent === older) {
+      return 75;
+    } // Stable
+    return Math.max(0, 50 - (recent - older) * 2); // Declining
   }
-  
+
   private getTrendStatus(trendData: number[]): 'good' | 'warning' | 'critical' {
     const score = this.calculateTrendScore(trendData);
-    if (score >= 75) {return 'good';}
-    if (score >= 50) {return 'warning';}
+    if (score >= 75) {
+      return 'good';
+    }
+    if (score >= 50) {
+      return 'warning';
+    }
     return 'critical';
   }
-  
+
   private generateRecommendations(
     metrics: DashboardData['currentMetrics'],
     config: any,
     _healthScore: DashboardData['healthScore']
   ): DashboardData['recommendations'] {
     const recommendations: DashboardData['recommendations'] = [];
-    
+
     // High error count
     if (metrics.errorCount > 5) {
       recommendations.push({
@@ -305,18 +367,19 @@ export class DashboardPanel implements vscode.Disposable {
         action: 'Review and fix critical errors'
       });
     }
-    
+
     // Performance optimization
     if (config.cacheResults === false) {
       recommendations.push({
         type: 'performance' as const,
         priority: 'medium' as const,
         title: 'Enable Result Caching',
-        description: 'Caching analysis results can significantly improve performance.',
+        description:
+          'Caching analysis results can significantly improve performance.',
         action: 'Enable caching in settings'
       });
     }
-    
+
     // Configuration optimization
     if (config.runInterval === 0) {
       recommendations.push({
@@ -327,7 +390,7 @@ export class DashboardPanel implements vscode.Disposable {
         action: 'Set analysis interval in settings'
       });
     }
-    
+
     // Maintenance
     if (metrics.totalIssues === 0) {
       recommendations.push({
@@ -338,14 +401,15 @@ export class DashboardPanel implements vscode.Disposable {
         action: 'Export settings for team use'
       });
     }
-    
+
     return recommendations;
   }
-  
+
   private generateHTML(data: DashboardData): string {
     const nonce = this.getNonce();
-    const isDark = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
-    
+    const isDark =
+      vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -415,7 +479,9 @@ export class DashboardPanel implements vscode.Disposable {
             <section class="health-section">
                 <h2>💪 Health Factors</h2>
                 <div class="health-factors">
-                    ${data.healthScore.factors.map(factor => `
+                    ${data.healthScore.factors
+                      .map(
+                        factor => `
                         <div class="health-factor">
                             <div class="factor-header">
                                 <span class="factor-name">${factor.name}</span>
@@ -426,7 +492,9 @@ export class DashboardPanel implements vscode.Disposable {
                                      style="width: ${factor.score}%"></div>
                             </div>
                         </div>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </div>
             </section>
             
@@ -434,7 +502,9 @@ export class DashboardPanel implements vscode.Disposable {
             <section class="activity-section">
                 <h2>🔄 Recent Activity</h2>
                 <div class="activity-list">
-                    ${data.recentActivity.map(activity => `
+                    ${data.recentActivity
+                      .map(
+                        activity => `
                         <div class="activity-item">
                             <div class="activity-icon">${this.getActivityIcon(activity.type)}</div>
                             <div class="activity-content">
@@ -445,7 +515,9 @@ export class DashboardPanel implements vscode.Disposable {
                                 </div>
                             </div>
                         </div>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </div>
             </section>
             
@@ -453,7 +525,9 @@ export class DashboardPanel implements vscode.Disposable {
             <section class="recommendations-section">
                 <h2>💡 Recommendations</h2>
                 <div class="recommendations-list">
-                    ${data.recommendations.map(rec => `
+                    ${data.recommendations
+                      .map(
+                        rec => `
                         <div class="recommendation-item priority-${rec.priority}">
                             <div class="recommendation-header">
                                 <span class="recommendation-type">${this.getRecommendationIcon(rec.type)}</span>
@@ -461,13 +535,19 @@ export class DashboardPanel implements vscode.Disposable {
                                 <span class="recommendation-priority priority-${rec.priority}">${rec.priority}</span>
                             </div>
                             <div class="recommendation-description">${rec.description}</div>
-                            ${rec.action ? `
+                            ${
+                              rec.action
+                                ? `
                                 <button class="recommendation-action" onclick="handleRecommendation('${rec.action}')">
                                     ${rec.action}
                                 </button>
-                            ` : ''}
+                            `
+                                : ''
+                            }
                         </div>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </div>
             </section>
             
@@ -498,51 +578,72 @@ export class DashboardPanel implements vscode.Disposable {
 </body>
 </html>`;
   }
-  
+
   private getTrendIndicator(trendData: number[]): string {
-    if (trendData.length < 2) {return '➖';}
-    
+    if (trendData.length < 2) {
+      return '➖';
+    }
+
     const recent = trendData[trendData.length - 1];
     const previous = trendData[trendData.length - 2];
-    
-    if (recent < previous) {return '📈';} // Improving (fewer issues)
-    if (recent > previous) {return '📉';} // Declining (more issues)
+
+    if (recent < previous) {
+      return '📈';
+    } // Improving (fewer issues)
+    if (recent > previous) {
+      return '📉';
+    } // Declining (more issues)
     return '➖'; // Stable
   }
-  
+
   private getActivityIcon(type: string): string {
     switch (type) {
-      case 'analysis': return '🔍';
-      case 'config': return '⚙️';
-      case 'exemption': return '🚫';
-      default: return '📝';
+      case 'analysis':
+        return '🔍';
+      case 'config':
+        return '⚙️';
+      case 'exemption':
+        return '🚫';
+      default:
+        return '📝';
     }
   }
-  
+
   private getRecommendationIcon(type: string): string {
     switch (type) {
-      case 'performance': return '⚡';
-      case 'quality': return '🎯';
-      case 'config': return '⚙️';
-      case 'maintenance': return '🔧';
-      default: return '💡';
+      case 'performance':
+        return '⚡';
+      case 'quality':
+        return '🎯';
+      case 'config':
+        return '⚙️';
+      case 'maintenance':
+        return '🔧';
+      default:
+        return '💡';
     }
   }
-  
+
   private formatRelativeTime(timestamp: number): string {
     const now = Date.now();
     const diff = now - timestamp;
-    
+
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    
-    if (days > 0) {return `${days}d ago`;}
-    if (hours > 0) {return `${hours}h ago`;}
-    if (minutes > 0) {return `${minutes}m ago`;}
+
+    if (days > 0) {
+      return `${days}d ago`;
+    }
+    if (hours > 0) {
+      return `${hours}h ago`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ago`;
+    }
     return 'Just now';
   }
-  
+
   private getStyles(isDark: boolean): string {
     return `<style>
         :root {
@@ -872,7 +973,7 @@ export class DashboardPanel implements vscode.Disposable {
         }
     </style>`;
   }
-  
+
   private getJavaScript(data: DashboardData): string {
     return `
         const vscode = acquireVsCodeApi();
@@ -931,65 +1032,68 @@ export class DashboardPanel implements vscode.Disposable {
         }, 30000);
     `;
   }
-  
+
   private async handleMessage(message: any): Promise<void> {
     switch (message.command) {
       case 'runAnalysis':
         await vscode.commands.executeCommand('xfidelity.runAnalysis');
         break;
-        
+
       case 'openSettings':
         await vscode.commands.executeCommand('xfidelity.openSettings');
         break;
-        
+
       case 'viewReports':
         await vscode.commands.executeCommand('xfidelity.openReports');
         break;
-        
+
       case 'exportData':
         await vscode.commands.executeCommand('xfidelity.exportReport');
         break;
-        
+
       case 'handleRecommendation':
         await this.handleRecommendation(message.action);
         break;
-        
+
       case 'refreshData':
         await this.updateContent();
         break;
     }
   }
-  
+
   private async handleRecommendation(action: string): Promise<void> {
     switch (action) {
       case 'Review and fix critical errors':
-        await vscode.commands.executeCommand('workbench.panel.markers.view.focus');
+        await vscode.commands.executeCommand(
+          'workbench.panel.markers.view.focus'
+        );
         break;
-        
+
       case 'Enable caching in settings':
         await this.configManager.updateConfig({ cacheResults: true });
         vscode.window.showInformationMessage('Result caching enabled');
         break;
-        
+
       case 'Set analysis interval in settings':
         await vscode.commands.executeCommand('xfidelity.openSettings');
         break;
-        
+
       case 'Export settings for team use':
         await vscode.commands.executeCommand('xfidelity.exportReport');
         break;
     }
   }
-  
+
   private getNonce(): string {
     let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const possible =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     for (let i = 0; i < 32; i++) {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
   }
-  
+
   dispose(): void {
     this.panel?.dispose();
     if (this.updateTimer) {
@@ -997,4 +1101,4 @@ export class DashboardPanel implements vscode.Disposable {
     }
     this.disposables.forEach(d => d.dispose());
   }
-} 
+}

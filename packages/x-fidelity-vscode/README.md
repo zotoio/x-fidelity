@@ -14,6 +14,7 @@ The extension now supports **development mode** with automatic workspace fallbac
 - **⚡ Zero Configuration**: Works immediately for contributors and developers
 
 This makes it easy to:
+
 - Develop and test the extension itself
 - Debug extension features without a separate project
 - Run X-Fidelity analysis on the extension's own codebase
@@ -77,6 +78,7 @@ yarn vscode:dev
 ```
 
 This will:
+
 1. Clean previous builds
 2. Build all dependencies
 3. Build the extension
@@ -90,6 +92,7 @@ This will:
 4. Press F5 or click the play button
 
 This will:
+
 1. Build the extension automatically
 2. Launch the Extension Development Host
 3. Allow you to set breakpoints and debug
@@ -102,6 +105,7 @@ yarn vscode:dev:watch
 ```
 
 This will:
+
 1. Build and launch the extension
 2. Continue watching for file changes
 3. Automatically rebuild when files change
@@ -255,6 +259,7 @@ yarn dev:fresh
 ```
 
 **What to look for:**
+
 - Extension should activate without `Lt.transport is not a function` errors
 - Check VSCode Developer Console (Help → Toggle Developer Tools)
 - Look for X-Fidelity logs in Output panel
@@ -266,13 +271,13 @@ The extension sets `process.env.VSCODE_EXTENSION = 'true'` to help the core logg
 
 ### Common Issues and Solutions
 
-| Issue | Solution |
-|-------|----------|
-| Extension won't activate | Check Developer Console, rebuild extension |
-| Analysis not running | Check configuration, ensure workspace has supported project type |
-| No diagnostics showing | Check Problems panel, verify `showInlineDecorations` setting |
-| Reports not generating | Check file permissions, verify `reportOutputDir` setting |
-| High CPU usage | Check `runInterval` setting, disable `autoAnalyzeOnFileChange` |
+| Issue                    | Solution                                                         |
+| ------------------------ | ---------------------------------------------------------------- |
+| Extension won't activate | Check Developer Console, rebuild extension                       |
+| Analysis not running     | Check configuration, ensure workspace has supported project type |
+| No diagnostics showing   | Check Problems panel, verify `showInlineDecorations` setting     |
+| Reports not generating   | Check file permissions, verify `reportOutputDir` setting         |
+| High CPU usage           | Check `runInterval` setting, disable `autoAnalyzeOnFileChange`   |
 
 ### Debug Mode
 
@@ -286,6 +291,7 @@ Enable debug logging by setting `"xfidelity.debugMode": true` in your VSCode set
 ```
 
 This will:
+
 - Enable verbose logging in the Output panel
 - Disable automatic analysis (set interval to 0)
 - Show detailed error messages

@@ -12,9 +12,15 @@ export interface ControlCenterTreeItem {
   readonly children?: ControlCenterTreeItem[];
 }
 
-export class ControlCenterTreeProvider implements vscode.TreeDataProvider<ControlCenterTreeItem> {
-  private _onDidChangeTreeData: vscode.EventEmitter<ControlCenterTreeItem | undefined | null> = new vscode.EventEmitter<ControlCenterTreeItem | undefined | null>();
-  readonly onDidChangeTreeData: vscode.Event<ControlCenterTreeItem | undefined | null> = this._onDidChangeTreeData.event;
+export class ControlCenterTreeProvider
+  implements vscode.TreeDataProvider<ControlCenterTreeItem>
+{
+  private _onDidChangeTreeData: vscode.EventEmitter<
+    ControlCenterTreeItem | undefined | null
+  > = new vscode.EventEmitter<ControlCenterTreeItem | undefined | null>();
+  readonly onDidChangeTreeData: vscode.Event<
+    ControlCenterTreeItem | undefined | null
+  > = this._onDidChangeTreeData.event;
 
   private treeData: ControlCenterTreeItem[] = [];
 
@@ -29,7 +35,7 @@ export class ControlCenterTreeProvider implements vscode.TreeDataProvider<Contro
 
   getTreeItem(element: ControlCenterTreeItem): vscode.TreeItem {
     const item = new vscode.TreeItem(element.label, element.collapsibleState);
-    
+
     item.id = element.id;
     item.tooltip = element.tooltip;
     item.description = element.description;
@@ -42,7 +48,9 @@ export class ControlCenterTreeProvider implements vscode.TreeDataProvider<Contro
     return item;
   }
 
-  getChildren(element?: ControlCenterTreeItem): Thenable<ControlCenterTreeItem[]> {
+  getChildren(
+    element?: ControlCenterTreeItem
+  ): Thenable<ControlCenterTreeItem[]> {
     if (!element) {
       // Root level
       return Promise.resolve(this.treeData);
@@ -99,7 +107,7 @@ export class ControlCenterTreeProvider implements vscode.TreeDataProvider<Contro
           }
         ]
       },
-      
+
       // Reports Section
       {
         id: 'reports',
@@ -142,7 +150,7 @@ export class ControlCenterTreeProvider implements vscode.TreeDataProvider<Contro
           }
         ]
       },
-      
+
       // Configuration Section
       {
         id: 'configuration',
@@ -187,4 +195,4 @@ export class ControlCenterTreeProvider implements vscode.TreeDataProvider<Contro
       }
     ];
   }
-} 
+}

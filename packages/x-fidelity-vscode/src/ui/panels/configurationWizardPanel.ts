@@ -14,7 +14,13 @@ interface ConfigurationStep {
   id: string;
   title: string;
   description: string;
-  category: 'archetype' | 'rules' | 'plugins' | 'performance' | 'output' | 'advanced';
+  category:
+    | 'archetype'
+    | 'rules'
+    | 'plugins'
+    | 'performance'
+    | 'output'
+    | 'advanced';
   required: boolean;
   dependencies?: string[];
   validation?: ConfigurationValidation;
@@ -73,9 +79,13 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
       }
     );
 
-    this.panel.onDidDispose(() => {
-      this.panel = undefined;
-    }, null, this.disposables);
+    this.panel.onDidDispose(
+      () => {
+        this.panel = undefined;
+      },
+      null,
+      this.disposables
+    );
 
     this.panel.webview.onDidReceiveMessage(
       message => this.handleMessage(message),
@@ -92,18 +102,20 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
       this.configurationSteps = this.getConfigurationSteps();
       this.currentStepIndex = 0;
       this.stepValues = {};
-      
+
       // Pre-populate with current configuration
       const currentConfig = this.configManager.getConfig();
       this.stepValues['archetype'] = currentConfig.archetype;
-      
-      logger.info('Configuration wizard initialized', { 
+
+      logger.info('Configuration wizard initialized', {
         totalSteps: this.configurationSteps.length,
-        currentStep: this.currentStepIndex 
+        currentStep: this.currentStepIndex
       });
     } catch (error) {
       logger.error('Failed to initialize configuration wizard', { error });
-      await vscode.window.showErrorMessage('Failed to initialize configuration wizard');
+      await vscode.window.showErrorMessage(
+        'Failed to initialize configuration wizard'
+      );
     }
   }
 
@@ -117,24 +129,32 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
         required: true,
         validation: {
           type: 'enum',
-          validator: ['node-fullstack', 'java-microservice', 'python-service', 'dotnet-service'],
+          validator: [
+            'node-fullstack',
+            'java-microservice',
+            'python-service',
+            'dotnet-service'
+          ],
           message: 'Please select a valid archetype',
           severity: 'error'
         },
         hints: [
           {
             type: 'tip',
-            message: 'Choose the archetype that most closely matches your technology stack'
+            message:
+              'Choose the archetype that most closely matches your technology stack'
           },
           {
             type: 'best-practice',
-            message: 'The archetype determines which rules and checks will be applied to your project'
+            message:
+              'The archetype determines which rules and checks will be applied to your project'
           }
         ],
         examples: [
           {
             title: 'Node.js Full-Stack',
-            description: 'For Node.js applications with both frontend and backend',
+            description:
+              'For Node.js applications with both frontend and backend',
             value: 'node-fullstack',
             useCase: 'Express.js with React/Vue frontend'
           },
@@ -166,20 +186,23 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
           },
           {
             type: 'performance',
-            message: 'Too many rules can slow down analysis - choose what\'s most important'
+            message:
+              "Too many rules can slow down analysis - choose what's most important"
           }
         ]
       },
       {
         id: 'performance',
         title: 'Performance Settings',
-        description: 'Optimize X-Fidelity for your project size and requirements',
+        description:
+          'Optimize X-Fidelity for your project size and requirements',
         category: 'performance',
         required: false,
         hints: [
           {
             type: 'performance',
-            message: 'Adjust these settings based on your project size and analysis frequency needs'
+            message:
+              'Adjust these settings based on your project size and analysis frequency needs'
           }
         ]
       }
@@ -187,7 +210,9 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
   }
 
   private async updateContent(): Promise<void> {
-    if (!this.panel) {return;}
+    if (!this.panel) {
+      return;
+    }
 
     const currentStep = this.configurationSteps[this.currentStepIndex];
     const hints = currentStep?.hints || [];
@@ -196,9 +221,17 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
     this.panel.webview.html = this.generateHTML(currentStep, hints, examples);
   }
 
-  private generateHTML(currentStep?: ConfigurationStep, hints: ConfigurationHint[] = [], examples: ConfigurationExample[] = []): string {
-    const progress = this.configurationSteps.length > 0 ? 
-      Math.round((this.currentStepIndex / this.configurationSteps.length) * 100) : 0;
+  private generateHTML(
+    currentStep?: ConfigurationStep,
+    hints: ConfigurationHint[] = [],
+    examples: ConfigurationExample[] = []
+  ): string {
+    const progress =
+      this.configurationSteps.length > 0
+        ? Math.round(
+            (this.currentStepIndex / this.configurationSteps.length) * 100
+          )
+        : 0;
 
     return `
     <!DOCTYPE html>
@@ -283,9 +316,13 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
     </div>`;
   }
 
-  private generateStepContent(step: ConfigurationStep, hints: ConfigurationHint[], examples: ConfigurationExample[]): string {
+  private generateStepContent(
+    step: ConfigurationStep,
+    hints: ConfigurationHint[],
+    examples: ConfigurationExample[]
+  ): string {
     const currentValue = this.stepValues[step.id] || '';
-    
+
     return `
     <div class="step-content">
         <div class="step-header">
@@ -306,7 +343,10 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
     </div>`;
   }
 
-  private generateStepInput(step: ConfigurationStep, currentValue: any): string {
+  private generateStepInput(
+    step: ConfigurationStep,
+    currentValue: any
+  ): string {
     switch (step.id) {
       case 'archetype':
         return `
@@ -397,7 +437,9 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
     <div class="hints-section">
         <h4>💡 Helpful Tips</h4>
         <div class="hints-list">
-            ${hints.map(hint => `
+            ${hints
+              .map(
+                hint => `
                 <div class="hint hint-${hint.type}">
                     <span class="hint-icon">${this.getHintIcon(hint.type)}</span>
                     <div class="hint-content">
@@ -405,7 +447,9 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
                         ${hint.learnMoreUrl ? `<a href="${hint.learnMoreUrl}" class="learn-more-link">Learn more →</a>` : ''}
                     </div>
                 </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
     </div>`;
   }
@@ -415,7 +459,9 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
     <div class="examples-section">
         <h4>📋 Examples</h4>
         <div class="examples-list">
-            ${examples.map(example => `
+            ${examples
+              .map(
+                example => `
                 <div class="example-card" onclick="useExample('${example.value}')">
                     <h5>${example.title}</h5>
                     <p class="example-description">${example.description}</p>
@@ -424,18 +470,25 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
                         <code>${typeof example.value === 'string' ? example.value : JSON.stringify(example.value)}</code>
                     </div>
                 </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
     </div>`;
   }
 
   private getHintIcon(type: string): string {
     switch (type) {
-      case 'tip': return '💡';
-      case 'warning': return '⚠️';
-      case 'best-practice': return '⭐';
-      case 'performance': return '⚡';
-      default: return 'ℹ️';
+      case 'tip':
+        return '💡';
+      case 'warning':
+        return '⚠️';
+      case 'best-practice':
+        return '⭐';
+      case 'performance':
+        return '⚡';
+      default:
+        return 'ℹ️';
     }
   }
 
@@ -902,7 +955,10 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
     switch (message.command) {
       case 'updateStepValue':
         this.stepValues[message.stepId] = message.value;
-        logger.debug('Step value updated', { stepId: message.stepId, value: message.value });
+        logger.debug('Step value updated', {
+          stepId: message.stepId,
+          value: message.value
+        });
         break;
 
       case 'validateStep':
@@ -940,7 +996,7 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
           errors.push(validation.message);
         }
       }
-      
+
       if (this.panel) {
         this.panel.webview.postMessage({
           type: 'validationResult',
@@ -966,7 +1022,9 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
     if (this.currentStepIndex > 0) {
       this.currentStepIndex--;
       await this.updateContent();
-      logger.debug('Moved to previous step', { stepIndex: this.currentStepIndex });
+      logger.debug('Moved to previous step', {
+        stepIndex: this.currentStepIndex
+      });
     }
   }
 
@@ -974,7 +1032,7 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
     try {
       // Apply the configuration
       const configUpdates: any = {};
-      
+
       if (this.stepValues.archetype) {
         configUpdates.archetype = this.stepValues.archetype;
       }
@@ -984,41 +1042,45 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
       }
 
       if (this.stepValues.maxFileSize !== undefined) {
-        configUpdates.maxFileSize = parseFloat(this.stepValues.maxFileSize) * 1024 * 1024; // Convert MB to bytes
+        configUpdates.maxFileSize =
+          parseFloat(this.stepValues.maxFileSize) * 1024 * 1024; // Convert MB to bytes
       }
 
       if (this.stepValues.autoAnalyzeOnSave !== undefined) {
         configUpdates.autoAnalyzeOnSave = this.stepValues.autoAnalyzeOnSave;
       }
-      
+
       if (this.stepValues.rules && Array.isArray(this.stepValues.rules)) {
         // Handle rule configuration
         logger.info('Rules configured', { rules: this.stepValues.rules });
       }
 
       await this.configManager.updateConfig(configUpdates);
-      
+
       // Show completion message
-      await vscode.window.showInformationMessage(
-        '🎉 Configuration completed successfully! X-Fidelity is now configured for your project.',
-        'Run Analysis'
-      ).then(selection => {
-        if (selection === 'Run Analysis') {
-          vscode.commands.executeCommand('xfidelity.runAnalysis');
-        }
-      });
+      await vscode.window
+        .showInformationMessage(
+          '🎉 Configuration completed successfully! X-Fidelity is now configured for your project.',
+          'Run Analysis'
+        )
+        .then(selection => {
+          if (selection === 'Run Analysis') {
+            vscode.commands.executeCommand('xfidelity.runAnalysis');
+          }
+        });
 
       // Close the wizard
       this.panel?.dispose();
-      
-      logger.info('Configuration wizard completed', { 
-        finalConfig: this.stepValues,
-        appliedUpdates: configUpdates 
-      });
 
+      logger.info('Configuration wizard completed', {
+        finalConfig: this.stepValues,
+        appliedUpdates: configUpdates
+      });
     } catch (error) {
       logger.error('Failed to finish wizard', { error });
-      await vscode.window.showErrorMessage('Failed to apply configuration changes');
+      await vscode.window.showErrorMessage(
+        'Failed to apply configuration changes'
+      );
     }
   }
 
@@ -1026,4 +1088,4 @@ export class ConfigurationWizardPanel implements vscode.Disposable {
     this.disposables.forEach(d => d.dispose());
     this.panel?.dispose();
   }
-} 
+}

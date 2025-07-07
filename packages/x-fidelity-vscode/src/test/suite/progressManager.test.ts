@@ -1,7 +1,11 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { suite, test, setup } from 'mocha';
-import { ProgressManager, ProgressReporter, ProgressPhase } from '../../utils/progressManager';
+import {
+  ProgressManager,
+  ProgressReporter,
+  ProgressPhase
+} from '../../utils/progressManager';
 
 suite('ProgressManager Tests', () => {
   let progressManager: ProgressManager;
@@ -24,9 +28,7 @@ suite('ProgressManager Tests', () => {
 
   test('should throw error for invalid phase weights', () => {
     assert.throws(() => {
-      progressManager.createCustomPhases([
-        { name: 'Invalid', weight: 0 }
-      ]);
+      progressManager.createCustomPhases([{ name: 'Invalid', weight: 0 }]);
     }, /Total phase weight must be greater than 0/);
   });
 
@@ -41,17 +43,20 @@ suite('ProgressManager Tests', () => {
       }
     };
 
-    const testOperation = async (reporter: ProgressReporter, _token: vscode.CancellationToken) => {
+    const testOperation = async (
+      reporter: ProgressReporter,
+      _token: vscode.CancellationToken
+    ) => {
       // Test phase progression
       reporter.updatePhaseProgress(50, 'Starting first phase');
       reporterStates.push(reporter.getCurrentState());
-      
+
       reporter.nextPhase('Moving to second phase');
       reporterStates.push(reporter.getCurrentState());
-      
+
       reporter.updatePhaseProgress(100, 'Completing second phase');
       reporterStates.push(reporter.getCurrentState());
-      
+
       return 'test-result';
     };
 
@@ -71,12 +76,18 @@ suite('ProgressManager Tests', () => {
       assert.strictEqual(result, 'test-result');
       assert.ok(progressReports.length > 0, 'Should have progress reports');
       assert.ok(reporterStates.length > 0, 'Should have reporter states');
-      
+
       // Verify states show proper progression
       const firstState = reporterStates[0];
-      assert.ok(firstState.overallProgress > 0, 'Should have some overall progress');
-      assert.strictEqual(firstState.phaseProgress, 50, 'Should have 50% phase progress');
-      
+      assert.ok(
+        firstState.overallProgress > 0,
+        'Should have some overall progress'
+      );
+      assert.strictEqual(
+        firstState.phaseProgress,
+        50,
+        'Should have 50% phase progress'
+      );
     } finally {
       // Restore original function
       (vscode.window as any).withProgress = originalWithProgress;
@@ -84,7 +95,10 @@ suite('ProgressManager Tests', () => {
   });
 
   test('should handle cancellation gracefully', async () => {
-    const testOperation = async (_reporter: ProgressReporter, _token: vscode.CancellationToken) => {
+    const testOperation = async (
+      _reporter: ProgressReporter,
+      _token: vscode.CancellationToken
+    ) => {
       // Simulate cancellation during operation
       return 'should-not-complete';
     };
@@ -111,7 +125,10 @@ suite('ProgressManager Tests', () => {
 
   test('should handle operation errors', async () => {
     const testError = new Error('Test operation failed');
-    const testOperation = async (_reporter: ProgressReporter, _token: vscode.CancellationToken) => {
+    const testOperation = async (
+      _reporter: ProgressReporter,
+      _token: vscode.CancellationToken
+    ) => {
       throw testError;
     };
 
@@ -135,7 +152,10 @@ suite('ProgressManager Tests', () => {
   test('should emit progress events when using runWithProgressAndEvents', async () => {
     let progressEvents: Array<any> = [];
 
-    const testOperation = async (reporter: ProgressReporter, _token: vscode.CancellationToken) => {
+    const testOperation = async (
+      reporter: ProgressReporter,
+      _token: vscode.CancellationToken
+    ) => {
       reporter.updatePhaseProgress(25);
       reporter.nextPhase();
       reporter.updatePhaseProgress(75);
@@ -161,13 +181,18 @@ suite('ProgressManager Tests', () => {
       );
 
       assert.strictEqual(result, 'test-result');
-      assert.ok(progressEvents.length >= 2, 'Should have multiple progress events');
-      
+      assert.ok(
+        progressEvents.length >= 2,
+        'Should have multiple progress events'
+      );
+
       // Verify progression in events
       const firstEvent = progressEvents[0];
       const lastEvent = progressEvents[progressEvents.length - 1];
-      assert.ok(lastEvent.overallProgress > firstEvent.overallProgress, 'Overall progress should increase');
-      
+      assert.ok(
+        lastEvent.overallProgress > firstEvent.overallProgress,
+        'Overall progress should increase'
+      );
     } finally {
       (vscode.window as any).withProgress = originalWithProgress;
     }
@@ -234,4 +259,4 @@ suite('ProgressReporter Tests', () => {
     const state = reporter.getCurrentState();
     assert.strictEqual(state.currentPhase, 'Only Phase');
   });
-}); 
+});

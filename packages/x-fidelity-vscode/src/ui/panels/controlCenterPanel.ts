@@ -24,7 +24,7 @@ export interface ControlCenterData {
 export class ControlCenterPanel implements vscode.Disposable {
   private panel?: vscode.WebviewPanel;
   private disposables: vscode.Disposable[] = [];
-  
+
   constructor(
     private context: vscode.ExtensionContext,
     private configManager: ConfigManager,
@@ -32,23 +32,31 @@ export class ControlCenterPanel implements vscode.Disposable {
     private diagnosticProvider: DiagnosticProvider
   ) {
     // Listen for analysis state changes to refresh the panel
-    this.analysisManager.onDidAnalysisStateChange(_state => {
-      this.refreshPanel();
-    }, null, this.disposables);
+    this.analysisManager.onDidAnalysisStateChange(
+      _state => {
+        this.refreshPanel();
+      },
+      null,
+      this.disposables
+    );
 
     // Listen for analysis completion
-    this.analysisManager.onDidAnalysisComplete(_result => {
-      this.refreshPanel();
-    }, null, this.disposables);
+    this.analysisManager.onDidAnalysisComplete(
+      _result => {
+        this.refreshPanel();
+      },
+      null,
+      this.disposables
+    );
   }
-  
+
   async show(): Promise<void> {
     if (this.panel) {
       this.panel.reveal();
       await this.updateContent();
       return;
     }
-    
+
     this.panel = vscode.window.createWebviewPanel(
       'xfidelityControlCenter',
       '🎛️ X-Fidelity Control Center',
@@ -56,26 +64,36 @@ export class ControlCenterPanel implements vscode.Disposable {
       {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionUri.fsPath, 'resources'))]
+        localResourceRoots: [
+          vscode.Uri.file(
+            path.join(this.context.extensionUri.fsPath, 'resources')
+          )
+        ]
       }
     );
-    
-    this.panel.onDidDispose(() => {
-      this.panel = undefined;
-    }, null, this.disposables);
-    
+
+    this.panel.onDidDispose(
+      () => {
+        this.panel = undefined;
+      },
+      null,
+      this.disposables
+    );
+
     this.panel.webview.onDidReceiveMessage(
       message => this.handleMessage(message),
       undefined,
       this.disposables
     );
-    
+
     await this.updateContent();
   }
-  
+
   private async updateContent(): Promise<void> {
-    if (!this.panel) {return;}
-    
+    if (!this.panel) {
+      return;
+    }
+
     const data = await this.collectControlCenterData();
     this.panel.webview.html = this.generateHTML(data);
   }
@@ -85,19 +103,19 @@ export class ControlCenterPanel implements vscode.Disposable {
       await this.updateContent();
     }
   }
-  
+
   private async collectControlCenterData(): Promise<ControlCenterData> {
     const summary = this.diagnosticProvider.getDiagnosticsSummary();
-    
+
     // Check if analysis is currently running
     const isAnalysisRunning = this.analysisManager.isAnalysisRunning;
-    
+
     // Get actual WASM status
     const wasmStatus = this.getWasmStatus();
-    
+
     // Get actual plugin count
     const pluginStatus = this.getPluginStatus();
-    
+
     return {
       lastAnalysis: this.getLastAnalysisTime(),
       issueCount: {
@@ -111,11 +129,12 @@ export class ControlCenterPanel implements vscode.Disposable {
       analysisStatus: isAnalysisRunning ? 'running' : 'idle'
     };
   }
-  
+
   private generateHTML(data: ControlCenterData): string {
     const nonce = this.getNonce();
-    const isDark = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
-    
+    const isDark =
+      vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -139,17 +158,21 @@ export class ControlCenterPanel implements vscode.Disposable {
             <section class="section">
                 <h2>🚀 Quick Actions</h2>
                 <div class="action-grid">
-                    ${data.analysisStatus === 'running' ? `
+                    ${
+                      data.analysisStatus === 'running'
+                        ? `
                     <button class="action-btn danger" onclick="cancelAnalysis()">
                         <span class="icon">🛑</span>
                         <span class="text">Cancel Analysis</span>
                     </button>
-                    ` : `
+                    `
+                        : `
                     <button class="action-btn primary" onclick="runAnalysis()">
                         <span class="icon">🔍</span>
                         <span class="text">Run Analysis</span>
                     </button>
-                    `}
+                    `
+                    }
                     <button class="action-btn" onclick="openSettings()">
                         <span class="icon">⚙️</span>
                         <span class="text">Settings</span>
@@ -207,9 +230,15 @@ export class ControlCenterPanel implements vscode.Disposable {
                     <div class="status-item">
                         <span class="label">WASM Status</span>
                         <span class="value status-${data.wasmStatus}">
-                            ${data.wasmStatus === 'ready' ? '✅ Ready' : 
-                              data.wasmStatus === 'loading' ? '⏳ Loading' : 
-                              data.wasmStatus === 'error' ? '❌ Error' : '⚠️ Unavailable'}
+                            ${
+                              data.wasmStatus === 'ready'
+                                ? '✅ Ready'
+                                : data.wasmStatus === 'loading'
+                                  ? '⏳ Loading'
+                                  : data.wasmStatus === 'error'
+                                    ? '❌ Error'
+                                    : '⚠️ Unavailable'
+                            }
                         </span>
                     </div>
                     <div class="status-item">
@@ -250,7 +279,7 @@ export class ControlCenterPanel implements vscode.Disposable {
 </body>
 </html>`;
   }
-  
+
   private getStyles(isDark: boolean): string {
     return `<style>
         :root {
@@ -464,7 +493,7 @@ export class ControlCenterPanel implements vscode.Disposable {
         }
     </style>`;
   }
-  
+
   private getJavaScript(): string {
     return `
         const vscode = acquireVsCodeApi();
@@ -527,7 +556,7 @@ export class ControlCenterPanel implements vscode.Disposable {
         }, 30000);
     `;
   }
-  
+
   private async handleMessage(message: any): Promise<void> {
     switch (message.command) {
       case 'runAnalysis':
@@ -537,100 +566,113 @@ export class ControlCenterPanel implements vscode.Disposable {
       case 'cancelAnalysis':
         await vscode.commands.executeCommand('xfidelity.cancelAnalysis');
         break;
-        
+
       case 'openSettings':
         await vscode.commands.executeCommand('xfidelity.openSettings');
         break;
-        
+
       case 'testExtension':
         await vscode.commands.executeCommand('xfidelity.test');
         break;
-        
+
       case 'showLogs':
         await vscode.commands.executeCommand('workbench.action.output.show');
         break;
-        
+
       case 'openIssueExplorer':
         await vscode.commands.executeCommand('xfidelity.showIssueExplorer');
         break;
-        
+
       case 'openDashboard':
         await vscode.commands.executeCommand('xfidelity.showDashboard');
         break;
-        
+
       case 'openReports':
         await vscode.commands.executeCommand('xfidelity.openReports');
         break;
-        
+
       case 'openAdvancedSettings':
         await vscode.commands.executeCommand('xfidelity.showAdvancedSettings');
         break;
-        
+
       case 'showDebugInfo':
         await this.showDebugInfo();
         break;
-        
+
       case 'runTests':
-        await vscode.commands.executeCommand('workbench.action.tasks.runTask', '🧪 Run Tests');
+        await vscode.commands.executeCommand(
+          'workbench.action.tasks.runTask',
+          '🧪 Run Tests'
+        );
         break;
-        
+
       case 'reloadExtension':
         await vscode.commands.executeCommand('workbench.action.reloadWindow');
         break;
-        
+
       case 'exportLogs':
         await this.exportLogs();
         break;
-        
+
       case 'refresh':
         await this.updateContent();
         break;
     }
   }
-  
+
   private async showDebugInfo(): Promise<void> {
     const data = await this.collectControlCenterData();
     const debugInfo = {
       'Extension Version': this.context.extension.packageJSON.version,
       'VSCode Version': vscode.version,
-      'Workspace': vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || 'No workspace',
+      Workspace:
+        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || 'No workspace',
       'WASM Status': data.wasmStatus,
       'Plugins Loaded': `${data.pluginStatus.loaded}/${data.pluginStatus.total}`,
       'Last Analysis': data.lastAnalysis?.toISOString() || 'Never',
-      'Issues': `${data.issueCount.errors} errors, ${data.issueCount.warnings} warnings`
+      Issues: `${data.issueCount.errors} errors, ${data.issueCount.warnings} warnings`
     };
-    
+
     const formatted = Object.entries(debugInfo)
       .map(([key, value]) => `${key}: ${value}`)
       .join('\n');
-    
+
     await vscode.window.showInformationMessage(
       'Debug information copied to clipboard',
       { modal: false }
     );
-    
+
     await vscode.env.clipboard.writeText(formatted);
   }
-  
+
   private async exportLogs(): Promise<void> {
     try {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       if (!workspaceFolder) {
-        await vscode.window.showWarningMessage('No workspace folder available for log export');
+        await vscode.window.showWarningMessage(
+          'No workspace folder available for log export'
+        );
         return;
       }
-      
+
       const logPath = path.join(workspaceFolder.uri.fsPath, 'x-fidelity.log');
       const exportPath = await vscode.window.showSaveDialog({
-        defaultUri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, `x-fidelity-logs-${new Date().toISOString().split('T')[0]}.log`)),
+        defaultUri: vscode.Uri.file(
+          path.join(
+            workspaceFolder.uri.fsPath,
+            `x-fidelity-logs-${new Date().toISOString().split('T')[0]}.log`
+          )
+        ),
         filters: { 'Log files': ['log'], 'All files': ['*'] }
       });
-      
+
       if (exportPath) {
         const fs = require('fs');
         if (fs.existsSync(logPath)) {
           fs.copyFileSync(logPath, exportPath.fsPath);
-          await vscode.window.showInformationMessage(`Logs exported to: ${exportPath.fsPath}`);
+          await vscode.window.showInformationMessage(
+            `Logs exported to: ${exportPath.fsPath}`
+          );
         } else {
           await vscode.window.showWarningMessage('No log file found to export');
         }
@@ -639,25 +681,32 @@ export class ControlCenterPanel implements vscode.Disposable {
       await vscode.window.showErrorMessage(`Failed to export logs: ${error}`);
     }
   }
-  
+
   private formatTime(date: Date): string {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) {return 'Just now';}
-    if (minutes < 60) {return `${minutes} min ago`;}
-    
+
+    if (minutes < 1) {
+      return 'Just now';
+    }
+    if (minutes < 60) {
+      return `${minutes} min ago`;
+    }
+
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) {return `${hours} hour${hours > 1 ? 's' : ''} ago`;}
-    
+    if (hours < 24) {
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    }
+
     const days = Math.floor(hours / 24);
     return `${days} day${days > 1 ? 's' : ''} ago`;
   }
-  
+
   private getNonce(): string {
     let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const possible =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     for (let i = 0; i < 32; i++) {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
@@ -680,7 +729,11 @@ export class ControlCenterPanel implements vscode.Disposable {
     return 'unavailable';
   }
 
-  private getPluginStatus(): { loaded: number; total: number; failed: string[] } {
+  private getPluginStatus(): {
+    loaded: number;
+    total: number;
+    failed: string[];
+  } {
     try {
       // Try to get plugin information from the core
       const { pluginRegistry } = require('@x-fidelity/core');
@@ -699,7 +752,7 @@ export class ControlCenterPanel implements vscode.Disposable {
       };
     }
   }
-  
+
   dispose(): void {
     this.disposables.forEach(d => d.dispose());
   }

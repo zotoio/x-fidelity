@@ -27,7 +27,10 @@ export interface ProcessedIssue {
   message: string;
   line?: number;
   column?: number;
-  range?: { start: { line: number; column: number }, end: { line: number; column: number } };
+  range?: {
+    start: { line: number; column: number };
+    end: { line: number; column: number };
+  };
   category: string;
   fixable: boolean;
   exempted: boolean;
@@ -51,13 +54,13 @@ export class IssueDetailsPanel implements vscode.Disposable {
     field: 'severity',
     direction: 'desc'
   };
-  
+
   constructor(
     private context: vscode.ExtensionContext,
     private configManager: ConfigManager,
     private diagnosticProvider: DiagnosticProvider
   ) {}
-  
+
   async show(initialData?: ResultMetadata): Promise<void> {
     if (this.panel) {
       this.panel.reveal();
@@ -66,7 +69,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
       }
       return;
     }
-    
+
     this.panel = vscode.window.createWebviewPanel(
       'xfidelityIssueDetails',
       'X-Fidelity Issue Explorer',
@@ -74,43 +77,51 @@ export class IssueDetailsPanel implements vscode.Disposable {
       {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionUri.fsPath, 'resources'))]
+        localResourceRoots: [
+          vscode.Uri.file(
+            path.join(this.context.extensionUri.fsPath, 'resources')
+          )
+        ]
       }
     );
-    
-    this.panel.onDidDispose(() => {
-      this.panel = undefined;
-    }, null, this.disposables);
-    
+
+    this.panel.onDidDispose(
+      () => {
+        this.panel = undefined;
+      },
+      null,
+      this.disposables
+    );
+
     this.panel.webview.onDidReceiveMessage(
       message => this.handleMessage(message),
       undefined,
       this.disposables
     );
-    
+
     if (initialData) {
       this.loadIssues(initialData);
     } else {
       this.loadCurrentIssues();
     }
   }
-  
+
   private loadIssues(data: ResultMetadata): void {
     this.issues = this.processIssues(data);
     this.applyFiltersAndSort();
     this.updateContent();
   }
-  
+
   private loadCurrentIssues(): void {
     const diagnostics = this.diagnosticProvider.getAllDiagnostics();
     this.issues = this.processDiagnostics(diagnostics);
     this.applyFiltersAndSort();
     this.updateContent();
   }
-  
+
   private processIssues(data: ResultMetadata): ProcessedIssue[] {
     const issues: ProcessedIssue[] = [];
-    
+
     for (const detail of data.XFI_RESULT.issueDetails) {
       for (const error of detail.errors) {
         issues.push({
@@ -128,22 +139,31 @@ export class IssueDetailsPanel implements vscode.Disposable {
         });
       }
     }
-    
+
     return issues;
   }
-  
-  private processDiagnostics(diagnostics: [vscode.Uri, vscode.Diagnostic[]][]): ProcessedIssue[] {
+
+  private processDiagnostics(
+    diagnostics: [vscode.Uri, vscode.Diagnostic[]][]
+  ): ProcessedIssue[] {
     const issues: ProcessedIssue[] = [];
-    
+
     for (const [uri, diags] of diagnostics) {
       for (const diag of diags) {
-        if (diag.source !== 'X-Fidelity') {continue;}
-        
+        if (diag.source !== 'X-Fidelity') {
+          continue;
+        }
+
         // Extract enhanced position data if available
         const enhancedPos = (diag as any).enhancedPosition;
-        let range: { start: { line: number; column: number }, end: { line: number; column: number } } | undefined = undefined;
+        let range:
+          | {
+              start: { line: number; column: number };
+              end: { line: number; column: number };
+            }
+          | undefined = undefined;
         let column = diag.range.start.character + 1; // Convert to 1-based
-        
+
         if (enhancedPos) {
           // Use enhanced range if available
           if (enhancedPos.range) {
@@ -154,12 +174,16 @@ export class IssueDetailsPanel implements vscode.Disposable {
             column = enhancedPos.position.column;
           }
           // Use first match range if available
-          else if (enhancedPos.matches && enhancedPos.matches.length > 0 && enhancedPos.matches[0].range) {
+          else if (
+            enhancedPos.matches &&
+            enhancedPos.matches.length > 0 &&
+            enhancedPos.matches[0].range
+          ) {
             range = enhancedPos.matches[0].range;
             column = enhancedPos.matches[0].range.start.column;
           }
         }
-        
+
         issues.push({
           id: `${uri.fsPath}-${diag.code}-${diag.range.start.line}`,
           file: vscode.workspace.asRelativePath(uri),
@@ -176,61 +200,74 @@ export class IssueDetailsPanel implements vscode.Disposable {
         });
       }
     }
-    
+
     return issues;
   }
-  
+
   private mapSeverityToString(severity: vscode.DiagnosticSeverity): string {
     switch (severity) {
-      case vscode.DiagnosticSeverity.Error: return 'error';
-      case vscode.DiagnosticSeverity.Warning: return 'warning';
-      case vscode.DiagnosticSeverity.Information: return 'info';
-      case vscode.DiagnosticSeverity.Hint: return 'hint';
-      default: return 'hint';
+      case vscode.DiagnosticSeverity.Error:
+        return 'error';
+      case vscode.DiagnosticSeverity.Warning:
+        return 'warning';
+      case vscode.DiagnosticSeverity.Information:
+        return 'info';
+      case vscode.DiagnosticSeverity.Hint:
+        return 'hint';
+      default:
+        return 'hint';
     }
   }
-  
+
   private applyFiltersAndSort(): void {
     let filtered = [...this.issues];
-    
+
     // Apply filters
     if (this.currentFilter.severity.length < 4) {
-      filtered = filtered.filter(issue => this.currentFilter.severity.includes(issue.severity));
-    }
-    
-    if (this.currentFilter.files.length > 0) {
-      filtered = filtered.filter(issue => this.currentFilter.files.includes(issue.file));
-    }
-    
-    if (this.currentFilter.rules.length > 0) {
-      filtered = filtered.filter(issue => this.currentFilter.rules.includes(issue.rule));
-    }
-    
-    if (this.currentFilter.searchText) {
-      const searchLower = this.currentFilter.searchText.toLowerCase();
-      filtered = filtered.filter(issue => 
-        issue.file.toLowerCase().includes(searchLower) ||
-        issue.rule.toLowerCase().includes(searchLower) ||
-        issue.message.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(issue =>
+        this.currentFilter.severity.includes(issue.severity)
       );
     }
-    
+
+    if (this.currentFilter.files.length > 0) {
+      filtered = filtered.filter(issue =>
+        this.currentFilter.files.includes(issue.file)
+      );
+    }
+
+    if (this.currentFilter.rules.length > 0) {
+      filtered = filtered.filter(issue =>
+        this.currentFilter.rules.includes(issue.rule)
+      );
+    }
+
+    if (this.currentFilter.searchText) {
+      const searchLower = this.currentFilter.searchText.toLowerCase();
+      filtered = filtered.filter(
+        issue =>
+          issue.file.toLowerCase().includes(searchLower) ||
+          issue.rule.toLowerCase().includes(searchLower) ||
+          issue.message.toLowerCase().includes(searchLower)
+      );
+    }
+
     if (!this.currentFilter.showExempted) {
       filtered = filtered.filter(issue => !issue.exempted);
     }
-    
+
     // Apply sorting
     filtered.sort((a, b) => {
       let comparison = 0;
-      
+
       switch (this.currentSort.field) {
         case 'file':
           comparison = a.file.localeCompare(b.file);
           break;
         case 'severity':
           const severityOrder = { error: 0, warning: 1, info: 2, hint: 3 };
-          comparison = (severityOrder[a.severity as keyof typeof severityOrder] || 3) - 
-                      (severityOrder[b.severity as keyof typeof severityOrder] || 3);
+          comparison =
+            (severityOrder[a.severity as keyof typeof severityOrder] || 3) -
+            (severityOrder[b.severity as keyof typeof severityOrder] || 3);
           break;
         case 'rule':
           comparison = a.rule.localeCompare(b.rule);
@@ -242,27 +279,30 @@ export class IssueDetailsPanel implements vscode.Disposable {
           comparison = a.dateFound - b.dateFound;
           break;
       }
-      
+
       return this.currentSort.direction === 'desc' ? -comparison : comparison;
     });
-    
+
     this.filteredIssues = filtered;
   }
-  
+
   private updateContent(): void {
-    if (!this.panel) {return;}
-    
+    if (!this.panel) {
+      return;
+    }
+
     this.panel.webview.html = this.generateHTML();
   }
-  
+
   private generateHTML(): string {
     const nonce = this.getNonce();
-    const isDark = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
-    
+    const isDark =
+      vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
+
     const allFiles = [...new Set(this.issues.map(i => i.file))].sort();
     const allRules = [...new Set(this.issues.map(i => i.rule))].sort();
     const stats = this.calculateStats();
-    
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -300,14 +340,18 @@ export class IssueDetailsPanel implements vscode.Disposable {
                     <div class="filter-group">
                         <label class="filter-label">Severity</label>
                         <div class="checkbox-group">
-                            ${['error', 'warning', 'info', 'hint'].map(severity => `
+                            ${['error', 'warning', 'info', 'hint']
+                              .map(
+                                severity => `
                                 <label class="checkbox-item">
                                     <input type="checkbox" value="${severity}" 
                                            ${this.currentFilter.severity.includes(severity) ? 'checked' : ''}
                                            onchange="updateSeverityFilter('${severity}', this.checked)">
                                     <span class="severity-label ${severity}">${severity.toUpperCase()}</span>
                                 </label>
-                            `).join('')}
+                            `
+                              )
+                              .join('')}
                         </div>
                     </div>
                     
@@ -316,14 +360,19 @@ export class IssueDetailsPanel implements vscode.Disposable {
                         <div class="multi-select">
                             <input type="text" id="fileSearch" placeholder="Search files..." class="filter-search">
                             <div class="options-list" id="filesList">
-                                ${allFiles.slice(0, 10).map(file => `
+                                ${allFiles
+                                  .slice(0, 10)
+                                  .map(
+                                    file => `
                                     <label class="option-item">
                                         <input type="checkbox" value="${file}" 
                                                ${this.currentFilter.files.includes(file) ? 'checked' : ''}
                                                onchange="updateFileFilter('${file}', this.checked)">
                                         <span class="option-text">${file}</span>
                                     </label>
-                                `).join('')}
+                                `
+                                  )
+                                  .join('')}
                                 ${allFiles.length > 10 ? `<div class="more-items">... ${allFiles.length - 10} more</div>` : ''}
                             </div>
                         </div>
@@ -334,14 +383,19 @@ export class IssueDetailsPanel implements vscode.Disposable {
                         <div class="multi-select">
                             <input type="text" id="ruleSearch" placeholder="Search rules..." class="filter-search">
                             <div class="options-list" id="rulesList">
-                                ${allRules.slice(0, 10).map(rule => `
+                                ${allRules
+                                  .slice(0, 10)
+                                  .map(
+                                    rule => `
                                     <label class="option-item">
                                         <input type="checkbox" value="${rule}" 
                                                ${this.currentFilter.rules.includes(rule) ? 'checked' : ''}
                                                onchange="updateRuleFilter('${rule}', this.checked)">
                                         <span class="option-text">${rule}</span>
                                     </label>
-                                `).join('')}
+                                `
+                                  )
+                                  .join('')}
                                 ${allRules.length > 10 ? `<div class="more-items">... ${allRules.length - 10} more</div>` : ''}
                             </div>
                         </div>
@@ -386,9 +440,10 @@ export class IssueDetailsPanel implements vscode.Disposable {
                 </div>
                 
                 <div class="issues-list">
-                    ${this.filteredIssues.length === 0 ? 
-                        '<div class="empty-state">No issues match your current filters</div>' :
-                        this.renderIssuesList()
+                    ${
+                      this.filteredIssues.length === 0
+                        ? '<div class="empty-state">No issues match your current filters</div>'
+                        : this.renderIssuesList()
                     }
                 </div>
             </main>
@@ -401,10 +456,10 @@ export class IssueDetailsPanel implements vscode.Disposable {
 </body>
 </html>`;
   }
-  
+
   private renderIssuesList(): string {
     const groupByFile = this.currentSort.field === 'file';
-    
+
     if (groupByFile) {
       const groupedIssues = this.groupIssuesByFile();
       return Object.entries(groupedIssues)
@@ -416,7 +471,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
         .join('');
     }
   }
-  
+
   private groupIssuesByFile(): Record<string, ProcessedIssue[]> {
     const grouped: Record<string, ProcessedIssue[]> = {};
     for (const issue of this.filteredIssues) {
@@ -427,7 +482,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
     }
     return grouped;
   }
-  
+
   private renderFileGroup(file: string, issues: ProcessedIssue[]): string {
     const stats = {
       errors: issues.filter(i => i.severity === 'error').length,
@@ -435,7 +490,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
       info: issues.filter(i => i.severity === 'info').length,
       hints: issues.filter(i => i.severity === 'hint').length
     };
-    
+
     return `
         <div class="file-group">
             <div class="file-header" onclick="toggleFileGroup('${file}')">
@@ -457,7 +512,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
         </div>
     `;
   }
-  
+
   private renderIssueItem(issue: ProcessedIssue, inGroup = false): string {
     return `
         <div class="issue-item ${issue.severity} ${issue.exempted ? 'exempted' : ''}" 
@@ -476,11 +531,15 @@ export class IssueDetailsPanel implements vscode.Disposable {
                 <button class="action-btn primary" onclick="navigateToIssue('${issue.file}', ${issue.line || 1}, ${issue.column || 0}, ${issue.range || null})">
                     Go to Issue
                 </button>
-                ${issue.fixable ? `
+                ${
+                  issue.fixable
+                    ? `
                     <button class="action-btn secondary" onclick="quickFix('${issue.id}')">
                         Quick Fix
                     </button>
-                ` : ''}
+                `
+                    : ''
+                }
                 <button class="action-btn secondary" onclick="addExemption('${issue.id}')">
                     Add Exemption
                 </button>
@@ -491,16 +550,17 @@ export class IssueDetailsPanel implements vscode.Disposable {
         </div>
     `;
   }
-  
+
   private calculateStats() {
     return {
       errors: this.filteredIssues.filter(i => i.severity === 'error').length,
-      warnings: this.filteredIssues.filter(i => i.severity === 'warning').length,
+      warnings: this.filteredIssues.filter(i => i.severity === 'warning')
+        .length,
       info: this.filteredIssues.filter(i => i.severity === 'info').length,
       hints: this.filteredIssues.filter(i => i.severity === 'hint').length
     };
   }
-  
+
   private getStyles(isDark: boolean): string {
     return `<style>
         :root {
@@ -886,7 +946,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
         }
     </style>`;
   }
-  
+
   private getJavaScript(): string {
     return `
         const vscode = acquireVsCodeApi();
@@ -1046,7 +1106,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
         }
     `;
   }
-  
+
   private async handleMessage(message: any): Promise<void> {
     switch (message.command) {
       case 'updateFilters':
@@ -1054,56 +1114,71 @@ export class IssueDetailsPanel implements vscode.Disposable {
         this.applyFiltersAndSort();
         this.updateContent();
         break;
-        
+
       case 'updateSort':
         this.currentSort = message.sort;
         this.applyFiltersAndSort();
         this.updateContent();
         break;
-        
+
       case 'navigateToIssue':
-        await this.navigateToIssue(message.file, message.line, message.column, message.range);
+        await this.navigateToIssue(
+          message.file,
+          message.line,
+          message.column,
+          message.range
+        );
         break;
-        
+
       case 'bulkOperations':
         await this.showBulkOperations(message.issueIds);
         break;
-        
+
       case 'exportIssues':
         await this.exportIssues();
         break;
-        
+
       case 'quickFix':
         await this.quickFix(message.issueId);
         break;
-        
+
       case 'addExemption':
         await this.addExemption(message.issueId);
         break;
-        
+
       case 'showRuleInfo':
         await this.showRuleInfo(message.ruleId);
         break;
     }
   }
-  
-  private async navigateToIssue(file: string, line: number, column?: number, range?: { start: { line: number; column: number }, end: { line: number; column: number } }): Promise<void> {
+
+  private async navigateToIssue(
+    file: string,
+    line: number,
+    column?: number,
+    range?: {
+      start: { line: number; column: number };
+      end: { line: number; column: number };
+    }
+  ): Promise<void> {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    if (!workspaceFolder) {return;}
-    
+    if (!workspaceFolder) {
+      return;
+    }
+
     try {
       let fileUri: vscode.Uri;
-      
+
       // Handle absolute vs relative paths
       if (file.startsWith('/') || file.includes(':')) {
         fileUri = vscode.Uri.file(file);
       } else {
         fileUri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, file));
       }
-      
+
       const document = await vscode.workspace.openTextDocument(fileUri);
       const editor = await vscode.window.showTextDocument(document);
-      
+
       // Enhanced navigation with precise positioning
       // Note: line/column parameters are 1-based from XFI core, range is also 1-based
       if (range) {
@@ -1116,15 +1191,18 @@ export class IssueDetailsPanel implements vscode.Disposable {
           Math.max(0, range.end.line - 1), // Convert XFI 1-based to VSCode 0-based
           Math.max(0, range.end.column - 1) // Convert XFI 1-based to VSCode 0-based
         );
-        
+
         const selection = new vscode.Selection(startPos, endPos);
         editor.selection = selection;
-        editor.revealRange(selection, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
-        
-        logger.debug('Navigated to issue with XFI range', { 
-          file, 
-          xfiRange: range, 
-          vscodeSelection: { startPos, endPos } 
+        editor.revealRange(
+          selection,
+          vscode.TextEditorRevealType.InCenterIfOutsideViewport
+        );
+
+        logger.debug('Navigated to issue with XFI range', {
+          file,
+          xfiRange: range,
+          vscodeSelection: { startPos, endPos }
         });
       } else if (column !== undefined && column > 0) {
         // Use line and column for precise positioning (convert 1-based to 0-based)
@@ -1133,97 +1211,128 @@ export class IssueDetailsPanel implements vscode.Disposable {
           Math.max(0, column - 1) // Convert XFI 1-based to VSCode 0-based
         );
         editor.selection = new vscode.Selection(position, position);
-        editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
-        
-        logger.debug('Navigated to issue with XFI line and column', { 
-          file, 
-          xfiLine: line, 
-          xfiColumn: column, 
-          vscodePosition: position 
+        editor.revealRange(
+          new vscode.Range(position, position),
+          vscode.TextEditorRevealType.InCenterIfOutsideViewport
+        );
+
+        logger.debug('Navigated to issue with XFI line and column', {
+          file,
+          xfiLine: line,
+          xfiColumn: column,
+          vscodePosition: position
         });
       } else {
         // Fallback to line-only navigation (convert 1-based to 0-based)
         const position = new vscode.Position(Math.max(0, line - 1), 0);
         editor.selection = new vscode.Selection(position, position);
-        editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
-        
-        logger.debug('Navigated to issue with XFI line only', { 
-          file, 
-          xfiLine: line, 
-          vscodePosition: position 
+        editor.revealRange(
+          new vscode.Range(position, position),
+          vscode.TextEditorRevealType.InCenterIfOutsideViewport
+        );
+
+        logger.debug('Navigated to issue with XFI line only', {
+          file,
+          xfiLine: line,
+          vscodePosition: position
         });
       }
     } catch (error) {
-      logger.error('Failed to navigate to issue', { file, line, column, range, error });
+      logger.error('Failed to navigate to issue', {
+        file,
+        line,
+        column,
+        range,
+        error
+      });
       vscode.window.showErrorMessage(`Failed to navigate to issue: ${error}`);
     }
   }
-  
+
   private async showBulkOperations(issueIds: string[]): Promise<void> {
-    const action = await vscode.window.showQuickPick([
-      { label: 'Add Exemptions', value: 'exempt' },
-      { label: 'Export Selected', value: 'export' },
-      { label: 'Apply Quick Fixes', value: 'fix' }
-    ], {
-      placeHolder: `Select action for ${issueIds.length} issues`
-    });
-    
-    if (!action) {return;}
-    
+    const action = await vscode.window.showQuickPick(
+      [
+        { label: 'Add Exemptions', value: 'exempt' },
+        { label: 'Export Selected', value: 'export' },
+        { label: 'Apply Quick Fixes', value: 'fix' }
+      ],
+      {
+        placeHolder: `Select action for ${issueIds.length} issues`
+      }
+    );
+
+    if (!action) {
+      return;
+    }
+
     switch (action.value) {
       case 'exempt':
         // Handle bulk exemptions
-        vscode.window.showInformationMessage(`Adding exemptions for ${issueIds.length} issues`);
+        vscode.window.showInformationMessage(
+          `Adding exemptions for ${issueIds.length} issues`
+        );
         break;
       case 'export':
         // Export selected issues
-        vscode.window.showInformationMessage(`Exporting ${issueIds.length} issues`);
+        vscode.window.showInformationMessage(
+          `Exporting ${issueIds.length} issues`
+        );
         break;
       case 'fix':
         // Apply fixes where possible
-        vscode.window.showInformationMessage(`Applying fixes for ${issueIds.length} issues`);
+        vscode.window.showInformationMessage(
+          `Applying fixes for ${issueIds.length} issues`
+        );
         break;
     }
   }
-  
+
   private async exportIssues(): Promise<void> {
     vscode.commands.executeCommand('xfidelity.exportReport');
   }
-  
+
   private async quickFix(issueId: string): Promise<void> {
     const issue = this.issues.find(i => i.id === issueId);
-    if (!issue) {return;}
-    
+    if (!issue) {
+      return;
+    }
+
     // This would integrate with the CodeActionProvider
-    vscode.window.showInformationMessage(`Quick fix for ${issue.rule} - ${issue.message}`);
+    vscode.window.showInformationMessage(
+      `Quick fix for ${issue.rule} - ${issue.message}`
+    );
   }
-  
+
   private async addExemption(issueId: string): Promise<void> {
     const issue = this.issues.find(i => i.id === issueId);
-    if (!issue) {return;}
-    
-    vscode.commands.executeCommand('xfidelity.addExemption', 
-      vscode.Uri.file(issue.file), 
-      new vscode.Range(issue.line || 1, 0, issue.line || 1, 0), 
+    if (!issue) {
+      return;
+    }
+
+    vscode.commands.executeCommand(
+      'xfidelity.addExemption',
+      vscode.Uri.file(issue.file),
+      new vscode.Range(issue.line || 1, 0, issue.line || 1, 0),
       issue.rule
     );
   }
-  
+
   private async showRuleInfo(ruleId: string): Promise<void> {
     vscode.commands.executeCommand('xfidelity.showRuleDocumentation', ruleId);
   }
-  
+
   private getNonce(): string {
     let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const possible =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     for (let i = 0; i < 32; i++) {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
   }
-  
+
   dispose(): void {
     this.panel?.dispose();
     this.disposables.forEach(d => d.dispose());
   }
-} 
+}

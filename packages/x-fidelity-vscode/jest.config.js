@@ -2,14 +2,14 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
-  testMatch: [
-    '**/test/unit/**/*.test.ts',
-    '**/src/**/*.unit.test.ts'
-  ],
+  testMatch: ['**/test/unit/**/*.test.ts', '**/src/**/*.unit.test.ts'],
   transform: {
-    '^.+\\.ts$': ['ts-jest', {
-      tsconfig: 'tsconfig.test.json'
-    }],
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        tsconfig: 'tsconfig.test.json'
+      }
+    ]
   },
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -26,4 +26,4 @@ module.exports = {
   },
   testTimeout: 10000,
   verbose: true
-}; 
+};

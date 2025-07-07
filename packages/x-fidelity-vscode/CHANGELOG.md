@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.1] - 2024-01-15
 
 ### Added
+
 - Initial release of X-Fidelity VSCode Extension
 - **Analysis Features**
   - Real-time code quality analysis using X-Fidelity rules
@@ -51,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Robust plugin loading with graceful fallbacks
 
 ### Technical Implementation
+
 - Built with TypeScript for type safety and maintainability
 - Follows VSCode Extension API best practices
 - Comprehensive test suite with 21+ integration tests
@@ -58,9 +60,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cross-platform compatibility (Windows, macOS, Linux)
 
 ### Dependencies
+
 - VSCode Engine: ^1.74.0
-- X-Fidelity Core: workspace:*
-- X-Fidelity Types: workspace:*
+- X-Fidelity Core: workspace:\*
+- X-Fidelity Types: workspace:\*
 - Tree-sitter for AST analysis
 - Mocha for testing framework
 
@@ -70,4 +73,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This extension provides a seamless integration between X-Fidelity's powerful code analysis capabilities and the VSCode development environment. It's designed to help developers maintain code quality standards and architectural compliance directly within their IDE.
 
-For development setup and contribution guidelines, see [DEVELOPMENT.md](./DEVELOPMENT.md). 
+For development setup and contribution guidelines, see [DEVELOPMENT.md](./DEVELOPMENT.md).

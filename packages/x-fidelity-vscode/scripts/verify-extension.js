@@ -2,7 +2,7 @@
 
 /**
  * X-Fidelity VSCode Extension Verification Script
- * 
+ *
  * Comprehensive verification of all extension features following Microsoft's
  * official testing guidelines and industry best practices.
  */
@@ -62,11 +62,11 @@ class ExtensionVerifier {
 
   async verifyPackageJson() {
     this.log('\n📦 Verifying package.json configuration...', COLORS.BOLD);
-    
+
     try {
       const packagePath = path.join(__dirname, '..', 'package.json');
       const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-      
+
       // Check essential fields
       if (packageJson.name === 'x-fidelity-vscode') {
         this.success('Package name is correct');
@@ -91,7 +91,9 @@ class ExtensionVerifier {
       // Check activation events
       const activationEvents = packageJson.activationEvents || [];
       if (activationEvents.length > 0) {
-        this.success(`Activation events configured: ${activationEvents.length}`);
+        this.success(
+          `Activation events configured: ${activationEvents.length}`
+        );
       } else {
         this.fail('No activation events configured');
       }
@@ -103,7 +105,6 @@ class ExtensionVerifier {
       } else {
         this.fail('Tree view contribution missing');
       }
-
     } catch (error) {
       this.fail(`Package.json verification failed: ${error.message}`);
     }
@@ -111,10 +112,10 @@ class ExtensionVerifier {
 
   async verifyBuildOutput() {
     this.log('\n🔨 Verifying build output...', COLORS.BOLD);
-    
+
     const distPath = path.join(__dirname, '..', 'dist');
     const extensionJs = path.join(distPath, 'extension.js');
-    
+
     if (fs.existsSync(distPath)) {
       this.success('Dist directory exists');
     } else {
@@ -124,13 +125,18 @@ class ExtensionVerifier {
 
     if (fs.existsSync(extensionJs)) {
       this.success('Extension.js built successfully');
-      
+
       // Check file size (should be reasonable)
       const stats = fs.statSync(extensionJs);
-      if (stats.size > 1000 && stats.size < 10000000) { // 1KB to 10MB
-        this.success(`Extension.js size is reasonable: ${Math.round(stats.size / 1024)}KB`);
+      if (stats.size > 1000 && stats.size < 10000000) {
+        // 1KB to 10MB
+        this.success(
+          `Extension.js size is reasonable: ${Math.round(stats.size / 1024)}KB`
+        );
       } else {
-        this.warn(`Extension.js size unusual: ${Math.round(stats.size / 1024)}KB`);
+        this.warn(
+          `Extension.js size unusual: ${Math.round(stats.size / 1024)}KB`
+        );
       }
     } else {
       this.fail('Extension.js missing from build output');
@@ -147,9 +153,9 @@ class ExtensionVerifier {
 
   async verifyTypeScriptCompilation() {
     this.log('\n📝 Verifying TypeScript compilation...', COLORS.BOLD);
-    
-    return new Promise((resolve) => {
-      const tsc = spawn('npx', ['tsc', '--noEmit'], { 
+
+    return new Promise(resolve => {
+      const tsc = spawn('npx', ['tsc', '--noEmit'], {
         cwd: path.join(__dirname, '..'),
         stdio: 'pipe'
       });
@@ -157,15 +163,15 @@ class ExtensionVerifier {
       let output = '';
       let errorOutput = '';
 
-      tsc.stdout.on('data', (data) => {
+      tsc.stdout.on('data', data => {
         output += data.toString();
       });
 
-      tsc.stderr.on('data', (data) => {
+      tsc.stderr.on('data', data => {
         errorOutput += data.toString();
       });
 
-      tsc.on('close', (code) => {
+      tsc.on('close', code => {
         if (code === 0) {
           this.success('TypeScript compilation passed');
         } else {
@@ -181,7 +187,7 @@ class ExtensionVerifier {
 
   async verifyTestSetup() {
     this.log('\n🧪 Verifying test setup...', COLORS.BOLD);
-    
+
     const testDirs = [
       path.join(__dirname, '..', 'src', 'test'),
       path.join(__dirname, '..', 'src', 'test', 'suite'),
@@ -215,9 +221,9 @@ class ExtensionVerifier {
 
   async runUnitTests() {
     this.log('\n🔬 Running unit tests...', COLORS.BOLD);
-    
-    return new Promise((resolve) => {
-      const testProcess = spawn('yarn', ['test:unit'], { 
+
+    return new Promise(resolve => {
+      const testProcess = spawn('yarn', ['test:unit'], {
         cwd: path.join(__dirname, '..'),
         stdio: 'pipe'
       });
@@ -225,18 +231,18 @@ class ExtensionVerifier {
       let output = '';
       let errorOutput = '';
 
-      testProcess.stdout.on('data', (data) => {
+      testProcess.stdout.on('data', data => {
         output += data.toString();
       });
 
-      testProcess.stderr.on('data', (data) => {
+      testProcess.stderr.on('data', data => {
         errorOutput += data.toString();
       });
 
-      testProcess.on('close', (code) => {
+      testProcess.on('close', code => {
         if (code === 0) {
           this.success('Unit tests passed');
-          
+
           // Extract test results if possible
           const passMatch = output.match(/(\d+) passed/);
           if (passMatch) {
@@ -255,20 +261,24 @@ class ExtensionVerifier {
 
   async verifyVSIXPackage() {
     this.log('\n📦 Verifying VSIX package...', COLORS.BOLD);
-    
-    const vsixFiles = fs.readdirSync(path.join(__dirname, '..'))
+
+    const vsixFiles = fs
+      .readdirSync(path.join(__dirname, '..'))
       .filter(file => file.endsWith('.vsix'));
-    
+
     if (vsixFiles.length > 0) {
       this.success(`VSIX package found: ${vsixFiles[0]}`);
-      
+
       // Check file size
       const vsixPath = path.join(__dirname, '..', vsixFiles[0]);
       const stats = fs.statSync(vsixPath);
-      if (stats.size > 100000) { // > 100KB
+      if (stats.size > 100000) {
+        // > 100KB
         this.success(`VSIX package size: ${Math.round(stats.size / 1024)}KB`);
       } else {
-        this.warn(`VSIX package seems small: ${Math.round(stats.size / 1024)}KB`);
+        this.warn(
+          `VSIX package seems small: ${Math.round(stats.size / 1024)}KB`
+        );
       }
     } else {
       this.warn('No VSIX package found (run yarn package to create)');
@@ -277,13 +287,19 @@ class ExtensionVerifier {
 
   async verifyExtensionManifest() {
     this.log('\n📋 Verifying extension manifest completeness...', COLORS.BOLD);
-    
+
     try {
       const packagePath = path.join(__dirname, '..', 'package.json');
       const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-      
+
       // Check required metadata
-      const requiredFields = ['name', 'displayName', 'description', 'version', 'publisher'];
+      const requiredFields = [
+        'name',
+        'displayName',
+        'description',
+        'version',
+        'publisher'
+      ];
       requiredFields.forEach(field => {
         if (packageJson[field]) {
           this.success(`${field} is present`);
@@ -294,7 +310,9 @@ class ExtensionVerifier {
 
       // Check engine compatibility
       if (packageJson.engines?.vscode) {
-        this.success(`VSCode engine requirement: ${packageJson.engines.vscode}`);
+        this.success(
+          `VSCode engine requirement: ${packageJson.engines.vscode}`
+        );
       } else {
         this.fail('VSCode engine requirement missing');
       }
@@ -312,7 +330,6 @@ class ExtensionVerifier {
       } else {
         this.warn('Repository information missing');
       }
-
     } catch (error) {
       this.fail(`Manifest verification failed: ${error.message}`);
     }
@@ -320,11 +337,11 @@ class ExtensionVerifier {
 
   async verifyExtensionCommands() {
     this.log('\n⚡ Verifying extension commands...', COLORS.BOLD);
-    
+
     try {
       const packagePath = path.join(__dirname, '..', 'package.json');
       const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-      
+
       const commands = packageJson.contributes?.commands || [];
       const expectedCommands = [
         'xfidelity.test',
@@ -350,7 +367,6 @@ class ExtensionVerifier {
           this.fail(`Invalid command structure: ${JSON.stringify(cmd)}`);
         }
       });
-
     } catch (error) {
       this.fail(`Command verification failed: ${error.message}`);
     }
@@ -358,10 +374,10 @@ class ExtensionVerifier {
 
   async verifyDependencies() {
     this.log('\n📚 Verifying dependencies...', COLORS.BOLD);
-    
+
     const packagePath = path.join(__dirname, '..', 'package.json');
     const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-    
+
     // Check for essential dependencies
     const essentialDeps = [
       '@x-fidelity/core',
@@ -403,11 +419,11 @@ class ExtensionVerifier {
 
   generateReport() {
     const duration = Math.round((Date.now() - this.startTime) / 1000);
-    
+
     this.log('\n' + '='.repeat(60), COLORS.BOLD);
     this.log('📊 VERIFICATION REPORT', COLORS.BOLD + COLORS.CYAN);
     this.log('='.repeat(60), COLORS.BOLD);
-    
+
     this.log(`\n⏱️  Duration: ${duration}s`);
     this.log(`📈 Total Checks: ${this.results.total}`);
     this.success(`✅ Passed: ${this.results.passed}`);
@@ -418,24 +434,41 @@ class ExtensionVerifier {
       this.warn(`⚠️  Warnings: ${this.results.warnings}`);
     }
 
-    const successRate = Math.round((this.results.passed / this.results.total) * 100);
+    const successRate = Math.round(
+      (this.results.passed / this.results.total) * 100
+    );
     this.log(`\n🎯 Success Rate: ${successRate}%`);
-    
+
     if (this.results.failed === 0) {
-      this.log('\n🎉 VERIFICATION PASSED! Extension is ready for use.', COLORS.GREEN + COLORS.BOLD);
-      this.log('\n💡 Quick Start: Press F5 in VSCode, then Ctrl+Shift+P → "X-Fidelity: Test Extension"', COLORS.CYAN);
+      this.log(
+        '\n🎉 VERIFICATION PASSED! Extension is ready for use.',
+        COLORS.GREEN + COLORS.BOLD
+      );
+      this.log(
+        '\n💡 Quick Start: Press F5 in VSCode, then Ctrl+Shift+P → "X-Fidelity: Test Extension"',
+        COLORS.CYAN
+      );
     } else {
-      this.log('\n🔧 VERIFICATION FAILED! Please fix the issues above.', COLORS.RED + COLORS.BOLD);
+      this.log(
+        '\n🔧 VERIFICATION FAILED! Please fix the issues above.',
+        COLORS.RED + COLORS.BOLD
+      );
     }
-    
+
     this.log('\n' + '='.repeat(60), COLORS.BOLD);
-    
+
     return this.results.failed === 0;
   }
 
   async run() {
-    this.log('🚀 X-Fidelity VSCode Extension Verification', COLORS.BOLD + COLORS.MAGENTA);
-    this.log('Following Microsoft\'s official testing guidelines\n', COLORS.CYAN);
+    this.log(
+      '🚀 X-Fidelity VSCode Extension Verification',
+      COLORS.BOLD + COLORS.MAGENTA
+    );
+    this.log(
+      "Following Microsoft's official testing guidelines\n",
+      COLORS.CYAN
+    );
 
     await this.verifyPackageJson();
     await this.verifyExtensionManifest();
@@ -454,12 +487,15 @@ class ExtensionVerifier {
 // Run verification if called directly
 if (require.main === module) {
   const verifier = new ExtensionVerifier();
-  verifier.run().then(success => {
-    process.exit(success ? 0 : 1);
-  }).catch(error => {
-    console.error('Verification failed:', error);
-    process.exit(1);
-  });
+  verifier
+    .run()
+    .then(success => {
+      process.exit(success ? 0 : 1);
+    })
+    .catch(error => {
+      console.error('Verification failed:', error);
+      process.exit(1);
+    });
 }
 
-module.exports = ExtensionVerifier; 
+module.exports = ExtensionVerifier;

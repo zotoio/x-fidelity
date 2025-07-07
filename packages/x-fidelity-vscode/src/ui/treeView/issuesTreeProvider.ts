@@ -29,17 +29,20 @@ interface VirtualTreeNode {
   expanded: boolean;
 }
 
-export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem> {
-  private _onDidChangeTreeData: vscode.EventEmitter<IssueTreeItem | undefined | null> = 
-    new vscode.EventEmitter<IssueTreeItem | undefined | null>();
-  readonly onDidChangeTreeData: vscode.Event<IssueTreeItem | undefined | null> = 
+export class IssuesTreeProvider
+  implements vscode.TreeDataProvider<IssueTreeItem>
+{
+  private _onDidChangeTreeData: vscode.EventEmitter<
+    IssueTreeItem | undefined | null
+  > = new vscode.EventEmitter<IssueTreeItem | undefined | null>();
+  readonly onDidChangeTreeData: vscode.Event<IssueTreeItem | undefined | null> =
     this._onDidChangeTreeData.event;
 
   private issues: ProcessedIssue[] = [];
   private groupingMode: GroupingMode = 'severity';
   private virtualTree: VirtualTreeNode[] = [];
   private nodeMap = new Map<string, VirtualTreeNode>();
-  
+
   // Performance optimization flags
   private updatePending = false;
   private lastUpdateTime = 0;
@@ -54,10 +57,10 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
     if (this.updatePending) {
       return;
     }
-    
+
     this.updatePending = true;
     const now = Date.now();
-    
+
     if (now - this.lastUpdateTime < this.UPDATE_DEBOUNCE_MS) {
       setTimeout(() => {
         this.performRefresh();
@@ -76,11 +79,13 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
 
   setIssues(issues: ProcessedIssue[]): void {
     // Quick check if issues actually changed
-    if (this.issues.length === issues.length && 
-        this.issues.every((issue, index) => issue.id === issues[index]?.id)) {
+    if (
+      this.issues.length === issues.length &&
+      this.issues.every((issue, index) => issue.id === issues[index]?.id)
+    ) {
       return; // No changes, skip update
     }
-    
+
     this.issues = issues;
     this.refresh();
   }
@@ -89,7 +94,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
     if (this.groupingMode === mode) {
       return; // No change, skip update
     }
-    
+
     this.groupingMode = mode;
     this.refresh();
   }
@@ -100,7 +105,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
 
   getTreeItem(element: IssueTreeItem): vscode.TreeItem {
     const item = new vscode.TreeItem(element.label, element.collapsibleState);
-    
+
     item.id = element.id;
     item.tooltip = element.tooltip;
     item.description = element.description;
@@ -116,9 +121,11 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
   getChildren(element?: IssueTreeItem): Thenable<IssueTreeItem[]> {
     if (!element) {
       // Root level - return visible top-level nodes
-      return Promise.resolve(this.virtualTree.filter(node => node.visible).map(node => node.data));
+      return Promise.resolve(
+        this.virtualTree.filter(node => node.visible).map(node => node.data)
+      );
     }
-    
+
     // Find node in virtual tree and return visible children
     const node = this.nodeMap.get(element.id);
     if (node && node.expanded) {
@@ -126,7 +133,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
         node.children.filter(child => child.visible).map(child => child.data)
       );
     }
-    
+
     return Promise.resolve([]);
   }
 
@@ -134,7 +141,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
     // Clear existing tree
     this.virtualTree = [];
     this.nodeMap.clear();
-    
+
     if (this.issues.length === 0) {
       const noIssuesNode = this.createVirtualNode({
         id: 'no-issues',
@@ -168,16 +175,20 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
     }
   }
 
-  private createVirtualNode(data: IssueTreeItem, parent?: VirtualTreeNode): VirtualTreeNode {
+  private createVirtualNode(
+    data: IssueTreeItem,
+    parent?: VirtualTreeNode
+  ): VirtualTreeNode {
     const node: VirtualTreeNode = {
       id: data.id,
       parent,
       children: [],
       data,
       visible: true,
-      expanded: data.collapsibleState === vscode.TreeItemCollapsibleState.Expanded
+      expanded:
+        data.collapsibleState === vscode.TreeItemCollapsibleState.Expanded
     };
-    
+
     this.nodeMap.set(data.id, node);
     return node;
   }
@@ -185,12 +196,12 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
   private buildSeverityTree(): void {
     const severityGroups = this.groupBy(this.issues, issue => issue.severity);
     const severityOrder = ['error', 'warning', 'info', 'hint'];
-    
+
     for (const severity of severityOrder) {
       if (!severityGroups[severity]?.length) {
         continue;
       }
-      
+
       const issues = severityGroups[severity];
       const groupNode = this.createVirtualNode({
         id: `severity-${severity}`,
@@ -202,7 +213,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
         groupKey: severity,
         count: issues.length
       });
-      
+
       this.addIssueChildren(groupNode, issues);
       this.virtualTree.push(groupNode);
     }
@@ -211,7 +222,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
   private buildRuleTree(): void {
     const ruleGroups = this.groupBy(this.issues, issue => issue.rule);
     const sortedRules = Object.keys(ruleGroups).sort();
-    
+
     for (const rule of sortedRules) {
       const issues = ruleGroups[rule];
       const groupNode = this.createVirtualNode({
@@ -224,7 +235,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
         groupKey: rule,
         count: issues.length
       });
-      
+
       this.addIssueChildren(groupNode, issues);
       this.virtualTree.push(groupNode);
     }
@@ -233,7 +244,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
   private buildFileTree(): void {
     const fileGroups = this.groupBy(this.issues, issue => issue.file);
     const sortedFiles = Object.keys(fileGroups).sort();
-    
+
     for (const file of sortedFiles) {
       const issues = fileGroups[file];
       const groupNode = this.createVirtualNode({
@@ -246,16 +257,19 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
         groupKey: file,
         count: issues.length
       });
-      
+
       this.addIssueChildren(groupNode, issues);
       this.virtualTree.push(groupNode);
     }
   }
 
   private buildCategoryTree(): void {
-    const categoryGroups = this.groupBy(this.issues, issue => issue.category || 'General');
+    const categoryGroups = this.groupBy(
+      this.issues,
+      issue => issue.category || 'General'
+    );
     const sortedCategories = Object.keys(categoryGroups).sort();
-    
+
     for (const category of sortedCategories) {
       const issues = categoryGroups[category];
       const groupNode = this.createVirtualNode({
@@ -268,40 +282,47 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
         groupKey: category,
         count: issues.length
       });
-      
+
       this.addIssueChildren(groupNode, issues);
       this.virtualTree.push(groupNode);
     }
   }
 
-  private addIssueChildren(parentNode: VirtualTreeNode, issues: ProcessedIssue[]): void {
+  private addIssueChildren(
+    parentNode: VirtualTreeNode,
+    issues: ProcessedIssue[]
+  ): void {
     // Sort issues efficiently
     const sortedIssues = issues.sort((a, b) => {
       const fileCompare = a.file.localeCompare(b.file);
       return fileCompare !== 0 ? fileCompare : (a.line || 0) - (b.line || 0);
     });
-    
+
     for (const issue of sortedIssues) {
       const icon = this.getSeverityIcon(issue.severity);
       const location = issue.line ? `:${issue.line}` : '';
-      const fileName = this.groupingMode === 'file' ? '' : ` in ${path.basename(issue.file)}`;
-      
-      const issueNode = this.createVirtualNode({
-        id: issue.id,
-        label: issue.message,
-        description: `${issue.rule}${fileName}${location}`,
-        tooltip: this.buildIssueTooltip(issue),
-        iconPath: icon,
-        contextValue: 'issue',
-        collapsibleState: vscode.TreeItemCollapsibleState.None,
-        command: {
-          command: 'xfidelity.goToIssue',
-          title: 'Go to Issue',
-          arguments: [issue]
+      const fileName =
+        this.groupingMode === 'file' ? '' : ` in ${path.basename(issue.file)}`;
+
+      const issueNode = this.createVirtualNode(
+        {
+          id: issue.id,
+          label: issue.message,
+          description: `${issue.rule}${fileName}${location}`,
+          tooltip: this.buildIssueTooltip(issue),
+          iconPath: icon,
+          contextValue: 'issue',
+          collapsibleState: vscode.TreeItemCollapsibleState.None,
+          command: {
+            command: 'xfidelity.goToIssue',
+            title: 'Go to Issue',
+            arguments: [issue]
+          },
+          issue: issue
         },
-        issue: issue
-      }, parentNode);
-      
+        parentNode
+      );
+
       parentNode.children.push(issueNode);
     }
   }
@@ -312,25 +333,27 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
       `Severity: ${issue.severity.toUpperCase()}`,
       `File: ${issue.file}`
     ];
-    
+
     if (issue.line) {
-      parts.push(`Line: ${issue.line}${issue.column ? `, Column: ${issue.column}` : ''}`);
+      parts.push(
+        `Line: ${issue.line}${issue.column ? `, Column: ${issue.column}` : ''}`
+      );
     }
-    
+
     if (issue.category && issue.category !== 'general') {
       parts.push(`Category: ${issue.category}`);
     }
-    
+
     if (issue.fixable) {
       parts.push('✓ Fixable');
     }
-    
+
     if (issue.exempted) {
       parts.push('⚠ Exempted');
     }
-    
+
     parts.push('', issue.message);
-    
+
     return parts.join('\\n');
   }
 
@@ -354,7 +377,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
     keyGetter: (item: T) => K
   ): Record<K, T[]> {
     const result = {} as Record<K, T[]>;
-    
+
     for (const item of array) {
       const key = keyGetter(item);
       if (!result[key]) {
@@ -362,7 +385,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
       }
       result[key].push(item);
     }
-    
+
     return result;
   }
 
@@ -384,14 +407,26 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeItem
 
     for (const issue of this.issues) {
       switch (issue.severity) {
-        case 'error': stats.error++; break;
-        case 'warning': stats.warning++; break;
-        case 'info': stats.info++; break;
-        case 'hint': stats.hint++; break;
+        case 'error':
+          stats.error++;
+          break;
+        case 'warning':
+          stats.warning++;
+          break;
+        case 'info':
+          stats.info++;
+          break;
+        case 'hint':
+          stats.hint++;
+          break;
       }
-      
-      if (issue.fixable) { stats.fixable++; }
-      if (issue.exempted) { stats.exempted++; }
+
+      if (issue.fixable) {
+        stats.fixable++;
+      }
+      if (issue.exempted) {
+        stats.exempted++;
+      }
     }
 
     return stats;

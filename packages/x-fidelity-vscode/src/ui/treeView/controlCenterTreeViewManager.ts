@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
-import { ControlCenterTreeProvider, type ControlCenterTreeItem } from './controlCenterTreeProvider';
+import {
+  ControlCenterTreeProvider,
+  type ControlCenterTreeItem
+} from './controlCenterTreeProvider';
 import { logger } from '../../utils/logger';
 
 export class ControlCenterTreeViewManager implements vscode.Disposable {
@@ -13,13 +16,16 @@ export class ControlCenterTreeViewManager implements vscode.Disposable {
   ) {
     // Initialize tree data provider
     this.treeDataProvider = new ControlCenterTreeProvider();
-    
+
     // Create tree view
-    this.treeView = vscode.window.createTreeView(this.viewId || 'xfidelityControlCenterView', {
-      treeDataProvider: this.treeDataProvider,
-      showCollapseAll: true,
-      canSelectMany: false
-    });
+    this.treeView = vscode.window.createTreeView(
+      this.viewId || 'xfidelityControlCenterView',
+      {
+        treeDataProvider: this.treeDataProvider,
+        showCollapseAll: true,
+        canSelectMany: false
+      }
+    );
 
     // Set initial title
     this.treeView.title = 'Control Center';
@@ -49,7 +55,9 @@ export class ControlCenterTreeViewManager implements vscode.Disposable {
       logger.debug('Control center tree view refreshed');
     } catch (error) {
       logger.error('Failed to refresh control center tree view', error);
-      vscode.window.showErrorMessage('Failed to refresh X-Fidelity control center');
+      vscode.window.showErrorMessage(
+        'Failed to refresh X-Fidelity control center'
+      );
     }
   }
 
@@ -65,4 +73,4 @@ export class ControlCenterTreeViewManager implements vscode.Disposable {
   dispose(): void {
     this.disposables.forEach(d => d.dispose());
   }
-} 
+}

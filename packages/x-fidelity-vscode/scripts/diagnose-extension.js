@@ -2,7 +2,7 @@
 
 /**
  * X-Fidelity VSCode Extension Diagnostic Script
- * 
+ *
  * Comprehensive diagnostic to identify exactly what's wrong with the extension
  * when user reports "extension is not working"
  */
@@ -54,12 +54,19 @@ class ExtensionDiagnostic {
   }
 
   header(title) {
-    this.log(`\n${COLORS.BOLD}${COLORS.MAGENTA}🔍 ${title}${COLORS.RESET}`, COLORS.MAGENTA);
+    this.log(
+      `\n${COLORS.BOLD}${COLORS.MAGENTA}🔍 ${title}${COLORS.RESET}`,
+      COLORS.MAGENTA
+    );
   }
 
   async runDiagnostic() {
-    this.log(`${COLORS.BOLD}${COLORS.CYAN}🩺 X-Fidelity VSCode Extension - Comprehensive Diagnostic${COLORS.RESET}`);
-    this.log(`${COLORS.CYAN}Identifying exactly what's wrong when extension is "not working"${COLORS.RESET}\n`);
+    this.log(
+      `${COLORS.BOLD}${COLORS.CYAN}🩺 X-Fidelity VSCode Extension - Comprehensive Diagnostic${COLORS.RESET}`
+    );
+    this.log(
+      `${COLORS.CYAN}Identifying exactly what's wrong when extension is "not working"${COLORS.RESET}\n`
+    );
 
     // 1. Basic File Structure Check
     this.header('File Structure & Build Status');
@@ -114,12 +121,7 @@ class ExtensionDiagnostic {
       }
     }
 
-    const requiredDirs = [
-      'src',
-      'dist',
-      '.vscode',
-      'node_modules'
-    ];
+    const requiredDirs = ['src', 'dist', '.vscode', 'node_modules'];
 
     for (const dir of requiredDirs) {
       if (fs.existsSync(dir)) {
@@ -133,7 +135,7 @@ class ExtensionDiagnostic {
   async analyzePackageJson() {
     try {
       const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-      
+
       if (packageJson.main) {
         this.success(`Main entry point: ${packageJson.main}`);
         if (fs.existsSync(packageJson.main)) {
@@ -146,13 +148,20 @@ class ExtensionDiagnostic {
       }
 
       if (packageJson.engines && packageJson.engines.vscode) {
-        this.success(`VSCode engine requirement: ${packageJson.engines.vscode}`);
+        this.success(
+          `VSCode engine requirement: ${packageJson.engines.vscode}`
+        );
       } else {
         this.fail(`No VSCode engine requirement in package.json`);
       }
 
-      if (packageJson.activationEvents && packageJson.activationEvents.length > 0) {
-        this.success(`Activation events configured: ${packageJson.activationEvents.length}`);
+      if (
+        packageJson.activationEvents &&
+        packageJson.activationEvents.length > 0
+      ) {
+        this.success(
+          `Activation events configured: ${packageJson.activationEvents.length}`
+        );
         for (const event of packageJson.activationEvents) {
           this.info_log(`  - ${event}`);
         }
@@ -161,7 +170,9 @@ class ExtensionDiagnostic {
       }
 
       if (packageJson.contributes && packageJson.contributes.commands) {
-        this.success(`Commands registered: ${packageJson.contributes.commands.length}`);
+        this.success(
+          `Commands registered: ${packageJson.contributes.commands.length}`
+        );
         // Check for essential commands
         const commands = packageJson.contributes.commands.map(c => c.command);
         if (commands.includes('xfidelity.test')) {
@@ -172,14 +183,13 @@ class ExtensionDiagnostic {
       } else {
         this.fail(`No commands configured in package.json`);
       }
-
     } catch (error) {
       this.fail(`Failed to parse package.json: ${error.message}`);
     }
   }
 
   async checkBuildStatus() {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       exec('yarn build', (error, stdout, stderr) => {
         if (error) {
           this.fail(`Build failed: ${error.message}`);
@@ -194,7 +204,9 @@ class ExtensionDiagnostic {
         if (fs.existsSync('dist/extension.js')) {
           const stats = fs.statSync('dist/extension.js');
           if (stats.size > 0) {
-            this.success(`Extension.js built (${Math.round(stats.size / 1024)}KB)`);
+            this.success(
+              `Extension.js built (${Math.round(stats.size / 1024)}KB)`
+            );
           } else {
             this.fail(`Extension.js is empty`);
           }
@@ -210,7 +222,7 @@ class ExtensionDiagnostic {
   async checkDependencies() {
     try {
       const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-      
+
       const criticalDeps = [
         '@x-fidelity/core',
         '@x-fidelity/types',
@@ -231,10 +243,7 @@ class ExtensionDiagnostic {
         }
       }
 
-      const devDeps = [
-        '@types/vscode',
-        'typescript'
-      ];
+      const devDeps = ['@types/vscode', 'typescript'];
 
       for (const dep of devDeps) {
         if (packageJson.devDependencies && packageJson.devDependencies[dep]) {
@@ -243,7 +252,6 @@ class ExtensionDiagnostic {
           this.fail(`Missing dev dependency: ${dep}`);
         }
       }
-
     } catch (error) {
       this.fail(`Failed to check dependencies: ${error.message}`);
     }
@@ -253,10 +261,16 @@ class ExtensionDiagnostic {
     // Check launch.json
     if (fs.existsSync('.vscode/launch.json')) {
       try {
-        const launch = JSON.parse(fs.readFileSync('.vscode/launch.json', 'utf8'));
+        const launch = JSON.parse(
+          fs.readFileSync('.vscode/launch.json', 'utf8')
+        );
         if (launch.configurations && launch.configurations.length > 0) {
-          this.success(`VSCode debug configurations: ${launch.configurations.length}`);
-          const hasExtensionHost = launch.configurations.some(c => c.type === 'extensionHost');
+          this.success(
+            `VSCode debug configurations: ${launch.configurations.length}`
+          );
+          const hasExtensionHost = launch.configurations.some(
+            c => c.type === 'extensionHost'
+          );
           if (hasExtensionHost) {
             this.success(`Extension Host debug configuration found`);
           } else {
@@ -301,7 +315,7 @@ class ExtensionDiagnostic {
     }
 
     // Check for TypeScript compilation errors
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       exec('npx tsc --noEmit', (error, stdout, stderr) => {
         if (error) {
           this.fail(`TypeScript compilation errors detected`);
@@ -336,7 +350,7 @@ class ExtensionDiagnostic {
 
     // 2. Check for circular dependencies (common issue)
     this.info_log(`Checking for common import issues...`);
-    
+
     // 3. Check node_modules size (bloated dependencies)
     if (fs.existsSync('node_modules')) {
       const stats = fs.statSync('node_modules');
@@ -360,14 +374,14 @@ class ExtensionDiagnostic {
 
   async checkDevelopmentEnvironment() {
     // Check Node version
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       exec('node --version', (error, stdout, stderr) => {
         if (error) {
           this.fail(`Node.js not available: ${error.message}`);
         } else {
           const nodeVersion = stdout.trim();
           this.success(`Node.js version: ${nodeVersion}`);
-          
+
           // Check if Node version is compatible
           const version = nodeVersion.replace('v', '');
           const majorVersion = parseInt(version.split('.')[0]);
@@ -402,49 +416,86 @@ class ExtensionDiagnostic {
   }
 
   async printSummary() {
-    this.log(`\n${COLORS.BOLD}${COLORS.MAGENTA}============================================================${COLORS.RESET}`);
-    this.log(`${COLORS.BOLD}${COLORS.MAGENTA}🩺 DIAGNOSTIC SUMMARY${COLORS.RESET}`);
-    this.log(`${COLORS.BOLD}${COLORS.MAGENTA}============================================================${COLORS.RESET}`);
+    this.log(
+      `\n${COLORS.BOLD}${COLORS.MAGENTA}============================================================${COLORS.RESET}`
+    );
+    this.log(
+      `${COLORS.BOLD}${COLORS.MAGENTA}🩺 DIAGNOSTIC SUMMARY${COLORS.RESET}`
+    );
+    this.log(
+      `${COLORS.BOLD}${COLORS.MAGENTA}============================================================${COLORS.RESET}`
+    );
 
     if (this.issues.length === 0) {
-      this.log(`\n${COLORS.BOLD}${COLORS.GREEN}🎉 NO CRITICAL ISSUES FOUND!${COLORS.RESET}`);
-      this.log(`${COLORS.GREEN}The extension appears to be properly configured.${COLORS.RESET}`);
-      
+      this.log(
+        `\n${COLORS.BOLD}${COLORS.GREEN}🎉 NO CRITICAL ISSUES FOUND!${COLORS.RESET}`
+      );
+      this.log(
+        `${COLORS.GREEN}The extension appears to be properly configured.${COLORS.RESET}`
+      );
+
       if (this.warnings.length > 0) {
-        this.log(`\n${COLORS.YELLOW}⚠️  ${this.warnings.length} Warning(s):${COLORS.RESET}`);
+        this.log(
+          `\n${COLORS.YELLOW}⚠️  ${this.warnings.length} Warning(s):${COLORS.RESET}`
+        );
         this.warnings.forEach(warning => {
           this.log(`   • ${warning}`, COLORS.YELLOW);
         });
       }
 
-      this.log(`\n${COLORS.BOLD}${COLORS.CYAN}🔧 TROUBLESHOOTING STEPS:${COLORS.RESET}`);
-      this.log(`${COLORS.CYAN}1. Press F5 in VSCode to launch extension in debug mode${COLORS.RESET}`);
-      this.log(`${COLORS.CYAN}2. Check VSCode Output panel for X-Fidelity extension logs${COLORS.RESET}`);
-      this.log(`${COLORS.CYAN}3. Try command: Ctrl+Shift+P → 'X-Fidelity: Test Extension'${COLORS.RESET}`);
-      this.log(`${COLORS.CYAN}4. Check VSCode Developer Tools (Help → Toggle Developer Tools)${COLORS.RESET}`);
-      this.log(`${COLORS.CYAN}5. Reload VSCode window (Ctrl+Shift+P → 'Developer: Reload Window')${COLORS.RESET}`);
-      
+      this.log(
+        `\n${COLORS.BOLD}${COLORS.CYAN}🔧 TROUBLESHOOTING STEPS:${COLORS.RESET}`
+      );
+      this.log(
+        `${COLORS.CYAN}1. Press F5 in VSCode to launch extension in debug mode${COLORS.RESET}`
+      );
+      this.log(
+        `${COLORS.CYAN}2. Check VSCode Output panel for X-Fidelity extension logs${COLORS.RESET}`
+      );
+      this.log(
+        `${COLORS.CYAN}3. Try command: Ctrl+Shift+P → 'X-Fidelity: Test Extension'${COLORS.RESET}`
+      );
+      this.log(
+        `${COLORS.CYAN}4. Check VSCode Developer Tools (Help → Toggle Developer Tools)${COLORS.RESET}`
+      );
+      this.log(
+        `${COLORS.CYAN}5. Reload VSCode window (Ctrl+Shift+P → 'Developer: Reload Window')${COLORS.RESET}`
+      );
     } else {
-      this.log(`\n${COLORS.BOLD}${COLORS.RED}❌ ${this.issues.length} Critical Issue(s) Found:${COLORS.RESET}`);
+      this.log(
+        `\n${COLORS.BOLD}${COLORS.RED}❌ ${this.issues.length} Critical Issue(s) Found:${COLORS.RESET}`
+      );
       this.issues.forEach(issue => {
         this.log(`   • ${issue}`, COLORS.RED);
       });
 
       if (this.warnings.length > 0) {
-        this.log(`\n${COLORS.YELLOW}⚠️  ${this.warnings.length} Warning(s):${COLORS.RESET}`);
+        this.log(
+          `\n${COLORS.YELLOW}⚠️  ${this.warnings.length} Warning(s):${COLORS.RESET}`
+        );
         this.warnings.forEach(warning => {
           this.log(`   • ${warning}`, COLORS.YELLOW);
         });
       }
 
-      this.log(`\n${COLORS.BOLD}${COLORS.CYAN}🔧 RECOMMENDED FIXES:${COLORS.RESET}`);
-      this.log(`${COLORS.CYAN}1. Fix the critical issues listed above${COLORS.RESET}`);
-      this.log(`${COLORS.CYAN}2. Run 'yarn install' to ensure dependencies are installed${COLORS.RESET}`);
-      this.log(`${COLORS.CYAN}3. Run 'yarn build' to rebuild the extension${COLORS.RESET}`);
+      this.log(
+        `\n${COLORS.BOLD}${COLORS.CYAN}🔧 RECOMMENDED FIXES:${COLORS.RESET}`
+      );
+      this.log(
+        `${COLORS.CYAN}1. Fix the critical issues listed above${COLORS.RESET}`
+      );
+      this.log(
+        `${COLORS.CYAN}2. Run 'yarn install' to ensure dependencies are installed${COLORS.RESET}`
+      );
+      this.log(
+        `${COLORS.CYAN}3. Run 'yarn build' to rebuild the extension${COLORS.RESET}`
+      );
       this.log(`${COLORS.CYAN}4. Restart VSCode and try again${COLORS.RESET}`);
     }
 
-    this.log(`\n${COLORS.BOLD}${COLORS.MAGENTA}============================================================${COLORS.RESET}`);
+    this.log(
+      `\n${COLORS.BOLD}${COLORS.MAGENTA}============================================================${COLORS.RESET}`
+    );
   }
 }
 
@@ -454,4 +505,4 @@ async function main() {
   await diagnostic.runDiagnostic();
 }
 
-main().catch(console.error); 
+main().catch(console.error);

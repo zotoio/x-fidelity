@@ -74,9 +74,9 @@ module.exports = defineConfig([
     workspaceFolder: './sampleWorkspace',
     mocha: {
       ui: 'tdd',
-      timeout: 20000,
-    },
-  },
+      timeout: 20000
+    }
+  }
   // you can specify additional test configurations, too
 ]);
 ```
@@ -185,25 +185,27 @@ export function run(): Promise<void> {
   const testsRoot = path.resolve(__dirname, '..');
 
   return new Promise((c, e) => {
-    glob('**/**.test.js', { cwd: testsRoot }).then((files) => {
-      // Add files to the test suite
-      files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
+    glob('**/**.test.js', { cwd: testsRoot })
+      .then(files => {
+        // Add files to the test suite
+        files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
 
-      try {
-        // Run the mocha test
-        mocha.run(failures => {
-          if (failures > 0) {
-            e(new Error(`${failures} tests failed.`));
-          } else {
-            c();
-          }
-        });
-      } catch (err) {
-        e(err);
-      }
-    }).catch((err) => {
-      return e(err);
-    });
+        try {
+          // Run the mocha test
+          mocha.run(failures => {
+            if (failures > 0) {
+              e(new Error(`${failures} tests failed.`));
+            } else {
+              c();
+            }
+          });
+        } catch (err) {
+          e(err);
+        }
+      })
+      .catch(err => {
+        return e(err);
+      });
   });
 }
 ```
@@ -339,13 +341,18 @@ async function main() {
     const extensionDevelopmentPath = path.resolve(__dirname, '../../../');
     const extensionTestsPath = path.resolve(__dirname, './suite/index');
     const vscodeExecutablePath = await downloadAndUnzipVSCode('1.40.1');
-    const [cliPath, ...args] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
+    const [cliPath, ...args] =
+      resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
 
     // Use cp.spawn / cp.exec for custom setup
-    cp.spawnSync(cliPath, [...args, '--install-extension', '<EXTENSION-ID-OR-PATH-TO-VSIX>'], {
-      encoding: 'utf-8',
-      stdio: 'inherit'
-    });
+    cp.spawnSync(
+      cliPath,
+      [...args, '--install-extension', '<EXTENSION-ID-OR-PATH-TO-VSIX>'],
+      {
+        encoding: 'utf-8',
+        stdio: 'inherit'
+      }
+    );
 
     // Run the extension test
     await runTests({

@@ -10,7 +10,7 @@ global.console = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: jest.fn(),
+  error: jest.fn()
 };
 
 // Mock process.env for consistent test environment
@@ -40,4 +40,4 @@ afterEach(() => {
   jest.runOnlyPendingTimers();
   jest.useRealTimers();
   jest.useFakeTimers();
-}); 
+});

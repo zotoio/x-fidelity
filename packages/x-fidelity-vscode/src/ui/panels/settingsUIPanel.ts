@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { ConfigManager, type ExtensionConfig } from '../../configuration/configManager';
+import {
+  ConfigManager,
+  type ExtensionConfig
+} from '../../configuration/configManager';
 import { DefaultDetectionService } from '../../configuration/defaultDetection';
 
 export interface SettingsCategory {
@@ -27,18 +30,18 @@ export interface SettingDefinition {
 export class SettingsUIPanel implements vscode.Disposable {
   private panel?: vscode.WebviewPanel;
   private disposables: vscode.Disposable[] = [];
-  
+
   constructor(
     private context: vscode.ExtensionContext,
     private configManager: ConfigManager
   ) {}
-  
+
   async show(): Promise<void> {
     if (this.panel) {
       this.panel.reveal();
       return;
     }
-    
+
     this.panel = vscode.window.createWebviewPanel(
       'xfidelitySettings',
       'X-Fidelity Settings',
@@ -46,32 +49,42 @@ export class SettingsUIPanel implements vscode.Disposable {
       {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionUri.fsPath, 'resources'))]
+        localResourceRoots: [
+          vscode.Uri.file(
+            path.join(this.context.extensionUri.fsPath, 'resources')
+          )
+        ]
       }
     );
-    
-    this.panel.onDidDispose(() => {
-      this.panel = undefined;
-    }, null, this.disposables);
-    
+
+    this.panel.onDidDispose(
+      () => {
+        this.panel = undefined;
+      },
+      null,
+      this.disposables
+    );
+
     this.panel.webview.onDidReceiveMessage(
       message => this.handleMessage(message),
       undefined,
       this.disposables
     );
-    
+
     await this.updateContent();
   }
-  
+
   private async updateContent(): Promise<void> {
-    if (!this.panel) {return;}
-    
+    if (!this.panel) {
+      return;
+    }
+
     const config = this.configManager.getConfig();
     const categories = this.getSettingsCategories();
-    
+
     this.panel.webview.html = this.generateHTML(config, categories);
   }
-  
+
   private getSettingsCategories(): SettingsCategory[] {
     return [
       {
@@ -83,15 +96,22 @@ export class SettingsUIPanel implements vscode.Disposable {
           {
             key: 'archetype',
             name: 'Project Archetype',
-            description: 'The X-Fidelity archetype that best matches your project',
+            description:
+              'The X-Fidelity archetype that best matches your project',
             type: 'enum',
             default: 'node-fullstack',
-            options: ['node-fullstack', 'java-microservice', 'python-service', 'dotnet-service']
+            options: [
+              'node-fullstack',
+              'java-microservice',
+              'python-service',
+              'dotnet-service'
+            ]
           },
           {
             key: 'runInterval',
             name: 'Auto-run Interval (seconds)',
-            description: 'How often to automatically run analysis (0 = disabled)',
+            description:
+              'How often to automatically run analysis (0 = disabled)',
             type: 'number',
             default: 300,
             min: 0,
@@ -107,7 +127,8 @@ export class SettingsUIPanel implements vscode.Disposable {
           {
             key: 'autoAnalyzeOnFileChange',
             name: 'Analyze on File Change',
-            description: 'Automatically run analysis when files are changed (debounced)',
+            description:
+              'Automatically run analysis when files are changed (debounced)',
             type: 'boolean',
             default: false
           },
@@ -131,7 +152,8 @@ export class SettingsUIPanel implements vscode.Disposable {
           {
             key: 'configServer',
             name: 'Config Server URL',
-            description: 'URL of remote X-Fidelity configuration server (optional)',
+            description:
+              'URL of remote X-Fidelity configuration server (optional)',
             type: 'string',
             default: ''
           },
@@ -152,7 +174,8 @@ export class SettingsUIPanel implements vscode.Disposable {
           {
             key: 'telemetryEnabled',
             name: 'Telemetry Collection',
-            description: 'Allow anonymous usage analytics to improve the extension',
+            description:
+              'Allow anonymous usage analytics to improve the extension',
             type: 'boolean',
             default: true
           },
@@ -352,11 +375,15 @@ export class SettingsUIPanel implements vscode.Disposable {
       }
     ];
   }
-  
-  private generateHTML(config: ExtensionConfig, categories: SettingsCategory[]): string {
+
+  private generateHTML(
+    config: ExtensionConfig,
+    categories: SettingsCategory[]
+  ): string {
     const nonce = this.getNonce();
-    const isDark = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
-    
+    const isDark =
+      vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -385,7 +412,9 @@ export class SettingsUIPanel implements vscode.Disposable {
                     <h3>Categories</h3>
                 </div>
                 <div class="category-list">
-                    ${categories.map(category => `
+                    ${categories
+                      .map(
+                        category => `
                         <div class="category-item ${category.id === 'analysis' ? 'active' : ''}" 
                              onclick="selectCategory('${category.id}')">
                             <span class="category-icon">${category.icon}</span>
@@ -394,7 +423,9 @@ export class SettingsUIPanel implements vscode.Disposable {
                                 <span class="category-description">${category.description}</span>
                             </div>
                         </div>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </div>
             </nav>
             
@@ -410,8 +441,11 @@ export class SettingsUIPanel implements vscode.Disposable {
 </body>
 </html>`;
   }
-  
-  private generateCategoryHTML(category: SettingsCategory, config: ExtensionConfig): string {
+
+  private generateCategoryHTML(
+    category: SettingsCategory,
+    config: ExtensionConfig
+  ): string {
     return `
         <div class="category-section" id="category-${category.id}" 
              style="display: ${category.id === 'analysis' ? 'block' : 'none'}">
@@ -426,14 +460,18 @@ export class SettingsUIPanel implements vscode.Disposable {
         </div>
     `;
   }
-  
-  private generateSettingHTML(setting: SettingDefinition, config: ExtensionConfig): string {
+
+  private generateSettingHTML(
+    setting: SettingDefinition,
+    config: ExtensionConfig
+  ): string {
     const currentValue = config[setting.key];
-    const isDisabled = setting.dependencies ? 
-      !setting.dependencies.every(dep => config[dep.key] === dep.value) : false;
-    
+    const isDisabled = setting.dependencies
+      ? !setting.dependencies.every(dep => config[dep.key] === dep.value)
+      : false;
+
     let inputHTML = '';
-    
+
     switch (setting.type) {
       case 'boolean':
         inputHTML = `
@@ -446,7 +484,7 @@ export class SettingsUIPanel implements vscode.Disposable {
             </label>
         `;
         break;
-        
+
       case 'string':
         inputHTML = `
             <input type="text" id="${setting.key}" 
@@ -457,7 +495,7 @@ export class SettingsUIPanel implements vscode.Disposable {
                    placeholder="${setting.default || ''}">
         `;
         break;
-        
+
       case 'number':
         inputHTML = `
             <input type="number" id="${setting.key}" 
@@ -469,29 +507,35 @@ export class SettingsUIPanel implements vscode.Disposable {
                    onchange="updateSetting('${setting.key}', parseInt(this.value))">
         `;
         break;
-        
+
       case 'enum':
         inputHTML = `
             <select id="${setting.key}" 
                     class="setting-select ${isDisabled ? 'disabled' : ''}"
                     ${isDisabled ? 'disabled' : ''}
                     onchange="updateSetting('${setting.key}', this.value)">
-                ${setting.options?.map(option => `
+                ${setting.options
+                  ?.map(
+                    option => `
                     <option value="${option}" ${currentValue === option ? 'selected' : ''}>
                         ${option}
                     </option>
-                `).join('')}
+                `
+                  )
+                  .join('')}
             </select>
         `;
         break;
-        
+
       case 'array':
         const arrayValue = Array.isArray(currentValue) ? currentValue : [];
         if (setting.options && setting.options.length > 0) {
           // Multi-select checkboxes
           inputHTML = `
               <div class="checkbox-group ${isDisabled ? 'disabled' : ''}">
-                  ${setting.options.map(option => `
+                  ${setting.options
+                    .map(
+                      option => `
                       <label class="checkbox-item">
                           <input type="checkbox" 
                                  value="${option}"
@@ -500,7 +544,9 @@ export class SettingsUIPanel implements vscode.Disposable {
                                  onchange="updateArraySetting('${setting.key}', '${option}', this.checked)">
                           <span>${option}</span>
                       </label>
-                  `).join('')}
+                  `
+                    )
+                    .join('')}
               </div>
           `;
         } else {
@@ -514,7 +560,7 @@ export class SettingsUIPanel implements vscode.Disposable {
           `;
         }
         break;
-        
+
       case 'object':
         inputHTML = `
             <textarea id="${setting.key}" 
@@ -525,17 +571,21 @@ export class SettingsUIPanel implements vscode.Disposable {
         `;
         break;
     }
-    
+
     return `
         <div class="setting-item ${isDisabled ? 'disabled' : ''}" data-key="${setting.key}">
             <div class="setting-info">
                 <label class="setting-label" for="${setting.key}">${setting.name}</label>
                 <p class="setting-description">${setting.description}</p>
-                ${setting.dependencies ? `
+                ${
+                  setting.dependencies
+                    ? `
                     <p class="setting-dependency">
                         Requires: ${setting.dependencies.map(dep => `${dep.key} = ${dep.value}`).join(', ')}
                     </p>
-                ` : ''}
+                `
+                    : ''
+                }
             </div>
             <div class="setting-control">
                 ${inputHTML}
@@ -543,7 +593,7 @@ export class SettingsUIPanel implements vscode.Disposable {
         </div>
     `;
   }
-  
+
   private getStyles(isDark: boolean): string {
     return `<style>
         :root {
@@ -863,8 +913,11 @@ export class SettingsUIPanel implements vscode.Disposable {
         }
     </style>`;
   }
-  
-  private getJavaScript(config: ExtensionConfig, categories: SettingsCategory[]): string {
+
+  private getJavaScript(
+    config: ExtensionConfig,
+    categories: SettingsCategory[]
+  ): string {
     return `
         const vscode = acquireVsCodeApi();
         let currentConfig = ${JSON.stringify(config)};
@@ -1041,45 +1094,48 @@ export class SettingsUIPanel implements vscode.Disposable {
         updateDependentSettings();
     `;
   }
-  
+
   private async handleMessage(message: any): Promise<void> {
     switch (message.command) {
       case 'updateSetting':
         await this.configManager.updateConfig({ [message.key]: message.value });
         break;
-        
+
       case 'exportSettings':
         await this.exportSettings();
         break;
-        
+
       case 'importSettings':
         await this.importSettings();
         break;
-        
+
       case 'detectArchetype':
         await this.detectArchetype();
         break;
-        
+
       case 'resetSettings':
         await this.resetSettings();
         break;
-        
+
       case 'showError':
         vscode.window.showErrorMessage(message.message);
         break;
     }
   }
-  
+
   private async exportSettings(): Promise<void> {
     const config = this.configManager.getConfig();
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
-    
+    const timestamp = new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace(/[:-]/g, '');
+
     try {
       const uri = await vscode.window.showSaveDialog({
         defaultUri: vscode.Uri.file(`xfidelity-settings-${timestamp}.json`),
         filters: { 'JSON Files': ['json'] }
       });
-      
+
       if (uri) {
         const content = JSON.stringify(config, null, 2);
         await vscode.workspace.fs.writeFile(uri, Buffer.from(content));
@@ -1089,98 +1145,108 @@ export class SettingsUIPanel implements vscode.Disposable {
       vscode.window.showErrorMessage(`Export failed: ${error}`);
     }
   }
-  
+
   private async importSettings(): Promise<void> {
     try {
       const uri = await vscode.window.showOpenDialog({
         canSelectMany: false,
         filters: { 'JSON Files': ['json'] }
       });
-      
+
       if (uri && uri[0]) {
         const content = await vscode.workspace.fs.readFile(uri[0]);
         const settings = JSON.parse(content.toString());
-        
+
         // Validate settings
         const validKeys = Object.keys(this.configManager.getConfig());
         const validSettings: Partial<ExtensionConfig> = {};
-        
+
         for (const [key, value] of Object.entries(settings)) {
           if (validKeys.includes(key)) {
             validSettings[key as keyof ExtensionConfig] = value as any;
           }
         }
-        
+
         await this.configManager.updateConfig(validSettings);
         await this.updateContent();
-        
+
         vscode.window.showInformationMessage('Settings imported successfully');
       }
     } catch (error) {
       vscode.window.showErrorMessage(`Import failed: ${error}`);
     }
   }
-  
+
   private async detectArchetype(): Promise<void> {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) {
       vscode.window.showErrorMessage('No workspace folder found');
       return;
     }
-    
+
     try {
       const detector = new DefaultDetectionService(workspaceFolder.uri.fsPath);
       const detections = await detector.detectArchetype();
-      
+
       if (detections.length === 0) {
         vscode.window.showInformationMessage('No specific archetype detected');
         return;
       }
-      
+
       const bestMatch = detections[0];
       const choice = await vscode.window.showInformationMessage(
         `Detected ${bestMatch.archetype} (${bestMatch.confidence}% confidence). Update archetype?`,
-        'Yes', 'No'
+        'Yes',
+        'No'
       );
-      
+
       if (choice === 'Yes') {
-        await this.configManager.updateConfig({ archetype: bestMatch.archetype });
+        await this.configManager.updateConfig({
+          archetype: bestMatch.archetype
+        });
         await this.updateContent();
-        vscode.window.showInformationMessage(`Archetype updated to: ${bestMatch.archetype}`);
+        vscode.window.showInformationMessage(
+          `Archetype updated to: ${bestMatch.archetype}`
+        );
       }
     } catch (error) {
       vscode.window.showErrorMessage(`Auto-detection failed: ${error}`);
     }
   }
-  
+
   private async resetSettings(): Promise<void> {
     try {
       const workspaceConfig = vscode.workspace.getConfiguration('xfidelity');
       const defaultConfig = this.configManager.getConfig();
-      
+
       // Reset all configuration values
       for (const key of Object.keys(defaultConfig)) {
-        await workspaceConfig.update(key, undefined, vscode.ConfigurationTarget.Workspace);
+        await workspaceConfig.update(
+          key,
+          undefined,
+          vscode.ConfigurationTarget.Workspace
+        );
       }
-      
+
       await this.updateContent();
       vscode.window.showInformationMessage('Settings reset to defaults');
     } catch (error) {
       vscode.window.showErrorMessage(`Reset failed: ${error}`);
     }
   }
-  
+
   private getNonce(): string {
     let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const possible =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     for (let i = 0; i < 32; i++) {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
   }
-  
+
   dispose(): void {
     this.panel?.dispose();
     this.disposables.forEach(d => d.dispose());
   }
-} 
+}

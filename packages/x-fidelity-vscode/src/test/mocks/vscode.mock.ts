@@ -3,7 +3,7 @@
 
 export const Uri = {
   parse: jest.fn((uri: string) => ({ toString: () => uri })),
-  file: jest.fn((path: string) => ({ toString: () => `file://${path}` })),
+  file: jest.fn((path: string) => ({ toString: () => `file://${path}` }))
 };
 
 export const Range = jest.fn();
@@ -14,19 +14,19 @@ export const DiagnosticSeverity = {
   Error: 0,
   Warning: 1,
   Information: 2,
-  Hint: 3,
+  Hint: 3
 };
 
 export const ConfigurationTarget = {
   Global: 1,
   Workspace: 2,
-  WorkspaceFolder: 3,
+  WorkspaceFolder: 3
 };
 
 export const ExtensionMode = {
   Production: 1,
   Development: 2,
-  Test: 3,
+  Test: 3
 };
 
 export const window = {
@@ -36,10 +36,10 @@ export const window = {
   createOutputChannel: jest.fn(() => ({
     appendLine: jest.fn(),
     show: jest.fn(),
-    dispose: jest.fn(),
+    dispose: jest.fn()
   })),
   createTreeView: jest.fn(() => ({
-    dispose: jest.fn(),
+    dispose: jest.fn()
   })),
   createStatusBarItem: jest.fn(() => ({
     show: jest.fn(),
@@ -47,8 +47,8 @@ export const window = {
     dispose: jest.fn(),
     text: '',
     tooltip: '',
-    command: '',
-  })),
+    command: ''
+  }))
 };
 
 // Mock configuration store
@@ -98,7 +98,7 @@ const initialConfigStore = { ...mockConfigStore };
 export const resetMockConfigStore = () => {
   Object.assign(mockConfigStore, initialConfigStore);
   mockConfigChangeListeners.length = 0; // Clear listeners
-  
+
   // Reset the mock configuration object
   mockConfigObject.get.mockClear();
   mockConfigObject.update.mockClear();
@@ -116,20 +116,20 @@ const createMockConfigObject = () => ({
   update: jest.fn().mockImplementation(async (key: string, value: any) => {
     // Update the mock store
     (mockConfigStore as any)[key] = value;
-    
+
     // Trigger configuration change event
     const changeEvent = {
       affectsConfiguration: jest.fn((configKey: string) => {
         return configKey === 'xfidelity' || configKey.startsWith('xfidelity.');
       })
     };
-    
+
     // Call all registered listeners
     mockConfigChangeListeners.forEach(listener => listener(changeEvent));
-    
+
     return Promise.resolve();
   }),
-  has: jest.fn((key: string) => key in mockConfigStore),
+  has: jest.fn((key: string) => key in mockConfigStore)
 });
 
 // Store the mock config object to ensure it's reused
@@ -152,13 +152,13 @@ export const workspace = {
         }
       })
     };
-  }),
+  })
 };
 
 export const commands = {
   registerCommand: jest.fn(),
   executeCommand: jest.fn(),
-  getCommands: jest.fn(() => Promise.resolve([])),
+  getCommands: jest.fn(() => Promise.resolve([]))
 };
 
 export const languages = {
@@ -166,26 +166,26 @@ export const languages = {
     set: jest.fn(),
     delete: jest.fn(),
     clear: jest.fn(),
-    dispose: jest.fn(),
-  })),
+    dispose: jest.fn()
+  }))
 };
 
 export const extensions = {
-  getExtension: jest.fn(),
+  getExtension: jest.fn()
 };
 
 export const env = {
-  openExternal: jest.fn(),
+  openExternal: jest.fn()
 };
 
 export const EventEmitter = jest.fn(() => ({
   event: jest.fn(),
   fire: jest.fn(),
-  dispose: jest.fn(),
+  dispose: jest.fn()
 }));
 
 export const Disposable = jest.fn(() => ({
-  dispose: jest.fn(),
+  dispose: jest.fn()
 }));
 
 // Mock commonly used VSCode types
@@ -229,11 +229,11 @@ export const mockExtensionContext: ExtensionContext = {
     extensionPath: '/test/extension',
     isActive: true,
     exports: {},
-    activate: jest.fn(),
+    activate: jest.fn()
   },
   languageModelAccessInformation: {
     onDidChange: jest.fn(),
-    canSendRequest: jest.fn(),
+    canSendRequest: jest.fn()
   },
   environmentVariableCollection: {
     persistent: false,
@@ -244,13 +244,13 @@ export const mockExtensionContext: ExtensionContext = {
     get: jest.fn(),
     forEach: jest.fn(),
     delete: jest.fn(),
-    clear: jest.fn(),
+    clear: jest.fn()
   },
   secrets: {
     get: jest.fn(),
     store: jest.fn(),
     delete: jest.fn(),
-    onDidChange: jest.fn(),
+    onDidChange: jest.fn()
   },
   storageUri: Uri.parse('file:///test/storage'),
   storagePath: '/test/storage',
@@ -258,18 +258,20 @@ export const mockExtensionContext: ExtensionContext = {
   globalStoragePath: '/test/global-storage',
   logUri: Uri.parse('file:///test/logs'),
   logPath: '/test/logs',
-  asAbsolutePath: jest.fn((relativePath: string) => `/test/extension/${relativePath}`),
+  asAbsolutePath: jest.fn(
+    (relativePath: string) => `/test/extension/${relativePath}`
+  ),
   globalState: {
     get: jest.fn(),
     update: jest.fn(),
     keys: jest.fn(() => []),
-    setKeysForSync: jest.fn(),
+    setKeysForSync: jest.fn()
   },
   workspaceState: {
     get: jest.fn(),
     update: jest.fn(),
-    keys: jest.fn(() => []),
-  },
+    keys: jest.fn(() => [])
+  }
 };
 
 // Export default mock
@@ -288,7 +290,7 @@ const vscode = {
   extensions,
   env,
   EventEmitter,
-  Disposable,
+  Disposable
 };
 
-export default vscode; 
+export default vscode;
