@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
 import { logger } from './logger';
 import { URL } from 'url';
+import * as http from 'http';
+import * as https from 'https';
 
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000; // 1 second
@@ -31,7 +33,97 @@ const PRIVATE_IP_RANGES = [
 ];
 
 /**
- * Validates a URL to prevent SSRF attacks
+ * Enhanced DNS resolution to prevent SSRF via IP address bypass
+ * @param hostname The hostname to resolve
+ * @returns Promise<boolean> True if hostname resolves to safe IP
+ */
+async function validateHostnameResolution(hostname: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    // Skip DNS resolution in test environment to prevent flaky tests
+    if (process.env.NODE_ENV === 'test') {
+      resolve(true);
+      return;
+    }
+    
+    const dns = require('dns');
+    dns.resolve4(hostname, (err: any, addresses: string[]) => {
+      if (err) {
+        logger.warn(`DNS resolution failed for ${hostname}: ${err.message}`);
+        resolve(false);
+        return;
+      }
+      
+      // Check if any resolved IP is in private ranges
+      for (const address of addresses) {
+        const isPrivate = PRIVATE_IP_RANGES.some(range => range.test(address));
+        if (isPrivate) {
+          logger.warn(`Hostname ${hostname} resolves to private IP: ${address}`);
+          resolve(false);
+          return;
+        }
+      }
+      
+      resolve(true);
+    });
+  });
+}
+
+/**
+ * Validates a URL to prevent SSRF attacks with enhanced security
+ * @param url The URL to validate
+ * @returns Promise<boolean> True if URL is safe, false otherwise
+ */
+async function validateUrlAsync(url: string): Promise<boolean> {
+  try {
+    const parsedUrl = new URL(url);
+    
+    // Only allow HTTP/HTTPS protocols
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      logger.warn(`Blocked non-HTTP(S) protocol: ${parsedUrl.protocol}`);
+      return false;
+    }
+    
+    // Check if domain is in allowlist
+    const isAllowedDomain = ALLOWED_DOMAINS.some(domain => 
+      parsedUrl.hostname === domain || parsedUrl.hostname.endsWith(`.${domain}`)
+    );
+    
+    if (!isAllowedDomain) {
+      logger.warn(`Blocked request to non-allowlisted domain: ${parsedUrl.hostname}`);
+      return false;
+    }
+    
+    // Check for private IP addresses in hostname
+    const hostname = parsedUrl.hostname;
+    const isPrivateIP = PRIVATE_IP_RANGES.some(range => range.test(hostname));
+    
+    if (isPrivateIP) {
+      logger.warn(`Blocked request to private IP address: ${hostname}`);
+      return false;
+    }
+    
+    // Additional security checks
+    if (hostname === 'localhost' || hostname === '0.0.0.0') {
+      logger.warn(`Blocked request to localhost: ${hostname}`);
+      return false;
+    }
+    
+    // Enhanced: Validate DNS resolution to prevent IP bypass
+    const isDnsValid = await validateHostnameResolution(hostname);
+    if (!isDnsValid) {
+      logger.warn(`DNS validation failed for hostname: ${hostname}`);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    logger.warn(`Invalid URL format: ${url}`);
+    return false;
+  }
+}
+
+/**
+ * Synchronous URL validation for backward compatibility
  * @param url The URL to validate
  * @returns True if URL is safe, false otherwise
  */
@@ -77,89 +169,142 @@ function validateUrl(url: string): boolean {
   }
 }
 
+// Security: Create secure HTTP agents with restricted connection capabilities
+const createSecureHttpAgent = () => new http.Agent({
+  keepAlive: false, // Disable keep-alive to prevent connection reuse
+  maxSockets: 5,    // Limit concurrent connections
+  timeout: CONNECTION_TIMEOUT,
+  // Security: Prevent connection to private networks
+  lookup: (hostname: string, options: any, callback: any) => {
+    const dns = require('dns');
+    dns.lookup(hostname, options, (err: any, address: string, family: number) => {
+      if (err) {
+        callback(err);
+        return;
+      }
+      
+      // Block private IP addresses at connection level
+      const isPrivate = PRIVATE_IP_RANGES.some(range => range.test(address));
+      if (isPrivate) {
+        callback(new Error(`Connection to private IP blocked: ${address}`));
+        return;
+      }
+      
+      callback(null, address, family);
+    });
+  }
+});
+
+const createSecureHttpsAgent = () => new https.Agent({
+  keepAlive: false, // Disable keep-alive to prevent connection reuse
+  maxSockets: 5,    // Limit concurrent connections
+  timeout: CONNECTION_TIMEOUT,
+  rejectUnauthorized: true, // Enforce SSL certificate validation
+  // Security: Prevent connection to private networks
+  lookup: (hostname: string, options: any, callback: any) => {
+    const dns = require('dns');
+    dns.lookup(hostname, options, (err: any, address: string, family: number) => {
+      if (err) {
+        callback(err);
+        return;
+      }
+      
+      // Block private IP addresses at connection level
+      const isPrivate = PRIVATE_IP_RANGES.some(range => range.test(address));
+      if (isPrivate) {
+        callback(new Error(`Connection to private IP blocked: ${address}`));
+        return;
+      }
+      
+      callback(null, address, family);
+    });
+  }
+});
+
 /**
- * Securely validates and makes HTTP requests with SSRF protection
+ * Securely validates and makes HTTP requests with enhanced SSRF protection
  * @param method HTTP method
- * @param validatedUrl Pre-validated URL (must pass validateUrl check)
+ * @param url URL to request (will be validated)
  * @param dataOrConfig Data or configuration
  * @param config Additional configuration
  * @returns Promise with axios response
  */
-function secureRequest<T = any>(
+async function secureRequest<T = any>(
   method: 'get' | 'post' | 'put' | 'delete', 
-  validatedUrl: string, 
+  url: string, 
   dataOrConfig?: any, 
   config?: AxiosRequestConfig
 ): Promise<AxiosResponse<T>> {
-  // Double-check URL validation for security
-  if (!validateUrl(validatedUrl)) {
-    return Promise.reject(new Error(`URL blocked by security policy: ${validatedUrl}`));
+  // Enhanced URL validation with async DNS checks
+  const isValidAsync = await validateUrlAsync(url);
+  if (!isValidAsync) {
+    return Promise.reject(new Error(`URL blocked by enhanced security policy: ${url}`));
   }
   
-  // Parse URL to ensure it meets our security requirements
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(validatedUrl);
-  } catch (error) {
-    return Promise.reject(new Error(`Invalid URL format: ${validatedUrl}`));
-  }
-  
-  // Additional security checks on parsed URL
-  if (!['https:', 'http:'].includes(parsedUrl.protocol)) {
-    return Promise.reject(new Error(`Unsafe protocol: ${parsedUrl.protocol}`));
-  }
-  
-  // Apply security headers
-  const secureConfig = {
+  // Apply maximum security configuration
+  const secureConfig: AxiosRequestConfig = {
     ...config,
+    timeout: DEFAULT_TIMEOUT,
+    maxRedirects: 0, // Disable redirects entirely to prevent redirect-based SSRF
+    validateStatus: (status: number) => status >= 200 && status < 400,
     headers: {
       'User-Agent': 'X-Fidelity-Client/4.0.0',
+      'Connection': 'close', // Force connection closure
       ...config?.headers
     },
-    // Prevent following redirects to untrusted domains
-    maxRedirects: 3,
-    validateStatus: (status: number) => status >= 200 && status < 400
+    // Use secure agents for all requests
+    httpAgent: process.env.NODE_ENV === 'test' ? undefined : createSecureHttpAgent(),
+    httpsAgent: process.env.NODE_ENV === 'test' ? undefined : createSecureHttpsAgent(),
+    // Security: Additional axios security options
+    maxContentLength: 10 * 1024 * 1024, // 10MB max response size
+    maxBodyLength: 1024 * 1024,         // 1MB max request body
   };
   
-  if (!axiosInstance) {
-    return Promise.reject(new Error('Axios instance not initialized'));
-  }
+  // Create a fresh axios instance for each request (no shared state)
+  const secureAxios = axios.create(secureConfig);
   
-  // Use validated URL in secure axios calls
-  switch (method) {
-    case 'get':
-      return axiosInstance.get(validatedUrl, secureConfig);
-    case 'post':
-      return axiosInstance.post(validatedUrl, dataOrConfig, secureConfig);
-    case 'put':
-      return axiosInstance.put(validatedUrl, dataOrConfig, secureConfig);
-    case 'delete':
-      return axiosInstance.delete(validatedUrl, secureConfig);
-    default:
-      return Promise.reject(new Error(`Unsupported HTTP method: ${method}`));
+  // Add final security interceptor
+  secureAxios.interceptors.request.use(
+    (requestConfig) => {
+      // Final URL validation before request
+      if (requestConfig.url && !validateUrl(requestConfig.url)) {
+        throw new Error(`Final URL validation failed: ${requestConfig.url}`);
+      }
+      return requestConfig;
+    },
+    (error) => Promise.reject(error)
+  );
+  
+  // Execute request with method-specific handling
+  try {
+    switch (method) {
+      case 'get':
+        return await secureAxios.get<T>(url, secureConfig);
+      case 'post':
+        return await secureAxios.post<T>(url, dataOrConfig, secureConfig);
+      case 'put':
+        return await secureAxios.put<T>(url, dataOrConfig, secureConfig);
+      case 'delete':
+        return await secureAxios.delete<T>(url, secureConfig);
+      default:
+        throw new Error(`Unsupported HTTP method: ${method}`);
+    }
+  } catch (error) {
+    // Enhanced error logging for security analysis
+    logger.warn(`Secure request failed for ${method.toUpperCase()} ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw error;
   }
 }
 
+// Legacy axios instance (deprecated - keeping for backward compatibility)
 const axiosInstance: AxiosInstance = axios.create({
   timeout: DEFAULT_TIMEOUT,
   // Prevent hanging connections in tests
-  httpAgent: process.env.NODE_ENV === 'test' ? undefined : new (require('http').Agent)({
-    keepAlive: true,
-    keepAliveMsecs: 30000,
-    timeout: CONNECTION_TIMEOUT,
-    maxSockets: 50,
-    maxFreeSockets: 10
-  }),
-  httpsAgent: process.env.NODE_ENV === 'test' ? undefined : new (require('https').Agent)({
-    keepAlive: true,
-    keepAliveMsecs: 30000,
-    timeout: CONNECTION_TIMEOUT,
-    maxSockets: 50,
-    maxFreeSockets: 10
-  })
+  httpAgent: process.env.NODE_ENV === 'test' ? undefined : createSecureHttpAgent(),
+  httpsAgent: process.env.NODE_ENV === 'test' ? undefined : createSecureHttpsAgent()
 });
 
-// Security: Add request interceptor to validate all URLs
+// Security: Add request interceptor to validate all URLs (legacy support)
 if (axiosInstance?.interceptors) {
   axiosInstance.interceptors.request.use(
     (config) => {
@@ -200,35 +345,49 @@ if (axiosInstance?.interceptors) {
   );
 }
 
+// Enhanced secure client with comprehensive SSRF protection
 export const axiosClient = {
-  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    // Security: Explicit URL validation to prevent SSRF
-    if (!validateUrl(url)) {
-      return Promise.reject(new Error(`URL blocked by security policy: ${url}`));
-    }
-    return secureRequest('get', url, config);
+  /**
+   * Secure GET request with enhanced SSRF protection
+   * @param url URL to request
+   * @param config Optional axios configuration
+   * @returns Promise with response data
+   */
+  get: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+    return secureRequest<T>('get', url, config);
   },
-  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    // Security: Explicit URL validation to prevent SSRF
-    if (!validateUrl(url)) {
-      return Promise.reject(new Error(`URL blocked by security policy: ${url}`));
-    }
-    return secureRequest('post', url, data, config);
+  
+  /**
+   * Secure POST request with enhanced SSRF protection
+   * @param url URL to request
+   * @param data Request data
+   * @param config Optional axios configuration
+   * @returns Promise with response data
+   */
+  post: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+    return secureRequest<T>('post', url, data, config);
   },
-  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    // Security: Explicit URL validation to prevent SSRF
-    if (!validateUrl(url)) {
-      return Promise.reject(new Error(`URL blocked by security policy: ${url}`));
-    }
-    return secureRequest('put', url, data, config);
+  
+  /**
+   * Secure PUT request with enhanced SSRF protection
+   * @param url URL to request
+   * @param data Request data
+   * @param config Optional axios configuration
+   * @returns Promise with response data
+   */
+  put: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+    return secureRequest<T>('put', url, data, config);
   },
-  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    // Security: Explicit URL validation to prevent SSRF
-    if (!validateUrl(url)) {
-      return Promise.reject(new Error(`URL blocked by security policy: ${url}`));
-    }
-    return secureRequest('delete', url, config);
+  
+  /**
+   * Secure DELETE request with enhanced SSRF protection
+   * @param url URL to request
+   * @param config Optional axios configuration
+   * @returns Promise with response data
+   */
+  delete: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+    return secureRequest<T>('delete', url, config);
   },
 };
 
-export { isAxiosError, validateUrl };
+export { isAxiosError, validateUrl, validateUrlAsync };

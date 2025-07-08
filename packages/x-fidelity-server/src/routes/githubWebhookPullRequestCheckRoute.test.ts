@@ -39,7 +39,8 @@ describe('githubWebhookPullRequestCheckRoute', () => {
     
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      send: jest.fn().mockReturnThis()
+      send: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis()
     };
     
     jest.clearAllMocks();
