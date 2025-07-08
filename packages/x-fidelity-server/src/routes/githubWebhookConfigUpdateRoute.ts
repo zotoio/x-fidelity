@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { logger, setLogPrefix } from '../utils/serverLogger';
 import crypto from 'crypto';
-import axios from 'axios';
+import { axiosClient } from '@x-fidelity/core';
 import { URL } from 'url';
 import path from 'path';
 import fs from 'fs';
@@ -167,7 +167,7 @@ async function updateLocalConfig(repoOwner: string, repoName: string, branch: st
             'User-Agent': 'XFidelity-Webhook/4.0.0'
         };
 
-        const response = await axios.get(baseUrl.toString(), { 
+        const response = await axiosClient.get(baseUrl.toString(), { 
             headers,
             params: { ref: branch },
             validateStatus: (status) => status === 200,
@@ -200,7 +200,7 @@ async function processDirectory(url: URL, dirPath: string, branch: string) {
     };
 
     try {
-        const response = await axios.get(url.toString(), { 
+        const response = await axiosClient.get(url.toString(), { 
             headers,
             params: { ref: branch },
             validateStatus: (status) => status === 200,
@@ -252,7 +252,7 @@ async function downloadFile(url: URL, filePath: string) {
 
     try {
         await fs.promises.mkdir(dir, { recursive: true });
-        const response = await axios.get(url.toString(), { 
+        const response = await axiosClient.get(url.toString(), { 
             responseType: 'arraybuffer',
             validateStatus: (status) => status === 200,
             maxRedirects: 3,

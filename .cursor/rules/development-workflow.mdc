@@ -1,0 +1,34 @@
+---
+alwaysApply: true
+---
+
+# X-Fidelity Development Workflow
+
+## Critical Requirements
+1. **Package Manager**: Always use `yarn` instead of `npm` for all commands
+2. **Testing**: After any significant changes, run `yarn test` from workspace root before completing work
+3. **Build**: Use `yarn build` to compile TypeScript to JavaScript in all packages
+4. **Dependency Management**: Use latest versions of npm packages when adding new dependencies
+
+## Testing Requirements
+- All packages must maintain 100% test coverage
+- Tests MUST pass before any commit or merge
+- If unit tests fail, fix them without changing implementation unless the implementation is broken
+- Test changes should only be made if the underlying implementation has been updated
+
+## Package Test Commands
+- **Root**: `yarn test` - Runs all package tests
+- **CLI**: `cd packages/x-fidelity-cli && yarn test`
+- **Core**: `cd packages/x-fidelity-core && yarn test` 
+- **VSCode**: `cd packages/x-fidelity-vscode && yarn test`
+- **Server**: `cd packages/x-fidelity-server && yarn test`
+- **Plugins**: `cd packages/x-fidelity-plugins && yarn test`
+- **Types**: `cd packages/x-fidelity-types && yarn test`
+
+## Key Development Files
+- **[DEVELOPMENT.md](mdc:packages/x-fidelity-vscode/DEVELOPMENT.md)** - VSCode extension development guide
+- **[CONTRIBUTOR_GUIDE.md](mdc:packages/x-fidelity-vscode/CONTRIBUTOR_GUIDE.md)** - Extension contributor workflow
+- Files in `temp/` directory are for reference only - never modify them
+
+## Documentation Updates
+When making changes, ensure both the README.md and the website documentation are updated accordingly.

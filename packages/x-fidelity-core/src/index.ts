@@ -91,6 +91,7 @@ export * from './utils/timingUtils';
 export * from './utils/inputValidation';
 export * from './utils/fileCacheManager';
 export * from './utils/executionContext';
+export * from './utils/axiosClient';
 
 // Export core functionality
 export { logger, LoggerProvider } from './utils/logger';

@@ -5,7 +5,6 @@ import { axiosClient } from './axiosClient';
 import { isOpenAIEnabled } from './openaiUtils';
 import { validateRule } from './jsonSchemas';
 import { LoadLocalConfigRuleParams, LoadRemoteRuleParams, LoadRulesParams, RuleConfig } from '@x-fidelity/types';
-import axios from 'axios';
 
 async function loadRules(params: LoadRulesParams): Promise<RuleConfig[]> {
     const { archetype, ruleNames, configServer, logPrefix, localConfigPath } = params;
@@ -44,7 +43,7 @@ export async function loadRemoteRule(params: LoadRemoteRuleParams): Promise<Rule
     const { configServer, archetype, rule } = params;
 
     try {
-        const response = await axios.get(`${configServer}/archetype/${archetype}/rule/${rule}`);
+        const response = await axiosClient.get(`${configServer}/archetype/${archetype}/rule/${rule}`);
         return response.data;
     } catch (error) {
         logger.error(`Failed to load remote rule ${rule} for archetype ${archetype}`);
