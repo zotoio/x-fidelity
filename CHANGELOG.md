@@ -1,3 +1,15 @@
+# [3.26.0](https://github.com/zotoio/x-fidelity/compare/v3.25.0...v3.26.0) (2025-07-08)
+
+
+### Bug Fixes
+
+* **tests:** minor updates ([d78ce28](https://github.com/zotoio/x-fidelity/commit/d78ce28216a2d9f48c55570011e129acf5f6bfde))
+
+
+### Features
+
+* **core:** security module ([91c08ee](https://github.com/zotoio/x-fidelity/commit/91c08eeb0f5fe13c598eb64ed9aefd240efda450))
+
 # [3.25.0](https://github.com/zotoio/x-fidelity/compare/v3.24.0...v3.25.0) (2025-07-07)
 
 
