@@ -94,7 +94,33 @@ function validateGitSha(sha: string): boolean {
 }
 
 /**
- * Creates a secure temporary directory path
+ * Enhanced validation for PR numbers to prevent injection attacks
+ * @param prNumber The PR number from GitHub payload
+ * @returns True if PR number is safe to use
+ */
+function validatePRNumber(prNumber: any): boolean {
+    // Must be a positive integer, reasonable range
+    if (typeof prNumber !== 'number' || !Number.isInteger(prNumber)) {
+        return false;
+    }
+    return prNumber > 0 && prNumber <= 999999; // Reasonable upper limit
+}
+
+/**
+ * Enhanced validation for SHA to prevent injection attacks
+ * @param sha The SHA from GitHub payload
+ * @returns True if SHA is safe to use
+ */
+function validateSHA(sha: any): boolean {
+    if (typeof sha !== 'string') {
+        return false;
+    }
+    // Must be exactly 40 character hex string
+    return /^[a-f0-9]{40}$/.test(sha);
+}
+
+/**
+ * Creates a secure temporary directory path with enhanced validation
  * @param prefix Directory prefix
  * @param identifier Unique identifier (sanitized)
  * @returns Secure temporary directory path
@@ -105,7 +131,63 @@ function createSecureTempPath(prefix: string, identifier: string): string {
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substring(2, 15);
     
-    return path.join('/tmp', `${prefix}-${timestamp}-${sanitizedId}-${randomSuffix}`);
+    const tempPath = path.join('/tmp', `${prefix}-${timestamp}-${sanitizedId}-${randomSuffix}`);
+    
+    // Security: Validate the resolved path is within /tmp
+    const resolvedPath = path.resolve(tempPath);
+    if (!resolvedPath.startsWith('/tmp/')) {
+        throw new Error('Invalid temporary directory path - security violation');
+    }
+    
+    return resolvedPath;
+}
+
+/**
+ * Creates a safe branch name for git operations
+ * @param prNumber The validated PR number
+ * @returns Safe branch name
+ */
+function createSafeBranchName(prNumber: number): string {
+    // Create a safe branch name using only the validated number
+    return `pr-${prNumber}`;
+}
+
+/**
+ * Creates a safe fetch refspec for git operations
+ * @param prNumber The validated PR number
+ * @returns Safe refspec string
+ */
+function createSafeFetchRefspec(prNumber: number): string {
+    // Create a safe refspec using only the validated number
+    return `pull/${prNumber}/head:pr-${prNumber}`;
+}
+
+/**
+ * Validates that a directory path is safe for operations
+ * @param dirPath The directory path to validate
+ * @returns True if path is safe
+ */
+function validateDirectoryPath(dirPath: string): boolean {
+    try {
+        const resolvedPath = path.resolve(dirPath);
+        
+        // Must be within /tmp directory
+        if (!resolvedPath.startsWith('/tmp/')) {
+            logger.warn(`Directory path outside allowed range: ${resolvedPath}`);
+            return false;
+        }
+        
+        // Check for path traversal attempts
+        if (dirPath.includes('..') || dirPath.includes('\0')) {
+            logger.warn(`Path traversal attempt detected: ${dirPath}`);
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        logger.warn(`Invalid directory path: ${dirPath}`);
+        return false;
+    }
 }
 
 export async function githubWebhookPullRequestCheckRoute(req: Request, res: Response) {
@@ -182,13 +264,18 @@ async function handlePullRequestCheck(payload: any) {
         return; // Return early instead of throwing error
     }
     
-    // Validate repository URL and SHAs
+    // Enhanced security validation
     if (!validateGitHubCloneUrl(repoUrl)) {
         logger.error(`Invalid or unsafe repository URL: ${repoUrl}`);
         return;
     }
     
-    if (!validateGitSha(headSha) || !validateGitSha(baseSha)) {
+    if (!validatePRNumber(prNumber)) {
+        logger.error(`Invalid PR number: ${prNumber}`);
+        return;
+    }
+    
+    if (!validateSHA(headSha) || !validateSHA(baseSha)) {
         logger.error(`Invalid SHA format - head: ${headSha}, base: ${baseSha}`);
         return;
     }
@@ -203,19 +290,29 @@ async function handlePullRequestCheck(payload: any) {
     // Create secure temporary directory for cloning
     const tempDir = createSecureTempPath('pr-check', `${prNumber}`);
     
+    // Security: Validate the temporary directory path
+    if (!validateDirectoryPath(tempDir)) {
+        logger.error(`Invalid temporary directory path: ${tempDir}`);
+        return;
+    }
+    
+    // Create safe git operation parameters
+    const safeBranchName = createSafeBranchName(prNumber);
+    const safeFetchRefspec = createSafeFetchRefspec(prNumber);
+    
     try {
         // Clone repository with security options
         await execSpawn('git', ['clone', '--depth=50', '--no-hardlinks', '--single-branch', repoUrl, tempDir], {
             timeout: 300000 // 5 minute timeout
         });
         
-        // Fetch and checkout pull request head (using cwd option to change directory)
-        await execSpawn('git', ['fetch', 'origin', 'pull/' + prNumber + '/head:pr-' + prNumber], {
+        // Fetch and checkout pull request head (using secure refspec)
+        await execSpawn('git', ['fetch', 'origin', safeFetchRefspec], {
             cwd: tempDir,
             timeout: 60000 // 1 minute timeout
         });
         
-        await execSpawn('git', ['checkout', 'pr-' + prNumber], {
+        await execSpawn('git', ['checkout', safeBranchName], {
             cwd: tempDir,
             timeout: 60000 // 1 minute timeout
         });
@@ -226,6 +323,11 @@ async function handlePullRequestCheck(payload: any) {
             enableConsole: true,
             enableColors: true
         });
+        
+        // Security: Validate tempDir before using in analysis
+        if (!validateDirectoryPath(tempDir)) {
+            throw new Error(`Invalid directory path for analysis: ${tempDir}`);
+        }
         
         // Run analysis
         const results = await analyzeCodebase({
@@ -246,8 +348,8 @@ async function handlePullRequestCheck(payload: any) {
         await postGitHubStatusCheck(repository, headSha, results);
         
     } finally {
-        // Cleanup temporary directory
-        if (fs.existsSync(tempDir)) {
+        // Cleanup temporary directory with path validation
+        if (fs.existsSync(tempDir) && validateDirectoryPath(tempDir)) {
             await execSpawn('rm', ['-rf', tempDir], { timeout: 30000 });
         }
     }
@@ -268,13 +370,13 @@ async function handlePushCheck(payload: any) {
         return; // Return early instead of throwing error
     }
     
-    // Validate repository URL and SHA
+    // Enhanced security validation
     if (!validateGitHubCloneUrl(repoUrl)) {
         logger.error(`Invalid or unsafe repository URL: ${repoUrl}`);
         return;
     }
     
-    if (!validateGitSha(sha)) {
+    if (!validateSHA(sha)) {
         logger.error(`Invalid SHA format: ${sha}`);
         return;
     }
@@ -287,13 +389,19 @@ async function handlePushCheck(payload: any) {
     // Create secure temporary directory for cloning
     const tempDir = createSecureTempPath('push-check', sha.substring(0, 8));
     
+    // Security: Validate the temporary directory path
+    if (!validateDirectoryPath(tempDir)) {
+        logger.error(`Invalid temporary directory path: ${tempDir}`);
+        return;
+    }
+    
     try {
         // Clone repository with security options
         await execSpawn('git', ['clone', '--depth=50', '--no-hardlinks', repoUrl, tempDir], { 
             timeout: 300000 // 5 minute timeout
         });
         
-        // Checkout specific commit (using cwd option to change directory)
+        // Checkout specific commit (using validated SHA)
         await execSpawn('git', ['checkout', sha], {
             cwd: tempDir,
             timeout: 60000 // 1 minute timeout
@@ -305,6 +413,11 @@ async function handlePushCheck(payload: any) {
             enableConsole: true,
             enableColors: true
         });
+        
+        // Security: Validate tempDir before using in analysis
+        if (!validateDirectoryPath(tempDir)) {
+            throw new Error(`Invalid directory path for analysis: ${tempDir}`);
+        }
         
         // Run analysis
         const results = await analyzeCodebase({
@@ -322,8 +435,8 @@ async function handlePushCheck(payload: any) {
         }, 'Push analysis completed');
         
     } finally {
-        // Cleanup temporary directory
-        if (fs.existsSync(tempDir)) {
+        // Cleanup temporary directory with path validation
+        if (fs.existsSync(tempDir) && validateDirectoryPath(tempDir)) {
             await execSpawn('rm', ['-rf', tempDir], { timeout: 30000 });
         }
     }

@@ -185,14 +185,34 @@ if (axiosInstance?.interceptors) {
 }
 
 export const axiosClient = {
-  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => 
-    secureRequest('get', url, config),
-  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => 
-    secureRequest('post', url, data, config),
-  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => 
-    secureRequest('put', url, data, config),
-  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => 
-    secureRequest('delete', url, config),
+  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+    // Security: Explicit URL validation to prevent SSRF
+    if (!validateUrl(url)) {
+      return Promise.reject(new Error(`URL blocked by security policy: ${url}`));
+    }
+    return secureRequest('get', url, config);
+  },
+  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+    // Security: Explicit URL validation to prevent SSRF
+    if (!validateUrl(url)) {
+      return Promise.reject(new Error(`URL blocked by security policy: ${url}`));
+    }
+    return secureRequest('post', url, data, config);
+  },
+  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+    // Security: Explicit URL validation to prevent SSRF
+    if (!validateUrl(url)) {
+      return Promise.reject(new Error(`URL blocked by security policy: ${url}`));
+    }
+    return secureRequest('put', url, data, config);
+  },
+  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+    // Security: Explicit URL validation to prevent SSRF
+    if (!validateUrl(url)) {
+      return Promise.reject(new Error(`URL blocked by security policy: ${url}`));
+    }
+    return secureRequest('delete', url, config);
+  },
 };
 
 export { isAxiosError, validateUrl };
