@@ -168,7 +168,7 @@ describe('EmailProvider', () => {
         to: 'test@example.com, admin@example.com',
         subject: mockNotification.subject,
         html: mockNotification.content,
-        text: expect.stringContaining('Analysis Results')
+        text: expect.stringContaining('ANALYSIS RESULTS')
       });
     });
 
@@ -206,7 +206,7 @@ describe('EmailProvider', () => {
       await emailProvider.send(mockNotification);
 
       const sendMailCall = mockTransporter.sendMail.mock.calls[0][0];
-      expect(sendMailCall.text).toContain('Analysis Results');
+      expect(sendMailCall.text).toContain('ANALYSIS RESULTS');
       expect(sendMailCall.text).toContain('Issues found: 5');
       expect(sendMailCall.text).toContain('--- Full Results ---');
       expect(sendMailCall.text).toContain('totalIssues: 5');
@@ -249,7 +249,7 @@ describe('EmailProvider', () => {
       await emailProvider.send(htmlNotification);
 
       const sendMailCall = mockTransporter.sendMail.mock.calls[0][0];
-      expect(sendMailCall.text).toContain('Test');
+      expect(sendMailCall.text).toContain('TEST');
       expect(sendMailCall.text).toContain('Content with HTML tags');
       expect(sendMailCall.text).not.toContain('<h1>');
       expect(sendMailCall.text).not.toContain('<strong>');

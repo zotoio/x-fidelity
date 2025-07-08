@@ -2,6 +2,7 @@ import { NotificationProvider, Notification, EmailProviderConfig } from '@x-fide
 import { logger } from '../../utils/logger';
 import nodemailer from 'nodemailer';
 import { stringify as yamlStringify } from 'yaml';
+import { convert as htmlToText } from 'html-to-text';
 
 export class EmailProvider implements NotificationProvider {
   public readonly name = 'email';
@@ -29,6 +30,36 @@ export class EmailProvider implements NotificationProvider {
                     user: this.config.auth.user || '',
                     pass: this.config.auth.pass || '',
                 } : undefined,
+    });
+  }
+
+  /**
+   * Safely converts HTML content to plain text
+   * @param htmlContent The HTML content to convert
+   * @returns Plain text version of the content
+   */
+  private convertHtmlToText(htmlContent: string): string {
+    return htmlToText(htmlContent, {
+      wordwrap: 130,
+      // Security: Remove all HTML tags and decode entities safely
+      preserveNewlines: true,
+      // Additional security options
+      limits: {
+        maxInputLength: 1024 * 1024, // 1MB limit
+        maxDepth: 10,
+        maxChildNodes: 1000
+      },
+      selectors: [
+        // Remove potentially dangerous elements
+        { selector: 'script', format: 'skip' },
+        { selector: 'style', format: 'skip' },
+        { selector: 'iframe', format: 'skip' },
+        { selector: 'object', format: 'skip' },
+        { selector: 'embed', format: 'skip' },
+        // Remove links and images
+        { selector: 'a', format: 'skip' },
+        { selector: 'img', format: 'skip' }
+      ]
     });
   }
 
@@ -60,8 +91,9 @@ export class EmailProvider implements NotificationProvider {
         return;
       }
 
-      // Generate plain text version with YAML
-      const plainTextContent = `${notification.content.replace(/<[^>]*>/g, '')}
+      // Generate plain text version with secure HTML-to-text conversion
+      const plainTextContent = this.convertHtmlToText(notification.content);
+      const fullTextContent = `${plainTextContent}
 
 --- Full Results ---
 ${yamlStringify(notification.metadata?.results?.XFI_RESULT || 'No results available')}`;
@@ -71,7 +103,7 @@ ${yamlStringify(notification.metadata?.results?.XFI_RESULT || 'No results availa
         to: notification.recipients.join(', '),
         subject: notification.subject,
         html: notification.content,
-        text: plainTextContent,
+        text: fullTextContent,
       });
 
       logger.info({

@@ -9,6 +9,66 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+/**
+ * Validates GitHub repository clone URL to prevent SSRF attacks
+ * @param cloneUrl The repository clone URL
+ * @returns True if URL is safe, false otherwise
+ */
+function validateGitHubCloneUrl(cloneUrl: string): boolean {
+    try {
+        const url = new URL(cloneUrl);
+        
+        // Only allow GitHub.com URLs
+        if (url.hostname !== 'github.com') {
+            logger.warn(`Invalid clone URL host: ${url.hostname}`);
+            return false;
+        }
+        
+        // Ensure HTTPS protocol
+        if (url.protocol !== 'https:') {
+            logger.warn(`Non-HTTPS clone URL: ${url.protocol}`);
+            return false;
+        }
+        
+        // Validate repository path format (owner/repo.git)
+        const pathMatch = url.pathname.match(/^\/([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)(?:\.git)?$/);
+        if (!pathMatch) {
+            logger.warn(`Invalid repository path format: ${url.pathname}`);
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        logger.warn(`Invalid clone URL format: ${cloneUrl}`);
+        return false;
+    }
+}
+
+/**
+ * Validates Git SHA to prevent injection attacks
+ * @param sha The Git SHA
+ * @returns True if SHA is valid, false otherwise
+ */
+function validateGitSha(sha: string): boolean {
+    // Git SHA should be 40 character hexadecimal string
+    return /^[a-f0-9]{40}$/i.test(sha);
+}
+
+/**
+ * Creates a secure temporary directory path
+ * @param prefix Directory prefix
+ * @param identifier Unique identifier (sanitized)
+ * @returns Secure temporary directory path
+ */
+function createSecureTempPath(prefix: string, identifier: string): string {
+    // Sanitize identifier to prevent path traversal
+    const sanitizedId = identifier.replace(/[^a-zA-Z0-9-_]/g, '').substring(0, 50);
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 15);
+    
+    return path.join('/tmp', `${prefix}-${timestamp}-${sanitizedId}-${randomSuffix}`);
+}
+
 export async function githubWebhookPullRequestCheckRoute(req: Request, res: Response) {
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
@@ -83,6 +143,17 @@ async function handlePullRequestCheck(payload: any) {
         return; // Return early instead of throwing error
     }
     
+    // Validate repository URL and SHAs
+    if (!validateGitHubCloneUrl(repoUrl)) {
+        logger.error(`Invalid or unsafe repository URL: ${repoUrl}`);
+        return;
+    }
+    
+    if (!validateGitSha(headSha) || !validateGitSha(baseSha)) {
+        logger.error(`Invalid SHA format - head: ${headSha}, base: ${baseSha}`);
+        return;
+    }
+    
     logger.info({
         repoUrl,
         prNumber,
@@ -90,15 +161,21 @@ async function handlePullRequestCheck(payload: any) {
         baseSha
     }, 'Processing pull request check');
 
-    // Create temporary directory for cloning
-    const tempDir = path.join('/tmp', `pr-check-${Date.now()}-${prNumber}`);
+    // Create secure temporary directory for cloning
+    const tempDir = createSecureTempPath('pr-check', `${prNumber}`);
     
     try {
-        // Clone repository
-        await execAsync(`git clone ${repoUrl} ${tempDir}`);
+        // Clone repository with security options
+        const cloneCmd = `git clone --depth=50 --no-hardlinks --single-branch ${repoUrl} ${tempDir}`;
+        await execAsync(cloneCmd, { 
+            timeout: 300000, // 5 minute timeout
+            maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+        });
         
-        // Checkout PR head
-        await execAsync(`cd ${tempDir} && git checkout ${headSha}`);
+        // Checkout pull request head
+        await execAsync(`cd ${tempDir} && git fetch origin pull/${prNumber}/head:pr-${prNumber} && git checkout pr-${prNumber}`, {
+            timeout: 60000 // 1 minute timeout
+        });
         
         // Create logger for analysis
         const analysisLogger = new ServerLogger({
@@ -106,8 +183,8 @@ async function handlePullRequestCheck(payload: any) {
             enableConsole: true,
             enableColors: true
         });
-
-        // Run analysis on the PR
+        
+        // Run analysis
         const results = await analyzeCodebase({
             repoPath: tempDir,
             archetype: 'node-fullstack', // Could be configurable
@@ -122,15 +199,13 @@ async function handlePullRequestCheck(payload: any) {
             warningCount: results.XFI_RESULT.warningCount
         }, 'Pull request analysis completed');
         
-        // Post status check to GitHub if GitHub App credentials are available
-        if (process.env.GITHUB_APP_ID && process.env.GITHUB_PRIVATE_KEY) {
-            await postGitHubStatusCheck(repository, headSha, results);
-        }
+        // Post GitHub status check (placeholder)
+        await postGitHubStatusCheck(repository, headSha, results);
         
     } finally {
         // Cleanup temporary directory
         if (fs.existsSync(tempDir)) {
-            await execAsync(`rm -rf ${tempDir}`);
+            await execAsync(`rm -rf ${tempDir}`, { timeout: 30000 });
         }
     }
 }
@@ -150,20 +225,37 @@ async function handlePushCheck(payload: any) {
         return; // Return early instead of throwing error
     }
     
+    // Validate repository URL and SHA
+    if (!validateGitHubCloneUrl(repoUrl)) {
+        logger.error(`Invalid or unsafe repository URL: ${repoUrl}`);
+        return;
+    }
+    
+    if (!validateGitSha(sha)) {
+        logger.error(`Invalid SHA format: ${sha}`);
+        return;
+    }
+    
     logger.info({
         repoUrl,
         sha
     }, 'Processing push check');
 
-    // Create temporary directory for cloning
-    const tempDir = path.join('/tmp', `push-check-${Date.now()}-${sha.substring(0, 8)}`);
+    // Create secure temporary directory for cloning
+    const tempDir = createSecureTempPath('push-check', sha.substring(0, 8));
     
     try {
-        // Clone repository
-        await execAsync(`git clone ${repoUrl} ${tempDir}`);
+        // Clone repository with security options
+        const cloneCmd = `git clone --depth=50 --no-hardlinks ${repoUrl} ${tempDir}`;
+        await execAsync(cloneCmd, { 
+            timeout: 300000, // 5 minute timeout
+            maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+        });
         
         // Checkout specific commit
-        await execAsync(`cd ${tempDir} && git checkout ${sha}`);
+        await execAsync(`cd ${tempDir} && git checkout ${sha}`, {
+            timeout: 60000 // 1 minute timeout
+        });
         
         // Create logger for analysis
         const analysisLogger = new ServerLogger({
@@ -190,7 +282,7 @@ async function handlePushCheck(payload: any) {
     } finally {
         // Cleanup temporary directory
         if (fs.existsSync(tempDir)) {
-            await execAsync(`rm -rf ${tempDir}`);
+            await execAsync(`rm -rf ${tempDir}`, { timeout: 30000 });
         }
     }
 }

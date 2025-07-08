@@ -142,7 +142,7 @@ describe('githubWebhookConfigUpdateRoute', () => {
     // Mock axios response for repository contents
     (axios.get as jest.Mock).mockResolvedValueOnce({
       data: [
-        { type: 'file', name: 'file1.json', download_url: 'https://example.com/file1.json', path: 'file1.json' },
+        { type: 'file', name: 'file1.json', download_url: 'https://raw.githubusercontent.com/testOwner/testRepo/main/file1.json', path: 'file1.json' },
         { type: 'dir', name: 'dir1', path: 'dir1' }
       ]
     });
@@ -150,8 +150,13 @@ describe('githubWebhookConfigUpdateRoute', () => {
     // Mock axios response for directory contents
     (axios.get as jest.Mock).mockResolvedValueOnce({
       data: [
-        { type: 'file', name: 'file2.json', download_url: 'https://example.com/file2.json', path: 'dir1/file2.json' }
+        { type: 'file', name: 'file2.json', download_url: 'https://raw.githubusercontent.com/testOwner/testRepo/main/dir1/file2.json', path: 'dir1/file2.json' }
       ]
+    });
+    
+    // Mock axios response for file downloads (return arraybuffer)
+    (axios.get as jest.Mock).mockResolvedValue({
+      data: Buffer.from('mock file content')
     });
     
     await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
