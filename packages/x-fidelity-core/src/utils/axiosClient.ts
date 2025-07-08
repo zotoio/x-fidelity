@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
 import { logger } from './logger';
+import { createSanitizedUrl as secureCreateSanitizedUrl, validateUrl as secureValidateUrl, validateUrlAsync as secureValidateUrlAsync } from '../security/urlValidator';
 import { URL } from 'url';
 import * as http from 'http';
 import * as https from 'https';
@@ -31,6 +32,8 @@ const PRIVATE_IP_RANGES = [
   /^fc00:/,                   // IPv6 unique local
   /^fd00:/                    // IPv6 unique local
 ];
+
+// URL sanitization is now handled by the centralized security module
 
 /**
  * Enhanced DNS resolution to prevent SSRF via IP address bypass
@@ -224,21 +227,24 @@ const createSecureHttpsAgent = () => new https.Agent({
 /**
  * Securely validates and makes HTTP requests with enhanced SSRF protection
  * @param method HTTP method
- * @param url URL to request (will be validated)
+ * @param userProvidedUrl User-provided URL (will be sanitized and validated)
  * @param dataOrConfig Data or configuration
  * @param config Additional configuration
  * @returns Promise with axios response
  */
 async function secureRequest<T = any>(
   method: 'get' | 'post' | 'put' | 'delete', 
-  url: string, 
+  userProvidedUrl: string, 
   dataOrConfig?: any, 
   config?: AxiosRequestConfig
 ): Promise<AxiosResponse<T>> {
-  // Enhanced URL validation with async DNS checks
-  const isValidAsync = await validateUrlAsync(url);
+  // Critical: Sanitize URL before any HTTP operation to prevent SSRF
+  const sanitizedUrl = secureCreateSanitizedUrl(userProvidedUrl);
+  
+  // Enhanced URL validation with async DNS checks using sanitized URL
+  const isValidAsync = await secureValidateUrlAsync(sanitizedUrl);
   if (!isValidAsync) {
-    return Promise.reject(new Error(`URL blocked by enhanced security policy: ${url}`));
+    throw new Error(`Sanitized URL failed security validation: ${sanitizedUrl}`);
   }
   
   // Apply maximum security configuration
@@ -263,11 +269,11 @@ async function secureRequest<T = any>(
   // Create a fresh axios instance for each request (no shared state)
   const secureAxios = axios.create(secureConfig);
   
-  // Add final security interceptor
+  // Add final security interceptor (defense in depth)
   secureAxios.interceptors.request.use(
     (requestConfig) => {
-      // Final URL validation before request
-      if (requestConfig.url && !validateUrl(requestConfig.url)) {
+      // Final URL validation before request using sanitized URL
+      if (requestConfig.url && !secureValidateUrl(requestConfig.url)) {
         throw new Error(`Final URL validation failed: ${requestConfig.url}`);
       }
       return requestConfig;
@@ -275,23 +281,23 @@ async function secureRequest<T = any>(
     (error) => Promise.reject(error)
   );
   
-  // Execute request with method-specific handling
+  // Execute request with method-specific handling using sanitized URL
   try {
     switch (method) {
       case 'get':
-        return await secureAxios.get<T>(url, secureConfig);
+        return await secureAxios.get<T>(sanitizedUrl, secureConfig);
       case 'post':
-        return await secureAxios.post<T>(url, dataOrConfig, secureConfig);
+        return await secureAxios.post<T>(sanitizedUrl, dataOrConfig, secureConfig);
       case 'put':
-        return await secureAxios.put<T>(url, dataOrConfig, secureConfig);
+        return await secureAxios.put<T>(sanitizedUrl, dataOrConfig, secureConfig);
       case 'delete':
-        return await secureAxios.delete<T>(url, secureConfig);
+        return await secureAxios.delete<T>(sanitizedUrl, secureConfig);
       default:
         throw new Error(`Unsupported HTTP method: ${method}`);
     }
   } catch (error) {
     // Enhanced error logging for security analysis
-    logger.warn(`Secure request failed for ${method.toUpperCase()} ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    logger.warn(`Secure request failed for ${method.toUpperCase()} ${sanitizedUrl}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     throw error;
   }
 }
@@ -308,7 +314,7 @@ const axiosInstance: AxiosInstance = axios.create({
 if (axiosInstance?.interceptors) {
   axiosInstance.interceptors.request.use(
     (config) => {
-      if (config.url && !validateUrl(config.url)) {
+      if (config.url && !secureValidateUrl(config.url)) {
         throw new Error(`URL blocked by security policy: ${config.url}`);
       }
       return config;
@@ -390,4 +396,9 @@ export const axiosClient = {
   },
 };
 
-export { isAxiosError, validateUrl, validateUrlAsync };
+export { isAxiosError };
+export { 
+  secureValidateUrl as validateUrl, 
+  secureValidateUrlAsync as validateUrlAsync,
+  secureCreateSanitizedUrl as createSanitizedUrl
+};

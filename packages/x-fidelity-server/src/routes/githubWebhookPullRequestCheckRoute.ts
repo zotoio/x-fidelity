@@ -18,6 +18,77 @@ const ALLOWED_GIT_FLAGS = [
 type AllowedGitCommand = typeof ALLOWED_GIT_COMMANDS[number];
 
 /**
+ * @security Immutable command parameter object that prevents injection
+ * This class ensures that all command arguments are validated and immutable
+ */
+class SafeGitCommand {
+  private readonly command: AllowedGitCommand;
+  private readonly args: readonly string[];
+  private readonly cwd?: string;
+  private readonly timeout?: number;
+
+  constructor(
+    command: AllowedGitCommand,
+    args: readonly string[],
+    options?: { cwd?: string; timeout?: number }
+  ) {
+    // Validate command is in allowlist
+    if (!ALLOWED_GIT_COMMANDS.includes(command)) {
+      throw new Error(`Unauthorized git command: ${command}`);
+    }
+
+    // Validate all arguments are safe with strict criteria
+    for (const arg of args) {
+      if (!this.isArgSafe(arg)) {
+        throw new Error(`Unsafe command argument detected: ${arg}`);
+      }
+    }
+
+    this.command = command;
+    this.args = Object.freeze([...args]); // Immutable copy
+    this.cwd = options?.cwd;
+    this.timeout = options?.timeout;
+  }
+
+  private isArgSafe(arg: string): boolean {
+    // Strict validation to prevent any form of injection
+    if (typeof arg !== 'string') return false;
+    if (arg.length === 0 || arg.length > 500) return false;
+    
+    // Check for any shell metacharacters that could be dangerous
+    const dangerousChars = /[;|&`$(){}[\]<>'"\\*?]/;
+    if (dangerousChars.test(arg)) return false;
+    
+    // Check for path traversal attempts
+    if (arg.includes('..') || arg.includes('~')) return false;
+    
+    // Check for null bytes or control characters
+    if (/[\x00-\x1f\x7f]/.test(arg)) return false;
+    
+    return true;
+  }
+
+  /**
+   * Executes the git command with all safety guarantees
+   * @returns Promise with command output
+   */
+  async execute(): Promise<{ stdout: string; stderr: string }> {
+    // Use the existing secure execution function with validated args
+    return execSpawnSecure('git', [this.command, ...this.args], {
+      cwd: this.cwd,
+      timeout: this.timeout
+    });
+  }
+
+  /**
+   * Gets a safe string representation for logging
+   */
+  toString(): string {
+    return `git ${this.command} ${this.args.join(' ')}`;
+  }
+}
+
+/**
  * Validates and sanitizes command arguments to prevent injection attacks
  * @param command The git command to validate
  * @param args The arguments to validate
@@ -479,22 +550,28 @@ async function handlePullRequestCheck(payload: any) {
     const safeFetchRefspec = createSafeFetchRefspec(prNumber);
     
     try {
-        // Clone repository with security options - using validated parameters
-        await execSpawnSecure('git', ['clone', '--depth=50', '--no-hardlinks', '--single-branch', repoUrl, tempDir], {
-            timeout: 300000 // 5 minute timeout
-        });
+        // Clone repository with security options - using safe command class
+        const cloneCmd = new SafeGitCommand('clone', [
+            '--depth=50', 
+            '--no-hardlinks', 
+            '--single-branch', 
+            repoUrl, 
+            tempDir
+        ], { timeout: 300000 });
+        await cloneCmd.execute();
         
         // Fetch and checkout pull request head (using secure refspec) - enhanced security
-        await execSpawnSecure('git', ['fetch', 'origin', safeFetchRefspec], {
-            cwd: tempDir,
-            timeout: 60000 // 1 minute timeout
-        });
+        const fetchCmd = new SafeGitCommand('fetch', [
+            'origin', 
+            safeFetchRefspec
+        ], { cwd: tempDir, timeout: 60000 });
+        await fetchCmd.execute();
         
         // Checkout using validated branch name - enhanced security
-        await execSpawnSecure('git', ['checkout', safeBranchName], {
-            cwd: tempDir,
-            timeout: 60000 // 1 minute timeout
-        });
+        const checkoutCmd = new SafeGitCommand('checkout', [
+            safeBranchName
+        ], { cwd: tempDir, timeout: 60000 });
+        await checkoutCmd.execute();
         
         // Create logger for analysis
         const analysisLogger = new ServerLogger({
@@ -586,17 +663,21 @@ async function handlePushCheck(payload: any) {
     }
     
     try {
-        // Clone repository with security options - using validated parameters
-        await execSpawnSecure('git', ['clone', '--depth=50', '--no-hardlinks', repoUrl, tempDir], { 
-            timeout: 300000 // 5 minute timeout
-        });
+        // Clone repository with security options - using safe command class
+        const cloneCmd = new SafeGitCommand('clone', [
+            '--depth=50', 
+            '--no-hardlinks', 
+            repoUrl, 
+            tempDir
+        ], { timeout: 300000 });
+        await cloneCmd.execute();
         
         // Checkout specific commit (using validated and sanitized SHA) - enhanced security
         const sanitizedSha = sanitizeSHAForCheckout(sha);
-        await execSpawnSecure('git', ['checkout', sanitizedSha], {
-            cwd: tempDir,
-            timeout: 60000 // 1 minute timeout
-        });
+        const checkoutCmd = new SafeGitCommand('checkout', [
+            sanitizedSha
+        ], { cwd: tempDir, timeout: 60000 });
+        await checkoutCmd.execute();
         
         // Create logger for analysis
         const analysisLogger = new ServerLogger({
