@@ -4,9 +4,9 @@ import { AnalysisManager } from '../analysis/analysisManager';
 import { PeriodicAnalysisManager } from '../analysis/periodicAnalysisManager';
 import { DiagnosticProvider } from '../diagnostics/diagnosticProvider';
 import { StatusBarProvider } from '../ui/statusBarProvider';
-import { IssuesTreeProvider } from '../ui/treeView/issuesTreeProvider';
+import { IssuesTreeViewManager } from '../ui/treeView/issuesTreeViewManager';
+import { ControlCenterTreeViewManager } from '../ui/treeView/controlCenterTreeViewManager';
 import { VSCodeLogger } from '../utils/vscodeLogger';
-import { getWorkspaceFolder } from '../utils/workspaceUtils';
 
 export class ExtensionManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
@@ -15,8 +15,9 @@ export class ExtensionManager implements vscode.Disposable {
   private periodicAnalysisManager: PeriodicAnalysisManager;
   private diagnosticProvider: DiagnosticProvider;
   private statusBarProvider: StatusBarProvider;
-  private issuesTreeProvider: IssuesTreeProvider;
-  private issuesTreeView: vscode.TreeView<any>;
+  private issuesTreeViewManager: IssuesTreeViewManager;
+  private explorerIssuesTreeViewManager: IssuesTreeViewManager;
+  private controlCenterTreeViewManager: ControlCenterTreeViewManager;
   private logger: VSCodeLogger;
 
   constructor(private context: vscode.ExtensionContext) {
@@ -29,15 +30,23 @@ export class ExtensionManager implements vscode.Disposable {
     );
     this.periodicAnalysisManager = PeriodicAnalysisManager.getInstance();
     this.statusBarProvider = new StatusBarProvider(this.analysisManager);
-    this.issuesTreeProvider = new IssuesTreeProvider();
 
-    // Initialize tree view
-    this.issuesTreeView = vscode.window.createTreeView(
-      'xfidelityIssuesTreeView',
-      {
-        treeDataProvider: this.issuesTreeProvider,
-        showCollapseAll: true
-      }
+    // Initialize tree view managers
+    this.issuesTreeViewManager = new IssuesTreeViewManager(
+      this.context,
+      this.diagnosticProvider,
+      this.configManager,
+      'xfidelityIssuesTreeView'
+    );
+    this.explorerIssuesTreeViewManager = new IssuesTreeViewManager(
+      this.context,
+      this.diagnosticProvider,
+      this.configManager,
+      'xfidelityIssuesTreeViewExplorer'
+    );
+    this.controlCenterTreeViewManager = new ControlCenterTreeViewManager(
+      this.context,
+      'xfidelityControlCenterView'
     );
 
     this.initialize().catch(error => {
@@ -64,12 +73,15 @@ export class ExtensionManager implements vscode.Disposable {
       this.registerCommands();
 
       // Add components to disposables
-      this.disposables.push(
+      this.addToDisposables(
+        this.context,
         this.analysisManager,
         this.periodicAnalysisManager,
         this.diagnosticProvider,
         this.statusBarProvider,
-        this.issuesTreeView
+        this.issuesTreeViewManager,
+        this.explorerIssuesTreeViewManager,
+        this.controlCenterTreeViewManager
       );
 
       // PERFORMANCE FIX: Don't start periodic analysis by default (disabled in config)
@@ -187,30 +199,10 @@ export class ExtensionManager implements vscode.Disposable {
     return relevantExtensions.some(ext => fileName.includes(ext));
   }
 
-  private updateIssuesTree(result: any): void {
+  private updateIssuesTree(_result: any): void {
     try {
-      // Convert diagnostics to ProcessedIssue format for tree view
-      const issues: any[] = [];
-      let issueId = 0;
-
-      for (const [filePath, diagnostics] of result.diagnostics) {
-        for (const diagnostic of diagnostics) {
-          issues.push({
-            id: `issue-${++issueId}`,
-            message: diagnostic.message,
-            severity: this.mapSeverityToString(diagnostic.severity),
-            rule: diagnostic.code || 'unknown',
-            file: filePath,
-            line: diagnostic.range.start.line + 1,
-            column: diagnostic.range.start.character + 1,
-            category: 'general',
-            fixable: false,
-            exempted: false
-          });
-        }
-      }
-
-      this.issuesTreeProvider.setIssues(issues);
+      // Tree view managers automatically refresh from diagnostic provider
+      // No manual update needed
     } catch (error) {
       this.logger.error('Failed to update issues tree:', error);
     }
@@ -270,52 +262,23 @@ export class ExtensionManager implements vscode.Disposable {
         this.analysisManager.getLogger().show();
       }),
 
-      // Tree view commands
-      vscode.commands.registerCommand('xfidelity.refreshIssuesTree', () => {
-        this.issuesTreeProvider.refresh();
-      }),
+      // Tree view commands are registered by IssuesTreeViewManager
 
+      // Control center commands
       vscode.commands.registerCommand(
-        'xfidelity.issuesTreeGroupBySeverity',
-        () => {
-          this.issuesTreeProvider.setGroupingMode('severity');
+        'xfidelity.showControlCenter',
+        async () => {
+          const controlCenterPanel = new (
+            await import('../ui/panels/controlCenterPanel')
+          ).ControlCenterPanel(
+            this.context,
+            this.configManager,
+            this.analysisManager,
+            this.diagnosticProvider
+          );
+          await controlCenterPanel.show();
         }
       ),
-
-      vscode.commands.registerCommand('xfidelity.issuesTreeGroupByRule', () => {
-        this.issuesTreeProvider.setGroupingMode('rule');
-      }),
-
-      vscode.commands.registerCommand('xfidelity.issuesTreeGroupByFile', () => {
-        this.issuesTreeProvider.setGroupingMode('file');
-      }),
-
-      vscode.commands.registerCommand(
-        'xfidelity.issuesTreeGroupByCategory',
-        () => {
-          this.issuesTreeProvider.setGroupingMode('category');
-        }
-      ),
-
-      vscode.commands.registerCommand('xfidelity.goToIssue', (issue: any) => {
-        if (issue && issue.file && issue.line) {
-          const workspaceFolder = getWorkspaceFolder();
-          if (workspaceFolder) {
-            const filePath = vscode.Uri.joinPath(
-              workspaceFolder.uri,
-              issue.file
-            );
-            vscode.window.showTextDocument(filePath).then(editor => {
-              const position = new vscode.Position(
-                issue.line - 1,
-                issue.column - 1 || 0
-              );
-              editor.selection = new vscode.Selection(position, position);
-              editor.revealRange(new vscode.Range(position, position));
-            });
-          }
-        }
-      }),
 
       // Performance monitoring command
       vscode.commands.registerCommand(
@@ -391,6 +354,238 @@ ${nextAnalysisText}`;
 
           vscode.window.showInformationMessage(message, { modal: true });
         }
+      ),
+
+      // === NEW CONTROL CENTER COMMANDS ===
+
+      // Dashboard command
+      vscode.commands.registerCommand('xfidelity.showDashboard', async () => {
+        const dashboardPanel = new (
+          await import('../ui/panels/dashboardPanel')
+        ).DashboardPanel(
+          this.context,
+          this.configManager,
+          this.analysisManager,
+          this.diagnosticProvider
+        );
+        await dashboardPanel.show();
+      }),
+
+      // Report History command
+      vscode.commands.registerCommand(
+        'xfidelity.showReportHistory',
+        async () => {
+          const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+          if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder found');
+            return;
+          }
+
+          const reportHistoryManager = new (
+            await import('../reports/reportHistoryManager')
+          ).ReportHistoryManager(this.configManager);
+
+          const history = await reportHistoryManager.getReportHistory(
+            workspaceFolder.uri.fsPath
+          );
+
+          if (history.length === 0) {
+            vscode.window.showInformationMessage(
+              'No analysis history found. Run an analysis first.'
+            );
+            return;
+          }
+
+          const items = history.slice(0, 10).map(entry => ({
+            label: `$(history) ${new Date(entry.timestamp).toLocaleString()}`,
+            description: `${entry.summary.totalIssues} issues found`,
+            detail: `Archetype: ${entry.summary.archetype} | Duration: ${entry.summary.durationSeconds}s`,
+            entry
+          }));
+
+          const selected = await vscode.window.showQuickPick(items, {
+            placeHolder: 'Select a report from history'
+          });
+
+          if (selected) {
+            vscode.window.showInformationMessage(
+              `Report from ${new Date(selected.entry.timestamp).toLocaleString()}: ${selected.entry.summary.totalIssues} issues found`
+            );
+          }
+        }
+      ),
+
+      // Export Report command
+      vscode.commands.registerCommand('xfidelity.exportReport', async () => {
+        const currentResults = this.analysisManager.getCurrentResults();
+        if (!currentResults || !currentResults.metadata) {
+          vscode.window.showWarningMessage(
+            'No analysis results to export. Run an analysis first.'
+          );
+          return;
+        }
+
+        const formatOptions = [
+          {
+            label: 'JSON',
+            description: 'Structured data format',
+            format: 'json' as const
+          },
+          {
+            label: 'CSV',
+            description: 'Comma-separated values',
+            format: 'csv' as const
+          },
+          {
+            label: 'HTML',
+            description: 'Web page report',
+            format: 'html' as const
+          },
+          {
+            label: 'Markdown',
+            description: 'Markdown document',
+            format: 'markdown' as const
+          },
+          {
+            label: 'SARIF',
+            description: 'Static Analysis Results Interchange Format',
+            format: 'sarif' as const
+          }
+        ];
+
+        const selectedFormat = await vscode.window.showQuickPick(
+          formatOptions,
+          {
+            placeHolder: 'Select export format'
+          }
+        );
+
+        if (selectedFormat) {
+          const exportManager = new (
+            await import('../reports/exportManager')
+          ).ExportManager(this.configManager);
+
+          try {
+            const exportPath = await exportManager.exportReport(
+              currentResults.metadata,
+              { format: selectedFormat.format }
+            );
+            vscode.window.showInformationMessage(
+              `Report exported to: ${exportPath}`
+            );
+          } catch (error) {
+            vscode.window.showErrorMessage(`Export failed: ${error}`);
+          }
+        }
+      }),
+
+      // Detect Archetype command
+      vscode.commands.registerCommand('xfidelity.detectArchetype', async () => {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+          vscode.window.showErrorMessage('No workspace folder found');
+          return;
+        }
+
+        const { DefaultDetectionService } = await import(
+          '../configuration/defaultDetection'
+        );
+        const detectionService = new DefaultDetectionService(
+          workspaceFolder.uri.fsPath
+        );
+
+        try {
+          vscode.window.showInformationMessage(
+            'Detecting project archetype...'
+          );
+          const detections = await detectionService.detectArchetype();
+
+          if (detections.length === 0) {
+            vscode.window.showWarningMessage(
+              'Could not detect project archetype'
+            );
+            return;
+          }
+
+          const topDetection = detections[0];
+          const message = `Detected Project Archetype: ${topDetection.archetype}
+Confidence: ${topDetection.confidence}%
+Indicators: ${topDetection.indicators.join(', ')}
+
+Would you like to update your configuration to use this archetype?`;
+
+          const choice = await vscode.window.showInformationMessage(
+            message,
+            { modal: true },
+            'Yes, Update',
+            'No, Keep Current'
+          );
+
+          if (choice === 'Yes, Update') {
+            await this.configManager.updateConfig({
+              archetype: topDetection.archetype
+            });
+            vscode.window.showInformationMessage(
+              `✅ Configuration updated to use ${topDetection.archetype} archetype`
+            );
+
+            // Trigger re-analysis with new archetype
+            await this.analysisManager.runAnalysis({ forceRefresh: true });
+          }
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Archetype detection failed: ${error}`
+          );
+        }
+      }),
+
+      // Reset Configuration command
+      vscode.commands.registerCommand(
+        'xfidelity.resetConfiguration',
+        async () => {
+          const choice = await vscode.window.showWarningMessage(
+            'Are you sure you want to reset all X-Fidelity configuration to defaults? This cannot be undone.',
+            { modal: true },
+            'Yes, Reset All',
+            'Cancel'
+          );
+
+          if (choice === 'Yes, Reset All') {
+            // Reset to default configuration
+            const defaultConfig = {
+              archetype: 'node-fullstack',
+              runInterval: 0,
+              autoAnalyzeOnSave: false,
+              autoAnalyzeOnFileChange: false,
+              configServer: '',
+              localConfigPath: '',
+              openaiEnabled: false,
+              telemetryEnabled: true,
+              generateReports: false,
+              showInlineDecorations: true,
+              statusBarVisibility: true
+            };
+
+            await this.configManager.updateConfig(defaultConfig);
+            vscode.window.showInformationMessage(
+              '✅ Configuration reset to defaults'
+            );
+
+            // Trigger re-analysis with new configuration
+            await this.analysisManager.runAnalysis({ forceRefresh: true });
+          }
+        }
+      ),
+
+      // Advanced Settings command (using SettingsUIPanel)
+      vscode.commands.registerCommand(
+        'xfidelity.showAdvancedSettings',
+        async () => {
+          const settingsPanel = new (
+            await import('../ui/panels/settingsUIPanel')
+          ).SettingsUIPanel(this.context, this.configManager);
+          await settingsPanel.show();
+        }
       )
     ];
 
@@ -419,6 +614,22 @@ ${nextAnalysisText}`;
     ];
 
     this.disposables.push(...fallbackCommands);
+  }
+
+  private addToDisposables(
+    context: vscode.ExtensionContext,
+    ...disposables: (
+      | vscode.Disposable
+      | IssuesTreeViewManager
+      | ControlCenterTreeViewManager
+    )[]
+  ): void {
+    for (const disposable of disposables) {
+      if (disposable) {
+        this.disposables.push(disposable);
+        context.subscriptions.push(disposable);
+      }
+    }
   }
 
   dispose(): void {

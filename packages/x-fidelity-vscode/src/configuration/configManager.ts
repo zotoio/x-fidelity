@@ -125,7 +125,7 @@ export class ConfigManager {
 
       // Resource Limits - REDUCED FOR PERFORMANCE
       maxFileSize: workspaceConfig.get('maxFileSize', 524288), // 512KB instead of 1MB
-      analysisTimeout: workspaceConfig.get('analysisTimeout', 45000), // 45s instead of 30s (more time but fewer concurrent)
+      analysisTimeout: workspaceConfig.get('analysisTimeout', 450000), // 450s instead of 30s (more time but fewer concurrent)
       excludePatterns: workspaceConfig.get('excludePatterns', [
         'node_modules/**',
         '.git/**',

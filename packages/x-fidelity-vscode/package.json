@@ -55,21 +55,7 @@
         "title": "X-Fidelity: Show Output Channel",
         "icon": "$(output)"
       },
-      {
-        "command": "xfidelity.showWasmStatus",
-        "title": "X-Fidelity: Show WASM Status",
-        "icon": "$(info)"
-      },
-      {
-        "command": "xfidelity.showPerformanceReport",
-        "title": "X-Fidelity: Show Performance Report",
-        "icon": "$(dashboard)"
-      },
-      {
-        "command": "xfidelity.showWorkerStats",
-        "title": "X-Fidelity: Worker Statistics",
-        "icon": "$(graph)"
-      },
+
       {
         "command": "xfidelity.refreshIssuesTree",
         "title": "Refresh",
@@ -114,6 +100,31 @@
         "command": "xfidelity.detectArchetype",
         "title": "X-Fidelity: Detect Project Archetype",
         "icon": "$(search)"
+      },
+      {
+        "command": "xfidelity.showDashboard",
+        "title": "X-Fidelity: Dashboard",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "xfidelity.showReportHistory",
+        "title": "X-Fidelity: Report History",
+        "icon": "$(history)"
+      },
+      {
+        "command": "xfidelity.exportReport",
+        "title": "X-Fidelity: Export Report",
+        "icon": "$(export)"
+      },
+      {
+        "command": "xfidelity.resetConfiguration",
+        "title": "X-Fidelity: Reset Configuration",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "xfidelity.showAdvancedSettings",
+        "title": "X-Fidelity: Advanced Settings",
+        "icon": "$(gear)"
       },
       {
         "command": "xfidelity.test",
@@ -293,7 +304,7 @@
         },
         "xfidelity.analysisTimeout": {
           "type": "number",
-          "default": 450000,
+          "default": 45000,
           "description": "Analysis timeout in milliseconds (45s for performance)."
         },
         "xfidelity.excludePatterns": {
@@ -355,13 +366,9 @@
         "xfidelity.cacheTTL": {
           "type": "number",
           "default": 30,
-          "description": "Cache time-to-live in minutes (10 min for performance)."
+          "description": "Cache time-to-live in minutes (30 min for performance)."
         },
-        "xfidelity.performance.maxConcurrentOperations": {
-          "type": "number",
-          "default": 1,
-          "description": "Maximum number of concurrent analysis operations (1 for performance)"
-        },
+
         "xfidelity.performance.enableDetailedLogging": {
           "type": "boolean",
           "default": false,
