@@ -2,7 +2,7 @@
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity Analyzer",
   "description": "Provides X-Fidelity software architectural analysis within VS Code",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "zotoio",
   "private": true,
   "license": "MIT",
@@ -293,7 +293,7 @@
         },
         "xfidelity.analysisTimeout": {
           "type": "number",
-          "default": 45000,
+          "default": 450000,
           "description": "Analysis timeout in milliseconds (45s for performance)."
         },
         "xfidelity.excludePatterns": {
@@ -315,7 +315,13 @@
           "items": {
             "type": "string"
           },
-          "default": [],
+          "default": [
+            "**/*.ts",
+            "**/*.tsx",
+            "**/*.js",
+            "**/*.jsx",
+            "**/*.json"
+          ],
           "description": "File patterns to include in analysis (empty = all files)."
         },
         "xfidelity.maxConcurrentAnalysis": {
@@ -348,7 +354,7 @@
         },
         "xfidelity.cacheTTL": {
           "type": "number",
-          "default": 10,
+          "default": 30,
           "description": "Cache time-to-live in minutes (10 min for performance)."
         },
         "xfidelity.performance.maxConcurrentOperations": {
@@ -363,7 +369,7 @@
         },
         "xfidelity.performance.astCacheSize": {
           "type": "number",
-          "default": 50,
+          "default": 150,
           "description": "Maximum number of AST trees to cache (reduced for performance)"
         },
         "xfidelity.performance.decorationLimit": {
@@ -398,7 +404,7 @@
         },
         "xfidelity.periodicAnalysis.maxFilesPerRun": {
           "type": "number",
-          "default": 5,
+          "default": 50,
           "description": "Maximum files to analyze per periodic run (reduced for performance)."
         },
         "xfidelity.periodicAnalysis.excludePatterns": {

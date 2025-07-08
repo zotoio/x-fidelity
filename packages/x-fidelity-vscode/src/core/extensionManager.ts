@@ -22,9 +22,12 @@ export class ExtensionManager implements vscode.Disposable {
   constructor(private context: vscode.ExtensionContext) {
     this.logger = new VSCodeLogger('ExtensionManager');
     this.configManager = ConfigManager.getInstance(context);
-    this.analysisManager = new AnalysisManager(this.configManager);
-    this.periodicAnalysisManager = PeriodicAnalysisManager.getInstance();
     this.diagnosticProvider = new DiagnosticProvider(this.configManager);
+    this.analysisManager = new AnalysisManager(
+      this.configManager,
+      this.diagnosticProvider
+    );
+    this.periodicAnalysisManager = PeriodicAnalysisManager.getInstance();
     this.statusBarProvider = new StatusBarProvider(this.analysisManager);
     this.issuesTreeProvider = new IssuesTreeProvider();
 
@@ -95,7 +98,7 @@ export class ExtensionManager implements vscode.Disposable {
     // Analysis completion
     this.disposables.push(
       this.analysisManager.onDidAnalysisComplete(result => {
-        this.diagnosticProvider.updateDiagnostics(result);
+        // Diagnostics are now updated directly by AnalysisManager through DiagnosticProvider
         this.updateIssuesTree(result);
 
         const stats = result.summary;

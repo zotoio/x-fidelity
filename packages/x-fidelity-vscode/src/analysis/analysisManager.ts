@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { analyzeCodebase } from '@x-fidelity/core';
 import { ConfigManager } from '../configuration/configManager';
+import { DiagnosticProvider } from '../diagnostics/diagnosticProvider';
 import { VSCodeLogger } from '../utils/vscodeLogger';
 import {
   getWorkspaceFolder,
@@ -41,7 +42,10 @@ export class AnalysisManager implements vscode.Disposable {
     cacheHits: 0
   };
 
-  constructor(private configManager: ConfigManager) {
+  constructor(
+    private configManager: ConfigManager,
+    private diagnosticProvider: DiagnosticProvider
+  ) {
     this.logger = new VSCodeLogger('X-Fidelity Analysis');
     this.setupEventListeners();
   }
@@ -196,13 +200,20 @@ export class AnalysisManager implements vscode.Disposable {
         }
       );
 
-      // PERFORMANCE FIX: Optimized diagnostic conversion
-      const diagnostics = this.convertToDiagnosticsOptimized(result);
+      // Update diagnostics through centralized provider
+      await this.diagnosticProvider.updateDiagnostics(result);
+
+      // Get diagnostics from provider for consistent data
+      const diagnostics = this.diagnosticProvider.getAllDiagnostics();
+      const diagnosticsMap = new Map(
+        diagnostics.map(([uri, diags]) => [uri.fsPath, diags])
+      );
+
       const duration = performance.now() - startTime;
 
       const analysisResult: AnalysisResult = {
         metadata: result,
-        diagnostics,
+        diagnostics: diagnosticsMap,
         timestamp: Date.now(),
         duration,
         summary: {
@@ -325,108 +336,6 @@ export class AnalysisManager implements vscode.Disposable {
         configServer.startsWith('https://'))
       ? configServer
       : undefined;
-  }
-
-  // PERFORMANCE FIX: Optimized diagnostic conversion with reduced overhead
-  private convertToDiagnosticsOptimized(
-    result: ResultMetadata
-  ): Map<string, vscode.Diagnostic[]> {
-    const diagnosticsMap = new Map<string, vscode.Diagnostic[]>();
-    const workspaceFolder = getWorkspaceFolder();
-    const workspacePath = workspaceFolder?.uri.fsPath;
-
-    // PERFORMANCE FIX: Batch process diagnostics more efficiently
-    const issuesByFile = new Map<string, any[]>();
-
-    // First pass: group by file to reduce map operations
-    for (const detail of result.XFI_RESULT.issueDetails) {
-      const existing = issuesByFile.get(detail.filePath) || [];
-      existing.push(
-        ...detail.errors.map(error => ({ ...error, filePath: detail.filePath }))
-      );
-      issuesByFile.set(detail.filePath, existing);
-    }
-
-    // Second pass: convert to diagnostics efficiently
-    for (const [filePath, errors] of issuesByFile) {
-      const diagnostics: vscode.Diagnostic[] = errors.map(error => {
-        const range = this.parseLineColumnInfoOptimized(error.details);
-        const diagnostic = new vscode.Diagnostic(
-          range,
-          error.details?.message || error.ruleFailure,
-          this.mapErrorLevelToSeverity(error.level || 'warning')
-        );
-
-        diagnostic.source = 'X-Fidelity';
-        diagnostic.code = error.ruleFailure;
-        return diagnostic;
-      });
-
-      if (diagnostics.length > 0) {
-        let normalizedPath = filePath;
-
-        // Handle global issues
-        if (filePath === 'REPO_GLOBAL_CHECK') {
-          normalizedPath = 'README.md';
-        } else if (workspacePath && filePath.startsWith(workspacePath)) {
-          normalizedPath = path.relative(workspacePath, filePath);
-        } else if (path.isAbsolute(filePath)) {
-          const analysisTargetPath = getAnalysisTargetDirectory();
-          if (analysisTargetPath && filePath.startsWith(analysisTargetPath)) {
-            normalizedPath = path.relative(analysisTargetPath, filePath);
-          } else {
-            normalizedPath = path.basename(filePath);
-          }
-        }
-
-        diagnosticsMap.set(normalizedPath, diagnostics);
-      }
-    }
-
-    return diagnosticsMap;
-  }
-
-  // PERFORMANCE FIX: Optimized line/column parsing
-  private parseLineColumnInfoOptimized(details: any): vscode.Range {
-    if (details?.range?.start) {
-      const startLine = Math.max(0, details.range.start.line - 1);
-      const startCol = Math.max(0, details.range.start.column - 1);
-      const endLine = details.range.end
-        ? Math.max(0, details.range.end.line - 1)
-        : startLine;
-      const endCol = details.range.end
-        ? Math.max(0, details.range.end.column - 1)
-        : startCol + 1;
-      return new vscode.Range(startLine, startCol, endLine, endCol);
-    }
-
-    if (details?.position) {
-      const line = Math.max(0, details.position.line - 1);
-      const col = Math.max(0, details.position.column - 1);
-      return new vscode.Range(line, col, line, col + 1);
-    }
-
-    if (details?.lineNumber && details.lineNumber > 0) {
-      const line = details.lineNumber - 1;
-      const col = details.columnNumber ? details.columnNumber - 1 : 0;
-      return new vscode.Range(line, col, line, col + 1);
-    }
-
-    return new vscode.Range(0, 0, 0, 1);
-  }
-
-  private mapErrorLevelToSeverity(level: string): vscode.DiagnosticSeverity {
-    switch (level) {
-      case 'fatal':
-      case 'error':
-        return vscode.DiagnosticSeverity.Error;
-      case 'warning':
-        return vscode.DiagnosticSeverity.Warning;
-      case 'info':
-        return vscode.DiagnosticSeverity.Information;
-      default:
-        return vscode.DiagnosticSeverity.Hint;
-    }
   }
 
   private calculateIssuesByLevel(
