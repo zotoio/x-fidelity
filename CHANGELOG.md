@@ -1,3 +1,10 @@
+# [3.27.0](https://github.com/zotoio/x-fidelity/compare/v3.26.0...v3.27.0) (2025-07-08)
+
+
+### Features
+
+* **release:** v4 BREAKING CHANGE: bump ([099418f](https://github.com/zotoio/x-fidelity/commit/099418fe3310483813f8f83c078d76492c442207))
+
 # [3.26.0](https://github.com/zotoio/x-fidelity/compare/v3.25.0...v3.26.0) (2025-07-08)
 
 
