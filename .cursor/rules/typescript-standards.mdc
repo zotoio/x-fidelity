@@ -1,0 +1,47 @@
+---
+globs: *.ts,*.tsx
+---
+
+# TypeScript Coding Standards
+
+## Code Quality Requirements
+- Always use strict TypeScript configuration
+- Prefer explicit typing over `any` 
+- Use interfaces for object type definitions
+- Implement proper error handling with typed errors
+- Follow PrefixingLogger pattern for consistent logging
+
+## Error Handling Pattern
+Use standardized error types with error codes (1000-1699), categories, and user-friendly templates:
+
+```typescript
+// Example from ConfigManager
+throw new StandardError(
+  'CONFIG_LOAD_ERROR',
+  `Failed to load configuration: ${error.message}`,
+  { originalError: error, configPath }
+);
+```
+
+## Logging Standards
+- Use PrefixingLogger wrapper for automatic execution ID prefixing
+- All loggers should come from LoggerProvider to ensure consistency
+- Use appropriate log levels: debug, info, warn, error
+- Include context in log messages for debugging
+
+## Key Configuration Files
+- **[packages/x-fidelity-core/src/core/configManager.ts](mdc:packages/x-fidelity-core/src/core/configManager.ts)** - Main config management with security validation
+- **[packages/x-fidelity-types/src/core.ts](mdc:packages/x-fidelity-types/src/core.ts)** - Core type definitions
+
+## Security Considerations
+When working with file paths, always use proper path validation:
+- Use `path.resolve()` for robust path handling
+- Validate paths against allowed directories
+- Include workspace root detection for monorepo environments
+- Add test-specific allowances when needed for Jest testing
+
+## Testing Patterns
+- Use Jest for all unit tests
+- Mock external dependencies properly
+- Test both success and error scenarios
+- Maintain 100% test coverage

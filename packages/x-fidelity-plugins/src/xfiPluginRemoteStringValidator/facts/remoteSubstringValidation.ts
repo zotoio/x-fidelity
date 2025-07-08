@@ -1,7 +1,7 @@
-import axios, { AxiosResponse } from 'axios';
+import { logger, axiosClient, isAxiosError } from '@x-fidelity/core';
+import { AxiosResponse } from 'axios';
 import { FactDefn, FileData } from '@x-fidelity/types';
 import { RemoteValidationParams, RemoteValidationResult } from '../types';
-import { logger } from '@x-fidelity/core';
 import { JSONPath as jp } from 'jsonpath-plus'; 
 
 export const remoteSubstringValidationFact: FactDefn = {
@@ -21,7 +21,7 @@ export const remoteSubstringValidationFact: FactDefn = {
         }
 
         try {
-            const response: AxiosResponse = await axios.get(pattern, {
+            const response: AxiosResponse = await axiosClient.get(pattern, {
                 params: { content },
                 ...options
             });
@@ -32,7 +32,7 @@ export const remoteSubstringValidationFact: FactDefn = {
                 error: response.data?.error
             };
         } catch (error) {
-            if (axios.isAxiosError(error)) {
+            if (isAxiosError(error)) {
                 return {
                     isValid: false,
                     error: error.message
@@ -40,7 +40,7 @@ export const remoteSubstringValidationFact: FactDefn = {
             }
             return {
                 isValid: false,
-                error: 'Unknown error occurred'
+                error: error instanceof Error ? error.message : 'Unknown error occurred'
             };
         }
     }
@@ -56,7 +56,7 @@ export async function validateMatch(params: RemoteValidationParams): Promise<Rem
     let validationResult: RemoteValidationResult = { isValid: false };
 
     try {
-        response = await axios.get(validatorUrl, { 
+        response = await axiosClient.get(validatorUrl, { 
             headers,
             timeout
         });

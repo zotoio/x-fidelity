@@ -4,14 +4,14 @@ import path from 'path';
 import { logger } from './logger';
 import { isOpenAIEnabled } from './openaiUtils';
 import { validateRule } from './jsonSchemas';
-import axios from 'axios';
+import { axiosClient } from './axiosClient';
 
 jest.mock('./openaiUtils');
 jest.mock('./jsonSchemas', () => ({
   validateRule: jest.fn()
 }));
 
-jest.mock('axios');
+jest.mock('./axiosClient');
 jest.mock('fs', () => ({
     promises: {
       lstat: jest.fn(),
@@ -53,23 +53,29 @@ describe('loadRules', () => {
 
     it('should load rules from config server when provided', async () => {
         const mockRuleContent = { name: 'testRule', conditions: {}, event: {} };
-        const mockedAxios = jest.mocked(axios);
-        mockedAxios.get.mockResolvedValue({ data: mockRuleContent });
+        const mockedAxiosClient = jest.mocked(axiosClient);
+        mockedAxiosClient.get.mockResolvedValue({ 
+            data: mockRuleContent,
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            config: {} as any
+        });
 
         const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'], configServer: 'http://configserver.com' });
 
         expect(result).toEqual([mockRuleContent]);
-        expect(axios.get).toHaveBeenCalledWith('http://configserver.com/archetype/testArchetype/rule/testRule');
+        expect(axiosClient.get).toHaveBeenCalledWith('http://configserver.com/archetype/testArchetype/rule/testRule');
     });
 
     it('should log an error if remote fetch fails', async () => {
-        const mockedAxios = jest.mocked(axios);
-        mockedAxios.get.mockRejectedValue(new Error('Network error'));
+        const mockedAxiosClient = jest.mocked(axiosClient);
+        mockedAxiosClient.get.mockRejectedValue(new Error('Network error'));
 
         const result = await loadRules({ archetype: 'testArchetype', ruleNames: ['testRule'], configServer: 'http://configserver.com' });
 
         expect(result).toEqual([]);
-        expect(axios.get).toHaveBeenCalledWith('http://configserver.com/archetype/testArchetype/rule/testRule');
+        expect(axiosClient.get).toHaveBeenCalledWith('http://configserver.com/archetype/testArchetype/rule/testRule');
     });
 
     it('should not load openai rules if OpenAI is not enabled', async () => {

@@ -1,0 +1,42 @@
+---
+description: VSCode extension development patterns and requirements
+---
+
+# VSCode Extension Development
+
+## Key Components
+The X-Fidelity VSCode extension is located in **[packages/x-fidelity-vscode](mdc:packages/x-fidelity-vscode)** and includes:
+
+- **[src/extension.ts](mdc:packages/x-fidelity-vscode/src/extension.ts)** - Main extension entry point
+- **[src/core/extensionManager.ts](mdc:packages/x-fidelity-vscode/src/core/extensionManager.ts)** - Core extension management
+- **[src/ui/treeView/issuesTreeViewManager.ts](mdc:packages/x-fidelity-vscode/src/ui/treeView/issuesTreeViewManager.ts)** - Issues tree view in sidebar
+- **[src/analysis/analysisManager.ts](mdc:packages/x-fidelity-vscode/src/analysis/analysisManager.ts)** - Analysis execution
+
+## Development Workflow
+1. **F5 Debug Launch**: Press F5 in VSCode to launch Extension Development Host
+2. **Extension Icon**: Lightning (zap) icon in Activity Bar
+3. **Auto-detection**: Automatically detects archetype with node-fullstack fallback
+4. **Zero Configuration**: Works out-of-the-box with demo config
+
+## Architecture Patterns
+- **Singleton Pattern**: Commands registered only once globally to prevent conflicts
+- **File-based Results**: Uses `.xfiResults/` directory for result passing to avoid serialization issues
+- **Dual Tree Views**: Both sidebar and explorer integration
+- **Error Isolation**: Component-level error handling with fallback mechanisms
+
+## Testing Requirements
+- Uses VSCode Test Runner with `@vscode/test-electron`
+- Extension Development Host testing for integration tests
+- Headless testing with Xvfb in CI/CD
+- All 21+ VSCode-specific tests must pass
+
+## Key Files
+- **[package.json](mdc:packages/x-fidelity-vscode/package.json)** - Extension manifest and configuration
+- **[DEVELOPMENT.md](mdc:packages/x-fidelity-vscode/DEVELOPMENT.md)** - Development guide
+- **[src/test/runTest.ts](mdc:packages/x-fidelity-vscode/src/test/runTest.ts)** - Test runner configuration
+
+## Common Issues & Solutions
+- **Command Registration Conflicts**: Use singleton pattern for command registration
+- **Serialization Errors**: Use file-based result passing instead of object serialization
+- **Progress Bar Hanging**: Ensure 100% completion reporting in analysis manager
+- **Path Resolution**: Extension works in both monorepo and user workspace contexts
