@@ -79,19 +79,34 @@ function validateUrl(url: string): boolean {
 
 /**
  * Securely validates and makes HTTP requests with SSRF protection
- * @param url The URL to request
- * @param config Optional axios configuration
+ * @param method HTTP method
+ * @param validatedUrl Pre-validated URL (must pass validateUrl check)
+ * @param dataOrConfig Data or configuration
+ * @param config Additional configuration
  * @returns Promise with axios response
  */
 function secureRequest<T = any>(
   method: 'get' | 'post' | 'put' | 'delete', 
-  url: string, 
+  validatedUrl: string, 
   dataOrConfig?: any, 
   config?: AxiosRequestConfig
 ): Promise<AxiosResponse<T>> {
-  // Validate URL before making request
-  if (!validateUrl(url)) {
-    throw new Error(`URL blocked by security policy: ${url}`);
+  // Double-check URL validation for security
+  if (!validateUrl(validatedUrl)) {
+    return Promise.reject(new Error(`URL blocked by security policy: ${validatedUrl}`));
+  }
+  
+  // Parse URL to ensure it meets our security requirements
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(validatedUrl);
+  } catch (error) {
+    return Promise.reject(new Error(`Invalid URL format: ${validatedUrl}`));
+  }
+  
+  // Additional security checks on parsed URL
+  if (!['https:', 'http:'].includes(parsedUrl.protocol)) {
+    return Promise.reject(new Error(`Unsafe protocol: ${parsedUrl.protocol}`));
   }
   
   // Apply security headers
@@ -107,20 +122,21 @@ function secureRequest<T = any>(
   };
   
   if (!axiosInstance) {
-    throw new Error('Axios instance not initialized');
+    return Promise.reject(new Error('Axios instance not initialized'));
   }
   
+  // Use validated URL in secure axios calls
   switch (method) {
     case 'get':
-      return axiosInstance.get(url, secureConfig);
+      return axiosInstance.get(validatedUrl, secureConfig);
     case 'post':
-      return axiosInstance.post(url, dataOrConfig, secureConfig);
+      return axiosInstance.post(validatedUrl, dataOrConfig, secureConfig);
     case 'put':
-      return axiosInstance.put(url, dataOrConfig, secureConfig);
+      return axiosInstance.put(validatedUrl, dataOrConfig, secureConfig);
     case 'delete':
-      return axiosInstance.delete(url, secureConfig);
+      return axiosInstance.delete(validatedUrl, secureConfig);
     default:
-      throw new Error(`Unsupported HTTP method: ${method}`);
+      return Promise.reject(new Error(`Unsupported HTTP method: ${method}`));
   }
 }
 

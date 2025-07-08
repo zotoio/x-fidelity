@@ -190,6 +190,38 @@ function validateDirectoryPath(dirPath: string): boolean {
     }
 }
 
+/**
+ * Creates a safe execution log prefix for PR analysis
+ * @param prNumber The validated PR number
+ * @returns Safe log prefix string
+ */
+function createSafeExecutionLogPrefix(prNumber: number): string {
+    // Ensure we only use validated numeric PR number
+    if (!Number.isInteger(prNumber) || prNumber <= 0) {
+        throw new Error('Invalid PR number for log prefix');
+    }
+    return `PR-${prNumber}`;
+}
+
+/**
+ * Creates a safe execution log prefix for push analysis
+ * @param sha The validated SHA string
+ * @returns Safe log prefix string
+ */
+function createSafePushLogPrefix(sha: string): string {
+    // Ensure we only use validated SHA
+    if (!validateSHA(sha)) {
+        throw new Error('Invalid SHA for log prefix');
+    }
+    // Use only first 8 characters of validated SHA
+    const shortSha = sha.substring(0, 8);
+    // Additional validation on substring
+    if (!/^[a-f0-9]{8}$/.test(shortSha)) {
+        throw new Error('Invalid SHA substring for log prefix');
+    }
+    return `PUSH-${shortSha}`;
+}
+
 export async function githubWebhookPullRequestCheckRoute(req: Request, res: Response) {
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     setLogPrefix(requestLogPrefix);
@@ -329,11 +361,14 @@ async function handlePullRequestCheck(payload: any) {
             throw new Error(`Invalid directory path for analysis: ${tempDir}`);
         }
         
+        // Create safe execution log prefix
+        const safeLogPrefix = createSafeExecutionLogPrefix(prNumber);
+        
         // Run analysis
         const results = await analyzeCodebase({
             repoPath: tempDir,
             archetype: 'node-fullstack', // Could be configurable
-            executionLogPrefix: 'PR-' + prNumber,
+            executionLogPrefix: safeLogPrefix,
             logger: analysisLogger
         });
         
@@ -386,8 +421,16 @@ async function handlePushCheck(payload: any) {
         sha
     }, 'Processing push check');
 
+    // Create safe identifier for temporary directory (using validated SHA)
+    const safeShaPrefix = sha.substring(0, 8);
+    // Validate the SHA prefix before using it
+    if (!/^[a-f0-9]{8}$/.test(safeShaPrefix)) {
+        logger.error(`Invalid SHA prefix format: ${safeShaPrefix}`);
+        return;
+    }
+    
     // Create secure temporary directory for cloning
-    const tempDir = createSecureTempPath('push-check', sha.substring(0, 8));
+    const tempDir = createSecureTempPath('push-check', safeShaPrefix);
     
     // Security: Validate the temporary directory path
     if (!validateDirectoryPath(tempDir)) {
@@ -419,16 +462,19 @@ async function handlePushCheck(payload: any) {
             throw new Error(`Invalid directory path for analysis: ${tempDir}`);
         }
         
+        // Create safe execution log prefix
+        const safeLogPrefix = createSafePushLogPrefix(sha);
+        
         // Run analysis
         const results = await analyzeCodebase({
             repoPath: tempDir,
             archetype: 'node-fullstack', // Could be configurable
-            executionLogPrefix: 'PUSH-' + sha.substring(0, 8),
+            executionLogPrefix: safeLogPrefix,
             logger: analysisLogger
         });
         
         logger.info({
-            sha: sha.substring(0, 8),
+            sha: safeLogPrefix.replace('PUSH-', ''), // Extract validated short SHA from safe prefix
             totalFailures: results.XFI_RESULT.totalIssues,
             errorCount: results.XFI_RESULT.errorCount,
             warningCount: results.XFI_RESULT.warningCount
