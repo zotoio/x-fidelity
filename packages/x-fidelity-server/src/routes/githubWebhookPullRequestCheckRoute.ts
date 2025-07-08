@@ -4,10 +4,49 @@ import { logger, setLogPrefix, ServerLogger } from '../utils/serverLogger';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+// Helper function to execute spawn commands as promises
+function execSpawn(command: string, args: string[], options: any = {}): Promise<{ stdout: string; stderr: string }> {
+    return new Promise((resolve, reject) => {
+        const child = spawn(command, args, {
+            stdio: ['pipe', 'pipe', 'pipe'],
+            ...options
+        });
+        
+        let stdout = '';
+        let stderr = '';
+        
+        child.stdout?.on('data', (data) => {
+            stdout += data.toString();
+        });
+        
+        child.stderr?.on('data', (data) => {
+            stderr += data.toString();
+        });
+        
+        child.on('close', (code) => {
+            if (code === 0) {
+                resolve({ stdout, stderr });
+            } else {
+                reject(new Error(`Command failed with exit code ${code}: ${stderr}`));
+            }
+        });
+        
+        child.on('error', (error) => {
+            reject(error);
+        });
+        
+        // Handle timeout
+        if (options.timeout) {
+            setTimeout(() => {
+                child.kill('SIGTERM');
+                reject(new Error('Command timeout'));
+            }, options.timeout);
+        }
+    });
+}
 
 /**
  * Validates GitHub repository clone URL to prevent SSRF attacks
@@ -166,14 +205,18 @@ async function handlePullRequestCheck(payload: any) {
     
     try {
         // Clone repository with security options
-        const cloneCmd = `git clone --depth=50 --no-hardlinks --single-branch ${repoUrl} ${tempDir}`;
-        await execAsync(cloneCmd, { 
-            timeout: 300000, // 5 minute timeout
-            maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+        await execSpawn('git', ['clone', '--depth=50', '--no-hardlinks', '--single-branch', repoUrl, tempDir], {
+            timeout: 300000 // 5 minute timeout
         });
         
-        // Checkout pull request head
-        await execAsync(`cd ${tempDir} && git fetch origin pull/${prNumber}/head:pr-${prNumber} && git checkout pr-${prNumber}`, {
+        // Fetch and checkout pull request head (using cwd option to change directory)
+        await execSpawn('git', ['fetch', 'origin', 'pull/' + prNumber + '/head:pr-' + prNumber], {
+            cwd: tempDir,
+            timeout: 60000 // 1 minute timeout
+        });
+        
+        await execSpawn('git', ['checkout', 'pr-' + prNumber], {
+            cwd: tempDir,
             timeout: 60000 // 1 minute timeout
         });
         
@@ -188,7 +231,7 @@ async function handlePullRequestCheck(payload: any) {
         const results = await analyzeCodebase({
             repoPath: tempDir,
             archetype: 'node-fullstack', // Could be configurable
-            executionLogPrefix: `PR-${prNumber}`,
+            executionLogPrefix: 'PR-' + prNumber,
             logger: analysisLogger
         });
         
@@ -205,7 +248,7 @@ async function handlePullRequestCheck(payload: any) {
     } finally {
         // Cleanup temporary directory
         if (fs.existsSync(tempDir)) {
-            await execAsync(`rm -rf ${tempDir}`, { timeout: 30000 });
+            await execSpawn('rm', ['-rf', tempDir], { timeout: 30000 });
         }
     }
 }
@@ -246,14 +289,13 @@ async function handlePushCheck(payload: any) {
     
     try {
         // Clone repository with security options
-        const cloneCmd = `git clone --depth=50 --no-hardlinks ${repoUrl} ${tempDir}`;
-        await execAsync(cloneCmd, { 
-            timeout: 300000, // 5 minute timeout
-            maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+        await execSpawn('git', ['clone', '--depth=50', '--no-hardlinks', repoUrl, tempDir], { 
+            timeout: 300000 // 5 minute timeout
         });
         
-        // Checkout specific commit
-        await execAsync(`cd ${tempDir} && git checkout ${sha}`, {
+        // Checkout specific commit (using cwd option to change directory)
+        await execSpawn('git', ['checkout', sha], {
+            cwd: tempDir,
             timeout: 60000 // 1 minute timeout
         });
         
@@ -268,7 +310,7 @@ async function handlePushCheck(payload: any) {
         const results = await analyzeCodebase({
             repoPath: tempDir,
             archetype: 'node-fullstack', // Could be configurable
-            executionLogPrefix: `PUSH-${sha.substring(0, 8)}`,
+            executionLogPrefix: 'PUSH-' + sha.substring(0, 8),
             logger: analysisLogger
         });
         
@@ -282,7 +324,7 @@ async function handlePushCheck(payload: any) {
     } finally {
         // Cleanup temporary directory
         if (fs.existsSync(tempDir)) {
-            await execAsync(`rm -rf ${tempDir}`, { timeout: 30000 });
+            await execSpawn('rm', ['-rf', tempDir], { timeout: 30000 });
         }
     }
 }
