@@ -1,8 +1,8 @@
 {
   "name": "x-fidelity-vscode",
-  "displayName": "X-Fidelity Analyzer",
-  "description": "Provides X-Fidelity software architectural analysis within VS Code",
-  "version": "0.0.4",
+  "displayName": "X-Fidelity",
+  "description": "VSCode extension for X-Fidelity code quality analysis",
+  "version": "0.0.5",
   "publisher": "zotoio",
   "private": true,
   "license": "MIT",

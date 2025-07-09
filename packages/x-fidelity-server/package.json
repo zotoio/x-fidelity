@@ -1,7 +1,8 @@
 {
   "name": "@x-fidelity/server",
-  "version": "4.0.0",
+  "version": "0.0.0",
   "description": "Configuration server for x-fidelity framework adherence checks",
+  "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "module": "dist/index.js",
@@ -52,9 +53,9 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "@x-fidelity/types": "4.0.0",
-    "@x-fidelity/core": "4.0.0",
-    "@x-fidelity/plugins": "4.0.0",
+    "@x-fidelity/types": "*",
+    "@x-fidelity/core": "*",
+    "@x-fidelity/plugins": "*",
     "body-parser": "^1.20.3",
     "chokidar": "^3.6.0",
     "express": "^4.21.2",
