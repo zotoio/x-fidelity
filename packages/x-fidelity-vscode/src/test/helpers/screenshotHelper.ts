@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface ScreenshotOptions {
   delay?: number;
@@ -79,7 +79,7 @@ export class ScreenshotHelper {
       }
 
       // Use scrot for screenshot capture in xvfb environment
-      await execAsync(`scrot --quality 90 --silent "${filepath}"`);
+      await execFileAsync('scrot', ['--quality', '90', '--silent', filepath]);
 
       if (global.isVerboseMode) {
         global.testConsole.log(`📸 Screenshot captured: ${filename}`);

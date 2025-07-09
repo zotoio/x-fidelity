@@ -167,18 +167,18 @@
       "properties": {
         "xfidelity.runInterval": {
           "type": "number",
-          "default": 0,
-          "description": "Auto-analysis interval in seconds (0 = disabled for performance)."
+          "default": 300,
+          "description": "Auto-analysis interval in seconds (0 = disabled)."
         },
         "xfidelity.autoAnalyzeOnSave": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically run analysis when files are saved (disabled for performance)."
+          "description": "Automatically run analysis when files are saved."
         },
         "xfidelity.autoAnalyzeOnFileChange": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically run analysis when files change (disabled for performance)."
+          "description": "Automatically run analysis when files change."
         },
         "xfidelity.archetype": {
           "type": "string",
@@ -201,7 +201,7 @@
           ],
           "enumDescriptions": [
             "Run analysis within VSCode extension (current behavior)",
-            "Use globally installed CLI binary (faster, requires 'npm install -g @x-fidelity/cli')"
+            "Use globally installed CLI binary (faster, requires 'yarn global add x-fidelity')"
           ],
           "description": "Analysis execution mode: 'extension' (built-in) or 'cli' (external binary)"
         },
@@ -253,12 +253,12 @@
         "xfidelity.generateReports": {
           "type": "boolean",
           "default": false,
-          "description": "Generate analysis reports (disabled for performance)."
+          "description": "Generate analysis reports."
         },
         "xfidelity.reportOutputDir": {
           "type": "string",
           "default": "",
-          "description": "Directory for report output (default: workspace root)."
+          "description": "Directory for report output."
         },
         "xfidelity.reportFormats": {
           "type": "array",
@@ -333,12 +333,12 @@
         "xfidelity.maxFileSize": {
           "type": "number",
           "default": 524288,
-          "description": "Maximum file size to analyze in bytes (512KB for performance)."
+          "description": "Maximum file size to analyze in bytes."
         },
         "xfidelity.analysisTimeout": {
           "type": "number",
-          "default": 45000,
-          "description": "Analysis timeout in milliseconds (45s for performance)."
+          "default": 60000,
+          "description": "Analysis timeout in milliseconds."
         },
         "xfidelity.excludePatterns": {
           "type": "array",

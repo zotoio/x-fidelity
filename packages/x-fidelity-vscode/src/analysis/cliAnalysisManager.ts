@@ -663,7 +663,13 @@ export class CLIAnalysisManager implements IAnalysisEngine {
    */
   private async validateBinary(command: string): Promise<CLIBinaryInfo> {
     try {
-      const versionOutput = await this.execCommand(`${command} --version`);
+      // Parse command safely and add --version argument
+      const parts = command.trim().split(/\s+/);
+      const executablePath = parts[0];
+      const existingArgs = parts.slice(1);
+      const versionArgs = [...existingArgs, '--version'];
+
+      const versionOutput = await this.execCommand(executablePath, versionArgs);
       const version = versionOutput.trim();
 
       if (version) {
@@ -677,14 +683,35 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   }
 
   /**
-   * Execute shell command and return output
+   * Execute shell command and return output (secure implementation)
    */
-  private execCommand(command: string): Promise<string> {
+  private execCommand(command: string, args: string[] = []): Promise<string> {
     return new Promise((resolve, reject) => {
-      const { exec } = require('child_process');
-      exec(
-        command,
-        { timeout: 5000 },
+      const { execFile } = require('child_process');
+
+      // Parse command and arguments safely
+      let executablePath: string;
+      let execArgs: string[];
+
+      if (args.length > 0) {
+        // If args provided separately, use them directly
+        executablePath = command;
+        execArgs = args;
+      } else {
+        // Parse command string safely
+        const parts = command.trim().split(/\s+/);
+        executablePath = parts[0];
+        execArgs = parts.slice(1);
+      }
+
+      this.logger.debug(
+        `Executing secure command: ${executablePath} ${execArgs.join(' ')}`
+      );
+
+      execFile(
+        executablePath,
+        execArgs,
+        { timeout: 120000 },
         (error: any, stdout: string, _stderr: string) => {
           if (error) {
             reject(error);
