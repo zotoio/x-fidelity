@@ -20,6 +20,12 @@ export interface ExtensionConfig {
   autoAnalyzeOnFileChange: boolean; // Trigger analysis on file change (debounced)
   archetype: string; // X-Fidelity archetype
 
+  // Analysis Engine Settings
+  analysisEngine: 'extension' | 'cli'; // Analysis execution mode
+  cliBinaryPath: string; // Custom CLI binary path (empty = auto-detect)
+  cliTimeout: number; // CLI execution timeout (ms)
+  cliExtraArgs: string[]; // Additional CLI arguments
+
   // Connection Settings
   configServer: string; // Remote config server URL
   localConfigPath: string; // Local config file path
@@ -114,6 +120,12 @@ export class ConfigManager {
       configServer: workspaceConfig.get('configServer', ''),
       localConfigPath: workspaceConfig.get('localConfigPath', ''),
 
+      // Analysis Engine Settings
+      analysisEngine: workspaceConfig.get('analysisEngine', 'cli'),
+      cliBinaryPath: workspaceConfig.get('cliBinaryPath', ''),
+      cliTimeout: workspaceConfig.get('cliTimeout', 60000), // 60 seconds
+      cliExtraArgs: workspaceConfig.get('cliExtraArgs', []),
+
       // Performance Settings - OPTIMIZED FOR SPEED
       runInterval: 0, // DISABLED - was causing concurrent analysis conflicts
       autoAnalyzeOnSave: false, // DISABLED - was causing performance issues
@@ -125,7 +137,7 @@ export class ConfigManager {
 
       // Resource Limits - REDUCED FOR PERFORMANCE
       maxFileSize: workspaceConfig.get('maxFileSize', 524288), // 512KB instead of 1MB
-      analysisTimeout: workspaceConfig.get('analysisTimeout', 45000), // 45s instead of 30s (more time but fewer concurrent)
+      analysisTimeout: workspaceConfig.get('analysisTimeout', 60000),
       excludePatterns: workspaceConfig.get('excludePatterns', [
         'node_modules/**',
         '.git/**',

@@ -2,7 +2,7 @@
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity Analyzer",
   "description": "Provides X-Fidelity software architectural analysis within VS Code",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "zotoio",
   "private": true,
   "license": "MIT",
@@ -55,21 +55,7 @@
         "title": "X-Fidelity: Show Output Channel",
         "icon": "$(output)"
       },
-      {
-        "command": "xfidelity.showWasmStatus",
-        "title": "X-Fidelity: Show WASM Status",
-        "icon": "$(info)"
-      },
-      {
-        "command": "xfidelity.showPerformanceReport",
-        "title": "X-Fidelity: Show Performance Report",
-        "icon": "$(dashboard)"
-      },
-      {
-        "command": "xfidelity.showWorkerStats",
-        "title": "X-Fidelity: Worker Statistics",
-        "icon": "$(graph)"
-      },
+
       {
         "command": "xfidelity.refreshIssuesTree",
         "title": "Refresh",
@@ -116,6 +102,31 @@
         "icon": "$(search)"
       },
       {
+        "command": "xfidelity.showDashboard",
+        "title": "X-Fidelity: Dashboard",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "xfidelity.showReportHistory",
+        "title": "X-Fidelity: Report History",
+        "icon": "$(history)"
+      },
+      {
+        "command": "xfidelity.exportReport",
+        "title": "X-Fidelity: Export Report",
+        "icon": "$(export)"
+      },
+      {
+        "command": "xfidelity.resetConfiguration",
+        "title": "X-Fidelity: Reset Configuration",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "xfidelity.showAdvancedSettings",
+        "title": "X-Fidelity: Advanced Settings",
+        "icon": "$(gear)"
+      },
+      {
         "command": "xfidelity.test",
         "title": "X-Fidelity: Test Extension",
         "icon": "$(beaker)"
@@ -156,18 +167,18 @@
       "properties": {
         "xfidelity.runInterval": {
           "type": "number",
-          "default": 0,
-          "description": "Auto-analysis interval in seconds (0 = disabled for performance)."
+          "default": 300,
+          "description": "Auto-analysis interval in seconds (0 = disabled)."
         },
         "xfidelity.autoAnalyzeOnSave": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically run analysis when files are saved (disabled for performance)."
+          "description": "Automatically run analysis when files are saved."
         },
         "xfidelity.autoAnalyzeOnFileChange": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically run analysis when files change (disabled for performance)."
+          "description": "Automatically run analysis when files change."
         },
         "xfidelity.archetype": {
           "type": "string",
@@ -180,6 +191,39 @@
             "dotnet-service"
           ],
           "description": "The X-Fidelity archetype to use for analysis."
+        },
+        "xfidelity.analysisEngine": {
+          "type": "string",
+          "default": "extension",
+          "enum": [
+            "extension",
+            "cli"
+          ],
+          "enumDescriptions": [
+            "Run analysis within VSCode extension (current behavior)",
+            "Use globally installed CLI binary (faster, requires 'yarn global add x-fidelity')"
+          ],
+          "description": "Analysis execution mode: 'extension' (built-in) or 'cli' (external binary)"
+        },
+        "xfidelity.cliBinaryPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to X-Fidelity CLI binary (empty = auto-detect). Example: /usr/local/bin/xfidelity"
+        },
+        "xfidelity.cliTimeout": {
+          "type": "number",
+          "default": 60000,
+          "minimum": 5000,
+          "maximum": 300000,
+          "description": "CLI execution timeout in milliseconds (60 seconds default, 5s-300s range)"
+        },
+        "xfidelity.cliExtraArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional CLI arguments to pass to X-Fidelity binary. Example: ['--openaiEnabled', '--telemetryEnabled']"
         },
         "xfidelity.configServer": {
           "type": "string",
@@ -209,12 +253,12 @@
         "xfidelity.generateReports": {
           "type": "boolean",
           "default": false,
-          "description": "Generate analysis reports (disabled for performance)."
+          "description": "Generate analysis reports."
         },
         "xfidelity.reportOutputDir": {
           "type": "string",
           "default": "",
-          "description": "Directory for report output (default: workspace root)."
+          "description": "Directory for report output."
         },
         "xfidelity.reportFormats": {
           "type": "array",
@@ -289,12 +333,12 @@
         "xfidelity.maxFileSize": {
           "type": "number",
           "default": 524288,
-          "description": "Maximum file size to analyze in bytes (512KB for performance)."
+          "description": "Maximum file size to analyze in bytes."
         },
         "xfidelity.analysisTimeout": {
           "type": "number",
-          "default": 45000,
-          "description": "Analysis timeout in milliseconds (45s for performance)."
+          "default": 60000,
+          "description": "Analysis timeout in milliseconds."
         },
         "xfidelity.excludePatterns": {
           "type": "array",
@@ -315,7 +359,13 @@
           "items": {
             "type": "string"
           },
-          "default": [],
+          "default": [
+            "**/*.ts",
+            "**/*.tsx",
+            "**/*.js",
+            "**/*.jsx",
+            "**/*.json"
+          ],
           "description": "File patterns to include in analysis (empty = all files)."
         },
         "xfidelity.maxConcurrentAnalysis": {
@@ -348,14 +398,10 @@
         },
         "xfidelity.cacheTTL": {
           "type": "number",
-          "default": 10,
-          "description": "Cache time-to-live in minutes (10 min for performance)."
+          "default": 30,
+          "description": "Cache time-to-live in minutes (30 min for performance)."
         },
-        "xfidelity.performance.maxConcurrentOperations": {
-          "type": "number",
-          "default": 1,
-          "description": "Maximum number of concurrent analysis operations (1 for performance)"
-        },
+
         "xfidelity.performance.enableDetailedLogging": {
           "type": "boolean",
           "default": false,
@@ -363,7 +409,7 @@
         },
         "xfidelity.performance.astCacheSize": {
           "type": "number",
-          "default": 50,
+          "default": 150,
           "description": "Maximum number of AST trees to cache (reduced for performance)"
         },
         "xfidelity.performance.decorationLimit": {
@@ -398,7 +444,7 @@
         },
         "xfidelity.periodicAnalysis.maxFilesPerRun": {
           "type": "number",
-          "default": 5,
+          "default": 50,
           "description": "Maximum files to analyze per periodic run (reduced for performance)."
         },
         "xfidelity.periodicAnalysis.excludePatterns": {

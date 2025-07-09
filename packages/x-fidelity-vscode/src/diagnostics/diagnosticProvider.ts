@@ -36,6 +36,16 @@ export class DiagnosticProvider implements vscode.Disposable {
   private logger: VSCodeLogger;
   private issueCount = 0;
 
+  // Event emitter for diagnostic updates
+  private readonly onDiagnosticsUpdated = new vscode.EventEmitter<{
+    totalIssues: number;
+    filesWithIssues: number;
+  }>();
+  readonly onDidDiagnosticsUpdate: vscode.Event<{
+    totalIssues: number;
+    filesWithIssues: number;
+  }> = this.onDiagnosticsUpdated.event;
+
   constructor(private configManager: ConfigManager) {
     this.logger = new VSCodeLogger('DiagnosticProvider');
     this.diagnosticCollection =
@@ -75,6 +85,13 @@ export class DiagnosticProvider implements vscode.Disposable {
       // Convert to VS Code diagnostics and group by file
       const diagnosticsByFile = await this.convertToDiagnosticsMap(issues);
 
+      // Clear any existing diagnostics for files that no longer have issues
+      this.diagnosticCollection.forEach((uri, _diagnostics) => {
+        if (!diagnosticsByFile.has(uri)) {
+          this.diagnosticCollection.set(uri, []);
+        }
+      });
+
       // Batch update diagnostics for all files
       for (const [fileUri, diagnostics] of diagnosticsByFile) {
         this.diagnosticCollection.set(fileUri, diagnostics);
@@ -107,6 +124,12 @@ export class DiagnosticProvider implements vscode.Disposable {
             vscode.window.showTextDocument(firstFile);
           }
         });
+
+      // Emit diagnostic update event
+      this.onDiagnosticsUpdated.fire({
+        totalIssues: this.issueCount,
+        filesWithIssues: diagnosticsByFile.size
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -239,6 +262,7 @@ export class DiagnosticProvider implements vscode.Disposable {
 
   /**
    * Extract location information from various X-Fidelity issue formats
+   * All coordinates are converted to 0-based for VSCode compatibility
    */
   private extractLocationInfo(issue: any): {
     line: number;
@@ -253,6 +277,28 @@ export class DiagnosticProvider implements vscode.Disposable {
       context?: any;
     }>;
   } {
+    // Helper function to safely convert 1-based to 0-based coordinates
+    const toZeroBased = (
+      value: number | undefined,
+      defaultValue: number = 0
+    ): number => {
+      if (value === undefined || value === null) {
+        return defaultValue;
+      }
+      return Math.max(0, Number(value) - 1);
+    };
+
+    // Helper function to safely convert 1-based to 0-based coordinates with fallback
+    const toZeroBasedWithFallback = (
+      value: number | undefined,
+      fallback: number = 1
+    ): number => {
+      if (value === undefined || value === null) {
+        return toZeroBased(fallback);
+      }
+      return Math.max(0, Number(value) - 1);
+    };
+
     // Default location (0-based for VSCode)
     let line = 0;
     let column = 0;
@@ -266,19 +312,37 @@ export class DiagnosticProvider implements vscode.Disposable {
       context?: any;
     }> = [];
 
-    // Check for simple lineNumber format
-    if (issue.lineNumber && typeof issue.lineNumber === 'number') {
-      line = Math.max(0, issue.lineNumber - 1); // Convert to 0-based
-      column = Math.max(0, (issue.column || 1) - 1); // Convert to 0-based
+    // Priority 1: Check for direct location object (most specific)
+    if (issue.location) {
+      const loc = issue.location;
+      line = toZeroBasedWithFallback(loc.startLine || loc.line);
+      column = toZeroBasedWithFallback(loc.startColumn || loc.column);
+      endLine = loc.endLine ? toZeroBased(loc.endLine) : undefined;
+      endColumn = loc.endColumn ? toZeroBased(loc.endColumn) : undefined;
+    }
+    // Priority 2: Check for simple lineNumber format (common format)
+    else if (issue.lineNumber && typeof issue.lineNumber === 'number') {
+      line = toZeroBased(issue.lineNumber);
+      column = toZeroBased(issue.column || 1);
+    }
+    // Priority 3: Use defaults for missing location information
+    else {
+      line = 0;
+      column = 0;
     }
 
+    // Handle multiple locations for complex issues
     // Check for details array with line information (e.g., sensitive logging)
     if (issue.details && Array.isArray(issue.details)) {
       for (const detail of issue.details) {
         if (detail.lineNumber && typeof detail.lineNumber === 'number') {
           locations.push({
-            line: Math.max(0, detail.lineNumber - 1), // Convert to 0-based
-            column: 0, // No column info in simple format
+            line: toZeroBased(detail.lineNumber),
+            column: toZeroBased(detail.column || 1),
+            endLine: detail.endLine ? toZeroBased(detail.endLine) : undefined,
+            endColumn: detail.endColumn
+              ? toZeroBased(detail.endColumn)
+              : undefined,
             context: detail
           });
         }
@@ -295,25 +359,14 @@ export class DiagnosticProvider implements vscode.Disposable {
         if (complexity.metrics && complexity.metrics.location) {
           const loc = complexity.metrics.location;
           locations.push({
-            line: Math.max(0, (loc.startLine || 1) - 1), // Convert to 0-based
-            column: Math.max(0, (loc.startColumn || 1) - 1), // Convert to 0-based
-            endLine: loc.endLine ? Math.max(0, loc.endLine - 1) : undefined, // Convert to 0-based
-            endColumn: loc.endColumn
-              ? Math.max(0, loc.endColumn - 1)
-              : undefined, // Convert to 0-based
+            line: toZeroBasedWithFallback(loc.startLine || loc.line),
+            column: toZeroBasedWithFallback(loc.startColumn || loc.column),
+            endLine: loc.endLine ? toZeroBased(loc.endLine) : undefined,
+            endColumn: loc.endColumn ? toZeroBased(loc.endColumn) : undefined,
             context: complexity
           });
         }
       }
-    }
-
-    // Check for direct location object
-    if (issue.location) {
-      const loc = issue.location;
-      line = Math.max(0, (loc.startLine || loc.line || 1) - 1); // Convert to 0-based
-      column = Math.max(0, (loc.startColumn || loc.column || 1) - 1); // Convert to 0-based
-      endLine = loc.endLine ? Math.max(0, loc.endLine - 1) : undefined; // Convert to 0-based
-      endColumn = loc.endColumn ? Math.max(0, loc.endColumn - 1) : undefined; // Convert to 0-based
     }
 
     // If we have multiple locations, use the first one as primary and return all
@@ -326,6 +379,16 @@ export class DiagnosticProvider implements vscode.Disposable {
         endColumn: primaryLocation.endColumn,
         locations
       };
+    }
+
+    // Validate final coordinates
+    line = Math.max(0, line);
+    column = Math.max(0, column);
+    if (endLine !== undefined) {
+      endLine = Math.max(line, endLine);
+    }
+    if (endColumn !== undefined) {
+      endColumn = Math.max(column, endColumn);
     }
 
     return { line, column, endLine, endColumn };
@@ -407,21 +470,31 @@ export class DiagnosticProvider implements vscode.Disposable {
 
   /**
    * Create a VS Code diagnostic from a diagnostic issue
+   * Ensures all coordinates are valid and ranges are properly constructed
    */
   private createVSCodeDiagnostic(issue: DiagnosticIssue): vscode.Diagnostic {
-    // Create range using enhanced location information
-    const startLine = issue.line;
-    const startColumn = issue.column;
-    const endLine = issue.endLine !== undefined ? issue.endLine : issue.line;
-    const endColumn =
-      issue.endColumn !== undefined ? issue.endColumn : issue.column + 1;
+    // Ensure all coordinates are valid (non-negative)
+    const startLine = Math.max(0, issue.line);
+    const startColumn = Math.max(0, issue.column);
 
-    const range = new vscode.Range(
-      startLine,
-      startColumn,
-      endLine,
-      Math.max(startColumn + 1, endColumn) // Ensure range spans at least one character
-    );
+    // Calculate end position with proper fallbacks
+    let endLine =
+      issue.endLine !== undefined ? Math.max(0, issue.endLine) : startLine;
+    let endColumn =
+      issue.endColumn !== undefined
+        ? Math.max(0, issue.endColumn)
+        : startColumn + 1;
+
+    // Validate range consistency
+    if (endLine < startLine) {
+      endLine = startLine;
+    }
+
+    if (endLine === startLine && endColumn <= startColumn) {
+      endColumn = startColumn + 1; // Ensure range spans at least one character
+    }
+
+    const range = new vscode.Range(startLine, startColumn, endLine, endColumn);
 
     const diagnostic = new vscode.Diagnostic(
       range,
@@ -542,6 +615,12 @@ export class DiagnosticProvider implements vscode.Disposable {
     this.diagnosticCollection.clear();
     this.issueCount = 0;
     this.logger.info('Diagnostics cleared');
+
+    // Emit diagnostic update event for clearing
+    this.onDiagnosticsUpdated.fire({
+      totalIssues: 0,
+      filesWithIssues: 0
+    });
   }
 
   /**
@@ -928,13 +1007,419 @@ export class DiagnosticProvider implements vscode.Disposable {
   }
 
   dispose(): void {
+    this.decorationType?.dispose();
+    this.diagnosticCollection.dispose();
+    this.onDiagnosticsUpdated.dispose();
+
     if (this.decorationUpdateDebouncer) {
       clearTimeout(this.decorationUpdateDebouncer);
     }
-    this.diagnosticCollection.dispose();
-    this.decorationType?.dispose();
-    this.disposables.forEach(d => d.dispose());
+
+    for (const disposable of this.disposables) {
+      try {
+        disposable.dispose();
+      } catch (error) {
+        this.logger.warn(
+          'Error disposing diagnostic provider resource:',
+          error
+        );
+      }
+    }
+
     this.disposables.length = 0;
     this.logger.info('Disposing Diagnostic Provider');
+  }
+
+  /**
+   * Validation Methods for Diagnostic Accuracy
+   * These methods ensure 100% accuracy in problems panel population and line number handling
+   */
+
+  /**
+   * Validate that all diagnostics have correct coordinate conversion (1-based to 0-based)
+   */
+  public validateDiagnosticCoordinates(): {
+    isValid: boolean;
+    errors: string[];
+  } {
+    const errors: string[] = [];
+    let isValid = true;
+
+    for (const [uri, diagnostics] of this.diagnosticCollection) {
+      for (const diagnostic of diagnostics) {
+        // Validate line numbers are 0-based
+        if (diagnostic.range.start.line < 0) {
+          errors.push(
+            `${uri.fsPath}: Start line ${diagnostic.range.start.line} is negative (should be 0-based)`
+          );
+          isValid = false;
+        }
+
+        if (diagnostic.range.end.line < 0) {
+          errors.push(
+            `${uri.fsPath}: End line ${diagnostic.range.end.line} is negative (should be 0-based)`
+          );
+          isValid = false;
+        }
+
+        // Validate column numbers are 0-based
+        if (diagnostic.range.start.character < 0) {
+          errors.push(
+            `${uri.fsPath}: Start character ${diagnostic.range.start.character} is negative (should be 0-based)`
+          );
+          isValid = false;
+        }
+
+        if (diagnostic.range.end.character < 0) {
+          errors.push(
+            `${uri.fsPath}: End character ${diagnostic.range.end.character} is negative (should be 0-based)`
+          );
+          isValid = false;
+        }
+
+        // Validate range consistency
+        if (diagnostic.range.end.line < diagnostic.range.start.line) {
+          errors.push(
+            `${uri.fsPath}: End line ${diagnostic.range.end.line} before start line ${diagnostic.range.start.line}`
+          );
+          isValid = false;
+        }
+
+        if (
+          diagnostic.range.end.line === diagnostic.range.start.line &&
+          diagnostic.range.end.character < diagnostic.range.start.character
+        ) {
+          errors.push(
+            `${uri.fsPath}: End character ${diagnostic.range.end.character} before start character ${diagnostic.range.start.character} on same line`
+          );
+          isValid = false;
+        }
+
+        // Validate required properties
+        if (!diagnostic.message) {
+          errors.push(`${uri.fsPath}: Diagnostic missing message`);
+          isValid = false;
+        }
+
+        if (!diagnostic.source) {
+          errors.push(`${uri.fsPath}: Diagnostic missing source`);
+          isValid = false;
+        }
+
+        if (diagnostic.source !== 'X-Fidelity') {
+          errors.push(
+            `${uri.fsPath}: Diagnostic has incorrect source: ${diagnostic.source} (expected 'X-Fidelity')`
+          );
+          isValid = false;
+        }
+
+        if (!diagnostic.code) {
+          errors.push(`${uri.fsPath}: Diagnostic missing code (rule ID)`);
+          isValid = false;
+        }
+      }
+    }
+
+    this.logger.info('Diagnostic coordinate validation completed', {
+      isValid,
+      errorCount: errors.length,
+      totalDiagnostics: this.issueCount
+    });
+
+    return { isValid, errors };
+  }
+
+  /**
+   * Validate that diagnostics can be navigated to (files exist and lines are in bounds)
+   */
+  public async validateDiagnosticNavigation(): Promise<{
+    isValid: boolean;
+    errors: string[];
+  }> {
+    const errors: string[] = [];
+    let isValid = true;
+
+    for (const [uri, diagnostics] of this.diagnosticCollection) {
+      try {
+        // Check if file exists and can be opened
+        const document = await vscode.workspace.openTextDocument(uri);
+
+        for (const diagnostic of diagnostics) {
+          const startLine = diagnostic.range.start.line;
+          const endLine = diagnostic.range.end.line;
+
+          // Validate line numbers are within document bounds
+          if (startLine >= document.lineCount) {
+            errors.push(
+              `${uri.fsPath}:${startLine + 1}: Line ${startLine + 1} is beyond document end (${document.lineCount} lines)`
+            );
+            isValid = false;
+          }
+
+          if (endLine >= document.lineCount) {
+            errors.push(
+              `${uri.fsPath}:${endLine + 1}: End line ${endLine + 1} is beyond document end (${document.lineCount} lines)`
+            );
+            isValid = false;
+          }
+
+          // Validate column numbers are within line bounds
+          if (startLine < document.lineCount) {
+            const lineText = document.lineAt(startLine).text;
+            const startChar = diagnostic.range.start.character;
+
+            if (startChar > lineText.length) {
+              errors.push(
+                `${uri.fsPath}:${startLine + 1}:${startChar + 1}: Column ${startChar + 1} is beyond line end (${lineText.length} characters)`
+              );
+              isValid = false;
+            }
+          }
+
+          if (endLine < document.lineCount && endLine === startLine) {
+            const lineText = document.lineAt(endLine).text;
+            const endChar = diagnostic.range.end.character;
+
+            if (endChar > lineText.length) {
+              errors.push(
+                `${uri.fsPath}:${endLine + 1}:${endChar + 1}: End column ${endChar + 1} is beyond line end (${lineText.length} characters)`
+              );
+              isValid = false;
+            }
+          }
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        errors.push(
+          `${uri.fsPath}: Cannot open file for validation: ${errorMessage}`
+        );
+        isValid = false;
+      }
+    }
+
+    this.logger.info('Diagnostic navigation validation completed', {
+      isValid,
+      errorCount: errors.length,
+      totalDiagnostics: this.issueCount
+    });
+
+    return { isValid, errors };
+  }
+
+  /**
+   * Validate severity mapping consistency
+   */
+  public validateSeverityMapping(expectedCounts?: {
+    errors: number;
+    warnings: number;
+    info: number;
+  }): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    let isValid = true;
+
+    const summary = this.getDiagnosticsSummary();
+
+    // Validate severity distribution makes sense
+    if (
+      summary.total !==
+      summary.errors + summary.warnings + summary.info + summary.hints
+    ) {
+      errors.push(
+        `Severity count mismatch: total ${summary.total} != errors ${summary.errors} + warnings ${summary.warnings} + info ${summary.info} + hints ${summary.hints}`
+      );
+      isValid = false;
+    }
+
+    // Validate against expected counts if provided
+    if (expectedCounts) {
+      if (summary.errors !== expectedCounts.errors) {
+        errors.push(
+          `Error count mismatch: expected ${expectedCounts.errors}, got ${summary.errors}`
+        );
+        isValid = false;
+      }
+
+      if (summary.warnings !== expectedCounts.warnings) {
+        errors.push(
+          `Warning count mismatch: expected ${expectedCounts.warnings}, got ${summary.warnings}`
+        );
+        isValid = false;
+      }
+
+      if (summary.info !== expectedCounts.info) {
+        errors.push(
+          `Info count mismatch: expected ${expectedCounts.info}, got ${summary.info}`
+        );
+        isValid = false;
+      }
+    }
+
+    // Validate each diagnostic has a valid severity
+    for (const [uri, diagnostics] of this.diagnosticCollection) {
+      for (const diagnostic of diagnostics) {
+        const validSeverities = [
+          vscode.DiagnosticSeverity.Error,
+          vscode.DiagnosticSeverity.Warning,
+          vscode.DiagnosticSeverity.Information,
+          vscode.DiagnosticSeverity.Hint
+        ];
+
+        if (!validSeverities.includes(diagnostic.severity)) {
+          errors.push(
+            `${uri.fsPath}: Invalid severity ${diagnostic.severity} for diagnostic "${diagnostic.message}"`
+          );
+          isValid = false;
+        }
+      }
+    }
+
+    this.logger.info('Severity mapping validation completed', {
+      isValid,
+      errorCount: errors.length,
+      severitySummary: summary,
+      expectedCounts
+    });
+
+    return { isValid, errors };
+  }
+
+  /**
+   * Validate problems panel integration (checks if diagnostics are actually visible in problems panel)
+   */
+  public validateProblemsPanel(): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    let isValid = true;
+
+    // Check if diagnostics are registered with VS Code
+    const registeredDiagnostics = vscode.languages.getDiagnostics();
+
+    // Find X-Fidelity diagnostics in the global diagnostics
+    let totalXFIDiagnostics = 0;
+    let xfidelityFiles = 0;
+
+    for (const [, diagnostics] of registeredDiagnostics) {
+      const xfiDiagnostics = diagnostics.filter(d => d.source === 'X-Fidelity');
+      if (xfiDiagnostics.length > 0) {
+        totalXFIDiagnostics += xfiDiagnostics.length;
+        xfidelityFiles++;
+      }
+    }
+
+    // Validate that our diagnostics are actually registered
+    if (totalXFIDiagnostics === 0 && this.issueCount > 0) {
+      errors.push(
+        `No X-Fidelity diagnostics found in problems panel, but ${this.issueCount} issues were processed`
+      );
+      isValid = false;
+    }
+
+    if (totalXFIDiagnostics !== this.issueCount) {
+      errors.push(
+        `Diagnostic count mismatch: problems panel has ${totalXFIDiagnostics}, but provider has ${this.issueCount}`
+      );
+      isValid = false;
+    }
+
+    // Validate that files match
+    let ourFiles = 0;
+    this.diagnosticCollection.forEach(() => {
+      ourFiles++;
+    });
+    if (xfidelityFiles !== ourFiles) {
+      errors.push(
+        `File count mismatch: problems panel has ${xfidelityFiles} files, but provider has ${ourFiles} files`
+      );
+      isValid = false;
+    }
+
+    this.logger.info('Problems panel validation completed', {
+      isValid,
+      errorCount: errors.length,
+      problemsPanelDiagnostics: totalXFIDiagnostics,
+      problemsPanelFiles: xfidelityFiles,
+      providerDiagnostics: this.issueCount,
+      providerFiles: ourFiles
+    });
+
+    return { isValid, errors };
+  }
+
+  /**
+   * Run comprehensive validation of all diagnostic aspects
+   */
+  public async runComprehensiveValidation(expectedCounts?: {
+    errors: number;
+    warnings: number;
+    info: number;
+  }): Promise<{
+    isValid: boolean;
+    coordinateValidation: { isValid: boolean; errors: string[] };
+    navigationValidation: { isValid: boolean; errors: string[] };
+    severityValidation: { isValid: boolean; errors: string[] };
+    problemsPanelValidation: { isValid: boolean; errors: string[] };
+    summary: string[];
+  }> {
+    this.logger.info('Starting comprehensive diagnostic validation');
+
+    const coordinateValidation = this.validateDiagnosticCoordinates();
+    const navigationValidation = await this.validateDiagnosticNavigation();
+    const severityValidation = this.validateSeverityMapping(expectedCounts);
+    const problemsPanelValidation = this.validateProblemsPanel();
+
+    const isValid =
+      coordinateValidation.isValid &&
+      navigationValidation.isValid &&
+      severityValidation.isValid &&
+      problemsPanelValidation.isValid;
+
+    const summary: string[] = [];
+
+    if (coordinateValidation.isValid) {
+      summary.push('✅ Coordinate conversion validation passed');
+    } else {
+      summary.push(
+        `❌ Coordinate conversion validation failed (${coordinateValidation.errors.length} errors)`
+      );
+    }
+
+    if (navigationValidation.isValid) {
+      summary.push('✅ Navigation validation passed');
+    } else {
+      summary.push(
+        `❌ Navigation validation failed (${navigationValidation.errors.length} errors)`
+      );
+    }
+
+    if (severityValidation.isValid) {
+      summary.push('✅ Severity mapping validation passed');
+    } else {
+      summary.push(
+        `❌ Severity mapping validation failed (${severityValidation.errors.length} errors)`
+      );
+    }
+
+    if (problemsPanelValidation.isValid) {
+      summary.push('✅ Problems panel integration validation passed');
+    } else {
+      summary.push(
+        `❌ Problems panel integration validation failed (${problemsPanelValidation.errors.length} errors)`
+      );
+    }
+
+    this.logger.info('Comprehensive validation completed', {
+      isValid,
+      totalDiagnostics: this.issueCount,
+      summary
+    });
+
+    return {
+      isValid,
+      coordinateValidation,
+      navigationValidation,
+      severityValidation,
+      problemsPanelValidation,
+      summary
+    };
   }
 }

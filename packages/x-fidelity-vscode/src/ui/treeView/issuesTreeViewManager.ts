@@ -165,6 +165,16 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         this.refreshIssues();
       })
     );
+
+    // CRITICAL FIX: Listen for diagnostic updates to refresh tree view automatically
+    this.disposables.push(
+      this.diagnosticProvider.onDidDiagnosticsUpdate(updateInfo => {
+        logger.debug(
+          `Tree view refreshing due to diagnostics update: ${updateInfo.totalIssues} issues across ${updateInfo.filesWithIssues} files`
+        );
+        this.refreshIssues();
+      })
+    );
   }
 
   private refreshIssues(): void {
