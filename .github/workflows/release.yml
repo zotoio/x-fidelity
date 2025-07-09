@@ -28,7 +28,7 @@ jobs:
       run: yarn test  
 
     - name: Run semantic-release of cli
-      run: yarn workspace @x-fidelity/cli semantic-release
+      run: yarn workspace x-fidelity semantic-release
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
