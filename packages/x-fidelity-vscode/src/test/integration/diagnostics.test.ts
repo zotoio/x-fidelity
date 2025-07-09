@@ -14,7 +14,7 @@ import type { ResultMetadata } from '@x-fidelity/types';
 
 /**
  * Comprehensive Diagnostic Validation Tests
- * 
+ *
  * This test suite ensures that:
  * 1. Problems panel is properly populated with X-Fi issues
  * 2. Line numbers are 100% accurate (proper 1-based to 0-based conversion)
@@ -30,15 +30,18 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     this.timeout(60000);
     await ensureExtensionActivated();
     workspace = getTestWorkspace();
-    
+
     // Get the diagnostic collection from the extension
-    diagnosticCollection = vscode.languages.createDiagnosticCollection('test-x-fidelity');
-    
+    diagnosticCollection =
+      vscode.languages.createDiagnosticCollection('test-x-fidelity');
+
     // Wait for extension to fully initialize
     await new Promise(resolve => setTimeout(resolve, 5000));
-    
+
     if (global.isVerboseMode) {
-      global.testConsole.log(`✅ Diagnostic tests setup complete - workspace: ${workspace.uri.fsPath}`);
+      global.testConsole.log(
+        `✅ Diagnostic tests setup complete - workspace: ${workspace.uri.fsPath}`
+      );
     }
   });
 
@@ -50,14 +53,17 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     this.timeout(120000);
 
     const workspacePath = workspace.uri.fsPath;
-    
+
     // Run CLI analysis to get ground truth
     const cliResult = await runCLIAnalysis(workspacePath);
     assert.ok(cliResult.XFI_RESULT, 'CLI analysis should return XFI_RESULT');
-    
+
     // Run extension analysis
     const extensionResult = await runExtensionAnalysis();
-    assert.ok(extensionResult.XFI_RESULT, 'Extension analysis should return XFI_RESULT');
+    assert.ok(
+      extensionResult.XFI_RESULT,
+      'Extension analysis should return XFI_RESULT'
+    );
 
     // Validate that both found the same number of issues
     assert.strictEqual(
@@ -71,16 +77,21 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     const extensionIssues = extractIssuesWithLineNumbers(extensionResult);
 
     if (global.isVerboseMode) {
-      global.testConsole.log(`CLI found ${cliIssues.length} issues with line numbers`);
-      global.testConsole.log(`Extension found ${extensionIssues.length} issues with line numbers`);
+      global.testConsole.log(
+        `CLI found ${cliIssues.length} issues with line numbers`
+      );
+      global.testConsole.log(
+        `Extension found ${extensionIssues.length} issues with line numbers`
+      );
     }
 
     // Validate that line numbers match between CLI and Extension
     for (const cliIssue of cliIssues) {
-      const matchingExtensionIssue = extensionIssues.find(ext => 
-        ext.file === cliIssue.file && 
-        ext.rule === cliIssue.rule &&
-        ext.message === cliIssue.message
+      const matchingExtensionIssue = extensionIssues.find(
+        ext =>
+          ext.file === cliIssue.file &&
+          ext.rule === cliIssue.rule &&
+          ext.message === cliIssue.message
       );
 
       assert.ok(
@@ -112,10 +123,10 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     this.timeout(60000);
 
     const workspacePath = workspace.uri.fsPath;
-    
+
     // Run CLI analysis
     const cliResult = await runCLIAnalysis(workspacePath);
-    
+
     // Run extension analysis
     const extensionResult = await runExtensionAnalysis();
 
@@ -143,7 +154,7 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
         extensionSeverity,
         `Extension should have severity mapping for issue: ${key}`
       );
-      
+
       assert.strictEqual(
         extensionSeverity,
         cliSeverity,
@@ -152,7 +163,9 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     }
 
     if (global.isVerboseMode) {
-      global.testConsole.log('✅ Severity mapping consistency validation passed');
+      global.testConsole.log(
+        '✅ Severity mapping consistency validation passed'
+      );
     }
   });
 
@@ -171,7 +184,10 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
 
     // Get all diagnostics
     const allDiagnostics = vscode.languages.getDiagnostics();
-    assert.ok(allDiagnostics.length > 0, 'Problems panel should contain diagnostics');
+    assert.ok(
+      allDiagnostics.length > 0,
+      'Problems panel should contain diagnostics'
+    );
 
     // Find X-Fidelity diagnostics
     const xfidelityDiagnostics = allDiagnostics.filter(([_uri, diagnostics]) =>
@@ -192,14 +208,26 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
       for (const diag of xfiDiags) {
         assert.ok(diag.message, 'Diagnostic should have a message');
         assert.ok(diag.range, 'Diagnostic should have a range');
-        assert.ok(diag.source === 'X-Fidelity', 'Diagnostic source should be X-Fidelity');
+        assert.ok(
+          diag.source === 'X-Fidelity',
+          'Diagnostic source should be X-Fidelity'
+        );
         assert.ok(diag.code, 'Diagnostic should have a code (rule ID)');
-        
+
         // Validate range is valid
-        assert.ok(diag.range.start.line >= 0, 'Start line should be 0-based and non-negative');
-        assert.ok(diag.range.start.character >= 0, 'Start character should be 0-based and non-negative');
-        assert.ok(diag.range.end.line >= diag.range.start.line, 'End line should be >= start line');
-        
+        assert.ok(
+          diag.range.start.line >= 0,
+          'Start line should be 0-based and non-negative'
+        );
+        assert.ok(
+          diag.range.start.character >= 0,
+          'Start character should be 0-based and non-negative'
+        );
+        assert.ok(
+          diag.range.end.line >= diag.range.start.line,
+          'End line should be >= start line'
+        );
+
         if (diag.range.end.line === diag.range.start.line) {
           assert.ok(
             diag.range.end.character >= diag.range.start.character,
@@ -221,7 +249,9 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
 
       if (global.isVerboseMode) {
         const relativePath = vscode.workspace.asRelativePath(uri);
-        global.testConsole.log(`${relativePath}: ${xfiDiags.length} X-Fidelity issues`);
+        global.testConsole.log(
+          `${relativePath}: ${xfiDiags.length} X-Fidelity issues`
+        );
       }
     }
 
@@ -231,7 +261,9 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     );
 
     if (global.isVerboseMode) {
-      global.testConsole.log(`✅ Problems panel populated with ${totalXFIDiagnostics} X-Fidelity diagnostics`);
+      global.testConsole.log(
+        `✅ Problems panel populated with ${totalXFIDiagnostics} X-Fidelity diagnostics`
+      );
     }
   });
 
@@ -239,11 +271,16 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     this.timeout(60000);
 
     // Focus on ComplexComponent.tsx which should have function complexity issues
-    const complexComponentPath = path.join(workspace.uri.fsPath, 'src', 'components', 'ComplexComponent.tsx');
-    
+    const complexComponentPath = path.join(
+      workspace.uri.fsPath,
+      'src',
+      'components',
+      'ComplexComponent.tsx'
+    );
+
     // Run analysis
     await executeCommandSafely('xfidelity.runAnalysis');
-    
+
     // Wait for diagnostics
     await waitFor(async () => {
       const diagnostics = vscode.languages.getDiagnostics();
@@ -252,18 +289,21 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
 
     // Find diagnostics for ComplexComponent.tsx
     const complexComponentUri = vscode.Uri.file(complexComponentPath);
-    const complexComponentDiagnostics = vscode.languages.getDiagnostics(complexComponentUri);
+    const complexComponentDiagnostics =
+      vscode.languages.getDiagnostics(complexComponentUri);
 
     if (complexComponentDiagnostics.length === 0) {
       if (global.isVerboseMode) {
-        global.testConsole.log('⚠️ No diagnostics found for ComplexComponent.tsx - this may be expected');
+        global.testConsole.log(
+          '⚠️ No diagnostics found for ComplexComponent.tsx - this may be expected'
+        );
       }
       return;
     }
 
     // Validate specific known issues
-    const functionComplexityDiagnostics = complexComponentDiagnostics.filter(diag =>
-      diag.code && diag.code.toString().includes('functionComplexity')
+    const functionComplexityDiagnostics = complexComponentDiagnostics.filter(
+      diag => diag.code && diag.code.toString().includes('functionComplexity')
     );
 
     if (functionComplexityDiagnostics.length > 0) {
@@ -289,7 +329,9 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
       }
 
       if (global.isVerboseMode) {
-        global.testConsole.log(`✅ Found ${functionComplexityDiagnostics.length} function complexity issues with valid line numbers`);
+        global.testConsole.log(
+          `✅ Found ${functionComplexityDiagnostics.length} function complexity issues with valid line numbers`
+        );
       }
     }
   });
@@ -299,7 +341,7 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
 
     // Run analysis
     await executeCommandSafely('xfidelity.runAnalysis');
-    
+
     // Wait for diagnostics
     await waitFor(async () => {
       const diagnostics = vscode.languages.getDiagnostics();
@@ -309,11 +351,15 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     // Get all X-Fidelity diagnostics
     const allDiagnostics = vscode.languages.getDiagnostics();
     const xfidelityDiagnostics = allDiagnostics
-      .filter(([_uri, diagnostics]) => diagnostics.some(diag => diag.source === 'X-Fidelity'))
+      .filter(([_uri, diagnostics]) =>
+        diagnostics.some(diag => diag.source === 'X-Fidelity')
+      )
       .slice(0, 3); // Test first 3 files to avoid timeout
 
     for (const [uri, diagnostics] of xfidelityDiagnostics) {
-      const xfiDiags = diagnostics.filter(diag => diag.source === 'X-Fidelity').slice(0, 2); // Test first 2 issues per file
+      const xfiDiags = diagnostics
+        .filter(diag => diag.source === 'X-Fidelity')
+        .slice(0, 2); // Test first 2 issues per file
 
       for (const diag of xfiDiags) {
         try {
@@ -359,7 +405,9 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     }
 
     if (global.isVerboseMode) {
-      global.testConsole.log('✅ Diagnostic navigation accuracy validation passed');
+      global.testConsole.log(
+        '✅ Diagnostic navigation accuracy validation passed'
+      );
     }
   });
 
@@ -368,7 +416,7 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
 
     // Run analysis to populate problems panel
     await executeCommandSafely('xfidelity.runAnalysis');
-    
+
     // Wait for diagnostics
     await waitFor(async () => {
       const diagnostics = vscode.languages.getDiagnostics();
@@ -376,7 +424,9 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     }, 30000);
 
     // Test focusing problems panel
-    const focusResult = await executeCommandSafely('workbench.panel.markers.view.focus');
+    const focusResult = await executeCommandSafely(
+      'workbench.panel.markers.view.focus'
+    );
     assert.ok(focusResult.success, 'Should be able to focus problems panel');
 
     // Test other problems panel related commands
@@ -393,7 +443,7 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
 
     // Run analysis
     await executeCommandSafely('xfidelity.runAnalysis');
-    
+
     // Wait for diagnostics
     await waitFor(async () => {
       const diagnostics = vscode.languages.getDiagnostics();
@@ -406,7 +456,7 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
       diagnostics.some(diag => diag.source === 'X-Fidelity')
     );
 
-    for (const [_uri, diagnostics] of xfidelityDiagnostics) {
+    for (const [, diagnostics] of xfidelityDiagnostics) {
       const xfiDiags = diagnostics.filter(diag => diag.source === 'X-Fidelity');
 
       for (const diag of xfiDiags) {
@@ -415,7 +465,7 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
           diag.range.start.line >= 0,
           `Diagnostic line should be 0-based: got ${diag.range.start.line}`
         );
-        
+
         assert.ok(
           diag.range.start.character >= 0,
           `Diagnostic character should be 0-based: got ${diag.range.start.character}`
@@ -437,7 +487,9 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     }
 
     if (global.isVerboseMode) {
-      global.testConsole.log('✅ Diagnostic coordinate conversion accuracy validated');
+      global.testConsole.log(
+        '✅ Diagnostic coordinate conversion accuracy validated'
+      );
     }
   });
 
@@ -478,7 +530,9 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
   }
 
   // Helper function to extract severity mapping for comparison
-  function extractSeverityMapping(result: ResultMetadata): Record<string, string> {
+  function extractSeverityMapping(
+    result: ResultMetadata
+  ): Record<string, string> {
     const severityMap: Record<string, string> = {};
 
     for (const detail of result.XFI_RESULT.issueDetails) {
@@ -490,4 +544,4 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
 
     return severityMap;
   }
-}); 
+});

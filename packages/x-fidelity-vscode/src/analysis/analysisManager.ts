@@ -8,18 +8,26 @@ import {
   getWorkspaceFolder,
   getAnalysisTargetDirectory
 } from '../utils/workspaceUtils';
+import {
+  createComponentLogger,
+  logCommandStart,
+  logCommandSuccess,
+  logCommandError
+} from '../utils/globalLogger';
 import type { AnalysisResult, ResultMetadata } from './types';
+import type { IExtensionAnalysisEngine } from './analysisEngineInterface';
 
 // Simplified analysis state
 type SimpleAnalysisState = 'idle' | 'analyzing' | 'complete' | 'error';
 
-export class AnalysisManager implements vscode.Disposable {
+export class AnalysisManager implements IExtensionAnalysisEngine {
   private disposables: vscode.Disposable[] = [];
   private isAnalyzing = false;
   private analysisTimeout?: NodeJS.Timeout;
   private periodicTimer?: NodeJS.Timeout;
   private cancellationToken?: vscode.CancellationTokenSource;
   private logger: VSCodeLogger;
+  private globalLogger: ReturnType<typeof createComponentLogger>;
   private lastAnalysisResult: AnalysisResult | null = null;
   private currentState: SimpleAnalysisState = 'idle';
   private stateChangeTimeout?: NodeJS.Timeout;
@@ -47,6 +55,7 @@ export class AnalysisManager implements vscode.Disposable {
     private diagnosticProvider: DiagnosticProvider
   ) {
     this.logger = new VSCodeLogger('X-Fidelity Analysis');
+    this.globalLogger = createComponentLogger('Extension Analysis');
     this.setupEventListeners();
   }
 
@@ -55,6 +64,15 @@ export class AnalysisManager implements vscode.Disposable {
   }
 
   get onDidAnalysisComplete(): vscode.Event<AnalysisResult> {
+    return this.onAnalysisComplete.event;
+  }
+
+  // New interface compatibility events
+  get onStateChanged(): vscode.Event<SimpleAnalysisState> {
+    return this.onAnalysisStateChanged.event;
+  }
+
+  get onComplete(): vscode.Event<AnalysisResult> {
     return this.onAnalysisComplete.event;
   }
 
@@ -132,12 +150,17 @@ export class AnalysisManager implements vscode.Disposable {
     const startTime = performance.now();
     let timeoutHandle: NodeJS.Timeout | undefined;
 
+    // Log analysis start to message channel
+    logCommandStart('xfidelity.runAnalysis', 'Extension Analysis');
+    this.globalLogger.info('🚀 Starting extension analysis...');
+
     try {
       const config = this.configManager.getConfig();
       const analysisTargetPath = getAnalysisTargetDirectory();
 
       if (!analysisTargetPath) {
         this.logger.error('No valid analysis target found');
+        this.globalLogger.error('❌ No workspace or analysis target found');
         vscode.window.showErrorMessage('No workspace or analysis target found');
         return null;
       }
@@ -146,17 +169,21 @@ export class AnalysisManager implements vscode.Disposable {
       const workspaceName =
         workspaceFolder?.name || path.basename(analysisTargetPath);
 
+      this.globalLogger.info(`📁 Analysis target: ${analysisTargetPath}`);
+      this.globalLogger.info(`🎯 Archetype: ${config.archetype}`);
+
       // Set up cancellation
       this.cancellationToken = new vscode.CancellationTokenSource();
       timeoutHandle = setTimeout(() => {
         this.logger.warn('Analysis timeout reached');
+        this.globalLogger.warn('⏱️ Analysis timeout reached');
         this.cancellationToken?.cancel();
       }, config.analysisTimeout);
 
       this.isAnalyzing = true;
       this.emitStateChange('analyzing');
 
-      this.logger.info('Starting OPTIMIZED analysis', {
+      this.logger.info('Starting analysis', {
         analysisTargetPath,
         workspaceName,
         archetype: config.archetype,
@@ -173,6 +200,7 @@ export class AnalysisManager implements vscode.Disposable {
         },
         async (progress, token) => {
           progress.report({ message: 'Analyzing...', increment: 20 });
+          this.globalLogger.info('⚡ Initializing analysis engine...');
 
           // Check for cancellation
           if (
@@ -187,6 +215,7 @@ export class AnalysisManager implements vscode.Disposable {
             message: 'Running core analysis...',
             increment: 50
           });
+          this.globalLogger.info('🔍 Running core analysis...');
 
           const analysisResult = await analyzeCodebase({
             repoPath: analysisTargetPath,
@@ -196,11 +225,13 @@ export class AnalysisManager implements vscode.Disposable {
           });
 
           progress.report({ message: 'Completed', increment: 100 });
+          this.globalLogger.info('✅ Core analysis completed');
           return analysisResult;
         }
       );
 
       // Update diagnostics through centralized provider
+      this.globalLogger.info('📝 Updating diagnostics...');
       await this.diagnosticProvider.updateDiagnostics(result);
 
       // Get diagnostics from provider for consistent data
@@ -227,15 +258,18 @@ export class AnalysisManager implements vscode.Disposable {
       // Update performance metrics
       this.updatePerformanceMetrics(duration);
 
-      this.logger.info('OPTIMIZED Analysis completed successfully', {
-        duration,
-        totalIssues: result.XFI_RESULT.totalIssues,
-        filesAnalyzed: result.XFI_RESULT.fileCount,
-        optimized: true
-      });
-
-      // PERFORMANCE FIX: Skip report generation by default (disabled in config)
-      // Reports are now disabled by default for performance
+      // Log success to message channel
+      logCommandSuccess(
+        'xfidelity.runAnalysis',
+        'Extension Analysis',
+        duration
+      );
+      this.globalLogger.info(
+        `✅ Extension analysis completed successfully in ${Math.round(duration)}ms`
+      );
+      this.globalLogger.info(
+        `📊 Analysis results: ${result.XFI_RESULT.totalIssues} issues found across ${result.XFI_RESULT.fileCount} files`
+      );
 
       this.emitStateChange('complete');
       this.lastAnalysisResult = analysisResult;
@@ -250,19 +284,24 @@ export class AnalysisManager implements vscode.Disposable {
       const duration = performance.now() - startTime;
 
       if (this.cancellationToken?.token.isCancellationRequested) {
-        this.logger.info('Analysis cancelled by user', { duration });
+        this.globalLogger.info('⏹️ Analysis was cancelled by user');
         this.emitStateChange('idle');
         return null;
       }
 
       const analysisError =
         error instanceof Error ? error : new Error(String(error));
-      this.logger.error('OPTIMIZED Analysis failed', {
-        error: analysisError.message,
-        duration,
-        analysisTargetPath: getAnalysisTargetDirectory(),
-        workspaceName: getWorkspaceFolder()?.name
-      });
+
+      // Log error to message channel
+      logCommandError(
+        'xfidelity.runAnalysis',
+        'Extension Analysis',
+        error,
+        duration
+      );
+      this.globalLogger.error(
+        `❌ Extension analysis failed: ${analysisError.message}`
+      );
 
       this.emitStateChange('error');
       vscode.window.showErrorMessage(
@@ -270,15 +309,14 @@ export class AnalysisManager implements vscode.Disposable {
       );
       return null;
     } finally {
-      if (timeoutHandle) {
-        clearTimeout(timeoutHandle);
-      }
+      // PERFORMANCE FIX: Always release global lock
+      AnalysisManager.globalAnalysisLock = false;
       this.isAnalyzing = false;
       this.cancellationToken?.dispose();
       this.cancellationToken = undefined;
-
-      // PERFORMANCE FIX: Always release global lock
-      AnalysisManager.globalAnalysisLock = false;
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
     }
   }
 
@@ -294,7 +332,7 @@ export class AnalysisManager implements vscode.Disposable {
     }, delay);
   }
 
-  startPeriodicAnalysis(): void {
+  async startPeriodicAnalysis(): Promise<void> {
     const config = this.configManager.getConfig();
     this.stopPeriodicAnalysis();
 

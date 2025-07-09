@@ -36,6 +36,16 @@ export class DiagnosticProvider implements vscode.Disposable {
   private logger: VSCodeLogger;
   private issueCount = 0;
 
+  // Event emitter for diagnostic updates
+  private readonly onDiagnosticsUpdated = new vscode.EventEmitter<{
+    totalIssues: number;
+    filesWithIssues: number;
+  }>();
+  readonly onDidDiagnosticsUpdate: vscode.Event<{
+    totalIssues: number;
+    filesWithIssues: number;
+  }> = this.onDiagnosticsUpdated.event;
+
   constructor(private configManager: ConfigManager) {
     this.logger = new VSCodeLogger('DiagnosticProvider');
     this.diagnosticCollection =
@@ -75,6 +85,13 @@ export class DiagnosticProvider implements vscode.Disposable {
       // Convert to VS Code diagnostics and group by file
       const diagnosticsByFile = await this.convertToDiagnosticsMap(issues);
 
+      // Clear any existing diagnostics for files that no longer have issues
+      this.diagnosticCollection.forEach((uri, _diagnostics) => {
+        if (!diagnosticsByFile.has(uri)) {
+          this.diagnosticCollection.set(uri, []);
+        }
+      });
+
       // Batch update diagnostics for all files
       for (const [fileUri, diagnostics] of diagnosticsByFile) {
         this.diagnosticCollection.set(fileUri, diagnostics);
@@ -107,6 +124,12 @@ export class DiagnosticProvider implements vscode.Disposable {
             vscode.window.showTextDocument(firstFile);
           }
         });
+
+      // Emit diagnostic update event
+      this.onDiagnosticsUpdated.fire({
+        totalIssues: this.issueCount,
+        filesWithIssues: diagnosticsByFile.size
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -239,6 +262,7 @@ export class DiagnosticProvider implements vscode.Disposable {
 
   /**
    * Extract location information from various X-Fidelity issue formats
+   * All coordinates are converted to 0-based for VSCode compatibility
    */
   private extractLocationInfo(issue: any): {
     line: number;
@@ -253,6 +277,28 @@ export class DiagnosticProvider implements vscode.Disposable {
       context?: any;
     }>;
   } {
+    // Helper function to safely convert 1-based to 0-based coordinates
+    const toZeroBased = (
+      value: number | undefined,
+      defaultValue: number = 0
+    ): number => {
+      if (value === undefined || value === null) {
+        return defaultValue;
+      }
+      return Math.max(0, Number(value) - 1);
+    };
+
+    // Helper function to safely convert 1-based to 0-based coordinates with fallback
+    const toZeroBasedWithFallback = (
+      value: number | undefined,
+      fallback: number = 1
+    ): number => {
+      if (value === undefined || value === null) {
+        return toZeroBased(fallback);
+      }
+      return Math.max(0, Number(value) - 1);
+    };
+
     // Default location (0-based for VSCode)
     let line = 0;
     let column = 0;
@@ -266,19 +312,37 @@ export class DiagnosticProvider implements vscode.Disposable {
       context?: any;
     }> = [];
 
-    // Check for simple lineNumber format
-    if (issue.lineNumber && typeof issue.lineNumber === 'number') {
-      line = Math.max(0, issue.lineNumber - 1); // Convert to 0-based
-      column = Math.max(0, (issue.column || 1) - 1); // Convert to 0-based
+    // Priority 1: Check for direct location object (most specific)
+    if (issue.location) {
+      const loc = issue.location;
+      line = toZeroBasedWithFallback(loc.startLine || loc.line);
+      column = toZeroBasedWithFallback(loc.startColumn || loc.column);
+      endLine = loc.endLine ? toZeroBased(loc.endLine) : undefined;
+      endColumn = loc.endColumn ? toZeroBased(loc.endColumn) : undefined;
+    }
+    // Priority 2: Check for simple lineNumber format (common format)
+    else if (issue.lineNumber && typeof issue.lineNumber === 'number') {
+      line = toZeroBased(issue.lineNumber);
+      column = toZeroBased(issue.column || 1);
+    }
+    // Priority 3: Use defaults for missing location information
+    else {
+      line = 0;
+      column = 0;
     }
 
+    // Handle multiple locations for complex issues
     // Check for details array with line information (e.g., sensitive logging)
     if (issue.details && Array.isArray(issue.details)) {
       for (const detail of issue.details) {
         if (detail.lineNumber && typeof detail.lineNumber === 'number') {
           locations.push({
-            line: Math.max(0, detail.lineNumber - 1), // Convert to 0-based
-            column: 0, // No column info in simple format
+            line: toZeroBased(detail.lineNumber),
+            column: toZeroBased(detail.column || 1),
+            endLine: detail.endLine ? toZeroBased(detail.endLine) : undefined,
+            endColumn: detail.endColumn
+              ? toZeroBased(detail.endColumn)
+              : undefined,
             context: detail
           });
         }
@@ -295,25 +359,14 @@ export class DiagnosticProvider implements vscode.Disposable {
         if (complexity.metrics && complexity.metrics.location) {
           const loc = complexity.metrics.location;
           locations.push({
-            line: Math.max(0, (loc.startLine || 1) - 1), // Convert to 0-based
-            column: Math.max(0, (loc.startColumn || 1) - 1), // Convert to 0-based
-            endLine: loc.endLine ? Math.max(0, loc.endLine - 1) : undefined, // Convert to 0-based
-            endColumn: loc.endColumn
-              ? Math.max(0, loc.endColumn - 1)
-              : undefined, // Convert to 0-based
+            line: toZeroBasedWithFallback(loc.startLine || loc.line),
+            column: toZeroBasedWithFallback(loc.startColumn || loc.column),
+            endLine: loc.endLine ? toZeroBased(loc.endLine) : undefined,
+            endColumn: loc.endColumn ? toZeroBased(loc.endColumn) : undefined,
             context: complexity
           });
         }
       }
-    }
-
-    // Check for direct location object
-    if (issue.location) {
-      const loc = issue.location;
-      line = Math.max(0, (loc.startLine || loc.line || 1) - 1); // Convert to 0-based
-      column = Math.max(0, (loc.startColumn || loc.column || 1) - 1); // Convert to 0-based
-      endLine = loc.endLine ? Math.max(0, loc.endLine - 1) : undefined; // Convert to 0-based
-      endColumn = loc.endColumn ? Math.max(0, loc.endColumn - 1) : undefined; // Convert to 0-based
     }
 
     // If we have multiple locations, use the first one as primary and return all
@@ -326,6 +379,16 @@ export class DiagnosticProvider implements vscode.Disposable {
         endColumn: primaryLocation.endColumn,
         locations
       };
+    }
+
+    // Validate final coordinates
+    line = Math.max(0, line);
+    column = Math.max(0, column);
+    if (endLine !== undefined) {
+      endLine = Math.max(line, endLine);
+    }
+    if (endColumn !== undefined) {
+      endColumn = Math.max(column, endColumn);
     }
 
     return { line, column, endLine, endColumn };
@@ -407,21 +470,31 @@ export class DiagnosticProvider implements vscode.Disposable {
 
   /**
    * Create a VS Code diagnostic from a diagnostic issue
+   * Ensures all coordinates are valid and ranges are properly constructed
    */
   private createVSCodeDiagnostic(issue: DiagnosticIssue): vscode.Diagnostic {
-    // Create range using enhanced location information
-    const startLine = issue.line;
-    const startColumn = issue.column;
-    const endLine = issue.endLine !== undefined ? issue.endLine : issue.line;
-    const endColumn =
-      issue.endColumn !== undefined ? issue.endColumn : issue.column + 1;
+    // Ensure all coordinates are valid (non-negative)
+    const startLine = Math.max(0, issue.line);
+    const startColumn = Math.max(0, issue.column);
 
-    const range = new vscode.Range(
-      startLine,
-      startColumn,
-      endLine,
-      Math.max(startColumn + 1, endColumn) // Ensure range spans at least one character
-    );
+    // Calculate end position with proper fallbacks
+    let endLine =
+      issue.endLine !== undefined ? Math.max(0, issue.endLine) : startLine;
+    let endColumn =
+      issue.endColumn !== undefined
+        ? Math.max(0, issue.endColumn)
+        : startColumn + 1;
+
+    // Validate range consistency
+    if (endLine < startLine) {
+      endLine = startLine;
+    }
+
+    if (endLine === startLine && endColumn <= startColumn) {
+      endColumn = startColumn + 1; // Ensure range spans at least one character
+    }
+
+    const range = new vscode.Range(startLine, startColumn, endLine, endColumn);
 
     const diagnostic = new vscode.Diagnostic(
       range,
@@ -542,6 +615,12 @@ export class DiagnosticProvider implements vscode.Disposable {
     this.diagnosticCollection.clear();
     this.issueCount = 0;
     this.logger.info('Diagnostics cleared');
+
+    // Emit diagnostic update event for clearing
+    this.onDiagnosticsUpdated.fire({
+      totalIssues: 0,
+      filesWithIssues: 0
+    });
   }
 
   /**
@@ -928,12 +1007,25 @@ export class DiagnosticProvider implements vscode.Disposable {
   }
 
   dispose(): void {
+    this.decorationType?.dispose();
+    this.diagnosticCollection.dispose();
+    this.onDiagnosticsUpdated.dispose();
+
     if (this.decorationUpdateDebouncer) {
       clearTimeout(this.decorationUpdateDebouncer);
     }
-    this.diagnosticCollection.dispose();
-    this.decorationType?.dispose();
-    this.disposables.forEach(d => d.dispose());
+
+    for (const disposable of this.disposables) {
+      try {
+        disposable.dispose();
+      } catch (error) {
+        this.logger.warn(
+          'Error disposing diagnostic provider resource:',
+          error
+        );
+      }
+    }
+
     this.disposables.length = 0;
     this.logger.info('Disposing Diagnostic Provider');
   }
@@ -1206,7 +1298,7 @@ export class DiagnosticProvider implements vscode.Disposable {
     let totalXFIDiagnostics = 0;
     let xfidelityFiles = 0;
 
-    for (const [_uri, diagnostics] of registeredDiagnostics) {
+    for (const [, diagnostics] of registeredDiagnostics) {
       const xfiDiagnostics = diagnostics.filter(d => d.source === 'X-Fidelity');
       if (xfiDiagnostics.length > 0) {
         totalXFIDiagnostics += xfiDiagnostics.length;
@@ -1231,7 +1323,7 @@ export class DiagnosticProvider implements vscode.Disposable {
 
     // Validate that files match
     let ourFiles = 0;
-    this.diagnosticCollection.forEach((_uri, _diagnostics) => {
+    this.diagnosticCollection.forEach(() => {
       ourFiles++;
     });
     if (xfidelityFiles !== ourFiles) {

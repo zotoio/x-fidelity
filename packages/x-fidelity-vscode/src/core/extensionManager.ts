@@ -1,17 +1,24 @@
 import * as vscode from 'vscode';
 import { ConfigManager } from '../configuration/configManager';
-import { AnalysisManager } from '../analysis/analysisManager';
 import { PeriodicAnalysisManager } from '../analysis/periodicAnalysisManager';
 import { DiagnosticProvider } from '../diagnostics/diagnosticProvider';
 import { StatusBarProvider } from '../ui/statusBarProvider';
+import { AnalysisEngineFactory } from '../analysis/analysisEngineFactory';
+import type { IAnalysisEngine } from '../analysis/analysisEngineInterface';
+import {
+  callIfExtensionEngine,
+  getStateChangeEvent,
+  getCompletionEvent
+} from '../analysis/analysisEngineInterface';
 import { IssuesTreeViewManager } from '../ui/treeView/issuesTreeViewManager';
 import { ControlCenterTreeViewManager } from '../ui/treeView/controlCenterTreeViewManager';
 import { VSCodeLogger } from '../utils/vscodeLogger';
+import { showXFidelityLogs } from '../utils/globalLogger';
 
 export class ExtensionManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
   private configManager: ConfigManager;
-  private analysisManager: AnalysisManager;
+  private analysisEngine: IAnalysisEngine;
   private periodicAnalysisManager: PeriodicAnalysisManager;
   private diagnosticProvider: DiagnosticProvider;
   private statusBarProvider: StatusBarProvider;
@@ -24,12 +31,12 @@ export class ExtensionManager implements vscode.Disposable {
     this.logger = new VSCodeLogger('ExtensionManager');
     this.configManager = ConfigManager.getInstance(context);
     this.diagnosticProvider = new DiagnosticProvider(this.configManager);
-    this.analysisManager = new AnalysisManager(
-      this.configManager,
-      this.diagnosticProvider
-    );
+
+    // Analysis engine will be initialized in initialize() method
+    this.analysisEngine = null as any; // Temporary assignment
+
     this.periodicAnalysisManager = PeriodicAnalysisManager.getInstance();
-    this.statusBarProvider = new StatusBarProvider(this.analysisManager);
+    this.statusBarProvider = null as any; // Will be initialized after analysis engine
 
     // Initialize tree view managers
     this.issuesTreeViewManager = new IssuesTreeViewManager(
@@ -61,6 +68,20 @@ export class ExtensionManager implements vscode.Disposable {
     );
 
     try {
+      // Create analysis engine using factory
+      this.analysisEngine = await AnalysisEngineFactory.create({
+        configManager: this.configManager,
+        diagnosticProvider: this.diagnosticProvider,
+        context: this.context
+      });
+      this.logger.info('Analysis engine created successfully');
+
+      // Initialize status bar provider with analysis engine
+      this.statusBarProvider = new StatusBarProvider(this.analysisEngine);
+
+      // Auto-detect and suggest CLI mode if available
+      await AnalysisEngineFactory.autoDetectAndSuggest(this.configManager);
+
       // Preload plugins first - essential for runtime functionality
       const { preloadDefaultPlugins } = await import('./pluginPreloader');
       await preloadDefaultPlugins(this.context);
@@ -75,7 +96,7 @@ export class ExtensionManager implements vscode.Disposable {
       // Add components to disposables
       this.addToDisposables(
         this.context,
-        this.analysisManager,
+        this.analysisEngine,
         this.periodicAnalysisManager,
         this.diagnosticProvider,
         this.statusBarProvider,
@@ -85,7 +106,7 @@ export class ExtensionManager implements vscode.Disposable {
       );
 
       // PERFORMANCE FIX: Don't start periodic analysis by default (disabled in config)
-      // this.analysisManager.startPeriodicAnalysis(); // DISABLED for performance
+      // callIfExtensionEngine(this.analysisEngine, 'startPeriodicAnalysis'); // DISABLED for performance
 
       // PERFORMANCE FIX: Don't start periodic analysis manager (disabled by default)
       // this.periodicAnalysisManager.start(); // DISABLED for performance
@@ -109,7 +130,7 @@ export class ExtensionManager implements vscode.Disposable {
   private setupEventListeners(): void {
     // Analysis completion
     this.disposables.push(
-      this.analysisManager.onDidAnalysisComplete(result => {
+      getCompletionEvent(this.analysisEngine)(result => {
         // Diagnostics are now updated directly by AnalysisManager through DiagnosticProvider
         this.updateIssuesTree(result);
 
@@ -124,7 +145,7 @@ export class ExtensionManager implements vscode.Disposable {
 
     // Analysis state changes (disabled to prevent infinite loops)
     this.disposables.push(
-      this.analysisManager.onDidAnalysisStateChange(state => {
+      getStateChangeEvent(this.analysisEngine)(state => {
         try {
           // Simply log state changes for now, no setContext calls
           this.logger.info(`Analysis state changed to: ${state}`);
@@ -153,7 +174,7 @@ export class ExtensionManager implements vscode.Disposable {
         // PERFORMANCE FIX: Stricter checks to prevent unwanted analysis
         if (
           !config.autoAnalyzeOnSave ||
-          this.analysisManager.isAnalysisRunning
+          this.analysisEngine.isAnalysisRunning
         ) {
           return;
         }
@@ -169,7 +190,9 @@ export class ExtensionManager implements vscode.Disposable {
             this.logger.info(
               'Auto-analysis triggered by file save (performance mode)'
             );
-            this.analysisManager.scheduleAnalysis(5000); // 5 second delay instead of 2
+            callIfExtensionEngine(this.analysisEngine, 'scheduleAnalysis', [
+              5000
+            ]); // 5 second delay instead of 2
           }, 3000); // 3 second debounce instead of 1
         }
       })
@@ -180,7 +203,7 @@ export class ExtensionManager implements vscode.Disposable {
       vscode.workspace.onDidChangeWorkspaceFolders(() => {
         this.logger.info('Workspace folders changed, reinitializing...');
         // Simple reinitialization
-        this.analysisManager.startPeriodicAnalysis();
+        callIfExtensionEngine(this.analysisEngine, 'startPeriodicAnalysis');
       })
     );
   }
@@ -199,10 +222,16 @@ export class ExtensionManager implements vscode.Disposable {
     return relevantExtensions.some(ext => fileName.includes(ext));
   }
 
-  private updateIssuesTree(_result: any): void {
+  private updateIssuesTree(result: any): void {
     try {
-      // Tree view managers automatically refresh from diagnostic provider
-      // No manual update needed
+      // Explicitly refresh both tree view instances to ensure they update
+      this.issuesTreeViewManager.refresh();
+      this.explorerIssuesTreeViewManager.refresh();
+
+      this.logger.debug('Tree views refreshed after analysis completion', {
+        totalIssues: result.summary?.totalIssues,
+        filesAnalyzed: result.summary?.filesAnalyzed
+      });
     } catch (error) {
       this.logger.error('Failed to update issues tree:', error);
     }
@@ -231,13 +260,13 @@ export class ExtensionManager implements vscode.Disposable {
       }),
 
       vscode.commands.registerCommand('xfidelity.getTestResults', () => {
-        return this.analysisManager.getCurrentResults();
+        return this.analysisEngine.getCurrentResults();
       }),
 
       vscode.commands.registerCommand('xfidelity.runAnalysis', async () => {
         this.logger.info('Manual analysis triggered...');
-        this.analysisManager.getLogger().show();
-        const result = await this.analysisManager.runAnalysis({
+        this.analysisEngine.getLogger().show();
+        const result = await this.analysisEngine.runAnalysis({
           forceRefresh: true
         });
         if (!result) {
@@ -248,7 +277,7 @@ export class ExtensionManager implements vscode.Disposable {
       }),
 
       vscode.commands.registerCommand('xfidelity.cancelAnalysis', async () => {
-        await this.analysisManager.cancelAnalysis();
+        await this.analysisEngine.cancelAnalysis();
       }),
 
       vscode.commands.registerCommand('xfidelity.openSettings', () => {
@@ -259,7 +288,7 @@ export class ExtensionManager implements vscode.Disposable {
       }),
 
       vscode.commands.registerCommand('xfidelity.showOutput', () => {
-        this.analysisManager.getLogger().show();
+        showXFidelityLogs();
       }),
 
       // Tree view commands are registered by IssuesTreeViewManager
@@ -273,7 +302,7 @@ export class ExtensionManager implements vscode.Disposable {
           ).ControlCenterPanel(
             this.context,
             this.configManager,
-            this.analysisManager,
+            this.analysisEngine as any,
             this.diagnosticProvider
           );
           await controlCenterPanel.show();
@@ -284,7 +313,7 @@ export class ExtensionManager implements vscode.Disposable {
       vscode.commands.registerCommand(
         'xfidelity.showPerformanceMetrics',
         () => {
-          const metrics = this.analysisManager.getPerformanceMetrics();
+          const metrics = this.analysisEngine.getPerformanceMetrics();
           const message = `Performance Metrics (OPTIMIZED):
 Total Analyses: ${metrics.totalAnalyses}
 Last Duration: ${Math.round(metrics.lastAnalysisDuration)}ms
@@ -365,7 +394,7 @@ ${nextAnalysisText}`;
         ).DashboardPanel(
           this.context,
           this.configManager,
-          this.analysisManager,
+          this.analysisEngine as any,
           this.diagnosticProvider
         );
         await dashboardPanel.show();
@@ -417,7 +446,7 @@ ${nextAnalysisText}`;
 
       // Export Report command
       vscode.commands.registerCommand('xfidelity.exportReport', async () => {
-        const currentResults = this.analysisManager.getCurrentResults();
+        const currentResults = this.analysisEngine.getCurrentResults();
         if (!currentResults || !currentResults.metadata) {
           vscode.window.showWarningMessage(
             'No analysis results to export. Run an analysis first.'
@@ -530,7 +559,7 @@ Would you like to update your configuration to use this archetype?`;
             );
 
             // Trigger re-analysis with new archetype
-            await this.analysisManager.runAnalysis({ forceRefresh: true });
+            await this.analysisEngine.runAnalysis({ forceRefresh: true });
           }
         } catch (error) {
           vscode.window.showErrorMessage(
@@ -572,7 +601,7 @@ Would you like to update your configuration to use this archetype?`;
             );
 
             // Trigger re-analysis with new configuration
-            await this.analysisManager.runAnalysis({ forceRefresh: true });
+            await this.analysisEngine.runAnalysis({ forceRefresh: true });
           }
         }
       ),
@@ -586,7 +615,167 @@ Would you like to update your configuration to use this archetype?`;
           ).SettingsUIPanel(this.context, this.configManager);
           await settingsPanel.show();
         }
-      )
+      ),
+
+      // CLI Mode Commands
+      vscode.commands.registerCommand(
+        'xfidelity.switchAnalysisEngine',
+        async () => {
+          const config = this.configManager.getConfig();
+          const current = config.analysisEngine;
+          const newEngine = current === 'cli' ? 'extension' : 'cli';
+
+          if (newEngine === 'cli') {
+            // Check if CLI is available before switching
+            const { CLIAnalysisManager } = await import(
+              '../analysis/cliAnalysisManager'
+            );
+            const tempManager = new CLIAnalysisManager(
+              this.configManager,
+              this.diagnosticProvider
+            );
+            const detected = await tempManager.detectCLIBinary();
+            tempManager.dispose();
+
+            if (detected.source === 'not-found') {
+              const choice = await vscode.window.showErrorMessage(
+                'X-Fidelity CLI binary not found. Install it globally?',
+                'Install Now',
+                'Configure Path',
+                'Cancel'
+              );
+
+              if (choice === 'Install Now') {
+                const terminal = vscode.window.createTerminal(
+                  'X-Fidelity CLI Install'
+                );
+                terminal.show();
+                terminal.sendText('npm install -g @x-fidelity/cli');
+                return;
+              } else if (choice === 'Configure Path') {
+                await vscode.commands.executeCommand(
+                  'xfidelity.configureCLIPath'
+                );
+                return;
+              }
+              return;
+            }
+
+            vscode.window.showInformationMessage(
+              `✅ Switching to CLI mode using: ${detected.path} (${detected.source})`
+            );
+          }
+
+          await this.configManager.updateConfig({ analysisEngine: newEngine });
+
+          vscode.window
+            .showInformationMessage(
+              `🔄 Analysis engine switched to ${newEngine} mode. Extension will reload to apply changes.`,
+              'Reload Now'
+            )
+            .then(choice => {
+              if (choice === 'Reload Now') {
+                vscode.commands.executeCommand('workbench.action.reloadWindow');
+              }
+            });
+        }
+      ),
+
+      vscode.commands.registerCommand(
+        'xfidelity.configureCLIPath',
+        async () => {
+          const currentPath = this.configManager.getConfig().cliBinaryPath;
+
+          const newPath = await vscode.window.showInputBox({
+            prompt: 'Enter the path to X-Fidelity CLI binary',
+            placeHolder:
+              'e.g., /usr/local/bin/xfidelity or C:\\Program Files\\nodejs\\xfidelity.cmd',
+            value: currentPath,
+            validateInput: value => {
+              if (!value || value.trim().length === 0) {
+                return 'Path cannot be empty';
+              }
+              return null;
+            }
+          });
+
+          if (newPath) {
+            await this.configManager.updateConfig({
+              cliBinaryPath: newPath.trim()
+            });
+            vscode.window.showInformationMessage(
+              'CLI binary path updated successfully!'
+            );
+          }
+        }
+      ),
+
+      vscode.commands.registerCommand('xfidelity.detectCLI', async () => {
+        const { CLIAnalysisManager } = await import(
+          '../analysis/cliAnalysisManager'
+        );
+        const tempManager = new CLIAnalysisManager(
+          this.configManager,
+          this.diagnosticProvider
+        );
+
+        try {
+          const detected = await tempManager.detectCLIBinary();
+
+          if (detected.source === 'not-found') {
+            vscode.window.showWarningMessage(
+              '❌ X-Fidelity CLI not found. Install it globally with: npm install -g @x-fidelity/cli'
+            );
+          } else {
+            const message = `✅ X-Fidelity CLI detected!\n\nPath: ${detected.path}\nSource: ${detected.source}\nVersion: ${detected.version}`;
+            const choice = await vscode.window.showInformationMessage(
+              message,
+              'Switch to CLI Mode',
+              'OK'
+            );
+
+            if (choice === 'Switch to CLI Mode') {
+              await vscode.commands.executeCommand(
+                'xfidelity.switchAnalysisEngine'
+              );
+            }
+          }
+        } finally {
+          tempManager.dispose();
+        }
+      }),
+
+      vscode.commands.registerCommand('xfidelity.showAnalysisMode', () => {
+        const config = this.configManager.getConfig();
+        const mode = config.analysisEngine;
+        const description =
+          mode === 'cli'
+            ? 'Using external CLI binary (faster performance)'
+            : 'Using built-in analysis engine';
+
+        vscode.window
+          .showInformationMessage(
+            `Current Analysis Mode: ${mode.toUpperCase()}\n${description}`,
+            'Switch Mode',
+            'Detect CLI',
+            'Settings'
+          )
+          .then(choice => {
+            switch (choice) {
+              case 'Switch Mode':
+                vscode.commands.executeCommand(
+                  'xfidelity.switchAnalysisEngine'
+                );
+                break;
+              case 'Detect CLI':
+                vscode.commands.executeCommand('xfidelity.detectCLI');
+                break;
+              case 'Settings':
+                vscode.commands.executeCommand('xfidelity.openSettings');
+                break;
+            }
+          });
+      })
     ];
 
     this.disposables.push(...commands);
@@ -609,7 +798,7 @@ Would you like to update your configuration to use this archetype?`;
       }),
 
       vscode.commands.registerCommand('xfidelity.showOutput', () => {
-        this.logger.show();
+        showXFidelityLogs();
       })
     ];
 
@@ -636,7 +825,7 @@ Would you like to update your configuration to use this archetype?`;
     this.logger.info('Disposing X-Fidelity extension (PERFORMANCE MODE)...');
 
     // PERFORMANCE FIX: Clean shutdown
-    this.analysisManager?.stopPeriodicAnalysis();
+    callIfExtensionEngine(this.analysisEngine, 'stopPeriodicAnalysis');
     this.periodicAnalysisManager?.dispose();
     this.disposables.forEach(d => d?.dispose());
     this.configManager?.dispose();

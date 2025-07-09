@@ -4,6 +4,7 @@
   "description": "CLI tool for opinionated framework adherence checks",
   "main": "dist/index",
   "types": "dist/index.d.ts",
+  "private": false,
   "bin": {
     "xfidelity": "./dist/xfidelity"
   },
@@ -26,7 +27,7 @@
     "test": "NODE_ENV=test yarn lint && NODE_ENV=test OPENAI_API_KEY= jest --testPathIgnorePatterns=vscode-extension",
     "test:coverage": "NODE_ENV=test OPENAI_API_KEY= jest --coverage",
     "commit": "yarn test && git-cz",
-    "release": "semantic-release",
+    "release": "yarn semantic-release",
     "test-bin-install": "yarn build && yarn global bin && yarn global add file:$PWD",
     "build-run": "yarn build && node . --dir ../x-fidelity-fixtures/node-fullstack | jq -R -r '. as $line | try fromjson catch $line' ",
     "build-run-with-stubs": "yarn build && yarn start-test-server && node . --dir ../node-fullstack | jq -R -r '. as $line | try fromjson catch $line' && kill-port 4200",
@@ -97,5 +98,8 @@
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

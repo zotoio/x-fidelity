@@ -192,6 +192,39 @@
           ],
           "description": "The X-Fidelity archetype to use for analysis."
         },
+        "xfidelity.analysisEngine": {
+          "type": "string",
+          "default": "extension",
+          "enum": [
+            "extension",
+            "cli"
+          ],
+          "enumDescriptions": [
+            "Run analysis within VSCode extension (current behavior)",
+            "Use globally installed CLI binary (faster, requires 'npm install -g @x-fidelity/cli')"
+          ],
+          "description": "Analysis execution mode: 'extension' (built-in) or 'cli' (external binary)"
+        },
+        "xfidelity.cliBinaryPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to X-Fidelity CLI binary (empty = auto-detect). Example: /usr/local/bin/xfidelity"
+        },
+        "xfidelity.cliTimeout": {
+          "type": "number",
+          "default": 60000,
+          "minimum": 5000,
+          "maximum": 300000,
+          "description": "CLI execution timeout in milliseconds (60 seconds default, 5s-300s range)"
+        },
+        "xfidelity.cliExtraArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional CLI arguments to pass to X-Fidelity binary. Example: ['--openaiEnabled', '--telemetryEnabled']"
+        },
         "xfidelity.configServer": {
           "type": "string",
           "default": "",
