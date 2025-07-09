@@ -558,6 +558,16 @@
           "command": "xfidelity.showIssueRuleInfo",
           "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
           "group": "1_actions@2"
+        },
+        {
+          "command": "xfidelity.explainIssue",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
+          "group": "1_actions@3"
+        },
+        {
+          "command": "xfidelity.fixIssue",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
+          "group": "1_actions@4"
         }
       ]
     },
