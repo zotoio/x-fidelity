@@ -587,10 +587,10 @@
     ]
   },
   "dependencies": {
-    "@x-fidelity/core": "4.0.0",
-    "@x-fidelity/democonfig": "4.0.0",
-    "@x-fidelity/plugins": "4.0.0",
-    "@x-fidelity/types": "4.0.0",
+    "@x-fidelity/core": "*",
+    "@x-fidelity/democonfig": "*",
+    "@x-fidelity/plugins": "*",
+    "@x-fidelity/types": "*",
     "fs-extra": "^11.3.0",
     "tree-sitter-javascript": "^0.23.1",
     "tree-sitter-typescript": "^0.23.2",
