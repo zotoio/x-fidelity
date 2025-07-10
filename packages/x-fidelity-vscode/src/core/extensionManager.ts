@@ -197,6 +197,25 @@ export class ExtensionManager implements vscode.Disposable {
       })
     );
 
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.showControlCenter', () => {
+        // Open control center tree view (it's already in sidebar)
+        vscode.commands.executeCommand(
+          'workbench.view.extension.x-fidelity-activitybar'
+        );
+      })
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.showSettingsUI', () => {
+        // For now, open VSCode settings for x-fidelity
+        vscode.commands.executeCommand(
+          'workbench.action.openSettings',
+          'xfidelity'
+        );
+      })
+    );
+
     // Report commands
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.exportReport', async () => {
@@ -278,6 +297,84 @@ export class ExtensionManager implements vscode.Disposable {
         );
       })
     );
+
+    // Configuration commands
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        'xfidelity.resetConfiguration',
+        async () => {
+          try {
+            const result = await vscode.window.showWarningMessage(
+              'Are you sure you want to reset X-Fidelity configuration to defaults?',
+              { modal: true },
+              'Reset',
+              'Cancel'
+            );
+
+            if (result === 'Reset') {
+              // Reset configuration by clearing workspace settings
+              const config = vscode.workspace.getConfiguration('xfidelity');
+              const keys = [
+                'cliSource',
+                'cliBinaryPath',
+                'cliTimeout',
+                'cliExtraArgs'
+              ];
+
+              for (const key of keys) {
+                await config.update(
+                  key,
+                  undefined,
+                  vscode.ConfigurationTarget.Workspace
+                );
+              }
+
+              vscode.window.showInformationMessage(
+                'X-Fidelity configuration reset to defaults'
+              );
+            }
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Failed to reset configuration: ${error}`
+            );
+          }
+        }
+      )
+    );
+
+    // Report commands
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.showReportHistory', () => {
+        vscode.window.showInformationMessage(
+          'Report history is available in the .xfiResults directory of your workspace'
+        );
+      })
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.openReports', () => {
+        vscode.commands.executeCommand('xfidelity.showReportHistory');
+      })
+    );
+
+    // Periodic analysis commands
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.startPeriodicAnalysis', () => {
+        vscode.window.showInformationMessage(
+          'Periodic analysis feature is planned for future releases'
+        );
+      })
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.stopPeriodicAnalysis', () => {
+        vscode.window.showInformationMessage(
+          'Periodic analysis feature is planned for future releases'
+        );
+      })
+    );
+
+    // Note: Issue exemption commands are handled by IssuesTreeViewManager
 
     this.disposables.push(
       vscode.commands.registerCommand(
