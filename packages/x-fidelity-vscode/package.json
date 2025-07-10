@@ -624,7 +624,7 @@
   "scripts": {
     "vscode:prepublish": "yarn compile",
     "compile": "yarn build",
-    "build": "node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "build": "yarn format && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
     "watch": "node --no-warnings=ExperimentalWarning esbuild.config.js --watch",
     "package": "yarn build && vsce package --yarn",

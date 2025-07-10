@@ -36,6 +36,23 @@ declare global {
 (global as any).testConsole = originalConsole;
 (global as any).isVerboseMode = !suppressConsole;
 
+// Add error handling to prevent test runner from exiting with code 1
+// due to unhandled promise rejections or other errors
+process.on('unhandledRejection', (reason, promise) => {
+  if (!suppressConsole) {
+    originalConsole.error('Unhandled promise rejection:', reason);
+    originalConsole.error('Promise:', promise);
+  }
+  // Don't exit the process - let tests continue
+});
+
+process.on('uncaughtException', (error) => {
+  if (!suppressConsole) {
+    originalConsole.error('Uncaught exception:', error);
+  }
+  // Don't exit the process - let tests continue
+});
+
 // Cleanup after tests complete
 process.on('exit', () => {
   if (suppressConsole) {

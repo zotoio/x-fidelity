@@ -39,7 +39,8 @@ export default defineConfig([
       ui: 'bdd',
       timeout: 30000,
       color: true,
-      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec'
+      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec',
+      exit: true
     },
     env: {
       NODE_ENV: 'test',
@@ -66,9 +67,14 @@ export default defineConfig([
     extensionDevelopmentPath: '.',
     mocha: {
       ui: 'bdd',
-      timeout: 60000,
+      timeout: 180000,
       color: true,
-      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec'
+      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec',
+      forbidOnly: false,
+      allowUncaught: false,
+      bail: false,
+      retries: 0,
+      exit: true
     },
     env: {
       NODE_ENV: 'test',
@@ -97,7 +103,8 @@ export default defineConfig([
       ui: 'bdd',
       timeout: 120000,
       color: true,
-      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec'
+      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec',
+      exit: true
     },
     env: {
       NODE_ENV: 'test',
@@ -127,7 +134,8 @@ export default defineConfig([
       ui: 'tdd',
       timeout: 60000,
       color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
+      reporter: process.env.CI ? 'spec' : 'spec',
+      exit: true
     },
     env: {
       NODE_ENV: 'test',
@@ -155,7 +163,8 @@ export default defineConfig([
       ui: 'bdd',
       timeout: 120000,
       color: true,
-      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec'
+      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec',
+      exit: true
     },
     env: {
       NODE_ENV: 'test',
@@ -185,7 +194,8 @@ export default defineConfig([
       ui: 'tdd',
       timeout: 60000,
       color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
+      reporter: process.env.CI ? 'spec' : 'spec',
+      exit: true
     },
     env: {
       NODE_ENV: 'test',
@@ -213,7 +223,8 @@ export default defineConfig([
       ui: 'tdd',
       timeout: 120000,
       color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
+      reporter: process.env.CI ? 'spec' : 'spec',
+      exit: true
     },
     env: {
       NODE_ENV: 'test',

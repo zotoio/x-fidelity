@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ExtensionManager } from './core/extensionManager';
 import { VSCodeLogger } from './utils/vscodeLogger';
+import { setupTestEnvironmentPatching } from './utils/testDetection';
 
 // Global logger for extension lifecycle
 const logger = new VSCodeLogger('X-Fidelity');
@@ -18,6 +19,9 @@ export async function activate(context: vscode.ExtensionContext) {
   let logger: VSCodeLogger | undefined; // Make logger optional initially
 
   try {
+    // Set up test environment patching early to prevent external URL opens
+    setupTestEnvironmentPatching();
+    
     logger = new VSCodeLogger('Extension'); // Initialize logger first
     logger.info(
       '🚀 X-Fidelity extension activating (PERFORMANCE OPTIMIZED)...'

@@ -18,21 +18,14 @@ import type {
     RuleFailure,
     IssueDetail,
     ResultMetadata,
-    FileData,
     ErrorLevel
 } from '@x-fidelity/types';
 
 import { initCLI, options } from './cli';
 import { version } from '../package.json';
 
-// Re-export all types
-export type {
-    RuleFailure,
-    IssueDetail,
-    ResultMetadata,
-    FileData,
-    ErrorLevel
-};
+export * from '@x-fidelity/core';
+export * from '@x-fidelity/types';
 
 // ASCII Art Banner Function
 function displayBanner(): void {

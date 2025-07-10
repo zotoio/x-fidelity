@@ -180,73 +180,52 @@ export class DiagnosticProvider implements vscode.Disposable {
       }
 
       // Process each file's results
-      for (const [filePath, fileResults] of Object.entries(detailedResults)) {
-        if (!fileResults || typeof fileResults !== 'object') {
-          continue;
-        }
-
-        // Handle both detailedResults format and issueDetails format
-        const issuesArray =
-          (fileResults as any).issues ||
-          (fileResults as any).errors ||
-          (Array.isArray(fileResults) ? fileResults : []);
-        if (!Array.isArray(issuesArray)) {
-          continue;
-        }
-
-        for (const issue of issuesArray) {
-          // Extract location information from multiple possible formats
-          const locationInfo = this.extractLocationInfo(issue);
-
-          // Create multiple diagnostics for complex issues with multiple locations
-          if (locationInfo.locations && locationInfo.locations.length > 0) {
-            // Handle multiple locations (e.g., function complexity with multiple functions)
-            for (const location of locationInfo.locations) {
-              const diagnosticIssue: DiagnosticIssue = {
-                file: filePath,
-                line: location.line,
-                column: location.column,
-                endLine: location.endLine,
-                endColumn: location.endColumn,
-                message: this.formatComplexMessage(issue, location),
-                severity: this.mapSeverity(issue.level || issue.severity),
-                ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
-                category: issue.category,
-                code: issue.code,
-                source: 'X-Fidelity'
-              };
-
-              // Add diagnostic tags for deprecated code, etc.
-              if (issue.tags) {
-                diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
-              }
-
-              issues.push(diagnosticIssue);
-            }
-          } else {
-            // Handle simple single location
-            const diagnosticIssue: DiagnosticIssue = {
-              file: filePath,
-              line: locationInfo.line,
-              column: locationInfo.column,
-              endLine: locationInfo.endLine,
-              endColumn: locationInfo.endColumn,
-              message:
-                issue.details?.message || issue.message || 'Unknown issue',
-              severity: this.mapSeverity(issue.level || issue.severity),
-              ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
-              category: issue.category,
-              code: issue.code,
-              source: 'X-Fidelity'
-            };
-
-            // Add diagnostic tags for deprecated code, etc.
-            if (issue.tags) {
-              diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
-            }
-
-            issues.push(diagnosticIssue);
+      // Handle both object format (filePath -> results) and array format (results with filePath property)
+      if (Array.isArray(detailedResults)) {
+        // Array format: each item should have a filePath property
+        for (const fileResult of detailedResults) {
+          if (!fileResult || typeof fileResult !== 'object') {
+            continue;
           }
+
+          const filePath = fileResult.filePath;
+          if (!filePath || typeof filePath !== 'string') {
+            this.logger.warn('Issue detail missing filePath property', {
+              fileResult
+            });
+            continue;
+          }
+
+          // Handle both detailedResults format and issueDetails format
+          const issuesArray =
+            fileResult.issues ||
+            fileResult.errors ||
+            (Array.isArray(fileResult) ? fileResult : []);
+          if (!Array.isArray(issuesArray)) {
+            continue;
+          }
+
+          // Process issues for this file
+          this.processIssuesForFile(filePath, issuesArray, issues);
+        }
+      } else {
+        // Object format: filePath -> results
+        for (const [filePath, fileResults] of Object.entries(detailedResults)) {
+          if (!fileResults || typeof fileResults !== 'object') {
+            continue;
+          }
+
+          // Handle both detailedResults format and issueDetails format
+          const issuesArray =
+            (fileResults as any).issues ||
+            (fileResults as any).errors ||
+            (Array.isArray(fileResults) ? fileResults : []);
+          if (!Array.isArray(issuesArray)) {
+            continue;
+          }
+
+          // Process issues for this file
+          this.processIssuesForFile(filePath, issuesArray, issues);
         }
       }
     } catch (error) {
@@ -258,6 +237,69 @@ export class DiagnosticProvider implements vscode.Disposable {
     }
 
     return issues;
+  }
+
+  /**
+   * Process issues for a specific file and add them to the issues array
+   */
+  private processIssuesForFile(
+    filePath: string,
+    issuesArray: any[],
+    issues: DiagnosticIssue[]
+  ): void {
+    for (const issue of issuesArray) {
+      // Extract location information from multiple possible formats
+      const locationInfo = this.extractLocationInfo(issue);
+
+      // Create multiple diagnostics for complex issues with multiple locations
+      if (locationInfo.locations && locationInfo.locations.length > 0) {
+        // Handle multiple locations (e.g., function complexity with multiple functions)
+        for (const location of locationInfo.locations) {
+          const diagnosticIssue: DiagnosticIssue = {
+            file: filePath,
+            line: location.line,
+            column: location.column,
+            endLine: location.endLine,
+            endColumn: location.endColumn,
+            message: this.formatComplexMessage(issue, location),
+            severity: this.mapSeverity(issue.level || issue.severity),
+            ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
+            category: issue.category,
+            code: issue.code,
+            source: 'X-Fidelity'
+          };
+
+          // Add diagnostic tags for deprecated code, etc.
+          if (issue.tags) {
+            diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
+          }
+
+          issues.push(diagnosticIssue);
+        }
+      } else {
+        // Handle simple single location
+        const diagnosticIssue: DiagnosticIssue = {
+          file: filePath,
+          line: locationInfo.line,
+          column: locationInfo.column,
+          endLine: locationInfo.endLine,
+          endColumn: locationInfo.endColumn,
+          message: issue.details?.message || issue.message || 'Unknown issue',
+          severity: this.mapSeverity(issue.level || issue.severity),
+          ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
+          category: issue.category,
+          code: issue.code,
+          source: 'X-Fidelity'
+        };
+
+        // Add diagnostic tags for deprecated code, etc.
+        if (issue.tags) {
+          diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
+        }
+
+        issues.push(diagnosticIssue);
+      }
+    }
   }
 
   /**

@@ -40,13 +40,13 @@ export function clearDependencyCache(): void {
 /**
  * Generates a cache key based on package manager files' modification times
  */
-function getDependencyCacheKey(): string {
-    const repoPath = options.dir || process.cwd();
+function getDependencyCacheKey(repoPath?: string): string {
+    const actualRepoPath = repoPath || options.dir || process.cwd();
     const files = [
-        path.join(repoPath, 'package.json'),
-        path.join(repoPath, 'yarn.lock'),
-        path.join(repoPath, 'package-lock.json'),
-        path.join(repoPath, 'npm-shrinkwrap.json')
+        path.join(actualRepoPath, 'package.json'),
+        path.join(actualRepoPath, 'yarn.lock'),
+        path.join(actualRepoPath, 'package-lock.json'),
+        path.join(actualRepoPath, 'npm-shrinkwrap.json')
     ];
     
     const mtimes: string[] = [];
@@ -74,11 +74,13 @@ function getVersionDataCacheKey(dependencyCacheKey: string, archetypeConfig: Arc
 
 /**
  * Collects the local dependencies with caching for performance.
+ * @param repoPath The repository path to analyze (optional, defaults to options.dir)
  * @returns The local dependencies.
  */
-export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
+export async function collectLocalDependencies(repoPath?: string): Promise<LocalDependencies[]> {
     const startTime = Date.now();
-    const cacheKey = getDependencyCacheKey();
+    const actualRepoPath = repoPath || options.dir || process.cwd();
+    const cacheKey = getDependencyCacheKey(actualRepoPath);
     
     // Check cache first
     const cached = dependencyCache.get(cacheKey);
@@ -91,10 +93,10 @@ export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
     logger.debug('Cache miss, collecting dependencies from package manager...');
     
     let result: LocalDependencies[] = [];
-    if (fs.existsSync(path.join(options.dir || '', 'yarn.lock'))) {
-        result = await collectNodeDependencies('yarn');
-    } else if (fs.existsSync(path.join(options.dir || '', 'package-lock.json'))) {
-        result = await collectNodeDependencies('npm');
+    if (fs.existsSync(path.join(actualRepoPath, 'yarn.lock'))) {
+        result = await collectNodeDependencies('yarn', actualRepoPath);
+    } else if (fs.existsSync(path.join(actualRepoPath, 'package-lock.json'))) {
+        result = await collectNodeDependencies('npm', actualRepoPath);
     } else {
         logger.warn('No yarn.lock or package-lock.json found - returning empty dependencies array');
         return []; // ✅ Return empty array instead of exiting process
@@ -113,8 +115,9 @@ export async function collectLocalDependencies(): Promise<LocalDependencies[]> {
     return result;
 }
 
-async function collectNodeDependencies(packageManager: string): Promise<LocalDependencies[]>  {
+async function collectNodeDependencies(packageManager: string, repoPath?: string): Promise<LocalDependencies[]>  {
     const emptyDeps: LocalDependencies[] = [];
+    const actualRepoPath = repoPath || options.dir || process.cwd();
     try {
         let stdout: string;
         let stderr: string = '';
@@ -122,11 +125,11 @@ async function collectNodeDependencies(packageManager: string): Promise<LocalDep
         try {
             // Use execSync as a fallback if execPromise fails
             if (packageManager === 'npm') {
-                const result = await execPromise('npm ls -a --json', { cwd: options.dir, maxBuffer: 10485760 });
+                const result = await execPromise('npm ls -a --json', { cwd: actualRepoPath, maxBuffer: 10485760 });
                 stdout = result.stdout;
                 stderr = result.stderr;
             } else {
-                const result = await execPromise('yarn list --json', { cwd: options.dir, maxBuffer: 10485760 });
+                const result = await execPromise('yarn list --json', { cwd: actualRepoPath, maxBuffer: 10485760 });
                 stdout = result.stdout;
                 stderr = result.stderr;
             }
@@ -135,7 +138,7 @@ async function collectNodeDependencies(packageManager: string): Promise<LocalDep
             logger.warn(`Falling back to execSync for ${packageManager} dependencies`);
             const output = execSync(
                 packageManager === 'npm' ? 'npm ls -a --json' : 'yarn list --json', 
-                { cwd: options.dir, maxBuffer: 10485760 }
+                { cwd: actualRepoPath, maxBuffer: 10485760 }
             );
             stdout = output.toString();
         }
@@ -234,11 +237,12 @@ function processNpmDependencies(npmOutput: any): LocalDependencies[] {
 /**
  * Gets the installed dependency versions with caching for performance.
  * @param archetypeConfig The archetype configuration.
+ * @param repoPath The repository path to analyze (optional, defaults to options.dir)
  * @returns The installed dependency versions.
  */
-export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig): Promise<VersionData[]> {
+export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig, repoPath?: string): Promise<VersionData[]> {
     const startTime = Date.now();
-    const dependencyCacheKey = getDependencyCacheKey();
+    const dependencyCacheKey = getDependencyCacheKey(repoPath);
     const versionCacheKey = getVersionDataCacheKey(dependencyCacheKey, archetypeConfig);
     
     // Check cache first
@@ -251,7 +255,7 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
     
     logger.debug('Cache miss, computing dependency version facts...');
     
-    const localDependencies = await collectLocalDependencies();
+    const localDependencies = await collectLocalDependencies(repoPath);
     const minimumDependencyVersions = archetypeConfig.config.minimumDependencyVersions;
 
     if (!localDependencies || localDependencies.length === 0) {
@@ -448,9 +452,9 @@ export const dependencyVersionFact: FactDefn = {
     type: 'global',  // ✅ Global fact - precomputed once and cached
     priority: 10,    // ✅ Higher priority for dependency data
     fn: async (params: unknown, almanac?: unknown) => {
-        // ✅ Extract archetypeConfig from new parameter structure
-        const { archetypeConfig } = params as { repoPath: string; archetypeConfig: any };
-        return getDependencyVersionFacts(archetypeConfig);
+        // ✅ Extract repoPath and archetypeConfig from new parameter structure
+        const { repoPath, archetypeConfig } = params as { repoPath: string; archetypeConfig: any };
+        return getDependencyVersionFacts(archetypeConfig, repoPath);
     }
 };
 

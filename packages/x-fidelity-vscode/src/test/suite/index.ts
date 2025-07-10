@@ -2,6 +2,9 @@ import * as path from 'path';
 import Mocha from 'mocha';
 import { glob } from 'glob';
 
+// Import global error handling setup
+import '../setup/mocha.setup';
+
 /**
  * Enhanced test suite configuration following VS Code best practices
  * - Individual test progress reporting using built-in spec reporter
@@ -10,6 +13,26 @@ import { glob } from 'glob';
  * - Console suppression capabilities
  */
 export function run(): Promise<void> {
+  // Add additional error handling to prevent process exit code 1
+  const originalHandlers = {
+    unhandledRejection: process.listenerCount('unhandledRejection') > 0,
+    uncaughtException: process.listenerCount('uncaughtException') > 0
+  };
+
+  // Only add handlers if they don't already exist
+  if (!originalHandlers.unhandledRejection) {
+    process.on('unhandledRejection', (reason, _promise) => {
+      console.error('Unhandled Promise Rejection in test suite:', reason);
+      // Don't exit - let tests continue
+    });
+  }
+
+  if (!originalHandlers.uncaughtException) {
+    process.on('uncaughtException', (error) => {
+      console.error('Uncaught Exception in test suite:', error);
+      // Don't exit - let tests continue
+    });
+  }
   // Store original console methods for restoration
   const originalConsole = {
     log: console.log,

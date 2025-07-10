@@ -21,7 +21,7 @@ const mockProgram = {
     cb();
     return mockProgram;
   }),
-  args: []
+  args: [] as string[]
 };
 
 jest.mock('commander', () => {
@@ -84,14 +84,16 @@ describe('CLI', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (mockProgram.opts as jest.Mock).mockReturnValue({});
+    mockProgram.args = [];
   });
 
   it('should initialize CLI with default options', () => {
     initCLI();
     
     expect(mockProgram.name).toHaveBeenCalledWith('xfidelity');
-    expect(mockProgram.description).toHaveBeenCalledWith('CLI tool for opinionated framework adherence checks');
-    expect(mockProgram.option).toHaveBeenCalledWith('-d, --dir <path>', 'path to repository root', '.');
+    expect(mockProgram.description).toHaveBeenCalledWith('CLI tool for opinionated framework adherence checks (v3.28.0)');
+    expect(mockProgram.argument).toHaveBeenCalledWith('[directory]', 'path to repository root (default: current directory)');
+    expect(mockProgram.option).toHaveBeenCalledWith('-d, --dir <path>', 'path to repository root (overrides positional argument)');
     expect(mockProgram.option).toHaveBeenCalledWith('-a, --archetype <archetype>', 'The archetype to use for analysis', 'node-fullstack');
     expect(mockProgram.parse).toHaveBeenCalledWith(process.argv);
     expect(setOptions).toHaveBeenCalled();
@@ -209,5 +211,46 @@ describe('CLI', () => {
     initCLI();
     
     expect(mockProgram.parse).toHaveBeenCalledWith(process.argv);
+  });
+
+  it('should use positional argument for directory when provided', () => {
+    (mockProgram.opts as jest.Mock).mockReturnValue({});
+    mockProgram.args = ['/test/positional/dir'];
+    
+    initCLI();
+    
+    expect(options.dir).toBe('/test/positional/dir');
+  });
+
+  it('should prefer --dir option over positional argument', () => {
+    (mockProgram.opts as jest.Mock).mockReturnValue({ dir: '/test/option/dir' });
+    mockProgram.args = ['/test/positional/dir'];
+    
+    initCLI();
+    
+    expect(options.dir).toBe('/test/option/dir');
+  });
+
+  it('should default to current directory when no directory specified', () => {
+    (mockProgram.opts as jest.Mock).mockReturnValue({});
+    mockProgram.args = [];
+    
+    initCLI();
+    
+    expect(options.dir).toBe('.');
+  });
+
+  it('should handle positional argument with other options', () => {
+    (mockProgram.opts as jest.Mock).mockReturnValue({ 
+      archetype: 'custom-archetype',
+      openaiEnabled: true 
+    });
+    mockProgram.args = ['/test/custom/dir'];
+    
+    initCLI();
+    
+    expect(options.dir).toBe('/test/custom/dir');
+    expect(options.archetype).toBe('custom-archetype');
+    expect(options.openaiEnabled).toBe(true);
   });
 });

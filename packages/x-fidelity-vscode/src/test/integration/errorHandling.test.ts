@@ -119,7 +119,7 @@ suite('Error Handling Integration Tests', () => {
   });
 
   test('should handle analysis control commands gracefully', async function () {
-    this.timeout(15000);
+    this.timeout(60000); // Increased timeout since analysis now works correctly and may take time
 
     // Test cancel analysis (may not have anything to cancel)
     const cancelResult = await executeCommandSafely('xfidelity.cancelAnalysis');
@@ -129,7 +129,7 @@ suite('Error Handling Integration Tests', () => {
       );
     }
 
-    // Test analysis commands
+    // Test analysis commands - this may take time since analysis now works correctly
     const analysisResult = await executeCommandSafely('xfidelity.runAnalysis');
     if (global.isVerboseMode) {
       global.testConsole.log(

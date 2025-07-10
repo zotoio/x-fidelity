@@ -16,10 +16,10 @@ export async function runCLIAnalysis(
   workspacePath: string
 ): Promise<CLIResult> {
   return new Promise((resolve, reject) => {
-    const cliPath = path.resolve(
-      __dirname,
-      '../../../../x-fidelity-cli/dist/index.js'
-    );
+      const cliPath = path.resolve(
+    __dirname,
+    '../../../../x-fidelity-cli/dist/index.js'
+  );
 
     if (!fs.existsSync(cliPath)) {
       reject(new Error(`CLI not found at ${cliPath}`));
