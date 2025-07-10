@@ -16,13 +16,26 @@ export async function runCLIAnalysis(
   workspacePath: string
 ): Promise<CLIResult> {
   return new Promise((resolve, reject) => {
-      const cliPath = path.resolve(
-    __dirname,
-    '../../../../x-fidelity-cli/dist/index.js'
-  );
+      // For tests, use bundled CLI path - try multiple locations
+      const possiblePaths = [
+        // In test output directory structure
+        path.resolve(__dirname, '../../cli/index.js'),
+        // Alternative test structure
+        path.resolve(__dirname, '../../../cli/index.js'),
+        // Direct access to built CLI
+        path.resolve(__dirname, '../../../dist/cli/index.js')
+      ];
+      
+      let cliPath: string | null = null;
+      for (const testPath of possiblePaths) {
+        if (fs.existsSync(testPath)) {
+          cliPath = testPath;
+          break;
+        }
+      }
 
-    if (!fs.existsSync(cliPath)) {
-      reject(new Error(`CLI not found at ${cliPath}`));
+    if (!cliPath || !fs.existsSync(cliPath)) {
+      reject(new Error(`CLI not found at any of the expected locations: ${possiblePaths.join(', ')}`));
       return;
     }
 
@@ -31,7 +44,7 @@ export async function runCLIAnalysis(
       [cliPath, '--dir', workspacePath, '--output-format', 'json'],
       {
         cwd: path.dirname(cliPath),
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: 'pipe',
         timeout: 60000 // 60 second timeout
       }
     );
@@ -39,11 +52,11 @@ export async function runCLIAnalysis(
     let stdout = '';
     let stderr = '';
 
-    child.stdout.on('data', data => {
+    child.stdout?.on('data', data => {
       stdout += data.toString();
     });
 
-    child.stderr.on('data', data => {
+    child.stderr?.on('data', data => {
       stderr += data.toString();
     });
 
@@ -348,4 +361,227 @@ export function compareAnalysisResults(
     extensionResult.XFI_RESULT.fileCount,
     'File count must be identical'
   );
+}
+
+/**
+ * Wait for analysis completion with timeout
+ */
+export async function waitForAnalysisCompletion(timeoutMs: number = 60000): Promise<boolean> {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < timeoutMs) {
+    try {
+      // Check if analysis is running by trying to get results
+      const results = await getAnalysisResults();
+      
+      // If we have results, analysis is likely complete
+      if (results !== null) {
+        console.log('✅ Analysis completed successfully');
+        return true;
+      }
+      
+      // Check if analysis is still running by looking for progress indicators
+      const isRunning = await checkAnalysisRunning();
+      if (!isRunning) {
+        console.log('✅ Analysis completed (no longer running)');
+        return true;
+      }
+      
+      // Wait before next check
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (error) {
+      console.log('⚠️ Error checking analysis status:', error);
+      // Continue checking
+    }
+  }
+  
+  console.log('⏰ Analysis completion timeout reached');
+  return false;
+}
+
+/**
+ * Get current analysis results
+ */
+export async function getAnalysisResults(): Promise<any> {
+  try {
+    // Try to get results via command
+    const results = await executeCommandSafely('xfidelity.getTestResults');
+    return results;
+  } catch (error) {
+    console.log('⚠️ Could not get analysis results:', error);
+    return null;
+  }
+}
+
+/**
+ * Check if analysis is currently running
+ */
+async function checkAnalysisRunning(): Promise<boolean> {
+  try {
+    // Check if the analysis engine is in analyzing state
+    // This is a simplified check - in a real implementation you might
+    // check the analysis engine state more directly
+    const results = await getAnalysisResults();
+    
+    // If we can't get results, analysis might still be running
+    if (results === null) {
+      return true;
+    }
+    
+    // If we have results, analysis is likely complete
+    return false;
+  } catch {
+    // If there's an error, assume analysis might be running
+    return true;
+  }
+}
+
+/**
+ * Execute a command and return its result
+ */
+export async function executeCommandWithResult(command: string, ...args: any[]): Promise<any> {
+  try {
+    return await vscode.commands.executeCommand(command, ...args);
+  } catch (error) {
+    console.log(`⚠️ Command ${command} failed:`, error);
+    return null;
+  }
+}
+
+/**
+ * Check if a file exists in the workspace
+ */
+export async function workspaceFileExists(relativePath: string): Promise<boolean> {
+  try {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      return false;
+    }
+    
+    const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, relativePath);
+    await vscode.workspace.fs.stat(fileUri);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get workspace folder path
+ */
+export function getWorkspacePath(): string | undefined {
+  return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+}
+
+/**
+ * Wait for a condition to be true with timeout
+ */
+export async function waitForCondition(
+  condition: () => boolean | Promise<boolean>,
+  timeoutMs: number = 10000,
+  intervalMs: number = 100
+): Promise<boolean> {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < timeoutMs) {
+    try {
+      const result = await condition();
+      if (result) {
+        return true;
+      }
+    } catch (error) {
+      console.log('⚠️ Error checking condition:', error);
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
+  }
+  
+  return false;
+}
+
+/**
+ * Verify that diagnostics are present for X-Fidelity
+ */
+export function verifyXfidelityDiagnostics(): boolean {
+  const diagnostics = vscode.languages.getDiagnostics();
+  let hasXfidelityDiagnostics = false;
+  
+  for (const [, diags] of diagnostics) {
+    const xfidelityDiags = diags.filter(d => d.source === 'X-Fidelity');
+    if (xfidelityDiags.length > 0) {
+      hasXfidelityDiagnostics = true;
+      break;
+    }
+  }
+  
+  return hasXfidelityDiagnostics;
+}
+
+/**
+ * Get count of X-Fidelity diagnostics
+ */
+export function getXfidelityDiagnosticCount(): number {
+  const diagnostics = vscode.languages.getDiagnostics();
+  let count = 0;
+  
+  for (const [, diags] of diagnostics) {
+    count += diags.filter(d => d.source === 'X-Fidelity').length;
+  }
+  
+  return count;
+}
+
+/**
+ * Verify that tree view is available and functional
+ */
+export async function verifyTreeViewAvailable(): Promise<boolean> {
+  try {
+    // Try to create a tree view (this will fail if the view is not registered)
+    const treeView = vscode.window.createTreeView('xfidelityIssuesTreeView', {
+      treeDataProvider: { 
+        getChildren: () => [],
+        getTreeItem: () => new vscode.TreeItem('test')
+      }
+    });
+    
+    // If we can create it, the view is available
+    return treeView !== undefined;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if extension is in a healthy state
+ */
+export async function checkExtensionHealth(): Promise<{
+  isActive: boolean;
+  hasCommands: boolean;
+  hasTreeView: boolean;
+  hasDiagnostics: boolean;
+}> {
+  const extension = vscode.extensions.getExtension('zotoio.x-fidelity-vscode');
+  const isActive = extension?.isActive || false;
+  
+  // Check if core commands are available
+  let hasCommands = false;
+  try {
+    await assertCommandExists('xfidelity.test');
+    hasCommands = true;
+  } catch {
+    hasCommands = false;
+  }
+  
+  // Check if tree view is available
+  const hasTreeView = await verifyTreeViewAvailable();
+  
+  // Check if diagnostics are working
+  const hasDiagnostics = verifyXfidelityDiagnostics();
+  
+  return {
+    isActive,
+    hasCommands,
+    hasTreeView,
+    hasDiagnostics
+  };
 }

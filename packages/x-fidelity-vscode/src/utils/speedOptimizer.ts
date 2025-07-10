@@ -103,7 +103,7 @@ export class SpeedOptimizer {
     // Step 2: Prioritize files by change impact and dependencies
     const prioritizedFiles = this.prioritizeFilesByImpact(changedFiles);
 
-    // Step 3: Create optimized analysis chunks
+    // Step 3: Create image.png analysis chunks
     this.createOptimizedChunks(prioritizedFiles);
 
     const estimatedSpeedup = this.calculateSpeedupEstimate(

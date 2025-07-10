@@ -63,9 +63,7 @@ export class ExtensionManager implements vscode.Disposable {
   }
 
   private async initialize(): Promise<void> {
-    this.logger.info(
-      'Initializing X-Fidelity extension (PERFORMANCE OPTIMIZED)...'
-    );
+    this.logger.info('Initializing X-Fidelity extension..');
 
     try {
       // Create analysis engine using factory
@@ -314,7 +312,7 @@ export class ExtensionManager implements vscode.Disposable {
         'xfidelity.showPerformanceMetrics',
         () => {
           const metrics = this.analysisEngine.getPerformanceMetrics();
-          const message = `Performance Metrics (OPTIMIZED):
+          const message = `Performance Metrics:
 Total Analyses: ${metrics.totalAnalyses}
 Last Duration: ${Math.round(metrics.lastAnalysisDuration)}ms
 Average Duration: ${Math.round(metrics.averageAnalysisDuration)}ms
@@ -344,9 +342,7 @@ Performance Mode: ✅ Enabled`;
 
       vscode.commands.registerCommand('xfidelity.stopPeriodicAnalysis', () => {
         this.periodicAnalysisManager.stop();
-        vscode.window.showInformationMessage(
-          '⏹️ Periodic analysis stopped (performance optimized)'
-        );
+        vscode.window.showInformationMessage('⏹️ Periodic analysis stopped');
       }),
 
       vscode.commands.registerCommand(

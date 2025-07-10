@@ -88,7 +88,12 @@ const mockConfigStore = {
   customPlugins: [],
   ruleOverrides: {},
   cacheResults: true,
-  cacheTTL: 10
+  cacheTTL: 10,
+  analysisEngine: 'cli',
+  cliSource: 'bundled',
+  cliBinaryPath: '',
+  cliTimeout: 60000,
+  cliExtraArgs: []
 };
 
 // Store initial values for reset

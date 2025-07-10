@@ -20,7 +20,7 @@ import type { IAnalysisEngine } from './analysisEngineInterface';
 export interface CLIBinaryInfo {
   path: string | null;
   version: string | null;
-  source: 'global' | 'local' | 'custom' | 'not-found';
+  source: 'bundled' | 'global' | 'local' | 'custom' | 'not-found';
 }
 
 export interface AnalysisOptions {
@@ -90,33 +90,86 @@ export class CLIAnalysisManager implements IAnalysisEngine {
    */
   async detectCLIBinary(): Promise<CLIBinaryInfo> {
     const config = this.configManager.getConfig();
+    const preferredSource = config.cliSource || 'bundled';
 
     try {
-      // 1. Check user-configured path
-      if (config.cliBinaryPath) {
+      // If user specified custom path, use it exclusively
+      if (preferredSource === 'custom' && config.cliBinaryPath) {
         const validated = await this.validateBinary(config.cliBinaryPath);
         if (validated.path) {
           return { ...validated, source: 'custom' };
         }
+        this.logger.warn(
+          `Custom CLI path failed: ${config.cliBinaryPath}, not falling back to other sources.`
+        );
+        return { path: null, version: null, source: 'not-found' };
       }
 
-      // 2. Check global installation
-      const globalBinary = await this.findGlobalBinary();
-      if (globalBinary.path) {
-        return { ...globalBinary, source: 'global' };
+      // If user explicitly set global or local, use only that
+      if (preferredSource === 'global') {
+        const globalBinary = await this.findGlobalBinary();
+        if (globalBinary.path) return globalBinary;
+        this.logger.warn(`Global CLI not found, not falling back to bundled.`);
+        return { path: null, version: null, source: 'not-found' };
+      }
+      if (preferredSource === 'local') {
+        const localBinary = await this.findLocalBinary();
+        if (localBinary.path) return localBinary;
+        this.logger.warn(`Local CLI not found, not falling back to bundled.`);
+        return { path: null, version: null, source: 'not-found' };
       }
 
-      // 3. Check local monorepo (development mode)
-      const localBinary = await this.findLocalBinary();
-      if (localBinary.path) {
-        return { ...localBinary, source: 'local' };
-      }
-
+      // Default: bundled only
+      const bundledBinary = await this.findBundledBinary();
+      if (bundledBinary.path) return bundledBinary;
+      this.logger.error(
+        'Bundled CLI not found. Please ensure the extension is properly installed and built.'
+      );
       return { path: null, version: null, source: 'not-found' };
     } catch (error) {
       this.logger.error('Error detecting CLI binary:', error);
       return { path: null, version: null, source: 'not-found' };
     }
+  }
+
+  /**
+   * Find CLI binary by specific source type
+   */
+  private async findBinaryBySource(source: string): Promise<CLIBinaryInfo> {
+    switch (source) {
+      case 'bundled':
+        const bundledBinary = await this.findBundledBinary();
+        if (bundledBinary.path) {
+          return { ...bundledBinary, source: 'bundled' };
+        }
+        break;
+
+      case 'global':
+        const globalBinary = await this.findGlobalBinary();
+        if (globalBinary.path) {
+          return { ...globalBinary, source: 'global' };
+        }
+        break;
+
+      case 'local':
+        const localBinary = await this.findLocalBinary();
+        if (localBinary.path) {
+          return { ...localBinary, source: 'local' };
+        }
+        break;
+
+      case 'custom':
+        const config = this.configManager.getConfig();
+        if (config.cliBinaryPath) {
+          const validated = await this.validateBinary(config.cliBinaryPath);
+          if (validated.path) {
+            return { ...validated, source: 'custom' };
+          }
+        }
+        break;
+    }
+
+    return { path: null, version: null, source: 'not-found' };
   }
 
   /**
@@ -270,15 +323,20 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     return new Promise((resolve, reject) => {
       const args = this.buildCLIArgs(workspacePath, config);
 
-      this.logger.debug(`Executing CLI: ${binaryPath} ${args.join(' ')}`);
+      // Parse binaryPath safely to separate executable from script path
+      const binaryParts = binaryPath.trim().split(/\s+/);
+      const executable = binaryParts[0];
+      const scriptArgs = binaryParts.slice(1);
+      const allArgs = [...scriptArgs, ...args];
 
-      const child = spawn(binaryPath, args, {
+      this.logger.debug(`Executing CLI: ${executable} ${allArgs.join(' ')}`);
+
+      const child = spawn(executable, allArgs, {
         cwd: workspacePath,
         stdio: ['pipe', 'pipe', 'pipe'],
         timeout: config.cliTimeout
       });
 
-      let stdout = '';
       let stderr = '';
 
       // Enhanced progress tracking state
@@ -466,10 +524,9 @@ export class CLIAnalysisManager implements IAnalysisEngine {
         }
       };
 
-      // Collect output with enhanced progress tracking
+      // Enhanced progress tracking from stdout
       child.stdout?.on('data', data => {
         const dataStr = data.toString();
-        stdout += dataStr;
         updateProgress(dataStr);
       });
 
@@ -481,11 +538,26 @@ export class CLIAnalysisManager implements IAnalysisEngine {
         updateProgress(dataStr);
       });
 
-      child.on('close', code => {
+      child.on('close', async code => {
         try {
-          if (code === 0 || code === null) {
-            // Parse results from stdout
-            const result = this.parseXFIResult(stdout);
+          // X-Fidelity CLI exit codes:
+          // 0: No issues found (success)
+          // 1: Issues found (successful analysis with findings)
+          // 2+: Actual errors/failures
+          if (code === 0 || code === 1 || code === null) {
+            // Read results from the structured output file instead of parsing stdout
+            const result = await this.parseXFIResultFromFile(workspacePath);
+
+            // Log appropriate message based on exit code
+            if (code === 1) {
+              this.globalLogger.info(
+                `✅ Analysis completed successfully with ${result.summary.totalIssues} issues found`
+              );
+            } else {
+              this.globalLogger.info(
+                `✅ Analysis completed successfully with no issues found`
+              );
+            }
 
             // Final progress report with results
             if (progress) {
@@ -497,14 +569,26 @@ export class CLIAnalysisManager implements IAnalysisEngine {
 
             resolve(result);
           } else {
+            // Exit codes 2+ indicate actual failures
             reject(
               new Error(
-                `CLI process exited with code ${code}. stderr: ${stderr}`
+                `CLI process failed with exit code ${code}. stderr: ${stderr}`
               )
             );
           }
         } catch (parseError) {
-          reject(new Error(`Failed to parse CLI output: ${parseError}`));
+          // If we can't read the result file, it's a real error
+          const errorMessage =
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError);
+          this.logger.error('Failed to read CLI result file:', parseError);
+          this.logger.debug('CLI stderr:', stderr);
+          reject(
+            new Error(
+              `Failed to read CLI result file: ${errorMessage}. Exit code: ${code}`
+            )
+          );
         }
       });
 
@@ -534,14 +618,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
    * Build CLI arguments from configuration
    */
   private buildCLIArgs(workspacePath: string, config: any): string[] {
-    const args = [
-      '--dir',
-      workspacePath,
-      '--archetype',
-      config.archetype,
-      '--output-format',
-      'json'
-    ];
+    const args = ['--dir', workspacePath, '--archetype', config.archetype];
 
     if (config.configServer) {
       args.push('--configServer', config.configServer);
@@ -566,40 +643,116 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   }
 
   /**
-   * Parse XFI_RESULT JSON from CLI output
+   * Parse XFI_RESULT from the XFI_RESULT.json file instead of stdout
    */
-  private parseXFIResult(output: string): AnalysisResult {
+  private async parseXFIResultFromFile(
+    workspacePath: string
+  ): Promise<AnalysisResult> {
     try {
-      // Look for structured output markers first
-      const structuredStart = output.indexOf('STRUCTURED_OUTPUT_START');
-      const structuredEnd = output.indexOf('STRUCTURED_OUTPUT_END');
+      const resultFilePath = path.join(
+        workspacePath,
+        '.xfiResults',
+        'XFI_RESULT.json'
+      );
 
-      if (structuredStart !== -1 && structuredEnd !== -1) {
-        const jsonStart = structuredStart + 'STRUCTURED_OUTPUT_START'.length;
-        const jsonContent = output.substring(jsonStart, structuredEnd).trim();
-        return JSON.parse(jsonContent);
+      // Wait a moment for file to be fully written (CLI flushes logs before exit)
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check if file exists
+      try {
+        await fs.access(resultFilePath);
+      } catch {
+        throw new Error(`Result file not found at ${resultFilePath}`);
       }
 
-      // Fallback: Look for JSON in log lines
-      const lines = output.split('\n');
-      for (const line of lines) {
-        // Remove log prefixes and find JSON
-        const cleanLine = line.replace(/^\[[^\]]+\]\s*/, '').trim();
+      // Read and parse the clean JSON file
+      const fileContent = await fs.readFile(resultFilePath, 'utf8');
+      const parsedData = JSON.parse(fileContent);
 
-        if (cleanLine.startsWith('{') && cleanLine.includes('XFI_RESULT')) {
-          try {
-            return JSON.parse(cleanLine);
-          } catch {
-            // Continue to next line
+      // Transform CLI output structure to match AnalysisResult interface
+      if (parsedData.XFI_RESULT) {
+        const xfiResult = parsedData.XFI_RESULT;
+
+        return {
+          metadata: parsedData, // Keep the full ResultMetadata
+          diagnostics: new Map<string, vscode.Diagnostic[]>(), // Will be populated by DiagnosticProvider
+          timestamp: Date.now(),
+          duration: (xfiResult.durationSeconds || 0) * 1000, // Convert to milliseconds
+          summary: {
+            totalIssues: xfiResult.totalIssues || 0,
+            filesAnalyzed: xfiResult.fileCount || 0,
+            analysisTimeMs: (xfiResult.durationSeconds || 0) * 1000,
+            issuesByLevel: {
+              warning: xfiResult.warningCount || 0,
+              error: xfiResult.errorCount || 0,
+              fatality: xfiResult.fatalityCount || 0,
+              exempt: xfiResult.exemptCount || 0
+            }
+          },
+          operationId: xfiResult.executionId
+        };
+      } else {
+        // If it's already in AnalysisResult format, return as-is
+        return parsedData;
+      }
+    } catch (error) {
+      this.logger.error('Failed to read result file:', error);
+      throw new Error(
+        `Failed to read analysis results from file: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  /**
+   * Find bundled CLI binary (bundled with extension)
+   */
+  private async findBundledBinary(): Promise<CLIBinaryInfo> {
+    try {
+      // Get extension path using VSCode API (most reliable approach)
+      const extension = vscode.extensions.getExtension(
+        'zotoio.x-fidelity-vscode'
+      );
+      const extensionPath = extension?.extensionPath;
+
+      const possiblePaths: string[] = [];
+
+      if (extensionPath) {
+        // Extension-relative paths (most reliable)
+        possiblePaths.push(
+          path.join(extensionPath, 'dist', 'cli', 'index.js'),
+          path.join(extensionPath, 'cli', 'index.js')
+        );
+      }
+
+      // Fallback paths relative to compiled location
+      possiblePaths.push(
+        // In dist directory relative to current compiled location
+        path.resolve(__dirname, 'cli/index.js'),
+        // In dist directory using parent directory approach
+        path.resolve(__dirname, '../cli/index.js'),
+        // Absolute path from extension root (safest approach)
+        path.resolve(__dirname, '../../cli/index.js')
+      );
+
+      for (const bundledCliPath of possiblePaths) {
+        try {
+          await fs.access(bundledCliPath);
+          const nodeCommand = `node ${bundledCliPath}`;
+          const validated = await this.validateBinary(nodeCommand);
+          if (validated.path) {
+            this.logger.debug(`Found bundled CLI at: ${bundledCliPath}`);
+            return validated;
           }
+        } catch {
+          // This path doesn't work, try next
+          this.logger.debug(`Bundled CLI not found at: ${bundledCliPath}`);
         }
       }
-
-      throw new Error('No valid XFI_RESULT found in CLI output');
     } catch (error) {
-      this.logger.error('CLI output parsing failed:', output);
-      throw error;
+      this.logger.debug('Bundled binary search failed:', error);
     }
+
+    return { path: null, version: null, source: 'not-found' };
   }
 
   /**

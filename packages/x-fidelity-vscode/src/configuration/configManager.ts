@@ -22,7 +22,8 @@ export interface ExtensionConfig {
 
   // Analysis Engine Settings
   analysisEngine: 'extension' | 'cli'; // Analysis execution mode
-  cliBinaryPath: string; // Custom CLI binary path (empty = auto-detect)
+  cliSource: 'bundled' | 'global' | 'local' | 'custom'; // Which CLI binary to use
+  cliBinaryPath: string; // Custom CLI binary path (only used when cliSource = 'custom')
   cliTimeout: number; // CLI execution timeout (ms)
   cliExtraArgs: string[]; // Additional CLI arguments
 
@@ -121,7 +122,8 @@ export class ConfigManager {
       localConfigPath: workspaceConfig.get('localConfigPath', ''),
 
       // Analysis Engine Settings
-      analysisEngine: workspaceConfig.get('analysisEngine', 'cli'),
+      analysisEngine: workspaceConfig.get('analysisEngine', 'extension'), // CHANGED from 'cli' to 'extension'
+      cliSource: workspaceConfig.get('cliSource', 'bundled'),
       cliBinaryPath: workspaceConfig.get('cliBinaryPath', ''),
       cliTimeout: workspaceConfig.get('cliTimeout', 60000), // 60 seconds
       cliExtraArgs: workspaceConfig.get('cliExtraArgs', []),
