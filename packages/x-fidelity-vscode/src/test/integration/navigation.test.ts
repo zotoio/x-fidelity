@@ -1,3 +1,4 @@
+import assert from 'assert';
 import * as vscode from 'vscode';
 import { suite, test, suiteSetup } from 'mocha';
 import {

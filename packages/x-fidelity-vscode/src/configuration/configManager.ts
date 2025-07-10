@@ -63,6 +63,8 @@ export interface ExtensionConfig {
   ruleOverrides: Record<string, RuleOverride>; // Rule-specific overrides
   cacheResults: boolean; // Cache analysis results
   cacheTTL: number; // Cache TTL in minutes
+  // Add analyzeOnStartup config
+  analyzeOnStartup: boolean; // Run analysis on extension startup
 }
 
 export class ConfigManager {
@@ -185,7 +187,9 @@ export class ConfigManager {
       customPlugins: workspaceConfig.get('customPlugins', []),
       ruleOverrides: workspaceConfig.get('ruleOverrides', {}),
       cacheResults: workspaceConfig.get('cacheResults', true),
-      cacheTTL: workspaceConfig.get('cacheTTL', 10) // 10 minutes instead of 5 for better caching
+      cacheTTL: workspaceConfig.get('cacheTTL', 10), // 10 minutes instead of 5 for better caching
+      // Add analyzeOnStartup config (default true)
+      analyzeOnStartup: workspaceConfig.get('analyzeOnStartup', true)
     };
   }
 

@@ -1,5 +1,6 @@
 dist/
 out/
+cli/
 node_modules/
 .vscode-test/
 .vscode-test-profile/
@@ -13,3 +14,4 @@ config/
 docs-archive/ 
 .vscode-test-user-data/
 temp/
+**/xfi-*.json

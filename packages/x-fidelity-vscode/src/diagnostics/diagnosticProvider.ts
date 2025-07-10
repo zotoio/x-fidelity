@@ -161,13 +161,32 @@ export class DiagnosticProvider implements vscode.Disposable {
     const issues: DiagnosticIssue[] = [];
 
     try {
-      // Handle different result formats
-      const xfiResult = 'XFI_RESULT' in result ? result.XFI_RESULT : result;
+      // Handle different result formats - check for XFI_RESULT in metadata first
+      let xfiResult;
+      if (
+        'metadata' in result &&
+        result.metadata &&
+        'XFI_RESULT' in result.metadata
+      ) {
+        xfiResult = result.metadata.XFI_RESULT;
+      } else if ('XFI_RESULT' in result) {
+        xfiResult = result.XFI_RESULT;
+      } else {
+        xfiResult = result;
+      }
 
       if (!xfiResult || typeof xfiResult !== 'object') {
         this.logger.warn('No detailed results found in analysis result');
         return issues;
       }
+
+      this.logger.debug('Processing XFI result structure:', {
+        hasDetailedResults: !!(xfiResult as any).detailedResults,
+        hasIssueDetails: !!(xfiResult as any).issueDetails,
+        resultKeys: Object.keys(xfiResult),
+        totalIssues: (xfiResult as any).totalIssues,
+        fileCount: (xfiResult as any).fileCount
+      });
 
       // Check for detailedResults property with proper type checking
       const detailedResults =

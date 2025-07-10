@@ -477,6 +477,11 @@
             "**/.xfiResults/**"
           ],
           "description": "Patterns to exclude from periodic analysis."
+        },
+        "xfidelity.analyzeOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically run analysis when the extension starts. Disable to require manual or event-based analysis trigger."
         }
       }
     },
@@ -631,8 +636,9 @@
   "scripts": {
     "vscode:prepublish": "yarn compile",
     "compile": "yarn build",
-    "build": "yarn format && yarn build:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "build": "yarn format && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "build:cli": "cd ../x-fidelity-cli && yarn build",
+    "embed:cli": "node scripts/embed-cli.js",
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
     "watch": "node --no-warnings=ExperimentalWarning esbuild.config.js --watch",
     "package": "yarn build && vsce package --yarn",

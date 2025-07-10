@@ -182,3 +182,41 @@ export function setupTestEnvironmentPatching(): void {
     }
   }
 }
+
+export function patchVSCodeDialogsForTests() {
+  if (!isTestEnvironment()) return;
+  const win = vscode.window as any;
+  if (!win._originalShowInformationMessage) {
+    win._originalShowInformationMessage = win.showInformationMessage;
+    win.showInformationMessage = function (message: any, ...args: any[]) {
+      const buttons = args.filter(arg => typeof arg === 'string');
+      const autoResponse = buttons[0];
+      console.log(
+        `[TEST] Auto-responding to showInformationMessage: ${message} → ${autoResponse}`
+      );
+      return Promise.resolve(autoResponse);
+    };
+  }
+  if (!win._originalShowWarningMessage) {
+    win._originalShowWarningMessage = win.showWarningMessage;
+    win.showWarningMessage = function (message: any, ...args: any[]) {
+      const buttons = args.filter(arg => typeof arg === 'string');
+      const autoResponse = buttons[0];
+      console.log(
+        `[TEST] Auto-responding to showWarningMessage: ${message} → ${autoResponse}`
+      );
+      return Promise.resolve(autoResponse);
+    };
+  }
+  if (!win._originalShowErrorMessage) {
+    win._originalShowErrorMessage = win.showErrorMessage;
+    win.showErrorMessage = function (message: any, ...args: any[]) {
+      const buttons = args.filter(arg => typeof arg === 'string');
+      const autoResponse = buttons[0];
+      console.log(
+        `[TEST] Auto-responding to showErrorMessage: ${message} → ${autoResponse}`
+      );
+      return Promise.resolve(autoResponse);
+    };
+  }
+}

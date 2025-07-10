@@ -6,8 +6,7 @@
   "types": "dist/index.d.ts",
   "private": false,
   "bin": {
-    "xfidelity": "./dist/xfidelity",
-    "xfi": "./dist/xfidelity"
+    "xfidelity": "./dist/xfidelity"
   },
   "files": [
     "dist/**/*",

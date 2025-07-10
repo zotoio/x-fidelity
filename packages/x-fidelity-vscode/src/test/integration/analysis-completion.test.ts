@@ -1,3 +1,4 @@
+import assert from 'assert';
 import * as vscode from 'vscode';
 import { suite, test, suiteSetup } from 'mocha';
 import {
@@ -45,7 +46,10 @@ suite('Analysis Completion & UI Feature Tests', () => {
 
     // 5. Verify tree view is populated
     const treeView = vscode.window.createTreeView('xfidelityIssuesTreeView', {
-      treeDataProvider: { getChildren: () => [] }
+      treeDataProvider: { 
+        getChildren: () => [],
+        getTreeItem: () => new vscode.TreeItem('test')
+      }
     });
     assert(treeView, 'Tree view should be available');
 

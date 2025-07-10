@@ -4,6 +4,7 @@ import { glob } from 'glob';
 
 // Import global error handling setup
 import '../setup/mocha.setup';
+import { patchVSCodeDialogsForTests } from '../../utils/testDetection';
 
 /**
  * Enhanced test suite configuration following VS Code best practices
@@ -71,6 +72,8 @@ export function run(): Promise<void> {
       verbose: isVerboseMode
     }
   });
+
+  patchVSCodeDialogsForTests();
 
   return new Promise((resolve, reject) => {
     // Temporarily restore console for test discovery and setup

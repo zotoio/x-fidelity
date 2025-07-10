@@ -15,7 +15,6 @@ let isActivated = false;
  */
 export async function activate(context: vscode.ExtensionContext) {
   const startTime = performance.now();
-  let extensionManager: ExtensionManager | undefined;
   let logger: VSCodeLogger | undefined; // Make logger optional initially
 
   try {
@@ -31,8 +30,11 @@ export async function activate(context: vscode.ExtensionContext) {
     await vscode.commands.executeCommand(
       'setContext',
       'xfidelity.extensionActive',
-      false
+      true
     );
+
+    // Store extension context globally for access by other components
+    extensionContext = context;
 
     // PERFORMANCE FIX: Fast initialization - don't block on heavy operations
     extensionManager = new ExtensionManager(context);

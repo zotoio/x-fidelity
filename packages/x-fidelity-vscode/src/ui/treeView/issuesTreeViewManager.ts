@@ -14,6 +14,7 @@ import { getWorkspaceFolder } from '../../utils/workspaceUtils';
 export class IssuesTreeViewManager implements vscode.Disposable {
   private static commandsRegistered = false;
   private static globalDisposables: vscode.Disposable[] = [];
+  private static activeInstance: IssuesTreeViewManager | null = null;
 
   private disposables: vscode.Disposable[] = [];
   private treeDataProvider: IssuesTreeProvider;
@@ -26,6 +27,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     private configManager: ConfigManager,
     private viewId?: string
   ) {
+    // Set this as the active instance
+    IssuesTreeViewManager.activeInstance = this;
+
     // Initialize tree data provider
     this.treeDataProvider = new IssuesTreeProvider();
 
@@ -53,6 +57,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
     // Add tree view to disposables
     this.disposables.push(this.treeView);
+
+    // Debug logging for tree view creation
+    logger.info(`IssuesTreeViewManager created for view: ${this.viewId || 'xfidelityIssuesTreeView'}`);
   }
 
   private registerCommands(): void {
@@ -64,7 +71,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       IssuesTreeViewManager.globalDisposables.push(
         vscode.commands.registerCommand('xfidelity.refreshIssuesTree', () => {
           // Find the active tree view and refresh it
-          this.refreshIssues();
+          if (IssuesTreeViewManager.activeInstance) {
+            IssuesTreeViewManager.activeInstance.refreshIssues();
+          }
         })
       );
 
@@ -73,7 +82,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         vscode.commands.registerCommand(
           'xfidelity.issuesTreeGroupBySeverity',
           () => {
-            this.setGroupingMode('severity');
+            if (IssuesTreeViewManager.activeInstance) {
+              IssuesTreeViewManager.activeInstance.setGroupingMode('severity');
+            }
           }
         )
       );
@@ -82,7 +93,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         vscode.commands.registerCommand(
           'xfidelity.issuesTreeGroupByRule',
           () => {
-            this.setGroupingMode('rule');
+            if (IssuesTreeViewManager.activeInstance) {
+              IssuesTreeViewManager.activeInstance.setGroupingMode('rule');
+            }
           }
         )
       );
@@ -91,7 +104,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         vscode.commands.registerCommand(
           'xfidelity.issuesTreeGroupByFile',
           () => {
-            this.setGroupingMode('file');
+            if (IssuesTreeViewManager.activeInstance) {
+              IssuesTreeViewManager.activeInstance.setGroupingMode('file');
+            }
           }
         )
       );
@@ -100,7 +115,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         vscode.commands.registerCommand(
           'xfidelity.issuesTreeGroupByCategory',
           () => {
-            this.setGroupingMode('category');
+            if (IssuesTreeViewManager.activeInstance) {
+              IssuesTreeViewManager.activeInstance.setGroupingMode('category');
+            }
           }
         )
       );
@@ -110,7 +127,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         vscode.commands.registerCommand(
           'xfidelity.goToIssue',
           async (issue: ProcessedIssue | IssueTreeItem) => {
-            await this.goToIssue(issue);
+            if (IssuesTreeViewManager.activeInstance) {
+              await IssuesTreeViewManager.activeInstance.goToIssue(issue);
+            }
           }
         )
       );
@@ -119,7 +138,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         vscode.commands.registerCommand(
           'xfidelity.addIssueExemption',
           async (item: IssueTreeItem) => {
-            await this.addIssueExemption(item);
+            if (IssuesTreeViewManager.activeInstance) {
+              await IssuesTreeViewManager.activeInstance.addIssueExemption(item);
+            }
           }
         )
       );
@@ -128,7 +149,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         vscode.commands.registerCommand(
           'xfidelity.showIssueRuleInfo',
           async (item: IssueTreeItem) => {
-            await this.showIssueRuleInfo(item);
+            if (IssuesTreeViewManager.activeInstance) {
+              await IssuesTreeViewManager.activeInstance.showIssueRuleInfo(item);
+            }
           }
         )
       );
@@ -316,6 +339,13 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     issueOrItem: ProcessedIssue | IssueTreeItem
   ): Promise<void> {
     try {
+      // Handle undefined/null parameters
+      if (!issueOrItem) {
+        logger.warn('goToIssue called with undefined/null parameter');
+        vscode.window.showWarningMessage('No issue data available for navigation');
+        return;
+      }
+
       let issue: ProcessedIssue;
 
       if ('issue' in issueOrItem && issueOrItem.issue) {
@@ -323,7 +353,15 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       } else if ('id' in issueOrItem && 'file' in issueOrItem) {
         issue = issueOrItem as ProcessedIssue;
       } else {
-        logger.warn('Invalid issue data for navigation');
+        logger.warn('Invalid issue data for navigation', { issueOrItem });
+        vscode.window.showWarningMessage('Invalid issue data for navigation');
+        return;
+      }
+
+      // Validate issue data
+      if (!issue.file || !issue.line) {
+        logger.warn('Issue missing required file or line data', { issue });
+        vscode.window.showWarningMessage('Issue missing required file or line data');
         return;
       }
 
@@ -472,6 +510,11 @@ export class IssuesTreeViewManager implements vscode.Disposable {
   }
 
   dispose(): void {
+    // Clear active instance if this is the active one
+    if (IssuesTreeViewManager.activeInstance === this) {
+      IssuesTreeViewManager.activeInstance = null;
+    }
+    
     this.disposables.forEach(d => d.dispose());
   }
 
