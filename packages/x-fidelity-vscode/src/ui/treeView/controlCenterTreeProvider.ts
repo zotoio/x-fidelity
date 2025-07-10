@@ -187,7 +187,7 @@ export class ControlCenterTreeProvider
             iconPath: new vscode.ThemeIcon('settings'),
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             command: {
-              command: 'xfidelity.showAdvancedSettings',
+              command: 'xfidelity.showSettingsUI',
               title: 'Show Advanced Settings'
             }
           }

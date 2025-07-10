@@ -160,6 +160,11 @@
         "command": "xfidelity.showPeriodicAnalysisStatus",
         "title": "X-Fidelity: Show Periodic Analysis Status",
         "icon": "$(info)"
+      },
+      {
+        "command": "xfidelity.debugDiagnostics",
+        "title": "X-Fidelity: Debug Diagnostics Info",
+        "icon": "$(bug)"
       }
     ],
     "configuration": {

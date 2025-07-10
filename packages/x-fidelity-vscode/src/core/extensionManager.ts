@@ -4,7 +4,8 @@ import { DiagnosticProvider } from '../diagnostics/diagnosticProvider';
 import { CLIAnalysisManager } from '../analysis/cliAnalysisManager';
 import { StatusBarProvider } from '../ui/statusBarProvider';
 import { IssuesTreeViewManager } from '../ui/treeView/issuesTreeViewManager';
-import { DashboardPanel } from '../ui/panels/dashboardPanel';
+import { ControlCenterTreeViewManager } from '../ui/treeView/controlCenterTreeViewManager';
+// import { DashboardPanel } from '../ui/panels/dashboardPanel'; // Disabled - using tree views only
 import { ReportHistoryManager } from '../reports/reportHistoryManager';
 import { ExportManager } from '../reports/exportManager';
 import { createComponentLogger } from '../utils/globalLogger';
@@ -25,7 +26,9 @@ export class ExtensionManager implements vscode.Disposable {
   // UI components
   private statusBarProvider: StatusBarProvider;
   private issuesTreeViewManager: IssuesTreeViewManager;
-  private dashboardPanel: DashboardPanel;
+  private issuesTreeViewManagerExplorer: IssuesTreeViewManager;
+  private controlCenterTreeViewManager: ControlCenterTreeViewManager;
+  // private dashboardPanel?: DashboardPanel; // Disabled - using tree views only
 
   // Report components
   private reportHistoryManager: ReportHistoryManager;
@@ -58,18 +61,37 @@ export class ExtensionManager implements vscode.Disposable {
       this.issuesTreeViewManager = new IssuesTreeViewManager(
         this.context,
         this.diagnosticProvider,
-        this.configManager
+        this.configManager,
+        'xfidelityIssuesTreeView'
       );
       this.globalLogger.debug('✅ IssuesTreeViewManager initialized');
 
-      // Initialize panels - pass the CLI analysis engine
-      this.dashboardPanel = new DashboardPanel(
+      this.issuesTreeViewManagerExplorer = new IssuesTreeViewManager(
         this.context,
+        this.diagnosticProvider,
         this.configManager,
-        this.analysisEngine, // Now using the correct CLI analysis engine
-        this.diagnosticProvider
+        'xfidelityIssuesTreeViewExplorer'
       );
-      this.globalLogger.debug('✅ DashboardPanel initialized');
+      this.globalLogger.debug(
+        '✅ IssuesTreeViewManager (Explorer) initialized'
+      );
+
+      this.controlCenterTreeViewManager = new ControlCenterTreeViewManager(
+        this.context,
+        'xfidelityControlCenterView'
+      );
+      this.globalLogger.debug('✅ ControlCenterTreeViewManager initialized');
+
+      // TODO: Webview panels disabled - focusing on tree views
+      // this.dashboardPanel = new DashboardPanel(
+      //   this.context,
+      //   this.configManager,
+      //   this.analysisEngine,
+      //   this.diagnosticProvider
+      // );
+      this.globalLogger.debug(
+        '✅ Webview panels disabled - using tree views only'
+      );
 
       // Initialize report components
       this.reportHistoryManager = new ReportHistoryManager(this.configManager);
@@ -107,8 +129,9 @@ export class ExtensionManager implements vscode.Disposable {
           `📊 Analysis completed: ${result.summary.totalIssues} issues found across ${result.summary.filesAnalyzed} files`
         );
 
-        // Update tree view
+        // Update tree views
         this.issuesTreeViewManager.refresh();
+        this.issuesTreeViewManagerExplorer.refresh();
 
         // Update dashboard
         this.updateDashboard();
@@ -124,8 +147,11 @@ export class ExtensionManager implements vscode.Disposable {
             .then(choice => {
               if (choice === 'View Issues') {
                 this.issuesTreeViewManager.refresh();
+                this.issuesTreeViewManagerExplorer.refresh();
               } else if (choice === 'View Dashboard') {
-                this.dashboardPanel.show();
+                // Dashboard disabled - show issues tree instead
+                this.issuesTreeViewManager.refresh();
+                this.issuesTreeViewManagerExplorer.refresh();
               }
             });
         } else {
@@ -153,10 +179,10 @@ export class ExtensionManager implements vscode.Disposable {
   }
 
   private updateDashboard(): void {
-    if (this.dashboardPanel) {
-      // Trigger dashboard update by calling show() if panel exists
-      this.dashboardPanel.show();
-    }
+    // Dashboard disabled - no action needed
+    // if (this.dashboardPanel) {
+    //   this.dashboardPanel.show();
+    // }
   }
 
   private registerCommands(): void {
@@ -190,10 +216,15 @@ export class ExtensionManager implements vscode.Disposable {
 
     // Note: Tree view commands are registered by IssuesTreeViewManager to prevent duplicates
 
-    // Panel commands
+    // Panel commands (dashboard disabled - show issues tree instead)
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.showDashboard', () => {
-        this.dashboardPanel.show();
+        // Dashboard disabled - show issues tree instead
+        this.issuesTreeViewManager.refresh();
+        this.issuesTreeViewManagerExplorer.refresh();
+        vscode.commands.executeCommand(
+          'workbench.view.extension.x-fidelity-activitybar'
+        );
       })
     );
 
@@ -213,6 +244,23 @@ export class ExtensionManager implements vscode.Disposable {
           'workbench.action.openSettings',
           'xfidelity'
         );
+      })
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.showAdvancedSettings', () => {
+        // Same as showSettingsUI - open VSCode settings for x-fidelity
+        vscode.commands.executeCommand(
+          'workbench.action.openSettings',
+          'xfidelity'
+        );
+      })
+    );
+
+    // Debug diagnostic information command
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.debugDiagnostics', () => {
+        this.debugDiagnosticsInfo();
       })
     );
 
@@ -400,13 +448,85 @@ export class ExtensionManager implements vscode.Disposable {
     );
   }
 
+  private debugDiagnosticsInfo(): void {
+    const diagnostics = this.diagnosticProvider.getAllDiagnostics();
+
+    const info = {
+      totalFiles: diagnostics.length,
+      totalDiagnostics: diagnostics.reduce(
+        (sum, [uri, diags]) => sum + diags.length,
+        0
+      ),
+      xfidelityDiagnostics: 0,
+      fileBreakdown: [] as any[]
+    };
+
+    for (const [uri, diags] of diagnostics) {
+      const xfiDiags = diags.filter(d => d.source === 'X-Fidelity');
+      info.xfidelityDiagnostics += xfiDiags.length;
+
+      if (diags.length > 0) {
+        info.fileBreakdown.push({
+          file: vscode.workspace.asRelativePath(uri),
+          totalDiagnostics: diags.length,
+          xfidelityDiagnostics: xfiDiags.length,
+          sources: [...new Set(diags.map(d => d.source || 'no-source'))],
+          firstFewMessages: diags.slice(0, 3).map(d => ({
+            source: d.source,
+            severity: vscode.DiagnosticSeverity[d.severity],
+            message: d.message.substring(0, 100)
+          }))
+        });
+      }
+    }
+
+    // Get tree view info
+    const treeStats = this.issuesTreeViewManager.getStatistics();
+    const currentIssues = this.issuesTreeViewManager.getCurrentIssues();
+
+    const debugInfo = {
+      ...info,
+      treeViewStats: treeStats,
+      currentTreeIssues: currentIssues.length,
+      treeViewTitle: this.issuesTreeViewManager.getTreeView().title
+    };
+
+    this.globalLogger.info('🔍 DEBUG DIAGNOSTICS INFO:', debugInfo);
+    console.log('[DEBUG] Full diagnostics info:', debugInfo);
+
+    // Show summary in popup
+    const message = `Debug Info:
+📊 Total Files: ${info.totalFiles}
+🔍 Total Diagnostics: ${info.totalDiagnostics} 
+⚡ X-Fidelity Diagnostics: ${info.xfidelityDiagnostics}
+🌳 Tree View Issues: ${currentIssues.length}
+📝 Tree Title: ${debugInfo.treeViewTitle}
+
+Check Output Console (X-Fidelity) for full details.`;
+
+    vscode.window
+      .showInformationMessage(message, 'Open Output')
+      .then(choice => {
+        if (choice === 'Open Output') {
+          vscode.commands.executeCommand(
+            'workbench.action.output.show.extension-output-x-fidelity'
+          );
+        }
+      });
+  }
+
   dispose(): void {
     this.globalLogger.info('🔄 Disposing Extension Manager...');
     this.disposables.forEach(d => d.dispose());
     this.analysisEngine.dispose();
     this.statusBarProvider.dispose();
     this.issuesTreeViewManager.dispose();
-    this.dashboardPanel.dispose();
+    this.issuesTreeViewManagerExplorer.dispose();
+    this.controlCenterTreeViewManager.dispose();
+    // Dashboard panel disabled - no disposal needed
+    // if (this.dashboardPanel) {
+    //   this.dashboardPanel.dispose();
+    // }
     // Note: ReportHistoryManager and ExportManager don't have dispose methods
     this.globalLogger.info('✅ Extension Manager disposed');
   }

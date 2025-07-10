@@ -5,7 +5,7 @@ import {
   type GroupingMode,
   type IssueTreeItem
 } from './issuesTreeProvider';
-import type { ProcessedIssue } from '../panels/issueDetailsPanel';
+import type { ProcessedIssue } from '../../types/issues';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
 import { ConfigManager } from '../../configuration/configManager';
 import { logger } from '../../utils/logger';
@@ -54,6 +54,19 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
     // Load initial data
     this.refreshIssues();
+    
+    // Register debug command for manual refresh
+    if (!IssuesTreeViewManager.commandsRegistered) {
+      this.context.subscriptions.push(
+        vscode.commands.registerCommand('xfidelity.debugRefreshTree', () => {
+          logger.info('🔍 Manual tree refresh triggered');
+          console.log('[DEBUG] Manual tree refresh triggered');
+          if (IssuesTreeViewManager.activeInstance) {
+            IssuesTreeViewManager.activeInstance.refreshIssues();
+          }
+        })
+      );
+    }
 
     // Add tree view to disposables
     this.disposables.push(this.treeView);
@@ -192,9 +205,10 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     // CRITICAL FIX: Listen for diagnostic updates to refresh tree view automatically
     this.disposables.push(
       this.diagnosticProvider.onDidDiagnosticsUpdate(updateInfo => {
-        logger.debug(
-          `Tree view refreshing due to diagnostics update: ${updateInfo.totalIssues} issues across ${updateInfo.filesWithIssues} files`
+        logger.info(
+          `🔄 Tree view received diagnostic update: ${updateInfo.totalIssues} issues across ${updateInfo.filesWithIssues} files`
         );
+        console.log(`[IssuesTreeViewManager] Diagnostic update received:`, updateInfo);
         this.refreshIssues();
       })
     );
@@ -208,9 +222,32 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       this.treeDataProvider.setIssues(this.currentIssues);
       this.updateTreeViewTitle();
 
-      logger.debug(
-        `Tree view updated with ${this.currentIssues.length} issues`
+      // Enhanced debugging
+      logger.info(
+        `Tree view updated with ${this.currentIssues.length} issues from ${diagnostics.length} diagnostic files`
       );
+      
+      // Debug diagnostic data
+      for (const [uri, diags] of diagnostics) {
+        logger.debug(`File ${uri.fsPath}: ${diags.length} diagnostics`);
+      }
+
+      // Debug processed issues
+      if (this.currentIssues.length > 0) {
+        logger.debug('Sample processed issues:', 
+          this.currentIssues.slice(0, 3).map(issue => ({
+            file: issue.file,
+            rule: issue.rule,
+            message: issue.message,
+            line: issue.line
+          }))
+        );
+      } else {
+        logger.warn('No issues were processed from diagnostics', {
+          diagnosticsCount: diagnostics.length,
+          totalDiagnostics: diagnostics.reduce((sum, [, diags]) => sum + diags.length, 0)
+        });
+      }
     } catch (error) {
       logger.error('Failed to refresh issues tree view', error);
       vscode.window.showErrorMessage(
@@ -225,10 +262,17 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     const issues: ProcessedIssue[] = [];
 
     for (const [uri, diags] of diagnostics) {
+      logger.debug(`Processing ${diags.length} diagnostics for ${uri.fsPath}`);
+      
       for (const diag of diags) {
+        logger.debug(`Diagnostic: source='${diag.source}', message='${diag.message.substring(0, 50)}...'`);
+        
         if (diag.source !== 'X-Fidelity') {
+          logger.warn(`🚫 Skipping diagnostic with source: '${diag.source}' (expected 'X-Fidelity')`);
           continue;
         }
+        
+        logger.info(`✅ Processing X-Fidelity diagnostic: ${diag.message.substring(0, 50)}...`);
 
         // Extract enhanced position data if available - use original XFI core data (1-based)
         const enhancedPos = (diag as any).enhancedPosition;
@@ -320,6 +364,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
     let title = 'X-Fidelity Issues';
 
+    logger.info(`📊 Tree view statistics: ${JSON.stringify(stats)}`);
+    console.log(`[IssuesTreeViewManager] Tree statistics:`, stats);
+
     if (stats.total > 0) {
       const errorCount = stats.error > 0 ? `${stats.error}E` : '';
       const warningCount = stats.warning > 0 ? `${stats.warning}W` : '';
@@ -333,6 +380,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     title += ` • ${modeIndicator}`;
 
     this.treeView.title = title;
+    
+    logger.info(`📝 Tree view title updated: '${title}' (current issues: ${this.currentIssues.length})`);
+    console.log(`[IssuesTreeViewManager] Title updated: ${title}`);
   }
 
   private async goToIssue(
