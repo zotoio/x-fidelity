@@ -41,12 +41,6 @@ suite('Extension Commands Tests', () => {
       'xfidelity.detectArchetype',
       'xfidelity.resetConfiguration',
       
-      // CLI commands
-      'xfidelity.switchAnalysisEngine',
-      'xfidelity.configureCLIPath',
-      'xfidelity.detectCLI',
-      'xfidelity.showAnalysisMode',
-      
       // Report commands
       'xfidelity.showReportHistory',
       'xfidelity.exportReport',
@@ -132,26 +126,6 @@ suite('Extension Commands Tests', () => {
     ];
 
     for (const command of configCommands) {
-      const result = await executeCommandSafely(command);
-      if (global.isVerboseMode) {
-        global.testConsole.log(
-          `✅ ${command}: ${result.success ? 'success' : 'handled gracefully'}`
-        );
-      }
-    }
-  });
-
-  test('should execute CLI commands gracefully', async function () {
-    this.timeout(15000);
-
-    const cliCommands = [
-      'xfidelity.switchAnalysisEngine',
-      'xfidelity.configureCLIPath',
-      'xfidelity.detectCLI',
-      'xfidelity.showAnalysisMode'
-    ];
-
-    for (const command of cliCommands) {
       const result = await executeCommandSafely(command);
       if (global.isVerboseMode) {
         global.testConsole.log(

@@ -57,7 +57,7 @@ export class StatusBarProvider implements vscode.Disposable {
     try {
       // Determine analysis mode for display
       const isCliMode = this.analysisEngine instanceof CLIAnalysisManager;
-      const modeIndicator = isCliMode ? ' (CLI)' : '';
+      const modeIndicator = isCliMode ? '' : '';
 
       let statusText = '';
       let statusTooltip = '';

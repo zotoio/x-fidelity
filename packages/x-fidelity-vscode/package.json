@@ -479,7 +479,14 @@
             "**/.git/**",
             "**/dist/**",
             "**/build/**",
-            "**/.xfiResults/**"
+            "**/.xfiResults/**",
+            "**/.idea/**",
+            "**/.vscode-test/**",
+            "**/.vscode-test-profile/**",
+            "**/.vscode-test-user-data/**",
+            "**/.DS_Store**",
+            "**/.vscode/**",
+            "*.log"
           ],
           "description": "Patterns to exclude from periodic analysis."
         },

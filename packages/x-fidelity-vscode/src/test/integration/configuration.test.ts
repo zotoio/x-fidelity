@@ -48,11 +48,8 @@ suite('Configuration Management Tests', () => {
       'ruleOverrides',
       'cacheResults',
       'cacheTTL',
-      'analysisEngine',
-      'cliSource',
-      'cliBinaryPath',
-      'cliTimeout',
-      'cliExtraArgs'
+      'cliExtraArgs',
+      'analyzeOnStartup'
     ];
 
     const missingProperties: string[] = [];

@@ -40,7 +40,8 @@
   },
   "dependencies": {
     "@types/node": "22",
-    "ajv": "^8.17.1"
+    "ajv": "^8.17.1",
+    "depcheck": "^1.4.7"
   },
   "devDependencies": {
     "c8": "^10.1.3",

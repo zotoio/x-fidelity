@@ -71,28 +71,28 @@ export class IssuesTreeProvider
   }
 
   private performRefresh(): void {
-    console.log(`[IssuesTreeProvider] performRefresh called with ${this.issues.length} issues`);
+    //console.log(`[IssuesTreeProvider] performRefresh called with ${this.issues.length} issues`);
     this.updatePending = false;
     this.lastUpdateTime = Date.now();
     this.rebuildTree();
-    console.log(`[IssuesTreeProvider] Tree rebuilt, firing onDidChangeTreeData event`);
+    //console.log(`[IssuesTreeProvider] Tree rebuilt, firing onDidChangeTreeData event`);
     this._onDidChangeTreeData.fire(null);
   }
 
   setIssues(issues: ProcessedIssue[]): void {
-    console.log(`[IssuesTreeProvider] setIssues called with ${issues.length} issues`);
+    //console.log(`[IssuesTreeProvider] setIssues called with ${issues.length} issues`);
     
     // Quick check if issues actually changed
     if (
       this.issues.length === issues.length &&
       this.issues.every((issue, index) => issue.id === issues[index]?.id)
     ) {
-      console.log(`[IssuesTreeProvider] No changes detected, skipping update`);
+      //console.log(`[IssuesTreeProvider] No changes detected, skipping update`);
       return; // No changes, skip update
     }
 
     this.issues = issues;
-    console.log(`[IssuesTreeProvider] Issues updated, calling refresh()`);
+    //console.log(`[IssuesTreeProvider] Issues updated, calling refresh()`);
     this.refresh();
   }
 
@@ -128,8 +128,8 @@ export class IssuesTreeProvider
     if (!element) {
       // Root level - return visible top-level nodes
       const rootNodes = this.virtualTree.filter(node => node.visible).map(node => node.data);
-      console.log(`[IssuesTreeProvider] getChildren(root): returning ${rootNodes.length} root nodes`);
-      console.log(`[IssuesTreeProvider] Virtual tree has ${this.virtualTree.length} total nodes`);
+      //console.log(`[IssuesTreeProvider] getChildren(root): returning ${rootNodes.length} root nodes`);
+      //console.log(`[IssuesTreeProvider] Virtual tree has ${this.virtualTree.length} total nodes`);
       return Promise.resolve(rootNodes);
     }
 
@@ -137,23 +137,23 @@ export class IssuesTreeProvider
     const node = this.nodeMap.get(element.id);
     if (node && node.expanded) {
       const children = node.children.filter(child => child.visible).map(child => child.data);
-      console.log(`[IssuesTreeProvider] getChildren(${element.id}): returning ${children.length} children`);
+      //console.log(`[IssuesTreeProvider] getChildren(${element.id}): returning ${children.length} children`);
       return Promise.resolve(children);
     }
 
-    console.log(`[IssuesTreeProvider] getChildren(${element.id}): no expanded node found, returning empty array`);
+    //console.log(`[IssuesTreeProvider] getChildren(${element.id}): no expanded node found, returning empty array`);
     return Promise.resolve([]);
   }
 
   private rebuildTree(): void {
-    console.log(`[IssuesTreeProvider] rebuildTree called with ${this.issues.length} issues`);
+    //console.log(`[IssuesTreeProvider] rebuildTree called with ${this.issues.length} issues`);
     
     // Clear existing tree
     this.virtualTree = [];
     this.nodeMap.clear();
 
     if (this.issues.length === 0) {
-      console.log(`[IssuesTreeProvider] No issues, creating 'no-issues' node`);
+      //console.log(`[IssuesTreeProvider] No issues, creating 'no-issues' node`);
       const noIssuesNode = this.createVirtualNode({
         id: 'no-issues',
         label: '✅ No issues found',
@@ -166,7 +166,7 @@ export class IssuesTreeProvider
         }
       });
       this.virtualTree.push(noIssuesNode);
-      console.log(`[IssuesTreeProvider] Added no-issues node to virtual tree`);
+      //console.log(`[IssuesTreeProvider] Added no-issues node to virtual tree`);
       return;
     }
 

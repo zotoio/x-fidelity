@@ -48,16 +48,12 @@ export class CLIAnalysisManager implements IAnalysisEngine {
 
   private initializeCLISpawner(): void {
     try {
-      const config = this.configManager.getConfig();
-      this.cliSpawner = createCLISpawner(
-        config.cliSource,
-        config.cliBinaryPath || undefined
-      );
+      this.cliSpawner = createCLISpawner();
       this.globalLogger.debug('✅ CLI Spawner initialized successfully');
     } catch (error) {
       this.globalLogger.error('❌ Failed to initialize CLI Spawner:', error);
       // Create a fallback CLI spawner with default settings
-      this.cliSpawner = createCLISpawner('bundled');
+      this.cliSpawner = createCLISpawner();
       this.globalLogger.info(
         '⚠️ Using fallback CLI spawner with bundled configuration'
       );
@@ -145,7 +141,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
           const analysisResult = await this.cliSpawner.runAnalysis({
             workspacePath,
             args: extraArgs,
-            timeout: config.cliTimeout,
+            timeout: config.analysisTimeout,
             cancellationToken: token,
             progress
           });

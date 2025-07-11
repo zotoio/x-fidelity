@@ -2,8 +2,10 @@ dist/
 out/
 cli/
 node_modules/
+.idea/
 .vscode-test/
 .vscode-test-profile/
+.vscode-test-user-data/
 *.vsix
 *.tgz
 .DS_Store
@@ -12,6 +14,5 @@ node_modules/
 .env
 config/
 docs-archive/ 
-.vscode-test-user-data/
 temp/
 **/xfi-*.json

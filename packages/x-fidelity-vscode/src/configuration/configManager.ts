@@ -20,11 +20,7 @@ export interface ExtensionConfig {
   autoAnalyzeOnFileChange: boolean; // Trigger analysis on file change (debounced)
   archetype: string; // X-Fidelity archetype
 
-  // Analysis Engine Settings
-  analysisEngine: 'extension' | 'cli'; // Analysis execution mode
-  cliSource: 'bundled' | 'global' | 'local' | 'custom'; // Which CLI binary to use
-  cliBinaryPath: string; // Custom CLI binary path (only used when cliSource = 'custom')
-  cliTimeout: number; // CLI execution timeout (ms)
+  // CLI Settings (simplified - bundled CLI only)
   cliExtraArgs: string[]; // Additional CLI arguments
 
   // Connection Settings
@@ -123,11 +119,7 @@ export class ConfigManager {
       configServer: workspaceConfig.get('configServer', ''),
       localConfigPath: workspaceConfig.get('localConfigPath', ''),
 
-      // Analysis Engine Settings
-      analysisEngine: workspaceConfig.get('analysisEngine', 'extension'), // CHANGED from 'cli' to 'extension'
-      cliSource: workspaceConfig.get('cliSource', 'bundled'),
-      cliBinaryPath: workspaceConfig.get('cliBinaryPath', ''),
-      cliTimeout: workspaceConfig.get('cliTimeout', 60000), // 60 seconds
+      // CLI Settings (simplified - bundled CLI only)
       cliExtraArgs: workspaceConfig.get('cliExtraArgs', []),
 
       // Performance Settings - OPTIMIZED FOR SPEED

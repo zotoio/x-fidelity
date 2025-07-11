@@ -60,21 +60,11 @@ const mockConfigStore = {
   runInterval: 0,
   autoAnalyzeOnSave: false,
   autoAnalyzeOnFileChange: false,
-  generateReports: false,
-  maxFileSize: 524288,
-  analysisTimeout: 45000,
-  excludePatterns: [
-    'node_modules/**',
-    '.git/**',
-    'dist/**',
-    'build/**',
-    '.xfiResults/**'
-  ],
-  includePatterns: [],
-  maxConcurrentAnalysis: 1,
+  cliExtraArgs: [],
   openaiEnabled: false,
   telemetryCollector: '',
   telemetryEnabled: false,
+  generateReports: false,
   reportOutputDir: '',
   reportFormats: ['json'],
   showReportAfterAnalysis: false,
@@ -84,16 +74,23 @@ const mockConfigStore = {
   statusBarVisibility: true,
   problemsPanelGrouping: 'file',
   showRuleDocumentation: false,
+  maxFileSize: 524288,
+  analysisTimeout: 60000,
+  excludePatterns: [
+    'node_modules/**',
+    '.git/**',
+    'dist/**',
+    'build/**',
+    '.xfiResults/**'
+  ],
+  includePatterns: [],
+  maxConcurrentAnalysis: 1,
   debugMode: false,
   customPlugins: [],
   ruleOverrides: {},
   cacheResults: true,
   cacheTTL: 10,
-  analysisEngine: 'cli',
-  cliSource: 'bundled',
-  cliBinaryPath: '',
-  cliTimeout: 60000,
-  cliExtraArgs: []
+  analyzeOnStartup: true
 };
 
 // Store initial values for reset

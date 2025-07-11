@@ -208,7 +208,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         logger.info(
           `🔄 Tree view received diagnostic update: ${updateInfo.totalIssues} issues across ${updateInfo.filesWithIssues} files`
         );
-        console.log(`[IssuesTreeViewManager] Diagnostic update received:`, updateInfo);
+        //console.log(`[IssuesTreeViewManager] Diagnostic update received:`, updateInfo);
         this.refreshIssues();
       })
     );
@@ -266,13 +266,16 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       
       for (const diag of diags) {
         logger.debug(`Diagnostic: source='${diag.source}', message='${diag.message.substring(0, 50)}...'`);
+        //console.log(`[DEBUG] Found diagnostic: source='${diag.source}', message='${diag.message.substring(0, 50)}...'`);
         
-        if (diag.source !== 'X-Fidelity') {
-          logger.warn(`🚫 Skipping diagnostic with source: '${diag.source}' (expected 'X-Fidelity')`);
-          continue;
-        }
+        // TEMPORARILY ACCEPT ALL DIAGNOSTICS FOR DEBUGGING
+        // TODO: Re-enable proper filtering once we identify the issue
+        // if (diag.source !== 'X-Fidelity') {
+        //   logger.warn(`🚫 Skipping diagnostic with source: '${diag.source}' (not X-Fidelity related)`);
+        //   continue;
+        // }
         
-        logger.info(`✅ Processing X-Fidelity diagnostic: ${diag.message.substring(0, 50)}...`);
+        logger.info(`✅ Processing diagnostic: ${diag.message.substring(0, 50)}...`);
 
         // Extract enhanced position data if available - use original XFI core data (1-based)
         const enhancedPos = (diag as any).enhancedPosition;
@@ -365,15 +368,15 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     let title = 'X-Fidelity Issues';
 
     logger.info(`📊 Tree view statistics: ${JSON.stringify(stats)}`);
-    console.log(`[IssuesTreeViewManager] Tree statistics:`, stats);
+    //console.log(`[IssuesTreeViewManager] Tree statistics:`, stats);
 
-    if (stats.total > 0) {
-      const errorCount = stats.error > 0 ? `${stats.error}E` : '';
-      const warningCount = stats.warning > 0 ? `${stats.warning}W` : '';
-      const counts = [errorCount, warningCount].filter(c => c).join(' ');
-
-      title += ` (${stats.total}${counts ? ` - ${counts}` : ''})`;
-    }
+    // Removed bracketed issue count format for cleaner UI
+    // if (stats.total > 0) {
+    //   const errorCount = stats.error > 0 ? `${stats.error}E` : '';
+    //   const warningCount = stats.warning > 0 ? `${stats.warning}W` : '';
+    //   const counts = [errorCount, warningCount].filter(c => c).join(' ');
+    //   title += ` (${stats.total}${counts ? ` - ${counts}` : ''})`;
+    // }
 
     // Add grouping mode indicator
     const modeIndicator = mode.charAt(0).toUpperCase() + mode.slice(1);
@@ -382,7 +385,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     this.treeView.title = title;
     
     logger.info(`📝 Tree view title updated: '${title}' (current issues: ${this.currentIssues.length})`);
-    console.log(`[IssuesTreeViewManager] Title updated: ${title}`);
+    //console.log(`[IssuesTreeViewManager] Title updated: ${title}`);
   }
 
   private async goToIssue(

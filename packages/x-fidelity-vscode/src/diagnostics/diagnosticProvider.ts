@@ -106,24 +106,8 @@ export class DiagnosticProvider implements vscode.Disposable {
         updateTime: `${this.lastUpdateTime.toFixed(2)}ms`
       });
 
-      // Show success notification with action to view results
-      vscode.window
-        .showInformationMessage(
-          `X-Fidelity: ${this.issueCount} issues found across ${diagnosticsByFile.size} files`,
-          'View Problems',
-          'Focus Editor'
-        )
-        .then(choice => {
-          if (choice === 'View Problems') {
-            vscode.commands.executeCommand(
-              'workbench.panel.markers.view.focus'
-            );
-          } else if (choice === 'Focus Editor' && diagnosticsByFile.size > 0) {
-            // Open first file with issues
-            const firstFile = Array.from(diagnosticsByFile.keys())[0];
-            vscode.window.showTextDocument(firstFile);
-          }
-        });
+      // NOTE: Duplicate notification removed to avoid showing two notifications
+      // The ExtensionManager already shows a notification with "View Issues" and "View Dashboard" buttons
 
       // Emit diagnostic update event
       this.onDiagnosticsUpdated.fire({
@@ -266,21 +250,59 @@ export class DiagnosticProvider implements vscode.Disposable {
     issuesArray: any[],
     issues: DiagnosticIssue[]
   ): void {
+    // Skip virtual files like REPO_GLOBAL_CHECK that don't represent actual files
+    if (
+      filePath === 'REPO_GLOBAL_CHECK' ||
+      filePath.includes('REPO_GLOBAL_CHECK') ||
+      filePath.includes('GLOBAL_CHECK')
+    ) {
+      this.logger.debug('Skipping virtual file for diagnostics', { filePath });
+      return;
+    }
+
+    // Debug malformed file paths
+    if (
+      filePath.startsWith('/src/') ||
+      filePath.startsWith('/packages/') ||
+      (filePath.startsWith('/') && !require('path').isAbsolute(filePath))
+    ) {
+      this.logger.warn('Detected potentially malformed file path', {
+        filePath,
+        isAbsolute: require('path').isAbsolute(filePath),
+        issueCount: issuesArray.length
+      });
+    }
+
     for (const issue of issuesArray) {
       // Extract location information from multiple possible formats
       const locationInfo = this.extractLocationInfo(issue);
 
+      // Debug location extraction for complexity issues
+      if (
+        issue.ruleFailure?.includes('complexity') ||
+        issue.details?.complexities
+      ) {
+        this.logger.debug('Processing complexity issue location', {
+          ruleFailure: issue.ruleFailure,
+          hasComplexities: !!issue.details?.complexities,
+          complexityCount: issue.details?.complexities?.length || 0,
+          extractedLocation: locationInfo,
+          primaryLine: locationInfo[0]?.startLine + 1, // Convert back to 1-based for logging
+          locationCount: locationInfo.length
+        });
+      }
+
       // Create multiple diagnostics for complex issues with multiple locations
-      if (locationInfo.locations && locationInfo.locations.length > 0) {
+      if (locationInfo.length > 0) {
         // Handle multiple locations (e.g., function complexity with multiple functions)
-        for (const location of locationInfo.locations) {
+        for (const loc of locationInfo) {
           const diagnosticIssue: DiagnosticIssue = {
             file: filePath,
-            line: location.line,
-            column: location.column,
-            endLine: location.endLine,
-            endColumn: location.endColumn,
-            message: this.formatComplexMessage(issue, location),
+            line: Math.max(0, (loc.startLine || 1) - 1), // Convert 1-based to 0-based
+            column: Math.max(0, (loc.startColumn || 1) - 1), // Convert 1-based to 0-based
+            endLine: Math.max(0, (loc.endLine || loc.startLine || 1) - 1), // Convert 1-based to 0-based
+            endColumn: Math.max(0, (loc.endColumn || 100) - 1), // Convert 1-based to 0-based
+            message: loc.message,
             severity: this.mapSeverity(issue.level || issue.severity),
             ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
             category: issue.category,
@@ -296,13 +318,20 @@ export class DiagnosticProvider implements vscode.Disposable {
           issues.push(diagnosticIssue);
         }
       } else {
-        // Handle simple single location
+        // Single location diagnostic
         const diagnosticIssue: DiagnosticIssue = {
           file: filePath,
-          line: locationInfo.line,
-          column: locationInfo.column,
-          endLine: locationInfo.endLine,
-          endColumn: locationInfo.endColumn,
+          line: Math.max(0, (locationInfo[0]?.startLine || 1) - 1), // Convert 1-based to 0-based
+          column: Math.max(0, (locationInfo[0]?.startColumn || 1) - 1), // Convert 1-based to 0-based
+          endLine: Math.max(
+            0,
+            (locationInfo[0]?.endLine || locationInfo[0]?.startLine || 1) - 1
+          ), // Convert 1-based to 0-based
+          endColumn: Math.max(
+            0,
+            (locationInfo[0]?.endColumn || locationInfo[0]?.startColumn || 1) -
+              1
+          ), // Convert 1-based to 0-based
           message: issue.details?.message || issue.message || 'Unknown issue',
           severity: this.mapSeverity(issue.level || issue.severity),
           ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
@@ -322,95 +351,28 @@ export class DiagnosticProvider implements vscode.Disposable {
   }
 
   /**
-   * Extract location information from various X-Fidelity issue formats
-   * All coordinates are converted to 0-based for VSCode compatibility
+   * Extract location information from issue details
    */
-  private extractLocationInfo(issue: any): {
-    line: number;
-    column: number;
-    endLine?: number;
-    endColumn?: number;
-    locations?: Array<{
-      line: number;
-      column: number;
-      endLine?: number;
-      endColumn?: number;
-      context?: any;
-    }>;
-  } {
-    // Helper function to safely convert 1-based to 0-based coordinates
-    const toZeroBased = (
-      value: number | undefined,
-      defaultValue: number = 0
-    ): number => {
-      if (value === undefined || value === null) {
-        return defaultValue;
-      }
-      return Math.max(0, Number(value) - 1);
-    };
+  private extractLocationInfo(issue: any): any[] {
+    const locationInfos: any[] = [];
 
-    // Helper function to safely convert 1-based to 0-based coordinates with fallback
-    const toZeroBasedWithFallback = (
-      value: number | undefined,
-      fallback: number = 1
-    ): number => {
-      if (value === undefined || value === null) {
-        return toZeroBased(fallback);
-      }
-      return Math.max(0, Number(value) - 1);
-    };
-
-    // Default location (0-based for VSCode)
-    let line = 0;
-    let column = 0;
-    let endLine: number | undefined;
-    let endColumn: number | undefined;
-    const locations: Array<{
-      line: number;
-      column: number;
-      endLine?: number;
-      endColumn?: number;
-      context?: any;
-    }> = [];
-
-    // Priority 1: Check for direct location object (most specific)
-    if (issue.location) {
-      const loc = issue.location;
-      line = toZeroBasedWithFallback(loc.startLine || loc.line);
-      column = toZeroBasedWithFallback(loc.startColumn || loc.column);
-      endLine = loc.endLine ? toZeroBased(loc.endLine) : undefined;
-      endColumn = loc.endColumn ? toZeroBased(loc.endColumn) : undefined;
-    }
-    // Priority 2: Check for simple lineNumber format (common format)
-    else if (issue.lineNumber && typeof issue.lineNumber === 'number') {
-      line = toZeroBased(issue.lineNumber);
-      column = toZeroBased(issue.column || 1);
-    }
-    // Priority 3: Use defaults for missing location information
-    else {
-      line = 0;
-      column = 0;
-    }
-
-    // Handle multiple locations for complex issues
-    // Check for details array with line information (e.g., sensitive logging)
+    // Handle standard location info (line-based patterns)
     if (issue.details && Array.isArray(issue.details)) {
       for (const detail of issue.details) {
-        if (detail.lineNumber && typeof detail.lineNumber === 'number') {
-          locations.push({
-            line: toZeroBased(detail.lineNumber),
-            column: toZeroBased(detail.column || 1),
-            endLine: detail.endLine ? toZeroBased(detail.endLine) : undefined,
-            endColumn: detail.endColumn
-              ? toZeroBased(detail.endColumn)
-              : undefined,
-            context: detail
+        if (detail.lineNumber) {
+          locationInfos.push({
+            startLine: detail.lineNumber,
+            startColumn: 1,
+            endLine: detail.lineNumber,
+            endColumn: detail.line ? detail.line.length : 100,
+            message: detail.match || detail.line || issue.message,
+            context: detail.line
           });
         }
       }
     }
 
-    // Check for AST-based location information (e.g., function complexity)
+    // Handle function complexity location info
     if (
       issue.details &&
       issue.details.complexities &&
@@ -419,40 +381,50 @@ export class DiagnosticProvider implements vscode.Disposable {
       for (const complexity of issue.details.complexities) {
         if (complexity.metrics && complexity.metrics.location) {
           const loc = complexity.metrics.location;
-          locations.push({
-            line: toZeroBasedWithFallback(loc.startLine || loc.line),
-            column: toZeroBasedWithFallback(loc.startColumn || loc.column),
-            endLine: loc.endLine ? toZeroBased(loc.endLine) : undefined,
-            endColumn: loc.endColumn ? toZeroBased(loc.endColumn) : undefined,
-            context: complexity
+          locationInfos.push({
+            startLine: loc.startLine,
+            startColumn: loc.startColumn || 1,
+            endLine: loc.endLine || loc.startLine,
+            endColumn: loc.endColumn || 100,
+            message: `Function "${complexity.name}" has high complexity (CC: ${complexity.metrics.cyclomaticComplexity}, Cognitive: ${complexity.metrics.cognitiveComplexity})`,
+            context: `Function ${complexity.name}: ${complexity.metrics.lineCount} lines`
           });
         }
       }
     }
 
-    // If we have multiple locations, use the first one as primary and return all
-    if (locations.length > 0) {
-      const primaryLocation = locations[0];
-      return {
-        line: primaryLocation.line,
-        column: primaryLocation.column,
-        endLine: primaryLocation.endLine,
-        endColumn: primaryLocation.endColumn,
-        locations
-      };
+    // Handle function count (file-level issues)
+    if (
+      issue.details &&
+      typeof issue.details === 'object' &&
+      !Array.isArray(issue.details)
+    ) {
+      // For file-level issues like function count, put at line 1
+      if (issue.message && issue.message.includes('functions')) {
+        locationInfos.push({
+          startLine: 1,
+          startColumn: 1,
+          endLine: 1,
+          endColumn: 100,
+          message: issue.message,
+          context: 'File-level issue'
+        });
+      }
     }
 
-    // Validate final coordinates
-    line = Math.max(0, line);
-    column = Math.max(0, column);
-    if (endLine !== undefined) {
-      endLine = Math.max(line, endLine);
-    }
-    if (endColumn !== undefined) {
-      endColumn = Math.max(column, endColumn);
+    // Fallback: if no specific location found, create a generic entry
+    if (locationInfos.length === 0) {
+      locationInfos.push({
+        startLine: 1,
+        startColumn: 1,
+        endLine: 1,
+        endColumn: 100,
+        message: issue.message || 'Issue detected',
+        context: 'Generic issue'
+      });
     }
 
-    return { line, column, endLine, endColumn };
+    return locationInfos;
   }
 
   /**
@@ -590,23 +562,63 @@ export class DiagnosticProvider implements vscode.Disposable {
    */
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
     try {
+      const path = require('path');
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+
+      if (!workspaceFolder) {
+        this.logger.warn('No workspace folder available for file resolution', {
+          filePath
+        });
+        return null;
+      }
+
+      const workspaceRoot = workspaceFolder.uri.fsPath;
+
       // Handle absolute paths
-      if (require('path').isAbsolute(filePath)) {
+      if (path.isAbsolute(filePath)) {
+        // Check if it's already a valid absolute path within the workspace
+        if (filePath.startsWith(workspaceRoot)) {
+          return vscode.Uri.file(filePath);
+        }
+
+        // Handle malformed paths like "/src/components/file.tsx" that should be relative
+        // These occur when workspace root gets incorrectly stripped
+        if (
+          filePath.startsWith('/src/') ||
+          filePath.startsWith('/packages/') ||
+          filePath.startsWith('/lib/') ||
+          filePath.startsWith('/app/') ||
+          filePath.startsWith('/components/') ||
+          filePath.startsWith('/utils/') ||
+          filePath.startsWith('/test/') ||
+          filePath.startsWith('/tests/')
+        ) {
+          // Convert to relative path by removing leading slash
+          const relativePath = filePath.substring(1);
+          const absolutePath = path.resolve(workspaceRoot, relativePath);
+          this.logger.debug(
+            'Converting malformed absolute path to workspace-relative',
+            {
+              original: filePath,
+              relative: relativePath,
+              resolved: absolutePath
+            }
+          );
+          return vscode.Uri.file(absolutePath);
+        }
+
+        // For other absolute paths, use as-is
         return vscode.Uri.file(filePath);
       }
 
       // Handle relative paths - resolve against workspace root
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      if (workspaceFolder) {
-        const absolutePath = require('path').resolve(
-          workspaceFolder.uri.fsPath,
-          filePath
-        );
-        return vscode.Uri.file(absolutePath);
-      }
-
-      // Fallback: try to parse as URI
-      return vscode.Uri.parse(filePath);
+      const absolutePath = path.resolve(workspaceRoot, filePath);
+      this.logger.debug('Resolving relative path', {
+        original: filePath,
+        workspaceRoot,
+        resolved: absolutePath
+      });
+      return vscode.Uri.file(absolutePath);
     } catch (error) {
       this.logger.warn('Failed to resolve file URI', { filePath, error });
       return null;
@@ -621,6 +633,7 @@ export class DiagnosticProvider implements vscode.Disposable {
       case 'error':
       case 'critical':
       case 'high':
+      case 'fatality':
         return 'error';
       case 'warning':
       case 'medium':
