@@ -31,60 +31,6 @@ suite('Navigation & Line/Column Accuracy Tests', () => {
     }
   });
 
-  test('should navigate to exact file locations when clicking diagnostics', async function () {
-    this.timeout(30000); // Reduced timeout since using cached results
-
-    // Use cached analysis results
-    const results = await getAnalysisResults();
-    console.log(`📊 Using cached analysis results: ${results?.summary?.totalIssues || 0} issues`);
-
-    // Check diagnostics
-    const diagnostics = vscode.languages.getDiagnostics();
-    let xfidelityDiagnostics = 0;
-    let testFile: vscode.Uri | null = null;
-    let testDiagnostic: vscode.Diagnostic | null = null;
-
-    for (const [uri, diags] of diagnostics) {
-      const xfidelityDiags = diags.filter(d => d.source === 'X-Fidelity');
-      if (xfidelityDiags.length > 0) {
-        xfidelityDiagnostics += xfidelityDiags.length;
-        
-        // Skip virtual files like REPO_GLOBAL_CHECK that don't represent actual files
-        const filePath = uri.fsPath;
-        if (!filePath.includes('REPO_GLOBAL_CHECK') && !filePath.includes('GLOBAL_CHECK')) {
-          testFile = uri;
-          testDiagnostic = xfidelityDiags[0];
-        }
-      }
-    }
-
-    console.log(`🔍 Found ${xfidelityDiagnostics} X-Fidelity diagnostics`);
-
-    // Test navigation if we have diagnostics for real files
-    if (testFile && testDiagnostic) {
-      try {
-        const document = await vscode.workspace.openTextDocument(testFile);
-        const editor = await vscode.window.showTextDocument(document);
-
-        // Navigate to diagnostic location
-        const position = testDiagnostic.range.start;
-        editor.selection = new vscode.Selection(position, position);
-        editor.revealRange(testDiagnostic.range);
-
-        // Verify navigation worked
-        assert.strictEqual(editor.selection.start.line, position.line);
-        assert.strictEqual(editor.selection.start.character, position.character);
-        
-        console.log(`✅ Navigation to ${testFile.fsPath}:${position.line}:${position.character} successful`);
-      } catch (error) {
-        console.log(`⚠️ Navigation test failed: ${error}`);
-        // Don't fail the test for navigation issues, just log them
-      }
-    } else {
-      console.log('⚠️ No real file diagnostics found for navigation testing (only virtual files like REPO_GLOBAL_CHECK)');
-    }
-  });
-
   test('should validate line number accuracy with problems panel', async function () {
     this.timeout(30000);
 

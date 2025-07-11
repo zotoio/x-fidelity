@@ -92,7 +92,24 @@ export async function runCLIAnalysis(
   workspacePath: string
 ): Promise<CLIResult> {
   const cliSpawner = createCLISpawner();
-  return await cliSpawner.runCLIForTesting({ workspacePath });
+  try {
+    const analysisResult = await cliSpawner.runAnalysis({ workspacePath });
+    
+    // Convert AnalysisResult to CLIResult format for test compatibility
+    return {
+      success: true,
+      output: 'CLI analysis completed',
+      XFI_RESULT: analysisResult.metadata.XFI_RESULT,
+      exitCode: 0
+    };
+  } catch (error) {
+    return {
+      success: false,
+      output: '',
+      error: error instanceof Error ? error.message : String(error),
+      exitCode: 1
+    };
+  }
 }
 
 /**

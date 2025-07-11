@@ -54,7 +54,9 @@ export class CLISpawner {
 
     // If none found, return the default path and let validation handle the error
     const defaultPath = path.resolve(__dirname, '../cli/index.js');
-    this.logger.warn(`CLI not found at any expected location. Trying default: ${defaultPath}`);
+    this.logger.warn(
+      `CLI not found at any expected location. Trying default: ${defaultPath}`
+    );
     return defaultPath;
   }
 
@@ -63,16 +65,16 @@ export class CLISpawner {
    */
   async validateCLI(): Promise<void> {
     const cliPath = this.getEmbeddedCLIPath();
-    
+
     this.logger.debug(`Validating CLI at: ${cliPath}`);
     this.logger.debug(`Current working directory: ${process.cwd()}`);
     this.logger.debug(`__dirname: ${__dirname}`);
-    
+
     if (!fs.existsSync(cliPath)) {
       // List what files DO exist in the expected directory for debugging
       const cliDir = path.dirname(cliPath);
       let dirListing = 'Directory does not exist';
-      
+
       try {
         if (fs.existsSync(cliDir)) {
           const files = fs.readdirSync(cliDir);
@@ -81,26 +83,30 @@ export class CLISpawner {
       } catch (error) {
         dirListing = `Error reading directory: ${error}`;
       }
-      
-      this.logger.error(`CLI validation failed - file not found at: ${cliPath}`);
+
+      this.logger.error(
+        `CLI validation failed - file not found at: ${cliPath}`
+      );
       this.logger.error(`CLI directory info: ${dirListing}`);
-      
+
       throw new Error(`Bundled CLI not found at: ${cliPath}. ${dirListing}`);
     }
-    
+
     // Additional validation - check if file is readable and appears to be a JS file
     try {
       const stats = fs.statSync(cliPath);
       if (!stats.isFile()) {
         throw new Error(`CLI path exists but is not a file: ${cliPath}`);
       }
-      
+
       // Check if file is not empty
       if (stats.size === 0) {
         throw new Error(`CLI file exists but is empty: ${cliPath}`);
       }
-      
-      this.logger.debug(`CLI validation successful - file size: ${stats.size} bytes`);
+
+      this.logger.debug(
+        `CLI validation successful - file size: ${stats.size} bytes`
+      );
     } catch (error) {
       this.logger.error(`CLI file validation failed:`, error);
       throw new Error(`CLI file validation failed: ${error}`);
@@ -216,142 +222,6 @@ export class CLISpawner {
     } catch (error) {
       CLISpawner.isExecuting = false; // Release mutex on any error
       throw error;
-    }
-  }
-
-  /**
-   * Execute CLI for testing purposes with simpler result format
-   */
-  async runCLIForTesting(options: CLISpawnOptions): Promise<CLIResult> {
-    // Check for concurrent execution
-    if (CLISpawner.isExecuting) {
-      return {
-        success: false,
-        output: '',
-        error: 'CLI analysis is already running',
-        exitCode: -1
-      };
-    }
-
-    CLISpawner.isExecuting = true;
-
-    try {
-      this.logger.debug(`Starting CLI validation for testing...`);
-      await this.validateCLI();
-
-      const cliPath = this.getEmbeddedCLIPath();
-      this.logger.debug(`Using CLI path: ${cliPath}`);
-      this.logger.debug(`Workspace path: ${options.workspacePath}`);
-
-      return new Promise((resolve, reject) => {
-        // Use correct CLI arguments format
-        const spawnArgs = [
-          cliPath,
-          '--dir',
-          options.workspacePath,
-          '--output-format',
-          'json',
-          ...(options.args || [])
-        ];
-
-        this.logger.debug(`Spawning CLI with args: node ${spawnArgs.join(' ')}`);
-
-        const child = spawn('node', spawnArgs, {
-          cwd: options.workspacePath,
-          stdio: ['pipe', 'pipe', 'pipe'],
-          env: { ...process.env, NODE_ENV: 'test', ...options.env }
-        });
-
-        let output = '';
-        let error = '';
-
-        child.stdout?.on('data', data => {
-          const dataStr = data.toString();
-          output += dataStr;
-          this.logger.debug(`CLI stdout: ${dataStr.trim()}`);
-        });
-
-        child.stderr?.on('data', data => {
-          const dataStr = data.toString();
-          error += dataStr;
-          this.logger.debug(`CLI stderr: ${dataStr.trim()}`);
-        });
-
-        child.on('close', async code => {
-          CLISpawner.isExecuting = false; // Release mutex
-          this.logger.debug(`CLI process completed with exit code: ${code}`);
-
-          const result: CLIResult = {
-            success: code === 0,
-            output,
-            error: error || undefined,
-            exitCode: code || undefined
-          };
-
-          // Enhanced error reporting for failed CLI execution
-          if (code !== 0) {
-            this.logger.error(`CLI execution failed with exit code ${code}`);
-            this.logger.error(`CLI stdout: ${output}`);
-            this.logger.error(`CLI stderr: ${error}`);
-          }
-
-          // Try to parse XFI_RESULT.json for test compatibility
-          if (code === 0) {
-            try {
-              const resultFilePath = path.join(
-                options.workspacePath,
-                '.xfiResults',
-                'XFI_RESULT.json'
-              );
-
-              this.logger.debug(`Looking for result file at: ${resultFilePath}`);
-
-              if (fs.existsSync(resultFilePath)) {
-                const resultContent = fs.readFileSync(resultFilePath, 'utf8');
-                const rawResult = JSON.parse(resultContent);
-                result.XFI_RESULT = rawResult.XFI_RESULT || rawResult;
-                this.logger.debug(`Successfully parsed XFI_RESULT with ${result.XFI_RESULT.totalIssues || 0} issues`);
-              } else {
-                this.logger.warn(`XFI_RESULT.json not found at expected location: ${resultFilePath}`);
-                // List what files DO exist in the .xfiResults directory
-                const resultsDir = path.dirname(resultFilePath);
-                if (fs.existsSync(resultsDir)) {
-                  const files = fs.readdirSync(resultsDir);
-                  this.logger.debug(`Files in .xfiResults directory: ${files.join(', ')}`);
-                } else {
-                  this.logger.debug(`.xfiResults directory does not exist`);
-                }
-              }
-            } catch (parseError) {
-              // Log error but don't fail the test
-              this.logger.debug(
-                'Failed to parse XFI_RESULT.json for testing:',
-                parseError
-              );
-            }
-          }
-
-          resolve(result);
-        });
-
-        child.on('error', err => {
-          CLISpawner.isExecuting = false; // Release mutex
-          this.logger.error(`CLI process error: ${err.message}`);
-          reject(new Error(`CLI execution failed: ${err.message}`));
-        });
-      });
-    } catch (validationError) {
-      CLISpawner.isExecuting = false; // Release mutex
-      this.logger.error(`CLI validation failed:`, validationError);
-      return {
-        success: false,
-        output: '',
-        error:
-          validationError instanceof Error
-            ? validationError.message
-            : String(validationError),
-        exitCode: -1
-      };
     }
   }
 

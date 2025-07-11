@@ -145,13 +145,9 @@ export class DiagnosticProvider implements vscode.Disposable {
     const issues: DiagnosticIssue[] = [];
 
     try {
-      // Handle different result formats - check for XFI_RESULT in metadata first
+      // Get XFI_RESULT from the result
       let xfiResult;
-      if (
-        'metadata' in result &&
-        result.metadata &&
-        'XFI_RESULT' in result.metadata
-      ) {
+      if ('metadata' in result && result.metadata?.XFI_RESULT) {
         xfiResult = result.metadata.XFI_RESULT;
       } else if ('XFI_RESULT' in result) {
         xfiResult = result.XFI_RESULT;
@@ -159,308 +155,140 @@ export class DiagnosticProvider implements vscode.Disposable {
         xfiResult = result;
       }
 
-      if (!xfiResult || typeof xfiResult !== 'object') {
-        this.logger.warn('No detailed results found in analysis result');
+      if (!xfiResult?.issueDetails) {
+        this.logger.warn('No issueDetails found in XFI_RESULT');
         return issues;
       }
 
-      this.logger.debug('Processing XFI result structure:', {
-        hasDetailedResults: !!(xfiResult as any).detailedResults,
-        hasIssueDetails: !!(xfiResult as any).issueDetails,
-        resultKeys: Object.keys(xfiResult),
-        totalIssues: (xfiResult as any).totalIssues,
-        fileCount: (xfiResult as any).fileCount
-      });
+      // DEBUG: Log the actual XFI_RESULT structure to see what we're getting
+      this.logger.debug('=== XFI_RESULT CONTENT DEBUG ===');
+      this.logger.debug(`XFI_RESULT keys: ${Object.keys(xfiResult)}`);
+      this.logger.debug(
+        `issueDetails length: ${xfiResult.issueDetails?.length || 0}`
+      );
 
-      // Check for detailedResults property with proper type checking
-      const detailedResults =
-        (xfiResult as any).detailedResults || (xfiResult as any).issueDetails;
-      if (!detailedResults) {
-        this.logger.warn(
-          'No detailed results or issue details found in analysis result'
-        );
-        return issues;
-      }
+      if (xfiResult.issueDetails && xfiResult.issueDetails.length > 0) {
+        const firstFileIssue = xfiResult.issueDetails[0];
+        this.logger.debug(`First file issue structure:`, {
+          filePath: firstFileIssue.filePath,
+          errorsCount: firstFileIssue.errors?.length || 0,
+          firstErrorKeys: firstFileIssue.errors?.[0]
+            ? Object.keys(firstFileIssue.errors[0])
+            : [],
+          firstErrorSample: firstFileIssue.errors?.[0] || null
+        });
 
-      // Process each file's results
-      // Handle both object format (filePath -> results) and array format (results with filePath property)
-      if (Array.isArray(detailedResults)) {
-        // Array format: each item should have a filePath property
-        for (const fileResult of detailedResults) {
-          if (!fileResult || typeof fileResult !== 'object') {
-            continue;
-          }
-
-          const filePath = fileResult.filePath;
-          if (!filePath || typeof filePath !== 'string') {
-            this.logger.warn('Issue detail missing filePath property', {
-              fileResult
-            });
-            continue;
-          }
-
-          // Handle both detailedResults format and issueDetails format
-          const issuesArray =
-            fileResult.issues ||
-            fileResult.errors ||
-            (Array.isArray(fileResult) ? fileResult : []);
-          if (!Array.isArray(issuesArray)) {
-            continue;
-          }
-
-          // Process issues for this file
-          this.processIssuesForFile(filePath, issuesArray, issues);
-        }
-      } else {
-        // Object format: filePath -> results
-        for (const [filePath, fileResults] of Object.entries(detailedResults)) {
-          if (!fileResults || typeof fileResults !== 'object') {
-            continue;
-          }
-
-          // Handle both detailedResults format and issueDetails format
-          const issuesArray =
-            (fileResults as any).issues ||
-            (fileResults as any).errors ||
-            (Array.isArray(fileResults) ? fileResults : []);
-          if (!Array.isArray(issuesArray)) {
-            continue;
-          }
-
-          // Process issues for this file
-          this.processIssuesForFile(filePath, issuesArray, issues);
+        if (firstFileIssue.errors && firstFileIssue.errors.length > 0) {
+          const firstError = firstFileIssue.errors[0];
+          this.logger.debug(`First error detailed structure:`, {
+            ruleFailure: firstError.ruleFailure,
+            level: firstError.level,
+            detailsKeys: firstError.details
+              ? Object.keys(firstError.details)
+              : [],
+            detailsMessage: firstError.details?.message || 'NO DETAILS MESSAGE',
+            detailsLineNumber:
+              firstError.details?.lineNumber || 'NO LINE NUMBER',
+            rawDetailsObject: firstError.details
+          });
         }
       }
+      this.logger.debug('=== END XFI_RESULT DEBUG ===');
+
+      // Simple direct mapping: XFI_RESULT.issueDetails -> VSCode diagnostics
+      for (const fileIssue of xfiResult.issueDetails) {
+        const filePath = fileIssue.filePath;
+        if (!filePath || !fileIssue.errors) {
+          continue;
+        }
+
+        for (const error of fileIssue.errors) {
+          // Extract line/column from error.details if available
+          const lineNumber = error.details?.lineNumber || 1;
+          const columnNumber = error.details?.columnNumber || 1;
+          const rawMessage =
+            error.details?.message || error.ruleFailure || 'Issue detected';
+
+          // DEBUG: Log the raw message before cleaning
+          this.logger.debug(`Raw message before cleaning:`, {
+            rawMessage,
+            messageType: typeof rawMessage,
+            messageLength: rawMessage?.length || 0,
+            ruleFailure: error.ruleFailure,
+            detailsMessage: error.details?.message
+          });
+
+          const message = this.cleanMessage(rawMessage);
+
+          const diagnosticIssue: DiagnosticIssue = {
+            file: filePath,
+            line: Math.max(0, lineNumber - 1), // Convert 1-based to 0-based
+            column: Math.max(0, columnNumber - 1), // Convert 1-based to 0-based
+            endLine: Math.max(0, lineNumber - 1), // Same line for now
+            endColumn: Math.max(0, columnNumber + 10), // Reasonable end column
+            message: message,
+            severity: this.mapSeverity(error.level),
+            ruleId: error.ruleFailure || 'unknown-rule',
+            category: error.category,
+            code: error.ruleFailure,
+            source: 'X-Fidelity'
+          };
+
+          issues.push(diagnosticIssue);
+        }
+      }
+
+      this.logger.debug(`Extracted ${issues.length} issues from XFI_RESULT`);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error('Error extracting issues from result', {
-        error: errorMessage
-      });
+      this.logger.error('Error extracting issues from XFI_RESULT:', error);
     }
 
     return issues;
   }
 
   /**
-   * Process issues for a specific file and add them to the issues array
+   * Extract clean issue description from structured log messages
    */
-  private processIssuesForFile(
-    filePath: string,
-    issuesArray: any[],
-    issues: DiagnosticIssue[]
-  ): void {
-    // Skip virtual files like REPO_GLOBAL_CHECK that don't represent actual files
-    if (
-      filePath === 'REPO_GLOBAL_CHECK' ||
-      filePath.includes('REPO_GLOBAL_CHECK') ||
-      filePath.includes('GLOBAL_CHECK')
-    ) {
-      this.logger.debug('Skipping virtual file for diagnostics', { filePath });
-      return;
+  private cleanMessage(message: string): string {
+    if (!message || typeof message !== 'string') {
+      return 'Issue detected';
     }
 
-    // Debug malformed file paths
-    if (
-      filePath.startsWith('/src/') ||
-      filePath.startsWith('/packages/') ||
-      (filePath.startsWith('/') && !require('path').isAbsolute(filePath))
-    ) {
-      this.logger.warn('Detected potentially malformed file path', {
-        filePath,
-        isAbsolute: require('path').isAbsolute(filePath),
-        issueCount: issuesArray.length
-      });
-    }
+    // Remove literal \n and split into lines
+    const lines = message.replace(/\\n/g, '\n').split('\n');
 
-    for (const issue of issuesArray) {
-      // Extract location information from multiple possible formats
-      const locationInfo = this.extractLocationInfo(issue);
+    // Find the actual issue description (usually after the metadata lines)
+    let issueDescription = '';
+    let foundMetadataEnd = false;
 
-      // Debug location extraction for complexity issues
-      if (
-        issue.ruleFailure?.includes('complexity') ||
-        issue.details?.complexities
-      ) {
-        this.logger.debug('Processing complexity issue location', {
-          ruleFailure: issue.ruleFailure,
-          hasComplexities: !!issue.details?.complexities,
-          complexityCount: issue.details?.complexities?.length || 0,
-          extractedLocation: locationInfo,
-          primaryLine: locationInfo[0]?.startLine + 1, // Convert back to 1-based for logging
-          locationCount: locationInfo.length
-        });
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      // Skip metadata lines (Rule:, Severity:, File:, Line:, etc.)
+      if (trimmedLine.match(/^(Rule|Severity|File|Line|Column|Level):/i)) {
+        continue;
       }
 
-      // Create multiple diagnostics for complex issues with multiple locations
-      if (locationInfo.length > 0) {
-        // Handle multiple locations (e.g., function complexity with multiple functions)
-        for (const loc of locationInfo) {
-          const diagnosticIssue: DiagnosticIssue = {
-            file: filePath,
-            line: Math.max(0, (loc.startLine || 1) - 1), // Convert 1-based to 0-based
-            column: Math.max(0, (loc.startColumn || 1) - 1), // Convert 1-based to 0-based
-            endLine: Math.max(0, (loc.endLine || loc.startLine || 1) - 1), // Convert 1-based to 0-based
-            endColumn: Math.max(0, (loc.endColumn || 100) - 1), // Convert 1-based to 0-based
-            message: loc.message,
-            severity: this.mapSeverity(issue.level || issue.severity),
-            ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
-            category: issue.category,
-            code: issue.code,
-            source: 'X-Fidelity'
-          };
-
-          // Add diagnostic tags for deprecated code, etc.
-          if (issue.tags) {
-            diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
-          }
-
-          issues.push(diagnosticIssue);
-        }
-      } else {
-        // Single location diagnostic
-        const diagnosticIssue: DiagnosticIssue = {
-          file: filePath,
-          line: Math.max(0, (locationInfo[0]?.startLine || 1) - 1), // Convert 1-based to 0-based
-          column: Math.max(0, (locationInfo[0]?.startColumn || 1) - 1), // Convert 1-based to 0-based
-          endLine: Math.max(
-            0,
-            (locationInfo[0]?.endLine || locationInfo[0]?.startLine || 1) - 1
-          ), // Convert 1-based to 0-based
-          endColumn: Math.max(
-            0,
-            (locationInfo[0]?.endColumn || locationInfo[0]?.startColumn || 1) -
-              1
-          ), // Convert 1-based to 0-based
-          message: issue.details?.message || issue.message || 'Unknown issue',
-          severity: this.mapSeverity(issue.level || issue.severity),
-          ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
-          category: issue.category,
-          code: issue.code,
-          source: 'X-Fidelity'
-        };
-
-        // Add diagnostic tags for deprecated code, etc.
-        if (issue.tags) {
-          diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
-        }
-
-        issues.push(diagnosticIssue);
+      // Skip empty lines before finding content
+      if (!trimmedLine && !foundMetadataEnd) {
+        foundMetadataEnd = true;
+        continue;
       }
-    }
-  }
 
-  /**
-   * Extract location information from issue details
-   */
-  private extractLocationInfo(issue: any): any[] {
-    const locationInfos: any[] = [];
+      // Take the first non-empty, non-metadata line as the issue description
+      if (trimmedLine && foundMetadataEnd) {
+        issueDescription = trimmedLine;
+        break;
+      }
 
-    // Handle standard location info (line-based patterns)
-    if (issue.details && Array.isArray(issue.details)) {
-      for (const detail of issue.details) {
-        if (detail.lineNumber) {
-          locationInfos.push({
-            startLine: detail.lineNumber,
-            startColumn: 1,
-            endLine: detail.lineNumber,
-            endColumn: detail.line ? detail.line.length : 100,
-            message: detail.match || detail.line || issue.message,
-            context: detail.line
-          });
-        }
+      // If no metadata found, take the first non-empty line
+      if (trimmedLine && !issueDescription) {
+        issueDescription = trimmedLine;
+        break;
       }
     }
 
-    // Handle function complexity location info
-    if (
-      issue.details &&
-      issue.details.complexities &&
-      Array.isArray(issue.details.complexities)
-    ) {
-      for (const complexity of issue.details.complexities) {
-        if (complexity.metrics && complexity.metrics.location) {
-          const loc = complexity.metrics.location;
-          locationInfos.push({
-            startLine: loc.startLine,
-            startColumn: loc.startColumn || 1,
-            endLine: loc.endLine || loc.startLine,
-            endColumn: loc.endColumn || 100,
-            message: `Function "${complexity.name}" has high complexity (CC: ${complexity.metrics.cyclomaticComplexity}, Cognitive: ${complexity.metrics.cognitiveComplexity})`,
-            context: `Function ${complexity.name}: ${complexity.metrics.lineCount} lines`
-          });
-        }
-      }
-    }
-
-    // Handle function count (file-level issues)
-    if (
-      issue.details &&
-      typeof issue.details === 'object' &&
-      !Array.isArray(issue.details)
-    ) {
-      // For file-level issues like function count, put at line 1
-      if (issue.message && issue.message.includes('functions')) {
-        locationInfos.push({
-          startLine: 1,
-          startColumn: 1,
-          endLine: 1,
-          endColumn: 100,
-          message: issue.message,
-          context: 'File-level issue'
-        });
-      }
-    }
-
-    // Fallback: if no specific location found, create a generic entry
-    if (locationInfos.length === 0) {
-      locationInfos.push({
-        startLine: 1,
-        startColumn: 1,
-        endLine: 1,
-        endColumn: 100,
-        message: issue.message || 'Issue detected',
-        context: 'Generic issue'
-      });
-    }
-
-    return locationInfos;
-  }
-
-  /**
-   * Format message for complex issues with specific location context
-   */
-  private formatComplexMessage(issue: any, location: any): string {
-    const baseMessage =
-      issue.details?.message || issue.message || 'Unknown issue';
-
-    // Add context for function complexity issues
-    if (location.context && location.context.metrics) {
-      const metrics = location.context.metrics;
-      const functionName =
-        metrics.name !== 'anonymous' ? metrics.name : 'anonymous function';
-
-      let complexityInfo = `${functionName}`;
-      if (metrics.cyclomaticComplexity) {
-        complexityInfo += ` (Cyclomatic: ${metrics.cyclomaticComplexity}`;
-      }
-      if (metrics.cognitiveComplexity) {
-        complexityInfo += `, Cognitive: ${metrics.cognitiveComplexity}`;
-      }
-      if (metrics.nestingDepth) {
-        complexityInfo += `, Nesting: ${metrics.nestingDepth}`;
-      }
-      complexityInfo += ')';
-
-      return `${baseMessage} - ${complexityInfo}`;
-    }
-
-    // Add context for pattern matching issues
-    if (location.context && location.context.match) {
-      return `${baseMessage} - Found: ${location.context.match}`;
-    }
-
-    return baseMessage;
+    return issueDescription || message.split('\n')[0] || 'Issue detected';
   }
 
   /**
@@ -563,55 +391,25 @@ export class DiagnosticProvider implements vscode.Disposable {
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
     try {
       const path = require('path');
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
 
+      // Since XFI_RESULT contains absolute paths, use them directly
+      if (path.isAbsolute(filePath)) {
+        return vscode.Uri.file(filePath);
+      }
+
+      // Handle relative paths by resolving against workspace root (fallback)
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       if (!workspaceFolder) {
-        this.logger.warn('No workspace folder available for file resolution', {
-          filePath
-        });
+        this.logger.warn(
+          'No workspace folder available for relative path resolution',
+          {
+            filePath
+          }
+        );
         return null;
       }
 
       const workspaceRoot = workspaceFolder.uri.fsPath;
-
-      // Handle absolute paths
-      if (path.isAbsolute(filePath)) {
-        // Check if it's already a valid absolute path within the workspace
-        if (filePath.startsWith(workspaceRoot)) {
-          return vscode.Uri.file(filePath);
-        }
-
-        // Handle malformed paths like "/src/components/file.tsx" that should be relative
-        // These occur when workspace root gets incorrectly stripped
-        if (
-          filePath.startsWith('/src/') ||
-          filePath.startsWith('/packages/') ||
-          filePath.startsWith('/lib/') ||
-          filePath.startsWith('/app/') ||
-          filePath.startsWith('/components/') ||
-          filePath.startsWith('/utils/') ||
-          filePath.startsWith('/test/') ||
-          filePath.startsWith('/tests/')
-        ) {
-          // Convert to relative path by removing leading slash
-          const relativePath = filePath.substring(1);
-          const absolutePath = path.resolve(workspaceRoot, relativePath);
-          this.logger.debug(
-            'Converting malformed absolute path to workspace-relative',
-            {
-              original: filePath,
-              relative: relativePath,
-              resolved: absolutePath
-            }
-          );
-          return vscode.Uri.file(absolutePath);
-        }
-
-        // For other absolute paths, use as-is
-        return vscode.Uri.file(filePath);
-      }
-
-      // Handle relative paths - resolve against workspace root
       const absolutePath = path.resolve(workspaceRoot, filePath);
       this.logger.debug('Resolving relative path', {
         original: filePath,
