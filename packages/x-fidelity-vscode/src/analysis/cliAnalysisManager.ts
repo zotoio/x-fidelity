@@ -49,13 +49,8 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   private initializeCLISpawner(): void {
     try {
       this.cliSpawner = createCLISpawner();
-      this.globalLogger.debug('✅ CLI Spawner initialized successfully');
     } catch (error) {
-      this.globalLogger.error('❌ Failed to initialize CLI Spawner:', error);
       this.cliSpawner = createCLISpawner();
-      this.globalLogger.info(
-        '⚠️ Using fallback CLI spawner with bundled configuration'
-      );
     }
   }
 
@@ -91,7 +86,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     forceRefresh?: boolean;
   }): Promise<AnalysisResult | null> {
     if (this.isAnalyzing) {
-      this.logger.warn('Analysis already in progress, skipping...');
       return null;
     }
 
@@ -100,15 +94,12 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     this.isAnalyzing = true;
 
     logCommandStart('xfidelity.runAnalysis', 'CLI Analysis');
-    this.globalLogger.info('🚀 Starting CLI analysis...');
 
     try {
       const workspacePath = getAnalysisTargetDirectory();
       if (!workspacePath) {
         throw new Error('No workspace folder found');
       }
-
-      this.globalLogger.info(`📁 Analysis target: ${workspacePath}`);
 
       const config = this.configManager.getConfig();
       const extraArgs = config.cliExtraArgs || [];
@@ -125,7 +116,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
             increment: 10
           });
 
-          this.globalLogger.info('⚡ Executing analysis...');
           const analysisResult = await this.cliSpawner.runAnalysis({
             workspacePath,
             args: extraArgs,
@@ -139,7 +129,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
         }
       );
 
-      this.globalLogger.info('📝 Updating diagnostics...');
       await this.diagnosticProvider.updateDiagnostics(result);
 
       const duration = performance.now() - startTime;
@@ -152,19 +141,12 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       this.setState('complete');
 
       logCommandSuccess('xfidelity.runAnalysis', 'CLI Analysis', duration);
-      this.globalLogger.info(
-        `✅ Analysis completed successfully in ${Math.round(duration)}ms`
-      );
-      this.globalLogger.info(
-        `📊 Analysis results: ${result.summary.totalIssues} issues found across ${result.summary.filesAnalyzed} files`
-      );
 
       return result;
     } catch (error) {
       this.setState('error');
 
       if (error instanceof vscode.CancellationError) {
-        this.globalLogger.info('⏹️ Analysis was cancelled by user');
         return null;
       }
 
@@ -173,18 +155,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       const duration = performance.now() - startTime;
 
       logCommandError('xfidelity.runAnalysis', 'CLI Analysis', error, duration);
-      this.globalLogger.error(`❌ Analysis failed: ${errorMessage}`);
-
-      vscode.window
-        .showErrorMessage(
-          `X-Fidelity analysis failed: ${errorMessage}`,
-          'Show Output'
-        )
-        .then(choice => {
-          if (choice === 'Show Output') {
-            this.globalLogger.show();
-          }
-        });
 
       throw error;
     } finally {
@@ -200,7 +170,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   async cancelAnalysis(): Promise<void> {
     if (this.cancellationToken) {
       this.cancellationToken.cancel();
-      this.logger.info('Analysis cancellation requested');
     }
   }
 
@@ -223,9 +192,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
 
   private setupEventListeners(): void {
     this.disposables.push(
-      this.configManager.onConfigurationChanged.event(() => {
-        this.logger.info('Configuration changed');
-      })
+      this.configManager.onConfigurationChanged.event(() => {})
     );
   }
 

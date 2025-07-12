@@ -2,13 +2,52 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ILogger, LogLevel, LogLevelValues } from '@x-fidelity/types';
+import { EnhancedLogger, EnhancedLoggerConfig } from '@x-fidelity/core/utils/enhancedLogger';
 
-export class VSCodeLogger implements ILogger {
-  private level: LogLevel = 'info';
+export class VSCodeLogger extends EnhancedLogger {
   private outputChannel: vscode.OutputChannel;
+  private ownsChannel: boolean = true;
+
+  constructor(
+    name: string = 'X-Fidelity',
+    logFilePath?: string,
+    prefix: string = '',
+    existingChannel?: vscode.OutputChannel
+  ) {
+    const baseLogger = new SimpleLogger(name, logFilePath, prefix, existingChannel);
+    const config: EnhancedLoggerConfig = {
+      baseLogger,
+      component: 'VSCode',
+      context: { prefix }
+    };
+    super(config);
+
+    this.outputChannel = baseLogger.getOutputChannel();
+    this.ownsChannel = baseLogger.ownsChannel;
+  }
+
+  show(): void {
+    this.outputChannel.show();
+  }
+
+  getOutputChannel(): vscode.OutputChannel {
+    return this.outputChannel;
+  }
+
+  dispose(): void {
+    super.dispose();
+    if (this.ownsChannel) {
+      this.outputChannel.dispose();
+    }
+  }
+}
+
+class SimpleLogger implements ILogger {
+  private level: LogLevel = 'info';
+  outputChannel: vscode.OutputChannel;
   private logFilePath?: string;
   private prefix: string;
-  private ownsChannel: boolean = true;
+  ownsChannel: boolean = true;
 
   constructor(
     name: string = 'X-Fidelity',
@@ -24,11 +63,6 @@ export class VSCodeLogger implements ILogger {
         this.outputChannel = vscode.window.createOutputChannel(name);
         this.ownsChannel = true;
       } catch (error) {
-        // If creating output channel fails, create a fallback that logs to console
-        // This can happen in test environments or when VSCode API is not available
-        console.warn(
-          `Failed to create VSCode output channel "${name}": ${error}. Falling back to console logging.`
-        );
         this.outputChannel = this.createFallbackChannel(name);
         this.ownsChannel = true;
       }
@@ -37,33 +71,24 @@ export class VSCodeLogger implements ILogger {
     this.logFilePath = logFilePath;
     this.prefix = prefix;
 
-    // Ensure log directory exists and clear log file at start of execution
     if (this.logFilePath) {
       const logDir = path.dirname(this.logFilePath);
       if (!fs.existsSync(logDir)) {
         fs.mkdirSync(logDir, { recursive: true });
       }
-
-      // Clear the log file at the start of each execution
-      try {
-        fs.writeFileSync(this.logFilePath, '');
-      } catch (error) {
-        console.warn(`Failed to clear log file ${this.logFilePath}: ${error}`);
-      }
     }
   }
 
   private createFallbackChannel(name: string): vscode.OutputChannel {
-    // Create a mock output channel that logs to console as fallback
     return {
       name: name,
       appendLine: (value: string) => console.log(`[${name}] ${value}`),
       append: (value: string) => console.log(`[${name}] ${value}`),
-      clear: () => console.log(`[${name}] Clear requested`),
-      show: () => console.log(`[${name}] Show requested`),
-      hide: () => console.log(`[${name}] Hide requested`),
-      dispose: () => console.log(`[${name}] Dispose requested`),
-      replace: () => console.log(`[${name}] Replace requested`)
+      clear: () => {},
+      show: () => {},
+      hide: () => {},
+      dispose: () => {},
+      replace: () => {}
     } as vscode.OutputChannel;
   }
 
@@ -96,7 +121,7 @@ export class VSCodeLogger implements ILogger {
       message = msgOrMeta;
       meta = metaOrMsg;
     } else {
-      message = metaOrMsg || this.safeStringify(msgOrMeta);
+      message = metaOrMsg || JSON.stringify(msgOrMeta);
       meta = msgOrMeta;
     }
 
@@ -104,107 +129,12 @@ export class VSCodeLogger implements ILogger {
     let logLine = `${timestamp} ${levelStr} ${prefixStr}${message}`;
 
     if (meta && typeof meta === 'object') {
-      logLine += ` ${this.safeStringify(meta)}`;
+      logLine += ` ${JSON.stringify(meta)}`;
     } else if (meta) {
       logLine += ` ${meta}`;
     }
 
     return logLine;
-  }
-
-  private safeStringify(obj: any): string {
-    if (obj === null || obj === undefined) {
-      return String(obj);
-    }
-
-    if (
-      typeof obj === 'string' ||
-      typeof obj === 'number' ||
-      typeof obj === 'boolean'
-    ) {
-      return String(obj);
-    }
-
-    if (typeof obj === 'function') {
-      return '[Function]';
-    }
-
-    if (obj instanceof Error) {
-      return `Error: ${obj.message}`;
-    }
-
-    if (typeof obj === 'object') {
-      try {
-        // Use a replacer function to handle circular references and non-serializable objects
-        return JSON.stringify(
-          obj,
-          (key, value) => {
-            // Handle circular references
-            if (typeof value === 'object' && value !== null) {
-              if (this.hasCircularReference(value)) {
-                return '[Circular Reference]';
-              }
-            }
-
-            // Handle functions
-            if (typeof value === 'function') {
-              return '[Function]';
-            }
-
-            // Handle VSCode objects that might not serialize well
-            if (value && typeof value === 'object') {
-              if (value.constructor && value.constructor.name) {
-                const constructorName = value.constructor.name;
-                if (
-                  constructorName.includes('Uri') ||
-                  constructorName.includes('Range') ||
-                  constructorName.includes('Position') ||
-                  constructorName.includes('Diagnostic') ||
-                  constructorName.includes('OutputChannel')
-                ) {
-                  return `[${constructorName}]`;
-                }
-              }
-            }
-
-            return value;
-          },
-          2
-        );
-      } catch (error) {
-        return `[Object - Serialization Failed: ${error}]`;
-      }
-    }
-
-    return String(obj);
-  }
-
-  private hasCircularReference(obj: any, seen = new WeakSet()): boolean {
-    if (obj === null || typeof obj !== 'object') {
-      return false;
-    }
-
-    if (seen.has(obj)) {
-      return true;
-    }
-
-    seen.add(obj);
-
-    try {
-      for (const key in obj) {
-        if (
-          obj.hasOwnProperty(key) &&
-          this.hasCircularReference(obj[key], seen)
-        ) {
-          return true;
-        }
-      }
-    } catch {
-      // If we can't iterate over the object, assume it might be problematic
-      return true;
-    }
-
-    return false;
   }
 
   private log(level: LogLevel, msgOrMeta: string | any, metaOrMsg?: any): void {
@@ -214,18 +144,12 @@ export class VSCodeLogger implements ILogger {
 
     const formattedMessage = this.formatMessage(level, msgOrMeta, metaOrMsg);
 
-    // Output to VSCode output channel
     this.outputChannel.appendLine(formattedMessage);
 
-    // Write to file if configured
     if (this.logFilePath) {
       try {
         fs.appendFileSync(this.logFilePath, formattedMessage + '\n');
-      } catch (error) {
-        // Fallback to console if file write fails
-        console.error('Failed to write to log file:', error);
-        console.log(formattedMessage);
-      }
+      } catch (error) {}
     }
   }
 
@@ -261,17 +185,15 @@ export class VSCodeLogger implements ILogger {
       ? `${this.prefix}[${bindingsStr}]`
       : bindingsStr;
 
-    // Create a child logger that shares the same output channel
-    return new VSCodeLogger(
+    return new SimpleLogger(
       this.outputChannel.name,
       this.logFilePath,
       childPrefix,
-      this.outputChannel // Pass the existing channel to share it
+      this.outputChannel
     );
   }
 
   dispose(): void {
-    // Only dispose the channel if this logger owns it
     if (this.ownsChannel) {
       this.outputChannel.dispose();
     }

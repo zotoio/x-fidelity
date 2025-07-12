@@ -3,47 +3,30 @@ import { standardErrorHandler } from './standardErrorHandler';
 
 export interface EnhancedLoggerConfig {
   baseLogger: ILogger;
-  
   component: 'CLI' | 'VSCode' | 'Core' | 'Plugin';
-  
   sessionId?: string;
-  
   context?: Record<string, any>;
-  
   structured?: boolean;
-  
   enablePerformanceTracking?: boolean;
-  
   enableCorrelation?: boolean;
 }
 
 export interface LogEntry {
   timestamp: string;
-  
   level: LogLevel;
-  
   message: string;
-  
   component: string;
-  
   sessionId?: string;
-  
   function?: string;
-  
   filePath?: string;
-  
   ruleName?: string;
-  
   pluginName?: string;
-  
   metadata?: Record<string, any>;
-  
   timing?: {
     startTime?: number;
     duration?: number;
     operation?: string;
   };
-  
   error?: {
     message: string;
     stack?: string;
