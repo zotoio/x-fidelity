@@ -25,12 +25,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   private currentState: SimpleAnalysisState = 'idle';
   private cliSpawner!: CLISpawner;
 
-  private performanceMetrics = {
-    lastAnalysisDuration: 0,
-    totalAnalyses: 0,
-    averageAnalysisDuration: 0
-  };
-
   private readonly onAnalysisStateChanged =
     new vscode.EventEmitter<SimpleAnalysisState>();
   private readonly onAnalysisComplete =
@@ -68,10 +62,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
 
   getLogger(): VSCodeLogger {
     return this.logger;
-  }
-
-  getPerformanceMetrics() {
-    return { ...this.performanceMetrics };
   }
 
   getCurrentResults(): AnalysisResult | null {
@@ -132,7 +122,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       await this.diagnosticProvider.updateDiagnostics(result);
 
       const duration = performance.now() - startTime;
-      this.updatePerformanceMetrics(duration);
 
       this.lastAnalysisResult = result;
 
@@ -176,18 +165,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   private setState(state: SimpleAnalysisState): void {
     this.currentState = state;
     this.onAnalysisStateChanged.fire(state);
-  }
-
-  private updatePerformanceMetrics(duration: number): void {
-    this.performanceMetrics.lastAnalysisDuration = duration;
-    this.performanceMetrics.totalAnalyses++;
-
-    const totalTime =
-      this.performanceMetrics.averageAnalysisDuration *
-        (this.performanceMetrics.totalAnalyses - 1) +
-      duration;
-    this.performanceMetrics.averageAnalysisDuration =
-      totalTime / this.performanceMetrics.totalAnalyses;
   }
 
   private setupEventListeners(): void {

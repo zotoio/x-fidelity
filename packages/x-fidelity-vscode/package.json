@@ -55,7 +55,6 @@
         "title": "X-Fidelity: Show Output Channel",
         "icon": "$(output)"
       },
-
       {
         "command": "xfidelity.refreshIssuesTree",
         "title": "Refresh",
@@ -140,26 +139,6 @@
         "command": "xfidelity.showPerformanceMetrics",
         "title": "X-Fidelity: Show Performance Metrics",
         "icon": "$(dashboard)"
-      },
-      {
-        "command": "xfidelity.startPeriodicAnalysis",
-        "title": "X-Fidelity: Start Periodic Analysis",
-        "icon": "$(play)"
-      },
-      {
-        "command": "xfidelity.stopPeriodicAnalysis",
-        "title": "X-Fidelity: Stop Periodic Analysis",
-        "icon": "$(stop)"
-      },
-      {
-        "command": "xfidelity.restartPeriodicAnalysis",
-        "title": "X-Fidelity: Restart Periodic Analysis",
-        "icon": "$(refresh)"
-      },
-      {
-        "command": "xfidelity.showPeriodicAnalysisStatus",
-        "title": "X-Fidelity: Show Periodic Analysis Status",
-        "icon": "$(info)"
       },
       {
         "command": "xfidelity.debugDiagnostics",
@@ -658,7 +637,7 @@
     "rebuild-native": "yarn rebuild --runtime=electron --target=35.5.1 --cache=.npm --disturl=https://electronjs.org/headers",
     "rebuild-native:check": "node -e \"try { require('tree-sitter'); console.log('✅ Native modules OK'); } catch(e) { console.log('❌ Native rebuild needed:', e.message); process.exit(1); }\"",
     "pretest": "yarn compile && yarn rebuild-native:check || yarn rebuild-native && yarn lint && yarn clean:test-artifacts && node -e \"require('fs').mkdirSync('./vscode-test-user-data', {recursive: true})\" && yarn build:cli",
-    "test": "yarn test:unit && yarn test:integration",
+    "test": "yarn test:all",
     "test:coverage": "jest --coverage",
     "test:unit": "jest",
     "test:integration": "node scripts/test-cross-platform.js integration",

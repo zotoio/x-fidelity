@@ -5,9 +5,6 @@ import { CLIAnalysisManager } from '../analysis/cliAnalysisManager';
 import { StatusBarProvider } from '../ui/statusBarProvider';
 import { IssuesTreeViewManager } from '../ui/treeView/issuesTreeViewManager';
 import { ControlCenterTreeViewManager } from '../ui/treeView/controlCenterTreeViewManager';
-// import { DashboardPanel } from '../ui/panels/dashboardPanel'; // Disabled - using tree views only
-import { ReportHistoryManager } from '../reports/reportHistoryManager';
-import { ExportManager } from '../reports/exportManager';
 import { createComponentLogger } from '../utils/globalLogger';
 import { VSCodeLogger } from '../utils/vscodeLogger';
 import { getAnalysisTargetDirectory } from '../utils/workspaceUtils';
@@ -18,23 +15,14 @@ export class ExtensionManager implements vscode.Disposable {
   private logger: VSCodeLogger;
   private globalLogger: VSCodeLogger;
 
-  // Core components
   private configManager: ConfigManager;
   private diagnosticProvider: DiagnosticProvider;
   private analysisEngine: CLIAnalysisManager;
 
-  // UI components
   private statusBarProvider: StatusBarProvider;
   private issuesTreeViewManager: IssuesTreeViewManager;
-  //private issuesTreeViewManagerExplorer: IssuesTreeViewManager;
   private controlCenterTreeViewManager: ControlCenterTreeViewManager;
-  // private dashboardPanel?: DashboardPanel; // Disabled - using tree views only
 
-  // Feature managers
-  private reportHistoryManager: ReportHistoryManager;
-  private exportManager: ExportManager;
-
-  // Periodic analysis state
   private periodicAnalysisTimer?: NodeJS.Timeout;
   private isPeriodicAnalysisRunning = false;
 
@@ -45,7 +33,6 @@ export class ExtensionManager implements vscode.Disposable {
     this.globalLogger.info('🚀 Initializing X-Fidelity Extension Manager...');
 
     try {
-      // Initialize core components
       this.configManager = new ConfigManager(this.context);
       this.globalLogger.debug('✅ ConfigManager initialized');
 
@@ -58,7 +45,6 @@ export class ExtensionManager implements vscode.Disposable {
       );
       this.globalLogger.debug('✅ CLIAnalysisManager initialized');
 
-      // Initialize UI components
       this.statusBarProvider = new StatusBarProvider(this.analysisEngine);
       this.globalLogger.debug('✅ StatusBarProvider initialized');
 
@@ -70,39 +56,12 @@ export class ExtensionManager implements vscode.Disposable {
       );
       this.globalLogger.debug('✅ IssuesTreeViewManager initialized');
 
-      // this.issuesTreeViewManagerExplorer = new IssuesTreeViewManager(
-      //   this.context,
-      //   this.diagnosticProvider,
-      //   this.configManager,
-      //   'xfidelityIssuesTreeViewExplorer'
-      // );
-      // this.globalLogger.debug(
-      //   '✅ IssuesTreeViewManager (Explorer) initialized'
-      // );
-
       this.controlCenterTreeViewManager = new ControlCenterTreeViewManager(
         this.context,
         'xfidelityControlCenterView'
       );
       this.globalLogger.debug('✅ ControlCenterTreeViewManager initialized');
 
-      // TODO: Webview panels disabled - focusing on tree views
-      // this.dashboardPanel = new DashboardPanel(
-      //   this.context,
-      //   this.configManager,
-      //   this.analysisEngine,
-      //   this.diagnosticProvider
-      // );
-      this.globalLogger.debug(
-        '✅ Webview panels disabled - using tree views only'
-      );
-
-      // Initialize report components
-      this.reportHistoryManager = new ReportHistoryManager(this.configManager);
-      this.exportManager = new ExportManager(this.configManager);
-      this.globalLogger.debug('✅ Report components initialized');
-
-      // Initialize plugin system
       this.initializePlugins();
 
       this.setupEventListeners();
@@ -113,7 +72,7 @@ export class ExtensionManager implements vscode.Disposable {
         '❌ Extension Manager initialization failed:',
         error
       );
-      throw error; // Re-throw to prevent partial initialization
+      throw error;
     }
   }
 
@@ -126,36 +85,23 @@ export class ExtensionManager implements vscode.Disposable {
   }
 
   private setupEventListeners(): void {
-    // Listen for analysis completion
     this.disposables.push(
       this.analysisEngine.onComplete(result => {
         this.globalLogger.info(
           `📊 Analysis completed: ${result.summary.totalIssues} issues found across ${result.summary.filesAnalyzed} files`
         );
 
-        // Update tree views
         this.issuesTreeViewManager.refresh();
-        //this.issuesTreeViewManagerExplorer.refresh();
 
-        // Update dashboard
-        this.updateDashboard();
-
-        // Show notification
         if (result.summary.totalIssues > 0) {
           vscode.window
             .showInformationMessage(
               `X-Fidelity found ${result.summary.totalIssues} issues across ${result.summary.filesAnalyzed} files`,
-              'View Issues',
-              'View Dashboard'
+              'View Issues'
             )
             .then(choice => {
               if (choice === 'View Issues') {
                 this.issuesTreeViewManager.refresh();
-                //this.issuesTreeViewManagerExplorer.refresh();
-              } else if (choice === 'View Dashboard') {
-                // Dashboard disabled - show issues tree instead
-                this.issuesTreeViewManager.refresh();
-                //this.issuesTreeViewManagerExplorer.refresh();
               }
             });
         } else {
@@ -166,31 +112,20 @@ export class ExtensionManager implements vscode.Disposable {
       })
     );
 
-    // Listen for analysis state changes
     this.disposables.push(
       this.analysisEngine.onStateChanged(state => {
         this.globalLogger.debug(`Analysis state changed: ${state}`);
       })
     );
 
-    // Listen for configuration changes
     this.disposables.push(
       this.configManager.onConfigurationChanged.event(() => {
         this.globalLogger.info('Configuration changed, updating components...');
-        this.updateDashboard();
       })
     );
   }
 
-  private updateDashboard(): void {
-    // Dashboard disabled - no action needed
-    // if (this.dashboardPanel) {
-    //   this.dashboardPanel.show();
-    // }
-  }
-
   private registerCommands(): void {
-    // Analysis commands
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.runAnalysis', async () => {
         try {
@@ -222,7 +157,6 @@ export class ExtensionManager implements vscode.Disposable {
               return;
             }
 
-            // Validate directory exists and is accessible
             try {
               const fs = require('fs');
               if (!fs.existsSync(workspacePath)) {
@@ -279,28 +213,21 @@ export class ExtensionManager implements vscode.Disposable {
       })
     );
 
-    // Note: Tree view commands are registered by IssuesTreeViewManager to prevent duplicates
-
-    // Panel commands (dashboard disabled - show issues tree instead)
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.showDashboard', () => {
-        // Dashboard disabled - show issues tree instead
         this.issuesTreeViewManager.refresh();
-        //this.issuesTreeViewManagerExplorer.refresh();
         vscode.commands.executeCommand('workbench.view.extension.xfidelity');
       })
     );
 
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.showControlCenter', () => {
-        // Open control center tree view (it's already in sidebar)
         vscode.commands.executeCommand('workbench.view.extension.xfidelity');
       })
     );
 
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.showSettingsUI', () => {
-        // For now, open VSCode settings for x-fidelity
         vscode.commands.executeCommand(
           'workbench.action.openSettings',
           'xfidelity'
@@ -310,7 +237,6 @@ export class ExtensionManager implements vscode.Disposable {
 
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.showAdvancedSettings', () => {
-        // Same as showSettingsUI - open VSCode settings for x-fidelity
         vscode.commands.executeCommand(
           'workbench.action.openSettings',
           'xfidelity'
@@ -318,94 +244,46 @@ export class ExtensionManager implements vscode.Disposable {
       })
     );
 
-    // Debug diagnostic information command
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.debugDiagnostics', () => {
         this.debugDiagnosticsInfo();
       })
     );
 
-    // Report commands
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.exportReport', async () => {
+      vscode.commands.registerCommand('xfidelity.handleReportAction', async (type: 'export' | 'share' | 'compare' | 'trends') => {
         try {
           const currentResults = this.analysisEngine.getCurrentResults();
           if (!currentResults) {
             vscode.window.showErrorMessage(
-              'No analysis results to export. Run an analysis first.'
+              'No analysis results available. Run an analysis first.'
             );
             return;
           }
 
-          vscode.window.showInformationMessage(
-            'Export functionality is being simplified. Results are available in the Problems panel and Issues tree.'
-          );
-        } catch (error) {
-          vscode.window.showErrorMessage(
-            `Export failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      })
-    );
-
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.shareReport', async () => {
-        try {
-          const currentResults = this.analysisEngine.getCurrentResults();
-          if (!currentResults) {
-            vscode.window.showErrorMessage(
-              'No analysis results to share. Run an analysis first.'
+          if (type === 'export' || type === 'share') {
+            const exportContent = JSON.stringify(
+              currentResults.metadata,
+              null,
+              2
             );
-            return;
+            await vscode.env.clipboard.writeText(exportContent);
+            vscode.window.showInformationMessage(
+              'Analysis results copied to clipboard!'
+            );
+          } else {
+            vscode.window.showInformationMessage(
+              `${type.charAt(0).toUpperCase() + type.slice(1)} feature is coming soon. Use the Problems panel or Issues tree for now.`
+            );
           }
-
-          // For simplicity, just copy to clipboard instead of using shareReport
-          const exportContent = JSON.stringify(
-            currentResults.metadata,
-            null,
-            2
-          );
-          await vscode.env.clipboard.writeText(exportContent);
-          vscode.window.showInformationMessage(
-            'Analysis results copied to clipboard!'
-          );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `Share failed: ${error instanceof Error ? error.message : String(error)}`
+            `${type} failed: ${error instanceof Error ? error.message : String(error)}`
           );
         }
       })
     );
 
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.compareReports', async () => {
-        try {
-          vscode.window.showInformationMessage(
-            'Report comparison feature is coming soon. For now, use the report history.'
-          );
-        } catch (error) {
-          vscode.window.showErrorMessage(
-            `Compare failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      })
-    );
-
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.viewTrends', async () => {
-        try {
-          vscode.window.showInformationMessage(
-            'Trend analysis feature is coming soon. Check report history for historical data.'
-          );
-        } catch (error) {
-          vscode.window.showErrorMessage(
-            `View trends failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      })
-    );
-
-    // Utility commands
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.showOutput', () => {
         this.globalLogger.show();
@@ -422,7 +300,6 @@ export class ExtensionManager implements vscode.Disposable {
           }
 
           this.globalLogger.info('🔍 Detecting project archetype...');
-          // For now, just show a message - archetype detection is handled by CLI
           vscode.window.showInformationMessage(
             'Archetype detection is handled automatically by the CLI during analysis'
           );
@@ -435,7 +312,6 @@ export class ExtensionManager implements vscode.Disposable {
       })
     );
 
-    // Test commands (for testing only)
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.test', () => {
         vscode.window.showInformationMessage(
@@ -444,10 +320,8 @@ export class ExtensionManager implements vscode.Disposable {
       })
     );
 
-    // Additional commands expected by tests
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.getTestResults', () => {
-        // Return current analysis results for testing
         if (this.analysisEngine && (this.analysisEngine as any).getLastResult) {
           return (this.analysisEngine as any).getLastResult();
         }
@@ -464,7 +338,6 @@ export class ExtensionManager implements vscode.Disposable {
       })
     );
 
-    // Configuration commands
     this.disposables.push(
       vscode.commands.registerCommand(
         'xfidelity.resetConfiguration',
@@ -478,7 +351,6 @@ export class ExtensionManager implements vscode.Disposable {
             );
 
             if (result === 'Reset') {
-              // Reset configuration by clearing workspace settings
               const config = vscode.workspace.getConfiguration('xfidelity');
               const keys = ['cliExtraArgs'];
 
@@ -503,7 +375,6 @@ export class ExtensionManager implements vscode.Disposable {
       )
     );
 
-    // Report commands
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.showReportHistory', () => {
         vscode.window.showInformationMessage(
@@ -518,7 +389,6 @@ export class ExtensionManager implements vscode.Disposable {
       })
     );
 
-    // Periodic analysis commands
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.startPeriodicAnalysis', () => {
         this.startPeriodicAnalysis();
@@ -549,7 +419,6 @@ export class ExtensionManager implements vscode.Disposable {
       )
     );
 
-    // Additional missing commands expected by tests
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.showRuleDocumentation', () => {
         vscode.window.showInformationMessage(
@@ -589,8 +458,6 @@ export class ExtensionManager implements vscode.Disposable {
       )
     );
 
-    // Note: Issue exemption commands are handled by IssuesTreeViewManager
-
     this.disposables.push(
       vscode.commands.registerCommand(
         'xfidelity.showPerformanceMetrics',
@@ -615,9 +482,6 @@ export class ExtensionManager implements vscode.Disposable {
     );
   }
 
-  /**
-   * Start periodic analysis based on configuration
-   */
   private startPeriodicAnalysis(): void {
     const config = this.configManager.getConfig();
     const runInterval = config.runInterval;
@@ -637,7 +501,7 @@ export class ExtensionManager implements vscode.Disposable {
     }
 
     this.isPeriodicAnalysisRunning = true;
-    const intervalMs = runInterval * 1000; // Convert seconds to milliseconds
+    const intervalMs = runInterval * 1000;
 
     this.periodicAnalysisTimer = setInterval(async () => {
       try {
@@ -656,9 +520,6 @@ export class ExtensionManager implements vscode.Disposable {
     );
   }
 
-  /**
-   * Stop periodic analysis
-   */
   private stopPeriodicAnalysis(): void {
     if (!this.isPeriodicAnalysisRunning) {
       vscode.window.showInformationMessage('Periodic analysis is not running.');
@@ -675,20 +536,13 @@ export class ExtensionManager implements vscode.Disposable {
     this.globalLogger.info('⏹️ Periodic analysis stopped');
   }
 
-  /**
-   * Restart periodic analysis
-   */
   private restartPeriodicAnalysis(): void {
     this.stopPeriodicAnalysis();
-    // Small delay to ensure cleanup
     setTimeout(() => {
       this.startPeriodicAnalysis();
     }, 100);
   }
 
-  /**
-   * Show periodic analysis status
-   */
   private showPeriodicAnalysisStatus(): void {
     const config = this.configManager.getConfig();
     const runInterval = config.runInterval;
@@ -739,7 +593,6 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
       }
     }
 
-    // Get tree view info
     const treeStats = this.issuesTreeViewManager.getStatistics();
     const currentIssues = this.issuesTreeViewManager.getCurrentIssues();
 
@@ -753,7 +606,6 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
     this.globalLogger.info('🔍 DEBUG DIAGNOSTICS INFO:', debugInfo);
     console.log('[DEBUG] Full diagnostics info:', debugInfo);
 
-    // Show summary in popup
     const message = `Debug Info:
 📊 Total Files: ${info.totalFiles}
 🔍 Total Diagnostics: ${info.totalDiagnostics} 
@@ -777,20 +629,13 @@ Check Output Console (X-Fidelity) for full details.`;
   dispose(): void {
     this.globalLogger.info('🔄 Disposing Extension Manager...');
 
-    // Stop periodic analysis if running
     this.stopPeriodicAnalysis();
 
     this.disposables.forEach(d => d.dispose());
     this.analysisEngine.dispose();
     this.statusBarProvider.dispose();
     this.issuesTreeViewManager.dispose();
-    //this.issuesTreeViewManagerExplorer.dispose();
     this.controlCenterTreeViewManager.dispose();
-    // Dashboard panel disabled - no disposal needed
-    // if (this.dashboardPanel) {
-    //   this.dashboardPanel.dispose();
-    // }
-    // Note: ReportHistoryManager and ExportManager don't have dispose methods
     this.globalLogger.info('✅ Extension Manager disposed');
   }
 }
