@@ -9,26 +9,6 @@ const mockBaseLogger: ILogger = {
   warn: jest.fn(),
   error: jest.fn(),
   fatal: jest.fn(),
-  child: jest.fn().mockImplementation((bindings: any) => ({
-    trace: jest.fn(),
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    fatal: jest.fn(),
-    child: jest.fn(),
-    setLevel: jest.fn(),
-    getLevel: jest.fn().mockReturnValue('info'),
-    isLevelEnabled: jest.fn((level: string) => {
-      // Simulate typical log level hierarchy: trace < debug < info < warn < error < fatal
-      const levels = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
-      const currentLevel = 'trace'; // Mock current level set to trace to enable all levels
-      const currentIndex = levels.indexOf(currentLevel);
-      const requestedIndex = levels.indexOf(level);
-      return requestedIndex >= currentIndex;
-    }),
-    dispose: jest.fn()
-  })),
   setLevel: jest.fn(),
   getLevel: jest.fn().mockReturnValue('info'),
   isLevelEnabled: jest.fn((level: string) => {
@@ -54,7 +34,6 @@ describe('EnhancedLogger', () => {
     (mockBaseLogger.warn as jest.Mock).mockClear();
     (mockBaseLogger.error as jest.Mock).mockClear();
     (mockBaseLogger.fatal as jest.Mock).mockClear();
-    (mockBaseLogger.child as jest.Mock).mockClear();
     (mockBaseLogger.setLevel as jest.Mock).mockClear();
     (mockBaseLogger.getLevel as jest.Mock).mockClear();
     (mockBaseLogger.isLevelEnabled as jest.Mock).mockClear();
@@ -70,26 +49,6 @@ describe('EnhancedLogger', () => {
     });
     
     (mockBaseLogger.getLevel as jest.Mock).mockReturnValue('info');
-    
-    (mockBaseLogger.child as jest.Mock).mockImplementation((bindings: any) => ({
-      trace: jest.fn(),
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      fatal: jest.fn(),
-      child: jest.fn(),
-      setLevel: jest.fn(),
-      getLevel: jest.fn().mockReturnValue('info'),
-      isLevelEnabled: jest.fn((level: string) => {
-        const levels = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
-        const currentLevel = 'trace';
-        const currentIndex = levels.indexOf(currentLevel);
-        const requestedIndex = levels.indexOf(level);
-        return requestedIndex >= currentIndex;
-      }),
-      dispose: jest.fn()
-    }));
     
     enhancedLogger = new EnhancedLogger({
       baseLogger: mockBaseLogger,
@@ -202,20 +161,11 @@ describe('EnhancedLogger', () => {
     });
   });
 
-  describe('child logger', () => {
-    it('should create child logger with additional bindings', () => {
-      const childBindings = { operation: 'test-op', userId: 123 };
-      const childLogger = enhancedLogger.child(childBindings);
-
-      expect(childLogger).toBeInstanceOf(EnhancedLogger);
-      expect(mockBaseLogger.child).toHaveBeenCalledWith(childBindings);
-    });
-
-    it('should inherit parent configuration in child logger', () => {
-      const childLogger = enhancedLogger.child({ additional: 'binding' });
+  describe('logger functionality', () => {
+    it('should support enhanced logging capabilities', () => {
+      enhancedLogger.info('Test enhanced message');
       
-      childLogger.info('Child logger message');
-      expect(mockBaseLogger.child).toHaveBeenCalled();
+      expect(mockBaseLogger.info).toHaveBeenCalled();
     });
   });
 

@@ -203,29 +203,121 @@ export class DiagnosticProvider implements vscode.Disposable {
         }
 
         for (const error of fileIssue.errors) {
-          // Extract line/column from error.details if available
-          const lineNumber = error.details?.lineNumber || 1;
-          const columnNumber = error.details?.columnNumber || 1;
-          const rawMessage =
-            error.details?.message || error.ruleFailure || 'Issue detected';
+          // Extract location information from the actual XFI_RESULT structure
+          let startLine = 1;
+          let startColumn = 1;
+          let endLine = 1;
+          let endColumn = 1;
 
-          // DEBUG: Log the raw message before cleaning
-          this.logger.debug(`Raw message before cleaning:`, {
-            rawMessage,
-            messageType: typeof rawMessage,
-            messageLength: rawMessage?.length || 0,
+          // Extract location information from various XFI_RESULT structures
+          let locationFound = false;
+
+          // METHOD 1: Check for location in complexities metrics (function complexity issues)
+          if (
+            error.details?.details?.complexities &&
+            error.details.details.complexities.length > 0
+          ) {
+            const location =
+              error.details.details.complexities[0].metrics?.location;
+            if (location) {
+              startLine = location.startLine || 1;
+              startColumn = location.startColumn || 1;
+              endLine = location.endLine || startLine;
+              endColumn = location.endColumn || startColumn;
+              locationFound = true;
+              this.logger.debug('Found location in complexities metrics');
+            }
+          }
+
+          // METHOD 2: Check for direct lineNumber in error.details (other rule types)
+          if (!locationFound && error.details?.lineNumber !== undefined) {
+            startLine = error.details.lineNumber;
+            startColumn = error.details.columnNumber || 1;
+            endLine = startLine;
+            endColumn = startColumn + 20; // Reasonable default range
+            locationFound = true;
+            this.logger.debug('Found location via lineNumber in details');
+          }
+
+          // METHOD 2.5: Check for matches array with location info (for pattern-based rules)
+          if (!locationFound && error.details?.details?.matches) {
+            const matches = error.details.details.matches;
+            if (
+              Array.isArray(matches) &&
+              matches.length > 0 &&
+              matches[0].lineNumber
+            ) {
+              startLine = matches[0].lineNumber;
+              startColumn = matches[0].columnNumber || 1;
+              endLine = startLine;
+              endColumn = startColumn + (matches[0].match?.length || 20);
+              locationFound = true;
+              this.logger.debug('Found location via matches array');
+            }
+          }
+
+          // METHOD 3: Fallback to legacy sources
+          if (!locationFound) {
+            if (error.lineNumber !== undefined) {
+              startLine = error.lineNumber;
+            } else if (error.line !== undefined) {
+              startLine = error.line;
+            }
+
+            if (error.columnNumber !== undefined) {
+              startColumn = error.columnNumber;
+            } else if (error.column !== undefined) {
+              startColumn = error.column;
+            }
+
+            endLine = startLine;
+            endColumn = startColumn + 10; // Default range
+            this.logger.debug('Using legacy line/column sources');
+          }
+
+          // Ensure all coordinates are positive integers
+          startLine = Math.max(1, parseInt(String(startLine)) || 1);
+          startColumn = Math.max(1, parseInt(String(startColumn)) || 1);
+          endLine = Math.max(startLine, parseInt(String(endLine)) || startLine);
+          endColumn = Math.max(
+            startColumn,
+            parseInt(String(endColumn)) || startColumn
+          );
+
+          const rawMessage =
+            error.details?.message ||
+            error.message ||
+            error.ruleFailure ||
+            'Issue detected';
+
+          // DEBUG: Log the enhanced coordinate extraction for debugging
+          this.logger.debug(`Enhanced coordinate extraction:`, {
+            filePath,
             ruleFailure: error.ruleFailure,
-            detailsMessage: error.details?.message
+            locationFound,
+            hasComplexities: !!error.details?.details?.complexities,
+            complexityCount: error.details?.details?.complexities?.length || 0,
+            hasDirectLineNumber: error.details?.lineNumber !== undefined,
+            hasMatches: !!error.details?.details?.matches,
+            matchesCount: error.details?.details?.matches?.length || 0,
+            extractedStartLine: startLine,
+            extractedStartColumn: startColumn,
+            extractedEndLine: endLine,
+            extractedEndColumn: endColumn,
+            convertedStartLine: Math.max(0, startLine - 1),
+            convertedStartColumn: Math.max(0, startColumn - 1),
+            convertedEndLine: Math.max(0, endLine - 1),
+            convertedEndColumn: Math.max(0, endColumn - 1)
           });
 
           const message = this.cleanMessage(rawMessage);
 
           const diagnosticIssue: DiagnosticIssue = {
             file: filePath,
-            line: Math.max(0, lineNumber - 1), // Convert 1-based to 0-based
-            column: Math.max(0, columnNumber - 1), // Convert 1-based to 0-based
-            endLine: Math.max(0, lineNumber - 1), // Same line for now
-            endColumn: Math.max(0, columnNumber + 10), // Reasonable end column
+            line: Math.max(0, startLine - 1), // Convert 1-based to 0-based
+            column: Math.max(0, startColumn - 1), // Convert 1-based to 0-based
+            endLine: Math.max(0, endLine - 1), // Convert 1-based to 0-based
+            endColumn: Math.max(0, endColumn - 1), // Convert 1-based to 0-based
             message: message,
             severity: this.mapSeverity(error.level),
             ruleId: error.ruleFailure || 'unknown-rule',
@@ -391,10 +483,71 @@ export class DiagnosticProvider implements vscode.Disposable {
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
     try {
       const path = require('path');
+      const fs = require('fs');
+
+      // Handle special global check files (like REPO_GLOBAL_CHECK)
+      if (
+        filePath === 'REPO_GLOBAL_CHECK' ||
+        filePath.endsWith('REPO_GLOBAL_CHECK')
+      ) {
+        // For global checks, find a suitable file to open (README, package.json, etc.)
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+          this.logger.warn('No workspace folder available for global check');
+          return null;
+        }
+
+        const workspaceRoot = workspaceFolder.uri.fsPath;
+
+        // Try to find a suitable file to open for global checks
+        const candidateFiles = [
+          'README.md',
+          'package.json',
+          'tsconfig.json',
+          'src/index.js',
+          'src/index.ts',
+          'index.js',
+          'index.ts'
+        ];
+
+        for (const candidate of candidateFiles) {
+          const candidatePath = path.resolve(workspaceRoot, candidate);
+          try {
+            if (fs.existsSync(candidatePath)) {
+              this.logger.debug(
+                `Using ${candidate} for REPO_GLOBAL_CHECK navigation`
+              );
+              return vscode.Uri.file(candidatePath);
+            }
+          } catch (error) {
+            // Continue to next candidate
+          }
+        }
+
+        // Fallback: return workspace folder URI (opens folder)
+        this.logger.debug(
+          'No suitable file found, using workspace folder for REPO_GLOBAL_CHECK'
+        );
+        return workspaceFolder.uri;
+      }
 
       // Since XFI_RESULT contains absolute paths, use them directly
       if (path.isAbsolute(filePath)) {
-        return vscode.Uri.file(filePath);
+        // Check if file exists before creating URI
+        try {
+          if (fs.existsSync(filePath)) {
+            return vscode.Uri.file(filePath);
+          } else {
+            this.logger.warn('Absolute file path does not exist', { filePath });
+            return null;
+          }
+        } catch (fsError) {
+          this.logger.warn('Cannot check file existence', {
+            filePath,
+            error: fsError
+          });
+          return vscode.Uri.file(filePath); // Return URI anyway for testing
+        }
       }
 
       // Handle relative paths by resolving against workspace root (fallback)
@@ -416,7 +569,24 @@ export class DiagnosticProvider implements vscode.Disposable {
         workspaceRoot,
         resolved: absolutePath
       });
-      return vscode.Uri.file(absolutePath);
+
+      // Check if resolved file exists
+      try {
+        if (fs.existsSync(absolutePath)) {
+          return vscode.Uri.file(absolutePath);
+        } else {
+          this.logger.warn('Resolved file path does not exist', {
+            absolutePath
+          });
+          return null;
+        }
+      } catch (fsError) {
+        this.logger.warn('Cannot check resolved file existence', {
+          absolutePath,
+          error: fsError
+        });
+        return vscode.Uri.file(absolutePath); // Return URI anyway for testing
+      }
     } catch (error) {
       this.logger.warn('Failed to resolve file URI', { filePath, error });
       return null;
@@ -427,18 +597,61 @@ export class DiagnosticProvider implements vscode.Disposable {
    * Map X-Fidelity severity to diagnostic severity
    */
   private mapSeverity(severity?: string): 'error' | 'warning' | 'info' {
-    switch (severity?.toLowerCase()) {
+    if (!severity) {
+      return 'info';
+    }
+
+    const normalizedSeverity = severity.toLowerCase().trim();
+
+    switch (normalizedSeverity) {
+      // Error levels
       case 'error':
+      case 'errors':
       case 'critical':
       case 'high':
       case 'fatality':
+      case 'fatalities':
+      case 'fatal':
+      case 'fail':
+      case 'failure':
         return 'error';
+
+      // Warning levels
       case 'warning':
+      case 'warnings':
+      case 'warn':
       case 'medium':
+      case 'moderate':
         return 'warning';
+
+      // Info levels
       case 'info':
+      case 'information':
+      case 'informational':
       case 'low':
+      case 'notice':
+      case 'note':
+      case 'hint':
+      case 'suggestion':
       default:
+        // Log unknown severity levels for debugging
+        if (
+          normalizedSeverity &&
+          ![
+            'info',
+            'information',
+            'informational',
+            'low',
+            'notice',
+            'note',
+            'hint',
+            'suggestion'
+          ].includes(normalizedSeverity)
+        ) {
+          this.logger.debug(
+            `Unknown severity level mapped to 'info': ${severity}`
+          );
+        }
         return 'info';
     }
   }

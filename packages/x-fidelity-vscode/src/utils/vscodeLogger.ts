@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ILogger, LogLevel, LogLevelValues } from '@x-fidelity/types';
-import { EnhancedLogger, EnhancedLoggerConfig } from '@x-fidelity/core/src/utils/enhancedLogger';
+import { EnhancedLogger, EnhancedLoggerConfig } from '@x-fidelity/core';
 
 export class VSCodeLogger extends EnhancedLogger {
   private outputChannel: vscode.OutputChannel;
@@ -14,7 +14,12 @@ export class VSCodeLogger extends EnhancedLogger {
     prefix: string = '',
     existingChannel?: vscode.OutputChannel
   ) {
-    const baseLogger = new SimpleLogger(name, logFilePath, prefix, existingChannel);
+    const baseLogger = new SimpleLogger(
+      name,
+      logFilePath,
+      prefix,
+      existingChannel
+    );
     const config: EnhancedLoggerConfig = {
       baseLogger,
       component: 'VSCode',
@@ -203,21 +208,7 @@ class SimpleLogger implements ILogger {
     this.log('fatal', msgOrMeta, metaOrMsg);
   }
 
-  child(bindings: any): ILogger {
-    const bindingsStr = Object.entries(bindings)
-      .map(([key, value]) => `${key}=${value}`)
-      .join(' ');
-    const childPrefix = this.prefix
-      ? `${this.prefix}[${bindingsStr}]`
-      : bindingsStr;
-
-    return new SimpleLogger(
-      this.outputChannel.name,
-      this.logFilePath,
-      childPrefix,
-      this.outputChannel
-    );
-  }
+  // Child logger method removed - use direct context passing instead
 
   dispose(): void {
     if (this.ownsChannel) {

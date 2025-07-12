@@ -7,7 +7,6 @@ import { loadFacts } from '../../facts';
 import { ConfigManager } from '../configManager';
 import { sendTelemetry } from '../../utils/telemetry';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
-import { generateLogPrefix } from '../../utils/logger';
 import { createTimingTracker } from '../../utils/timingUtils';
 import { factMetricsTracker } from '../../utils/factMetricsTracker';
 import fs from 'fs/promises';
@@ -23,7 +22,6 @@ jest.mock('../../facts');
 jest.mock('../configManager');
 jest.mock('../../utils/telemetry');
 jest.mock('../../utils/openaiUtils');
-jest.mock('../../utils/logger');
 jest.mock('../../utils/timingUtils');
 jest.mock('../../utils/factMetricsTracker');
 jest.mock('fs/promises');
@@ -82,10 +80,6 @@ describe('Analyzer', () => {
             const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
             const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
             const mockFacts = [{ name: 'mockFact', fn: jest.fn() }];
-
-            const mockLogPrefix = 'mockLogPrefix';
-
-            (generateLogPrefix as jest.Mock).mockReturnValue(mockLogPrefix);
 
             // Mock plugin facts through registry
             (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
@@ -161,10 +155,7 @@ describe('Analyzer', () => {
             const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
             const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
             const mockFacts = [{ name: 'mockFact', fn: jest.fn() }];
-            const mockLogPrefix = 'mockLogPrefix';
 
-            (generateLogPrefix as jest.Mock).mockReturnValue(mockLogPrefix);
-            
             // Mock plugin facts through registry
             (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
                 { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue(mockDependencyData) },

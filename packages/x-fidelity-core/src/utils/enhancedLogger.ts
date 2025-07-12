@@ -11,7 +11,7 @@ export interface EnhancedLoggerConfig {
   enableCorrelation?: boolean;
 }
 
-export interface LogEntry {
+export interface EnhancedLogEntry {
   timestamp: string;
   level: LogLevel;
   message: string;
@@ -79,17 +79,7 @@ export class EnhancedLogger implements ILogger {
     this.log('fatal', msgOrMeta, metaOrMsg);
   }
   
-  child(bindings: any): ILogger {
-    return new EnhancedLogger({
-      baseLogger: this.baseLogger.child(bindings),
-      component: this.component,
-      sessionId: this.sessionId,
-      context: { ...this.context, ...bindings },
-      structured: this.structured,
-      enablePerformanceTracking: this.enablePerformanceTracking,
-      enableCorrelation: this.enableCorrelation
-    });
-  }
+  // Child logger method removed - use direct context passing instead
   
   setLevel(level: LogLevel): void {
     this.baseLogger.setLevel(level);
@@ -180,7 +170,7 @@ export class EnhancedLogger implements ILogger {
     }
   }
   
-  private createLogEntry(level: LogLevel, msgOrMeta: string | any, metaOrMsg?: any): LogEntry {
+  private createLogEntry(level: LogLevel, msgOrMeta: string | any, metaOrMsg?: any): EnhancedLogEntry {
     let message: string;
     let metadata: Record<string, any> = {};
     
@@ -196,7 +186,7 @@ export class EnhancedLogger implements ILogger {
       message = String(msgOrMeta);
     }
     
-    const logEntry: LogEntry = {
+    const logEntry: EnhancedLogEntry = {
       timestamp: new Date().toISOString(),
       level,
       message,
@@ -229,7 +219,7 @@ export class EnhancedLogger implements ILogger {
     return logEntry;
   }
   
-  private logStructured(entry: LogEntry): void {
+  private logStructured(entry: EnhancedLogEntry): void {
     const structuredData: Record<string, any> = {
       '@timestamp': entry.timestamp,
       '@level': entry.level.toUpperCase(),
@@ -255,7 +245,7 @@ export class EnhancedLogger implements ILogger {
     this.baseLogger[entry.level](entry.message, structuredData);
   }
   
-  private logFormatted(entry: LogEntry): void {
+  private logFormatted(entry: EnhancedLogEntry): void {
     const parts: string[] = [];
     
     const contextParts: string[] = [entry.component];

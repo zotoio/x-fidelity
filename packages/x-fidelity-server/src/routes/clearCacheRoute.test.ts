@@ -49,11 +49,8 @@ describe('clearCacheRoute', () => {
   it('should clear cache and return success message', async () => {
     await clearCacheRoute(mockRequest, mockResponse);
     
-    // Should create child logger with request context
-    expect(logger.child).toHaveBeenCalledWith({ 
-      requestId: 'test-prefix', 
-      route: 'clearCache' 
-    });
+    // Should log cache clear success
+    expect(logger.info).toHaveBeenCalled();
     expect(clearCache).toHaveBeenCalled();
     expect(ConfigManager.clearLoadedConfigs).toHaveBeenCalled();
     expect(mockResponse.json).toHaveBeenCalledWith({ message: 'Cache cleared successfully' });

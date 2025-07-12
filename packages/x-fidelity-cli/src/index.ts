@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Set max listeners early to prevent warnings when multiple workers are created
+process.setMaxListeners(20);
+
 import { 
     analyzeCodebase, 
     sendTelemetry, 
@@ -23,6 +27,19 @@ import type {
 
 import { initCLI, options } from './cli';
 import { version } from '../package.json';
+
+// Initialize universal logging FIRST before any other operations
+LoggerProvider.initializeForPlugins();
+
+// Create CLI logger instance and inject it
+const logger = new PinoLogger({
+    level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
+    enableConsole: true,
+    enableColors: true
+});
+
+// Set the logger provider to use CLI's pino logger immediately
+LoggerProvider.setLogger(logger);
 
 export * from '@x-fidelity/core';
 export * from '@x-fidelity/types';
@@ -54,13 +71,6 @@ ${versionLine}
     // Use console.log instead of logger to ensure banner always shows
     console.log(banner);
 }
-
-// Create CLI logger instance
-const logger = new PinoLogger({
-    level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
-    enableConsole: true,
-    enableColors: true
-});
 
 if (require.main === module) {
     initCLI();
@@ -138,7 +148,7 @@ export async function main() {
                     filePath: logFilePath
                 });
 
-                // Set the logger provider to use CLI's pino logger
+                // Update the logger provider to use CLI's pino logger with file output
                 LoggerProvider.setLogger(analysisLogger);
 
                 logger.info('🚀 Starting codebase analysis');

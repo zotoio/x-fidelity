@@ -34,7 +34,6 @@ jest.mock('../../utils/logger', () => ({
 
 jest.mock('../../utils/loggerProvider', () => ({
     LoggerProvider: {
-        createChildLogger: jest.fn(() => mockChildLogger),
         getLogger: jest.fn(() => mockChildLogger),
         setLogger: jest.fn(),
         hasInjectedLogger: jest.fn(),
@@ -48,7 +47,6 @@ describe('executeErrorAction', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         // Reset all mocks after each test
-        (LoggerProvider.createChildLogger as jest.Mock).mockReturnValue(mockChildLogger);
         (LoggerProvider.getLogger as jest.Mock).mockReturnValue(mockChildLogger);
     });
 

@@ -54,13 +54,14 @@ describe('expressLogger', () => {
     it('should log incoming requests', () => {
         expressLogger(mockRequest, mockResponse, mockNext);
         
-        // Should create child logger with request context
-        expect(logger.child).toHaveBeenCalledWith({
+        // Should log incoming request with context
+        expect(logger.info).toHaveBeenCalledWith('[express] Incoming request', expect.objectContaining({
             requestId: 'test-prefix',
             method: 'GET',
             url: '/test',
-            headers: 'test-request-id'
-        });
+            headers: 'test-request-id',
+            req: expect.any(Object)
+        }));
         
         expect(maskSensitiveData).toHaveBeenCalled();
         expect(mockNext).toHaveBeenCalled();
@@ -73,8 +74,14 @@ describe('expressLogger', () => {
         const responseBody = { success: true };
         mockResponse.send(responseBody);
         
-        // Should have created child logger
-        expect(logger.child).toHaveBeenCalled();
+        // Should have logged outgoing response
+        expect(logger.info).toHaveBeenCalledWith('[express] Outgoing response', expect.objectContaining({
+            requestId: 'test-prefix',
+            method: 'GET',
+            url: '/test',
+            headers: 'test-request-id',
+            res: expect.any(Object)
+        }));
         expect(maskSensitiveData).toHaveBeenCalled();
     });
 
@@ -83,12 +90,14 @@ describe('expressLogger', () => {
         
         expressLogger(mockRequest, mockResponse, mockNext);
         
-        // Should create child logger without requestId
-        expect(logger.child).toHaveBeenCalledWith({
+        // Should log incoming request without requestId
+        expect(logger.info).toHaveBeenCalledWith('[express] Incoming request', expect.objectContaining({
+            requestId: undefined,
             method: 'GET',
             url: '/test',
-            headers: 'test-request-id'
-        });
+            headers: 'test-request-id',
+            req: expect.any(Object)
+        }));
         expect(mockNext).toHaveBeenCalled();
     });
 });

@@ -79,7 +79,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                             };
                             engine.addRule(ruleProperties);
                             // Register the rule for proper name tracking (v3.24.0 contract)
-                            registerRuleForTracking(ruleProperties);
+                            registerRuleForTracking(ruleProperties, logger);
                         } else {
                             // Convert RuleConfig to RuleProperties format
                             const ruleProperties = {
@@ -89,7 +89,7 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
                             };
                             engine.addRule(ruleProperties);
                             // Register the rule for proper name tracking (v3.24.0 contract)
-                            registerRuleForTracking(ruleProperties);
+                            registerRuleForTracking(ruleProperties, logger);
                         }
                     } else {
                         logger.error('Invalid rule configuration: rule or rule name is undefined');

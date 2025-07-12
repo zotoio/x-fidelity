@@ -1,10 +1,10 @@
-import { ScanResult, RuleFailure, ErrorLevel, RunEngineOnFilesParams } from '@x-fidelity/types';
+import { ScanResult, RuleFailure, ErrorLevel, RunEngineOnFilesParams, ILogger } from '@x-fidelity/types';
 import { Engine } from 'json-rules-engine';
-import { logger } from '../../utils/logger';
 import { REPO_GLOBAL_CHECK } from '../configManager';
 import { executeErrorAction } from './errorActionExecutor';
 import { createTimingTracker } from '../../utils/timingUtils';
 import { pluginRegistry } from '../pluginRegistry';
+import { LoggerProvider } from '../../utils/loggerProvider';
 
 // Rule registry to map event types to rule names
 const ruleEventTypeRegistry = new Map<string, { name: string; rule: any }[]>();
@@ -12,21 +12,23 @@ const ruleEventTypeRegistry = new Map<string, { name: string; rule: any }[]>();
 /**
  * Registers a rule in our tracking system
  */
-export function registerRuleForTracking(rule: any) {
+export function registerRuleForTracking(rule: any, logger?: ILogger) {
     if (rule && rule.event && rule.event.type && rule.name) {
         const eventType = rule.event.type;
         if (!ruleEventTypeRegistry.has(eventType)) {
             ruleEventTypeRegistry.set(eventType, []);
         }
         ruleEventTypeRegistry.get(eventType)!.push({ name: rule.name, rule });
-        logger.debug(`Registered rule '${rule.name}' for event type '${eventType}'`);
+        if (logger) {
+            logger.debug(`Registered rule '${rule.name}' for event type '${eventType}'`);
+        }
     }
 }
 
 /**
  * Resolves fact details from the almanac based on event details configuration
  */
-async function resolveEventDetails(details: any, almanac: any): Promise<any> {
+async function resolveEventDetails(details: any, almanac: any, logger?: ILogger): Promise<any> {
     if (!details || !almanac) {
         return details;
     }
@@ -39,12 +41,16 @@ async function resolveEventDetails(details: any, almanac: any): Promise<any> {
 
         // If details contains a fact reference, resolve it from the almanac
         if (details.fact && typeof details.fact === 'string') {
-            logger.debug(`Resolving fact '${details.fact}' from almanac`);
+            if (logger) {
+                logger.debug(`Resolving fact '${details.fact}' from almanac`);
+            }
             try {
                 const factValue = await almanac.factValue(details.fact);
                 return factValue;
             } catch (error) {
-                logger.debug(`Fact '${details.fact}' not available in almanac: ${error}`);
+                if (logger) {
+                    logger.debug(`Fact '${details.fact}' not available in almanac: ${error}`);
+                }
                 return details; // Return original details if fact not found
             }
         }
@@ -52,7 +58,9 @@ async function resolveEventDetails(details: any, almanac: any): Promise<any> {
         // If details is an object with other properties, return as-is
         return details;
     } catch (error) {
-        logger.warn(`Failed to resolve fact details: ${error}`);
+        if (logger) {
+            logger.warn(`Failed to resolve fact details: ${error}`);
+        }
         return details;
     }
 }
@@ -60,19 +68,23 @@ async function resolveEventDetails(details: any, almanac: any): Promise<any> {
 /**
  * Finds the rule that triggered the event using our registry
  */
-function findTriggeringRule(engine: any, eventType: string): any {
+function findTriggeringRule(engine: any, eventType: string, logger?: ILogger): any {
     try {
         // First, try to get from our registry
         const rulesForEventType = ruleEventTypeRegistry.get(eventType);
         
         if (rulesForEventType && rulesForEventType.length > 0) {
-            logger.debug(`Found ${rulesForEventType.length} rules for event type '${eventType}'`);
+            if (logger) {
+                logger.debug(`Found ${rulesForEventType.length} rules for event type '${eventType}'`);
+            }
             // Return the first rule (in most cases there should be only one per event type)
             return rulesForEventType[0].rule;
         }
         
         // Fallback: create a basic rule structure with the event type as the name
-        logger.debug(`No registered rule found for event type '${eventType}', using fallback`);
+        if (logger) {
+            logger.debug(`No registered rule found for event type '${eventType}', using fallback`);
+        }
         return {
             name: eventType,
             event: { type: eventType },
@@ -80,7 +92,9 @@ function findTriggeringRule(engine: any, eventType: string): any {
             description: 'Rule extracted from event type'
         };
     } catch (error) {
-        logger.debug(`Could not find triggering rule for event type: ${eventType}, error: ${error}`);
+        if (logger) {
+            logger.debug(`Could not find triggering rule for event type: ${eventType}, error: ${error}`);
+        }
         return null;
     }
 }
@@ -88,8 +102,8 @@ function findTriggeringRule(engine: any, eventType: string): any {
 /**
  * Builds the proper RuleFailure structure according to v3.24.0 contract
  */
-async function buildRuleFailure(event: any, rule: any, file: any, almanac: any): Promise<RuleFailure> {
-    const resolvedDetails = await resolveEventDetails(event.params?.details, almanac);
+async function buildRuleFailure(event: any, rule: any, file: any, almanac: any, logger?: ILogger): Promise<RuleFailure> {
+    const resolvedDetails = await resolveEventDetails(event.params?.details, almanac, logger);
     
     // Get the rule name - use the rule's name if available, otherwise fall back to event type
     const ruleName = rule?.name || event.type;
@@ -205,7 +219,9 @@ async function buildRuleFailureFromResult(result: any, rule: any, file: any, alm
 }
 
 export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<ScanResult[]> {
-    const { engine, fileData, installedDependencyVersions, minimumDependencyVersions, standardStructure } = params;
+    const { engine, fileData, installedDependencyVersions, minimumDependencyVersions, standardStructure, logger: loggerParam } = params;
+    // Use the passed logger or fall back to the logger provider
+    const logger = loggerParam || LoggerProvider.getLogger();
     const results: ScanResult[] = [];
 
     // Performance tracking with much more detail

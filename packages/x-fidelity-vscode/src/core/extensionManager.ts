@@ -9,6 +9,7 @@ import { createComponentLogger } from '../utils/globalLogger';
 import { VSCodeLogger } from '../utils/vscodeLogger';
 import { getAnalysisTargetDirectory } from '../utils/workspaceUtils';
 import { preloadDefaultPlugins } from './pluginPreloader';
+import { LoggerProvider } from '@x-fidelity/core';
 
 export class ExtensionManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
@@ -27,10 +28,24 @@ export class ExtensionManager implements vscode.Disposable {
   private isPeriodicAnalysisRunning = false;
 
   constructor(private context: vscode.ExtensionContext) {
+    // PHASE 1: Initialize logger provider FIRST for universal logging
+    // This ensures all plugins and components have access to logging
+    // Note: Only initialize if not already initialized to prevent duplicate initialization
+    if (!LoggerProvider.hasLogger()) {
+      LoggerProvider.initializeForPlugins();
+    }
+
+    // PHASE 2: Create and inject VSCode logger
     this.logger = new VSCodeLogger('Extension Manager');
     this.globalLogger = createComponentLogger('Extension Manager');
 
-    this.globalLogger.info('🚀 Initializing X-Fidelity Extension Manager...');
+    // Inject the VSCode logger into the provider for use by plugins
+    LoggerProvider.setLogger(this.logger);
+
+    this.globalLogger.info('🚀 Initializing X-Fidelity Extension Manager...', {
+      hasInjectedLogger: LoggerProvider.hasInjectedLogger(),
+      loggerReady: LoggerProvider.hasLogger()
+    });
 
     try {
       this.configManager = new ConfigManager(this.context);
@@ -62,6 +77,7 @@ export class ExtensionManager implements vscode.Disposable {
       );
       this.globalLogger.debug('✅ ControlCenterTreeViewManager initialized');
 
+      // PHASE 3: Initialize plugins AFTER logger setup
       this.initializePlugins();
 
       this.setupEventListeners();
@@ -78,7 +94,11 @@ export class ExtensionManager implements vscode.Disposable {
 
   private async initializePlugins(): Promise<void> {
     try {
+      this.globalLogger.info('🔌 Initializing plugins with logger context...');
       await preloadDefaultPlugins(this.context);
+      this.globalLogger.info(
+        `✅ Plugin initialization completed. Logger provider status: ${LoggerProvider.hasInjectedLogger() ? 'Injected' : 'Default'}`
+      );
     } catch (error) {
       this.globalLogger.warn('Plugin initialization failed:', error);
     }
@@ -251,7 +271,7 @@ export class ExtensionManager implements vscode.Disposable {
     );
 
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.handleReportAction', async (type: 'export' | 'share' | 'compare' | 'trends') => {
+      vscode.commands.registerCommand('xfidelity.exportReport', async () => {
         try {
           const currentResults = this.analysisEngine.getCurrentResults();
           if (!currentResults) {
@@ -261,27 +281,58 @@ export class ExtensionManager implements vscode.Disposable {
             return;
           }
 
-          if (type === 'export' || type === 'share') {
-            const exportContent = JSON.stringify(
-              currentResults.metadata,
-              null,
-              2
-            );
-            await vscode.env.clipboard.writeText(exportContent);
-            vscode.window.showInformationMessage(
-              'Analysis results copied to clipboard!'
-            );
-          } else {
-            vscode.window.showInformationMessage(
-              `${type.charAt(0).toUpperCase() + type.slice(1)} feature is coming soon. Use the Problems panel or Issues tree for now.`
-            );
-          }
+          const exportContent = JSON.stringify(
+            currentResults.metadata,
+            null,
+            2
+          );
+          await vscode.env.clipboard.writeText(exportContent);
+          vscode.window.showInformationMessage(
+            'Analysis results copied to clipboard!'
+          );
         } catch (error) {
           vscode.window.showErrorMessage(
-            `${type} failed: ${error instanceof Error ? error.message : String(error)}`
+            `Export failed: ${error instanceof Error ? error.message : String(error)}`
           );
         }
       })
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        'xfidelity.handleReportAction',
+        async (type: 'export' | 'share' | 'compare' | 'trends') => {
+          try {
+            const currentResults = this.analysisEngine.getCurrentResults();
+            if (!currentResults) {
+              vscode.window.showErrorMessage(
+                'No analysis results available. Run an analysis first.'
+              );
+              return;
+            }
+
+            if (type === 'export' || type === 'share') {
+              const exportContent = JSON.stringify(
+                currentResults.metadata,
+                null,
+                2
+              );
+              await vscode.env.clipboard.writeText(exportContent);
+              vscode.window.showInformationMessage(
+                'Analysis results copied to clipboard!'
+              );
+            } else {
+              vscode.window.showInformationMessage(
+                `${type.charAt(0).toUpperCase() + type.slice(1)} feature is coming soon. Use the Problems panel or Issues tree for now.`
+              );
+            }
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `${type} failed: ${error instanceof Error ? error.message : String(error)}`
+            );
+          }
+        }
+      )
     );
 
     this.disposables.push(

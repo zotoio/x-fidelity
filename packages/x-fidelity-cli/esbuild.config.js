@@ -8,6 +8,37 @@ async function main() {
   // First ensure all dependencies are built
   console.log('[cli] Building dependencies...');
   
+  // Build TreeSitter worker first
+  const workerCtx = await esbuild.context({
+    entryPoints: [
+      '../x-fidelity-plugins/src/xfiPluginAst/worker/treeSitterWorker.ts'
+    ],
+    bundle: true,
+    format: 'cjs',
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: 'node',
+    outfile: 'dist/treeSitterWorker.js',
+    external: [
+      // Keep tree-sitter modules external to use rebuilt versions
+      'tree-sitter',
+      'tree-sitter-javascript',
+      'tree-sitter-typescript'
+    ],
+    logLevel: 'info',
+    alias: {
+      '@x-fidelity/core': path.resolve(__dirname, '../x-fidelity-core/dist/index.js'),
+      '@x-fidelity/types': path.resolve(__dirname, '../x-fidelity-types/dist/index.js')
+    },
+    target: 'node18',
+    treeShaking: true,
+    loader: {
+      '.json': 'json',
+      '.node': 'file'
+    }
+  });
+  
   // Build main CLI
   const ctx = await esbuild.context({
     entryPoints: ['src/index.ts'],
@@ -26,8 +57,14 @@ async function main() {
       'prettyjson',
       'pino',
       'pino-pretty',
+      // Core dependencies that should remain external
+      'glob',
       // VSCode API is only available in VSCode extension context
-      'vscode'
+      'vscode',
+      // Keep tree-sitter modules external to use rebuilt versions
+      'tree-sitter',
+      'tree-sitter-javascript',
+      'tree-sitter-typescript'
     ],
     logLevel: 'info',
     // Bundle all internal dependencies
@@ -55,14 +92,20 @@ async function main() {
     ]
   });
 
-  const result = await ctx.rebuild();
+  // Build worker and CLI
+  const [, cliResult] = await Promise.all([
+    workerCtx.rebuild(),
+    ctx.rebuild()
+  ]);
   
-  if (result.metafile) {
-    const bundleSize = fs.statSync('dist/index.js').size;
-    console.log(`[cli] Bundle size: ${Math.round(bundleSize / 1024)}KB`);
+  if (cliResult.metafile) {
+    const cliSize = fs.statSync('dist/index.js').size;
+    const workerSize = fs.statSync('dist/treeSitterWorker.js').size;
+    console.log(`[cli] CLI bundle size: ${Math.round(cliSize / 1024)}KB`);
+    console.log(`[cli] Worker bundle size: ${Math.round(workerSize / 1024)}KB`);
   }
 
-  await ctx.dispose();
+  await Promise.all([workerCtx.dispose(), ctx.dispose()]);
 }
 
 /**

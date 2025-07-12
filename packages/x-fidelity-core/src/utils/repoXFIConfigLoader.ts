@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { glob } from 'glob';
 import { isPathInside } from './pathUtils';
 import { logger } from './logger';
 import type { RepoXFIConfig } from '@x-fidelity/types';
@@ -167,7 +168,6 @@ async function processLocalRule(rule: any, baseRepo: string, validatedRules: any
             let rulePaths: string[] = [];
             if (pathPattern.includes('*')) {
                 // Handle wildcards using glob pattern
-                const { glob } = await import('glob');
                 rulePaths = await glob(fullPattern);
             } else if (fs.existsSync(fullPattern)) {
                 // Single file path

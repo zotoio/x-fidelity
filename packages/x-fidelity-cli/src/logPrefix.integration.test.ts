@@ -50,7 +50,6 @@ describe('CLI Log Prefix Integration', () => {
             setLevel: jest.fn(),
             getLevel: jest.fn().mockReturnValue('info'),
             isLevelEnabled: jest.fn().mockReturnValue(true),
-            child: jest.fn().mockReturnThis()
         };
     });
 
@@ -251,7 +250,8 @@ describe('CLI Log Prefix Integration', () => {
 
             LoggerProvider.setLogger(mockLogger);
             const parentLogger = LoggerProvider.getLogger();
-            const childLogger = parentLogger.child({ component: 'analyzer' });
+            // Note: child logger functionality removed from ILogger interface
+            const childLogger = parentLogger; // Use same logger instead of child
 
             parentLogger.info('Parent logger message');
             childLogger.info('Child logger message');

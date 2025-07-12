@@ -221,7 +221,8 @@ export class AnalysisManager implements IExtensionAnalysisEngine {
             repoPath: analysisTargetPath,
             archetype: config.archetype,
             configServer: this.getValidConfigServer(config.configServer),
-            localConfigPath: this.configManager.getResolvedLocalConfigPath()
+            localConfigPath: this.configManager.getResolvedLocalConfigPath(),
+            logger: this.globalLogger
           });
 
           progress.report({ message: 'Completed', increment: 100 });

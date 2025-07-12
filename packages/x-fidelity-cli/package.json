@@ -1,7 +1,7 @@
 {
   "name": "x-fidelity",
   "version": "3.28.0",
-  "description": "CLI tool for opinionated framework adherence checks",
+  "description": "CLI tool for opinionated framework adherence checks with performance optimizations and caching",
   "main": "dist/index",
   "types": "dist/index.d.ts",
   "private": false,
@@ -27,7 +27,7 @@
     "build": "yarn build:deps && node esbuild.config.js",
     "build:production": "yarn build:deps && node esbuild.config.js --production",
     "prepublishOnly": "yarn build:production",
-    "build:deps": "cd ../../ && yarn tsc -b",
+    "build:deps": "cd ../../ && yarn build:deps",
     "build:watch": "yarn build:deps && node esbuild.config.js --watch",
     "start": "NODE_ENV=test OPENAI_API_KEY= jest --watch",
     "test": "NODE_ENV=test yarn lint && NODE_ENV=test OPENAI_API_KEY= jest --testPathIgnorePatterns=vscode-extension",
@@ -96,6 +96,7 @@
   "dependencies": {
     "commander": "^14.0.0",
     "fs-extra": "^11.3.0",
+    "glob": "11.0.3",
     "ora": "^8.2.0",
     "prettyjson": "^1.2.5",
     "pino": "^9.7.0",

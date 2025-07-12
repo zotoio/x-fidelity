@@ -5,7 +5,7 @@ import { ArchetypeConfig, FileData, IsBlacklistedParams, isWhitelistedParams, Fa
 // Filesystem facts for repository analysis
 import { maskSensitiveData } from '@x-fidelity/core';
 // ✅ Import Tree-sitter manager for AST preprocessing
-import { TreeSitterManager } from '../../xfiPluginAst/worker/treeSitterManager';
+import { treeSitterManager } from '../../xfiPluginAst/worker/treeSitterManager';
 
 // ✅ Enhanced helper function to determine if file should have AST preprocessed
 function shouldPreprocessAst(filePath: string): boolean {
@@ -46,7 +46,7 @@ async function generateAstForFile(filePath: string, content: string): Promise<As
     }
 
     const startTime = Date.now();
-    const manager = TreeSitterManager.getInstance();
+    const manager = treeSitterManager;
     
     try {
         const parseResult = await manager.parseCode(content, language, path.basename(filePath));

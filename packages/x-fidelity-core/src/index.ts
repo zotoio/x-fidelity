@@ -11,6 +11,7 @@ export * from './core/validateConfig';
 export * from './facts';
 export * from './operators';
 export * from './notifications';
+export * from './utils/enhancedLogger';
 
 // Re-export types from the types package
 export type {
@@ -70,6 +71,8 @@ export type {
     PluginContext,
     PluginFactResult,
     PluginOperatorResult,
+    PluginInitializationOptions,
+    PluginLoggerContext,
     
     // Server types
     StartServerParams,
@@ -79,9 +82,10 @@ export type {
 } from '@x-fidelity/types';
 
 // Export utility classes and functions
-export * from './utils/defaultLogger';
 export * from './utils/logger';
 export * from './utils/loggerProvider';
+export * from './utils/pluginLogger';
+export * from './utils/defaultLogger';
 export * from './utils/maskSensitiveData';
 export * from './utils/openaiUtils';
 export * from './utils/telemetry';
@@ -94,8 +98,10 @@ export * from './utils/executionContext';
 export * from './utils/axiosClient';
 
 // Export core functionality
-export { logger, LoggerProvider } from './utils/logger';
-export { getLogPrefix, setLogLevel, setLogFilePath, getLogFilePath } from './utils/logger';
+export { logger } from './utils/logger';
+export { LoggerProvider } from './utils/loggerProvider';
+export { pluginLogger, createPluginLogger, getPluginLogger, createPluginLoggerContext } from './utils/pluginLogger';
+export { DefaultLogger, SilentLogger, createDefaultLogger } from './utils/defaultLogger';
 export { analyzeCodebase } from './core/engine/analyzer';
 export { sendTelemetry } from './utils/telemetry';
 

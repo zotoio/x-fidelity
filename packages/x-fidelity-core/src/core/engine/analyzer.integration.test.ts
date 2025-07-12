@@ -13,18 +13,6 @@ describe('Logger Injection Integration Test', () => {
       warn: jest.fn(),
       error: jest.fn(),
       fatal: jest.fn(),
-      child: jest.fn().mockReturnValue({
-        trace: jest.fn(),
-        debug: jest.fn(),
-        info: jest.fn(),
-        warn: jest.fn(),
-        error: jest.fn(),
-        fatal: jest.fn(),
-        child: jest.fn(),
-        setLevel: jest.fn(),
-        getLevel: jest.fn(),
-        isLevelEnabled: jest.fn()
-      }),
       setLevel: jest.fn(),
       getLevel: jest.fn().mockReturnValue('info'),
       isLevelEnabled: jest.fn().mockReturnValue(true)
@@ -73,16 +61,13 @@ describe('Logger Injection Integration Test', () => {
     expect(mockLogger.error).toHaveBeenCalledWith('Test error', undefined);
   });
 
-  it('should create child logger from injected logger', () => {
+  it('should use injected logger consistently', () => {
     // Inject the logger
     LoggerProvider.setLogger(mockLogger);
 
-    // Create child logger
-    const bindings = { userId: '123' };
-    const childLogger = LoggerProvider.createChildLogger(bindings);
-
-    // Verify child logger was created from injected logger
-    expect(mockLogger.child).toHaveBeenCalledWith(bindings);
+    // Verify logger was injected and is used consistently
+    expect(LoggerProvider.hasInjectedLogger()).toBe(true);
+    expect(LoggerProvider.getBaseLogger()).toBe(mockLogger);
   });
 
   it('should fall back to default logger when no logger is injected', async () => {

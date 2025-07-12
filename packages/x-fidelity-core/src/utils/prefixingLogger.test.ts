@@ -17,13 +17,12 @@ describe('PrefixingLogger', () => {
             fatal: jest.fn(),
             setLevel: jest.fn(),
             getLevel: jest.fn().mockReturnValue('info'),
-            isLevelEnabled: jest.fn().mockReturnValue(true),
-            child: jest.fn().mockReturnThis()
+            isLevelEnabled: jest.fn().mockReturnValue(true)
         };
 
         // Start execution context for testing
         ExecutionContext.startExecution({
-            component: 'test',
+            component: 'Core',
             operation: 'unit-test'
         });
 
@@ -126,19 +125,10 @@ describe('PrefixingLogger', () => {
             expect(mockBaseLogger.info).toHaveBeenCalledWith(`${staticPrefix} Test message`, undefined);
         });
 
-        it('should create child logger with same prefixing behavior', () => {
-            const childLogger = prefixingLogger.child({ component: 'child' });
-            const executionId = ExecutionContext.getCurrentExecutionId();
-            const expectedPrefix = `[${executionId}]`;
-
-            // Child logger should also be a PrefixingLogger
-            expect(childLogger).toBeInstanceOf(PrefixingLogger);
-
-            // Test that child logger also adds prefixes
-            childLogger.info('Child message');
-
-            expect(mockBaseLogger.child).toHaveBeenCalledWith({ component: 'child' });
-            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${expectedPrefix} Child message`, undefined);
+        it('should provide access to base logger when needed', () => {
+            const baseLogger = prefixingLogger.getBaseLogger();
+            
+            expect(baseLogger).toBe(mockBaseLogger);
         });
     });
 
@@ -150,7 +140,7 @@ describe('PrefixingLogger', () => {
             // Start new execution
             ExecutionContext.endExecution();
             ExecutionContext.startExecution({
-                component: 'test',
+                component: 'Core',
                 operation: 'second-test'
             });
 

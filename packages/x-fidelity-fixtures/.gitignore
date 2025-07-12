@@ -3,3 +3,4 @@
 # X-Fidelity analysis results
 .xfiResults/
 xfi-*.json
+.xfidelity-cache.json

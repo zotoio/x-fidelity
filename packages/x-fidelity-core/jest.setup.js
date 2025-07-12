@@ -1,5 +1,12 @@
 jest.setTimeout(10000);
 
+// Mock glob package globally to avoid native dependency issues
+jest.mock('glob', () => ({
+  glob: jest.fn().mockResolvedValue([]),
+  __esModule: true,
+  default: jest.fn().mockResolvedValue([])
+}));
+
 // Suppress all console output during tests
 const originalConsole = {
   log: console.log,

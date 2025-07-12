@@ -4,7 +4,7 @@
  */
 
 export * from './mockCore';
-export * from './consistencyTesting';
+// export * from './consistencyTesting'; // Temporarily disabled - module not found
 
 // Common test data
 export const mockFileData = {

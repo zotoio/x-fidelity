@@ -1,7 +1,7 @@
 {
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity",
-  "description": "VSCode extension for X-Fidelity code quality analysis",
+  "description": "VSCode extension for X-Fidelity code quality analysis with 47 commands, real-time diagnostics, and comprehensive UI integration",
   "version": "3.28.0",
   "publisher": "zotoio",
   "private": true,
@@ -627,7 +627,7 @@
   "scripts": {
     "vscode:prepublish": "yarn compile",
     "compile": "yarn build",
-    "build": "yarn format && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "build": "yarn build:deps && yarn format && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "build:cli": "cd ../x-fidelity-cli && yarn build",
     "embed:cli": "node scripts/embed-cli.js",
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",

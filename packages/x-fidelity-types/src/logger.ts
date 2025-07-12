@@ -21,9 +21,6 @@ export interface ILogger {
   /** Log fatal level messages (highest level) */
   fatal(msgOrMeta: string | any, metaOrMsg?: any): void;
   
-  /** Create a child logger with additional context */
-  child(bindings: any): ILogger;
-  
   /** Set the logging level */
   setLevel(level: LogLevel): void;
   
@@ -45,7 +42,7 @@ export interface ILogger {
  */
 export interface ILoggerProvider {
   /** Create a new logger instance */
-  createLogger(options?: LoggerOptions): ILogger;
+  createLogger(options?: LoggerOptions): ILogger | null;
   
   /** Dispose of provider resources */
   dispose?(): void;

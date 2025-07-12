@@ -206,7 +206,8 @@ export class PeriodicAnalysisManager {
 
         await analyzeCodebase({
           repoPath: workspaceRoot,
-          archetype: archetype
+          archetype: archetype,
+          logger: logger
           // Don't pass global options, let it use defaults
         });
 

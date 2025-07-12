@@ -7,7 +7,7 @@ module.exports = {
     '^.+\\.ts$': [
       'ts-jest',
       {
-        tsconfig: 'tsconfig.test.json'
+        tsconfig: '<rootDir>/tsconfig.test.json'
       }
     ]
   },
@@ -24,6 +24,5 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^vscode$': '<rootDir>/src/test/mocks/vscode.mock.ts'
   },
-  testTimeout: 10000,
-  verbose: true
+  testTimeout: 10000
 };

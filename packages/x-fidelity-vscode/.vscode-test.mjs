@@ -39,6 +39,12 @@ export default defineConfig([
   },
   {
     ...commonConfig,
+    label: 'integration',
+    files: 'out/test/test/integration/**/*.test.js',
+    mocha: { ...commonConfig.mocha, timeout: 60000 }
+  },
+  {
+    ...commonConfig,
     label: 'e2e',
     files: 'out/test/test/e2e/**/*.test.js'
   },

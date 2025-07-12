@@ -16,6 +16,11 @@ jest.mock('../utils/serverLogger', () => ({
   setLogPrefix: jest.fn()
 }));
 
+// Mock glob package to avoid native dependency issues in tests
+jest.mock('glob', () => ({
+  glob: jest.fn()
+}));
+
 jest.mock('@x-fidelity/core', () => ({
   ...jest.requireActual('@x-fidelity/core'),
   ConfigManager: {

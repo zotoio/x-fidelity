@@ -1,305 +1,336 @@
 # X-Fidelity VSCode Extension
 
-This is the VSCode extension for X-Fidelity, providing architectural analysis directly within your code editor.
+X-Fidelity is an advanced code quality analysis tool that ensures your projects follow specific standards and best practices through a flexible, rule-based system. The VSCode extension brings this powerful analysis directly into your editor with real-time feedback and comprehensive issue management.
 
-## Development
+## 🌟 What is X-Fidelity?
 
-### Development Mode Workspace Fallback
+X-Fidelity analyzes your codebase using configurable rules to identify:
+- **Architecture violations** - Inconsistent patterns and structure issues
+- **Security vulnerabilities** - Potential security risks in your code
+- **Code quality issues** - Performance, maintainability, and style problems
+- **Best practice violations** - Deviations from established coding standards
+- **Dependency problems** - Outdated or problematic package usage
 
-The extension now supports **development mode** with automatic workspace fallback:
+## 📦 Installation
 
-- **🔧 Development Mode**: When no workspace folder is open, the extension automatically uses the `packages/x-fidelity-vscode` directory as the workspace
-- **📁 Fallback Behavior**: Perfect for extension development and testing without needing to open a separate project
-- **🔔 User Notification**: Shows a friendly notification when using fallback workspace mode
-- **⚡ Zero Configuration**: Works immediately for contributors and developers
+1. **Install from VSCode Marketplace:**
+   - Open VSCode
+   - Go to Extensions (Ctrl+Shift+X)
+   - Search for "X-Fidelity"
+   - Click "Install"
 
-This makes it easy to:
+2. **Alternative: Install from VSIX:**
+   ```bash
+   code --install-extension x-fidelity-vscode-*.vsix
+   ```
 
-- Develop and test the extension itself
-- Debug extension features without a separate project
-- Run X-Fidelity analysis on the extension's own codebase
-- Contribute to the extension with minimal setup
+## 🚀 Quick Start
 
-### Quick Start
+1. **Open a project** in VSCode
+2. **X-Fidelity activates automatically** when you open supported file types
+3. **View issues** in the Problems Panel (Ctrl+Shift+M)
+4. **See inline highlights** directly in your code
+5. **Use the X-Fidelity tree view** for organized issue management
 
-From the workspace root, you can use these convenient commands:
+### First Analysis
 
-```bash
-# Build and launch extension in debug mode
-yarn vscode:dev
+Run your first analysis by:
+- **Command Palette:** Press `Ctrl+Shift+P`, type "X-Fidelity: Run Analysis Now"
+- **Status Bar:** Click the X-Fidelity status indicator
+- **Tree View:** Click the refresh button in the X-Fidelity Issues panel
 
-# Build and launch with fresh user data (clean state)
-yarn vscode:dev:fresh
+## 🎯 Key Features
 
-# Build, launch, and watch for changes
-yarn vscode:dev:watch
+### Real-Time Code Analysis
+- **Inline diagnostics** with squiggly underlines highlighting issues
+- **Problems Panel integration** showing all issues with file locations
+- **Hover tooltips** displaying rule documentation and fix suggestions
+- **Auto-analysis** on file save (configurable)
 
-# Package the extension for distribution
-yarn vscode:package
-```
+### Comprehensive Issue Management
+- **Issues Tree View** with multiple grouping options:
+  - Group by severity (Error, Warning, Info)
+  - Group by rule type
+  - Group by file location
+  - Group by category
+- **Quick navigation** to issue locations with one click
+- **Rule documentation** accessible via hover and context menus
 
-### Local Development Scripts
+### Code Actions & Quick Fixes
+- **Add exemptions** for specific issues
+- **Bulk exemption management** for multiple issues
+- **Quick fixes** for automatically resolvable problems
+- **Learn more** actions linking to detailed rule documentation
 
-From within the `packages/x-fidelity-vscode` directory:
+### Reporting & History
+- **Automated report generation** in multiple formats (JSON, Markdown, HTML, CSV)
+- **Report history tracking** with timestamp-based archival
+- **Export capabilities** for sharing analysis results
+- **Dashboard view** with analysis summaries and trends
 
-```bash
-# Build the extension
-yarn build
+### Configuration Flexibility
+- **Built-in archetypes** for common project types
+- **Custom configuration** support for team-specific rules
+- **Remote configuration** via config servers
+- **Performance tuning** options for large codebases
 
-# Build and launch in debug mode
-yarn dev
+## 🔧 Configuration
 
-# Build and launch with fresh VSCode instance
-yarn dev:fresh
+### Project Archetypes
 
-# Build, launch, and watch for changes
-yarn dev:watch
+X-Fidelity includes built-in configurations for common project types:
 
-# Watch for changes (without launching VSCode)
-yarn watch
+- **`node-fullstack`** (default) - Full-stack Node.js applications
+- **`java-microservice`** - Java-based microservices
+- **`react-spa`** - React single-page applications
+- **`python-service`** - Python services
+- **`dotnet-service`** - .NET services
 
-# Package for distribution
-yarn package
+### Settings
 
-# Clean build artifacts
-yarn clean
+Access settings via: **File → Preferences → Settings → Extensions → X-Fidelity**
 
-# Run tests
-yarn test
-```
-
-### VSCode Development Workflow
-
-#### Option 1: Command Line (Recommended for quick testing)
-
-```bash
-# From workspace root
-yarn vscode:dev
-```
-
-This will:
-
-1. Clean previous builds
-2. Build all dependencies
-3. Build the extension
-4. Launch a new VSCode window with the extension loaded
-
-#### Option 2: VSCode Debug (Recommended for debugging)
-
-1. Open this workspace in VSCode
-2. Go to Run and Debug (Ctrl+Shift+D)
-3. Select "Run X-Fidelity Extension"
-4. Press F5 or click the play button
-
-This will:
-
-1. Build the extension automatically
-2. Launch the Extension Development Host
-3. Allow you to set breakpoints and debug
-
-#### Option 3: Watch Mode (Recommended for active development)
-
-```bash
-# From workspace root
-yarn vscode:dev:watch
-```
-
-This will:
-
-1. Build and launch the extension
-2. Continue watching for file changes
-3. Automatically rebuild when files change
-4. You can reload the Extension Development Host (Ctrl+R) to see changes
-
-### File Structure
-
-```
-packages/x-fidelity-vscode/
-├── src/                          # Source code
-│   ├── extension.ts              # Main extension entry point
-│   ├── core/                     # Core extension management
-│   ├── analysis/                 # Analysis functionality
-│   ├── reports/                  # Report generation and management
-│   ├── configuration/            # Configuration management
-│   ├── diagnostics/              # VSCode diagnostics integration
-│   ├── ui/                       # User interface components
-│   └── utils/                    # Utilities and helpers
-├── dist/                         # Built extension (generated)
-├── package.json                  # Extension manifest and dependencies
-├── esbuild.config.js            # Build configuration
-└── README.md                     # This file
-```
-
-### Extension Features
-
-- **Real-time Analysis**: Automatically analyzes your code as you work
-- **Inline Diagnostics**: Shows issues directly in the editor with squiggly lines
-- **Problems Panel**: Integrates with VSCode's Problems panel
-- **Report Generation**: Creates detailed reports in multiple formats
-- **Status Bar**: Shows analysis status and quick actions
-- **Command Palette**: Access all features via Ctrl+Shift+P
-- **Configuration**: Extensive settings for customization
-
-### Commands
-
-Access these commands via the Command Palette (Ctrl+Shift+P):
-
-- `X-Fidelity: Run Analysis Now` - Trigger immediate analysis
-- `X-Fidelity: Open Settings` - Open extension settings
-- `X-Fidelity: Open Reports Folder` - Open the reports directory
-- `X-Fidelity: Detect Project Archetype` - Auto-detect project type
-- `X-Fidelity: Show Report History` - View analysis history
-- `X-Fidelity: Export Report` - Export reports in various formats
-- `X-Fidelity: Show Dashboard` - Open analysis dashboard
-
-### Configuration
-
-#### 🎯 **Built-in Demo Configuration**
-
-The extension **automatically uses demo configuration** with sensible defaults:
-
-- **Default Archetype**: `node-fullstack` with comprehensive rule set
-- **Built-in Rules**: 15+ predefined rules including security, architecture, and code quality checks
-- **All Plugins**: Automatically loads all builtin plugins with facts and operators
-- **Zero Setup**: Works immediately without any configuration
-
-#### Configuration Hierarchy
-
-The extension resolves configuration in this order:
-
-1. **User-specified config** (if `configServer` or `localConfigPath` is set)
-2. **Home directory config** (`~/.config/x-fidelity`)
-3. **Environment variable** (`$XFI_CONFIG_PATH`)
-4. **🎯 Demo config** (automatically used as fallback)
-
-#### Settings Customization
-
-You can customize the extension through VSCode settings:
-
+#### Core Settings
 ```json
 {
   "xfidelity.archetype": "node-fullstack",
-  "xfidelity.autoAnalyzeOnSave": true,
-  "xfidelity.generateReports": true,
-  "xfidelity.reportFormats": ["json", "md"],
+  "xfidelity.autoAnalyzeOnSave": false,
   "xfidelity.showInlineDecorations": true,
-  "xfidelity.runInterval": 300
+  "xfidelity.statusBarVisibility": true
 }
 ```
 
-#### Available Demo Archetypes
+#### Analysis Engine Options
+- **Extension Engine:** Built-in analysis within VSCode process
+- **CLI Engine:** External CLI binary execution (faster, default)
+- **CLI Source Options:**
+  - **Bundled** (default): Zero-setup embedded CLI binary  
+  - **Global**: System-wide installed CLI (`yarn global add x-fidelity`)
+  - **Local**: Project-specific CLI installation
+  - **Custom**: User-specified CLI binary path
 
-- `node-fullstack` (default) - Full-stack Node.js applications
-- `java-microservice` - Java-based microservices
-- `react-spa` - React single-page applications
-- `python-service` - Python services
-- `dotnet-service` - .NET services
-
-### Output Files
-
-The extension writes analysis results to `.xfiResults/` in your workspace:
-
-- Reports: `xfi-report-{timestamp}.json`, `xfi-report-{timestamp}.md`
-- Logs: `x-fidelity.log`
-- History: `.xfidelity-history.json`
-
-### Debugging
-
-To debug the extension:
-
-1. Use the "Run X-Fidelity Extension" launch configuration
-2. Set breakpoints in your TypeScript source files
-3. The debugger will stop at breakpoints when the extension runs
-
-### Packaging and Distribution
-
-```bash
-# Create a .vsix package
-yarn package
-
-# Install the package locally for testing
-yarn install-vsix
-
-# Publish to marketplace (requires publisher setup)
-yarn publish
-```
-
-### Testing
-
-```bash
-# Run unit tests
-yarn test
-
-# Run tests in watch mode
-jest --watch
-```
-
-### Testing the Extension
-
-After building, you can test the extension in several ways:
-
-#### 1. Quick Test for Transport Issues
-
-```bash
-# Clean build and test
-yarn clean && yarn build
-yarn test
-
-# If no transport errors appear, the fix is working
-```
-
-#### 2. Live Testing with VSCode
-
-```bash
-# Launch extension in debug mode
-yarn dev
-
-# Or with clean state
-yarn dev:fresh
-```
-
-**What to look for:**
-
-- Extension should activate without `Lt.transport is not a function` errors
-- Check VSCode Developer Console (Help → Toggle Developer Tools)
-- Look for X-Fidelity logs in Output panel
-- Verify analysis runs without transport errors
-
-#### 3. Environment Variable Verification
-
-The extension sets `process.env.VSCODE_EXTENSION = 'true'` to help the core logger detect the VSCode environment and avoid transport issues.
-
-### Common Issues and Solutions
-
-| Issue                    | Solution                                                         |
-| ------------------------ | ---------------------------------------------------------------- |
-| Extension won't activate | Check Developer Console, rebuild extension                       |
-| Analysis not running     | Check configuration, ensure workspace has supported project type |
-| No diagnostics showing   | Check Problems panel, verify `showInlineDecorations` setting     |
-| Reports not generating   | Check file permissions, verify `reportOutputDir` setting         |
-| High CPU usage           | Check `runInterval` setting, disable `autoAnalyzeOnFileChange`   |
-
-### Debug Mode
-
-Enable debug logging by setting `"xfidelity.debugMode": true` in your VSCode settings:
-
+#### Report Configuration
 ```json
 {
-  "xfidelity.debugMode": true,
-  "xfidelity.runInterval": 0
+  "xfidelity.generateReports": false,
+  "xfidelity.reportFormats": ["json", "md"],
+  "xfidelity.reportRetentionDays": 30,
+  "xfidelity.showReportAfterAnalysis": false
 }
 ```
 
-This will:
+#### Performance & Analysis Settings
+```json
+{
+  "xfidelity.maxFileSize": 524288,
+  "xfidelity.cliTimeout": 60000,
+  "xfidelity.cacheTTL": 30,
+  "xfidelity.maxConcurrentAnalysis": 1,
+  "xfidelity.decorationLimit": 50,
+  "xfidelity.astCacheSize": 150,
+  "xfidelity.excludePatterns": [
+    "node_modules/**",
+    ".git/**", 
+    "dist/**",
+    "build/**"
+  ],
+  "xfidelity.periodicAnalysis.enabled": false,
+  "xfidelity.periodicAnalysis.intervalMinutes": 5,
+  "xfidelity.periodicAnalysis.onlyActiveFiles": true
+}
+```
 
-- Enable verbose logging in the Output panel
-- Disable automatic analysis (set interval to 0)
-- Show detailed error messages
+### Configuration Hierarchy
 
-### Contributing
+X-Fidelity resolves configuration in this order:
+1. **User-specified config** (via settings)
+2. **Home directory config** (`~/.config/x-fidelity`)
+3. **Environment variable** (`$XFI_CONFIG_PATH`)
+4. **Built-in demo config** (automatic fallback)
 
-1. Make your changes
-2. Test with `yarn dev`
-3. Run tests with `yarn test`
-4. Ensure linting passes with `yarn lint`
-5. Submit a pull request
+## 🎨 User Interface
+
+### Activity Bar
+Find X-Fidelity in the Activity Bar with dedicated panels:
+- **Issues Tree View** - Organized list of all code issues
+- **Control Center** - Quick access to commands and settings
+
+### Status Bar
+The X-Fidelity status indicator shows:
+- **Analysis status** (Running, Complete, Error)
+- **Issue count** by severity
+- **Quick action buttons** for common tasks
+
+### Problems Panel
+Integrated with VSCode's built-in Problems Panel (Ctrl+Shift+M):
+- **All issues** displayed with file locations
+- **Click to navigate** directly to issue location
+- **Severity filtering** and sorting options
+- **Source filtering** to show only X-Fidelity issues
+
+### Tree Views
+
+#### Issues Tree View
+- **Hierarchical organization** of all detected issues
+- **Multiple grouping modes:** Severity, Rule, File, Category
+- **Context menu actions:** Go to issue, Add exemption, Show rule info
+- **Real-time updates** as issues are resolved or new ones detected
+
+#### Control Center
+- **Dashboard overview** with analysis summaries
+- **Quick actions** for common tasks
+- **Settings shortcuts** and configuration links
+- **Performance metrics** and system status
+
+## 📋 Commands
+
+Access all 47 commands via Command Palette (Ctrl+Shift+P):
+
+### Core Analysis Commands
+- **`X-Fidelity: Run Analysis Now`** - Trigger immediate analysis
+- **`X-Fidelity: Cancel Analysis`** - Stop running analysis
+- **`X-Fidelity: Run Analysis with Directory`** - Analyze specific directory
+- **`X-Fidelity: Detect Project Archetype`** - Auto-detect project type
+
+### UI & Management Commands
+- **`X-Fidelity: Dashboard`** - Open main dashboard view
+- **`X-Fidelity: Control Center`** - Open control center panel
+- **`X-Fidelity: Open Settings`** - Open extension settings
+- **`X-Fidelity: Show Output Channel`** - View debug logs
+
+### Periodic Analysis Commands
+- **`X-Fidelity: Start Periodic Analysis`** - Enable background analysis
+- **`X-Fidelity: Stop Periodic Analysis`** - Disable background analysis
+- **`X-Fidelity: Restart Periodic Analysis`** - Restart background monitoring
+- **`X-Fidelity: Show Periodic Analysis Status`** - View background analysis state
+
+### Report & Export Commands
+- **`X-Fidelity: Export Report`** - Copy analysis results to clipboard
+- **`X-Fidelity: Report History`** - View analysis history
+- **`X-Fidelity: Show Performance Metrics`** - Display performance data
+- **`X-Fidelity: Share Report`** - Share analysis results
+- **`X-Fidelity: Compare Reports`** - Compare analysis results
+- **`X-Fidelity: View Trends`** - View analysis trends over time
+
+### Tree View Commands
+- **`X-Fidelity: Refresh Issues Tree`** - Refresh issues display
+- **`X-Fidelity: Group Issues by Severity`** - Group by error severity
+- **`X-Fidelity: Group Issues by Rule`** - Group by rule type
+- **`X-Fidelity: Group Issues by File`** - Group by file location
+- **`X-Fidelity: Group Issues by Category`** - Group by analysis category
+
+### Diagnostic & Debug Commands
+- **`X-Fidelity: Debug Diagnostics`** - Show diagnostic system info
+- **`X-Fidelity: Show Test Results`** - Display test analysis results
+
+### Configuration Commands
+- **`X-Fidelity: Reset Configuration`** - Reset to default settings
+- **`X-Fidelity: Advanced Settings`** - Open advanced configuration
+
+## 📊 Working with Issues
+
+### Understanding Issue Severity
+- **🔴 Error** - Critical issues that should be fixed immediately
+- **🟡 Warning** - Important issues that should be addressed
+- **🔵 Info** - Suggestions and best practice recommendations
+- **💡 Hint** - Minor improvements and style suggestions
+
+### Issue Actions
+1. **Navigate to issue:** Click on any issue in the tree view or problems panel
+2. **Add exemption:** Right-click → "Add Exemption" to suppress specific issues
+3. **Bulk exemptions:** Select multiple issues for batch exemption management
+4. **Learn more:** Access detailed rule documentation and fix guidance
+
+### Code Actions
+When hovering over highlighted code:
+- **Quick Fix** - Apply automatic fixes when available
+- **Add Exemption** - Suppress this specific issue
+- **Show Rule Info** - View detailed rule documentation
+- **Bulk Actions** - Manage multiple related issues
+
+## 📁 Output Files
+
+X-Fidelity creates a `.xfiResults/` directory in your workspace containing:
+
+### Analysis Results
+- **`XFI_RESULT.json`** - Latest analysis results in JSON format
+- **`xfi-report-{timestamp}.json`** - Timestamped analysis reports
+- **`xfi-report-{timestamp}.md`** - Human-readable Markdown reports
+
+### Logs and History
+- **`x-fidelity.log`** - Extension activity logs
+- **`.xfidelity-history.json`** - Analysis history and trends
+
+### Configuration
+- **`.xfi-config.json`** - Project-specific configuration (if created)
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Extension not analyzing:**
+1. Check the Output panel for X-Fidelity logs
+2. Verify workspace contains supported file types
+3. Check exclude patterns in settings
+4. Try running analysis manually via Command Palette
+5. Check CLI source configuration (bundled/global/local/custom)
+
+**Performance issues:**
+1. Increase `maxFileSize` limit if needed
+2. Add large directories to `excludePatterns`
+3. Adjust `cliTimeout` for faster feedback
+4. Use bundled CLI for best performance (default)
+5. Configure periodic analysis settings
+6. Monitor with performance metrics commands
+
+**No issues showing:**
+1. Verify archetype matches your project type
+2. Check if files match `includePatterns`
+3. Ensure rules are enabled in configuration
+4. Check Problems Panel filter settings
+5. Use diagnostic commands to debug extension state
+
+### Debug Mode
+Enable debug logging in settings:
+```json
+{
+  "xfidelity.debugMode": true
+}
+```
+
+### Support
+- **View Logs:** Command Palette → "X-Fidelity: Show Output Channel"
+- **GitHub Issues:** [Report bugs and feature requests](https://github.com/zotoio/x-fidelity/issues)
+- **Documentation:** [Full documentation website](https://zotoio.github.io/x-fidelity/)
+
+## 🎯 Best Practices
+
+### Getting Started
+1. **Start with defaults** - The built-in archetype configurations work well out of the box
+2. **Review initial results** - Understand the types of issues detected in your codebase
+3. **Gradually customize** - Add exemptions and tune settings based on your needs
+4. **Use tree views** - Organize and prioritize issues using different grouping modes
+
+### Team Usage
+1. **Share configuration** - Commit `.xfi-config.json` for consistent team analysis
+2. **Use remote config** - Centralize rules via config server for multiple projects
+3. **Regular analysis** - Enable auto-analysis or run manually before commits
+4. **Review reports** - Use generated reports for code quality discussions
+
+### Performance Optimization
+1. **Exclude unnecessary files** - Add build outputs and dependencies to exclude patterns
+2. **Set appropriate timeouts** - Balance thoroughness with development speed
+3. **Use file size limits** - Skip analysis of very large generated files
+4. **Monitor metrics** - Use performance commands to track analysis efficiency
+
+## 📚 Learn More
+
+- **Full Documentation:** https://zotoio.github.io/x-fidelity/
+- **VSCode Extension Guide:** https://zotoio.github.io/x-fidelity/vscode-extension/
+- **Configuration Reference:** https://zotoio.github.io/x-fidelity/archetypes/
+- **Plugin Development:** https://zotoio.github.io/x-fidelity/plugins/overview/
+- **CI/CD Integration:** https://zotoio.github.io/x-fidelity/ci-cd/overview/
+
+---
+
+**Happy coding with X-Fidelity! 🚀**

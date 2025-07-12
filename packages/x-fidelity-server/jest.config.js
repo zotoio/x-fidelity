@@ -21,11 +21,16 @@ module.exports = {
     '^@x-fidelity/plugins/(.*)$': '<rootDir>/../x-fidelity-plugins/src/$1',
     '^@x-fidelity/plugins$': '<rootDir>/../x-fidelity-plugins/src/index',
     '^@x-fidelity/server/(.*)$': '<rootDir>/src/$1',
-    '^@x-fidelity/server$': '<rootDir>/src/index'
+    '^@x-fidelity/server$': '<rootDir>/src/index',
+    '^glob$': '<rootDir>/jest-mocks/glob.js'
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node", "mts", "cts"],
   // Jest 30 performance improvements
   testEnvironmentOptions: {
     globalsCleanup: 'soft'
-  }
+  },
+  // Transform ignore patterns to handle ESM modules  
+  transformIgnorePatterns: [
+    'node_modules/(?!(glob|path-scurry)/)'
+  ]
 }; 

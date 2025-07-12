@@ -17,6 +17,7 @@
     "clean": "rimraf dist/",
     "prebuild": "yarn clean && node -e \"require('fs').mkdirSync('dist', {recursive: true})\"",
     "build": "tsc",
+    "build:deps": "cd ../../ && yarn build:deps",
     "build:watch": "tsc --watch --sourceMap",
     "test": "NODE_ENV=test jest --config jest.config.js",
     "test:coverage": "NODE_ENV=test jest --config jest.config.js --coverage",

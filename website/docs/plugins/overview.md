@@ -8,24 +8,27 @@ x-fidelity supports plugins that allow you to extend its core functionality with
 
 ## What are Plugins?
 
-Plugins are Node.js modules that:
-- Add custom facts
-- Add custom operators
-- Provide error handlers
-- Add validation logic
-- Include sample rules
+Plugins are Node.js modules that extend X-Fidelity's capabilities:
+- Add custom facts for data collection
+- Add custom operators for rule evaluation
+- Provide error handlers and recovery mechanisms
+- Add validation logic and rule implementations
+- Include sample rules and configurations
+- Benefit from universal logging system with automatic fallback
+- Support context-aware logging with plugin identification
 
 ## Built-in Plugins
 
-X-Fidelity comes with **9 built-in plugins** that provide comprehensive code analysis capabilities:
+X-Fidelity comes with **9 built-in plugins** that provide comprehensive code analysis capabilities with universal logging support and enhanced error handling:
 
 ### Core Analysis Plugins
 
 #### 1. AST Analysis Plugin (`xfiPluginAst`)
-Advanced abstract syntax tree analysis for JavaScript/TypeScript:
+Advanced abstract syntax tree analysis for JavaScript/TypeScript with Tree-sitter:
 - **Facts**: `ast`, `codeRhythm`, `functionComplexity`, `functionCount`
 - **Operators**: `astComplexity`, `functionCount`
-- **Capabilities**: Code complexity analysis, function metrics, syntax tree parsing
+- **Capabilities**: Code complexity analysis, function metrics, Tree-sitter parsing with worker threads
+- **Performance**: Enhanced with caching and optimized memory usage
 
 #### 2. Dependency Plugin (`xfiPluginDependency`)
 Package dependency version checking and analysis:
@@ -113,7 +116,7 @@ Example usage:
 
 ### Built-in Plugin Loading
 
-All built-in plugins are automatically available and loaded as needed based on your archetype configuration. No additional installation is required for the 9 built-in plugins.
+All built-in plugins are automatically available and loaded as needed based on your archetype configuration. No additional installation is required for the 9 built-in plugins. Each plugin benefits from the universal logging system with context-aware loggers and enhanced error handling.
 
 ### External Plugin Loading
 

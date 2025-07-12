@@ -27,7 +27,13 @@ module.exports = {
   },
   transform: {
     "^.+\\.tsx?$": ["ts-jest", {
-      tsconfig: "tsconfig.json"
+      tsconfig: {
+        outDir: "./dist",
+        rootDir: "./src",
+        isolatedModules: true,
+        resolveJsonModule: true,
+        types: ["@types/node", "@types/jest"]
+      }
     }]
   },
   testMatch: [
@@ -38,7 +44,6 @@ module.exports = {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   // Improve test cleanup and prevent hanging
   testTimeout: 15000,
-  forceExit: true,
   detectOpenHandles: true,
   // Reset modules and mocks between tests
   clearMocks: true,

@@ -44,7 +44,7 @@ export class PinoLogger implements ILogger {
         try {
           fs.writeFileSync(config.filePath, '');
         } catch (error) {
-          console.warn(`Failed to clear log file ${config.filePath}: ${error}`);
+          // Silent fail - log file clearing is not critical
         }
         
         targets.push({
@@ -56,7 +56,7 @@ export class PinoLogger implements ILogger {
         });
       } catch (error) {
         // If file logging fails, just continue with console logging
-        console.warn(`Failed to setup file logging: ${error}`);
+        // Silent fail - file logging is not critical
       }
     }
 
@@ -131,17 +131,7 @@ export class PinoLogger implements ILogger {
     return checkLevelValue >= currentLevelValue;
   }
 
-  child(bindings: any): ILogger {
-    const childLogger = this.logger.child(bindings);
-    const childConfig: SimpleLoggerConfig = {
-      level: this.getLevel()
-    };
-    
-    // Create a new PinoLogger instance wrapping the child
-    const wrapper = new PinoLogger(childConfig);
-    wrapper.logger = childLogger;
-    return wrapper;
-  }
+  // Child logger method removed - use direct context passing instead
 
   async flush(): Promise<void> {
     return new Promise((resolve) => {

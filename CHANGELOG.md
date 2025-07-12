@@ -1,3 +1,38 @@
+# [3.28.0] (2025-07-12)
+
+### Features
+
+* **vscode:** Enhanced VSCode extension with 47 commands and comprehensive UI integration
+* **logging:** Universal plugin logging system with context-aware loggers
+* **performance:** Enhanced performance monitoring and optimization features
+* **cli:** Multiple CLI source options (bundled, global, local, custom) with zero-setup bundled CLI
+* **diagnostics:** Improved diagnostic provider with accurate line/column positioning
+* **testing:** Comprehensive test suite with 5 major test fixes for extension reliability
+
+### Bug Fixes
+
+* **vscode:** Fixed REPO_GLOBAL_CHECK navigation issue with proper file redirection
+* **vscode:** Fixed CLI analysis integration with enhanced result handling
+* **vscode:** Fixed XFI_RESULT assertion failures with consistent test data
+* **vscode:** Fixed function complexity issue detection with better location extraction
+* **vscode:** Fixed exportReport command registration for complete command coverage
+* **core:** Enhanced error handling and recovery mechanisms
+* **plugins:** Improved plugin loading with universal logger availability
+
+### Performance Improvements
+
+* **caching:** Enhanced file caching with TTL-based invalidation
+* **analysis:** Optimized analysis engine with performance metrics tracking
+* **memory:** Improved memory management and resource utilization
+* **startup:** Fast extension startup with <30ms activation time
+
+### Documentation
+
+* **comprehensive:** Updated all documentation to reflect current feature set
+* **cli:** Added complete CLI reference with all options and examples
+* **vscode:** Enhanced VSCode extension documentation with all 47 commands
+* **website:** Updated website documentation for accuracy and completeness
+
 # [3.27.0](https://github.com/zotoio/x-fidelity/compare/v3.26.0...v3.27.0) (2025-07-08)
 
 

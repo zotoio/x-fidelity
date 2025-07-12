@@ -6,18 +6,19 @@ import { ConfigManager } from '@x-fidelity/core';
 export async function clearCacheRoute(req: Request, res: Response) {
     const requestLogPrefix = req.headers['x-log-prefix'] as string || '';
     
-    // Create a child logger with request context instead of using setLogPrefix
-    const requestLogger = requestLogPrefix ? 
-        logger.child({ requestId: requestLogPrefix, route: 'clearCache' }) : 
-        logger.child({ route: 'clearCache' });
+    // Create context for logging
+    const logContext = { 
+        requestId: requestLogPrefix, 
+        route: 'clearCache' 
+    };
     
     try {
         clearCache();
         ConfigManager.clearLoadedConfigs();
-        requestLogger.info('Cache cleared successfully');
+        logger.info('[clearCache] Cache cleared successfully', logContext);
         res.json({ message: 'Cache cleared successfully' });
     } catch (error) {
-        requestLogger.error(`Error clearing cache: ${error}`);
+        logger.error(`[clearCache] Error clearing cache: ${error}`, logContext);
         res.status(500).json({ error: 'Failed to clear cache' });
     }
 }

@@ -1,7 +1,7 @@
 import { runEngineOnFiles, registerRuleForTracking } from './engineRunner';
 import { REPO_GLOBAL_CHECK } from '../configManager';
 import { Engine } from 'json-rules-engine';
-import { logger, getLogPrefix, setLogPrefix } from '../../utils/logger';
+import { logger } from '../../utils/logger';
 import { executeErrorAction } from './errorActionExecutor';
 import { ScanResult, RuleFailure, ErrorLevel } from '@x-fidelity/types';
 
@@ -14,10 +14,12 @@ jest.mock('../../utils/logger', () => ({
         debug: jest.fn(),
         error: jest.fn(),
         warn: jest.fn(),
-        trace: jest.fn()
-    },
-    getLogPrefix: jest.fn().mockReturnValue('test-prefix'),
-    setLogPrefix: jest.fn(),
+        trace: jest.fn(),
+        fatal: jest.fn(),
+        setLevel: jest.fn(),
+        getLevel: jest.fn().mockReturnValue('info'),
+        isLevelEnabled: jest.fn().mockReturnValue(true)
+    }
 }));
 
 describe('engineRunner - Enhanced Test Suite', () => {
@@ -84,7 +86,8 @@ describe('engineRunner - Enhanced Test Suite', () => {
         minimumDependencyVersions: {},
         standardStructure: false,
         repoUrl: 'https://github.com/test/repo',
-        exemptions: []
+        exemptions: [],
+        logger: logger
     });
 
     describe('Basic Engine Execution', () => {
@@ -224,7 +227,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
                 conditions: { all: [] }
             };
 
-            registerRuleForTracking(mockRule);
+            registerRuleForTracking(mockRule, logger);
 
             expect(logger.debug).toHaveBeenCalledWith(
                 `Registered rule 'testRule' for event type 'warning'`
@@ -234,7 +237,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
         it('should handle rules without proper event structure', () => {
             const invalidRule = { name: 'invalidRule' };
             
-            registerRuleForTracking(invalidRule);
+            registerRuleForTracking(invalidRule, logger);
 
             // Should not log anything for invalid rules
             expect(logger.debug).not.toHaveBeenCalledWith(
@@ -246,8 +249,8 @@ describe('engineRunner - Enhanced Test Suite', () => {
             const rule1 = { name: 'rule1', event: { type: 'error' }, conditions: {} };
             const rule2 = { name: 'rule2', event: { type: 'error' }, conditions: {} };
 
-            registerRuleForTracking(rule1);
-            registerRuleForTracking(rule2);
+            registerRuleForTracking(rule1, logger);
+            registerRuleForTracking(rule2, logger);
 
             expect(logger.debug).toHaveBeenCalledWith(
                 `Registered rule 'rule1' for event type 'error'`
