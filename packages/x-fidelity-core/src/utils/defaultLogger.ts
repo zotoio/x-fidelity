@@ -28,8 +28,11 @@ export class DefaultLogger implements ILogger {
   }
 
   private shouldLog(level: LogLevel): boolean {
-    // Always silent in test environment
-    if (this.isTestEnvironment) {
+    // In VSCode mode, allow logging even in test-like environments
+    const isVSCodeMode = process.env.XFI_VSCODE_MODE === 'true';
+    
+    // Always silent in test environment (unless in VSCode mode)
+    if (this.isTestEnvironment && !isVSCodeMode) {
       return false;
     }
 
@@ -155,6 +158,11 @@ export class DefaultLogger implements ILogger {
     return levels[level] >= levels[this.level];
   }
 
+  async flush(): Promise<void> {
+    // No flush needed for console logger, resolve immediately
+    return Promise.resolve();
+  }
+
   dispose?(): void {
     // No resources to dispose for console-based logger
   }
@@ -175,6 +183,7 @@ export class SilentLogger implements ILogger {
   setLevel(): void {}
   getLevel(): LogLevel { return 'fatal'; }
   isLevelEnabled(): boolean { return false; }
+  async flush(): Promise<void> { return Promise.resolve(); }
   dispose?(): void {}
 }
 

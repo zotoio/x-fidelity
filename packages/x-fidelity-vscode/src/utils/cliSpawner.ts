@@ -155,7 +155,13 @@ export class CLISpawner {
           cwd: options.workspacePath,
           stdio: ['pipe', 'pipe', 'pipe'],
           timeout: options.timeout || 120000,
-          env: { ...process.env, ...options.env }
+          env: { 
+            ...process.env, 
+            XFI_VSCODE_MODE: 'true',  // Force console logging in CLI
+            XFI_DISABLE_FILE_LOGGING: 'true',  // Disable file logging
+            XFI_LOG_LEVEL: 'warn',  // Reduce log verbosity from VSCode
+            ...options.env 
+          }
         });
 
         let stderr = '';

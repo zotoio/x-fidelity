@@ -29,8 +29,8 @@ export class PinoLogger implements ILogger {
       });
     }
 
-    // File transport
-    if (config.enableFile !== false && config.filePath) {
+    // File transport (skip if explicitly disabled or in VSCode mode)
+    if (config.enableFile === true && config.filePath && process.env.XFI_VSCODE_MODE !== 'true') {
       try {
         // Ensure directory exists
         const fs = require('fs');
