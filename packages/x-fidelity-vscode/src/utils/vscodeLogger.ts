@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ILogger, LogLevel, LogLevelValues } from '@x-fidelity/types';
-import { EnhancedLogger, EnhancedLoggerConfig } from '@x-fidelity/core/utils/enhancedLogger';
+import { EnhancedLogger, EnhancedLoggerConfig } from '../../../core/src/utils/enhancedLogger';
 
 export class VSCodeLogger extends EnhancedLogger {
   private outputChannel: vscode.OutputChannel;
