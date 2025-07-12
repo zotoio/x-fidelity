@@ -36,6 +36,11 @@ jobs:
       env:
         DISPLAY: ':99.0'
 
+    - name: Run consistency tests
+      run: yarn test:consistency:quick
+      env:
+        DISPLAY: ':99.0'
+
     - name: Run fixture validation
       run: |
         cd packages/x-fidelity-fixtures

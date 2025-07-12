@@ -2,10 +2,10 @@ name: VSCode Extension Verification
 
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches: [ master, feature/* ]
     paths: [ 'packages/x-fidelity-vscode/**' ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ master ]
     paths: [ 'packages/x-fidelity-vscode/**' ]
   workflow_dispatch:
     inputs:
@@ -183,7 +183,7 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: packages/x-fidelity-vscode/
-          base: main
+          base: master
           head: HEAD
 
   code-quality:
@@ -313,7 +313,7 @@ jobs:
     name: Marketplace Validation
     runs-on: ubuntu-latest
     needs: [verify-extension, code-quality]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/master'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

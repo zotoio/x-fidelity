@@ -2,7 +2,7 @@ name: VSCode Extension CI
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [master]
     paths:
       - 'packages/x-fidelity-vscode/**'
       - 'packages/x-fidelity-core/**'
@@ -70,7 +70,6 @@ jobs:
           
       - name: Run CLI-Extension consistency test
         run: |
-          cd packages/x-fidelity-vscode
           xvfb-run -a yarn test:consistency
         env:
           CI: true
