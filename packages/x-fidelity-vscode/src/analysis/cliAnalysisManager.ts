@@ -76,6 +76,10 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     return this.getCurrentResults();
   }
 
+  getCLISpawner(): CLISpawner {
+    return this.cliSpawner;
+  }
+
   async runAnalysis(_options?: {
     forceRefresh?: boolean;
   }): Promise<AnalysisResult | null> {

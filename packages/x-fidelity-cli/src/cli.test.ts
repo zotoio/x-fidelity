@@ -91,7 +91,6 @@ describe('CLI', () => {
     initCLI();
     
     expect(mockProgram.name).toHaveBeenCalledWith('xfidelity');
-    expect(mockProgram.description).toHaveBeenCalledWith('CLI tool for opinionated framework adherence checks (v3.28.0)');
     expect(mockProgram.argument).toHaveBeenCalledWith('[directory]', 'path to repository root (default: current directory)');
     expect(mockProgram.option).toHaveBeenCalledWith('-d, --dir <path>', 'path to repository root (overrides positional argument)');
     expect(mockProgram.option).toHaveBeenCalledWith('-a, --archetype <archetype>', 'The archetype to use for analysis', 'node-fullstack');

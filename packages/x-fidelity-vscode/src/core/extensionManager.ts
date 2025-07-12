@@ -271,6 +271,12 @@ export class ExtensionManager implements vscode.Disposable {
     );
 
     this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.debugCLISetup', async () => {
+        await this.debugCLISetup();
+      })
+    );
+
+    this.disposables.push(
       vscode.commands.registerCommand('xfidelity.exportReport', async () => {
         try {
           const currentResults = this.analysisEngine.getCurrentResults();
@@ -657,6 +663,50 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
     this.globalLogger.info(
       `🔍 Periodic analysis status: ${status}, interval: ${intervalText}`
     );
+  }
+
+  private async debugCLISetup(): Promise<void> {
+    try {
+      const cliSpawner = this.analysisEngine.getCLISpawner();
+      if (!cliSpawner) {
+        vscode.window.showErrorMessage('CLI Spawner not available');
+        return;
+      }
+
+      // Get CLI diagnostics
+      const diagnostics = await cliSpawner.getDiagnostics();
+
+      this.globalLogger.info('🔍 CLI Setup Diagnostics:', diagnostics);
+
+      const message =
+        `CLI Setup Diagnostics:\n` +
+        `Platform: ${diagnostics.platform}\n` +
+        `Node.js Path: ${diagnostics.nodePath}\n` +
+        `CLI Path: ${diagnostics.cliPath}\n` +
+        `CLI Exists: ${diagnostics.cliExists ? '✅' : '❌'}\n` +
+        `Node.js Exists: ${diagnostics.nodeExists ? '✅' : '❌'}\n` +
+        `Working Directory: ${diagnostics.workingDirectory}\n` +
+        `Extension Path: ${diagnostics.extensionPath}\n\n` +
+        `Check the Output Console (X-Fidelity) for detailed information.`;
+
+      vscode.window
+        .showInformationMessage(message, 'Open Output', 'Copy Diagnostics')
+        .then(choice => {
+          if (choice === 'Open Output') {
+            this.globalLogger.show();
+          } else if (choice === 'Copy Diagnostics') {
+            vscode.env.clipboard.writeText(
+              JSON.stringify(diagnostics, null, 2)
+            );
+            vscode.window.showInformationMessage(
+              'CLI diagnostics copied to clipboard'
+            );
+          }
+        });
+    } catch (error) {
+      this.globalLogger.error('CLI diagnostics failed:', error);
+      vscode.window.showErrorMessage(`CLI diagnostics failed: ${error}`);
+    }
   }
 
   private debugDiagnosticsInfo(): void {

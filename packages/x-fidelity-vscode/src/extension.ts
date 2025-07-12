@@ -36,9 +36,32 @@ export async function activate(context: vscode.ExtensionContext) {
     // Store extension context globally for access by other components
     extensionContext = context;
 
-    // PERFORMANCE FIX: Fast initialization - don't block on heavy operations
-    extensionManager = new ExtensionManager(context);
-    context.subscriptions.push(extensionManager);
+    // PERFORMANCE FIX: Fast initialization with macOS native module handling
+    try {
+      extensionManager = new ExtensionManager(context);
+      context.subscriptions.push(extensionManager);
+    } catch (error) {
+      // Handle macOS native module issues gracefully
+      if (process.platform === 'darwin' && 
+          error instanceof Error && 
+          (error.message.includes('fd') || error.message.includes('file descriptor'))) {
+        logger.warn('Detected macOS file descriptor issue, retrying with safe mode...', {
+          originalError: error.message
+        });
+        
+        // Set environment variable to disable problematic features
+        process.env.XFI_SAFE_MODE = 'true';
+        process.env.XFI_DISABLE_NATIVE = 'true';
+        
+        // Retry initialization in safe mode
+        extensionManager = new ExtensionManager(context);
+        context.subscriptions.push(extensionManager);
+        
+        logger.info('Successfully initialized in macOS safe mode');
+      } else {
+        throw error; // Re-throw if it's not a known macOS issue
+      }
+    }
 
     // Mark as activated
     isActivated = true;

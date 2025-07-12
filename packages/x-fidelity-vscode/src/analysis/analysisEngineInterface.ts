@@ -28,6 +28,9 @@ export interface IAnalysisEngine extends vscode.Disposable {
 
   // Logging
   getLogger(): any;
+
+  // CLI access (for CLI-based engines)
+  getCLISpawner?(): any;
 }
 
 /**

@@ -2,7 +2,7 @@
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity",
   "description": "VSCode extension for X-Fidelity code quality analysis with 47 commands, real-time diagnostics, and comprehensive UI integration",
-  "version": "3.28.0",
+  "version": "3.31.0",
   "publisher": "zotoio",
   "private": true,
   "license": "MIT",
@@ -144,6 +144,11 @@
         "command": "xfidelity.debugDiagnostics",
         "title": "X-Fidelity: Debug Diagnostics Info",
         "icon": "$(bug)"
+      },
+      {
+        "command": "xfidelity.debugCLISetup",
+        "title": "X-Fidelity: Debug CLI Setup",
+        "icon": "$(tools)"
       }
     ],
     "configuration": {
@@ -625,9 +630,10 @@
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "vscode:prepublish": "yarn compile",
+    "vscode:prepublish": "yarn format && yarn compile",
     "compile": "yarn build",
-    "build": "yarn build:deps && yarn format && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "prebuild": "yarn format",
+    "build": "yarn build:deps && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "build:cli": "cd ../x-fidelity-cli && yarn build",
     "embed:cli": "node scripts/embed-cli.js",
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
@@ -649,7 +655,8 @@
     "lint:fix": "eslint src --ext ts --fix && yarn format",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
-    "build:production": "yarn format && yarn check-types && node --no-warnings=ExperimentalWarning esbuild.config.js --production",
+    "prebuild:production": "yarn format",
+    "build:production": "yarn check-types && node --no-warnings=ExperimentalWarning esbuild.config.js --production",
     "check-types": "tsc --noEmit",
     "build:test": "tsc -p tsconfig.test.json",
     "clean": "rimraf dist dist-test config .vscode-test .vscode-test-profile && node -e \"try { require('fs').readdirSync('.').filter(f => f.endsWith('.tsbuildinfo')).forEach(f => require('fs').unlinkSync(f)); } catch(e) { /* ignore */ }\"",

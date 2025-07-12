@@ -12,6 +12,7 @@ import {
 } from '@x-fidelity/core';
 
 import { PinoLogger } from './utils/pinoLogger';
+import { DefaultLogger } from '@x-fidelity/core';
 import { LogLevel } from '@x-fidelity/types';
 import path from 'path';
 import fs from 'fs/promises';
@@ -32,11 +33,23 @@ import { version } from '../package.json';
 LoggerProvider.initializeForPlugins();
 
 // Create CLI logger instance and inject it
-const logger = new PinoLogger({
-    level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
-    enableConsole: true,
-    enableColors: true
-});
+// When called from VSCode, use simple console logging to avoid file descriptor issues
+const isVSCodeMode = process.env.XFI_VSCODE_MODE === 'true';
+const disableFileLogging = process.env.XFI_DISABLE_FILE_LOGGING === 'true';
+
+const logger = isVSCodeMode 
+    ? new DefaultLogger('[CLI]') // Use simple console logger for VSCode to avoid Pino issues
+    : new PinoLogger({
+        level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
+        enableConsole: true,
+        enableColors: true,
+        enableFile: false // Always disable file logging for initial setup
+    });
+
+// Set log level for DefaultLogger if in VSCode mode
+if (isVSCodeMode && process.env.XFI_LOG_LEVEL) {
+    logger.setLevel(process.env.XFI_LOG_LEVEL as LogLevel);
+}
 
 // Set the logger provider to use CLI's pino logger immediately
 LoggerProvider.setLogger(logger);
@@ -139,14 +152,21 @@ export async function main() {
                     }
                 });
                 
-                // Create logger with file output for analysis
-                const analysisLogger = new PinoLogger({
-                    level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
-                    enableConsole: true,
-                    enableColors: true,
-                    enableFile: true,
-                    filePath: logFilePath
-                });
+                // Create logger with file output for analysis (unless disabled from VSCode)
+                const analysisLogger = isVSCodeMode 
+                    ? new DefaultLogger('[CLI-Analysis]') // Use simple console logger for VSCode
+                    : new PinoLogger({
+                        level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
+                        enableConsole: true,
+                        enableColors: true,
+                        enableFile: !disableFileLogging, // Disable file logging if requested
+                        filePath: logFilePath
+                    });
+
+                // Set log level for DefaultLogger if in VSCode mode
+                if (isVSCodeMode && process.env.XFI_LOG_LEVEL) {
+                    analysisLogger.setLevel(process.env.XFI_LOG_LEVEL as LogLevel);
+                }
 
                 // Update the logger provider to use CLI's pino logger with file output
                 LoggerProvider.setLogger(analysisLogger);
@@ -234,7 +254,7 @@ export async function main() {
                         outputLogger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
                         
                         // Flush logger before exit
-                        if (analysisLogger.flush) {
+                        if (analysisLogger && 'flush' in analysisLogger && typeof analysisLogger.flush === 'function') {
                             await analysisLogger.flush();
                         }
                         
@@ -250,7 +270,7 @@ export async function main() {
                         outputLogger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
                         
                         // Flush logger before exit
-                        if (analysisLogger.flush) {
+                        if (analysisLogger && 'flush' in analysisLogger && typeof analysisLogger.flush === 'function') {
                             await analysisLogger.flush();
                         }
                         
@@ -264,7 +284,7 @@ export async function main() {
                         outputLogger.warn(outcomeMessage('Please review the warnings above.'));
                         
                         // Flush logger before exit
-                        if (analysisLogger.flush) {
+                        if (analysisLogger && 'flush' in analysisLogger && typeof analysisLogger.flush === 'function') {
                             await analysisLogger.flush();
                         }
                         
@@ -295,7 +315,7 @@ export async function main() {
         // Try to flush logger before exit if available
         try {
             const currentLogger = LoggerProvider.getLogger();
-            if (currentLogger.flush) {
+            if (currentLogger && 'flush' in currentLogger && typeof currentLogger.flush === 'function') {
                 await currentLogger.flush();
             }
         } catch (flushError) {
