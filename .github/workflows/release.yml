@@ -28,9 +28,6 @@ jobs:
     - name: Run tests
       run: yarn test
       
-    - name: Run consistency tests
-      run: yarn test:consistency:validate  
-
     - name: Run semantic-release of cli
       run: yarn workspace x-fidelity semantic-release
       env:

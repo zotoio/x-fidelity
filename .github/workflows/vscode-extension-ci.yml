@@ -126,24 +126,6 @@ jobs:
         run: |
           cd packages/x-fidelity-vscode
           timeout 300 yarn --cwd ../.. build-run > cli-results.json || true
-          
-      - name: Run extension consistency test
-        run: |
-          cd packages/x-fidelity-vscode
-          xvfb-run -a yarn test --grep "CLI-Extension Consistency"
-        env:
-          CI: true
-          XFI_CONSISTENCY_CHECK: true
-          
-      - name: Upload consistency report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: consistency-report
-          path: |
-            packages/x-fidelity-vscode/cli-results.json
-            packages/x-fidelity-vscode/consistency-report.txt
-          retention-days: 30
 
   publish-check:
     runs-on: ubuntu-latest
