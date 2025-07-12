@@ -516,6 +516,14 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 logger.info('Latest result updated: XFI_RESULT.json');
             }
             
+            // Always maintain latest result copy for markdown files
+            const mdFile = savedFiles.find(f => f.extension === 'md');
+            if (mdFile) {
+                const latestMdPath = path.join(resultsDir, 'XFI_RESULT.md');
+                await fs.writeFile(latestMdPath, reportFormats.find(f => f.extension === 'md')?.content || '', 'utf8');
+                logger.info('Latest result updated: XFI_RESULT.md');
+            }
+            
             // Save file cache to disk
             await fileCache.saveCacheToDisk();
             

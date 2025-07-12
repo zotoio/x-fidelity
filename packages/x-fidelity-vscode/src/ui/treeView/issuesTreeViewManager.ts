@@ -10,6 +10,7 @@ import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
 import { ConfigManager } from '../../configuration/configManager';
 import { logger } from '../../utils/logger';
 import { getWorkspaceFolder } from '../../utils/workspaceUtils';
+import { REPO_GLOBAL_CHECK } from '@x-fidelity/core';
 
 export class IssuesTreeViewManager implements vscode.Disposable {
   private static commandsRegistered = false;
@@ -427,7 +428,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
       // Resolve file path
       let filePath: string;
-      if (vscode.Uri.file(issue.file).scheme === 'file') {
+      if (path.isAbsolute(issue.file)) {
         filePath = issue.file;
       } else {
         filePath = vscode.Uri.file(
@@ -442,7 +443,23 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       const editor = await vscode.window.showTextDocument(document);
 
       // Navigate to the issue location
-      if (issue.line) {
+      if (issue.file === REPO_GLOBAL_CHECK) {
+        // If the file is REPO_GLOBAL_CHECK, open the markdown report
+        const markdownUri = vscode.Uri.file(
+          path.join(workspaceFolder.uri.fsPath, '.xfiResults', 'XFI_RESULT.md')
+        );
+        
+        try {
+          const markdownDocument = await vscode.workspace.openTextDocument(markdownUri);
+          await vscode.window.showTextDocument(markdownDocument);
+          logger.debug('Navigated to global check report', { file: issue.file });
+        } catch (error) {
+          logger.warn('Failed to open global check report, trying to show error details', { error });
+          vscode.window.showWarningMessage(
+            `Global check report not found. Issue: ${issue.message}`
+          );
+        }
+      } else if (issue.line) {
         // Issue line/column are 1-based from XFI core, convert to 0-based for VSCode
         const line = Math.max(0, issue.line - 1);
         const column = Math.max(0, (issue.column || 1) - 1);
