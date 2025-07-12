@@ -24,7 +24,10 @@ async function main() {
       // Keep tree-sitter modules external to use rebuilt versions
       'tree-sitter',
       'tree-sitter-javascript',
-      'tree-sitter-typescript'
+      'tree-sitter-typescript',
+      // Native modules that contain .node files
+      'fsevents',
+      'chokidar'
     ],
     logLevel: 'info',
     alias: {
@@ -64,7 +67,10 @@ async function main() {
       // Keep tree-sitter modules external to use rebuilt versions
       'tree-sitter',
       'tree-sitter-javascript',
-      'tree-sitter-typescript'
+      'tree-sitter-typescript',
+      // Native modules that contain .node files
+      'fsevents',
+      'chokidar'
     ],
     logLevel: 'info',
     // Bundle all internal dependencies
@@ -84,7 +90,8 @@ async function main() {
     mainFields: ['main', 'module'],
     conditions: ['node'],
     loader: {
-      '.json': 'json'
+      '.json': 'json',
+      '.node': 'file'
     },
     metafile: true,
     plugins: [

@@ -43,6 +43,15 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn build
+        env:
+          # Make fsevents optional on non-macOS systems
+          CPPFLAGS: "-DMAC_OS_X_VERSION_MIN_REQUIRED=MAC_OS_X_VERSION_10_12"
+
+      - name: Rebuild native modules (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn rebuild-native || echo "Native rebuild failed, continuing..."
 
       - name: Build extension
         run: |
@@ -149,6 +158,9 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn build
+        env:
+          # Make fsevents optional on non-macOS systems
+          CPPFLAGS: "-DMAC_OS_X_VERSION_MIN_REQUIRED=MAC_OS_X_VERSION_10_12"
 
       - name: Test with VSCode ${{ matrix.vscode-version }}
         run: |
@@ -203,6 +215,9 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn build
+        env:
+          # Make fsevents optional on non-macOS systems
+          CPPFLAGS: "-DMAC_OS_X_VERSION_MIN_REQUIRED=MAC_OS_X_VERSION_10_12"
 
       - name: Run linting
         run: |
@@ -231,6 +246,15 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn build
+        env:
+          # Make fsevents optional on non-macOS systems
+          CPPFLAGS: "-DMAC_OS_X_VERSION_MIN_REQUIRED=MAC_OS_X_VERSION_10_12"
+
+      - name: Rebuild native modules (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn rebuild-native || echo "Native rebuild failed, continuing..."
 
       - name: Build extension
         run: |
@@ -323,6 +347,9 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn build
+        env:
+          # Make fsevents optional on non-macOS systems
+          CPPFLAGS: "-DMAC_OS_X_VERSION_MIN_REQUIRED=MAC_OS_X_VERSION_10_12"
 
       - name: Build and package extension
         run: |

@@ -201,16 +201,15 @@ suite('Comprehensive UI Integration Tests', () => {
 
       // Get diagnostic counts
       const allDiagnostics = vscode.languages.getDiagnostics();
-      const diagnosticEntries = Array.from(allDiagnostics.entries());
+      const diagnosticEntries = Array.from(allDiagnostics);
 
-      const xfidelityFiles = diagnosticEntries.filter((entry) => {
-        const diagnostics = entry[1];
-        return diagnostics.some(d => d.source === 'X-Fidelity');
+      const xfidelityFiles = diagnosticEntries.filter(([uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => {
+        return diagnostics.some((d: vscode.Diagnostic) => d.source === 'X-Fidelity');
       }).length;
 
       const totalXfidelityDiagnostics = diagnosticEntries
-        .flatMap((entry) => entry[1])
-        .filter(d => d.source === 'X-Fidelity').length;
+        .flatMap(([uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => diagnostics)
+        .filter((d: vscode.Diagnostic) => d.source === 'X-Fidelity').length;
         
       // Should have valid counts (even if 0)
       assert.ok(xfidelityFiles >= 0, 'Should have valid file count');

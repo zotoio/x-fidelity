@@ -171,14 +171,14 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
 
     // Get all X-Fidelity diagnostics, excluding virtual files
     const allDiagnostics = vscode.languages.getDiagnostics();
-    const diagnosticEntries: [vscode.Uri, vscode.Diagnostic[]][] = Array.from(allDiagnostics.entries());
+    const diagnosticEntries: [vscode.Uri, vscode.Diagnostic[]][] = Array.from(allDiagnostics);
     const xfidelityDiagnostics = diagnosticEntries
-      .filter(([uri, diagnostics]) => {
+      .filter(([uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => {
         const filePath = uri.fsPath;
         // Skip virtual files like REPO_GLOBAL_CHECK
         return !filePath.includes('REPO_GLOBAL_CHECK') && 
                !filePath.includes('GLOBAL_CHECK') &&
-               diagnostics.some(diag => diag.source === 'X-Fidelity');
+               diagnostics.some((diag: vscode.Diagnostic) => diag.source === 'X-Fidelity');
       })
       .slice(0, 3);
 
@@ -187,11 +187,9 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
       return;
     }
 
-    for (const entry of xfidelityDiagnostics) {
-      const uri = entry[0];
-      const diagnostics = entry[1];
+    for (const [uri, diagnostics] of xfidelityDiagnostics) {
       const xfiDiags = diagnostics
-        .filter(diag => diag.source === 'X-Fidelity')
+        .filter((diag: vscode.Diagnostic) => diag.source === 'X-Fidelity')
         .slice(0, 2); // Test first 2 issues per file
 
       for (const diag of xfiDiags) {
@@ -295,14 +293,12 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
 
     // Get all X-Fidelity diagnostics
     const allDiagnostics = vscode.languages.getDiagnostics();
-    const xfidelityDiagnostics = Array.from(allDiagnostics.entries()).filter(([_uri, diagnostics]) =>
-      diagnostics.some(diag => diag.source === 'X-Fidelity')
+    const xfidelityDiagnostics = Array.from(allDiagnostics).filter(([_uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) =>
+      diagnostics.some((diag: vscode.Diagnostic) => diag.source === 'X-Fidelity')
     );
 
-    for (const entry of xfidelityDiagnostics) {
-      const uri = entry[0];
-      const diagnostics = entry[1];
-      const xfiDiags = diagnostics.filter(diag => diag.source === 'X-Fidelity');
+    for (const [uri, diagnostics] of xfidelityDiagnostics) {
+      const xfiDiags = diagnostics.filter((diag: vscode.Diagnostic) => diag.source === 'X-Fidelity');
 
       for (const diag of xfiDiags) {
         // Validate VSCode expects 0-based coordinates
