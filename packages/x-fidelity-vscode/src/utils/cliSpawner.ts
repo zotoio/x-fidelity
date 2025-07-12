@@ -155,12 +155,12 @@ export class CLISpawner {
           cwd: options.workspacePath,
           stdio: ['pipe', 'pipe', 'pipe'],
           timeout: options.timeout || 120000,
-          env: { 
-            ...process.env, 
-            XFI_VSCODE_MODE: 'true',  // Force console logging in CLI
-            XFI_DISABLE_FILE_LOGGING: 'true',  // Disable file logging
-            XFI_LOG_LEVEL: 'warn',  // Reduce log verbosity from VSCode
-            ...options.env 
+          env: {
+            ...process.env,
+            XFI_VSCODE_MODE: 'true', // Force console logging in CLI
+            XFI_DISABLE_FILE_LOGGING: 'true', // Disable file logging
+            XFI_LOG_LEVEL: 'warn', // Reduce log verbosity from VSCode
+            ...options.env
           }
         });
 
@@ -369,7 +369,7 @@ export class CLISpawner {
 
       // Extract XFI_RESULT from the CLI output structure
       // The CLI might wrap the result in different ways
-      let xfiResult;
+      let xfiResult: any;
       if (rawResult.XFI_RESULT) {
         xfiResult = rawResult.XFI_RESULT;
         this.logger.debug('Found XFI_RESULT in rawResult.XFI_RESULT');
