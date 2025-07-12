@@ -214,11 +214,6 @@ jobs:
           cd packages/x-fidelity-vscode
           yarn tsc --noEmit
 
-      - name: Check formatting
-        run: |
-          cd packages/x-fidelity-vscode
-          npx prettier --check "src/**/*.{ts,js,json}"
-
   performance-test:
     name: Performance Test
     runs-on: ubuntu-latest

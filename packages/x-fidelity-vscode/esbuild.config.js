@@ -25,7 +25,10 @@ async function main() {
       // Keep tree-sitter modules external to use rebuilt versions
       'tree-sitter',
       'tree-sitter-javascript',
-      'tree-sitter-typescript'
+      'tree-sitter-typescript',
+      // Native modules that contain .node files
+      'fsevents',
+      'chokidar'
     ],
     logLevel: 'info',
     alias: {
@@ -64,7 +67,10 @@ async function main() {
       // Exclude native tree-sitter packages since we're using WASM versions
       'tree-sitter',
       'tree-sitter-javascript',
-      'tree-sitter-typescript'
+      'tree-sitter-typescript',
+      // Native modules that contain .node files
+      'fsevents',
+      'chokidar'
     ],
     logLevel: 'info',
     plugins: [
