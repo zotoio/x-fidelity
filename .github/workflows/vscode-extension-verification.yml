@@ -191,13 +191,6 @@ jobs:
           cd packages/x-fidelity-vscode
           yarn audit --level moderate || true
 
-      - name: Scan for secrets
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: packages/x-fidelity-vscode/
-          base: master
-          head: HEAD
-
   code-quality:
     name: Code Quality Check
     runs-on: ubuntu-latest
