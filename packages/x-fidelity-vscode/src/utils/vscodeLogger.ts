@@ -59,7 +59,9 @@ export class VSCodeLogger extends EnhancedLogger {
   }
 
   dispose(): void {
-    super.dispose();
+    if (super.dispose) {
+      super.dispose();
+    }
     if (this.ownsChannel) {
       this.outputChannel.dispose();
     }
