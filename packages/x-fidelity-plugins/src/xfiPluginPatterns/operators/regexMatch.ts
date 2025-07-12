@@ -1,20 +1,28 @@
-import { logger } from '@x-fidelity/core';
+import { pluginLogger } from '@x-fidelity/core';
 import { OperatorDefn } from '@x-fidelity/types';
 
 const regexMatch: OperatorDefn = {
     'name': 'regexMatch',
-    'description': 'Matches fact values against regex patterns',
+    'description': 'Matches fact values against regex patterns with enhanced logging',
     'fn': (factValue: any, regexPattern: string) => {
+        const logger = pluginLogger.createOperatorLogger('xfi-plugin-patterns', 'regexMatch');
+        
         try {
-            logger.debug(`regexMatch: testing ${factValue} against pattern ${regexPattern}`);
+            logger.debug('Executing regex match operator', {
+                factValueType: typeof factValue,
+                patternLength: regexPattern?.length || 0,
+                pattern: regexPattern?.substring(0, 100) + (regexPattern?.length > 100 ? '...' : '')
+            });
             
             if (factValue === undefined || factValue === null) {
-                logger.debug('regexMatch: factValue is undefined or null');
+                logger.debug('Regex match: factValue is undefined or null');
                 return false;
             }
 
             if (typeof regexPattern !== 'string') {
-                logger.debug(`regexMatch: regexPattern is not a string: ${typeof regexPattern}`);
+                logger.debug('Regex match: regexPattern is not a string', { 
+                    patternType: typeof regexPattern 
+                });
                 return false;
             }
 
@@ -27,16 +35,26 @@ const regexMatch: OperatorDefn = {
             if (regexFormatMatch) {
                 pattern = regexFormatMatch[1];
                 flags = regexFormatMatch[2];
-                logger.debug(`regexMatch: extracted pattern "${pattern}" with flags "${flags}"`);
+                logger.debug('Regex match: extracted pattern with flags', { 
+                    originalPattern: regexPattern,
+                    extractedPattern: pattern, 
+                    flags 
+                });
             }
 
             const regex = new RegExp(pattern, flags);
             const result = regex.test(String(factValue));
             
-            logger.debug(`regexMatch: result is ${result}`);
+            logger.debug('Regex match completed', { 
+                result,
+                patternUsed: pattern,
+                flagsUsed: flags,
+                factValueLength: String(factValue).length
+            });
+            
             return result;
         } catch (e) {
-            logger.error(`regexMatch error: ${e}`);
+            logger.error('Regex match error:', e);
             return false;
         }
     }

@@ -1,146 +1,217 @@
 import { LoggerProvider, PrefixingLogger } from './loggerProvider';
-import { DefaultLogger } from './defaultLogger';
+import { DefaultLogger, SilentLogger } from './defaultLogger';
 import { ILogger } from '@x-fidelity/types';
 
+// Mock logger for testing
+class MockLogger implements ILogger {
+    public logs: Array<{ level: string; message: string; meta?: any }> = [];
+
+    trace(msgOrMeta: string | any, metaOrMsg?: any): void {
+        this.logs.push({ level: 'trace', message: msgOrMeta, meta: metaOrMsg });
+    }
+
+    debug(msgOrMeta: string | any, metaOrMsg?: any): void {
+        this.logs.push({ level: 'debug', message: msgOrMeta, meta: metaOrMsg });
+    }
+
+    info(msgOrMeta: string | any, metaOrMsg?: any): void {
+        this.logs.push({ level: 'info', message: msgOrMeta, meta: metaOrMsg });
+    }
+
+    warn(msgOrMeta: string | any, metaOrMsg?: any): void {
+        this.logs.push({ level: 'warn', message: msgOrMeta, meta: metaOrMsg });
+    }
+
+    error(msgOrMeta: string | any, metaOrMsg?: any): void {
+        this.logs.push({ level: 'error', message: msgOrMeta, meta: metaOrMsg });
+    }
+
+    fatal(msgOrMeta: string | any, metaOrMsg?: any): void {
+        this.logs.push({ level: 'fatal', message: msgOrMeta, meta: metaOrMsg });
+    }
+
+
+    setLevel(level: any): void {}
+    getLevel(): any { return 'info'; }
+    isLevelEnabled(level: any): boolean { return true; }
+    dispose?(): void {}
+}
+
 describe('LoggerProvider', () => {
-  beforeEach(() => {
-    // Clear any injected logger before each test
-    LoggerProvider.clearInjectedLogger();
-  });
+    beforeEach(() => {
+        // Reset the provider before each test
+        LoggerProvider.reset();
+    });
 
-  afterEach(() => {
-    // Clean up after each test
-    LoggerProvider.clearInjectedLogger();
-  });
+    afterEach(() => {
+        // Clean up after each test
+        LoggerProvider.reset();
+    });
 
-  it('should return PrefixingLogger wrapping default logger when no logger is injected', () => {
-    const logger = LoggerProvider.getLogger();
-    expect(logger).toBeInstanceOf(PrefixingLogger);
-    
-    // Check that the base logger is the default logger
-    const baseLogger = LoggerProvider.getBaseLogger();
-    expect(baseLogger).toBeInstanceOf(DefaultLogger);
-    expect(LoggerProvider.hasInjectedLogger()).toBe(false);
-  });
+    describe('Initialization', () => {
+        it('should initialize with default logger when ensureInitialized is called', () => {
+            LoggerProvider.ensureInitialized();
+            
+            expect(LoggerProvider.hasLogger()).toBe(true);
+            expect(LoggerProvider.hasInjectedLogger()).toBe(false);
+            
+            const logger = LoggerProvider.getLogger();
+            expect(logger).toBeDefined();
+            expect(logger).toBeInstanceOf(PrefixingLogger);
+        });
 
-  it('should return PrefixingLogger wrapping injected logger when one is set', () => {
-    const mockLogger: ILogger = {
-      trace: jest.fn(),
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      fatal: jest.fn(),
-      child: jest.fn(),
-      setLevel: jest.fn(),
-      getLevel: jest.fn(),
-      isLevelEnabled: jest.fn()
-    };
+        it('should initialize only once when ensureInitialized is called multiple times', () => {
+            LoggerProvider.ensureInitialized();
+            const firstLogger = LoggerProvider.getBaseLogger();
+            
+            LoggerProvider.ensureInitialized();
+            const secondLogger = LoggerProvider.getBaseLogger();
+            
+            expect(firstLogger).toBe(secondLogger);
+        });
 
-    LoggerProvider.setLogger(mockLogger);
-    
-    const logger = LoggerProvider.getLogger();
-    expect(logger).toBeInstanceOf(PrefixingLogger);
-    
-    // Check that the base logger is the injected logger
-    const baseLogger = LoggerProvider.getBaseLogger();
-    expect(baseLogger).toBe(mockLogger);
-    expect(LoggerProvider.hasInjectedLogger()).toBe(true);
-  });
+        it('should initialize automatically when getLogger is called', () => {
+            const logger = LoggerProvider.getLogger();
+            
+            expect(logger).toBeDefined();
+            expect(LoggerProvider.hasLogger()).toBe(true);
+        });
+    });
 
-  it('should create child logger with PrefixingLogger wrapper', () => {
-    const mockChildLogger: ILogger = {
-      trace: jest.fn(),
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      fatal: jest.fn(),
-      child: jest.fn(),
-      setLevel: jest.fn(),
-      getLevel: jest.fn(),
-      isLevelEnabled: jest.fn()
-    };
+    describe('Logger Injection', () => {
+        it('should use injected logger when available', () => {
+            const mockLogger = new MockLogger();
+            LoggerProvider.setLogger(mockLogger);
+            
+            expect(LoggerProvider.hasInjectedLogger()).toBe(true);
+            expect(LoggerProvider.getBaseLogger()).toBe(mockLogger);
+        });
 
-    const mockLogger: ILogger = {
-      trace: jest.fn(),
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      fatal: jest.fn(),
-      child: jest.fn().mockReturnValue(mockChildLogger),
-      setLevel: jest.fn(),
-      getLevel: jest.fn(),
-      isLevelEnabled: jest.fn()
-    };
+        it('should wrap injected logger with prefixing', () => {
+            const mockLogger = new MockLogger();
+            LoggerProvider.setLogger(mockLogger);
+            
+            const logger = LoggerProvider.getLogger();
+            expect(logger).toBeInstanceOf(PrefixingLogger);
+            expect((logger as PrefixingLogger).getBaseLogger()).toBe(mockLogger);
+        });
 
-    LoggerProvider.setLogger(mockLogger);
-    
-    const bindings = { userId: '123' };
-    const childLogger = LoggerProvider.createChildLogger(bindings);
-    
-    // Child logger should also be wrapped in PrefixingLogger
-    expect(childLogger).toBeInstanceOf(PrefixingLogger);
-    
-    // The base logger's child method should have been called
-    expect(mockLogger.child).toHaveBeenCalled();
-  });
+        it('should fall back to default logger when injected logger is cleared', () => {
+            const mockLogger = new MockLogger();
+            LoggerProvider.setLogger(mockLogger);
+            
+            expect(LoggerProvider.hasInjectedLogger()).toBe(true);
+            
+            LoggerProvider.clearInjectedLogger();
+            
+            expect(LoggerProvider.hasInjectedLogger()).toBe(false);
+            expect(LoggerProvider.hasLogger()).toBe(true);
+        });
+    });
 
-  it('should clear injected logger and return to wrapped default logger', () => {
-    const mockLogger: ILogger = {
-      trace: jest.fn(),
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      fatal: jest.fn(),
-      child: jest.fn(),
-      setLevel: jest.fn(),
-      getLevel: jest.fn(),
-      isLevelEnabled: jest.fn()
-    };
+    describe('Logger Functionality', () => {
+        it('should support basic logging operations', () => {
+            const mockLogger = new MockLogger();
+            LoggerProvider.setLogger(mockLogger);
+            
+            const logger = LoggerProvider.getLogger();
+            logger.info('test message');
+            
+            expect(mockLogger.logs).toHaveLength(1);
+            expect(mockLogger.logs[0].level).toBe('info');
+        });
 
-    LoggerProvider.setLogger(mockLogger);
-    expect(LoggerProvider.hasInjectedLogger()).toBe(true);
-    
-    LoggerProvider.clearInjectedLogger();
-    expect(LoggerProvider.hasInjectedLogger()).toBe(false);
-    
-    const logger = LoggerProvider.getLogger();
-    expect(logger).toBeInstanceOf(PrefixingLogger);
-    
-    // Base logger should be default logger
-    const baseLogger = LoggerProvider.getBaseLogger();
-    expect(baseLogger).toBeInstanceOf(DefaultLogger);
-  });
+        it('should support auto-prefixing control', () => {
+            LoggerProvider.setAutoPrefixing(false);
+            const mockLogger = new MockLogger();
+            LoggerProvider.setLogger(mockLogger);
+            
+            const logger = LoggerProvider.getLogger();
+            expect(logger).toBe(mockLogger);
+            
+            LoggerProvider.setAutoPrefixing(true);
+        });
+    });
 
-  it('should allow disabling auto-prefixing', () => {
-    const mockLogger: ILogger = {
-      trace: jest.fn(),
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      fatal: jest.fn(),
-      child: jest.fn(),
-      setLevel: jest.fn(),
-      getLevel: jest.fn(),
-      isLevelEnabled: jest.fn()
-    };
+    describe('Plugin Initialization', () => {
+        it('should initialize logger provider for plugins', () => {
+            LoggerProvider.initializeForPlugins();
+            
+            expect(LoggerProvider.hasLogger()).toBe(true);
+            
+            const logger = LoggerProvider.getLogger();
+            expect(logger).toBeDefined();
+        });
 
-    LoggerProvider.setLogger(mockLogger);
-    
-    // Disable auto-prefixing
-    LoggerProvider.setAutoPrefixing(false);
-    
-    const logger = LoggerProvider.getLogger();
-    expect(logger).toBe(mockLogger);
-    
-    // Re-enable auto-prefixing
-    LoggerProvider.setAutoPrefixing(true);
-    
-    const wrappedLogger = LoggerProvider.getLogger();
-    expect(wrappedLogger).toBeInstanceOf(PrefixingLogger);
-  });
+        it('should not throw error when initializing for plugins multiple times', () => {
+            expect(() => {
+                LoggerProvider.initializeForPlugins();
+                LoggerProvider.initializeForPlugins();
+            }).not.toThrow();
+        });
+    });
+
+    describe('Auto-Prefixing', () => {
+        it('should enable auto-prefixing by default', () => {
+            const mockLogger = new MockLogger();
+            LoggerProvider.setLogger(mockLogger);
+            
+            const logger = LoggerProvider.getLogger();
+            expect(logger).toBeInstanceOf(PrefixingLogger);
+        });
+
+        it('should disable auto-prefixing when requested', () => {
+            const mockLogger = new MockLogger();
+            LoggerProvider.setLogger(mockLogger);
+            LoggerProvider.setAutoPrefixing(false);
+            
+            const logger = LoggerProvider.getLogger();
+            expect(logger).toBe(mockLogger);
+        });
+
+        it('should re-enable auto-prefixing when requested', () => {
+            const mockLogger = new MockLogger();
+            LoggerProvider.setLogger(mockLogger);
+            LoggerProvider.setAutoPrefixing(false);
+            LoggerProvider.setAutoPrefixing(true);
+            
+            const logger = LoggerProvider.getLogger();
+            expect(logger).toBeInstanceOf(PrefixingLogger);
+        });
+    });
+
+    describe('Error Handling', () => {
+        it('should never throw when getLogger is called', () => {
+            expect(() => {
+                LoggerProvider.getLogger();
+            }).not.toThrow();
+        });
+
+        it('should provide valid logger even without initialization', () => {
+            const logger = LoggerProvider.getLogger();
+            expect(logger).toBeDefined();
+            expect(typeof logger.info).toBe('function');
+            expect(typeof logger.error).toBe('function');
+        });
+
+        it('should provide valid logger after reset', () => {
+            LoggerProvider.reset();
+            const logger = LoggerProvider.getLogger();
+            expect(logger).toBeDefined();
+        });
+    });
+
+    describe('Legacy Compatibility', () => {
+        it('should maintain backwards compatibility with existing code', () => {
+            const mockLogger = new MockLogger();
+            LoggerProvider.setLogger(mockLogger);
+            
+            // Test old methods still work
+            expect(LoggerProvider.hasInjectedLogger()).toBe(true);
+            expect(LoggerProvider.getBaseLogger()).toBe(mockLogger);
+            
+            LoggerProvider.clearInjectedLogger();
+            expect(LoggerProvider.hasInjectedLogger()).toBe(false);
+        });
+    });
 }); 

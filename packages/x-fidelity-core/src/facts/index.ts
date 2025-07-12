@@ -2,6 +2,7 @@ import { pluginRegistry } from '../core/pluginRegistry';
 import { isOpenAIEnabled } from '../utils/openaiUtils';
 import { FactDefn } from '@x-fidelity/types';
 import { logger } from '../utils/logger';
+import { LoggerProvider } from '../utils/loggerProvider';
 import { factMetricsTracker } from '../utils/factMetricsTracker';
 
 async function loadFacts(factNames: string[]): Promise<FactDefn[]> {
@@ -13,6 +14,11 @@ async function loadFacts(factNames: string[]): Promise<FactDefn[]> {
             {
                 ...fact,
                 fn: async (params: any, almanac: any) => {
+                    // Ensure logger is available to plugin facts by checking LoggerProvider
+                    if (!LoggerProvider.hasInjectedLogger()) {
+                        throw new Error(`No logger injected before executing plugin fact '${fact.name}'. Please ensure LoggerProvider.setLogger() is called before plugin execution.`);
+                    }
+                    
                     return factMetricsTracker.trackFactExecution(fact.name, 
                         () => fact.fn(params, almanac)
                     );

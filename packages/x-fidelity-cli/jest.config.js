@@ -23,7 +23,12 @@ module.exports = {
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'tsconfig.test.json'
+      tsconfig: {
+        outDir: "./dist",
+        rootDir: "./src",
+        resolveJsonModule: true,
+        types: ["@types/node", "@types/jest"]
+      }
     }]
   },
   moduleNameMapper: {

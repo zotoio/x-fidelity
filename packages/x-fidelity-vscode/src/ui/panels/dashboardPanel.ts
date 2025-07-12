@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { ConfigManager } from '../../configuration/configManager';
-import { AnalysisManager } from '../../analysis/analysisManager';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
+import { IAnalysisEngine, getCompletionEvent } from '../../analysis/analysisEngineInterface';
 import type { TrendData } from '../../reports/reportHistoryManager';
 
 export interface DashboardData {
@@ -56,7 +56,7 @@ export class DashboardPanel implements vscode.Disposable {
   constructor(
     private context: vscode.ExtensionContext,
     private configManager: ConfigManager,
-    private analysisManager: AnalysisManager,
+    private analysisManager: IAnalysisEngine | null,
     private diagnosticProvider: DiagnosticProvider
   ) {
     this.setupEventListeners();
@@ -107,14 +107,16 @@ export class DashboardPanel implements vscode.Disposable {
   }
 
   private setupEventListeners(): void {
-    // Listen for analysis completion to update dashboard
-    this.disposables.push(
-      this.analysisManager.onDidAnalysisComplete(() => {
-        if (this.panel) {
-          this.updateContent();
-        }
-      })
-    );
+    // Listen for analysis completion to update dashboard (if analysis manager is available)
+    if (this.analysisManager) {
+      this.disposables.push(
+        getCompletionEvent(this.analysisManager)(() => {
+          if (this.panel) {
+            this.updateContent();
+          }
+        })
+      );
+    }
 
     // Listen for configuration changes
     this.disposables.push(
@@ -153,12 +155,15 @@ export class DashboardPanel implements vscode.Disposable {
     const config = this.configManager.getConfig();
     const diagnosticsSummary = this.diagnosticProvider.getDiagnosticsSummary();
 
+    // Defensive: Only use plain string for archetype
+    const archetype = typeof config.archetype === 'string' ? config.archetype : String(config.archetype);
+
     // Project info
     const projectInfo = {
       name: workspaceFolder
         ? path.basename(workspaceFolder.uri.fsPath)
         : 'No Workspace',
-      archetype: config.archetype,
+      archetype,
       filesCount: await this.getFileCount(workspaceFolder?.uri.fsPath),
       lastAnalysis: Date.now() // This would come from actual analysis data
     };
@@ -198,7 +203,7 @@ export class DashboardPanel implements vscode.Disposable {
       {
         timestamp: Date.now() - 3600000, // 1 hour ago
         type: 'config' as const,
-        description: 'Changed archetype to ' + config.archetype,
+        description: 'Changed archetype to ' + archetype,
         impact: 'Configuration updated'
       },
       {
@@ -215,7 +220,7 @@ export class DashboardPanel implements vscode.Disposable {
     // Recommendations
     const recommendations = this.generateRecommendations(
       currentMetrics,
-      config,
+      { archetype }, // Only pass plain archetype
       healthScore
     );
 
@@ -975,9 +980,15 @@ export class DashboardPanel implements vscode.Disposable {
   }
 
   private getJavaScript(data: DashboardData): string {
+    let dashboardDataString = '{}';
+    try {
+      dashboardDataString = JSON.stringify(data);
+    } catch (err) {
+      console.error('Failed to serialize dashboard data for webview:', err, data);
+    }
     return `
         const vscode = acquireVsCodeApi();
-        const dashboardData = ${JSON.stringify(data)};
+        const dashboardData = ${dashboardDataString};
         
         // Simple chart rendering (mock for now)
         function renderChart() {

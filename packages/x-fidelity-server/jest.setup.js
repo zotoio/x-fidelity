@@ -16,6 +16,11 @@ console.info = jest.fn();
 console.debug = jest.fn();
 console.trace = jest.fn();
 
+// Mock glob package globally to avoid native dependency issues
+jest.mock('glob', () => ({
+  glob: jest.fn().mockResolvedValue([])
+}));
+
 // Create a silent logger implementation for tests
 class SilentLogger {
   trace() {}

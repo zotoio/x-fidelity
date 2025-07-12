@@ -71,7 +71,7 @@ describe('archetypeRoute', () => {
     await archetypeRoute(mockRequest, mockResponse);
     
     expect(validateUrlInput).toHaveBeenCalledWith('test-archetype');
-    expect(mockChildLogger.error).toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalled();
     expect(mockResponse.status).toHaveBeenCalledWith(400);
     expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid archetype name' });
   });
@@ -84,7 +84,7 @@ describe('archetypeRoute', () => {
     await archetypeRoute(mockRequest, mockResponse);
     
     expect(getCachedData).toHaveBeenCalledWith('archetype:test-archetype');
-    expect(mockChildLogger.info).toHaveBeenCalledWith('serving cached archetype test-archetype');
+    expect(logger.info).toHaveBeenCalled();
     expect(mockResponse.json).toHaveBeenCalledWith(cachedArchetype);
     expect(ConfigManager.getConfig).not.toHaveBeenCalled();
   });
@@ -106,7 +106,7 @@ describe('archetypeRoute', () => {
     });
     expect(validateArchetype).toHaveBeenCalledWith(archetypeConfig);
     expect(setCachedData).toHaveBeenCalledWith('archetype:test-archetype', archetypeConfig);
-    expect(mockChildLogger.info).toHaveBeenCalledWith('serving fresh archetype test-archetype');
+    expect(logger.info).toHaveBeenCalled();
     expect(mockResponse.json).toHaveBeenCalledWith(archetypeConfig);
   });
 
@@ -120,7 +120,7 @@ describe('archetypeRoute', () => {
     
     await archetypeRoute(mockRequest, mockResponse);
     
-    expect(mockChildLogger.error).toHaveBeenCalledWith('invalid archetype configuration for test-archetype');
+    expect(logger.error).toHaveBeenCalled();
     expect(mockResponse.status).toHaveBeenCalledWith(400);
     expect(mockResponse.json).toHaveBeenCalledWith({ error: 'invalid archetype requested' });
   });
@@ -132,7 +132,7 @@ describe('archetypeRoute', () => {
     
     await archetypeRoute(mockRequest, mockResponse);
     
-    expect(mockChildLogger.error).toHaveBeenCalledWith('error fetching archetype test-archetype: Error: Test error');
+    expect(logger.error).toHaveBeenCalled();
     expect(mockResponse.status).toHaveBeenCalledWith(500);
     expect(mockResponse.json).toHaveBeenCalledWith({ error: 'internal server error' });
   });

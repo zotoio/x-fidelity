@@ -1,11 +1,28 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["node", "vscode", "jest", "@jest/globals"],
-    "noEmit": true
+    "outDir": "out/test",
+    "rootDir": "src",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "sourceMap": true,
+    "declaration": false,
+    "types": ["node", "vscode", "mocha", "jest"],
+    "baseUrl": ".",
+    "paths": {
+      "@x-fidelity/types": ["../x-fidelity-types/dist/index"],
+      "@x-fidelity/core": ["../x-fidelity-core/dist/index"],
+      "@x-fidelity/plugins": ["../x-fidelity-plugins/dist/index"]
+    }
   },
   "include": [
-    "src/**/*",
     "src/test/**/*"
   ],
   "exclude": [

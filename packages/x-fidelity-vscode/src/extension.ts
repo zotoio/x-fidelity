@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ExtensionManager } from './core/extensionManager';
 import { VSCodeLogger } from './utils/vscodeLogger';
+import { setupTestEnvironmentPatching } from './utils/testDetection';
 
 // Global logger for extension lifecycle
 const logger = new VSCodeLogger('X-Fidelity');
@@ -14,21 +15,26 @@ let isActivated = false;
  */
 export async function activate(context: vscode.ExtensionContext) {
   const startTime = performance.now();
-  let extensionManager: ExtensionManager | undefined;
   let logger: VSCodeLogger | undefined; // Make logger optional initially
 
   try {
+    // Set up test environment patching early to prevent external URL opens
+    setupTestEnvironmentPatching();
+    
     logger = new VSCodeLogger('Extension'); // Initialize logger first
     logger.info(
-      '🚀 X-Fidelity extension activating (PERFORMANCE OPTIMIZED)...'
+      '🚀 X-Fidelity extension activating..'
     );
 
     // Set context immediately for UI elements
     await vscode.commands.executeCommand(
       'setContext',
       'xfidelity.extensionActive',
-      false
+      true
     );
+
+    // Store extension context globally for access by other components
+    extensionContext = context;
 
     // PERFORMANCE FIX: Fast initialization - don't block on heavy operations
     extensionManager = new ExtensionManager(context);
@@ -39,7 +45,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const activationTime = performance.now() - startTime;
     logger.info(
-      '✅ X-Fidelity extension activated successfully (PERFORMANCE MODE)',
+      '✅ X-Fidelity extension activated successfully.',
       {
         activationTime: Math.round(activationTime),
         performanceOptimized: true
@@ -62,7 +68,7 @@ export async function activate(context: vscode.ExtensionContext) {
       if (showPerformanceNotice) {
         vscode.window
           .showInformationMessage(
-            '⚡ X-Fidelity is optimized for performance. Background analysis is disabled by default.',
+            '⚡ X-Fidelity is optimized for performance. Background analysis is enabled by default.',
             'Got it',
             'Settings'
           )
@@ -82,7 +88,7 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     // Performance warning for slow activation
-    if (activationTime > 3000) {
+    if (activationTime > 30000) {
       // Increased threshold since we're optimizing
       logger.warn('Slow extension activation detected', { activationTime });
     }

@@ -4,6 +4,7 @@ import type { ResultMetadata } from '@x-fidelity/types';
 import { ConfigManager } from '../../configuration/configManager';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
 import { logger } from '../../utils/logger';
+import { REPO_GLOBAL_CHECK } from '@x-fidelity/core';
 
 export interface IssueFilter {
   severity: string[];
@@ -1169,8 +1170,29 @@ export class IssueDetailsPanel implements vscode.Disposable {
     try {
       let fileUri: vscode.Uri;
 
+      // Handle special case for global repository checks
+      if (file === REPO_GLOBAL_CHECK) {
+        // Open the markdown report instead
+        fileUri = vscode.Uri.file(
+          path.join(workspaceFolder.uri.fsPath, '.xfiResults', 'XFI_RESULT.md')
+        );
+        
+        try {
+          const document = await vscode.workspace.openTextDocument(fileUri);
+          await vscode.window.showTextDocument(document);
+          logger.debug('Navigated to global check report', { file });
+          return;
+        } catch (error) {
+          logger.warn('Failed to open global check report', { error });
+          vscode.window.showWarningMessage(
+            `Global check report not found. Details: ${file}`
+          );
+          return;
+        }
+      }
+
       // Handle absolute vs relative paths
-      if (file.startsWith('/') || file.includes(':')) {
+      if (path.isAbsolute(file)) {
         fileUri = vscode.Uri.file(file);
       } else {
         fileUri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, file));

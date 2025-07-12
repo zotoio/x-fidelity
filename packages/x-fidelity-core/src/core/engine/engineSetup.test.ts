@@ -76,7 +76,6 @@ describe('engineSetup - Enhanced Test Suite', () => {
             isLevelEnabled: jest.fn()
         };
         
-        (LoggerProvider.createChildLogger as jest.Mock) = jest.fn().mockReturnValue(mockChildLogger);
         (LoggerProvider.getLogger as jest.Mock) = jest.fn().mockReturnValue(mockChildLogger);
         
         // Set up the mockChildLogger as a property so we can access it in tests

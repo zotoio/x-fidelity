@@ -253,7 +253,17 @@ export class StandardErrorHandler {
   ): Promise<void> {
     try {
       // Dynamic import to avoid loading VSCode API in CLI
-      const vscode = await import('vscode');
+      // Wrap in try-catch for bundled environments where vscode isn't available
+      let vscode: any;
+      try {
+        // Use Function constructor to hide import from bundlers
+        const dynamicImport = new Function('moduleName', 'return import(moduleName)');
+        vscode = await dynamicImport('vscode');
+      } catch (importError) {
+        // VSCode module not available - fallback to CLI notification
+        this.showCLINotification(error, userMessage, technicalDetails, severity, recoveryActions);
+        return;
+      }
       
       const actions = ['Show Details', ...recoveryActions.map(a => a.label)];
       

@@ -5,6 +5,7 @@ import {
   type ExtensionConfig
 } from '../../configuration/configManager';
 import { DefaultDetectionService } from '../../configuration/defaultDetection';
+import { isTestEnvironment } from '../../utils/testDetection';
 
 export interface SettingsCategory {
   id: string;
@@ -1194,11 +1195,17 @@ export class SettingsUIPanel implements vscode.Disposable {
       }
 
       const bestMatch = detections[0];
-      const choice = await vscode.window.showInformationMessage(
-        `Detected ${bestMatch.archetype} (${bestMatch.confidence}% confidence). Update archetype?`,
-        'Yes',
-        'No'
-      );
+      let choice: string | undefined;
+      if (isTestEnvironment()) {
+        choice = 'Yes';
+        console.log('[TEST] Auto-responding to archetype update dialog: Yes');
+      } else {
+        choice = await vscode.window.showInformationMessage(
+          `Detected ${bestMatch.archetype} (${bestMatch.confidence}% confidence). Update archetype?`,
+          'Yes',
+          'No'
+        );
+      }
 
       if (choice === 'Yes') {
         await this.configManager.updateConfig({

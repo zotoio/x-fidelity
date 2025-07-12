@@ -3,6 +3,12 @@ import * as path from 'path';
 import { logger } from '@x-fidelity/core';
 import { TreeSitterRequest, TreeSitterResponse, ParseResult } from './treeSitterWorker';
 
+// Set max listeners to reasonable level - we should only have one TreeSitter worker
+process.setMaxListeners(20);
+
+// Global singleton symbol to prevent multiple instances
+const GLOBAL_SINGLETON_KEY = Symbol.for('x-fidelity.treeSitterManager');
+
 export class TreeSitterManager {
   private static instance: TreeSitterManager | null = null;
   private worker: Worker | null = null;
@@ -11,10 +17,23 @@ export class TreeSitterManager {
   private isInitialized = false;
   private initializationPromise: Promise<void> | null = null;
   private lastInitializationError: string | null = null;
+  private isShuttingDown = false;
+  private initializationMutex = false; // Simple mutex for initialization
 
-  private constructor() {}
+  private constructor() {
+    // Prevent multiple instances even across different contexts
+    if ((globalThis as any)[GLOBAL_SINGLETON_KEY]) {
+      throw new Error('TreeSitterManager instance already exists. Use treeSitterManager singleton instead.');
+    }
+    (globalThis as any)[GLOBAL_SINGLETON_KEY] = this;
+  }
 
   static getInstance(): TreeSitterManager {
+    // Check for existing global instance first
+    if ((globalThis as any)[GLOBAL_SINGLETON_KEY]) {
+      return (globalThis as any)[GLOBAL_SINGLETON_KEY];
+    }
+    
     if (!TreeSitterManager.instance) {
       TreeSitterManager.instance = new TreeSitterManager();
     }
@@ -22,21 +41,68 @@ export class TreeSitterManager {
   }
 
   /**
-   * Initialize the Tree-sitter worker
+   * Reset the singleton instance (for testing purposes only)
+   * @internal
+   */
+  static resetInstance(): void {
+    if (TreeSitterManager.instance) {
+      TreeSitterManager.instance.cleanup();
+      TreeSitterManager.instance = null;
+    }
+    delete (globalThis as any)[GLOBAL_SINGLETON_KEY];
+  }
+
+  /**
+   * Initialize the Tree-sitter worker with mutex protection
    */
   async initialize(): Promise<void> {
-    if (this.isInitialized) {
+    // Quick check if already initialized
+    if (this.isInitialized && !this.isShuttingDown) {
       logger.debug('[TreeSitter Manager] Already initialized, skipping');
       return;
     }
 
+    // Mutex protection: wait for any ongoing initialization to complete
+    if (this.initializationMutex) {
+      logger.debug('[TreeSitter Manager] Initialization mutex locked, waiting...');
+      // Wait for the current initialization to complete
+      while (this.initializationMutex) {
+        await new Promise(resolve => setTimeout(resolve, 10)); // 10ms polling
+      }
+      
+      // Check again after waiting
+      if (this.isInitialized && !this.isShuttingDown) {
+        logger.debug('[TreeSitter Manager] Initialization completed by another caller');
+        return;
+      }
+    }
+
+    // Check if initialization is already in progress
     if (this.initializationPromise) {
       logger.debug('[TreeSitter Manager] Initialization already in progress, waiting...');
       return this.initializationPromise;
     }
 
-    this.initializationPromise = this.doInitialize();
-    return this.initializationPromise;
+    // Acquire mutex
+    this.initializationMutex = true;
+    logger.debug('[TreeSitter Manager] Acquired initialization mutex');
+
+    try {
+      // Double-check after acquiring mutex
+      if (this.isInitialized && !this.isShuttingDown) {
+        logger.debug('[TreeSitter Manager] Already initialized after acquiring mutex, skipping');
+        return;
+      }
+
+      // Reset shutdown flag
+      this.isShuttingDown = false;
+      this.initializationPromise = this.doInitialize();
+      await this.initializationPromise;
+    } finally {
+      // Always release mutex
+      this.initializationMutex = false;
+      logger.debug('[TreeSitter Manager] Released initialization mutex');
+    }
   }
 
   private async doInitialize(): Promise<void> {
@@ -44,10 +110,21 @@ export class TreeSitterManager {
       logger.info('[TreeSitter Manager] Initializing Tree-sitter worker...');
       this.lastInitializationError = null;
 
+      // Check if worker already exists (safety check)
+      if (this.worker) {
+        logger.debug('[TreeSitter Manager] Worker already exists, cleaning up first...');
+        await this.cleanup();
+      }
+
       // Create worker thread
       const workerPath = path.join(__dirname, 'treeSitterWorker.js');
       logger.debug(`[TreeSitter Manager] Creating worker from path: ${workerPath}`);
+      logger.debug(`[TreeSitter Manager] Current process listeners before worker creation: ${process.listenerCount('exit')}`);
+      
       this.worker = new Worker(workerPath);
+      
+      logger.debug(`[TreeSitter Manager] Worker created, process listeners after creation: ${process.listenerCount('exit')}`);
+      logger.debug(`[TreeSitter Manager] Worker thread ID: ${this.worker.threadId}`);
 
       // Set up message handling
       this.worker.on('message', (response: TreeSitterResponse) => {
@@ -93,30 +170,26 @@ export class TreeSitterManager {
 
   /**
    * Parse code using the Tree-sitter worker
+   * NOTE: TreeSitter manager MUST be pre-initialized before calling this method
    */
   async parseCode(code: string, language: 'javascript' | 'typescript', fileName: string): Promise<ParseResult> {
-    // Auto-recovery: if not ready, try to initialize first
+    // Fail fast if not ready - no auto-recovery to prevent multiple worker creation
     if (!this.isReady()) {
-      logger.debug('[TreeSitter Manager] Manager not ready, attempting initialization...');
-      try {
-        await this.initialize();
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error(`[TreeSitter Manager] Auto-recovery initialization failed: ${errorMessage}`);
-        return {
-          tree: null,
-          reason: `Auto-recovery failed: ${errorMessage}`
-        };
-      }
-    }
-
-    // Double-check readiness after potential initialization
-    if (!this.isInitialized || !this.worker) {
       const status = this.getDetailedStatus();
-      logger.warn('[TreeSitter Manager] Still not ready after initialization attempt', status);
+      logger.error('[TreeSitter Manager] Manager not ready - must be pre-initialized', status);
       return {
         tree: null,
-        reason: `Manager not ready: ${status.lastInitializationError || 'Unknown error'}`
+        reason: `Manager not ready: ${status.lastInitializationError || 'Manager not pre-initialized'}`
+      };
+    }
+
+    // Ensure worker is available
+    if (!this.isInitialized || !this.worker) {
+      const status = this.getDetailedStatus();
+      logger.error('[TreeSitter Manager] Worker not available', status);
+      return {
+        tree: null,
+        reason: `Worker not available: ${status.lastInitializationError || 'Worker not initialized'}`
       };
     }
 
@@ -171,9 +244,12 @@ export class TreeSitterManager {
    * Shutdown the worker
    */
   async shutdown(): Promise<void> {
-    if (!this.worker) {
+    if (!this.worker || this.isShuttingDown) {
       return;
     }
+
+    this.isShuttingDown = true;
+    logger.debug('[TreeSitter Manager] Shutting down worker...');
 
     try {
       await this.sendRequest('shutdown', undefined, 2000); // 2 second timeout
@@ -301,10 +377,18 @@ export class TreeSitterManager {
    * Clean up resources
    */
   private cleanup(): void {
+    logger.debug('[TreeSitter Manager] Cleaning up resources...');
+    
     if (this.worker) {
-      this.worker.terminate().catch(() => {
-        // Ignore termination errors
-      });
+      try {
+        // Remove all listeners before terminating to clean up exit listeners
+        this.worker.removeAllListeners();
+        this.worker.terminate().catch(() => {
+          // Ignore termination errors
+        });
+      } catch (error) {
+        logger.debug('[TreeSitter Manager] Error during worker cleanup:', error);
+      }
       this.worker = null;
     }
 
@@ -319,6 +403,8 @@ export class TreeSitterManager {
 
     this.isInitialized = false;
     this.initializationPromise = null;
+    this.isShuttingDown = false;
+    this.initializationMutex = false; // Reset mutex on cleanup
     // Note: We don't reset lastInitializationError here to preserve error info for debugging
   }
 
@@ -344,5 +430,5 @@ export class TreeSitterManager {
   }
 }
 
-// Export singleton instance
+// Export singleton instance - this is the preferred way to access the TreeSitter manager
 export const treeSitterManager = TreeSitterManager.getInstance(); 

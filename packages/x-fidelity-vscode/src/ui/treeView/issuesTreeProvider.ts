@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import type { ProcessedIssue } from '../panels/issueDetailsPanel';
+import type { ProcessedIssue } from '../../types/issues';
 
 export type GroupingMode = 'severity' | 'rule' | 'file' | 'category';
 
 export interface IssueTreeItem {
   readonly id: string;
   readonly label: string;
-  readonly tooltip?: string;
+  readonly tooltip?: string | vscode.MarkdownString;
   readonly description?: string;
   readonly contextValue?: string;
   readonly collapsibleState?: vscode.TreeItemCollapsibleState;
@@ -71,22 +71,28 @@ export class IssuesTreeProvider
   }
 
   private performRefresh(): void {
+    //console.log(`[IssuesTreeProvider] performRefresh called with ${this.issues.length} issues`);
     this.updatePending = false;
     this.lastUpdateTime = Date.now();
     this.rebuildTree();
+    //console.log(`[IssuesTreeProvider] Tree rebuilt, firing onDidChangeTreeData event`);
     this._onDidChangeTreeData.fire(null);
   }
 
   setIssues(issues: ProcessedIssue[]): void {
+    //console.log(`[IssuesTreeProvider] setIssues called with ${issues.length} issues`);
+    
     // Quick check if issues actually changed
     if (
       this.issues.length === issues.length &&
       this.issues.every((issue, index) => issue.id === issues[index]?.id)
     ) {
+      //console.log(`[IssuesTreeProvider] No changes detected, skipping update`);
       return; // No changes, skip update
     }
 
     this.issues = issues;
+    //console.log(`[IssuesTreeProvider] Issues updated, calling refresh()`);
     this.refresh();
   }
 
@@ -121,28 +127,33 @@ export class IssuesTreeProvider
   getChildren(element?: IssueTreeItem): Thenable<IssueTreeItem[]> {
     if (!element) {
       // Root level - return visible top-level nodes
-      return Promise.resolve(
-        this.virtualTree.filter(node => node.visible).map(node => node.data)
-      );
+      const rootNodes = this.virtualTree.filter(node => node.visible).map(node => node.data);
+      //console.log(`[IssuesTreeProvider] getChildren(root): returning ${rootNodes.length} root nodes`);
+      //console.log(`[IssuesTreeProvider] Virtual tree has ${this.virtualTree.length} total nodes`);
+      return Promise.resolve(rootNodes);
     }
 
     // Find node in virtual tree and return visible children
     const node = this.nodeMap.get(element.id);
     if (node && node.expanded) {
-      return Promise.resolve(
-        node.children.filter(child => child.visible).map(child => child.data)
-      );
+      const children = node.children.filter(child => child.visible).map(child => child.data);
+      //console.log(`[IssuesTreeProvider] getChildren(${element.id}): returning ${children.length} children`);
+      return Promise.resolve(children);
     }
 
+    //console.log(`[IssuesTreeProvider] getChildren(${element.id}): no expanded node found, returning empty array`);
     return Promise.resolve([]);
   }
 
   private rebuildTree(): void {
+    //console.log(`[IssuesTreeProvider] rebuildTree called with ${this.issues.length} issues`);
+    
     // Clear existing tree
     this.virtualTree = [];
     this.nodeMap.clear();
 
     if (this.issues.length === 0) {
+      //console.log(`[IssuesTreeProvider] No issues, creating 'no-issues' node`);
       const noIssuesNode = this.createVirtualNode({
         id: 'no-issues',
         label: '✅ No issues found',
@@ -155,6 +166,7 @@ export class IssuesTreeProvider
         }
       });
       this.virtualTree.push(noIssuesNode);
+      //console.log(`[IssuesTreeProvider] Added no-issues node to virtual tree`);
       return;
     }
 
@@ -327,34 +339,52 @@ export class IssuesTreeProvider
     }
   }
 
-  private buildIssueTooltip(issue: ProcessedIssue): string {
-    const parts = [
-      `Rule: ${issue.rule}`,
-      `Severity: ${issue.severity.toUpperCase()}`,
-      `File: ${issue.file}`
-    ];
+  private buildIssueTooltip(issue: ProcessedIssue): vscode.MarkdownString {
+    const markdown = new vscode.MarkdownString();
+    markdown.isTrusted = true;
 
-    if (issue.line) {
-      parts.push(
-        `Line: ${issue.line}${issue.column ? `, Column: ${issue.column}` : ''}`
-      );
-    }
+    // Title with rule and severity
+    const severityIcon = this.getSeverityIcon(issue.severity);
+    const severityEmoji = this.getSeverityEmoji(issue.severity);
+    markdown.appendMarkdown(`**${severityEmoji} ${issue.rule}**\n\n`);
 
+    // Issue message (main content)
+    markdown.appendMarkdown(`${issue.message}\n\n`);
+
+    // Details section
+    markdown.appendMarkdown(`---\n\n`);
+    
+    // File location
+    const fileName = path.basename(issue.file);
+    const location = issue.line ? `:${issue.line}${issue.column ? `:${issue.column}` : ''}` : '';
+    markdown.appendMarkdown(`**📁 File:** \`${fileName}${location}\`\n\n`);
+    
+    // Severity
+    markdown.appendMarkdown(`**🔥 Severity:** ${issue.severity.toUpperCase()}\n\n`);
+
+    // Category (if not general)
     if (issue.category && issue.category !== 'general') {
-      parts.push(`Category: ${issue.category}`);
+      markdown.appendMarkdown(`**🏷️ Category:** ${issue.category}\n\n`);
     }
 
+    // Status indicators
+    const statusItems: string[] = [];
     if (issue.fixable) {
-      parts.push('✓ Fixable');
+      statusItems.push('💡 **Fixable**');
     }
-
     if (issue.exempted) {
-      parts.push('⚠ Exempted');
+      statusItems.push('⚠️ **Exempted**');
+    }
+    
+    if (statusItems.length > 0) {
+      markdown.appendMarkdown(`${statusItems.join(' • ')}\n\n`);
     }
 
-    parts.push('', issue.message);
+    // Action hint
+    markdown.appendMarkdown(`---\n\n`);
+    markdown.appendMarkdown(`💫 *Click to navigate to issue*`);
 
-    return parts.join('\\n');
+    return markdown;
   }
 
   private getSeverityIcon(severity: string): vscode.ThemeIcon {
@@ -369,6 +399,21 @@ export class IssuesTreeProvider
         return new vscode.ThemeIcon('lightbulb');
       default:
         return new vscode.ThemeIcon('circle-outline');
+    }
+  }
+
+  private getSeverityEmoji(severity: string): string {
+    switch (severity.toLowerCase()) {
+      case 'error':
+        return '🔴';
+      case 'warning':
+        return '🟡';
+      case 'info':
+        return '🔵';
+      case 'hint':
+        return '💡';
+      default:
+        return '⚪';
     }
   }
 

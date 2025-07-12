@@ -1,7 +1,8 @@
 {
   "name": "@x-fidelity/democonfig",
-  "version": "4.0.0",
+  "version": "0.0.0",
   "description": "Demo configuration files for X-Fidelity including rules, archetypes, and exemptions",
+  "private": true,
   "scripts": {
     "clean": "rimraf dist/",
     "prebuild": "yarn clean && node -e \"require('fs').mkdirSync('dist', {recursive: true})\"",

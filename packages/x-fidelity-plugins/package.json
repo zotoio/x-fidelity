@@ -1,7 +1,8 @@
 {
   "name": "@x-fidelity/plugins",
-  "version": "4.0.0",
-  "description": "Core plugins for x-fidelity framework adherence checks",
+  "version": "0.0.0",
+  "description": "9 built-in plugins for X-Fidelity: AST analysis, filesystem checks, dependency validation, OpenAI integration, and more",
+  "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "module": "dist/index.js",
@@ -16,6 +17,7 @@
     "clean": "rimraf dist/",
     "prebuild": "yarn clean && node -e \"require('fs').mkdirSync('dist', {recursive: true})\"",
     "build": "tsc",
+    "build:deps": "cd ../../ && yarn build:deps",
     "build:watch": "tsc --watch --sourceMap",
     "test": "NODE_ENV=test jest --config jest.config.js",
     "test:coverage": "NODE_ENV=test jest --config jest.config.js --coverage",
@@ -46,8 +48,8 @@
     "nodemon": "^3.1.9"
   },
   "dependencies": {
-    "@x-fidelity/types": "4.0.0",
-    "@x-fidelity/core": "4.0.0",
+    "@x-fidelity/types": "*",
+    "@x-fidelity/core": "*",
     "@babel/parser": "^7.23.0",
     "@babel/types": "^7.23.0",
     "@yarnpkg/lockfile": "^1.1.0",

@@ -132,17 +132,7 @@ export class ServerLogger implements ILogger {
     return checkLevelValue >= currentLevelValue;
   }
 
-  child(bindings: any): ILogger {
-    const childLogger = this.logger.child(bindings);
-    const childConfig: SimpleLoggerConfig = {
-      level: this.getLevel()
-    };
-    
-    // Create a new ServerLogger instance wrapping the child
-    const wrapper = new ServerLogger(childConfig);
-    wrapper.logger = childLogger;
-    return wrapper;
-  }
+  // Child logger method removed - use direct context passing instead
 }
 
 // Create a default server logger instance

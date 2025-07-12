@@ -11,14 +11,15 @@ X-Fidelity is a comprehensive code analysis framework that provides opinionated 
 
 ### Core Capabilities
 - **Flexible Archetype System**: Define custom project archetypes with specific rules and configurations
-- **Comprehensive Rule Engine**: Create and apply rules for various aspects of your codebase
-- **Advanced Analysis**: AST-based code analysis, dependency checking, and pattern matching
-- **Plugin Architecture**: 9 built-in plugins with support for custom extensions
+- **Comprehensive Rule Engine**: JSON-based rules engine with conditions and actions
+- **Advanced Analysis**: AST-based code analysis with Tree-sitter, dependency checking, and pattern matching
+- **Plugin Architecture**: 9 built-in plugins with universal logging system and custom extension support
+- **Performance Optimization**: File caching, TTL-based invalidation, and performance monitoring
 
 ### User Interfaces
-- **VSCode Extension**: Real-time analysis with visual tree views and integrated debugging
-- **Command Line Interface**: Perfect for CI/CD pipelines and automated workflows
-- **Configuration Server**: Centralized rule management and distribution
+- **VSCode Extension**: 47 commands, real-time analysis, Problems panel integration, 40+ settings
+- **Command Line Interface**: Enhanced performance with caching, multiple output formats, server mode
+- **Configuration Server**: Centralized rule management with cache TTL and webhook support
 
 ### Integration Features
 - **Remote Configuration**: Fetch configurations from a remote server for team consistency
@@ -102,12 +103,15 @@ graph TD
 
 #### VSCode Extension (Recommended for Development)
 ```bash
-# Clone and setup for development
+# Install from marketplace (zero setup)
+# Search "X-Fidelity" in VSCode extensions
+
+# OR for development
 git clone https://github.com/zotoio/x-fidelity.git
 cd x-fidelity
 yarn install && yarn build
 
-# Launch VSCode extension
+# Launch VSCode extension in debug mode
 yarn vscode:dev
 ```
 
@@ -117,8 +121,11 @@ yarn vscode:dev
 yarn global add x-fidelity
 export PATH="$PATH:$(yarn global bin)"
 
-# Run analysis
+# Run analysis (uses bundled CLI in VSCode by default)
 xfidelity .
+
+# Advanced usage
+xfidelity . --archetype node-fullstack --output-format json
 ```
 
 ## Next Steps

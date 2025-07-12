@@ -20,40 +20,40 @@ export async function archetypeRoute(req: Request, res: Response) {
         });
     }
     
-    // Create a child logger with request context including execution ID
-    const requestLogger = logger.child({ 
+    // Create context for logging
+    const logContext = { 
         executionId,
         requestId: requestLogPrefix, 
         route: 'archetype', 
         archetype 
-    });
+    };
     
     if (!validateUrlInput(archetype)) {
-        requestLogger.error(`invalid archetype name: ${archetype}`);
+        logger.error(`[archetype] invalid archetype name: ${archetype}`, logContext);
         return res.status(400).json({ error: 'Invalid archetype name' });
     }
     const cacheKey = `archetype:${archetype}`;
     const cachedData = getCachedData(cacheKey);
     if (cachedData) {
-        requestLogger.info(`serving cached archetype ${archetype}`);
+        logger.info(`[archetype] serving cached archetype ${archetype}`, logContext);
         return res.json(cachedData);
     }
 
     try {
         const config = await ConfigManager.getConfig({ archetype, logPrefix: requestLogPrefix });
         const archetypeConfig = config.archetype;
-        requestLogger.debug(`found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`);
+        logger.debug(`[archetype] found archetype ${archetype} config: ${JSON.stringify(archetypeConfig)}`, logContext);
 
         if (!validateArchetype(archetypeConfig)) {
-            requestLogger.error(`invalid archetype configuration for ${archetype}`);
+            logger.error(`[archetype] invalid archetype configuration for ${archetype}`, logContext);
             return res.status(400).json({ error: 'invalid archetype requested' });
         }
 
         setCachedData(cacheKey, archetypeConfig);
-        requestLogger.info(`serving fresh archetype ${archetype}`);
+        logger.info(`[archetype] serving fresh archetype ${archetype}`, logContext);
         res.json(archetypeConfig);
     } catch (error) {
-        requestLogger.error(`error fetching archetype ${archetype}: ${error}`);
+        logger.error(`[archetype] error fetching archetype ${archetype}: ${error}`, logContext);
         res.status(500).json({ error: 'internal server error' });
     }
 }

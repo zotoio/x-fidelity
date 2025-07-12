@@ -43,32 +43,61 @@ Centralized access to all X-Fidelity functionality:
 - **Quick Fixes**: Where applicable, suggested fixes for issues
 
 #### Command Palette
-All features accessible through VSCode's command palette:
+All 47 commands accessible through VSCode's command palette:
 
+**Core Analysis:**
 - `X-Fidelity: Run Analysis Now` - Standard analysis
-- `X-Fidelity: Debug Analysis with --dir` - Debug with explicit workspace path
+- `X-Fidelity: Cancel Analysis` - Stop running analysis
+- `X-Fidelity: Run Analysis with Directory` - Debug with explicit workspace path
+- `X-Fidelity: Detect Archetype` - Auto-detect project type
+
+**UI & Management:**
 - `X-Fidelity: Control Center` - Open main control panel
+- `X-Fidelity: Dashboard` - Open issues dashboard
 - `X-Fidelity: Open Settings` - Configure extension settings
 - `X-Fidelity: Show Output Channel` - View debug logs
-- `X-Fidelity: Show WASM Status` - Check WASM initialization status
-- `X-Fidelity: Show Performance Report` - View performance metrics
-- `X-Fidelity: Worker Statistics` - Display worker thread statistics
+
+**Periodic Analysis:**
+- `X-Fidelity: Start Periodic Analysis` - Enable background analysis
+- `X-Fidelity: Stop Periodic Analysis` - Disable background analysis
+- `X-Fidelity: Restart Periodic Analysis` - Restart background monitoring
+- `X-Fidelity: Show Periodic Analysis Status` - View background state
+
+**Performance & Debug:**
+- `X-Fidelity: Show Performance Metrics` - View performance data
+- `X-Fidelity: Debug Diagnostics` - Extension diagnostic information
+- `X-Fidelity: Show Test Results` - Display test analysis results
+
+**Reports & Export:**
+- `X-Fidelity: Export Report` - Copy results to clipboard
+- `X-Fidelity: Report History` - View analysis history
+- `X-Fidelity: Share Report` - Share analysis results
+- `X-Fidelity: Compare Reports` - Compare analysis results
+- `X-Fidelity: View Trends` - View analysis trends
 
 ### 4. Advanced Configuration
 
 #### Settings Integration
-Comprehensive configuration through VSCode settings:
+Comprehensive configuration through 40+ VSCode settings:
 
 ```json
 {
   "xfidelity.archetype": "node-fullstack",
-  "xfidelity.autoAnalyzeOnSave": true,
+  "xfidelity.autoAnalyzeOnSave": false,
+  "xfidelity.analysisEngine": "cli",
+  "xfidelity.cliSource": "bundled",
+  "xfidelity.cliTimeout": 60000,
   "xfidelity.configServer": "http://localhost:8888",
   "xfidelity.openaiEnabled": false,
-  "xfidelity.reportOutputDir": ".xfiResults",
-  "xfidelity.logLevel": "info",
-  "xfidelity.maxFileSize": 1048576,
-  "xfidelity.analysisTimeout": 30000,
+  "xfidelity.maxFileSize": 524288,
+  "xfidelity.cacheTTL": 30,
+  "xfidelity.maxConcurrentAnalysis": 1,
+  "xfidelity.decorationLimit": 50,
+  "xfidelity.astCacheSize": 150,
+  "xfidelity.periodicAnalysis.enabled": false,
+  "xfidelity.periodicAnalysis.intervalMinutes": 5,
+  "xfidelity.statusBarVisibility": true,
+  "xfidelity.showInlineDecorations": true,
   "xfidelity.excludePatterns": ["**/node_modules/**", "**/dist/**"]
 }
 ```
@@ -117,14 +146,17 @@ Detailed performance insights accessible through commands:
 - **Fallback Mechanisms**: Graceful degradation when WASM is unavailable
 
 #### Plugin System Integration
-Full access to all X-Fidelity plugins:
+Full access to all 9 X-Fidelity plugins with universal logging:
 
-- **AST Plugin** (`xfiPluginAst`): Advanced syntax tree analysis
-- **Dependency Plugin** (`xfiPluginDependency`): Package dependency validation
-- **Filesystem Plugin** (`xfiPluginFilesystem`): File structure analysis
-- **OpenAI Plugin** (`xfiPluginOpenAI`): AI-powered analysis (when configured)
+- **AST Plugin** (`xfiPluginAst`): Advanced syntax tree analysis with Tree-sitter
+- **Dependency Plugin** (`xfiPluginDependency`): Package dependency version validation
+- **Filesystem Plugin** (`xfiPluginFilesystem`): File structure and content analysis
+- **OpenAI Plugin** (`xfiPluginOpenAI`): AI-powered code analysis and suggestions
+- **Patterns Plugin** (`xfiPluginPatterns`): Regular expression and pattern matching
 - **React Patterns Plugin** (`xfiPluginReactPatterns`): React-specific pattern detection
-- **Remote Validator Plugin** (`xfiPluginRemoteStringValidator`): External validation
+- **Remote Validator Plugin** (`xfiPluginRemoteStringValidator`): External API validation
+- **Required Files Plugin** (`xfiPluginRequiredFiles`): File existence verification
+- **Simple Example Plugin** (`xfiPluginSimpleExample`): Template for custom plugins
 
 ### 8. Report Management
 

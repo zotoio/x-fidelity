@@ -106,24 +106,8 @@ export class DiagnosticProvider implements vscode.Disposable {
         updateTime: `${this.lastUpdateTime.toFixed(2)}ms`
       });
 
-      // Show success notification with action to view results
-      vscode.window
-        .showInformationMessage(
-          `X-Fidelity: ${this.issueCount} issues found across ${diagnosticsByFile.size} files`,
-          'View Problems',
-          'Focus Editor'
-        )
-        .then(choice => {
-          if (choice === 'View Problems') {
-            vscode.commands.executeCommand(
-              'workbench.panel.markers.view.focus'
-            );
-          } else if (choice === 'Focus Editor' && diagnosticsByFile.size > 0) {
-            // Open first file with issues
-            const firstFile = Array.from(diagnosticsByFile.keys())[0];
-            vscode.window.showTextDocument(firstFile);
-          }
-        });
+      // NOTE: Duplicate notification removed to avoid showing two notifications
+      // The ExtensionManager already shows a notification with "View Issues" and "View Dashboard" buttons
 
       // Emit diagnostic update event
       this.onDiagnosticsUpdated.fire({
@@ -161,273 +145,242 @@ export class DiagnosticProvider implements vscode.Disposable {
     const issues: DiagnosticIssue[] = [];
 
     try {
-      // Handle different result formats
-      const xfiResult = 'XFI_RESULT' in result ? result.XFI_RESULT : result;
+      // Get XFI_RESULT from the result
+      let xfiResult;
+      if ('metadata' in result && result.metadata?.XFI_RESULT) {
+        xfiResult = result.metadata.XFI_RESULT;
+      } else if ('XFI_RESULT' in result) {
+        xfiResult = result.XFI_RESULT;
+      } else {
+        xfiResult = result;
+      }
 
-      if (!xfiResult || typeof xfiResult !== 'object') {
-        this.logger.warn('No detailed results found in analysis result');
+      if (!xfiResult?.issueDetails) {
+        this.logger.warn('No issueDetails found in XFI_RESULT');
         return issues;
       }
 
-      // Check for detailedResults property with proper type checking
-      const detailedResults =
-        (xfiResult as any).detailedResults || (xfiResult as any).issueDetails;
-      if (!detailedResults) {
-        this.logger.warn(
-          'No detailed results or issue details found in analysis result'
-        );
-        return issues;
+      // DEBUG: Log the actual XFI_RESULT structure to see what we're getting
+      this.logger.debug('=== XFI_RESULT CONTENT DEBUG ===');
+      this.logger.debug(`XFI_RESULT keys: ${Object.keys(xfiResult)}`);
+      this.logger.debug(
+        `issueDetails length: ${xfiResult.issueDetails?.length || 0}`
+      );
+
+      if (xfiResult.issueDetails && xfiResult.issueDetails.length > 0) {
+        const firstFileIssue = xfiResult.issueDetails[0];
+        this.logger.debug(`First file issue structure:`, {
+          filePath: firstFileIssue.filePath,
+          errorsCount: firstFileIssue.errors?.length || 0,
+          firstErrorKeys: firstFileIssue.errors?.[0]
+            ? Object.keys(firstFileIssue.errors[0])
+            : [],
+          firstErrorSample: firstFileIssue.errors?.[0] || null
+        });
+
+        if (firstFileIssue.errors && firstFileIssue.errors.length > 0) {
+          const firstError = firstFileIssue.errors[0];
+          this.logger.debug(`First error detailed structure:`, {
+            ruleFailure: firstError.ruleFailure,
+            level: firstError.level,
+            detailsKeys: firstError.details
+              ? Object.keys(firstError.details)
+              : [],
+            detailsMessage: firstError.details?.message || 'NO DETAILS MESSAGE',
+            detailsLineNumber:
+              firstError.details?.lineNumber || 'NO LINE NUMBER',
+            rawDetailsObject: firstError.details
+          });
+        }
       }
+      this.logger.debug('=== END XFI_RESULT DEBUG ===');
 
-      // Process each file's results
-      for (const [filePath, fileResults] of Object.entries(detailedResults)) {
-        if (!fileResults || typeof fileResults !== 'object') {
+      // Simple direct mapping: XFI_RESULT.issueDetails -> VSCode diagnostics
+      for (const fileIssue of xfiResult.issueDetails) {
+        const filePath = fileIssue.filePath;
+        if (!filePath || !fileIssue.errors) {
           continue;
         }
 
-        // Handle both detailedResults format and issueDetails format
-        const issuesArray =
-          (fileResults as any).issues ||
-          (fileResults as any).errors ||
-          (Array.isArray(fileResults) ? fileResults : []);
-        if (!Array.isArray(issuesArray)) {
-          continue;
-        }
+        for (const error of fileIssue.errors) {
+          // Extract location information from the actual XFI_RESULT structure
+          let startLine = 1;
+          let startColumn = 1;
+          let endLine = 1;
+          let endColumn = 1;
 
-        for (const issue of issuesArray) {
-          // Extract location information from multiple possible formats
-          const locationInfo = this.extractLocationInfo(issue);
+          // Extract location information from various XFI_RESULT structures
+          let locationFound = false;
 
-          // Create multiple diagnostics for complex issues with multiple locations
-          if (locationInfo.locations && locationInfo.locations.length > 0) {
-            // Handle multiple locations (e.g., function complexity with multiple functions)
-            for (const location of locationInfo.locations) {
-              const diagnosticIssue: DiagnosticIssue = {
-                file: filePath,
-                line: location.line,
-                column: location.column,
-                endLine: location.endLine,
-                endColumn: location.endColumn,
-                message: this.formatComplexMessage(issue, location),
-                severity: this.mapSeverity(issue.level || issue.severity),
-                ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
-                category: issue.category,
-                code: issue.code,
-                source: 'X-Fidelity'
-              };
-
-              // Add diagnostic tags for deprecated code, etc.
-              if (issue.tags) {
-                diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
-              }
-
-              issues.push(diagnosticIssue);
+          // METHOD 1: Check for location in complexities metrics (function complexity issues)
+          if (
+            error.details?.details?.complexities &&
+            error.details.details.complexities.length > 0
+          ) {
+            const location =
+              error.details.details.complexities[0].metrics?.location;
+            if (location) {
+              startLine = location.startLine || 1;
+              startColumn = location.startColumn || 1;
+              endLine = location.endLine || startLine;
+              endColumn = location.endColumn || startColumn;
+              locationFound = true;
+              this.logger.debug('Found location in complexities metrics');
             }
-          } else {
-            // Handle simple single location
-            const diagnosticIssue: DiagnosticIssue = {
-              file: filePath,
-              line: locationInfo.line,
-              column: locationInfo.column,
-              endLine: locationInfo.endLine,
-              endColumn: locationInfo.endColumn,
-              message:
-                issue.details?.message || issue.message || 'Unknown issue',
-              severity: this.mapSeverity(issue.level || issue.severity),
-              ruleId: issue.ruleFailure || issue.ruleId || 'unknown-rule',
-              category: issue.category,
-              code: issue.code,
-              source: 'X-Fidelity'
-            };
-
-            // Add diagnostic tags for deprecated code, etc.
-            if (issue.tags) {
-              diagnosticIssue.tags = this.mapDiagnosticTags(issue.tags);
-            }
-
-            issues.push(diagnosticIssue);
           }
+
+          // METHOD 2: Check for direct lineNumber in error.details (other rule types)
+          if (!locationFound && error.details?.lineNumber !== undefined) {
+            startLine = error.details.lineNumber;
+            startColumn = error.details.columnNumber || 1;
+            endLine = startLine;
+            endColumn = startColumn + 20; // Reasonable default range
+            locationFound = true;
+            this.logger.debug('Found location via lineNumber in details');
+          }
+
+          // METHOD 2.5: Check for matches array with location info (for pattern-based rules)
+          if (!locationFound && error.details?.details?.matches) {
+            const matches = error.details.details.matches;
+            if (
+              Array.isArray(matches) &&
+              matches.length > 0 &&
+              matches[0].lineNumber
+            ) {
+              startLine = matches[0].lineNumber;
+              startColumn = matches[0].columnNumber || 1;
+              endLine = startLine;
+              endColumn = startColumn + (matches[0].match?.length || 20);
+              locationFound = true;
+              this.logger.debug('Found location via matches array');
+            }
+          }
+
+          // METHOD 3: Fallback to legacy sources
+          if (!locationFound) {
+            if (error.lineNumber !== undefined) {
+              startLine = error.lineNumber;
+            } else if (error.line !== undefined) {
+              startLine = error.line;
+            }
+
+            if (error.columnNumber !== undefined) {
+              startColumn = error.columnNumber;
+            } else if (error.column !== undefined) {
+              startColumn = error.column;
+            }
+
+            endLine = startLine;
+            endColumn = startColumn + 10; // Default range
+            this.logger.debug('Using legacy line/column sources');
+          }
+
+          // Ensure all coordinates are positive integers
+          startLine = Math.max(1, parseInt(String(startLine)) || 1);
+          startColumn = Math.max(1, parseInt(String(startColumn)) || 1);
+          endLine = Math.max(startLine, parseInt(String(endLine)) || startLine);
+          endColumn = Math.max(
+            startColumn,
+            parseInt(String(endColumn)) || startColumn
+          );
+
+          const rawMessage =
+            error.details?.message ||
+            error.message ||
+            error.ruleFailure ||
+            'Issue detected';
+
+          // DEBUG: Log the enhanced coordinate extraction for debugging
+          this.logger.debug(`Enhanced coordinate extraction:`, {
+            filePath,
+            ruleFailure: error.ruleFailure,
+            locationFound,
+            hasComplexities: !!error.details?.details?.complexities,
+            complexityCount: error.details?.details?.complexities?.length || 0,
+            hasDirectLineNumber: error.details?.lineNumber !== undefined,
+            hasMatches: !!error.details?.details?.matches,
+            matchesCount: error.details?.details?.matches?.length || 0,
+            extractedStartLine: startLine,
+            extractedStartColumn: startColumn,
+            extractedEndLine: endLine,
+            extractedEndColumn: endColumn,
+            convertedStartLine: Math.max(0, startLine - 1),
+            convertedStartColumn: Math.max(0, startColumn - 1),
+            convertedEndLine: Math.max(0, endLine - 1),
+            convertedEndColumn: Math.max(0, endColumn - 1)
+          });
+
+          const message = this.cleanMessage(rawMessage);
+
+          const diagnosticIssue: DiagnosticIssue = {
+            file: filePath,
+            line: Math.max(0, startLine - 1), // Convert 1-based to 0-based
+            column: Math.max(0, startColumn - 1), // Convert 1-based to 0-based
+            endLine: Math.max(0, endLine - 1), // Convert 1-based to 0-based
+            endColumn: Math.max(0, endColumn - 1), // Convert 1-based to 0-based
+            message: message,
+            severity: this.mapSeverity(error.level),
+            ruleId: error.ruleFailure || 'unknown-rule',
+            category: error.category,
+            code: error.ruleFailure,
+            source: 'X-Fidelity'
+          };
+
+          issues.push(diagnosticIssue);
         }
       }
+
+      this.logger.debug(`Extracted ${issues.length} issues from XFI_RESULT`);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error('Error extracting issues from result', {
-        error: errorMessage
-      });
+      this.logger.error('Error extracting issues from XFI_RESULT:', error);
     }
 
     return issues;
   }
 
   /**
-   * Extract location information from various X-Fidelity issue formats
-   * All coordinates are converted to 0-based for VSCode compatibility
+   * Extract clean issue description from structured log messages
    */
-  private extractLocationInfo(issue: any): {
-    line: number;
-    column: number;
-    endLine?: number;
-    endColumn?: number;
-    locations?: Array<{
-      line: number;
-      column: number;
-      endLine?: number;
-      endColumn?: number;
-      context?: any;
-    }>;
-  } {
-    // Helper function to safely convert 1-based to 0-based coordinates
-    const toZeroBased = (
-      value: number | undefined,
-      defaultValue: number = 0
-    ): number => {
-      if (value === undefined || value === null) {
-        return defaultValue;
+  private cleanMessage(message: string): string {
+    if (!message || typeof message !== 'string') {
+      return 'Issue detected';
+    }
+
+    // Remove literal \n and split into lines
+    const lines = message.replace(/\\n/g, '\n').split('\n');
+
+    // Find the actual issue description (usually after the metadata lines)
+    let issueDescription = '';
+    let foundMetadataEnd = false;
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      // Skip metadata lines (Rule:, Severity:, File:, Line:, etc.)
+      if (trimmedLine.match(/^(Rule|Severity|File|Line|Column|Level):/i)) {
+        continue;
       }
-      return Math.max(0, Number(value) - 1);
-    };
 
-    // Helper function to safely convert 1-based to 0-based coordinates with fallback
-    const toZeroBasedWithFallback = (
-      value: number | undefined,
-      fallback: number = 1
-    ): number => {
-      if (value === undefined || value === null) {
-        return toZeroBased(fallback);
+      // Skip empty lines before finding content
+      if (!trimmedLine && !foundMetadataEnd) {
+        foundMetadataEnd = true;
+        continue;
       }
-      return Math.max(0, Number(value) - 1);
-    };
 
-    // Default location (0-based for VSCode)
-    let line = 0;
-    let column = 0;
-    let endLine: number | undefined;
-    let endColumn: number | undefined;
-    const locations: Array<{
-      line: number;
-      column: number;
-      endLine?: number;
-      endColumn?: number;
-      context?: any;
-    }> = [];
+      // Take the first non-empty, non-metadata line as the issue description
+      if (trimmedLine && foundMetadataEnd) {
+        issueDescription = trimmedLine;
+        break;
+      }
 
-    // Priority 1: Check for direct location object (most specific)
-    if (issue.location) {
-      const loc = issue.location;
-      line = toZeroBasedWithFallback(loc.startLine || loc.line);
-      column = toZeroBasedWithFallback(loc.startColumn || loc.column);
-      endLine = loc.endLine ? toZeroBased(loc.endLine) : undefined;
-      endColumn = loc.endColumn ? toZeroBased(loc.endColumn) : undefined;
-    }
-    // Priority 2: Check for simple lineNumber format (common format)
-    else if (issue.lineNumber && typeof issue.lineNumber === 'number') {
-      line = toZeroBased(issue.lineNumber);
-      column = toZeroBased(issue.column || 1);
-    }
-    // Priority 3: Use defaults for missing location information
-    else {
-      line = 0;
-      column = 0;
-    }
-
-    // Handle multiple locations for complex issues
-    // Check for details array with line information (e.g., sensitive logging)
-    if (issue.details && Array.isArray(issue.details)) {
-      for (const detail of issue.details) {
-        if (detail.lineNumber && typeof detail.lineNumber === 'number') {
-          locations.push({
-            line: toZeroBased(detail.lineNumber),
-            column: toZeroBased(detail.column || 1),
-            endLine: detail.endLine ? toZeroBased(detail.endLine) : undefined,
-            endColumn: detail.endColumn
-              ? toZeroBased(detail.endColumn)
-              : undefined,
-            context: detail
-          });
-        }
+      // If no metadata found, take the first non-empty line
+      if (trimmedLine && !issueDescription) {
+        issueDescription = trimmedLine;
+        break;
       }
     }
 
-    // Check for AST-based location information (e.g., function complexity)
-    if (
-      issue.details &&
-      issue.details.complexities &&
-      Array.isArray(issue.details.complexities)
-    ) {
-      for (const complexity of issue.details.complexities) {
-        if (complexity.metrics && complexity.metrics.location) {
-          const loc = complexity.metrics.location;
-          locations.push({
-            line: toZeroBasedWithFallback(loc.startLine || loc.line),
-            column: toZeroBasedWithFallback(loc.startColumn || loc.column),
-            endLine: loc.endLine ? toZeroBased(loc.endLine) : undefined,
-            endColumn: loc.endColumn ? toZeroBased(loc.endColumn) : undefined,
-            context: complexity
-          });
-        }
-      }
-    }
-
-    // If we have multiple locations, use the first one as primary and return all
-    if (locations.length > 0) {
-      const primaryLocation = locations[0];
-      return {
-        line: primaryLocation.line,
-        column: primaryLocation.column,
-        endLine: primaryLocation.endLine,
-        endColumn: primaryLocation.endColumn,
-        locations
-      };
-    }
-
-    // Validate final coordinates
-    line = Math.max(0, line);
-    column = Math.max(0, column);
-    if (endLine !== undefined) {
-      endLine = Math.max(line, endLine);
-    }
-    if (endColumn !== undefined) {
-      endColumn = Math.max(column, endColumn);
-    }
-
-    return { line, column, endLine, endColumn };
-  }
-
-  /**
-   * Format message for complex issues with specific location context
-   */
-  private formatComplexMessage(issue: any, location: any): string {
-    const baseMessage =
-      issue.details?.message || issue.message || 'Unknown issue';
-
-    // Add context for function complexity issues
-    if (location.context && location.context.metrics) {
-      const metrics = location.context.metrics;
-      const functionName =
-        metrics.name !== 'anonymous' ? metrics.name : 'anonymous function';
-
-      let complexityInfo = `${functionName}`;
-      if (metrics.cyclomaticComplexity) {
-        complexityInfo += ` (Cyclomatic: ${metrics.cyclomaticComplexity}`;
-      }
-      if (metrics.cognitiveComplexity) {
-        complexityInfo += `, Cognitive: ${metrics.cognitiveComplexity}`;
-      }
-      if (metrics.nestingDepth) {
-        complexityInfo += `, Nesting: ${metrics.nestingDepth}`;
-      }
-      complexityInfo += ')';
-
-      return `${baseMessage} - ${complexityInfo}`;
-    }
-
-    // Add context for pattern matching issues
-    if (location.context && location.context.match) {
-      return `${baseMessage} - Found: ${location.context.match}`;
-    }
-
-    return baseMessage;
+    return issueDescription || message.split('\n')[0] || 'Issue detected';
   }
 
   /**
@@ -529,23 +482,111 @@ export class DiagnosticProvider implements vscode.Disposable {
    */
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
     try {
-      // Handle absolute paths
-      if (require('path').isAbsolute(filePath)) {
-        return vscode.Uri.file(filePath);
-      }
+      const path = require('path');
+      const fs = require('fs');
 
-      // Handle relative paths - resolve against workspace root
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      if (workspaceFolder) {
-        const absolutePath = require('path').resolve(
-          workspaceFolder.uri.fsPath,
-          filePath
+      // Handle special global check files (like REPO_GLOBAL_CHECK)
+      if (
+        filePath === 'REPO_GLOBAL_CHECK' ||
+        filePath.endsWith('REPO_GLOBAL_CHECK')
+      ) {
+        // For global checks, find a suitable file to open (README, package.json, etc.)
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+          this.logger.warn('No workspace folder available for global check');
+          return null;
+        }
+
+        const workspaceRoot = workspaceFolder.uri.fsPath;
+
+        // Try to find a suitable file to open for global checks
+        const candidateFiles = [
+          'README.md',
+          'package.json',
+          'tsconfig.json',
+          'src/index.js',
+          'src/index.ts',
+          'index.js',
+          'index.ts'
+        ];
+
+        for (const candidate of candidateFiles) {
+          const candidatePath = path.resolve(workspaceRoot, candidate);
+          try {
+            if (fs.existsSync(candidatePath)) {
+              this.logger.debug(
+                `Using ${candidate} for REPO_GLOBAL_CHECK navigation`
+              );
+              return vscode.Uri.file(candidatePath);
+            }
+          } catch (error) {
+            // Continue to next candidate
+          }
+        }
+
+        // Fallback: return workspace folder URI (opens folder)
+        this.logger.debug(
+          'No suitable file found, using workspace folder for REPO_GLOBAL_CHECK'
         );
-        return vscode.Uri.file(absolutePath);
+        return workspaceFolder.uri;
       }
 
-      // Fallback: try to parse as URI
-      return vscode.Uri.parse(filePath);
+      // Since XFI_RESULT contains absolute paths, use them directly
+      if (path.isAbsolute(filePath)) {
+        // Check if file exists before creating URI
+        try {
+          if (fs.existsSync(filePath)) {
+            return vscode.Uri.file(filePath);
+          } else {
+            this.logger.warn('Absolute file path does not exist', { filePath });
+            return null;
+          }
+        } catch (fsError) {
+          this.logger.warn('Cannot check file existence', {
+            filePath,
+            error: fsError
+          });
+          return vscode.Uri.file(filePath); // Return URI anyway for testing
+        }
+      }
+
+      // Handle relative paths by resolving against workspace root (fallback)
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) {
+        this.logger.warn(
+          'No workspace folder available for relative path resolution',
+          {
+            filePath
+          }
+        );
+        return null;
+      }
+
+      const workspaceRoot = workspaceFolder.uri.fsPath;
+      const absolutePath = path.resolve(workspaceRoot, filePath);
+      this.logger.debug('Resolving relative path', {
+        original: filePath,
+        workspaceRoot,
+        resolved: absolutePath
+      });
+
+      // Check if resolved file exists
+      try {
+        if (fs.existsSync(absolutePath)) {
+          return vscode.Uri.file(absolutePath);
+        } else {
+          this.logger.warn('Resolved file path does not exist', {
+            absolutePath
+          });
+          return null;
+        }
+      } catch (fsError) {
+        this.logger.warn('Cannot check resolved file existence', {
+          absolutePath,
+          error: fsError
+        });
+        return vscode.Uri.file(absolutePath); // Return URI anyway for testing
+      }
     } catch (error) {
       this.logger.warn('Failed to resolve file URI', { filePath, error });
       return null;
@@ -556,17 +597,61 @@ export class DiagnosticProvider implements vscode.Disposable {
    * Map X-Fidelity severity to diagnostic severity
    */
   private mapSeverity(severity?: string): 'error' | 'warning' | 'info' {
-    switch (severity?.toLowerCase()) {
+    if (!severity) {
+      return 'info';
+    }
+
+    const normalizedSeverity = severity.toLowerCase().trim();
+
+    switch (normalizedSeverity) {
+      // Error levels
       case 'error':
+      case 'errors':
       case 'critical':
       case 'high':
+      case 'fatality':
+      case 'fatalities':
+      case 'fatal':
+      case 'fail':
+      case 'failure':
         return 'error';
+
+      // Warning levels
       case 'warning':
+      case 'warnings':
+      case 'warn':
       case 'medium':
+      case 'moderate':
         return 'warning';
+
+      // Info levels
       case 'info':
+      case 'information':
+      case 'informational':
       case 'low':
+      case 'notice':
+      case 'note':
+      case 'hint':
+      case 'suggestion':
       default:
+        // Log unknown severity levels for debugging
+        if (
+          normalizedSeverity &&
+          ![
+            'info',
+            'information',
+            'informational',
+            'low',
+            'notice',
+            'note',
+            'hint',
+            'suggestion'
+          ].includes(normalizedSeverity)
+        ) {
+          this.logger.debug(
+            `Unknown severity level mapped to 'info': ${severity}`
+          );
+        }
         return 'info';
     }
   }

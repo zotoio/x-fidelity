@@ -1,6 +1,7 @@
 import { Engine, OperatorEvaluator } from 'json-rules-engine';
 import { JSONSchemaType } from 'ajv';
 import { RepoXFIConfig } from './config';
+import { ILogger } from './logger';
 
 export type OperatorDefn = {
     name: string,
@@ -196,12 +197,12 @@ export interface SetupEngineParams {
 }
 
 export interface RunEngineOnFilesParams {
-    engine: Engine;
-    fileData: FileData[];
-    installedDependencyVersions: any;
-    minimumDependencyVersions: any;
-    standardStructure: any;
-    repoUrl: string;
+  engine: Engine;
+  fileData: FileData[];
+  installedDependencyVersions: any;
+  minimumDependencyVersions: any;
+  standardStructure: any;
+  logger: ILogger;
 }
 
 export interface Exemption {

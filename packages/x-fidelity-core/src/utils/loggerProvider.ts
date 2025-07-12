@@ -1,6 +1,6 @@
 import { ILogger, LogLevel } from '@x-fidelity/types';
-import { DefaultLogger } from './defaultLogger';
 import { ExecutionContext } from './executionContext';
+import { createDefaultLogger } from './defaultLogger';
 
 /**
  * Logger wrapper that automatically prefixes all messages with execution ID
@@ -80,11 +80,7 @@ class PrefixingLogger implements ILogger {
     this.baseLogger.fatal(this.prefixMessage(msgOrMeta), metaOrMsg);
   }
 
-  child(bindings: any): ILogger {
-    // Create child from base logger and wrap it with prefixing
-    const childBaseLogger = this.baseLogger.child(bindings);
-    return new PrefixingLogger(childBaseLogger, this.staticPrefix);
-  }
+  // Child logger method removed - use direct context passing instead
 
   setLevel(level: LogLevel): void {
     this.baseLogger.setLevel(level);
@@ -113,27 +109,45 @@ class PrefixingLogger implements ILogger {
 }
 
 /**
- * Logger provider that allows injecting a logger instance and automatically prefixes all messages
+ * Enhanced Logger provider that allows injecting a logger instance with automatic fallback
+ * and ensures universal logging availability for plugins
  */
 class LoggerProvider {
   private static injectedLogger: ILogger | null = null;
-  private static defaultLogger: ILogger = new DefaultLogger('[X-Fidelity-Core]');
+  private static defaultLogger: ILogger | null = null;
   private static enableAutoPrefixing: boolean = true;
+  private static isInitialized: boolean = false;
+
+  /**
+   * Ensure the logger provider is initialized with a default logger
+   * This guarantees that getLogger() will always return a valid logger instance
+   */
+  static ensureInitialized(): void {
+    if (!this.isInitialized) {
+      this.defaultLogger = createDefaultLogger('[X-Fidelity-Core]');
+      this.isInitialized = true;
+    }
+  }
 
   /**
    * Set the logger instance to be used throughout the system
    * @param logger The logger instance to inject
    */
   static setLogger(logger: ILogger): void {
+    this.ensureInitialized();
     this.injectedLogger = logger;
   }
 
   /**
    * Get the current logger instance (injected or default) with automatic prefixing
    * @returns The current logger instance, wrapped with prefixing if enabled
+   * @throws Never throws - always returns a valid logger (fallback if needed)
    */
   static getLogger(): ILogger {
-    const baseLogger = this.injectedLogger || this.defaultLogger;
+    this.ensureInitialized();
+    
+    // Use injected logger if available, otherwise use default
+    const baseLogger = this.injectedLogger || this.defaultLogger!;
     
     // Wrap with prefixing logger if enabled
     if (this.enableAutoPrefixing) {
@@ -148,7 +162,8 @@ class LoggerProvider {
    * @returns The raw logger instance without any wrapping
    */
   static getBaseLogger(): ILogger {
-    return this.injectedLogger || this.defaultLogger;
+    this.ensureInitialized();
+    return this.injectedLogger || this.defaultLogger!;
   }
 
   /**
@@ -160,7 +175,7 @@ class LoggerProvider {
   }
 
   /**
-   * Check if a logger has been injected
+   * Check if a logger has been injected (not using default)
    * @returns True if a logger has been injected
    */
   static hasInjectedLogger(): boolean {
@@ -168,43 +183,47 @@ class LoggerProvider {
   }
 
   /**
+   * Check if any logger is available (injected or default)
+   * @returns True if any logger is available (should always be true after ensureInitialized)
+   */
+  static hasLogger(): boolean {
+    this.ensureInitialized();
+    return this.injectedLogger !== null || this.defaultLogger !== null;
+  }
+
+  /**
    * Clear the injected logger (useful for testing)
+   * Will fall back to default logger
    */
   static clearInjectedLogger(): void {
     this.injectedLogger = null;
   }
 
   /**
-   * Create a child logger from the current logger with automatic execution context and prefixing
-   * @param bindings Additional context for the child logger
-   * @returns A child logger instance with automatic prefixing
+   * Reset the provider to uninitialized state (useful for testing)
    */
-  static createChildLogger(bindings: any): ILogger {
-    // Automatically include execution context in all child loggers
-    const executionBindings = ExecutionContext.createLoggerBindings(bindings);
-    return this.getLogger().child(executionBindings);
+  static reset(): void {
+    this.injectedLogger = null;
+    this.defaultLogger = null;
+    this.isInitialized = false;
   }
 
-  /**
-   * Create a child logger with execution context for a specific operation
-   * @param operation The operation name
-   * @param additionalBindings Additional context
-   * @returns A child logger instance with automatic prefixing
-   */
-  static createOperationLogger(operation: string, additionalBindings?: any): ILogger {
-    const bindings = { operation, ...additionalBindings };
-    return this.createChildLogger(bindings);
-  }
+  // Child logger creation methods removed - use direct context passing instead
 
   /**
-   * Create a child logger with execution context for a specific component
-   * @param component The component name
-   * @param additionalBindings Additional context
-   * @returns A child logger instance with automatic prefixing
+   * Initialize the logger provider with a default logger for universal availability
+   * This method ensures plugins always have access to logging, even if no logger is injected
+   * This method is idempotent and safe to call multiple times
    */
-  static createComponentLogger(component: string, additionalBindings?: any): ILogger {
-    const bindings = { component, ...additionalBindings };
-    return this.createChildLogger(bindings);
+  static initializeForPlugins(): void {
+    if (this.isInitialized) {
+      // Already initialized - skip to prevent duplicate initialization
+      return;
+    }
+    
+    this.ensureInitialized();
+    // Log that the system is ready for plugin logging
+    this.getLogger().debug('Logger provider initialized for universal plugin logging');
   }
 }
 

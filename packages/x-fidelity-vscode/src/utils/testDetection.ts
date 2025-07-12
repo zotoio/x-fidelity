@@ -134,6 +134,7 @@ export function preventExternalOpenInTests(
 
 /**
  * Monkey patch VSCode's openExternal function during tests to prevent any browser opens
+ * Handles read-only property gracefully for newer VSCode versions
  */
 export function setupTestEnvironmentPatching(): void {
   if (isTestEnvironment()) {
@@ -141,21 +142,81 @@ export function setupTestEnvironmentPatching(): void {
       '🔧 Setting up test environment patching for vscode.env.openExternal'
     );
 
-    // Store original function
-    const originalOpenExternal = vscode.env.openExternal;
+    try {
+      // Store original function
+      const originalOpenExternal = vscode.env.openExternal;
 
-    // Replace with test-safe version
-    (vscode.env as any).openExternal = (uri: vscode.Uri): Thenable<boolean> => {
+      // Try to replace with test-safe version
+      (vscode.env as any).openExternal = (
+        uri: vscode.Uri
+      ): Thenable<boolean> => {
+        console.log(
+          `🚫 Test environment - blocking openExternal call to: ${uri.toString()}`
+        );
+        return Promise.resolve(true); // Pretend success
+      };
+
       console.log(
-        `🚫 Test environment - blocking openExternal call to: ${uri.toString()}`
+        '✅ Successfully patched vscode.env.openExternal for testing'
       );
-      return Promise.resolve(true); // Pretend success
-    };
 
-    // Restore original after a delay (for cleanup)
-    setTimeout(() => {
-      console.log('🔄 Restoring original vscode.env.openExternal function');
-      (vscode.env as any).openExternal = originalOpenExternal;
-    }, 60000); // Restore after 1 minute
+      // Restore original after a delay (for cleanup)
+      setTimeout(() => {
+        try {
+          console.log('🔄 Restoring original vscode.env.openExternal function');
+          (vscode.env as any).openExternal = originalOpenExternal;
+        } catch (restoreError) {
+          console.log(
+            '⚠️ Could not restore original openExternal function (property is read-only)'
+          );
+        }
+      }, 60000); // Restore after 1 minute
+    } catch (error) {
+      console.log(
+        `⚠️ Could not patch vscode.env.openExternal (property is read-only in this VSCode version): ${error}`
+      );
+      console.log(
+        '🔄 Tests will use alternative openExternal blocking methods'
+      );
+      // Continue without patching - tests can use preventExternalOpenInTests() instead
+    }
+  }
+}
+
+export function patchVSCodeDialogsForTests() {
+  if (!isTestEnvironment()) return;
+  const win = vscode.window as any;
+  if (!win._originalShowInformationMessage) {
+    win._originalShowInformationMessage = win.showInformationMessage;
+    win.showInformationMessage = function (message: any, ...args: any[]) {
+      const buttons = args.filter(arg => typeof arg === 'string');
+      const autoResponse = buttons[0];
+      console.log(
+        `[TEST] Auto-responding to showInformationMessage: ${message} → ${autoResponse}`
+      );
+      return Promise.resolve(autoResponse);
+    };
+  }
+  if (!win._originalShowWarningMessage) {
+    win._originalShowWarningMessage = win.showWarningMessage;
+    win.showWarningMessage = function (message: any, ...args: any[]) {
+      const buttons = args.filter(arg => typeof arg === 'string');
+      const autoResponse = buttons[0];
+      console.log(
+        `[TEST] Auto-responding to showWarningMessage: ${message} → ${autoResponse}`
+      );
+      return Promise.resolve(autoResponse);
+    };
+  }
+  if (!win._originalShowErrorMessage) {
+    win._originalShowErrorMessage = win.showErrorMessage;
+    win.showErrorMessage = function (message: any, ...args: any[]) {
+      const buttons = args.filter(arg => typeof arg === 'string');
+      const autoResponse = buttons[0];
+      console.log(
+        `[TEST] Auto-responding to showErrorMessage: ${message} → ${autoResponse}`
+      );
+      return Promise.resolve(autoResponse);
+    };
   }
 }

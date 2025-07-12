@@ -6,6 +6,11 @@ import { logger } from './utils/serverLogger';
 import chokidar from 'chokidar';
 import { options } from '@x-fidelity/core';
 
+// Mock glob package to avoid native dependency issues in tests
+jest.mock('glob', () => ({
+  glob: jest.fn()
+}));
+
 jest.mock('express', () => {
   const mockJson = jest.fn().mockReturnValue(jest.fn());
   const mockApp = {

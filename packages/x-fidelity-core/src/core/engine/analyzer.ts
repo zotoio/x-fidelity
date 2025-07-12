@@ -1,7 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { getFormattedDate } from '../../utils/utils';
-import { DefaultLogger } from '../../utils/defaultLogger';
 import { LoggerProvider } from '../../utils/loggerProvider';
 import { ConfigManager, REPO_GLOBAL_CHECK } from '../configManager';
 import { ReportGenerator as XFiReportGenerator } from '../../notifications/reportGenerator';
@@ -35,6 +34,13 @@ import { logger } from '../../utils/logger';
 import { ExecutionContext } from '../../utils/executionContext';
 
 export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<ResultMetadata> {
+    // PHASE 1: Initialize logger provider FIRST before any other operations
+    // This ensures universal logging availability for all plugins and components
+    // Note: Only initialize if not already initialized to prevent duplicate initialization
+    if (!LoggerProvider.hasLogger()) {
+        LoggerProvider.initializeForPlugins();
+    }
+    
     // Start execution context for consistent logging
     const executionId = ExecutionContext.startExecution({
         component: 'Core',
@@ -47,24 +53,24 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         }
     });
 
-    // Use the standard logger since execution ID is already in prefix
-    const execLogger = LoggerProvider.getLogger();
-
-    execLogger.info('🚀 Starting codebase analysis', {
-        repoPath: params.repoPath,
-        archetype: params.archetype
-    });
-
     const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '', executionLogPrefix = '', logger: injectedLogger } = params;
     
-    // Use injected logger or create default logger
-    const logger = injectedLogger || new DefaultLogger('[X-Fidelity-Core]');
-    
-    // Inject the logger into the provider so all core and plugin code uses it
+    // PHASE 2: Set up logger injection if provided
+    // If an external logger is provided, inject it into the provider
+    // This ensures all plugins use the same logger instance
     if (injectedLogger) {
         LoggerProvider.setLogger(injectedLogger);
     }
     
+    // Use the logger from the provider (guaranteed to be available)
+    const logger = LoggerProvider.getLogger();
+    
+    logger.info('🚀 Starting codebase analysis', {
+        repoPath: params.repoPath,
+        archetype: params.archetype,
+        hasInjectedLogger: LoggerProvider.hasInjectedLogger()
+    });
+
     // Create .xfiResults directory
     const resultsDir = path.join(repoPath, '.xfiResults');
     await fs.mkdir(resultsDir, { recursive: true });
@@ -101,6 +107,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     }
     
     try {
+        // PHASE 3: Load configuration (this may trigger plugin loading)
         const executionConfig = await ConfigManager.getConfig({ archetype, logPrefix: executionLogPrefix });
         timingTracker.recordTiming('config_loading');
         
@@ -125,6 +132,12 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         });
         timingTracker.recordTiming('telemetry_send');
 
+        // PHASE 4: Initialize plugins with logger context
+        // At this point, plugins have been loaded and logger is available
+        const pluginCount = pluginRegistry.getPluginCount();
+        const pluginNames = pluginRegistry.getPluginNames() || [];
+        logger.info(`Plugin registry initialized with ${pluginCount} plugins: ${pluginNames.join(', ')}`);
+        
         // Get plugin functions for data collection
         const pluginFacts = pluginRegistry.getPluginFacts();
         timingTracker.recordTiming('plugin_facts_loading');
@@ -220,6 +233,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             logger.info(`Loading additional plugins from repo config: ${repoXFIConfig.additionalPlugins.join(', ')}`);
             try {
                 await ConfigManager.loadPlugins(repoXFIConfig.additionalPlugins);
+                logger.info(`Successfully loaded additional plugins. Total plugins: ${pluginRegistry.getPluginCount()}`);
             } catch (error) {
                 logger.warn(`Error loading additional plugins from repo config: ${error}`);
             }
@@ -382,7 +396,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             installedDependencyVersions: Object.fromEntries(installedDependencyVersions.map((v: any) => [v.name, v.version])),
             minimumDependencyVersions: dependencyVersionRequirements,
             standardStructure,
-            repoUrl
+            logger
         });
         timingTracker.recordTiming('engine_execution');
 
@@ -516,6 +530,14 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 logger.info('Latest result updated: XFI_RESULT.json');
             }
             
+            // Always maintain latest result copy for markdown files
+            const mdFile = savedFiles.find(f => f.extension === 'md');
+            if (mdFile) {
+                const latestMdPath = path.join(resultsDir, 'XFI_RESULT.md');
+                await fs.writeFile(latestMdPath, reportFormats.find(f => f.extension === 'md')?.content || '', 'utf8');
+                logger.info('Latest result updated: XFI_RESULT.md');
+            }
+            
             // Save file cache to disk
             await fileCache.saveCacheToDisk();
             
@@ -539,7 +561,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         });
 
         // Log completion with execution ID
-        execLogger.info('✅ Codebase analysis completed', {
+        logger.info('✅ Codebase analysis completed', {
             duration: (finishTime - telemetryData.startTime) / 1000,
             totalIssues: totalFailureCount,
             fileCount: fileData.length - 1
@@ -557,7 +579,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
 
 export async function analyzeFiles(engine: Engine, files: FileData[], logger?: import('@x-fidelity/types').ILogger): Promise<any[]> {
     const results = [];
-    const loggerInstance = logger || new DefaultLogger('[X-Fidelity-Core]');
+    const loggerInstance = logger || LoggerProvider.getLogger();
 
     // Add a global check file
     files.push({

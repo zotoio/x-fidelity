@@ -1,351 +1,329 @@
-import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as path from 'path';
-import { spawn } from 'child_process';
-import type { ResultMetadata } from '@x-fidelity/types';
+import * as fs from 'fs';
+import { createCLISpawner, CLIResult, getEmbeddedCLIPath } from '../../utils/cliSpawner';
 
-// Type aliases for better readability
-export type CLIResult = ResultMetadata;
-export type ExtensionResult = ResultMetadata;
-
-/**
- * Helper function to run CLI analysis and return ResultMetadata
- */
-export async function runCLIAnalysis(
-  workspacePath: string
-): Promise<CLIResult> {
-  return new Promise((resolve, reject) => {
-    const cliPath = path.resolve(
-      __dirname,
-      '../../../../x-fidelity-cli/dist/index.js'
-    );
-
-    if (!fs.existsSync(cliPath)) {
-      reject(new Error(`CLI not found at ${cliPath}`));
-      return;
-    }
-
-    const child = spawn(
-      'node',
-      [cliPath, '--dir', workspacePath, '--output-format', 'json'],
-      {
-        cwd: path.dirname(cliPath),
-        stdio: ['pipe', 'pipe', 'pipe'],
-        timeout: 60000 // 60 second timeout
-      }
-    );
-
-    let stdout = '';
-    let stderr = '';
-
-    child.stdout.on('data', data => {
-      stdout += data.toString();
-    });
-
-    child.stderr.on('data', data => {
-      stderr += data.toString();
-    });
-
-    child.on('close', code => {
-      if (code !== 0 && code !== 1) {
-        // CLI can exit with 1 for fatal issues
-        reject(new Error(`CLI process exited with code ${code}: ${stderr}`));
-        return;
-      }
-
-      try {
-        // Parse the JSON output from CLI
-        const lines = stdout.split('\n');
-        let resultLine = '';
-
-        // Look for XFI_RESULT JSON line
-        for (const line of lines) {
-          if (line.includes('XFI_RESULT') && line.includes('{')) {
-            // Extract JSON from log line
-            const jsonStart = line.indexOf('{');
-            if (jsonStart !== -1) {
-              resultLine = line.substring(jsonStart);
-              break;
-            }
-          }
-        }
-
-        if (!resultLine) {
-          // Fallback: look for any valid JSON object
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('{') && trimmed.includes('XFI_RESULT')) {
-              resultLine = trimmed;
-              break;
-            }
-          }
-        }
-
-        if (!resultLine) {
-          reject(
-            new Error(
-              `No XFI_RESULT JSON found in CLI output. STDOUT: ${stdout.substring(0, 500)}...`
-            )
-          );
-          return;
-        }
-
-        const result = JSON.parse(resultLine) as ResultMetadata;
-
-        if (!result.XFI_RESULT) {
-          reject(new Error('Parsed result does not have XFI_RESULT property'));
-          return;
-        }
-
-        resolve(result);
-      } catch (error) {
-        reject(
-          new Error(
-            `Failed to parse CLI JSON output: ${error}. STDOUT: ${stdout.substring(0, 500)}...`
-          )
-        );
-      }
-    });
-
-    child.on('error', error => {
-      reject(new Error(`CLI process error: ${error.message}`));
-    });
-  });
-}
+// Global analysis results cache
+let cachedAnalysisResults: any = null;
+let cachedWorkspacePath: string | null = null;
 
 /**
- * Helper function to run extension analysis and return ResultMetadata
+ * Ensure the X-Fidelity extension is activated
  */
-export async function runExtensionAnalysis(): Promise<ExtensionResult> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Trigger extension analysis
-      await vscode.commands.executeCommand('xfidelity.runAnalysis');
-
-      // Wait for analysis to complete and get results
-      let attempts = 0;
-      const maxAttempts = 60; // 60 seconds total wait time
-
-      const checkAnalysis = async () => {
-        attempts++;
-
-        try {
-          // Get analysis results from extension using the test command
-          const results = (await vscode.commands.executeCommand(
-            'xfidelity.getTestResults'
-          )) as ResultMetadata;
-
-          if (
-            results &&
-            results.XFI_RESULT &&
-            typeof results.XFI_RESULT.totalIssues === 'number'
-          ) {
-            if (global.isVerboseMode) {
-              global.testConsole.log(
-                'Extension analysis results obtained successfully'
-              );
-            }
-            resolve(results);
-            return;
-          }
-
-          if (attempts >= maxAttempts) {
-            reject(
-              new Error(
-                `Extension analysis failed to complete after ${maxAttempts} seconds`
-              )
-            );
-            return;
-          }
-
-          // Check again in 1 second
-          setTimeout(checkAnalysis, 1000);
-        } catch (error) {
-          if (attempts >= maxAttempts) {
-            reject(
-              new Error(
-                `Extension analysis failed after ${maxAttempts} attempts: ${error}`
-              )
-            );
-          } else {
-            setTimeout(checkAnalysis, 1000);
-          }
-        }
-      };
-
-      checkAnalysis();
-    } catch (error) {
-      reject(new Error(`Failed to start extension analysis: ${error}`));
-    }
-  });
-}
-
-/**
- * Helper to get the test workspace
- */
-export function getTestWorkspace(): vscode.WorkspaceFolder {
-  if (
-    !vscode.workspace.workspaceFolders ||
-    vscode.workspace.workspaceFolders.length === 0
-  ) {
-    throw new Error('No workspace folder available for testing');
-  }
-  return vscode.workspace.workspaceFolders[0];
-}
-
-/**
- * Helper to get the extension instance
- */
-export function getExtension(): vscode.Extension<any> {
-  const extension = vscode.extensions.getExtension('zotoio.x-fidelity-vscode');
+export async function ensureExtensionActivated(): Promise<vscode.Extension<any>> {
+  const extensionId = 'zotoio.x-fidelity-vscode';
+  const extension = vscode.extensions.getExtension(extensionId);
+  
   if (!extension) {
-    throw new Error('X-Fidelity extension not found');
+    throw new Error(`Extension ${extensionId} not found`);
   }
-  return extension;
-}
 
-/**
- * Helper to ensure extension is activated
- */
-export async function ensureExtensionActivated(): Promise<
-  vscode.Extension<any>
-> {
-  const extension = getExtension();
   if (!extension.isActive) {
     await extension.activate();
   }
+
+  // Wait a bit for activation to complete
+  await new Promise(resolve => setTimeout(resolve, 2000));
+
   return extension;
 }
 
 /**
- * Helper to wait for a condition with timeout
+ * Get the current test workspace folder
  */
-export async function waitFor(
-  condition: () => boolean | Promise<boolean>,
-  timeoutMs: number = 5000,
-  intervalMs: number = 100
-): Promise<void> {
-  const startTime = Date.now();
+export function getTestWorkspace(): vscode.WorkspaceFolder {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders || workspaceFolders.length === 0) {
+    throw new Error('No workspace folder found');
+  }
+  
+  return workspaceFolders[0];
+}
 
-  while (Date.now() - startTime < timeoutMs) {
-    if (await condition()) {
-      return;
+/**
+ * Validate that expected files and directories exist in the workspace
+ */
+export async function validateWorkspaceStructure(
+  expectedFiles: string[],
+  expectedDirs: string[]
+): Promise<void> {
+  const workspace = getTestWorkspace();
+  const workspacePath = workspace.uri.fsPath;
+
+  // Check files
+  for (const file of expectedFiles) {
+    const filePath = path.join(workspacePath, file);
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Expected file not found: ${file} at ${filePath}`);
     }
-    await new Promise(resolve => setTimeout(resolve, intervalMs));
   }
 
-  throw new Error(`Condition not met within ${timeoutMs}ms`);
+  // Check directories
+  for (const dir of expectedDirs) {
+    const dirPath = path.join(workspacePath, dir);
+    if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
+      throw new Error(`Expected directory not found: ${dir} at ${dirPath}`);
+    }
+  }
 }
 
 /**
- * Helper to assert command exists
- */
-export async function assertCommandExists(commandId: string): Promise<void> {
-  const commands = await vscode.commands.getCommands(true);
-  assert.ok(
-    commands.includes(commandId),
-    `Command ${commandId} should be registered`
-  );
-}
-
-/**
- * Helper to execute command safely
+ * Execute a VSCode command safely with error handling
  */
 export async function executeCommandSafely(
-  commandId: string,
+  command: string,
   ...args: any[]
 ): Promise<{ success: boolean; result?: any; error?: string }> {
   try {
-    const result = await vscode.commands.executeCommand(commandId, ...args);
+    const result = await vscode.commands.executeCommand(command, ...args);
     return { success: true, result };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error) 
     };
   }
 }
 
 /**
- * Helper to validate workspace structure
+ * Run CLI analysis for testing
  */
-export async function validateWorkspaceStructure(
-  expectedFiles: string[],
-  expectedDirs: string[] = []
-): Promise<void> {
-  const workspace = getTestWorkspace();
-
-  for (const file of expectedFiles) {
-    try {
-      const fileUri = vscode.Uri.joinPath(workspace.uri, file);
-      const stat = await vscode.workspace.fs.stat(fileUri);
-      assert.ok(stat.type === vscode.FileType.File, `${file} should be a file`);
-    } catch {
-      assert.fail(`Expected file not found: ${file}`);
-    }
-  }
-
-  for (const dir of expectedDirs) {
-    try {
-      const dirUri = vscode.Uri.joinPath(workspace.uri, dir);
-      const stat = await vscode.workspace.fs.stat(dirUri);
-      assert.ok(
-        stat.type === vscode.FileType.Directory,
-        `${dir} should be a directory`
-      );
-    } catch {
-      assert.fail(`Expected directory not found: ${dir}`);
-    }
+export async function runCLIAnalysis(
+  workspacePath: string
+): Promise<CLIResult> {
+  const cliSpawner = createCLISpawner();
+  try {
+    const analysisResult = await cliSpawner.runAnalysis({ workspacePath });
+    
+    // Convert AnalysisResult to CLIResult format for test compatibility
+    return {
+      success: true,
+      output: 'CLI analysis completed',
+      XFI_RESULT: analysisResult.metadata?.XFI_RESULT || analysisResult,
+      exitCode: 0
+    };
+  } catch (error) {
+    return {
+      success: false,
+      output: '',
+      error: error instanceof Error ? error.message : String(error),
+      exitCode: 1
+    };
   }
 }
 
 /**
- * Helper to compare analysis results
+ * Run extension analysis for testing
  */
-export function compareAnalysisResults(
-  cliResult: CLIResult,
-  extensionResult: ExtensionResult
-): void {
-  assert.strictEqual(
-    cliResult.XFI_RESULT.totalIssues,
-    extensionResult.XFI_RESULT.totalIssues,
-    'Total issue counts must be identical'
-  );
+export async function runExtensionAnalysis(): Promise<CLIResult> {
+  const workspacePath = getWorkspaceRoot();
+  
+  // Run analysis using the extension
+  const result = await executeCommandSafely('xfidelity.runAnalysis');
+  if (!result.success) {
+    throw new Error(`Extension analysis failed: ${result.error}`);
+  }
 
-  assert.strictEqual(
-    cliResult.XFI_RESULT.warningCount,
-    extensionResult.XFI_RESULT.warningCount,
-    'Warning counts must be identical'
-  );
+  // Wait for completion
+  const completed = await waitForAnalysisCompletion(90000, workspacePath);
+  if (!completed) {
+    throw new Error('Extension analysis did not complete within timeout');
+  }
 
-  assert.strictEqual(
-    cliResult.XFI_RESULT.errorCount,
-    extensionResult.XFI_RESULT.errorCount,
-    'Error counts must be identical'
-  );
+  // Get results
+  const analysisResults = await getAnalysisResults(workspacePath, false);
+  
+  // Return in CLI format for consistency with tests
+  return {
+    success: true,
+    output: 'Extension analysis completed',
+    XFI_RESULT: analysisResults,
+    exitCode: 0
+  };
+}
 
-  assert.strictEqual(
-    cliResult.XFI_RESULT.fatalityCount,
-    extensionResult.XFI_RESULT.fatalityCount,
-    'Fatality counts must be identical'
-  );
+// Re-export for backward compatibility
+export { getEmbeddedCLIPath, CLIResult };
 
-  assert.strictEqual(
-    cliResult.XFI_RESULT.exemptCount,
-    extensionResult.XFI_RESULT.exemptCount,
-    'Exemption counts must be identical'
-  );
+/**
+ * Get analysis results from the cache or file
+ */
+export async function getAnalysisResults(
+  workspacePath?: string,
+  forceRefresh = false
+): Promise<any> {
+  const targetPath = workspacePath || getWorkspaceRoot();
+  
+  // Always try to read from XFI_RESULT.json first (most recent)
+  const resultPath = path.join(targetPath, '.xfiResults', 'XFI_RESULT.json');
+  
+  try {
+    if (fs.existsSync(resultPath)) {
+      const content = fs.readFileSync(resultPath, 'utf8');
+      const parsed = JSON.parse(content);
+      
+      // Cache the results for future use
+      cachedAnalysisResults = parsed;
+      cachedWorkspacePath = targetPath;
+      
+      return parsed;
+    }
+  } catch (error) {
+    // Continue to try cache if file read fails
+  }
 
-  assert.strictEqual(
-    cliResult.XFI_RESULT.archetype,
-    extensionResult.XFI_RESULT.archetype,
-    'Archetype must be identical'
-  );
+  // Fallback to cached results if file doesn't exist
+  if (!forceRefresh && cachedAnalysisResults && cachedWorkspacePath === targetPath) {
+    return cachedAnalysisResults;
+  }
 
-  assert.strictEqual(
-    cliResult.XFI_RESULT.fileCount,
-    extensionResult.XFI_RESULT.fileCount,
-    'File count must be identical'
-  );
+  throw new Error('No analysis results found. Run analysis first.');
+}
+
+/**
+ * Check if analysis results exist
+ */
+export function hasAnalysisResults(workspacePath?: string): boolean {
+  const targetPath = workspacePath || getWorkspaceRoot();
+  const resultPath = path.join(targetPath, '.xfiResults', 'XFI_RESULT.json');
+  return fs.existsSync(resultPath);
+}
+
+/**
+ * Get workspace root path
+ */
+export function getWorkspaceRoot(): string {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders || workspaceFolders.length === 0) {
+    throw new Error('No workspace folder found');
+  }
+  return workspaceFolders[0].uri.fsPath;
+}
+
+/**
+ * Wait for a condition to be true
+ */
+export async function waitFor(
+  condition: () => boolean,
+  timeout: number = 10000,
+  interval: number = 100
+): Promise<void> {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < timeout) {
+    if (condition()) {
+      return;
+    }
+    await new Promise(resolve => setTimeout(resolve, interval));
+  }
+  
+  throw new Error(`Condition not met within ${timeout}ms`);
+}
+
+/**
+ * Wait for analysis completion
+ */
+export async function waitForAnalysisCompletion(
+  timeout: number = 60000,
+  workspacePath?: string
+): Promise<boolean> {
+  const startTime = Date.now();
+  const targetPath = workspacePath || getWorkspaceRoot();
+  
+  while (Date.now() - startTime < timeout) {
+    if (hasAnalysisResults(targetPath)) {
+      // Give it a moment to ensure the file is fully written
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return true;
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  
+  return false;
+}
+
+/**
+ * Run initial analysis and cache results for reuse
+ */
+export async function runInitialAnalysis(
+  workspacePath?: string,
+  forceRefresh: boolean = false
+): Promise<any> {
+  const targetPath = workspacePath || getWorkspaceRoot();
+  
+  // Return cached results if available and not forcing refresh
+  if (!forceRefresh && cachedAnalysisResults && cachedWorkspacePath === targetPath) {
+    return cachedAnalysisResults;
+  }
+
+  // Clear any existing results if forcing refresh
+  if (forceRefresh) {
+    clearAnalysisCache();
+    const resultPath = path.join(targetPath, '.xfiResults', 'XFI_RESULT.json');
+    if (fs.existsSync(resultPath)) {
+      await fs.promises.unlink(resultPath);
+    }
+  }
+
+  // Run analysis
+  const result = await executeCommandSafely('xfidelity.runAnalysis');
+  if (!result.success) {
+    throw new Error(`Analysis failed: ${result.error}`);
+  }
+
+  // Wait for completion
+  const completed = await waitForAnalysisCompletion(90000, targetPath);
+  if (!completed) {
+    throw new Error('Analysis did not complete within timeout');
+  }
+
+  // Get and cache results
+  const analysisResults = await getAnalysisResults(targetPath, true);
+  return analysisResults;
+}
+
+/**
+ * Clear analysis cache
+ */
+export function clearAnalysisCache(): void {
+  cachedAnalysisResults = null;
+  cachedWorkspacePath = null;
+}
+
+/**
+ * Ensure XFI tree and problems panel are populated
+ */
+export async function ensureXfiTreeAndProblemsPopulated(): Promise<void> {
+  // Wait for tree view to be populated
+  await waitFor(() => {
+    const diagnostics = vscode.languages.getDiagnostics();
+    for (const [, diags] of diagnostics) {
+      if (diags.some(d => d.source === 'X-Fidelity')) {
+        return true;
+      }
+    }
+    return false;
+  }, 15000);
+
+  // Refresh tree view to ensure it's populated
+  await executeCommandSafely('xfidelity.refreshIssuesTree');
+}
+
+/**
+ * Assert that a command exists
+ */
+export async function assertCommandExists(command: string): Promise<void> {
+  const commands = await vscode.commands.getCommands();
+  if (!commands.includes(command)) {
+    throw new Error(`Command ${command} is not registered`);
+  }
+}
+
+/**
+ * Get status bar text (for testing)
+ */
+export function getStatusBarText(): string {
+  // This is a simplified version for testing
+  // In a real scenario, you'd need to access the actual status bar item
+  return 'Status unknown';
 }

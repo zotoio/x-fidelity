@@ -17,12 +17,16 @@ export const DEMO_CONFIG_PATH = path.resolve(__dirname, '..', '..', 'x-fidelity-
 
 export function initCLI(): void {
     const program = new Command();
+    
+    // Get version from package.json
+    const version = require('../package.json').version;
 
     program
         .name('xfidelity')
-        .description('CLI tool for opinionated framework adherence checks')
-        .version(require('../package.json').version, '-v, --version', 'output the version number')
-        .option('-d, --dir <path>', 'path to repository root', '.')
+        .description(`CLI tool for opinionated framework adherence checks (v${version})`)
+        .version(version, '-v, --version', 'output the version number')
+        .argument('[directory]', 'path to repository root (default: current directory)')
+        .option('-d, --dir <path>', 'path to repository root (overrides positional argument)')
         .option('-a, --archetype <archetype>', 'The archetype to use for analysis', 'node-fullstack')
         .option('-c, --configServer <url>', 'The config server URL for fetching remote archetype configuration')
         .option('-l, --localConfigPath <path>', 'Path to local archetype config and rules')
@@ -37,10 +41,19 @@ export function initCLI(): void {
         .option('--file-cache-ttl <minutes>', 'File modification cache TTL in minutes', '60')
         .option('--output-format <format>', 'Output format: human (default) or json')
         .option('--output-file <path>', 'Write structured output to file (works with --output-format json)')
-        .option('--disableTreeSitterWorker', 'Disable TreeSitter worker for performance testing (worker enabled by default)')
-        .parse(process.argv);
+        .option('--disableTreeSitterWorker', 'Disable TreeSitter worker for performance testing (worker enabled by default)');
+
+    // Check if no arguments provided (only node and script path)
+    if (process.argv.length === 2) {
+        // Show help with version when no arguments are provided
+        program.help();
+        process.exit(0);
+    }
+
+    program.parse(process.argv);
 
     const opts = program.opts();
+    const args = program.args;
 
     // Parse zap files if provided
     let zapFiles: string[] | undefined = undefined;
@@ -57,8 +70,11 @@ export function initCLI(): void {
         }
     }
 
+    // Determine directory: --dir option takes precedence over positional argument
+    const directory = opts.dir || args[0] || '.';
+
     options = {
-        dir: opts.dir || '.',
+        dir: directory,
         archetype: opts.archetype || 'node-fullstack',
         configServer: opts.configServer,
         localConfigPath: opts.localConfigPath || DEMO_CONFIG_PATH,
@@ -78,7 +94,7 @@ export function initCLI(): void {
 
     // Update core options so they're available to other packages
     setOptions({
-        dir: opts.dir || '.',
+        dir: directory,
         archetype: opts.archetype || 'node-fullstack',
         configServer: opts.configServer,
         localConfigPath: opts.localConfigPath || DEMO_CONFIG_PATH,

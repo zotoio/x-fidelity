@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { ConfigManager } from '../configuration/configManager';
+import { REPO_GLOBAL_CHECK } from '@x-fidelity/core';
 
 export interface ReportViewerOptions {
   reportData: ResultMetadata;
@@ -830,6 +831,24 @@ export class ReportViewer implements vscode.Disposable {
       }
 
       let fileUri: vscode.Uri;
+
+      // Handle special case for global repository checks
+      if (filePath === REPO_GLOBAL_CHECK) {
+        fileUri = vscode.Uri.file(
+          path.join(workspaceFolder.uri.fsPath, '.xfiResults', 'XFI_RESULT.md')
+        );
+
+        try {
+          const document = await vscode.workspace.openTextDocument(fileUri);
+          await vscode.window.showTextDocument(document);
+          return;
+        } catch (error) {
+          vscode.window.showWarningMessage(
+            `Global check report not found. Details: ${filePath}`
+          );
+          return;
+        }
+      }
 
       // Handle absolute paths
       if (path.isAbsolute(filePath)) {

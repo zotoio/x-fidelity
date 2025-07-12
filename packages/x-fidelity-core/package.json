@@ -1,7 +1,8 @@
 {
   "name": "@x-fidelity/core",
-  "version": "4.0.0",
-  "description": "Core library for x-fidelity framework adherence checks",
+  "version": "0.0.0",
+  "description": "Core analysis engine with universal plugin logging system and performance monitoring",
+  "private": true,
   "main": "dist/index",
   "types": "dist/index.d.ts",
   "module": "dist/index.js",
@@ -15,6 +16,7 @@
   "scripts": {
     "clean": "rimraf dist/",
     "build": "yarn clean && tsc",
+    "build:deps": "cd ../../ && yarn build:deps",
     "build:watch": "tsc --watch --sourceMap",
     "test": "NODE_ENV=test jest --config jest.config.js",
     "test:coverage": "NODE_ENV=test jest --config jest.config.js --coverage",
@@ -57,7 +59,7 @@
     "@babel/types": "^7.23.0",
     "@types/body-parser": "^1.19.5",
     "@types/vscode": "^1.101.0",
-    "@x-fidelity/types": "4.0.0",
+    "@x-fidelity/types": "*",
     "@yarnpkg/lockfile": "^1.1.0",
     "axios": "^1.8.1",
     "body-parser": "^1.20.3",
@@ -88,8 +90,5 @@
   "files": [
     "dist/**/*",
     "README.md"
-  ],
-  "publishConfig": {
-    "access": "public"
-  }
+  ]
 }

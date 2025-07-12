@@ -1,235 +1,56 @@
 import { defineConfig } from '@vscode/test-cli';
 
+const commonConfig = {
+  version: 'stable',
+  workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
+  extensionDevelopmentPath: '.',
+  mocha: {
+    ui: 'bdd',
+    timeout: 120000,
+    color: true,
+    reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec',
+    exit: true
+  },
+  env: {
+    NODE_ENV: 'test',
+    VSCODE_TEST_VERBOSE: process.env.VSCODE_TEST_VERBOSE || 'false',
+    DISPLAY: process.env.DISPLAY || ':99',
+    XVFB: '1',
+    XDG_RUNTIME_DIR: './.vscode-test-user-data',
+    TMPDIR: './.vscode-test-user-data',
+    SCREENSHOTS: process.env.SCREENSHOTS || 'false'
+  },
+  launchArgs: [
+    '--no-sandbox',
+    '--disable-gpu',
+    '--disable-dev-shm-usage',
+    '--disable-extension=ms-python.python',
+    '--disable-extension=ms-vsliveshare.vsliveshare',
+    '--user-data-dir=./.vscode-test-user-data'
+  ]
+};
+
 export default defineConfig([
   {
-    label: 'simple',
-    files: 'out/test/test/unit/simple.test.js',
-    version: 'stable',
-    workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    extensionDevelopmentPath: '.',
-    mocha: {
-      ui: 'tdd',
-      timeout: 30000,
-      color: true,
-      reporter: 'spec'
-    },
-    env: {
-      NODE_ENV: 'test',
-      DISPLAY: process.env.DISPLAY || ':99',
-      XVFB: '1',
-      XDG_RUNTIME_DIR: './.vscode-test-user-data',
-      TMPDIR: './.vscode-test-user-data'
-    },
-    launchArgs: [
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--disable-extension=ms-python.python',
-      '--disable-extension=ms-vsliveshare.vsliveshare',
-      '--user-data-dir=./.vscode-test-user-data'
-    ]
+    ...commonConfig,
+    label: 'core',
+    files: 'out/test/test/{unit,integration}/**/*.test.js',
+    mocha: { ...commonConfig.mocha, timeout: 30000 }
   },
   {
-    label: 'unit',
-    files: 'out/test/test/unit/**/*.test.js',
-    version: 'stable',
-    workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    extensionDevelopmentPath: '.',
-    mocha: {
-      ui: 'bdd',
-      timeout: 30000,
-      color: true,
-      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec'
-    },
-    env: {
-      NODE_ENV: 'test',
-      VSCODE_TEST_VERBOSE: process.env.VSCODE_TEST_VERBOSE || 'false',
-      DISPLAY: process.env.DISPLAY || ':99',
-      XVFB: '1',
-      XDG_RUNTIME_DIR: './.vscode-test-user-data',
-      TMPDIR: './.vscode-test-user-data'
-    },
-    launchArgs: [
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--disable-extension=ms-python.python',
-      '--disable-extension=ms-vsliveshare.vsliveshare',
-      '--user-data-dir=./.vscode-test-user-data'
-    ]
-  },
-  {
+    ...commonConfig,
     label: 'integration',
     files: 'out/test/test/integration/**/*.test.js',
-    version: 'stable',
-    workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    extensionDevelopmentPath: '.',
-    mocha: {
-      ui: 'bdd',
-      timeout: 60000,
-      color: true,
-      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec'
-    },
-    env: {
-      NODE_ENV: 'test',
-      VSCODE_TEST_VERBOSE: process.env.VSCODE_TEST_VERBOSE || 'false',
-      DISPLAY: process.env.DISPLAY || ':99',
-      XVFB: '1',
-      XDG_RUNTIME_DIR: './.vscode-test-user-data',
-      TMPDIR: './.vscode-test-user-data'
-    },
-    launchArgs: [
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--disable-extension=ms-python.python',
-      '--disable-extension=ms-vsliveshare.vsliveshare',
-      '--user-data-dir=./.vscode-test-user-data'
-    ]
+    mocha: { ...commonConfig.mocha, timeout: 60000 }
   },
   {
-    label: 'comprehensive',
-    files: 'out/test/test/suite/**/*.test.js',
-    version: 'stable',
-    workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    extensionDevelopmentPath: '.',
-    mocha: {
-      ui: 'bdd',
-      timeout: 120000,
-      color: true,
-      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec'
-    },
-    env: {
-      NODE_ENV: 'test',
-      VSCODE_TEST_VERBOSE: process.env.VSCODE_TEST_VERBOSE || 'false',
-      DISPLAY: process.env.DISPLAY || ':99',
-      XVFB: '1',
-      XDG_RUNTIME_DIR: './.vscode-test-user-data',
-      TMPDIR: './.vscode-test-user-data',
-      SCREENSHOTS: process.env.SCREENSHOTS || 'false'
-    },
-    launchArgs: [
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--disable-extension=ms-python.python',
-      '--disable-extension=ms-vsliveshare.vsliveshare',
-      '--user-data-dir=./.vscode-test-user-data'
-    ]
-  },
-  {
-    label: 'progress',
-    files: 'out/test/test/suite/progressManager.test.js',
-    version: 'stable',
-    workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    extensionDevelopmentPath: '.',
-    mocha: {
-      ui: 'tdd',
-      timeout: 60000,
-      color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
-    },
-    env: {
-      NODE_ENV: 'test',
-      DISPLAY: process.env.DISPLAY || ':99',
-      XVFB: '1',
-      XDG_RUNTIME_DIR: './.vscode-test-user-data',
-      TMPDIR: './.vscode-test-user-data'
-    },
-    launchArgs: [
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--disable-extension=ms-python.python',
-      '--disable-extension=ms-vsliveshare.vsliveshare',
-      '--user-data-dir=./.vscode-test-user-data'
-    ]
-  },
-  {
+    ...commonConfig,
     label: 'e2e',
-    files: 'out/test/test/e2e/**/*.test.js',
-    version: 'stable',
-    workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    extensionDevelopmentPath: '.',
-    mocha: {
-      ui: 'bdd',
-      timeout: 120000,
-      color: true,
-      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'spec'
-    },
-    env: {
-      NODE_ENV: 'test',
-      VSCODE_TEST_VERBOSE: process.env.VSCODE_TEST_VERBOSE || 'false',
-      DISPLAY: process.env.DISPLAY || ':99',
-      XVFB: '1',
-      XDG_RUNTIME_DIR: './.vscode-test-user-data',
-      TMPDIR: './.vscode-test-user-data',
-      SCREENSHOTS: process.env.SCREENSHOTS || 'false'
-    },
-    launchArgs: [
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--disable-extension=ms-python.python',
-      '--disable-extension=ms-vsliveshare.vsliveshare',
-      '--user-data-dir=./.vscode-test-user-data'
-    ]
+    files: 'out/test/test/e2e/**/*.test.js'
   },
   {
-    label: 'consistency',
-    files: 'out/test/test-utils/**/*.test.js',
-    version: 'stable',
-    workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    extensionDevelopmentPath: '.',
-    mocha: {
-      ui: 'tdd',
-      timeout: 60000,
-      color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
-    },
-    env: {
-      NODE_ENV: 'test',
-      DISPLAY: process.env.DISPLAY || ':99',
-      XVFB: '1',
-      XDG_RUNTIME_DIR: './.vscode-test-user-data',
-      TMPDIR: './.vscode-test-user-data'
-    },
-    launchArgs: [
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--disable-extension=ms-python.python',
-      '--disable-extension=ms-vsliveshare.vsliveshare',
-      '--user-data-dir=./.vscode-test-user-data'
-    ]
-  },
-  {
+    ...commonConfig,
     label: 'all',
-    files: 'out/test/test/**/*.test.js',
-    version: 'stable',
-    workspaceFolder: '../x-fidelity-fixtures/node-fullstack',
-    extensionDevelopmentPath: '.',
-    mocha: {
-      ui: 'tdd',
-      timeout: 120000,
-      color: true,
-      reporter: process.env.CI ? 'spec' : 'spec'
-    },
-    env: {
-      NODE_ENV: 'test',
-      DISPLAY: process.env.DISPLAY || ':99',
-      XVFB: '1',
-      XDG_RUNTIME_DIR: './.vscode-test-user-data',
-      TMPDIR: './.vscode-test-user-data',
-      SCREENSHOTS: process.env.SCREENSHOTS || 'false'
-    },
-    launchArgs: [
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--disable-extension=ms-python.python',
-      '--disable-extension=ms-vsliveshare.vsliveshare',
-      '--user-data-dir=./.vscode-test-user-data'
-    ]
+    files: 'out/test/test/**/*.test.js'
   }
-]); 
+]);
