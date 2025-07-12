@@ -26,6 +26,18 @@ export class VSCodeLogger extends EnhancedLogger {
     this.ownsChannel = baseLogger.ownsChannel;
   }
 
+  debug(msgOrMeta: string | any, metaOrMsg?: any): void {
+    super.debug(msgOrMeta, metaOrMsg);
+  }
+
+  info(msgOrMeta: string | any, metaOrMsg?: any): void {
+    super.info(msgOrMeta, metaOrMsg);
+  }
+
+  warn(msgOrMeta: string | any, metaOrMsg?: any): void {
+    super.warn(msgOrMeta, metaOrMsg);
+  }
+
   show(): void {
     this.outputChannel.show();
   }
