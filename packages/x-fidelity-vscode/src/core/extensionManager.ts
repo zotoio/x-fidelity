@@ -531,6 +531,53 @@ export class ExtensionManager implements vscode.Disposable {
         }
       )
     );
+
+    // Additional report commands
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.shareReport', async () => {
+        try {
+          const currentResults = this.analysisEngine.getCurrentResults();
+          if (!currentResults) {
+            vscode.window.showErrorMessage(
+              'No analysis results available. Run an analysis first.'
+            );
+            return;
+          }
+
+          const exportContent = JSON.stringify(
+            currentResults.metadata,
+            null,
+            2
+          );
+          await vscode.env.clipboard.writeText(exportContent);
+          vscode.window.showInformationMessage(
+            'Analysis results copied to clipboard for sharing!'
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Share report failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      })
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.compareReports', () => {
+        vscode.window.showInformationMessage(
+          'Report comparison feature is coming soon. Use the Problems panel or Issues tree for now.'
+        );
+      })
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.viewTrends', () => {
+        vscode.window.showInformationMessage(
+          'Trend analysis feature is coming soon. Check the .xfiResults directory for historical data.'
+        );
+      })
+    );
+
+    // Note: Tree view commands are registered by IssuesTreeViewManager
   }
 
   private startPeriodicAnalysis(): void {
