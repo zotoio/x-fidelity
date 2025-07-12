@@ -144,6 +144,11 @@
         "command": "xfidelity.debugDiagnostics",
         "title": "X-Fidelity: Debug Diagnostics Info",
         "icon": "$(bug)"
+      },
+      {
+        "command": "xfidelity.debugCLISetup",
+        "title": "X-Fidelity: Debug CLI Setup",
+        "icon": "$(tools)"
       }
     ],
     "configuration": {
