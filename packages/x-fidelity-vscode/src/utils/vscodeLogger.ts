@@ -26,6 +26,10 @@ export class VSCodeLogger extends EnhancedLogger {
     this.ownsChannel = baseLogger.ownsChannel;
   }
 
+  trace(msgOrMeta: string | any, metaOrMsg?: any): void {
+    super.trace(msgOrMeta, metaOrMsg);
+  }
+
   debug(msgOrMeta: string | any, metaOrMsg?: any): void {
     super.debug(msgOrMeta, metaOrMsg);
   }
@@ -36,6 +40,14 @@ export class VSCodeLogger extends EnhancedLogger {
 
   warn(msgOrMeta: string | any, metaOrMsg?: any): void {
     super.warn(msgOrMeta, metaOrMsg);
+  }
+
+  error(msgOrMeta: string | any, metaOrMsg?: any): void {
+    super.error(msgOrMeta, metaOrMsg);
+  }
+
+  fatal(msgOrMeta: string | any, metaOrMsg?: any): void {
+    super.fatal(msgOrMeta, metaOrMsg);
   }
 
   show(): void {

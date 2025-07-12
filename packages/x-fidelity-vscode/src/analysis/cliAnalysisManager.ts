@@ -64,6 +64,10 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     return this.logger;
   }
 
+  getPerformanceMetrics() {
+    return {};
+  }
+
   getCurrentResults(): AnalysisResult | null {
     return this.lastAnalysisResult;
   }
