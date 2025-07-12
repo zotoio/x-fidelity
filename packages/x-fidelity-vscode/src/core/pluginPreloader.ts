@@ -18,6 +18,16 @@ export async function preloadDefaultPlugins(
     return;
   }
 
+  // Skip native modules if in safe mode (macOS fd issue mitigation)
+  const isSafeMode = process.env.XFI_SAFE_MODE === 'true';
+  const disableNative = process.env.XFI_DISABLE_NATIVE === 'true';
+
+  if (isSafeMode || disableNative) {
+    logger.info(
+      `[X-Fidelity VSCode] Running in safe mode - skipping native module plugins`
+    );
+  }
+
   if (!pluginRegistry || typeof pluginRegistry.registerPlugin !== 'function') {
     logger.warn(
       `[X-Fidelity VSCode] Plugin registry not available, skipping preload`
@@ -28,9 +38,9 @@ export async function preloadDefaultPlugins(
   let loadedCount = 0;
   let loadedPluginsMap: Record<string, any> = {};
 
-  // Define all plugins - all plugins work the same way now with centralized worker
-  const allPluginNames = [
-    'xfiPluginAst', // Uses centralized Tree-sitter worker
+  // Define all plugins - filter out native modules if in safe mode
+  let allPluginNames = [
+    'xfiPluginAst', // Uses centralized Tree-sitter worker (native)
     'xfiPluginDependency',
     'xfiPluginFilesystem',
     'xfiPluginOpenAI',
@@ -40,6 +50,17 @@ export async function preloadDefaultPlugins(
     'xfiPluginRequiredFiles',
     'xfiPluginSimpleExample'
   ];
+
+  // Filter out native module plugins in safe mode
+  if (isSafeMode || disableNative) {
+    const nativePlugins = ['xfiPluginAst']; // Plugins that use native modules
+    allPluginNames = allPluginNames.filter(
+      name => !nativePlugins.includes(name)
+    );
+    logger.info(
+      `[X-Fidelity VSCode] Safe mode: excluding native plugins: ${nativePlugins.join(', ')}`
+    );
+  }
 
   logger.info(
     `[X-Fidelity VSCode] Loading plugins with centralized worker support`

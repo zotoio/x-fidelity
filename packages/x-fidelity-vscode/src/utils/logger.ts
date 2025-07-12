@@ -40,6 +40,14 @@ function getLogger(force?: boolean): pino.Logger {
     process.env.NODE_ENV === 'test' ||
     typeof (globalThis as any).jest !== 'undefined';
 
+  // Check if we're running on macOS and in VSCode
+  const isMacOS = process.platform === 'darwin';
+  const isVSCode =
+    typeof require !== 'undefined' &&
+    (process.env.VSCODE_PID ||
+      process.env.VSCODE_CWD ||
+      process.argv.some(arg => arg.includes('vscode')));
+
   if (!loggerInstance || force) {
     const loggerOptions: pino.LoggerOptions = {
       timestamp: pino.stdTimeFunctions.isoTime,
@@ -78,39 +86,34 @@ function getLogger(force?: boolean): pino.Logger {
       }
     };
 
-    // For VSCode extension, use a simple file destination to avoid transport issues
-    if (isTestEnv) {
-      // In test environment, use default console output
+    // For VSCode extension, avoid file destinations on macOS to prevent fd errors
+    if (isTestEnv || (isMacOS && isVSCode)) {
+      // In test environment or macOS VSCode, use console output to avoid fd issues
       loggerInstance = pino(loggerOptions);
     } else {
-      // In VSCode extension, use simple file destination only
+      // In other environments, try file destination with fallback
       try {
-        // Clear the log file at the start of each execution
         const fs = require('fs');
         const path = require('path');
         const logDir = path.dirname(logFilePath);
 
-        // Ensure directory exists
+        // Ensure directory exists safely
         if (!fs.existsSync(logDir)) {
           fs.mkdirSync(logDir, { recursive: true });
         }
 
-        // Clear the log file
-        try {
-          fs.writeFileSync(logFilePath, '');
-        } catch (error) {
-          console.warn(`Failed to clear log file ${logFilePath}: ${error}`);
-        }
-
+        // Try to create file destination with sync mode for stability
         const fileDestination = pino.destination({
           dest: logFilePath,
-          sync: false
+          sync: true, // Use sync mode to avoid fd issues
+          mkdir: true
         });
+
         loggerInstance = pino(loggerOptions, fileDestination);
       } catch (error) {
-        // Fallback to console if file logging fails
+        // Always fallback to console if file logging fails
         console.warn(
-          'Failed to create file logger, falling back to console:',
+          'Failed to create file logger, using console output:',
           error
         );
         loggerInstance = pino(loggerOptions);
