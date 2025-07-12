@@ -286,9 +286,12 @@ export class CLISpawner {
       const cliDir = path.dirname(cliPath);
       const packageJsonPath = path.join(cliDir, '..', 'package.json');
       if (fs.existsSync(packageJsonPath)) {
-        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        const packageJson = JSON.parse(
+          fs.readFileSync(packageJsonPath, 'utf8')
+        );
         (diagnostics as any).cliDependencies = packageJson.dependencies || {};
-        (diagnostics as any).hasChokidar = 'chokidar' in (packageJson.dependencies || {});
+        (diagnostics as any).hasChokidar =
+          'chokidar' in (packageJson.dependencies || {});
       }
 
       // Check if the CLI can be loaded without errors
@@ -297,7 +300,8 @@ export class CLISpawner {
         // Try a basic accessibility test
         (diagnostics as any).cliLoadTest = 'node_accessible';
       } catch (testError) {
-        (diagnostics as any).cliLoadTest = `failed: ${testError instanceof Error ? testError.message : String(testError)}`;
+        (diagnostics as any).cliLoadTest =
+          `failed: ${testError instanceof Error ? testError.message : String(testError)}`;
       }
     } catch (error) {
       this.logger.debug('CLI dependency check failed:', error);
@@ -485,13 +489,16 @@ export class CLISpawner {
       if (code !== 0 && code !== 1) {
         // Check for module resolution errors in stderr
         const stderrLower = stderr.toLowerCase();
-        if (stderrLower.includes('cannot find module') || stderrLower.includes('module not found')) {
+        if (
+          stderrLower.includes('cannot find module') ||
+          stderrLower.includes('module not found')
+        ) {
           reject(
             new Error(
               `CLI dependency error (exit code ${code}):\n${stderr}\n` +
-              `This typically means a required Node.js module is missing.\n` +
-              `The CLI bundle may be incomplete or dependencies were not properly installed.\n` +
-              `Try running the X-Fidelity CLI diagnostics command for more details.`
+                `This typically means a required Node.js module is missing.\n` +
+                `The CLI bundle may be incomplete or dependencies were not properly installed.\n` +
+                `Try running the X-Fidelity CLI diagnostics command for more details.`
             )
           );
         } else {
@@ -587,16 +594,19 @@ export class CLISpawner {
       } else {
         // Check if this might be a module resolution error
         const errorMessage = error.message.toLowerCase();
-        if (errorMessage.includes('cannot find module') || errorMessage.includes('module not found')) {
+        if (
+          errorMessage.includes('cannot find module') ||
+          errorMessage.includes('module not found')
+        ) {
           const moduleError = new Error(
             `CLI dependency error: ${error.message}\n` +
-            `This typically means:\n` +
-            `1. A required Node.js module is missing\n` +
-            `2. The CLI bundle is incomplete\n` +
-            `3. Dependencies were not properly installed\n` +
-            `Platform: ${process.platform}\n` +
-            `CLI Path: ${cliPath}\n` +
-            `Try running the X-Fidelity CLI diagnostics command for more details.`
+              `This typically means:\n` +
+              `1. A required Node.js module is missing\n` +
+              `2. The CLI bundle is incomplete\n` +
+              `3. Dependencies were not properly installed\n` +
+              `Platform: ${process.platform}\n` +
+              `CLI Path: ${cliPath}\n` +
+              `Try running the X-Fidelity CLI diagnostics command for more details.`
           );
           reject(moduleError);
         } else {
