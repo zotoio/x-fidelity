@@ -52,7 +52,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       this.globalLogger.debug('✅ CLI Spawner initialized successfully');
     } catch (error) {
       this.globalLogger.error('❌ Failed to initialize CLI Spawner:', error);
-      // Create a fallback CLI spawner with default settings
       this.cliSpawner = createCLISpawner();
       this.globalLogger.info(
         '⚠️ Using fallback CLI spawner with bundled configuration'
@@ -60,7 +59,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     }
   }
 
-  // Public API
   get isAnalysisRunning(): boolean {
     return this.isAnalyzing;
   }
@@ -85,16 +83,10 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     return this.lastAnalysisResult;
   }
 
-  /**
-   * Alias for getCurrentResults() (for test compatibility)
-   */
   getLastResult(): AnalysisResult | null {
     return this.getCurrentResults();
   }
 
-  /**
-   * Run analysis using CLI spawner
-   */
   async runAnalysis(_options?: {
     forceRefresh?: boolean;
   }): Promise<AnalysisResult | null> {
@@ -107,12 +99,10 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     this.setState('analyzing');
     this.isAnalyzing = true;
 
-    // Log analysis start
     logCommandStart('xfidelity.runAnalysis', 'CLI Analysis');
     this.globalLogger.info('🚀 Starting CLI analysis...');
 
     try {
-      // Get workspace path
       const workspacePath = getAnalysisTargetDirectory();
       if (!workspacePath) {
         throw new Error('No workspace folder found');
@@ -120,11 +110,9 @@ export class CLIAnalysisManager implements IAnalysisEngine {
 
       this.globalLogger.info(`📁 Analysis target: ${workspacePath}`);
 
-      // Get config for CLI arguments
       const config = this.configManager.getConfig();
       const extraArgs = config.cliExtraArgs || [];
 
-      // Run CLI analysis
       const result = await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Window,
@@ -151,24 +139,18 @@ export class CLIAnalysisManager implements IAnalysisEngine {
         }
       );
 
-      // Update diagnostics
       this.globalLogger.info('📝 Updating diagnostics...');
       await this.diagnosticProvider.updateDiagnostics(result);
 
-      // Update performance metrics
       const duration = performance.now() - startTime;
       this.updatePerformanceMetrics(duration);
 
-      // Store result
       this.lastAnalysisResult = result;
 
-      // Emit completion event
       this.onAnalysisComplete.fire(result);
 
-      // Set state to complete on successful analysis
       this.setState('complete');
 
-      // Log success
       logCommandSuccess('xfidelity.runAnalysis', 'CLI Analysis', duration);
       this.globalLogger.info(
         `✅ Analysis completed successfully in ${Math.round(duration)}ms`
@@ -190,7 +172,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
         error instanceof Error ? error.message : String(error);
       const duration = performance.now() - startTime;
 
-      // Log error
       logCommandError('xfidelity.runAnalysis', 'CLI Analysis', error, duration);
       this.globalLogger.error(`❌ Analysis failed: ${errorMessage}`);
 
@@ -208,7 +189,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       throw error;
     } finally {
       this.isAnalyzing = false;
-      // Only set to idle if we're not in a complete or error state
       if (this.currentState !== 'complete' && this.currentState !== 'error') {
         this.setState('idle');
       }
@@ -217,9 +197,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     }
   }
 
-  /**
-   * Cancel running analysis
-   */
   async cancelAnalysis(): Promise<void> {
     if (this.cancellationToken) {
       this.cancellationToken.cancel();
@@ -236,7 +213,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     this.performanceMetrics.lastAnalysisDuration = duration;
     this.performanceMetrics.totalAnalyses++;
 
-    // Calculate rolling average
     const totalTime =
       this.performanceMetrics.averageAnalysisDuration *
         (this.performanceMetrics.totalAnalyses - 1) +
@@ -246,7 +222,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   }
 
   private setupEventListeners(): void {
-    // Listen for configuration changes
     this.disposables.push(
       this.configManager.onConfigurationChanged.event(() => {
         this.logger.info('Configuration changed');
