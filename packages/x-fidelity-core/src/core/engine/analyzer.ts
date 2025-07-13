@@ -53,7 +53,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         }
     });
 
-    const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '', executionLogPrefix = '', logger: injectedLogger } = params;
+    const { repoPath, archetype = 'node-fullstack', configServer = '', localConfigPath = '', executionLogPrefix = '', logger: injectedLogger, version: passedVersion } = params;
     
     // PHASE 2: Set up logger injection if provided
     // If an external logger is provided, inject it into the provider
@@ -439,7 +439,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 startTime: telemetryData.startTime,
                 finishTime,
                 durationSeconds: (finishTime - telemetryData.startTime) / 1000,
-                xfiVersion: version,
+                xfiVersion: passedVersion || version, // Use passed version from CLI, fallback to core version
                 archetype,
                 fileCount: fileData.length - 1,
                 totalIssues: totalFailureCount,

@@ -1,6 +1,6 @@
 {
   "name": "@x-fidelity/types",
-  "version": "0.0.0",
+  "version": "0.0.0-semantically-released",
   "description": "Shared TypeScript type definitions for x-fidelity",
   "private": true,
   "main": "dist/index.js",

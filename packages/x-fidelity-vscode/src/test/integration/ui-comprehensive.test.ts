@@ -18,13 +18,13 @@ import { ScreenshotHelper } from '../helpers/screenshotHelper';
 
 // Helper functions for robust testing
 function logDiag(...args: any[]) {
-  if (global.testConsole) global.testConsole.log(...args);
-  else console.log(...args);
+  if (global.testConsole) {global.testConsole.log(...args);}
+  else {console.log(...args);}
 }
 
 function logError(...args: any[]) {
-  if (global.testConsole) global.testConsole.error(...args);
-  else console.error(...args);
+  if (global.testConsole) {global.testConsole.error(...args);}
+  else {console.error(...args);}
 }
 
 async function logAndCaptureOnError(testName: string, error: any) {
@@ -83,8 +83,8 @@ suite('Comprehensive UI Integration Tests', () => {
         global.testConsole.log('✅ Fixture workspace structure validated');
       }
     } catch (e) {
-      if (global.testConsole) global.testConsole.error('❌ Fixture validation failed:', e);
-      else console.error('❌ Fixture validation failed:', e);
+      if (global.testConsole) {global.testConsole.error('❌ Fixture validation failed:', e);}
+      else {console.error('❌ Fixture validation failed:', e);}
       throw e;
     }
 

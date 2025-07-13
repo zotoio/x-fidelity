@@ -44,6 +44,7 @@ WORKDIR /test-workspace
 # Set up environment
 ENV PATH="/usr/local/bin:$PATH"
 ENV NODE_ENV=test
+ENV XFI_LOG_LEVEL=debug
 
 # Default command runs bash for interactive testing
 CMD ["/bin/bash"]

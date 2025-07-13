@@ -78,6 +78,8 @@ async function main() {
       'vscode',
       // Native modules that contain .node files - these need platform-specific builds
       'fsevents'
+      // NOTE: @x-fidelity/* packages are intentionally NOT listed here
+      // They should be bundled via the alias configuration below
     ],
     logLevel: 'info',
     // Bundle all internal dependencies from source
@@ -102,6 +104,26 @@ async function main() {
     },
     metafile: true,
     plugins: [
+      // Plugin to replace dynamic imports with static ones for bundling
+      {
+        name: 'replace-dynamic-imports',
+        setup(build) {
+          build.onLoad({ filter: /\.ts$/ }, async (args) => {
+            if (!args.path.includes('configManager.ts')) return;
+            
+            const fs = require('fs');
+            let contents = fs.readFileSync(args.path, 'utf8');
+            
+            // Replace dynamic imports with static imports for bundling
+            contents = contents.replace(
+              /await this\.dynamicImport\('@x-fidelity\/plugins'\)/g,
+              'await import("@x-fidelity/plugins")'
+            );
+            
+            return { contents, loader: 'ts' };
+          });
+        }
+      },
       copyAssetsPlugin
     ]
   });

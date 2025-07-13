@@ -226,6 +226,7 @@ export interface AnalyzeCodebaseParams {
     localConfigPath?: string;
     executionLogPrefix?: string;
     logger?: import('./logger').ILogger;
+    version?: string;  // Dynamic version from calling package (usually CLI)
 }
 
 export interface CollectTelemetryDataParams {

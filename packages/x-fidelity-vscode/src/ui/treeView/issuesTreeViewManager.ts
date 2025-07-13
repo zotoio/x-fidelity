@@ -345,11 +345,11 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     // Show issue counts in title
     if (stats.total > 0) {
       const counts: string[] = [];
-      if (stats.error > 0) counts.push(`${stats.error}E`);
-      if (stats.warning > 0) counts.push(`${stats.warning}W`);
-      if (stats.info > 0) counts.push(`${stats.info}I`);
-      if (stats.exempt > 0) counts.push(`${stats.exempt}X`);
-      if (stats.hint > 0) counts.push(`${stats.hint}H`);
+      if (stats.error > 0) {counts.push(`${stats.error}E`);}
+      if (stats.warning > 0) {counts.push(`${stats.warning}W`);}
+      if (stats.info > 0) {counts.push(`${stats.info}I`);}
+      if (stats.exempt > 0) {counts.push(`${stats.exempt}X`);}
+      if (stats.hint > 0) {counts.push(`${stats.hint}H`);}
       
       const countString = counts.length > 0 ? ` (${counts.join(' ')})` : ` (${stats.total})`;
       title += countString;

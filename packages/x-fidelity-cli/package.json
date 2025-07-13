@@ -24,8 +24,9 @@
   "scripts": {
     "clean": "rimraf dist/",
     "prebuild": "yarn clean",
-    "build": "node esbuild.config.js",
-    "build:production": "node esbuild.config.js --production",
+    "build": "npx nx run-many --target=build --projects=x-fidelity-types,x-fidelity-core,x-fidelity-plugins --parallel=false && node esbuild.config.js",
+    "build:production": "npx nx run-many --target=build --projects=x-fidelity-types,x-fidelity-core,x-fidelity-plugins --parallel=false && node esbuild.config.js --production",
+    "build:fresh": "npx nx reset && npx nx run-many --target=build --all --parallel=false",
     "prepublishOnly": "yarn build:production",
     "build:watch": "node esbuild.config.js --watch",
     "start": "NODE_ENV=test OPENAI_API_KEY= jest --watch",
@@ -45,8 +46,8 @@
     "bats:test": "cd ./cli-testing && bats *.bats",
     "validate-demo-config": "yarn build && node . --dir ../x-fidelity-fixtures/node-fullstack -x node-fullstack -o true",
     "global:setup": "cd ../../global-install-testing && ./scripts/setup-test-env.sh",
-    "global:test:published": "yarn global:setup && cd ../../global-install-testing && ./scripts/test-published.sh",
-    "global:test:local": "yarn global:setup && cd ../../global-install-testing && ./scripts/test-local.sh",
+    "global:test:published": "yarn build:fresh && yarn global:setup && cd ../../global-install-testing && ./scripts/test-published.sh",
+    "global:test:local": "yarn build:fresh && yarn global:setup && cd ../../global-install-testing && ./scripts/test-local.sh",
     "global:test": "yarn global:test:local && yarn global:test:published"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",

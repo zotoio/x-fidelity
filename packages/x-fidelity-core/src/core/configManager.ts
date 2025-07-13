@@ -197,6 +197,18 @@ export class ConfigManager {
                     throw new Error(`Failed to load extension ${moduleName} from all locations: ${error}`);
                 }
             }
+
+            // Wait for all plugins to complete initialization before proceeding
+            if (extensions.length > 0) {
+                logger.info(`Waiting for ${extensions.length} extensions to complete initialization...`);
+                try {
+                    await pluginRegistry.waitForAllPlugins();
+                    logger.info(`All extensions initialization completed successfully`);
+                } catch (error) {
+                    logger.error(`Extension initialization failed:`, error);
+                    throw new Error(`Extension initialization failed: ${error}`);
+                }
+            }
         }
     }
 

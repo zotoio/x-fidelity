@@ -1,6 +1,6 @@
 {
   "name": "@x-fidelity/democonfig",
-  "version": "0.0.0",
+  "version": "0.0.0-semantically-released",
   "description": "Demo configuration files for X-Fidelity including rules, archetypes, and exemptions",
   "private": true,
   "scripts": {

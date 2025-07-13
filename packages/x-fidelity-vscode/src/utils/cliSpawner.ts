@@ -292,6 +292,7 @@ export class CLISpawner {
         (diagnostics as any).cliDependencies = packageJson.dependencies || {};
         (diagnostics as any).hasChokidar =
           'chokidar' in (packageJson.dependencies || {});
+        (diagnostics as any).cliVersion = packageJson.version || 'unknown';
       }
 
       // Check if the CLI can be loaded without errors
@@ -308,6 +309,29 @@ export class CLISpawner {
     }
 
     return diagnostics;
+  }
+
+  /**
+   * Get the CLI version from the embedded CLI package.json
+   */
+  private getCLIVersion(): string {
+    try {
+      const cliPath = this.getEmbeddedCLIPath();
+      const cliDir = path.dirname(cliPath);
+      const packageJsonPath = path.join(cliDir, '..', 'package.json');
+
+      if (fs.existsSync(packageJsonPath)) {
+        const packageJson = JSON.parse(
+          fs.readFileSync(packageJsonPath, 'utf8')
+        );
+        return packageJson.version || '0.0.0';
+      }
+    } catch (error) {
+      this.logger.debug('Failed to read CLI version:', error);
+    }
+
+    // Fallback version
+    return '0.0.0';
   }
 
   /**
@@ -620,6 +644,7 @@ export class CLISpawner {
    * Create a minimal XFI_RESULT structure that satisfies the ResultMetadata interface
    */
   private createMinimalXFIResult(): any {
+    const cliVersion = this.getCLIVersion();
     return {
       repoXFIConfig: {
         archetype: 'unknown',
@@ -642,7 +667,7 @@ export class CLISpawner {
       startTime: Date.now(),
       finishTime: Date.now(),
       durationSeconds: 0,
-      xfiVersion: '3.28.0',
+      xfiVersion: cliVersion,
       archetype: 'unknown',
       fileCount: 0,
       totalIssues: 0,

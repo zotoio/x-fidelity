@@ -42,7 +42,7 @@ teardown() {
     run timeout 15 xfidelity --dir . --archetype node-fullstack
     # Allow either success or controlled failure since fixtures have complex rules
     if [ "$status" -eq 0 ]; then
-        assert_output --partial "directory: ."
+        assert_output --partial "HIGH FIDELITY"
     else
         # For fixtures, we expect some analysis issues but the tool should still run
         assert_output --partial "Starting codebase analysis"
@@ -105,6 +105,59 @@ teardown() {
     if [ "$status" -eq 0 ]; then
         # Try to parse as JSON or check for expected content
         echo "$output" | jq . >/dev/null 2>&1 || assert_output --partial "directory"
+    fi
+}
+
+@test "xfidelity fails when errorCount > 0" {
+    cd /tmp/test-project
+    run timeout 15 xfidelity --dir . --archetype node-fullstack
+    
+    # If the analysis finds errors (errorCount > 0), xfidelity should exit with code 1
+    if echo "$output" | grep -q '"errorCount":[[:space:]]*[1-9]'; then
+        assert_failure
+        echo "Found errorCount > 0 in output, correctly failed with exit code $status"
+    else
+        # If no errors found, should succeed
+        echo "No errors found in analysis, exit code $status is acceptable"
+    fi
+}
+
+@test "xfidelity detects and reports ERR_MODULE_NOT_FOUND errors" {
+    cd /tmp/test-project
+    run timeout 15 xfidelity --dir . --archetype node-fullstack
+    
+    # Check if ERR_MODULE_NOT_FOUND appears in output (particularly @x-fidelity packages)
+    if echo "$output" | grep -q "ERR_MODULE_NOT_FOUND\|Cannot find package '@x-fidelity\|Cannot find module"; then
+        assert_failure
+        assert_output --partial "ERR_MODULE_NOT_FOUND"
+        echo "Detected module dependency issue - this indicates packages are not properly bundled"
+        echo "CLI should bundle all @x-fidelity/* packages internally"
+        echo "Output: $output"
+        
+        # If specifically @x-fidelity packages are missing, this is a bundling issue
+        if echo "$output" | grep -q "Cannot find package '@x-fidelity"; then
+            echo "ERROR: @x-fidelity packages should be bundled, not external dependencies!"
+            return 1
+        fi
+    else
+        echo "No module dependency errors detected - packages properly bundled"
+    fi
+}
+
+@test "xfidelity suggests nx build on module errors" {
+    cd /tmp/test-project
+    run timeout 15 xfidelity --dir . --archetype node-fullstack
+    
+    # If module errors are found, should suggest nx build
+    if echo "$output" | grep -q "ERR_MODULE_NOT_FOUND\|Cannot find module"; then
+        # Should suggest the build command
+        if echo "$output" | grep -q "npx nx run-many\|yarn build"; then
+            echo "Correctly suggests build command for module errors"
+        else
+            echo "Module error detected but no build suggestion found in output:"
+            echo "$output"
+            false  # Fail the test
+        fi
     fi
 }
 
