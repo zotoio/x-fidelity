@@ -175,6 +175,28 @@ export class IssuesTreeViewManager implements vscode.Disposable {
           }
         )
       );
+
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand(
+          'xfidelity.explainIssue',
+          async (item: IssueTreeItem) => {
+            if (IssuesTreeViewManager.activeInstance) {
+              await IssuesTreeViewManager.activeInstance.explainIssue(item);
+            }
+          }
+        )
+      );
+
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand(
+          'xfidelity.fixIssue',
+          async (item: IssueTreeItem) => {
+            if (IssuesTreeViewManager.activeInstance) {
+              await IssuesTreeViewManager.activeInstance.fixIssue(item);
+            }
+          }
+        )
+      );
     }
   }
 
@@ -580,6 +602,38 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       vscode.window.showErrorMessage(
         `Failed to show rule information: ${error}`
       );
+    }
+  }
+
+  private async explainIssue(item: IssueTreeItem): Promise<void> {
+    if (!item || !item.issue) {
+      vscode.window.showWarningMessage('No issue data available to explain');
+      return;
+    }
+
+    try {
+      vscode.window.showInformationMessage(
+        `Explain Issue: ${item.issue.rule} - This feature will provide detailed explanations about the issue.`
+      );
+    } catch (error) {
+      logger.error('Failed to explain issue', error);
+      vscode.window.showErrorMessage(`Failed to explain issue: ${error}`);
+    }
+  }
+
+  private async fixIssue(item: IssueTreeItem): Promise<void> {
+    if (!item || !item.issue) {
+      vscode.window.showWarningMessage('No issue data available to fix');
+      return;
+    }
+
+    try {
+      vscode.window.showInformationMessage(
+        `Fix Issue: ${item.issue.rule} - This feature will provide automated fixes for the issue.`
+      );
+    } catch (error) {
+      logger.error('Failed to fix issue', error);
+      vscode.window.showErrorMessage(`Failed to fix issue: ${error}`);
     }
   }
 
