@@ -1,5 +1,5 @@
 {
-  "name": "fixtures",
+  "name": "@x-fidelity/fixtures",
   "version": "0.0.0-semantically-released",
   "description": "Test fixtures for X-Fidelity including sample projects and test data",
   "private": true,
