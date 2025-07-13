@@ -212,11 +212,23 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     // CRITICAL FIX: Listen for diagnostic updates to refresh tree view automatically
     this.disposables.push(
       this.diagnosticProvider.onDidDiagnosticsUpdate(updateInfo => {
-        logger.info(
-          `🔄 Tree view received diagnostic update: ${updateInfo.totalIssues} issues across ${updateInfo.filesWithIssues} files`
-        );
-        //console.log(`[IssuesTreeViewManager] Diagnostic update received:`, updateInfo);
-        this.refreshIssues();
+        try {
+          logger.info(
+            `🔄 Tree view received diagnostic update: ${updateInfo.totalIssues} issues across ${updateInfo.filesWithIssues} files`
+          );
+          //console.log(`[IssuesTreeViewManager] Diagnostic update received:`, updateInfo);
+          this.refreshIssues();
+        } catch (error) {
+          logger.error('Failed to handle diagnostic update in tree view', error);
+          // Try to refresh anyway after a short delay
+          setTimeout(() => {
+            try {
+              this.refreshIssues();
+            } catch (retryError) {
+              logger.error('Failed to refresh tree view on retry', retryError);
+            }
+          }, 1000);
+        }
       })
     );
   }
@@ -533,7 +545,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
   }
 
   private async addIssueExemption(item: IssueTreeItem): Promise<void> {
-    if (!item.issue) {
+    if (!item || !item.issue) {
       vscode.window.showWarningMessage('No issue data available for exemption');
       return;
     }
@@ -552,7 +564,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
   }
 
   private async showIssueRuleInfo(item: IssueTreeItem): Promise<void> {
-    if (!item.issue) {
+    if (!item || !item.issue) {
       vscode.window.showWarningMessage('No issue data available for rule info');
       return;
     }

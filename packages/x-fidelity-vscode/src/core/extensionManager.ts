@@ -35,9 +35,9 @@ export class ExtensionManager implements vscode.Disposable {
       LoggerProvider.initializeForPlugins();
     }
 
-    // PHASE 2: Create and inject VSCode logger
-    this.logger = new VSCodeLogger('Extension Manager');
+    // PHASE 2: Create and inject VSCode logger using singleton pattern
     this.globalLogger = createComponentLogger('Extension Manager');
+    this.logger = this.globalLogger; // Use the same logger instance
 
     // Inject the VSCode logger into the provider for use by plugins
     LoggerProvider.setLogger(this.logger);
@@ -107,16 +107,27 @@ export class ExtensionManager implements vscode.Disposable {
   private setupEventListeners(): void {
     this.disposables.push(
       this.analysisEngine.onComplete(result => {
+        // Validate result structure
+        if (!result.summary) {
+          this.globalLogger.error('Analysis result missing summary object', {
+            result
+          });
+          return;
+        }
+
+        const totalIssues = result.summary.totalIssues || 0;
+        const filesAnalyzed = result.summary.filesAnalyzed || 0;
+
         this.globalLogger.info(
-          `📊 Analysis completed: ${result.summary.totalIssues} issues found across ${result.summary.filesAnalyzed} files`
+          `📊 Analysis completed: ${totalIssues} issues found across ${filesAnalyzed} files`
         );
 
         this.issuesTreeViewManager.refresh();
 
-        if (result.summary.totalIssues > 0) {
+        if (totalIssues > 0) {
           vscode.window
             .showInformationMessage(
-              `X-Fidelity found ${result.summary.totalIssues} issues across ${result.summary.filesAnalyzed} files`,
+              `X-Fidelity found ${totalIssues} issues across ${filesAnalyzed} files`,
               'View Issues'
             )
             .then(choice => {

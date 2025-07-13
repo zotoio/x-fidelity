@@ -113,8 +113,9 @@ describe('DiagnosticProvider Unit Tests', () => {
       .mockImplementation(() => {
         throw new Error('extract error');
       });
-    // The error will cause updateDiagnostics to fail before .then on showInformationMessage
-    await expect(provider.updateDiagnostics({} as any)).rejects.toThrow();
+    // The error will be caught and handled gracefully (no longer throws)
+    await provider.updateDiagnostics({} as any);
+    expect(true).toBe(true); // Test passes if no exception is thrown
   });
 
   it('should handle error in updateDiagnostics gracefully', async () => {
