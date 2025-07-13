@@ -9,6 +9,7 @@
     "build": "echo 'Build noop for democonfig - using src directly'",
     "build:watch": "echo 'Build watch noop for democonfig'",
     "test": "echo 'No tests for democonfig package'",
+    "test:unit": "echo 'No tests for democonfig package'",
     "test:coverage": "echo 'No tests for democonfig package'",
     "lint": "echo 'No linting for democonfig package'",
     "lint:fix": "echo 'No linting for democonfig package'"

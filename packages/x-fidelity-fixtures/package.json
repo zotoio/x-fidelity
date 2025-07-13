@@ -9,6 +9,7 @@
     "build": "echo 'Build noop for fixtures - using src directly'",
     "build:watch": "echo 'Build watch noop for fixtures'",
     "test": "echo 'No tests for fixtures package'",
+    "test:unit": "echo 'No tests for fixtures package'",
     "test:coverage": "echo 'No tests for fixtures package'",
     "lint": "echo 'No linting for fixtures package'",
     "lint:fix": "echo 'No linting for fixtures package'"

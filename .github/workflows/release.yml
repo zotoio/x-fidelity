@@ -26,7 +26,7 @@ jobs:
       run: yarn build
 
     - name: Run tests
-      run: yarn test
+      run: yarn ci
       
     - name: Run semantic-release of cli
       run: yarn workspace x-fidelity semantic-release
