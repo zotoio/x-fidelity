@@ -115,7 +115,8 @@ docs/
 .DS_Store
 Thumbs.db
 
-# project specific
+
+
 .nx/
 node_modules/*
 dist/
@@ -130,5 +131,3 @@ test*.json
 .xfi*.json
 test*.log
 .vscode*/
-tmp/
-temp/

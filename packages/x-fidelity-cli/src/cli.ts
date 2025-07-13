@@ -12,8 +12,25 @@ export let options: CLIOptions = {
     extraPlugins: []
 };
 
-// Point to the x-fidelity-democonfig package src directory
-export const DEMO_CONFIG_PATH = path.resolve(__dirname, '..', '..', 'x-fidelity-democonfig', 'src');
+// Point to the bundled demo config directory
+// In development: points to monorepo structure
+// In production/global install: points to bundled demoConfig
+export const DEMO_CONFIG_PATH = (() => {
+    // Try bundled config in same directory as bundle (for global installations)
+    const bundledPathSameDir = path.resolve(__dirname, 'demoConfig');
+    if (require('fs').existsSync(bundledPathSameDir)) {
+        return bundledPathSameDir;
+    }
+    
+    // Try bundled config one level up (for some build configurations)
+    const bundledPathParent = path.resolve(__dirname, '..', 'demoConfig');
+    if (require('fs').existsSync(bundledPathParent)) {
+        return bundledPathParent;
+    }
+    
+    // Fall back to monorepo structure (for development)
+    return path.resolve(__dirname, '..', '..', 'x-fidelity-democonfig', 'src');
+})();
 
 export function initCLI(): void {
     const program = new Command();
@@ -41,7 +58,8 @@ export function initCLI(): void {
         .option('--file-cache-ttl <minutes>', 'File modification cache TTL in minutes', '60')
         .option('--output-format <format>', 'Output format: human (default) or json')
         .option('--output-file <path>', 'Write structured output to file (works with --output-format json)')
-        .option('--disableTreeSitterWorker', 'Disable TreeSitter worker for performance testing (worker enabled by default)');
+        .option('--disableTreeSitterWorker', 'Disable TreeSitter worker for performance testing (worker enabled by default)')
+        .option('--enable-file-logging', 'Enable logging to x-fidelity.log file (disabled by default)');
 
     // Check if no arguments provided (only node and script path)
     if (process.argv.length === 2) {
@@ -89,7 +107,8 @@ export function initCLI(): void {
         fileCacheTTL: opts.fileCacheTTL ? parseInt(opts.fileCacheTTL) : 60,
         outputFormat: opts.outputFormat,
         outputFile: opts.outputFile,
-        disableTreeSitterWorker: opts.disableTreeSitterWorker || false
+        disableTreeSitterWorker: opts.disableTreeSitterWorker || false,
+        enableFileLogging: opts.enableFileLogging || false
     };
 
     // Update core options so they're available to other packages

@@ -3,7 +3,7 @@ import { remoteSubstringValidationFact } from './facts/remoteSubstringValidation
 import { invalidRemoteValidationOperator } from './operators/invalidRemoteValidation';
 
 export const xfiPluginRemoteStringValidator: XFiPlugin = {
-    name: 'xfi-plugin-remote-string-validator',
+    name: 'xfiPluginRemoteStringValidator',
     version: '1.0.0',
     description: 'Plugin for remote string validation',
     facts: [remoteSubstringValidationFact],

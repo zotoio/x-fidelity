@@ -3,7 +3,7 @@ import { dependencyVersionFact, repoDependencyAnalysisFact } from './facts/repoD
 import { outdatedFramework } from './operators/outdatedFramework';
 
 export const xfiPluginDependency: XFiPlugin = {
-    name: 'xfi-plugin-dependency',
+    name: 'xfiPluginDependency',
     version: '1.0.0',
     description: 'Plugin for dependency analysis and version checking',
     facts: [dependencyVersionFact, repoDependencyAnalysisFact],

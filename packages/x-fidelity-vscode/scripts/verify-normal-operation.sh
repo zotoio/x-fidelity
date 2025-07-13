@@ -7,7 +7,7 @@ echo ""
 echo "1️⃣  Quick Build & Test Verification:"
 echo "   Run this to confirm everything works:"
 echo "   cd packages/x-fidelity-vscode"
-echo "   yarn test:no-xvfb"
+echo "   yarn test:unit"
 echo ""
 
 echo "2️⃣  Manual VSCode Verification:"

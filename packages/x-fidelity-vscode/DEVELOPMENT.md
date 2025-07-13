@@ -379,7 +379,7 @@ yarn logs
 
 - Extension logs appear in **Output** panel > **"X-Fidelity Debug"**
 - Analysis logs appear in **Output** panel > **"X-Fidelity Analysis"**
-- File logs are written to `.xfiResults/x-fidelity.log`
+- File logs are written to `.xfiResults/x-fidelity.log` (only if `--enable-file-logging` is used)
 
 ### Debug Information
 
@@ -504,7 +504,7 @@ yarn install-vsix
 **Extension not loading**
 
 - Check **Output** panel for errors
-- Verify all dependencies built: `yarn build:deps`
+- Verify all dependencies built: `yarn build` (uses NX to build all packages)
 - Try fresh profile: `yarn dev:fresh`
 
 **WASM errors**

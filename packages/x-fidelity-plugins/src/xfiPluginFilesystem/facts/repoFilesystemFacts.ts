@@ -205,7 +205,8 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
             const isBlacklistedFile = isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns });
             const isWhitelistedFile = isWhitelisted({ filePath, repoPath, whitelistPatterns: archetypeConfig.config.whitelistPatterns });
             logger.debug({ filePath, isBlacklisted: isBlacklistedFile, isWhitelisted: isWhitelistedFile }, 'Checking file against blacklist patterns');
-            if (!isBlacklistedFile && isWhitelistedFile) {
+            // Whitelist takes precedence over blacklist - if explicitly whitelisted, include the file
+            if (isWhitelistedFile || !isBlacklistedFile) {
                 const fileData = await parseFile(filePath);
                 fileData.relativePath = path.relative(repoPath, filePath);
                 filesData.push(fileData);

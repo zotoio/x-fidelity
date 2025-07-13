@@ -10,7 +10,7 @@ The X-Fidelity VSCode Extension follows industry best practices for extension de
 
 ### 1. Test Architecture
 
-Our verification framework is built on multiple testing layers:
+Our verification framework is built on multiple testing layers, leveraging NX for build orchestration and streamlined dependency management:
 
 #### **Unit Testing**
 
@@ -55,17 +55,24 @@ Our verification framework is built on multiple testing layers:
 
 - **Trigger**: Every push and pull request
 - **Environment**: Ubuntu, headless VSCode with Xvfb
+- **Build System**: NX-powered monorepo with intelligent dependency management
 - **Validation**: All tests must pass before merge
 - **Consistency**: CLI-Extension output matching verification
+- **CLI Testing**: Embedded CLI bundling and execution verification
 
 #### **Quality Gates**
 
 - ✅ All unit tests pass
-- ✅ All integration tests pass
+- ✅ All integration tests pass  
+- ✅ All end-to-end tests pass
+- ✅ CLI integration tests pass
+- ✅ Embedded CLI builds and bundles successfully
+- ✅ Demo config bundling verification
 - ✅ No TypeScript errors or warnings
 - ✅ Code formatting compliance (Prettier)
 - ✅ Linting compliance (ESLint)
 - ✅ Extension builds successfully
+- ✅ Native module compatibility (tree-sitter, chokidar)
 
 ## Verification Components
 
@@ -74,19 +81,24 @@ Our verification framework is built on multiple testing layers:
 #### **Activation Testing**
 
 ```typescript
-// Verifies extension activates correctly
+// Verifies extension activates correctly with proper logger setup
 test('should activate extension properly', async () => {
   const extension = vscode.extensions.getExtension('zotoio.x-fidelity-vscode');
   await extension?.activate();
   assert(extension?.isActive);
+  
+  // Verify CLI spawner is configured for VSCode mode
+  const extensionExports = extension?.exports;
+  assert(extensionExports?.cliSpawner);
 });
 ```
 
 #### **Command Registration**
 
-- Verifies all 16+ commands are properly registered
-- Tests command execution with various parameters
+- Verifies all 47+ commands are properly registered
+- Tests command execution with various parameters  
 - Validates error handling for invalid inputs
+- Includes CLI setup diagnostics and troubleshooting commands
 
 #### **Configuration Management**
 
@@ -98,9 +110,13 @@ test('should activate extension properly', async () => {
 
 #### **Analysis Engine Integration**
 
-- Tests X-Fidelity core analysis execution
+- Tests embedded CLI execution with bundled demo config
+- Validates macOS-specific Node.js path resolution
+- Tests console logger vs Pino logger switching for VSCode mode
+- Verifies chokidar dependency availability in CLI bundle
 - Validates result processing and display
 - Verifies error handling for analysis failures
+- Tests ENOENT error handling and fallback mechanisms
 
 #### **Workspace Context Detection**
 
@@ -115,6 +131,23 @@ test('should activate extension properly', async () => {
 - Control center and panel operations
 
 ### 3. Performance Verification
+
+#### **CLI Integration Testing**
+
+```typescript
+// Example CLI integration test
+test('should execute CLI with proper environment variables', async () => {
+  const cliSpawner = getCLISpawner();
+  const diagnostics = await cliSpawner.getDiagnostics();
+  
+  assert(diagnostics.nodeExists);
+  assert(diagnostics.cliExists);
+  assert(diagnostics.hasChokidar);
+  
+  // Verify bundled demo config is available
+  assert(diagnostics.demoConfigExists);
+});
+```
 
 #### **Memory Management**
 
@@ -139,8 +172,11 @@ test('should not leak memory during analysis', async () => {
 #### **Graceful Degradation**
 
 - Tests extension behavior with missing dependencies
-- Validates fallback command registration
+- Validates fallback command registration  
 - Verifies user-friendly error messages
+- Tests CLI diagnostics and troubleshooting commands
+- Validates macOS-specific error handling (ENOENT, Node.js path resolution)
+- Tests chokidar dependency error handling
 
 #### **Recovery Scenarios**
 
@@ -157,6 +193,17 @@ test('should not leak memory during analysis', async () => {
 - Launch Extension Development Host
 - Hot reload capability for rapid iteration
 - Comprehensive debugging and logging
+- CLI spawner diagnostics available via `X-Fidelity: Debug CLI Setup`
+
+#### **Development Scripts**
+
+```bash
+# Development workflows (streamlined, no redundant build:deps)
+yarn dev          # Start development with hot reload
+yarn dev:fresh    # Fresh profile for clean testing
+yarn dev:build    # Build for development testing
+yarn build        # Full production build with embedded CLI
+```
 
 #### **Local Test Execution**
 
@@ -167,11 +214,26 @@ yarn test:unit
 # Integration tests
 yarn test:integration
 
-# Full test suite
-yarn test
+# End-to-end tests  
+yarn test:e2e
+
+# Full test suite (all three above)
+yarn test:all
+
+# CI comprehensive tests
+yarn test:ci
+
+# Coverage reporting
+yarn test:coverage
 
 # Verbose mode for debugging
 VSCODE_TEST_VERBOSE=true yarn test:integration
+
+# Extension verification
+yarn verify
+
+# Full verification with build
+yarn verify:full
 ```
 
 ### 2. CI/CD Testing
@@ -246,9 +308,11 @@ VSCODE_TEST_VERBOSE=true yarn test:integration
 
 #### **Extension Size**
 
-- Bundle size optimization
+- Bundle size optimization (4.4MB with embedded CLI)
 - Tree-shaking for unused code
-- Efficient dependency management
+- Efficient dependency management via NX
+- Embedded CLI with bundled demo config (~3.7MB)
+- Optimized asset copying and manifest generation
 
 #### **Runtime Performance**
 
@@ -322,16 +386,43 @@ VSCODE_TEST_VERBOSE=true yarn test:integration
 - CI/CD pipeline optimization
 - Testing tool evaluation
 
+## Recent Framework Improvements
+
+### 1. Script Optimization (2025)
+
+#### **Streamlined Build Process**
+- **Removed Redundant Scripts**: Eliminated 15+ redundant `build:deps` scripts across all packages
+- **NX Integration**: Leveraged NX for intelligent dependency management and parallel builds
+- **CLI Integration**: Enhanced embedded CLI bundling with proper demo config inclusion
+- **Script Consolidation**: Consolidated verification scripts from 5 variants to 2 essential commands
+
+#### **Enhanced Cross-Platform Support**
+- **macOS Optimization**: Implemented comprehensive Node.js path resolution for macOS environments
+- **CLI Diagnostics**: Added `X-Fidelity: Debug CLI Setup` command for troubleshooting
+- **Error Handling**: Enhanced ENOENT error handling with specific guidance for different platforms
+- **Dependency Management**: Fixed chokidar dependency bundling for global installations
+
+#### **Improved Testing Commands**
+```bash
+# Before: Confusing mix of commands
+yarn verify:all, yarn verify:dev, yarn verify:ci, yarn verify:extension, yarn verify:quick
+
+# After: Clear, focused commands  
+yarn verify      # Quick verification
+yarn verify:full # Complete verification with build
+```
+
 ## Conclusion
 
 This Extension Verification Framework ensures the X-Fidelity VSCode Extension meets the highest standards of quality, reliability, and performance. Through comprehensive testing, continuous integration, and adherence to best practices, we deliver a robust developer tool that enhances the X-Fidelity ecosystem.
 
 The framework is designed to be:
 
-- **Comprehensive**: Covering all aspects of extension functionality
-- **Maintainable**: Easy to update and extend as the extension evolves
-- **Reliable**: Consistent and predictable test results
-- **Efficient**: Fast feedback loops for developers
+- **Comprehensive**: Covering all aspects of extension functionality including CLI integration
+- **Maintainable**: Easy to update and extend as the extension evolves, streamlined with NX
+- **Reliable**: Consistent and predictable test results across platforms (including macOS)
+- **Efficient**: Fast feedback loops for developers with optimized build processes  
 - **Compliant**: Meeting all VSCode marketplace and industry standards
+- **Cross-Platform**: Robust testing on Linux, Windows, and macOS with platform-specific optimizations
 
 For questions or contributions to this framework, please refer to our [DEVELOPMENT.md](./DEVELOPMENT.md) guide or open an issue in the repository.

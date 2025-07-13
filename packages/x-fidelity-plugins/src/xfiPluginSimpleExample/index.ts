@@ -6,7 +6,7 @@ import { customOperator } from './operators/customOperator';
 let logger: ILogger;
 
 export const xfiPluginSimpleExample: XFiPlugin = {
-    name: 'xfi-plugin-simple-example',
+    name: 'xfiPluginSimpleExample',
     version: '1.0.0',
     description: 'Simple example plugin for x-fidelity with enhanced logging',
     facts: [customFact],

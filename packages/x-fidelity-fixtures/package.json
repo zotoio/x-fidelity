@@ -1,0 +1,26 @@
+{
+  "name": "fixtures",
+  "version": "0.0.0",
+  "description": "Test fixtures for X-Fidelity including sample projects and test data",
+  "private": true,
+  "scripts": {
+    "clean": "echo 'Clean noop for fixtures'",
+    "prebuild": "echo 'Prebuild noop for fixtures'",
+    "build": "echo 'Build noop for fixtures - using src directly'",
+    "build:watch": "echo 'Build watch noop for fixtures'",
+    "test": "echo 'No tests for fixtures package'",
+    "test:coverage": "echo 'No tests for fixtures package'",
+    "lint": "echo 'No linting for fixtures package'",
+    "lint:fix": "echo 'No linting for fixtures package'"
+  },
+  "repository": "git@github.com:zotoio/x-fidelity.git",
+  "author": "wyvern8 <io@zoto.io>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.16.0",
+    "yarn": ">=1.22.0"
+  },
+  "files": [
+    "**/*"
+  ]
+}

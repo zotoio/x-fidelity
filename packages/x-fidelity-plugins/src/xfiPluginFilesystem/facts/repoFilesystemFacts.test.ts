@@ -182,9 +182,10 @@ describe('File operations', () => {
             mockedFsPromises.stat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
 
             const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
-            expect(result.length).toBe(2);
+            expect(result.length).toBe(3);
             expect(result[0].fileName).toBe('file1.js');
             expect(result[1].fileName).toBe('file2.tsx');
+            expect(result[2].fileName).toBe('file3.txt');
         }, 15000);
 
         it('should recursively process directories', async () => {
@@ -201,9 +202,10 @@ describe('File operations', () => {
                 .mockResolvedValueOnce({ isDirectory: () => false } as fs.Stats);
 
             const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
-            expect(result.length).toBe(2);
+            expect(result.length).toBe(3);
             expect(result.some(file => file.fileName === 'file1.js')).toBe(true);
             expect(result.some(file => file.fileName === 'file2.js')).toBe(true);
+            expect(result.some(file => file.fileName === 'file3.txt')).toBe(true);
         }, 15000);
 
         it('should handle symlinks correctly', async () => {
@@ -284,8 +286,15 @@ describe('File operations', () => {
                 throw new Error('Circular symlink detected');
             });
             
+            // Mock fs.promises.stat to treat the fallback path as a file
+            const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+            mockedFsPromises.stat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
+            
             const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
-            expect(result).toEqual([]);
+            // With the new logic, the file gets processed even when realpathSync fails
+            // because it falls back to the original path and continues processing
+            expect(result.length).toBe(1);
+            expect(result[0].fileName).toBe('circular-link');
             expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Error resolving real path'));
             
             realpathSyncSpy.mockRestore();

@@ -1,0 +1,43 @@
+# Test environment for local x-fidelity package global installation
+FROM node:22-alpine
+
+# Install required system dependencies
+RUN apk add --no-cache \
+    bash \
+    curl \
+    git \
+    jq
+
+# Install BATS testing framework
+RUN cd /tmp && \
+    git clone https://github.com/bats-core/bats-core.git && \
+    cd bats-core && \
+    ./install.sh /usr/local && \
+    cd / && rm -rf /tmp/bats-core
+
+# Install BATS helpers
+RUN cd /tmp && \
+    git clone https://github.com/bats-core/bats-support.git && \
+    git clone https://github.com/bats-core/bats-assert.git && \
+    mkdir -p /usr/local/lib/bats && \
+    mv bats-support /usr/local/lib/bats/ && \
+    mv bats-assert /usr/local/lib/bats/ && \
+    rm -rf /tmp/bats-*
+
+# Create directories
+WORKDIR /test-workspace
+RUN mkdir -p /package-source
+
+# Copy package tarball (will be mounted or copied at runtime)
+# Expected: /package-source/x-fidelity-*.tgz
+
+# Set up environment
+ENV PATH="/usr/local/bin:$PATH"
+ENV NODE_ENV=test
+
+# Install script will be called at runtime
+COPY scripts/test-local.sh /usr/local/bin/test-local.sh
+RUN chmod +x /usr/local/bin/test-local.sh
+
+# Default command runs the local package test
+CMD ["/usr/local/bin/test-local.sh"]

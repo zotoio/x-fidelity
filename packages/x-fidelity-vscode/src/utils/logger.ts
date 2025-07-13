@@ -1,14 +1,12 @@
-import crypto from 'crypto';
-import pino from 'pino';
+import * as vscode from 'vscode';
 import { maskSensitiveData } from '@x-fidelity/core';
 
-// Initialize variables
-let loggerInstance: pino.Logger | undefined;
+// VSCode Logger implementation - no pino, no file descriptors
+let outputChannel: vscode.OutputChannel | undefined;
 let loglevel =
   process.env.XFI_LOG_LEVEL ||
   (process.env.NODE_ENV === 'test' ? 'silent' : 'info');
 let logPrefix: string = generateLogPrefix();
-let logFilePath: string = 'x-fidelity.log'; // Default log file path
 
 /**
  * Generate a unique log prefix for this logger instance
@@ -16,112 +14,111 @@ let logFilePath: string = 'x-fidelity.log'; // Default log file path
  * @returns {string} A unique prefix for log messages
  */
 function generateLogPrefix(): string {
-  try {
-    // Try to use crypto.randomUUID if available (Node.js 14.17.0+)
-    if (crypto.randomUUID) {
-      return crypto.randomUUID().substring(0, 8);
-    }
-    // Fallback to randomBytes if available
-    if (crypto.randomBytes) {
-      return crypto.randomBytes(4).toString('hex');
-    }
-  } catch {
-    // Fall through to simple fallback
-  }
-
-  // Simple fallback for test environments or when crypto is not available
+  // Simple random ID without crypto dependency
   return Math.random().toString(36).substring(2, 10);
 }
 
-// VSCode-specific logger implementation that avoids transport issues
-function getLogger(force?: boolean): pino.Logger {
-  // Use a simple check for test environment
-  const isTestEnv =
-    process.env.NODE_ENV === 'test' ||
-    typeof (globalThis as any).jest !== 'undefined';
+// VSCode native logger - no file descriptors, uses OutputChannel
+function getOutputChannel(): vscode.OutputChannel {
+  if (!outputChannel) {
+    outputChannel = vscode.window.createOutputChannel('X-Fidelity');
+  }
+  return outputChannel;
+}
 
-  // Check if we're running on macOS and in VSCode
-  const isMacOS = process.platform === 'darwin';
-  const isVSCode =
-    typeof require !== 'undefined' &&
-    (process.env.VSCODE_PID ||
-      process.env.VSCODE_CWD ||
-      process.argv.some(arg => arg.includes('vscode')));
+type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'silent';
 
-  if (!loggerInstance || force) {
-    const loggerOptions: pino.LoggerOptions = {
-      timestamp: pino.stdTimeFunctions.isoTime,
-      msgPrefix: `${logPrefix} - `,
-      level: loglevel,
-      formatters: {
-        level: label => ({ level: label }),
-        bindings: bindings => bindings,
-        log: object => ({
-          ...object
-        })
-      },
-      serializers: {
-        err: pino.stdSerializers.err,
-        error: pino.stdSerializers.err,
-        req: (req: any) => maskSensitiveData(pino.stdSerializers.req(req)),
-        res: (res: any) => maskSensitiveData(pino.stdSerializers.res(res)),
-        '*': (obj: any) => maskSensitiveData(obj)
-      },
-      redact: {
-        paths: [
-          'password',
-          'apiKey',
-          'authorization',
-          'cookie',
-          'req.headers.authorization',
-          'req.headers.cookie',
-          'req.body.password',
-          'res.headers["set-cookie"]',
-          '*.password',
-          '*.apiKey',
-          '*.secret',
-          '*.token'
-        ],
-        censor: '********'
+function shouldLog(level: LogLevel): boolean {
+  const levels: Record<LogLevel, number> = {
+    silent: 100,
+    fatal: 60,
+    error: 50,
+    warn: 40,
+    info: 30,
+    debug: 20,
+    trace: 10
+  };
+  
+  const currentLevel = levels[loglevel as LogLevel] || levels.info;
+  return levels[level] >= currentLevel;
+}
+
+function formatLogMessage(level: LogLevel, msg: string, obj?: any): string {
+  const timestamp = new Date().toISOString();
+  const maskedObj = obj ? maskSensitiveData(obj) : '';
+  const objStr = maskedObj ? ` ${JSON.stringify(maskedObj)}` : '';
+  return `[${timestamp}] ${logPrefix} - ${level.toUpperCase()}: ${msg}${objStr}`;
+}
+
+interface Logger {
+  trace(msg: string, obj?: any): void;
+  debug(msg: string, obj?: any): void;
+  info(msg: string, obj?: any): void;
+  warn(msg: string, obj?: any): void;
+  error(msg: string, obj?: any): void;
+  fatal(msg: string, obj?: any): void;
+}
+
+function createLogger(): Logger {
+  const isTestEnv = process.env.NODE_ENV === 'test' || typeof (globalThis as any).jest !== 'undefined';
+  
+  return {
+    trace: (msg: string, obj?: any) => {
+      if (!shouldLog('trace')) return;
+      const formatted = formatLogMessage('trace', msg, obj);
+      if (isTestEnv) {
+        console.log(formatted);
+      } else {
+        getOutputChannel().appendLine(formatted);
       }
-    };
-
-    // For VSCode extension, avoid file destinations on macOS to prevent fd errors
-    if (isTestEnv || (isMacOS && isVSCode)) {
-      // In test environment or macOS VSCode, use console output to avoid fd issues
-      loggerInstance = pino(loggerOptions);
-    } else {
-      // In other environments, try file destination with fallback
-      try {
-        const fs = require('fs');
-        const path = require('path');
-        const logDir = path.dirname(logFilePath);
-
-        // Ensure directory exists safely
-        if (!fs.existsSync(logDir)) {
-          fs.mkdirSync(logDir, { recursive: true });
-        }
-
-        // Try to create file destination with sync mode for stability
-        const fileDestination = pino.destination({
-          dest: logFilePath,
-          sync: true, // Use sync mode to avoid fd issues
-          mkdir: true
-        });
-
-        loggerInstance = pino(loggerOptions, fileDestination);
-      } catch (error) {
-        // Always fallback to console if file logging fails
-        console.warn(
-          'Failed to create file logger, using console output:',
-          error
-        );
-        loggerInstance = pino(loggerOptions);
+    },
+    debug: (msg: string, obj?: any) => {
+      if (!shouldLog('debug')) return;
+      const formatted = formatLogMessage('debug', msg, obj);
+      if (isTestEnv) {
+        console.log(formatted);
+      } else {
+        getOutputChannel().appendLine(formatted);
+      }
+    },
+    info: (msg: string, obj?: any) => {
+      if (!shouldLog('info')) return;
+      const formatted = formatLogMessage('info', msg, obj);
+      if (isTestEnv) {
+        console.log(formatted);
+      } else {
+        getOutputChannel().appendLine(formatted);
+      }
+    },
+    warn: (msg: string, obj?: any) => {
+      if (!shouldLog('warn')) return;
+      const formatted = formatLogMessage('warn', msg, obj);
+      if (isTestEnv) {
+        console.warn(formatted);
+      } else {
+        getOutputChannel().appendLine(formatted);
+      }
+    },
+    error: (msg: string, obj?: any) => {
+      if (!shouldLog('error')) return;
+      const formatted = formatLogMessage('error', msg, obj);
+      if (isTestEnv) {
+        console.error(formatted);
+      } else {
+        getOutputChannel().appendLine(formatted);
+      }
+    },
+    fatal: (msg: string, obj?: any) => {
+      if (!shouldLog('fatal')) return;
+      const formatted = formatLogMessage('fatal', msg, obj);
+      if (isTestEnv) {
+        console.error(formatted);
+      } else {
+        getOutputChannel().appendLine(formatted);
       }
     }
-  }
-  return loggerInstance;
+  };
 }
 
 // Export the logger instance
-export const logger: pino.Logger = getLogger();
+export const logger: Logger = createLogger();

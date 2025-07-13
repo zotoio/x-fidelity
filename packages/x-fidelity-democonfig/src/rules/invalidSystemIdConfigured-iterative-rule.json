@@ -1,5 +1,5 @@
 {                                                                                                                                    
-     "name": "invalidSystemIdConfigured",                                                                                              
+     "name": "invalidSystemIdConfigured-iterative",                                                                                              
      "conditions": {                                                                                                                  
          "all": [  
             {
@@ -11,7 +11,7 @@
             {                                                                                                                        
                 "fact": "remoteSubstringValidation",                                                                                          
                 "params": {                                                                                                          
-                    "pattern": "\"systemId\":[\\s]*\"([a-z]*)\"",                                                              
+                    "pattern": "\"systemId\":[\\s]*\"([a-zA-Z0-9]*)\"",                                                              
                     "flags": "gi",
                     "validationParams": {
                         "url": "http://localhost:4200/systemIdValidator",

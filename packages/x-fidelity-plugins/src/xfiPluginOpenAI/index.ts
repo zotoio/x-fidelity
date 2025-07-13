@@ -3,7 +3,7 @@ import { openaiAnalysis } from './facts/openaiAnalysisFacts';
 import { openaiAnalysisHighSeverity } from './operators/openaiAnalysisHighSeverity';
 
 export const xfiPluginOpenAI: XFiPlugin = {
-    name: 'xfi-plugin-openai',
+    name: 'xfiPluginOpenAI',
     version: '1.0.0',
     description: 'Plugin for AI-powered code analysis using OpenAI',
     facts: [openaiAnalysis],
