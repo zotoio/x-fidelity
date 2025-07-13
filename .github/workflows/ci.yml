@@ -6,12 +6,52 @@ on:
       - master
   push:
     branches:
-      - master    
+      - master
+      - 'feature/**'    
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.cache.outputs.cache-hit }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'yarn'
+
+    - name: Cache dependencies
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          **/node_modules
+          ~/.cache/yarn
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+
+    - name: Build all packages
+      run: yarn build
+
+    - name: Run fixture validation
+      run: yarn workspace @x-fidelity/fixtures test
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        package: ['core', 'plugins', 'types', 'server', 'cli']
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -25,27 +65,20 @@ jobs:
     - name: Install dependencies
       run: yarn install --frozen-lockfile
 
-    - name: Build all packages
+    - name: Build dependencies
       run: yarn build
 
-    - name: Install xvfb for VSCode extension tests
-      run: sudo apt-get update && sudo apt-get install -y xvfb
+    - name: Run unit tests for ${{ matrix.package }}
+      run: |
+        case "${{ matrix.package }}" in
+          "core") yarn workspace @x-fidelity/core test:unit ;;
+          "plugins") yarn workspace @x-fidelity/plugins test:unit ;;
+          "types") yarn workspace @x-fidelity/types test:unit ;;
+          "server") yarn workspace @x-fidelity/server test:unit ;;
+          "cli") yarn workspace x-fidelity test:unit ;;
+        esac
 
-    - name: Run unit tests
-      run: yarn test:unit
-      env:
-        DISPLAY: ':99.0'
-
-    - name: Run integration tests
-      run: yarn test:integration
-      env:
-        DISPLAY: ':99.0'
-
-    - name: Run fixture validation
-      run: yarn 
-      n fixtures test
-
-  global-install-test:
+  integration-tests:
     runs-on: ubuntu-latest
     needs: build
     
@@ -65,10 +98,66 @@ jobs:
     - name: Build all packages
       run: yarn build
 
-    - name: Run unit tests
-      run: yarn test:unit
+    - name: Install xvfb for VSCode extension tests
+      run: sudo apt-get update && sudo apt-get install -y xvfb
+
+    - name: Run CLI integration tests
+      run: yarn workspace x-fidelity test:integration
+      env:
+        DISPLAY: ':99.0'
+
+    - name: Run VSCode extension integration tests
+      run: xvfb-run -a yarn workspace x-fidelity-vscode test:integration
+      env:
+        DISPLAY: ':99.0'
+
+  global-install-test:
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+
+    - name: Build all packages
+      run: yarn build
 
     - name: Run local package global install test
       run: yarn workspace x-fidelity global:test:local
+
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+
+    - name: Build all packages
+      run: yarn build
+
+    - name: Run linting
+      run: yarn ci:lint
+
+    - name: Run type checking
+      run: yarn ci:typecheck
 
 

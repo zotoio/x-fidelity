@@ -10,6 +10,17 @@ on:
       - 'packages/x-fidelity-types/**'
       - 'packages/x-fidelity-plugins/**'
       - '.github/workflows/vscode-extension-ci.yml'
+  push:
+    branches:
+      - master
+      - 'feature/**'
+    paths:
+      - 'packages/x-fidelity-cli/**'
+      - 'packages/x-fidelity-vscode/**'
+      - 'packages/x-fidelity-core/**'
+      - 'packages/x-fidelity-types/**'
+      - 'packages/x-fidelity-plugins/**'
+      - '.github/workflows/vscode-extension-ci.yml'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
