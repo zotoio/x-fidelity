@@ -504,8 +504,8 @@ yarn install-vsix
 **Extension not loading**
 
 - Check **Output** panel for errors
-- Verify all dependencies built: `yarn build` (uses NX to build all packages)
-- Try fresh profile: `yarn dev:fresh`
+- Verify all dependencies built: `npx nx run-many --target=build --all`
+- Try fresh profile: `npx nx run vscode:dev:fresh`
 
 **WASM errors**
 
@@ -521,7 +521,7 @@ yarn install-vsix
 
 **Tests failing**
 
-- Ensure clean build: `yarn clean && yarn build`
+- Ensure clean build: `npx nx reset && npx nx run-many --target=build --all`
 - Check mock implementations
 - Verify test environment setup
 

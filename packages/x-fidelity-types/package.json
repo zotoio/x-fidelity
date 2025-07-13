@@ -1,6 +1,6 @@
 {
   "name": "@x-fidelity/types",
-  "version": "0.0.0",
+  "version": "0.0.0-semantically-released",
   "description": "Shared TypeScript type definitions for x-fidelity",
   "private": true,
   "main": "dist/index.js",
@@ -19,6 +19,7 @@
     "build": "tsc",
     "build:watch": "tsc --watch --sourceMap",
     "test": "yarn lint:fix && NODE_ENV=test jest --config jest.config.js",
+    "test:unit": "yarn lint:fix && NODE_ENV=test jest --config jest.config.js",
     "test:coverage": "NODE_ENV=test jest --config jest.config.js --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

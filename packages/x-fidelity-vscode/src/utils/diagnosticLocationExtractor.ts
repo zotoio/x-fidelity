@@ -162,13 +162,17 @@ export class DiagnosticLocationExtractor {
     if (Array.isArray(details) && details.length > 0) {
       const detail = details[0];
       if (typeof detail.lineNumber === 'number') {
-        const matchLength = detail.match?.length || this.DEFAULT_RANGE_LENGTH;
+        // CRITICAL FIX: Use reasonable default instead of regex pattern length
+        // The detail.match field contains regex patterns, not actual matched text
+        // Using detail.match.length causes incorrect highlighting ranges
+        const REASONABLE_MATCH_LENGTH = 10; // Reasonable default for most actual matches
+
         return {
           location: {
             startLine: detail.lineNumber,
             startColumn: detail.columnNumber || 1,
             endLine: detail.lineNumber,
-            endColumn: (detail.columnNumber || 1) + matchLength,
+            endColumn: (detail.columnNumber || 1) + REASONABLE_MATCH_LENGTH,
             source: 'details-array'
           },
           found: true,

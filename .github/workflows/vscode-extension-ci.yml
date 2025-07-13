@@ -10,6 +10,17 @@ on:
       - 'packages/x-fidelity-types/**'
       - 'packages/x-fidelity-plugins/**'
       - '.github/workflows/vscode-extension-ci.yml'
+  push:
+    branches:
+      - master
+      - 'feature/**'
+    paths:
+      - 'packages/x-fidelity-cli/**'
+      - 'packages/x-fidelity-vscode/**'
+      - 'packages/x-fidelity-core/**'
+      - 'packages/x-fidelity-types/**'
+      - 'packages/x-fidelity-plugins/**'
+      - '.github/workflows/vscode-extension-ci.yml'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -45,34 +56,22 @@ jobs:
           sudo apt-get install -y xvfb
           
       - name: Lint extension
-        run: |
-          cd packages/x-fidelity-vscode
-          yarn lint
+        run: yarn workspace x-fidelity-vscode lint
           
       - name: Type check extension
-        run: |
-          cd packages/x-fidelity-vscode
-          yarn check-types
+        run: yarn workspace x-fidelity-vscode check-types
           
       - name: Build VSCode extension
-        run: |
-          cd packages/x-fidelity-vscode
-          yarn build
+        run: yarn workspace x-fidelity-vscode build
           
       - name: Run unit tests
-        run: |
-          cd packages/x-fidelity-vscode
-          xvfb-run -a yarn test:unit
+        run: xvfb-run -a yarn workspace x-fidelity-vscode test:unit
           
       - name: Run integration tests
-        run: |
-          cd packages/x-fidelity-vscode
-          xvfb-run -a yarn test:integration
+        run: xvfb-run -a yarn workspace x-fidelity-vscode test:integration
           
       - name: Package extension
-        run: |
-          cd packages/x-fidelity-vscode
-          yarn package
+        run: yarn workspace x-fidelity-vscode package
           
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4
@@ -114,9 +113,8 @@ jobs:
         
       - name: Build and package extension
         run: |
-          cd packages/x-fidelity-vscode
-          yarn build
-          yarn package
+          yarn workspace x-fidelity-vscode build
+          yarn workspace x-fidelity-vscode package
           
       - name: Verify extension package
         run: |

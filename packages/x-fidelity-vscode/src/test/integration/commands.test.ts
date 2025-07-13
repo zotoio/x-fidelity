@@ -24,23 +24,23 @@ suite('Extension Commands Tests', () => {
       'xfidelity.cancelAnalysis',
       'xfidelity.openSettings',
       'xfidelity.showOutput',
-      
+
       // UI commands
       'xfidelity.showControlCenter',
       'xfidelity.showDashboard',
       'xfidelity.showAdvancedSettings',
       'xfidelity.showPerformanceMetrics',
-      
+
       // Periodic analysis commands
       'xfidelity.startPeriodicAnalysis',
       'xfidelity.stopPeriodicAnalysis',
       'xfidelity.restartPeriodicAnalysis',
       'xfidelity.showPeriodicAnalysisStatus',
-      
+
       // Configuration commands
       'xfidelity.detectArchetype',
       'xfidelity.resetConfiguration',
-      
+
       // Report commands
       'xfidelity.showReportHistory',
       'xfidelity.exportReport',
@@ -48,7 +48,7 @@ suite('Extension Commands Tests', () => {
       'xfidelity.shareReport',
       'xfidelity.compareReports',
       'xfidelity.viewTrends',
-      
+
       // Tree view commands
       'xfidelity.refreshIssuesTree',
       'xfidelity.issuesTreeGroupBySeverity',
@@ -58,7 +58,7 @@ suite('Extension Commands Tests', () => {
       'xfidelity.goToIssue',
       'xfidelity.addIssueExemption',
       'xfidelity.showIssueRuleInfo',
-      
+
       // Test/helper commands
       'xfidelity.runAnalysisWithDir',
       'xfidelity.showRuleDocumentation',
@@ -194,11 +194,11 @@ suite('Extension Commands Tests', () => {
       'xfidelity.runAnalysisWithDir',
       '/test/path'
     );
-    
+
     if (global.isVerboseMode) {
       global.testConsole.log(
         `✅ runAnalysisWithDir: ${result.success ? 'success' : 'handled gracefully'}`
       );
     }
   });
-}); 
+});

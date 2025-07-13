@@ -166,6 +166,28 @@ export class XFiPluginRegistry implements PluginRegistry {
     }
 
     /**
+     * Wait for a specific plugin to complete initialization
+     */
+    public async waitForPlugin(pluginName: string): Promise<void> {
+        const promise = this.initializationPromises.get(pluginName);
+        if (promise) {
+            logger.debug(`Waiting for plugin ${pluginName} to complete initialization...`);
+            await promise;
+            logger.debug(`Plugin ${pluginName} initialization completed`);
+        } else {
+            // Check if plugin is already completed or doesn't need initialization
+            const status = this.initializationStatus.get(pluginName);
+            if (status === 'completed') {
+                logger.debug(`Plugin ${pluginName} already completed initialization`);
+            } else if (status === 'failed') {
+                throw new Error(`Plugin ${pluginName} initialization failed`);
+            } else {
+                logger.debug(`Plugin ${pluginName} has no initialization promise`);
+            }
+        }
+    }
+
+    /**
      * Wait for all plugins to complete initialization
      */
     public async waitForAllPlugins(): Promise<void> {

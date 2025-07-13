@@ -2,7 +2,7 @@
 
 /**
  * VSCode Extension VSIX Installation Test Script
- * 
+ *
  * This script tests the installation and basic functionality of the VSCode extension
  * from a packaged VSIX file. It provides comprehensive validation including:
  * - VSIX file existence and integrity
@@ -25,27 +25,27 @@ console.log(`📋 Platform: ${platform} (CI: ${isCI})`);
 
 async function findVsixFile() {
   console.log('\n🔍 Looking for VSIX file...');
-  
+
   try {
     const files = fs.readdirSync('.').filter(file => file.endsWith('.vsix'));
-    
+
     if (files.length === 0) {
       throw new Error('No VSIX file found. Run "yarn package" first.');
     }
-    
+
     if (files.length > 1) {
       console.log(`⚠️  Multiple VSIX files found: ${files.join(', ')}`);
       console.log(`Using: ${files[0]}`);
     }
-    
+
     const vsixFile = files[0];
     console.log(`✅ Found VSIX file: ${vsixFile}`);
-    
+
     // Check file size
     const stats = fs.statSync(vsixFile);
     const sizeKB = Math.round(stats.size / 1024);
     console.log(`📦 File size: ${sizeKB}KB`);
-    
+
     return vsixFile;
   } catch (error) {
     console.error(`❌ Error finding VSIX file: ${error.message}`);
@@ -55,24 +55,24 @@ async function findVsixFile() {
 
 async function testVsixIntegrity(vsixFile) {
   console.log('\n🔍 Testing VSIX file integrity...');
-  
+
   return new Promise((resolve, reject) => {
     const unzip = spawn('unzip', ['-t', vsixFile], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
-    
+
     let output = '';
     let errorOutput = '';
-    
-    unzip.stdout.on('data', (data) => {
+
+    unzip.stdout.on('data', data => {
       output += data.toString();
     });
-    
-    unzip.stderr.on('data', (data) => {
+
+    unzip.stderr.on('data', data => {
       errorOutput += data.toString();
     });
-    
-    unzip.on('close', (code) => {
+
+    unzip.on('close', code => {
       if (code === 0) {
         console.log('✅ VSIX file integrity check passed');
         resolve();
@@ -82,8 +82,8 @@ async function testVsixIntegrity(vsixFile) {
         reject(new Error('VSIX file is corrupted'));
       }
     });
-    
-    unzip.on('error', (error) => {
+
+    unzip.on('error', error => {
       if (error.code === 'ENOENT') {
         console.log('⚠️  unzip command not found, skipping integrity check');
         resolve(); // Don't fail if unzip is not available
@@ -96,19 +96,19 @@ async function testVsixIntegrity(vsixFile) {
 
 async function checkVscodeCliAvailability() {
   console.log('\n🔍 Checking VSCode CLI availability...');
-  
+
   return new Promise((resolve, reject) => {
     const vscode = spawn('code', ['--version'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
-    
+
     let output = '';
-    
-    vscode.stdout.on('data', (data) => {
+
+    vscode.stdout.on('data', data => {
       output += data.toString();
     });
-    
-    vscode.on('close', (code) => {
+
+    vscode.on('close', code => {
       if (code === 0) {
         const version = output.split('\n')[0];
         console.log(`✅ VSCode CLI available: ${version}`);
@@ -117,10 +117,14 @@ async function checkVscodeCliAvailability() {
         reject(new Error('VSCode CLI not available'));
       }
     });
-    
-    vscode.on('error', (error) => {
+
+    vscode.on('error', error => {
       if (error.code === 'ENOENT') {
-        reject(new Error('VSCode CLI not found. Please install VSCode or add it to PATH.'));
+        reject(
+          new Error(
+            'VSCode CLI not found. Please install VSCode or add it to PATH.'
+          )
+        );
       } else {
         reject(error);
       }
@@ -130,24 +134,24 @@ async function checkVscodeCliAvailability() {
 
 async function installExtension(vsixFile) {
   console.log('\n📦 Installing extension...');
-  
+
   return new Promise((resolve, reject) => {
     const vscode = spawn('code', ['--install-extension', vsixFile, '--force'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
-    
+
     let output = '';
     let errorOutput = '';
-    
-    vscode.stdout.on('data', (data) => {
+
+    vscode.stdout.on('data', data => {
       output += data.toString();
     });
-    
-    vscode.stderr.on('data', (data) => {
+
+    vscode.stderr.on('data', data => {
       errorOutput += data.toString();
     });
-    
-    vscode.on('close', (code) => {
+
+    vscode.on('close', code => {
       if (code === 0) {
         console.log('✅ Extension installed successfully');
         console.log(`Output: ${output.trim()}`);
@@ -163,27 +167,31 @@ async function installExtension(vsixFile) {
 
 async function verifyExtensionInstallation() {
   console.log('\n🔍 Verifying extension installation...');
-  
+
   return new Promise((resolve, reject) => {
     const vscode = spawn('code', ['--list-extensions'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
-    
+
     let output = '';
-    
-    vscode.stdout.on('data', (data) => {
+
+    vscode.stdout.on('data', data => {
       output += data.toString();
     });
-    
-    vscode.on('close', (code) => {
+
+    vscode.on('close', code => {
       if (code === 0) {
         const extensions = output.split('\n').filter(ext => ext.trim());
-        const xFidelityExtension = extensions.find(ext => 
-          ext.includes('x-fidelity-vscode') || ext.includes('zotoio.x-fidelity-vscode')
+        const xFidelityExtension = extensions.find(
+          ext =>
+            ext.includes('x-fidelity-vscode') ||
+            ext.includes('zotoio.x-fidelity-vscode')
         );
-        
+
         if (xFidelityExtension) {
-          console.log(`✅ Extension verified in installed list: ${xFidelityExtension}`);
+          console.log(
+            `✅ Extension verified in installed list: ${xFidelityExtension}`
+          );
           console.log(`📊 Total extensions installed: ${extensions.length}`);
           resolve();
         } else {
@@ -206,13 +214,12 @@ async function runTest() {
     await checkVscodeCliAvailability();
     await installExtension(vsixFile);
     await verifyExtensionInstallation();
-    
+
     console.log('\n🎉 All tests passed! Extension installation successful.');
     process.exit(0);
-    
   } catch (error) {
     console.error(`\n❌ Test failed: ${error.message}`);
-    
+
     if (isCI) {
       console.log('\n💡 This is a CI environment. Consider:');
       console.log('  - Ensuring VSCode CLI is installed in the CI setup');
@@ -220,12 +227,14 @@ async function runTest() {
       console.log('  - Checking if extension packaging completed successfully');
     } else {
       console.log('\n💡 For local development:');
-      console.log('  1. Install VSCode: https://code.visualstudio.com/download');
+      console.log(
+        '  1. Install VSCode: https://code.visualstudio.com/download'
+      );
       console.log('  2. Add VSCode to PATH or use VSCode CLI');
       console.log('  3. Run "yarn package" to create VSIX file');
       console.log('  4. Try running this test again');
     }
-    
+
     process.exit(1);
   }
 }
@@ -242,4 +251,4 @@ process.on('SIGTERM', () => {
 });
 
 // Run the test
-runTest(); 
+runTest();

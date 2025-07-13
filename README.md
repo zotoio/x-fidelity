@@ -61,14 +61,26 @@ The X-Fidelity VSCode extension provides a comprehensive development experience 
 # Install dependencies
 yarn install
 
-# Build all packages
-yarn build
+# Build all packages (using Nx)
+npx nx run-many --target=build --all
+
+# Build specific packages
+npx nx run core:build
+npx nx run cli:build
+npx nx run vscode:build
 
 # VSCode extension development
-yarn vscode:dev
+npx nx run vscode:dev
 
-# Run tests
-yarn test
+# Run tests (using Nx)
+npx nx run-many --target=test --all
+
+# Test specific packages
+npx nx run core:test
+npx nx run plugins:test
+
+# Lint all packages
+npx nx run-many --target=lint --all
 ```
 
 ## Documentation

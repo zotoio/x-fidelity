@@ -10,11 +10,11 @@ const vscodeWindowMock: any = {
     onDidChangeVisibility: jest.fn(),
     onDidChangeSelection: jest.fn(),
     reveal: jest.fn(),
-    dispose: jest.fn(),
-  })),
+    dispose: jest.fn()
+  }))
 };
 
-const ThemeIconMock = jest.fn().mockImplementation((id) => ({ id }));
+const ThemeIconMock = jest.fn().mockImplementation(id => ({ id }));
 const TreeItemCollapsibleStateMock = { None: 0, Collapsed: 1, Expanded: 2 };
 
 jest.mock('vscode', () => {
@@ -23,7 +23,7 @@ jest.mock('vscode', () => {
     ...actual,
     window: vscodeWindowMock,
     ThemeIcon: ThemeIconMock,
-    TreeItemCollapsibleState: TreeItemCollapsibleStateMock,
+    TreeItemCollapsibleState: TreeItemCollapsibleStateMock
   };
 });
 
@@ -127,7 +127,9 @@ describe('IssuesTreeViewManager Unit Tests', () => {
   });
 
   it('should handle error in refreshIssues gracefully', () => {
-    jest.spyOn(manager as any, 'processDiagnostics').mockImplementation(() => { throw new Error('process error'); });
+    jest.spyOn(manager as any, 'processDiagnostics').mockImplementation(() => {
+      throw new Error('process error');
+    });
     manager['refreshIssues']();
     expect(true).toBe(true);
   });
@@ -135,17 +137,34 @@ describe('IssuesTreeViewManager Unit Tests', () => {
   it('should handle error in goToIssue gracefully', async () => {
     // Patch the vscode.window mock to include showTextDocument for error handling test
     const vscode = require('vscode');
-    vscode.window.showTextDocument = jest.fn(() => { throw new Error('show error'); });
-    await manager['goToIssue']({ file: 'file.ts', line: 1, column: 1, message: 'msg', rule: 'rule', severity: 'error', id: 'id', category: 'cat', fixable: false, exempted: false, dateFound: Date.now() });
+    vscode.window.showTextDocument = jest.fn(() => {
+      throw new Error('show error');
+    });
+    await manager['goToIssue']({
+      file: 'file.ts',
+      line: 1,
+      column: 1,
+      message: 'msg',
+      rule: 'rule',
+      severity: 'error',
+      id: 'id',
+      category: 'cat',
+      fixable: false,
+      exempted: false,
+      dateFound: Date.now()
+    });
     expect(true).toBe(true);
   });
 
   it('should refresh on DiagnosticProvider onDidDiagnosticsUpdate event', () => {
     const spy = jest.spyOn(manager as any, 'refreshIssues');
     // Simulate event by firing the private event emitter directly
-    manager['diagnosticProvider']['onDiagnosticsUpdated'].fire({ totalIssues: 1, filesWithIssues: 1 });
+    manager['diagnosticProvider']['onDiagnosticsUpdated'].fire({
+      totalIssues: 1,
+      filesWithIssues: 1
+    });
     // Call refreshIssues directly to ensure coverage if event does not trigger
     manager['refreshIssues']();
     expect(spy).toHaveBeenCalled();
   });
-}); 
+});

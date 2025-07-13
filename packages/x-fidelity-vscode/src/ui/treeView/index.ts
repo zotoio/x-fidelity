@@ -7,4 +7,8 @@ export { IssuesTreeViewManager } from './issuesTreeViewManager';
 export { ControlCenterTreeViewManager } from './controlCenterTreeViewManager';
 
 // Re-export types for convenience
-export type { ProcessedIssue, IssueFilter, IssueSortOptions } from '../../types/issues';
+export type {
+  ProcessedIssue,
+  IssueFilter,
+  IssueSortOptions
+} from '../../types/issues';

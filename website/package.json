@@ -1,6 +1,6 @@
 {
   "name": "x-fidelity-website",
-  "version": "0.0.0",
+  "version": "0.0.0-semantically-released",
   "private": true,
   "scripts": {
     "clean": "rimraf build/",

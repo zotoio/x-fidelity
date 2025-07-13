@@ -158,6 +158,22 @@ export async function preloadDefaultPlugins(
     return originalDynamicImport(modulePath);
   };
 
+  // Wait for all plugins to complete initialization before proceeding
+  if (loadedCount > 0) {
+    logger.info(
+      `[X-Fidelity VSCode] Waiting for ${loadedCount} plugins to complete initialization...`
+    );
+    try {
+      await pluginRegistry.waitForAllPlugins();
+      logger.info(
+        `[X-Fidelity VSCode] All plugins initialization completed successfully`
+      );
+    } catch (error) {
+      logger.error(`[X-Fidelity VSCode] Plugin initialization failed:`, error);
+      // Don't throw - allow extension to continue with partially initialized plugins
+    }
+  }
+
   logger.info(
     `[X-Fidelity VSCode] Pre-loaded ${loadedCount} plugins with centralized AST worker support and overrode dynamic imports`
   );

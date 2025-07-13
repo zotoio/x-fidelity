@@ -151,6 +151,32 @@ describe('index', () => {
         expect(process.exit).toHaveBeenCalledWith(0);
     });
 
+    it('should fail when errorCount > 0', async () => {
+        (options as any).mode = 'client';
+
+        const mockAnalyzeCodebase = analyzeCodebase as jest.MockedFunction<typeof analyzeCodebase>;
+        mockAnalyzeCodebase.mockResolvedValue({
+            XFI_RESULT: {
+                totalIssues: 2,
+                warningCount: 1,
+                fatalityCount: 0,
+                errorCount: 1,
+                exemptCount: 0,
+                issueDetails: [
+                    { filePath: 'test.js', errors: [
+                        { level: 'warning', ruleFailure: 'Test warning' },
+                        { level: 'error', ruleFailure: 'Test error' }
+                    ]}
+                ]
+            }
+        } as any);
+
+        await main();
+
+        // Check that errors cause exit code 1
+        expect(process.exit).toHaveBeenCalledWith(1);
+    });
+
     it('should handle errors during execution', async () => {
         (options as any).mode = 'client';
 

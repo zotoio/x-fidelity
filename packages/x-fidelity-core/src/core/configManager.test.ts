@@ -98,7 +98,9 @@ jest.mock('./pluginRegistry', () => ({
         registerPlugin: jest.fn(),
         getPlugin: jest.fn(),
         getPluginFacts: jest.fn().mockReturnValue([]),
-        getPluginOperators: jest.fn().mockReturnValue([])
+        getPluginOperators: jest.fn().mockReturnValue([]),
+        waitForAllPlugins: jest.fn().mockResolvedValue(undefined),
+        waitForPlugin: jest.fn().mockResolvedValue(undefined)
     }
 }));
 

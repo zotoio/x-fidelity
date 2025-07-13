@@ -2,7 +2,7 @@
 const mockDiagnosticCollection = {
   set: jest.fn(),
   clear: jest.fn(),
-  forEach: jest.fn(),
+  forEach: jest.fn()
 };
 
 const vscodeWindowMock: any = {
@@ -11,7 +11,7 @@ const vscodeWindowMock: any = {
   onDidChangeVisibleTextEditors: jest.fn(() => ({ dispose: jest.fn() })),
   showInformationMessage: jest.fn(),
   showErrorMessage: jest.fn(),
-  visibleTextEditors: [],
+  visibleTextEditors: []
 };
 
 jest.mock('vscode', () => {
@@ -20,9 +20,9 @@ jest.mock('vscode', () => {
     ...actual,
     window: vscodeWindowMock,
     languages: {
-      createDiagnosticCollection: jest.fn(() => mockDiagnosticCollection),
+      createDiagnosticCollection: jest.fn(() => mockDiagnosticCollection)
     },
-    DiagnosticCollection: jest.fn(() => mockDiagnosticCollection),
+    DiagnosticCollection: jest.fn(() => mockDiagnosticCollection)
   };
 });
 
@@ -46,9 +46,9 @@ describe('DiagnosticProvider Unit Tests', () => {
     const result = {
       XFI_RESULT: {
         detailedResults: {
-          'file.ts': [{ message: 'Test', severity: 2 }],
-        },
-      },
+          'file.ts': [{ message: 'Test', severity: 2 }]
+        }
+      }
     };
     await provider.updateDiagnostics(result as any);
     expect(true).toBe(true);
@@ -64,12 +64,12 @@ describe('DiagnosticProvider Unit Tests', () => {
               severity: 2,
               locations: [
                 { line: 1, column: 1 },
-                { line: 2, column: 2 },
-              ],
-            },
-          ],
-        },
-      },
+                { line: 2, column: 2 }
+              ]
+            }
+          ]
+        }
+      }
     };
     await provider.updateDiagnostics(result as any);
     expect(true).toBe(true);
@@ -95,13 +95,11 @@ describe('DiagnosticProvider Unit Tests', () => {
             {
               message: 'Test',
               severity: 2,
-              locations: [
-                { line: 2, column: 3 },
-              ],
-            },
-          ],
-        },
-      },
+              locations: [{ line: 2, column: 3 }]
+            }
+          ]
+        }
+      }
     };
     await provider.updateDiagnostics(result as any);
     expect(true).toBe(true);
@@ -110,7 +108,11 @@ describe('DiagnosticProvider Unit Tests', () => {
   it('should handle error in extractIssuesFromResult gracefully', async () => {
     const provider = new DiagnosticProvider(configManager);
     // Patch extractIssuesFromResult to throw, but catch block returns []
-    jest.spyOn(provider as any, 'extractIssuesFromResult').mockImplementation(() => { throw new Error('extract error'); });
+    jest
+      .spyOn(provider as any, 'extractIssuesFromResult')
+      .mockImplementation(() => {
+        throw new Error('extract error');
+      });
     // The error will cause updateDiagnostics to fail before .then on showInformationMessage
     await expect(provider.updateDiagnostics({} as any)).rejects.toThrow();
   });
@@ -118,15 +120,28 @@ describe('DiagnosticProvider Unit Tests', () => {
   it('should handle error in updateDiagnostics gracefully', async () => {
     const provider = new DiagnosticProvider(configManager);
     // Patch convertToDiagnosticsMap to throw
-    jest.spyOn(provider as any, 'convertToDiagnosticsMap').mockImplementation(() => { throw new Error('convert error'); });
-    await provider.updateDiagnostics({ XFI_RESULT: { detailedResults: {} } } as any);
+    jest
+      .spyOn(provider as any, 'convertToDiagnosticsMap')
+      .mockImplementation(() => {
+        throw new Error('convert error');
+      });
+    await provider.updateDiagnostics({
+      XFI_RESULT: { detailedResults: {} }
+    } as any);
     expect(true).toBe(true);
   });
 
   it('should handle error in openIssueLocation gracefully', async () => {
     const provider = new DiagnosticProvider(configManager);
     jest.spyOn(provider as any, 'resolveFileUri').mockResolvedValue(undefined);
-    await provider.openIssueLocation({ file: 'notfound.ts', line: 1, column: 1, message: 'msg', severity: 'error', ruleId: 'rule' });
+    await provider.openIssueLocation({
+      file: 'notfound.ts',
+      line: 1,
+      column: 1,
+      message: 'msg',
+      severity: 'error',
+      ruleId: 'rule'
+    });
     expect(true).toBe(true);
   });
 
@@ -138,7 +153,10 @@ describe('DiagnosticProvider Unit Tests', () => {
         { fsPath: 'file.ts' },
         [
           {
-            range: { start: { line: -1, character: 0 }, end: { line: 0, character: 0 } },
+            range: {
+              start: { line: -1, character: 0 },
+              end: { line: 0, character: 0 }
+            },
             message: 'msg',
             source: 'X-Fidelity',
             code: 'rule',
@@ -157,7 +175,10 @@ describe('DiagnosticProvider Unit Tests', () => {
     // Provide a Map with an array of diagnostics (mock VSCode DiagnosticCollection)
     const diagnosticsArray = [
       {
-        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+        range: {
+          start: { line: 0, character: 0 },
+          end: { line: 0, character: 1 }
+        },
         message: 'msg',
         source: 'X-Fidelity',
         code: 'rule',
@@ -184,4 +205,4 @@ describe('DiagnosticProvider Unit Tests', () => {
     expect(result.isValid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
   });
-}); 
+});

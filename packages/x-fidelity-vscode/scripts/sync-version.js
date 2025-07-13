@@ -45,42 +45,45 @@ function main() {
   const scriptDir = __dirname;
   const vscodeDir = path.dirname(scriptDir);
   const cliDir = path.resolve(vscodeDir, '../x-fidelity-cli');
-  
+
   const vscodePackagePath = path.join(vscodeDir, 'package.json');
   const cliPackagePath = path.join(cliDir, 'package.json');
-  
+
   log('blue', '🔄 Synchronizing versions between CLI and VSCode extension...');
-  
+
   // Read both package.json files
   const vscodePackage = readPackageJson(vscodePackagePath);
   const cliPackage = readPackageJson(cliPackagePath);
-  
+
   const vscodeVersion = vscodePackage.version;
   const cliVersion = cliPackage.version;
-  
+
   log('blue', `📦 VSCode Extension version: ${vscodeVersion}`);
   log('blue', `📦 CLI version: ${cliVersion}`);
-  
+
   if (vscodeVersion === cliVersion) {
     log('green', '✅ Versions are already synchronized!');
     return;
   }
-  
+
   // Determine which version to use (prioritize CLI as source of truth)
   const targetVersion = cliVersion;
   log('yellow', `🎯 Target version: ${targetVersion}`);
-  
+
   // Update VSCode extension version
   if (vscodeVersion !== targetVersion) {
     vscodePackage.version = targetVersion;
     writePackageJson(vscodePackagePath, vscodePackage);
-    log('green', `✅ VSCode extension version updated: ${vscodeVersion} → ${targetVersion}`);
+    log(
+      'green',
+      `✅ VSCode extension version updated: ${vscodeVersion} → ${targetVersion}`
+    );
   }
-  
+
   log('green', '🎉 Version synchronization complete!');
   log('blue', `📋 All packages now use version: ${targetVersion}`);
 }
 
 if (require.main === module) {
   main();
-} 
+}

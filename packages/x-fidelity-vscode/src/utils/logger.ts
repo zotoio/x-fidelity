@@ -73,7 +73,9 @@ function createLogger(): Logger {
 
   return {
     trace: (msg: string, obj?: any) => {
-      if (!shouldLog('trace')) return;
+      if (!shouldLog('trace')) {
+        return;
+      }
       const formatted = formatLogMessage('trace', msg, obj);
       if (isTestEnv) {
         console.log(formatted);
@@ -82,7 +84,9 @@ function createLogger(): Logger {
       }
     },
     debug: (msg: string, obj?: any) => {
-      if (!shouldLog('debug')) return;
+      if (!shouldLog('debug')) {
+        return;
+      }
       const formatted = formatLogMessage('debug', msg, obj);
       if (isTestEnv) {
         console.log(formatted);
@@ -91,7 +95,9 @@ function createLogger(): Logger {
       }
     },
     info: (msg: string, obj?: any) => {
-      if (!shouldLog('info')) return;
+      if (!shouldLog('info')) {
+        return;
+      }
       const formatted = formatLogMessage('info', msg, obj);
       if (isTestEnv) {
         console.log(formatted);
@@ -100,7 +106,9 @@ function createLogger(): Logger {
       }
     },
     warn: (msg: string, obj?: any) => {
-      if (!shouldLog('warn')) return;
+      if (!shouldLog('warn')) {
+        return;
+      }
       const formatted = formatLogMessage('warn', msg, obj);
       if (isTestEnv) {
         console.warn(formatted);
@@ -109,7 +117,9 @@ function createLogger(): Logger {
       }
     },
     error: (msg: string, obj?: any) => {
-      if (!shouldLog('error')) return;
+      if (!shouldLog('error')) {
+        return;
+      }
       const formatted = formatLogMessage('error', msg, obj);
       if (isTestEnv) {
         console.error(formatted);
@@ -118,7 +128,9 @@ function createLogger(): Logger {
       }
     },
     fatal: (msg: string, obj?: any) => {
-      if (!shouldLog('fatal')) return;
+      if (!shouldLog('fatal')) {
+        return;
+      }
       const formatted = formatLogMessage('fatal', msg, obj);
       if (isTestEnv) {
         console.error(formatted);

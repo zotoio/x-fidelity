@@ -4,23 +4,15 @@ module.exports = {
   testEnvironment: 'node',
   roots: ["<rootDir>/src/"],
   setupFilesAfterEnv: ['./src/jest.setup.ts'],
-  testMatch: ['**/*.test.ts', '!**/*.integration.test.ts'],
+  testMatch: ['**/*.integration.test.ts'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.test.ts',
     '!src/**/*.spec.ts',
     '!src/**/index.ts'
   ],
-  coverageDirectory: 'coverage',
+  coverageDirectory: 'coverage-integration',
   coverageReporters: ['text', 'lcov', 'html'],
-  coverageThreshold: {
-    global: {
-      statements: 85,
-      branches: 80,
-      functions: 85,
-      lines: 85
-    }
-  },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: {
@@ -40,8 +32,10 @@ module.exports = {
     '^@x-fidelity/democonfig(.*)$': '<rootDir>/../x-fidelity-democonfig/src$1'
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node", "mts", "cts"],
-  // Jest 30 performance improvements
+  // Jest 30 performance improvements  
   testEnvironmentOptions: {
     globalsCleanup: 'soft'
-  }
+  },
+  // Integration tests typically need more time
+  testTimeout: 30000
 };

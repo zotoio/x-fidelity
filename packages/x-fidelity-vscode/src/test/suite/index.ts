@@ -29,7 +29,7 @@ export function run(): Promise<void> {
   }
 
   if (!originalHandlers.uncaughtException) {
-    process.on('uncaughtException', (error) => {
+    process.on('uncaughtException', error => {
       console.error('Uncaught Exception in test suite:', error);
       // Don't exit - let tests continue
     });

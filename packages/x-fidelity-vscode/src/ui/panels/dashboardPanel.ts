@@ -2,7 +2,10 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { ConfigManager } from '../../configuration/configManager';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
-import { IAnalysisEngine, getCompletionEvent } from '../../analysis/analysisEngineInterface';
+import {
+  IAnalysisEngine,
+  getCompletionEvent
+} from '../../analysis/analysisEngineInterface';
 import type { TrendData } from '../../reports/reportHistoryManager';
 
 export interface DashboardData {
@@ -156,7 +159,10 @@ export class DashboardPanel implements vscode.Disposable {
     const diagnosticsSummary = this.diagnosticProvider.getDiagnosticsSummary();
 
     // Defensive: Only use plain string for archetype
-    const archetype = typeof config.archetype === 'string' ? config.archetype : String(config.archetype);
+    const archetype =
+      typeof config.archetype === 'string'
+        ? config.archetype
+        : String(config.archetype);
 
     // Project info
     const projectInfo = {
@@ -984,7 +990,11 @@ export class DashboardPanel implements vscode.Disposable {
     try {
       dashboardDataString = JSON.stringify(data);
     } catch (err) {
-      console.error('Failed to serialize dashboard data for webview:', err, data);
+      console.error(
+        'Failed to serialize dashboard data for webview:',
+        err,
+        data
+      );
     }
     return `
         const vscode = acquireVsCodeApi();

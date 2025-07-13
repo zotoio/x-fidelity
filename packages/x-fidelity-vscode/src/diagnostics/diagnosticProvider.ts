@@ -205,8 +205,11 @@ export class DiagnosticProvider implements vscode.Disposable {
 
         for (const error of fileIssue.errors) {
           // Use enhanced location extraction
-          const locationResult = DiagnosticLocationExtractor.extractLocation(error);
-          const location = DiagnosticLocationExtractor.validateLocation(locationResult.location);
+          const locationResult =
+            DiagnosticLocationExtractor.extractLocation(error);
+          const location = DiagnosticLocationExtractor.validateLocation(
+            locationResult.location
+          );
 
           this.logger.debug('Location extraction result', {
             ruleFailure: error.ruleFailure,
@@ -241,7 +244,8 @@ export class DiagnosticProvider implements vscode.Disposable {
           // Preserve original XFI level and location metadata for debugging
           (diagnosticIssue as any).originalLevel = error.level;
           (diagnosticIssue as any).locationSource = location.source;
-          (diagnosticIssue as any).locationConfidence = locationResult.confidence;
+          (diagnosticIssue as any).locationConfidence =
+            locationResult.confidence;
 
           issues.push(diagnosticIssue);
         }

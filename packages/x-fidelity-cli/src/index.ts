@@ -16,6 +16,7 @@ import { DefaultLogger } from '@x-fidelity/core';
 import { LogLevel } from '@x-fidelity/types';
 import path from 'path';
 import fs from 'fs/promises';
+import { version as cliVersion } from '../package.json';  // Import CLI version
 
 import { startServer } from '@x-fidelity/server';
 
@@ -179,7 +180,8 @@ export async function main() {
                     configServer: options.configServer,
                     localConfigPath: options.localConfigPath,
                     executionLogPrefix: executionId, // Use execution ID as prefix
-                    logger: analysisLogger
+                    logger: analysisLogger,
+                    version: cliVersion // Pass CLI version
                 });
 
                 logger.info(`PERFORMANCE: Rule executions took ${resultMetadata.XFI_RESULT.durationSeconds} seconds`);

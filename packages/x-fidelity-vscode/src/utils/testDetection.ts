@@ -184,7 +184,9 @@ export function setupTestEnvironmentPatching(): void {
 }
 
 export function patchVSCodeDialogsForTests() {
-  if (!isTestEnvironment()) return;
+  if (!isTestEnvironment()) {
+    return;
+  }
   const win = vscode.window as any;
   if (!win._originalShowInformationMessage) {
     win._originalShowInformationMessage = win.showInformationMessage;

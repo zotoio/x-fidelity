@@ -17,82 +17,88 @@ This is a monorepo containing the X-Fidelity framework for opinionated code adhe
 
 ## Common Commands
 
-### Building and Development
+### Building and Development (Using Yarn Workspaces)
 ```bash
 # Install dependencies
 yarn install
 
-# Build all packages
+# Build all packages (in dependency order)
 yarn build
 
-# Build with clean slate
-yarn build:clean
-
-# Watch mode for development
-yarn build:watch
+# Build specific packages
+yarn workspace @x-fidelity/core build
+yarn workspace x-fidelity build
+yarn workspace x-fidelity-vscode build
+yarn workspace @x-fidelity/plugins build
 
 # Clean all build artifacts
 yarn clean
 ```
 
-### Testing
+### Testing (Using Yarn Workspaces)
 ```bash
 # Run all tests across packages
 yarn test
 
-# Run consistency testing specifically
-yarn test:consistency
+# Test specific packages
+yarn workspace @x-fidelity/core test
+yarn workspace @x-fidelity/plugins test
+yarn workspace x-fidelity-vscode test
+
+# Run consistency testing specifically (CLI package)
+yarn workspace x-fidelity test:consistency
 
 # Run quick consistency test
-yarn test:consistency:quick
-
-# Generate consistency baseline
-yarn test:consistency:baseline
-
-# Validate consistency
-yarn test:consistency:validate
+yarn workspace x-fidelity test:consistency:quick
 ```
 
-### CLI Global Install Testing
+### CLI Global Install Testing (Using Yarn Workspaces)
 ```bash
 # Set up Docker-based global install testing environment
-cd packages/x-fidelity-cli
-yarn global:setup
+yarn workspace x-fidelity global:setup
 
 # Test local package global installation (from workspace)
-yarn global:test:local
+yarn workspace x-fidelity global:test:local
 
 # Test published package global installation (from npm registry)
-yarn global:test:published
+yarn workspace x-fidelity global:test:published
 
 # Run both local and published package tests
-yarn global:test
+yarn workspace x-fidelity global:test
 ```
 
-### VSCode Extension Development
+### VSCode Extension Development (Using Yarn Workspaces)
 ```bash
 # Launch extension in debug mode
-yarn vscode:dev
+yarn workspace x-fidelity-vscode dev
 
 # Launch with fresh user data
-yarn vscode:dev:fresh
+yarn workspace x-fidelity-vscode dev:fresh
 
 # Launch with watch mode
-yarn vscode:dev:watch
+yarn workspace x-fidelity-vscode dev:watch
 
 # Package extension
-yarn vscode:package
+yarn workspace x-fidelity-vscode package
+
+# Build extension for development
+yarn workspace x-fidelity-vscode dev:build
 ```
 
-### Linting and Code Quality
+### Linting and Code Quality (Using Yarn Workspaces)
 ```bash
 # Lint all packages
 yarn lint
 
-# Individual package linting (from workspace root)
-yarn workspace x-fidelity-core lint
+# Lint specific packages
+yarn workspace @x-fidelity/core lint
 yarn workspace x-fidelity-vscode lint
+yarn workspace x-fidelity lint
+
+# Lint with auto-fix
+yarn lint:fix
 ```
+
 
 ## High-Level Architecture
 
@@ -150,9 +156,10 @@ JSON-based rule definitions using json-rules-engine:
 ## Development Guidelines
 
 ### Package Management
-- Use **yarn** instead of npm for all commands
-- Workspace commands: `yarn workspace <package-name> <command>`
-- Build dependencies between packages using `yarn build` from root
+- Use **yarn** for dependency installation: `yarn install`
+- Use **yarn workspaces** for build/test/lint commands: `yarn build`, `yarn test`, `yarn lint`
+- Build script handles dependency order between packages
+- Build dependencies manually specified in root package.json build script
 
 ### Testing Strategy
 - Always run `yarn test` from workspace root after significant changes

@@ -18,25 +18,33 @@ import { ScreenshotHelper } from '../helpers/screenshotHelper';
 
 // Helper functions for robust testing
 function logDiag(...args: any[]) {
-  if (global.testConsole) global.testConsole.log(...args);
-  else console.log(...args);
+  if (global.testConsole) {
+    global.testConsole.log(...args);
+  } else {
+    console.log(...args);
+  }
 }
 
 function logError(...args: any[]) {
-  if (global.testConsole) global.testConsole.error(...args);
-  else console.error(...args);
+  if (global.testConsole) {
+    global.testConsole.error(...args);
+  } else {
+    console.error(...args);
+  }
 }
 
 async function logAndCaptureOnError(testName: string, error: any) {
   logError(`❌ Test failed: ${testName}`, error);
   if (process.env.SCREENSHOTS === 'true') {
-    await ScreenshotHelper.captureScreen(testName + '-failure', { description: 'failure' });
+    await ScreenshotHelper.captureScreen(testName + '-failure', {
+      description: 'failure'
+    });
   }
 }
 
 // Wrapper function for robust testing with shared analysis results
 function robustTest(testName: string, testFn: any) {
-  return async function(this: Mocha.Context) {
+  return async function (this: Mocha.Context) {
     await testFn.call(this);
   };
 }
@@ -65,26 +73,32 @@ suite('Comprehensive UI Integration Tests', () => {
 
     // Validate fixture workspace structure
     try {
-      await validateWorkspaceStructure([
-        'src/components/UserAuth.tsx',
-        'src/components/ComplexComponent.tsx',
-        'src/components/PoorRhythmComponent.tsx',
-        'src/components/LegacyUIComponent.tsx',
-        'src/components/AccessibilityIssues.tsx',
-        'src/utils/database.js',
-        'src/utils/sdkUsage.ts',
-        'src/facts/problematicFact.ts',
-        'src/facts/manyFunctionsFact.ts',
-        'src/xfiTestMatch.json',
-        'package.json',
-        'wrongStructure/badDir/problematicCode.js'
-      ], ['src/components', 'src/utils', 'src/facts', 'wrongStructure/badDir']);
+      await validateWorkspaceStructure(
+        [
+          'src/components/UserAuth.tsx',
+          'src/components/ComplexComponent.tsx',
+          'src/components/PoorRhythmComponent.tsx',
+          'src/components/LegacyUIComponent.tsx',
+          'src/components/AccessibilityIssues.tsx',
+          'src/utils/database.js',
+          'src/utils/sdkUsage.ts',
+          'src/facts/problematicFact.ts',
+          'src/facts/manyFunctionsFact.ts',
+          'src/xfiTestMatch.json',
+          'package.json',
+          'wrongStructure/badDir/problematicCode.js'
+        ],
+        ['src/components', 'src/utils', 'src/facts', 'wrongStructure/badDir']
+      );
       if (global.isVerboseMode) {
         global.testConsole.log('✅ Fixture workspace structure validated');
       }
     } catch (e) {
-      if (global.testConsole) global.testConsole.error('❌ Fixture validation failed:', e);
-      else console.error('❌ Fixture validation failed:', e);
+      if (global.testConsole) {
+        global.testConsole.error('❌ Fixture validation failed:', e);
+      } else {
+        console.error('❌ Fixture validation failed:', e);
+      }
       throw e;
     }
 
@@ -95,9 +109,14 @@ suite('Comprehensive UI Integration Tests', () => {
     logDiag('🔍 Running initial analysis for UI test suite...');
     try {
       initialAnalysisResults = await runInitialAnalysis();
-      logDiag(`📊 Initial analysis completed with ${initialAnalysisResults?.summary?.totalIssues || 0} issues`);
+      logDiag(
+        `📊 Initial analysis completed with ${initialAnalysisResults?.summary?.totalIssues || 0} issues`
+      );
     } catch (error) {
-      logDiag('⚠️ Initial analysis failed (may be expected for test environment):', error);
+      logDiag(
+        '⚠️ Initial analysis failed (may be expected for test environment):',
+        error
+      );
       initialAnalysisResults = null;
     }
 
@@ -203,17 +222,26 @@ suite('Comprehensive UI Integration Tests', () => {
       const allDiagnostics = vscode.languages.getDiagnostics();
       const diagnosticEntries = Array.from(allDiagnostics);
 
-      const xfidelityFiles = diagnosticEntries.filter(([uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => {
-        return diagnostics.some((d: vscode.Diagnostic) => d.source === 'X-Fidelity');
-      }).length;
+      const xfidelityFiles = diagnosticEntries.filter(
+        ([uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => {
+          return diagnostics.some(
+            (d: vscode.Diagnostic) => d.source === 'X-Fidelity'
+          );
+        }
+      ).length;
 
       const totalXfidelityDiagnostics = diagnosticEntries
-        .flatMap(([uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => diagnostics)
+        .flatMap(
+          ([uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => diagnostics
+        )
         .filter((d: vscode.Diagnostic) => d.source === 'X-Fidelity').length;
-        
+
       // Should have valid counts (even if 0)
       assert.ok(xfidelityFiles >= 0, 'Should have valid file count');
-      assert.ok(totalXfidelityDiagnostics >= 0, 'Should have valid diagnostic count');
+      assert.ok(
+        totalXfidelityDiagnostics >= 0,
+        'Should have valid diagnostic count'
+      );
 
       logDiag('✅ Problems panel test passed');
     });
@@ -264,7 +292,10 @@ suite('Comprehensive UI Integration Tests', () => {
       const freshResults = await runInitialAnalysis(undefined, true); // Force fresh
 
       // Verify fresh results are available
-      assert.ok(freshResults !== null, 'Fresh analysis results should be available');
+      assert.ok(
+        freshResults !== null,
+        'Fresh analysis results should be available'
+      );
 
       logDiag('✅ Fresh analysis test passed');
     });
@@ -278,4 +309,4 @@ suite('Comprehensive UI Integration Tests', () => {
       await ScreenshotHelper.cleanupOldSessions();
     }
   });
-}); 
+});

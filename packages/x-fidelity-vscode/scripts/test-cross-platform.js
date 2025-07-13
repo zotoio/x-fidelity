@@ -23,7 +23,13 @@ console.log(`📋 Test label: ${testLabel}`);
 // Base command - use npx to run locally installed vscode-test
 const npxCmd = platform === 'win32' ? 'npx.cmd' : 'npx';
 const baseCmd = npxCmd;
-const baseArgs = ['vscode-test', '--config', '.vscode-test.mjs', '--label', testLabel];
+const baseArgs = [
+  'vscode-test',
+  '--config',
+  '.vscode-test.mjs',
+  '--label',
+  testLabel
+];
 
 let command, args;
 
@@ -46,7 +52,7 @@ if (isLinux && (isCI || process.env.FORCE_XVFB === 'true')) {
   } else if (platform === 'darwin') {
     console.log('🍎 Running on macOS');
   }
-  
+
   command = baseCmd;
   args = baseArgs;
 }
@@ -88,11 +94,11 @@ const child = spawn(command, args, {
 });
 
 // Capture and forward stdout
-child.stdout.on('data', (data) => {
+child.stdout.on('data', data => {
   const output = data.toString();
   testOutput += output;
   process.stdout.write(output);
-  
+
   // Check for test success patterns
   if (output.includes('✔') || output.includes('passing')) {
     // Look for patterns that indicate all tests passed
@@ -101,25 +107,30 @@ child.stdout.on('data', (data) => {
       /✔.*should handle analysis with directory parameter/,
       /✔.*should handle configuration and exemption commands gracefully/
     ];
-    
-    const passedTests = successPatterns.filter(pattern => pattern.test(testOutput));
-    if (passedTests.length >= 2) { // At least 2 key tests passed
+
+    const passedTests = successPatterns.filter(pattern =>
+      pattern.test(testOutput)
+    );
+    if (passedTests.length >= 2) {
+      // At least 2 key tests passed
       allTestsPassed = true;
     }
   }
 });
 
 // Capture and forward stderr
-child.stderr.on('data', (data) => {
+child.stderr.on('data', data => {
   const output = data.toString();
   testOutput += output;
   process.stderr.write(output);
 });
 
-child.on('error', (error) => {
+child.on('error', error => {
   if (error.code === 'ENOENT') {
     if (command === 'xvfb-run') {
-      console.error('❌ xvfb-run not found. Install with: sudo apt-get install xvfb');
+      console.error(
+        '❌ xvfb-run not found. Install with: sudo apt-get install xvfb'
+      );
       console.log('💡 Alternative: Run with FORCE_XVFB=false to skip xvfb');
     } else {
       console.error(`❌ Command not found: ${command}`);
@@ -130,21 +141,27 @@ child.on('error', (error) => {
   process.exit(1);
 });
 
-child.on('close', (code) => {
+child.on('close', code => {
   // Check for actual test failures vs VSCode test runner issues
-  const hasTestFailures = testOutput.includes('failing') || 
-                         testOutput.includes('❌') && !testOutput.includes('❌ Tests failed with exit code');
-  
+  const hasTestFailures =
+    testOutput.includes('failing') ||
+    (testOutput.includes('❌') &&
+      !testOutput.includes('❌ Tests failed with exit code'));
+
   if (code === 0) {
     console.log('✅ Tests completed successfully');
     process.exit(0);
   } else if (code === 1 && allTestsPassed && !hasTestFailures) {
     // VSCode test runner exit code 1 but all tests actually passed
-    console.log('⚠️  VSCode test runner returned exit code 1, but all tests passed');
-    console.log('✅ Tests completed successfully (ignoring VSCode test runner exit code)');
+    console.log(
+      '⚠️  VSCode test runner returned exit code 1, but all tests passed'
+    );
+    console.log(
+      '✅ Tests completed successfully (ignoring VSCode test runner exit code)'
+    );
     process.exit(0);
   } else {
     console.error(`❌ Tests failed with exit code ${code}`);
     process.exit(code);
   }
-}); 
+});

@@ -194,40 +194,43 @@ const copyXFidelityAssetsPlugin = {
         '../x-fidelity-cli/dist/index.js'
       );
       const cliBinaryDest = 'dist/cli';
-      
+
       try {
         // Ensure CLI directory exists
         if (!fs.existsSync(cliBinaryDest)) {
           fs.mkdirSync(cliBinaryDest, { recursive: true });
         }
-        
+
         // Copy CLI binary and support files
         const cliFiles = ['index.js', 'index.js.map', 'index.d.ts'];
         const cliDistPath = path.dirname(cliBinarySrc);
-        
+
         for (const file of cliFiles) {
           const srcFile = path.join(cliDistPath, file);
           const destFile = path.join(cliBinaryDest, file);
-          
+
           if (fs.existsSync(srcFile)) {
             fs.copyFileSync(srcFile, destFile);
           }
         }
-        
+
         // Copy demo config directory for bundled CLI
         const cliDemoConfigSrc = path.join(cliDistPath, 'demoConfig');
         const cliDemoConfigDest = path.join(cliBinaryDest, 'demoConfig');
-        
+
         if (fs.existsSync(cliDemoConfigSrc)) {
-          fs.cpSync(cliDemoConfigSrc, cliDemoConfigDest, { 
+          fs.cpSync(cliDemoConfigSrc, cliDemoConfigDest, {
             recursive: true,
-            force: true 
+            force: true
           });
         }
-        
+
         console.log('[cli] ✅ CLI binary bundled to dist/cli');
       } catch (error) {
-        console.warn('[cli] ⚠️ CLI bundling failed (CLI may not be built):', error.message);
+        console.warn(
+          '[cli] ⚠️ CLI bundling failed (CLI may not be built):',
+          error.message
+        );
         console.warn('[cli] 💡 Run: cd ../x-fidelity-cli && yarn build');
       }
 
