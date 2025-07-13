@@ -267,74 +267,45 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       
       for (const diag of diags) {
         logger.debug(`Diagnostic: source='${diag.source}', message='${diag.message.substring(0, 50)}...'`);
-        //console.log(`[DEBUG] Found diagnostic: source='${diag.source}', message='${diag.message.substring(0, 50)}...'`);
         
-        // TEMPORARILY ACCEPT ALL DIAGNOSTICS FOR DEBUGGING
-        // TODO: Re-enable proper filtering once we identify the issue
-        // if (diag.source !== 'X-Fidelity') {
-        //   logger.warn(`🚫 Skipping diagnostic with source: '${diag.source}' (not X-Fidelity related)`);
-        //   continue;
-        // }
+        // Filter for X-Fidelity diagnostics
+        if (diag.source !== 'X-Fidelity') {
+          continue;
+        }
         
         logger.info(`✅ Processing diagnostic: ${diag.message.substring(0, 50)}...`);
 
-        // Extract enhanced position data if available - use original XFI core data (1-based)
-        const enhancedPos = (diag as any).enhancedPosition;
-        let range:
-          | {
-              start: { line: number; column: number };
-              end: { line: number; column: number };
-            }
-          | undefined = undefined;
-        let line = diag.range.start.line + 1; // Convert VSCode 0-based back to 1-based for display
-        let column = diag.range.start.character + 1; // Convert VSCode 0-based back to 1-based for display
+        // Use simple VSCode range data (convert back to 1-based for display)
+        let line = diag.range.start.line + 1; 
+        let column = diag.range.start.character + 1;
 
-        if (enhancedPos) {
-          // Use original XFI core range data (1-based) for accurate display
-          if (enhancedPos.originalRange) {
-            range = enhancedPos.originalRange;
-            line = enhancedPos.originalRange.start.line;
-            column = enhancedPos.originalRange.start.column;
-          }
-          // Use original position data for more accurate positioning
-          else if (enhancedPos.originalPosition) {
-            line = enhancedPos.originalPosition.line;
-            column = enhancedPos.originalPosition.column;
-          }
-          // Use first match range if available (original XFI core data)
-          else if (
-            enhancedPos.originalMatches &&
-            enhancedPos.originalMatches.length > 0 &&
-            enhancedPos.originalMatches[0].range
-          ) {
-            range = enhancedPos.originalMatches[0].range;
-            line = enhancedPos.originalMatches[0].range.start.line;
-            column = enhancedPos.originalMatches[0].range.start.column;
-          }
-          // Fallback to legacy fields (original 1-based values)
-          else if ((diag as any).lineNumber) {
-            line = (diag as any).lineNumber;
-            column = (diag as any).columnNumber || 1;
-          }
+        // Check if this issue was originally marked as exempt
+        const originalLevel = (diag as any).originalLevel || null;
+        const isExempted = originalLevel === 'exempt';
+
+        // For exempted issues, adjust severity display
+        let displaySeverity = this.mapSeverityToString(diag.severity);
+        if (isExempted) {
+          displaySeverity = 'exempt';
         }
 
         issues.push({
           id: `${uri.fsPath}-${diag.code}-${diag.range.start.line}`,
           file: vscode.workspace.asRelativePath(uri),
           rule: String(diag.code || 'unknown'),
-          severity: this.mapSeverityToString(diag.severity),
+          severity: displaySeverity,
           message: diag.message,
-          line: line, // 1-based line number from XFI core
-          column: column, // 1-based column number from XFI core
-          range: range, // Original XFI core range data (1-based)
+          line: line,
+          column: column,
           category: (diag as any).category || 'general',
           fixable: (diag as any).fixable || false,
-          exempted: false,
+          exempted: isExempted,
           dateFound: Date.now()
         });
       }
     }
 
+    logger.debug(`Processed ${issues.length} issues for tree view`);
     return issues;
   }
 
@@ -371,13 +342,18 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     logger.info(`📊 Tree view statistics: ${JSON.stringify(stats)}`);
     //console.log(`[IssuesTreeViewManager] Tree statistics:`, stats);
 
-    // Removed bracketed issue count format for cleaner UI
-    // if (stats.total > 0) {
-    //   const errorCount = stats.error > 0 ? `${stats.error}E` : '';
-    //   const warningCount = stats.warning > 0 ? `${stats.warning}W` : '';
-    //   const counts = [errorCount, warningCount].filter(c => c).join(' ');
-    //   title += ` (${stats.total}${counts ? ` - ${counts}` : ''})`;
-    // }
+    // Show issue counts in title
+    if (stats.total > 0) {
+      const counts: string[] = [];
+      if (stats.error > 0) counts.push(`${stats.error}E`);
+      if (stats.warning > 0) counts.push(`${stats.warning}W`);
+      if (stats.info > 0) counts.push(`${stats.info}I`);
+      if (stats.exempt > 0) counts.push(`${stats.exempt}X`);
+      if (stats.hint > 0) counts.push(`${stats.hint}H`);
+      
+      const countString = counts.length > 0 ? ` (${counts.join(' ')})` : ` (${stats.total})`;
+      title += countString;
+    }
 
     // Add grouping mode indicator
     const modeIndicator = mode.charAt(0).toUpperCase() + mode.slice(1);

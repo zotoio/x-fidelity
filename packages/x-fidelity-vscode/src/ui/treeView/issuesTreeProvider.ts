@@ -207,7 +207,7 @@ export class IssuesTreeProvider
 
   private buildSeverityTree(): void {
     const severityGroups = this.groupBy(this.issues, issue => issue.severity);
-    const severityOrder = ['error', 'warning', 'info', 'hint'];
+    const severityOrder = ['error', 'warning', 'info', 'hint', 'exempt'];
 
     for (const severity of severityOrder) {
       if (!severityGroups[severity]?.length) {
@@ -388,32 +388,36 @@ export class IssuesTreeProvider
   }
 
   private getSeverityIcon(severity: string): vscode.ThemeIcon {
-    switch (severity.toLowerCase()) {
+    switch (severity) {
       case 'error':
-        return new vscode.ThemeIcon('error');
+        return new vscode.ThemeIcon('error', new vscode.ThemeColor('list.errorForeground'));
       case 'warning':
-        return new vscode.ThemeIcon('warning');
+        return new vscode.ThemeIcon('warning', new vscode.ThemeColor('list.warningForeground'));
       case 'info':
-        return new vscode.ThemeIcon('info');
+        return new vscode.ThemeIcon('info', new vscode.ThemeColor('list.warningForeground'));
       case 'hint':
-        return new vscode.ThemeIcon('lightbulb');
+        return new vscode.ThemeIcon('lightbulb', new vscode.ThemeColor('editorLightBulb.foreground'));
+      case 'exempt':
+        return new vscode.ThemeIcon('shield', new vscode.ThemeColor('charts.purple'));
       default:
         return new vscode.ThemeIcon('circle-outline');
     }
   }
 
   private getSeverityEmoji(severity: string): string {
-    switch (severity.toLowerCase()) {
+    switch (severity) {
       case 'error':
-        return '🔴';
+        return '❌';
       case 'warning':
-        return '🟡';
+        return '⚠️';
       case 'info':
-        return '🔵';
+        return 'ℹ️';
       case 'hint':
         return '💡';
+      case 'exempt':
+        return '🛡️';
       default:
-        return '⚪';
+        return '●';
     }
   }
 
@@ -446,6 +450,7 @@ export class IssuesTreeProvider
       warning: 0,
       info: 0,
       hint: 0,
+      exempt: 0,
       fixable: 0,
       exempted: 0
     };
@@ -463,6 +468,9 @@ export class IssuesTreeProvider
           break;
         case 'hint':
           stats.hint++;
+          break;
+        case 'exempt':
+          stats.exempt++;
           break;
       }
 

@@ -723,7 +723,17 @@ export class ReportViewer implements vscode.Disposable {
             // Issue items are handled by onclick in HTML
         }
         
-        function navigateToIssue(filePath, lineNumber, columnNumber, range) {
+        function navigateToIssue(filePath, lineNumber, columnNumber, rangeJson) {
+            // Parse range safely, handling null/undefined
+            let range = null;
+            if (rangeJson && rangeJson !== 'null') {
+                try {
+                    range = typeof rangeJson === 'string' ? JSON.parse(rangeJson) : rangeJson;
+                } catch (e) {
+                    console.warn('Failed to parse range:', rangeJson);
+                }
+            }
+            
             vscode.postMessage({
                 command: 'navigateToIssue',
                 filePath: filePath,
@@ -778,8 +788,13 @@ export class ReportViewer implements vscode.Disposable {
     const column = error.details?.columnNumber || '';
     const location = line ? `Line ${line}${column ? `:${column}` : ''}` : '';
 
+    // Safely serialize range object to avoid toJSON errors
+    const rangeJson = error.details?.range
+      ? JSON.stringify(error.details.range)
+      : 'null';
+
     return `
-      <div class="issue-item" onclick="navigateToIssue('${filePath}', ${line || 1}, ${column || 1}, ${error.details?.range})">
+      <div class="issue-item" onclick="navigateToIssue('${filePath}', ${line || 1}, ${column || 1}, ${rangeJson})">
         <div class="issue-header">
           <span class="issue-severity ${error.level || 'hint'}">${(error.level || 'hint').toUpperCase()}</span>
           <span class="issue-rule">${error.ruleFailure}</span>
@@ -787,7 +802,7 @@ export class ReportViewer implements vscode.Disposable {
         </div>
         <div class="issue-message">${error.details?.message || error.ruleFailure}</div>
         <div class="issue-actions">
-          <button class="btn btn-primary" onclick="event.stopPropagation(); navigateToIssue('${filePath}', ${line || 1}, ${column || 1}, ${error.details?.range})">
+          <button class="btn btn-primary" onclick="event.stopPropagation(); navigateToIssue('${filePath}', ${line || 1}, ${column || 1}, ${rangeJson})">
             Go to Issue
           </button>
           <button class="btn btn-secondary" onclick="event.stopPropagation(); showRuleInfo('${error.ruleFailure}')">

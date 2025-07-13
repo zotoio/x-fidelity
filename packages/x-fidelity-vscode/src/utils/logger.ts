@@ -26,7 +26,14 @@ function getOutputChannel(): vscode.OutputChannel {
   return outputChannel;
 }
 
-type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'silent';
+type LogLevel =
+  | 'trace'
+  | 'debug'
+  | 'info'
+  | 'warn'
+  | 'error'
+  | 'fatal'
+  | 'silent';
 
 function shouldLog(level: LogLevel): boolean {
   const levels: Record<LogLevel, number> = {
@@ -38,7 +45,7 @@ function shouldLog(level: LogLevel): boolean {
     debug: 20,
     trace: 10
   };
-  
+
   const currentLevel = levels[loglevel as LogLevel] || levels.info;
   return levels[level] >= currentLevel;
 }
@@ -60,8 +67,10 @@ interface Logger {
 }
 
 function createLogger(): Logger {
-  const isTestEnv = process.env.NODE_ENV === 'test' || typeof (globalThis as any).jest !== 'undefined';
-  
+  const isTestEnv =
+    process.env.NODE_ENV === 'test' ||
+    typeof (globalThis as any).jest !== 'undefined';
+
   return {
     trace: (msg: string, obj?: any) => {
       if (!shouldLog('trace')) return;

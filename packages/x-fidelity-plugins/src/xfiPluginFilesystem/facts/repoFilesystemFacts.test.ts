@@ -51,7 +51,7 @@ const mockArchetypeConfig: ArchetypeConfig = {
         minimumDependencyVersions: {},
         standardStructure: {},
         blacklistPatterns: ['node_modules', '\\.git'],
-        whitelistPatterns: ['\\.js$', '\\.tsx$', '\\.md$']
+        whitelistPatterns: ['\\.js$', '\\.tsx$', '\\.txt$', '\\.md$']
     }
 };
 
@@ -280,7 +280,7 @@ describe('File operations', () => {
 
         it('should handle circular symlinks', async () => {
             const repoPath = 'mock/repo-with-circular-symlinks';
-            (fs.readdirSync as jest.Mock).mockReturnValue(['circular-link']);
+            (fs.readdirSync as jest.Mock).mockReturnValue(['circular-link.js']);
             const realpathSyncSpy = jest.spyOn(fs, 'realpathSync');
             realpathSyncSpy.mockImplementation(() => {
                 throw new Error('Circular symlink detected');
@@ -294,7 +294,7 @@ describe('File operations', () => {
             // With the new logic, the file gets processed even when realpathSync fails
             // because it falls back to the original path and continues processing
             expect(result.length).toBe(1);
-            expect(result[0].fileName).toBe('circular-link');
+            expect(result[0].fileName).toBe('circular-link.js');
             expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Error resolving real path'));
             
             realpathSyncSpy.mockRestore();
@@ -416,7 +416,7 @@ describe('File operations', () => {
         });
 
         it('should return false if file path does not match any whitelist pattern', () => {
-            const filePath = '/test/repo/build/index.txt';
+            const filePath = '/test/repo/build/index.log';
             const repoPath = '/test/repo';
             expect(isWhitelisted({ filePath, repoPath, whitelistPatterns: mockArchetypeConfig.config.whitelistPatterns })).toBe(false);
         });
