@@ -53,6 +53,22 @@ yarn test:consistency:baseline
 yarn test:consistency:validate
 ```
 
+### CLI Global Install Testing
+```bash
+# Set up Docker-based global install testing environment
+cd packages/x-fidelity-cli
+yarn global:setup
+
+# Test local package global installation (from workspace)
+yarn global:test:local
+
+# Test published package global installation (from npm registry)
+yarn global:test:published
+
+# Run both local and published package tests
+yarn global:test
+```
+
 ### VSCode Extension Development
 ```bash
 # Launch extension in debug mode
@@ -142,6 +158,16 @@ JSON-based rule definitions using json-rules-engine:
 - Always run `yarn test` from workspace root after significant changes
 - VSCode extension tests use: `packages/x-fidelity-fixtures/node-fullstack` as test workspace
 - Fix failing tests without changing implementation unless test is incorrect
+
+#### CLI Global Install Testing
+- **Location**: `global-install-testing/` directory with Docker-based test environments
+- **Framework**: BATS (Bash Automated Testing System) for integration testing
+- **Test Types**:
+  - **Local Package Testing**: Tests `yarn pack` + global install of development build
+  - **Published Package Testing**: Tests `yarn global add x-fidelity` from npm registry
+- **Docker Environments**: Clean Node.js Alpine containers to simulate fresh installs
+- **CI Integration**: Automated testing in GitHub Actions with cross-platform support
+- **Test Coverage**: Command availability, functionality, bundle integrity, cleanup
 
 ### Code Quality
 - ESLint configuration in `eslint.config.js` with TypeScript rules

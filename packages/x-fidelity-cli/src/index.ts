@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Set max listeners early to prevent warnings when multiple workers are created
-process.setMaxListeners(20);
+//process.setMaxListeners(20);
 
 import { 
     analyzeCodebase, 
@@ -35,7 +35,6 @@ LoggerProvider.initializeForPlugins();
 // Create CLI logger instance and inject it
 // When called from VSCode, use simple console logging to avoid file descriptor issues
 const isVSCodeMode = process.env.XFI_VSCODE_MODE === 'true';
-const disableFileLogging = process.env.XFI_DISABLE_FILE_LOGGING === 'true';
 
 const logger = isVSCodeMode 
     ? new DefaultLogger('[CLI]') // Use simple console logger for VSCode to avoid Pino issues
@@ -152,14 +151,15 @@ export async function main() {
                     }
                 });
                 
-                // Create logger with file output for analysis (unless disabled from VSCode)
+                // Create logger with console output (file logging only if explicitly enabled)
+                const enableFileLogging = options.enableFileLogging === true;
                 const analysisLogger = isVSCodeMode 
                     ? new DefaultLogger('[CLI-Analysis]') // Use simple console logger for VSCode
                     : new PinoLogger({
                         level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
                         enableConsole: true,
                         enableColors: true,
-                        enableFile: !disableFileLogging, // Disable file logging if requested
+                        enableFile: enableFileLogging, // File logging only if explicitly enabled
                         filePath: logFilePath
                     });
 
@@ -171,7 +171,7 @@ export async function main() {
                 // Update the logger provider to use CLI's pino logger with file output
                 LoggerProvider.setLogger(analysisLogger);
 
-                logger.info('🚀 Starting codebase analysis');
+                logger.info('Ready..');
 
                 const resultMetadata: ResultMetadata = await analyzeCodebase({
                     repoPath,

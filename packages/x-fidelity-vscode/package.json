@@ -1,7 +1,7 @@
 {
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity",
-  "description": "VSCode extension for X-Fidelity code quality analysis with 47 commands, real-time diagnostics, and comprehensive UI integration",
+  "description": "VSCode extension for X-Fidelity code quality analysis real-time diagnostics, and comprehensive UI integration",
   "version": "3.31.0",
   "publisher": "zotoio",
   "private": true,
@@ -630,10 +630,8 @@
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "vscode:prepublish": "yarn format && yarn compile",
-    "compile": "yarn build",
-    "prebuild": "yarn format",
-    "build": "yarn build:deps && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "vscode:prepublish": "yarn build",
+    "build": "yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "build:cli": "cd ../x-fidelity-cli && yarn build",
     "embed:cli": "node scripts/embed-cli.js",
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
@@ -642,7 +640,7 @@
     "sync-version": "node scripts/sync-version.js",
     "rebuild-native": "yarn rebuild --runtime=electron --target=35.5.1 --cache=.npm --disturl=https://electronjs.org/headers",
     "rebuild-native:check": "node -e \"try { require('tree-sitter'); console.log('✅ Native modules OK'); } catch(e) { console.log('❌ Native rebuild needed:', e.message); process.exit(1); }\"",
-    "pretest": "yarn compile && yarn rebuild-native:check || yarn rebuild-native && yarn lint && yarn clean:test-artifacts && node -e \"require('fs').mkdirSync('./vscode-test-user-data', {recursive: true})\" && yarn build:cli",
+    "pretest": "yarn build:test && yarn rebuild-native:check || yarn rebuild-native && yarn lint:fix && yarn clean:test-artifacts && node -e \"require('fs').mkdirSync('./vscode-test-user-data', {recursive: true})\" && yarn build:cli",
     "test": "yarn test:all",
     "test:coverage": "jest --coverage",
     "test:unit": "jest",
@@ -664,21 +662,14 @@
     "publish": "yarn package && vsce publish",
     "install-vsix": "code --install-extension $(ls *.vsix | head -1) --force",
     "test:vsix": "node scripts/test-vsix-installation.js",
-    "dev:build": "yarn clean && yarn build:deps && (yarn rebuild-native:check || yarn rebuild-native) && tsc && node --no-warnings=ExperimentalWarning esbuild.config.js",
-    "build:deps": "cd ../../ && yarn build",
+    "dev:build": "yarn clean && (yarn rebuild-native:check || yarn rebuild-native) && tsc && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "dev:fresh": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --user-data-dir=./.vscode-test-profile .",
     "dev:watch": "yarn dev:build && (yarn watch &) && sleep 2 && code --extensionDevelopmentPath=. --new-window .",
     "dev:complete": "./scripts/dev-complete.sh",
     "test:all": "yarn test:unit && yarn test:integration && yarn test:e2e",
     "test:watch": "node -e \"require('fs').mkdirSync('./.vscode-test-user-data', {recursive: true})\" && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label unit --watch",
     "debug": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --enable-proposed-api",
-    "logs": "echo 'Check VSCode Output panel > X-Fidelity Debug for logs'",
-    "verify:all": "node scripts/verify-extension.js",
-    "verify:dev": "yarn dev:build && node scripts/verify-extension.js",
-    "verify:ci": "yarn build && node scripts/verify-extension.js",
-    "verify:extension": "node scripts/verify-extension.js",
-    "verify:quick": "yarn build:test && yarn test:unit && yarn verify:extension",
-    "quick-start": "echo '🚀 Quick Start: Press F5 to launch extension, then Ctrl+Shift-P > X-Fidelity: Control Center'",
-    "help": "echo '📖 Development Help:\n  yarn dev - Start development\n  yarn dev:fresh - Fresh profile\n  yarn test:all - Run tests\n  yarn rebuild-native - Fix Electron native modules\n  F5 in VSCode - Debug launch\n  yarn verify:all - Full verification'"
+    "verify": "node scripts/verify-extension.js",
+    "verify:full": "yarn build && node scripts/verify-extension.js"
   }
 }

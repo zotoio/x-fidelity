@@ -37,12 +37,12 @@
         },
         "blacklistPatterns": [
             ".*\\/\\..*",
-            ".*\\.(log|lock)$",
-            ".*\\/(dist|coverage|build|node_modules)(\\/.*|$)"
+            ".*\\.(log|lock|txt|md|mdc|json)$",
+            ".*\\/(dist|coverage|build|node_modules|tmp|temp|out)(\\/.*|$)"
         ],
         "whitelistPatterns": [
             ".*\\.(ts|tsx|js|jsx)$",
-            ".*\\/xfiTestMatch\\.json$",
+            ".*xfiTestMatch\\.json$",
             ".*\\/README\\.md$"
         ],
         "notifications": {

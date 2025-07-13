@@ -15,11 +15,10 @@
   },
   "scripts": {
     "clean": "rimraf dist/",
-    "prebuild": "yarn clean && node -e \"require('fs').mkdirSync('dist', {recursive: true})\"",
+    "prebuild": "yarn clean",
     "build": "tsc",
-    "build:deps": "cd ../../ && yarn build:deps",
     "build:watch": "tsc --watch --sourceMap",
-    "test": "NODE_ENV=test jest --config jest.config.js",
+    "test": "yarn lint:fix && NODE_ENV=test jest --config jest.config.js",
     "test:coverage": "NODE_ENV=test jest --config jest.config.js --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

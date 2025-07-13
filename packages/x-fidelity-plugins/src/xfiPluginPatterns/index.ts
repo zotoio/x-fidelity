@@ -9,7 +9,7 @@ import { globalPatternRatio } from './operators/globalPatternRatio';
 let logger: ILogger;
 
 export const xfiPluginPatterns: XFiPlugin = {
-    name: 'xfi-plugin-patterns',
+    name: 'xfiPluginPatterns',
     version: '1.0.0',
     description: 'Plugin for pattern matching and regex analysis with enhanced logging',
     facts: [globalFileAnalysis],

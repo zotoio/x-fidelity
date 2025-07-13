@@ -85,7 +85,7 @@ echo -e "${CYAN}Next Steps:${RESET}"
 echo -e "  ${GREEN}•${RESET} Press ${BOLD}F5${RESET} in VSCode to launch extension"
 echo -e "  ${GREEN}•${RESET} Or run: ${BOLD}yarn dev${RESET}"
 echo -e "  ${GREEN}•${RESET} Test with: ${BOLD}Ctrl+Shift+P${RESET} → 'X-Fidelity: Test Extension'"
-echo -e "  ${GREEN}•${RESET} Full verification: ${BOLD}yarn verify:all${RESET}"
+echo -e "  ${GREEN}•${RESET} Full verification: ${BOLD}yarn verify:full${RESET}"
 
 echo ""
 echo -e "${BOLD}⚡ Lightning Status: READY${RESET}" 

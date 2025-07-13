@@ -1,13 +1,13 @@
 {
-  "name": "@x-fidelity/democonfig",
+  "name": "democonfig",
   "version": "0.0.0",
   "description": "Demo configuration files for X-Fidelity including rules, archetypes, and exemptions",
   "private": true,
   "scripts": {
-    "clean": "rimraf dist/",
-    "prebuild": "yarn clean && node -e \"require('fs').mkdirSync('dist', {recursive: true})\"",
-    "build": "node -e \"require('fs-extra').copySync('src', 'dist')\"",
-    "build:watch": "yarn build && chokidar 'src/**/*' -c 'yarn build'",
+    "clean": "echo 'Clean noop for democonfig'",
+    "prebuild": "echo 'Prebuild noop for democonfig'",
+    "build": "echo 'Build noop for democonfig - using src directly'",
+    "build:watch": "echo 'Build watch noop for democonfig'",
     "test": "echo 'No tests for democonfig package'",
     "test:coverage": "echo 'No tests for democonfig package'",
     "lint": "echo 'No linting for democonfig package'",
@@ -26,7 +26,6 @@
     "rimraf": "^6.0.1"
   },
   "files": [
-    "dist/**/*",
     "src/**/*"
   ]
 } 

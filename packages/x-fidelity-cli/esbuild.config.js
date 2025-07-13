@@ -21,13 +21,13 @@ async function main() {
     platform: 'node',
     outfile: 'dist/treeSitterWorker.js',
     external: [
-      // Keep tree-sitter modules external to use rebuilt versions
+      // Native modules that contain .node files - these need platform-specific builds
+      'fsevents',
+      'chokidar',
+      // Keep tree-sitter modules external so they compile for target platform
       'tree-sitter',
       'tree-sitter-javascript',
-      'tree-sitter-typescript',
-      // Native modules that contain .node files
-      'fsevents',
-      'chokidar'
+      'tree-sitter-typescript'
     ],
     logLevel: 'info',
     alias: {
@@ -64,13 +64,13 @@ async function main() {
       'glob',
       // VSCode API is only available in VSCode extension context
       'vscode',
-      // Keep tree-sitter modules external to use rebuilt versions
+      // Native modules that contain .node files - these need platform-specific builds
+      'fsevents',
+      'chokidar',
+      // Keep tree-sitter modules external so they compile for target platform
       'tree-sitter',
       'tree-sitter-javascript',
-      'tree-sitter-typescript',
-      // Native modules that contain .node files
-      'fsevents',
-      'chokidar'
+      'tree-sitter-typescript'
     ],
     logLevel: 'info',
     // Bundle all internal dependencies
@@ -144,8 +144,7 @@ const copyAssetsPlugin = {
       // Create executable CLI binaries
       const cliSource = 'dist/index.js';
       const binaries = [
-        { name: 'xfidelity', path: 'dist/xfidelity' },
-        { name: 'xfi', path: 'dist/xfi' }
+        { name: 'xfidelity', path: 'dist/xfidelity' }
       ];
       
       if (fs.existsSync(cliSource)) {

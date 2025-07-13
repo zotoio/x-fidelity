@@ -8,7 +8,7 @@ import { functionCountOperator } from './operators/functionCount';
 import { treeSitterManager } from './worker/treeSitterManager';
 
 export const xfiPluginAst: XFiPlugin = {
-    name: 'xfi-plugin-ast',
+    name: 'xfiPluginAst',
     version: '1.0.0',
     description: 'AST analysis plugin for x-fidelity',
     facts: [

@@ -258,7 +258,7 @@ X-Fidelity creates a `.xfiResults/` directory in your workspace containing:
 - **`xfi-report-{timestamp}.md`** - Human-readable Markdown reports
 
 ### Logs and History
-- **`x-fidelity.log`** - Extension activity logs
+- **`x-fidelity.log`** - Extension activity logs (only created if `--enable-file-logging` is used)
 - **`.xfidelity-history.json`** - Analysis history and trends
 
 ### Configuration
