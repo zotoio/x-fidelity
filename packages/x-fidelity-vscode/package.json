@@ -149,6 +149,16 @@
         "command": "xfidelity.debugCLISetup",
         "title": "X-Fidelity: Debug CLI Setup",
         "icon": "$(tools)"
+      },
+      {
+        "command": "xfidelity.explainIssue",
+        "title": "Explain Issue",
+        "icon": "$(question)"
+      },
+      {
+        "command": "xfidelity.fixIssue",
+        "title": "Fix Issue",
+        "icon": "$(wrench)"
       }
     ],
     "configuration": {
@@ -576,6 +586,16 @@
           "command": "xfidelity.showIssueRuleInfo",
           "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
           "group": "1_actions@2"
+        },
+        {
+          "command": "xfidelity.explainIssue",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
+          "group": "1_actions@3"
+        },
+        {
+          "command": "xfidelity.fixIssue",
+          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
+          "group": "1_actions@4"
         }
         ]
     },
@@ -633,7 +653,8 @@
     "vscode:prepublish": "yarn build",
     "build": "yarn format && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "build:cli": "cd ../../ && yarn workspace x-fidelity build",
-    "build:dependencies": "cd ../../ && yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && yarn workspace @x-fidelity/democonfig build",
+    "build:dependencies": "cd ../../ && yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && yarn workspace @x-fidelity/democonfig build && echo 'Dependencies built successfully'",
+    "verify:dependencies": "node -e \"const fs = require('fs'); const deps = ['../x-fidelity-types/dist/index.js', '../x-fidelity-core/dist/index.js', '../x-fidelity-plugins/dist/index.js']; deps.forEach(dep => { if (!fs.existsSync(dep)) { console.error('Missing dependency:', dep); process.exit(1); } }); console.log('All dependencies verified');\"",
     "embed:cli": "node scripts/embed-cli.js",
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
     "watch": "node --no-warnings=ExperimentalWarning esbuild.config.js --watch",
@@ -641,11 +662,11 @@
     "sync-version": "node scripts/sync-version.js",
     "rebuild-native": "yarn rebuild --runtime=electron --target=35.5.1 --cache=.npm --disturl=https://electronjs.org/headers",
     "rebuild-native:check": "node -e \"try { require('tree-sitter'); console.log('✅ Native modules OK'); } catch(e) { console.log('❌ Native rebuild needed:', e.message); process.exit(1); }\"",
-    "pretest": "yarn build:test && yarn rebuild-native:check || yarn rebuild-native && yarn lint:fix && yarn clean:test-artifacts && node -e \"require('fs').mkdirSync('./vscode-test-user-data', {recursive: true})\" && yarn build:cli",
+    "pretest": "yarn build:dependencies && yarn verify:dependencies && yarn build:test && yarn rebuild-native:check || yarn rebuild-native && yarn lint:fix && yarn clean:test-artifacts && node -e \"require('fs').mkdirSync('./vscode-test-user-data', {recursive: true})\" && yarn build:cli",
     "test": "yarn format && yarn test:all",
     "test:coverage": "yarn build:dependencies && jest --coverage",
-    "test:unit": "yarn build:dependencies && jest",
-    "test:integration": "node scripts/test-cross-platform.js integration",
+    "test:unit": "yarn build:dependencies && yarn verify:dependencies && jest",
+    "test:integration": "yarn build:dependencies && yarn verify:dependencies && node scripts/test-cross-platform.js integration",
     "test:e2e": "node scripts/test-cross-platform.js e2e",
     "test:ci": "node scripts/test-cross-platform.js comprehensive",
     "test:simple": "vscode-test --config .vscode-test.mjs --label all",

@@ -153,8 +153,10 @@ export class PeriodicAnalysisManager {
         return;
       }
 
-      const { AnalysisManager } = await import('./analysisManager');
-      if ((AnalysisManager as any).globalAnalysisLock) {
+      // Check if main analysis is running via CLISpawner execution state
+      const { createCLISpawner } = await import('../utils/cliSpawner');
+      const cliSpawner = createCLISpawner();
+      if (cliSpawner.isExecuting()) {
         logger.debug('Main analysis running, skipping periodic analysis');
         return;
       }

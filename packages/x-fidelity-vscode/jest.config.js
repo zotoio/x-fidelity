@@ -26,7 +26,8 @@ module.exports = {
     '^@x-fidelity/core$': '<rootDir>/../x-fidelity-core/dist/index.js',
     '^@x-fidelity/types$': '<rootDir>/../x-fidelity-types/dist/index.js',
     '^@x-fidelity/plugins$': '<rootDir>/../x-fidelity-plugins/dist/index.js',
-    '^@x-fidelity/democonfig$': '<rootDir>/../x-fidelity-democonfig/dist/index.js'
+    '^@x-fidelity/democonfig$':
+      '<rootDir>/../x-fidelity-democonfig/dist/index.js'
   },
   testTimeout: 10000
 };

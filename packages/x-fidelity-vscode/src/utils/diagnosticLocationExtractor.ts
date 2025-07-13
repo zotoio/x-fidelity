@@ -45,12 +45,26 @@ export class DiagnosticLocationExtractor {
       this.extractFromLegacyFields
     ];
 
+    // CRITICAL FIX: Add logging for extraction attempts
     for (const extractor of extractors) {
-      const result = extractor(error);
-      if (result.found) {
-        return result;
+      try {
+        const result = extractor(error);
+        if (result.found) {
+          return result;
+        }
+      } catch (extractorError) {
+        console.warn('Location extractor failed:', extractorError);
       }
     }
+
+    // Enhanced fallback with better logging
+    console.warn('No location found for error:', {
+      ruleFailure: error?.ruleFailure || 'unknown',
+      availableKeys: error ? Object.keys(error) : [],
+      detailsKeys: error?.details ? Object.keys(error.details) : [],
+      hasDetails: !!error?.details,
+      hasComplexities: !!error?.details?.details?.complexities
+    });
 
     // Ultimate fallback
     return {

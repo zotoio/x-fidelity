@@ -34,8 +34,8 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     private configManager: ConfigManager,
     private diagnosticProvider: DiagnosticProvider
   ) {
-    this.logger = new VSCodeLogger('CLI Analysis');
     this.globalLogger = createComponentLogger('CLI Analysis');
+    this.logger = this.globalLogger; // Use the same logger instance
     this.initializeCLISpawner();
     this.setupEventListeners();
   }
@@ -84,6 +84,9 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     forceRefresh?: boolean;
   }): Promise<AnalysisResult | null> {
     if (this.isAnalyzing) {
+      this.globalLogger.warn(
+        '🔄 Analysis already in progress, skipping request'
+      );
       return null;
     }
 
@@ -99,8 +102,20 @@ export class CLIAnalysisManager implements IAnalysisEngine {
         throw new Error('No workspace folder found');
       }
 
+      this.globalLogger.info('🔍 Starting fresh analysis', {
+        workspacePath,
+        forceRefresh: _options?.forceRefresh
+      });
+
       const config = this.configManager.getConfig();
       const extraArgs = config.cliExtraArgs || [];
+
+      this.globalLogger.debug('📋 Analysis configuration', {
+        workspacePath,
+        extraArgs,
+        timeout: config.analysisTimeout,
+        archetype: config.archetype
+      });
 
       const result = await vscode.window.withProgress(
         {
@@ -114,6 +129,8 @@ export class CLIAnalysisManager implements IAnalysisEngine {
             increment: 10
           });
 
+          this.globalLogger.info('⚡ Executing CLI analysis...');
+
           const analysisResult = await this.cliSpawner.runAnalysis({
             workspacePath,
             args: extraArgs,
@@ -122,16 +139,36 @@ export class CLIAnalysisManager implements IAnalysisEngine {
             progress
           });
 
+          this.globalLogger.info('📊 CLI analysis completed', {
+            filesAnalyzed: analysisResult.summary?.filesAnalyzed || 0,
+            totalIssues: analysisResult.summary?.totalIssues || 0,
+            analysisTimeMs: analysisResult.summary?.analysisTimeMs || 0
+          });
+
           progress.report({ message: 'Completed', increment: 100 });
           return analysisResult;
         }
       );
 
+      this.globalLogger.info('🔄 Updating VSCode diagnostics...');
       await this.diagnosticProvider.updateDiagnostics(result);
 
       const duration = performance.now() - startTime;
 
       this.lastAnalysisResult = result;
+
+      // Ensure result has the required summary structure
+      if (!result.summary) {
+        this.globalLogger.error('❌ Result missing summary object', { result });
+        throw new Error('Analysis result missing summary object');
+      }
+
+      this.globalLogger.info('✅ Analysis completed successfully', {
+        duration: Math.round(duration),
+        filesAnalyzed: result.summary.filesAnalyzed,
+        totalIssues: result.summary.totalIssues,
+        analysisTimeMs: result.summary.analysisTimeMs
+      });
 
       this.onAnalysisComplete.fire(result);
 
@@ -144,12 +181,17 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       this.setState('error');
 
       if (error instanceof vscode.CancellationError) {
+        this.globalLogger.warn('⏹️ Analysis cancelled by user');
         return null;
       }
 
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
       const duration = performance.now() - startTime;
+
+      this.globalLogger.error('❌ Analysis failed', {
+        error: error instanceof Error ? error.message : String(error),
+        duration: Math.round(duration),
+        workspacePath: getAnalysisTargetDirectory()
+      });
 
       logCommandError('xfidelity.runAnalysis', 'CLI Analysis', error, duration);
 

@@ -69,14 +69,7 @@ jobs:
       run: yarn build
 
     - name: Run unit tests for ${{ matrix.package }}
-      run: |
-        case "${{ matrix.package }}" in
-          "core") yarn workspace @x-fidelity/core test:unit ;;
-          "plugins") yarn workspace @x-fidelity/plugins test:unit ;;
-          "types") yarn workspace @x-fidelity/types test:unit ;;
-          "server") yarn workspace @x-fidelity/server test:unit ;;
-          "cli") yarn workspace x-fidelity test:unit ;;
-        esac
+      run: yarn test:unit
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -107,7 +100,18 @@ jobs:
         DISPLAY: ':99.0'
 
     - name: Run VSCode extension integration tests
-      run: xvfb-run -a yarn workspace x-fidelity-vscode test:integration
+      run: |
+        # Verify workspace dependencies are built
+        yarn workspace @x-fidelity/types build
+        yarn workspace @x-fidelity/core build  
+        yarn workspace @x-fidelity/plugins build
+        yarn workspace @x-fidelity/democonfig build
+        # Verify the built files exist
+        ls -la packages/x-fidelity-types/dist/ || echo "Types dist not found"
+        ls -la packages/x-fidelity-core/dist/ || echo "Core dist not found"
+        ls -la packages/x-fidelity-plugins/dist/ || echo "Plugins dist not found"
+        # Run the extension tests
+        xvfb-run -a yarn workspace x-fidelity-vscode test:integration
       env:
         DISPLAY: ':99.0'
 

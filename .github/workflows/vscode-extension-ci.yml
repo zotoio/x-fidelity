@@ -58,10 +58,24 @@ jobs:
         run: yarn workspace x-fidelity-vscode build
           
       - name: Run unit tests
-        run: xvfb-run -a yarn workspace x-fidelity-vscode test:unit
+        run: |
+          # Verify workspace dependencies are built
+          yarn workspace @x-fidelity/types build
+          yarn workspace @x-fidelity/core build  
+          yarn workspace @x-fidelity/plugins build
+          yarn workspace @x-fidelity/democonfig build
+          # Run unit tests
+          xvfb-run -a yarn workspace x-fidelity-vscode test:unit
           
       - name: Run integration tests
-        run: xvfb-run -a yarn workspace x-fidelity-vscode test:integration
+        run: |
+          # Verify workspace dependencies are built
+          yarn workspace @x-fidelity/types build
+          yarn workspace @x-fidelity/core build  
+          yarn workspace @x-fidelity/plugins build
+          yarn workspace @x-fidelity/democonfig build
+          # Run integration tests
+          xvfb-run -a yarn workspace x-fidelity-vscode test:integration
           
       - name: Package extension
         run: yarn workspace x-fidelity-vscode package

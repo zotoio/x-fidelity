@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
 import { ConfigManager } from '../configuration/configManager';
 import { DiagnosticProvider } from '../diagnostics/diagnosticProvider';
-import { AnalysisManager } from './analysisManager';
 import { CLIAnalysisManager } from './cliAnalysisManager';
 import type { IAnalysisEngine } from './analysisEngineInterface';
 
-export type AnalysisEngineType = 'extension' | 'cli';
+export type AnalysisEngineType = 'cli';
 
 export interface AnalysisEngineOptions {
   configManager: ConfigManager;
@@ -15,37 +14,25 @@ export interface AnalysisEngineOptions {
 
 export class AnalysisEngineFactory {
   /**
-   * Create analysis engine based on configuration
+   * Create CLI analysis engine
    */
   static async create(
     options: AnalysisEngineOptions
   ): Promise<IAnalysisEngine> {
-    const { configManager, diagnosticProvider, context } = options;
-    const config = configManager.getConfig();
+    const { configManager, diagnosticProvider } = options;
 
-    // Simplified: Always use CLI analysis manager
     return new CLIAnalysisManager(configManager, diagnosticProvider);
-  }
-
-  /**
-   * Auto-detect and suggest CLI mode if available
-   */
-  static async autoDetectAndSuggest(
-    configManager: ConfigManager
-  ): Promise<void> {
-    // Simplified: CLI is always available since we're using embedded CLI
-    return;
   }
 
   /**
    * Get available analysis engines
    */
   static getAvailableEngines(): AnalysisEngineType[] {
-    return ['cli']; // Only CLI is available now
+    return ['cli'];
   }
 
   /**
-   * Validate analysis engine configuration
+   * Validate CLI analysis engine configuration
    */
   static async validateConfiguration(configManager: ConfigManager): Promise<{
     isValid: boolean;
@@ -55,7 +42,7 @@ export class AnalysisEngineFactory {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    // Simplified validation for CLI-only mode
+    // Basic CLI validation
     return {
       isValid: true,
       errors,
