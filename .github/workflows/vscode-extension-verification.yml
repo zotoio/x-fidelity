@@ -41,8 +41,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          yarn install
-          npx nx run-many --target=build --all
+          yarn install --frozen-lockfile
+          yarn build
         env:
           # Make fsevents optional on non-macOS systems
           CPPFLAGS: "-DMAC_OS_X_VERSION_MIN_REQUIRED=MAC_OS_X_VERSION_10_12"
@@ -54,19 +54,19 @@ jobs:
           yarn rebuild-native || echo "Native rebuild failed, continuing..."
 
       - name: Build extension
-        run: npx nx run vscode:dev:build
+        run: yarn workspace x-fidelity-vscode dev:build
 
       - name: Run comprehensive verification
-        run: npx nx run vscode:verify:ci
+        run: yarn workspace x-fidelity-vscode verify:ci
 
       - name: Run unit tests
-        run: npx nx run vscode:test:unit
+        run: yarn workspace x-fidelity-vscode test:unit
 
       - name: Run integration tests
-        run: npx nx run vscode:test:integration
+        run: yarn workspace x-fidelity-vscode test:integration
 
       - name: Package extension
-        run: npx nx run vscode:package
+        run: yarn workspace x-fidelity-vscode package
 
       - name: Install VSCode CLI (Linux)
         if: runner.os == 'Linux'
@@ -146,8 +146,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          yarn install
-          npx nx run-many --target=build --all
+          yarn install --frozen-lockfile
+          yarn build
         env:
           # Make fsevents optional on non-macOS systems
           CPPFLAGS: "-DMAC_OS_X_VERSION_MIN_REQUIRED=MAC_OS_X_VERSION_10_12"
@@ -196,14 +196,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          yarn install
-          npx nx run-many --target=build --all
+          yarn install --frozen-lockfile
+          yarn build
         env:
           # Make fsevents optional on non-macOS systems
           CPPFLAGS: "-DMAC_OS_X_VERSION_MIN_REQUIRED=MAC_OS_X_VERSION_10_12"
 
       - name: Run linting
-        run: npx nx run vscode:lint:fix
+        run: yarn workspace x-fidelity-vscode lint:fix
 
       - name: Check TypeScript
         run: |
@@ -225,8 +225,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          yarn install
-          npx nx run-many --target=build --all
+          yarn install --frozen-lockfile
+          yarn build
         env:
           # Make fsevents optional on non-macOS systems
           CPPFLAGS: "-DMAC_OS_X_VERSION_MIN_REQUIRED=MAC_OS_X_VERSION_10_12"
@@ -238,7 +238,7 @@ jobs:
           yarn rebuild-native || echo "Native rebuild failed, continuing..."
 
       - name: Build extension
-        run: npx nx run vscode:dev:build
+        run: yarn workspace x-fidelity-vscode dev:build
 
       - name: Install VSCode CLI for performance test
         run: |
@@ -324,8 +324,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          yarn install
-          npx nx run-many --target=build --all
+          yarn install --frozen-lockfile
+          yarn build
         env:
           # Make fsevents optional on non-macOS systems
           CPPFLAGS: "-DMAC_OS_X_VERSION_MIN_REQUIRED=MAC_OS_X_VERSION_10_12"

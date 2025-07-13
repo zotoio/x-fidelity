@@ -144,14 +144,14 @@ teardown() {
     fi
 }
 
-@test "xfidelity suggests nx build on module errors" {
+@test "xfidelity suggests yarn build on module errors" {
     cd /tmp/test-project
     run timeout 15 xfidelity --dir . --archetype node-fullstack
     
-    # If module errors are found, should suggest nx build
+    # If module errors are found, should suggest yarn build
     if echo "$output" | grep -q "ERR_MODULE_NOT_FOUND\|Cannot find module"; then
         # Should suggest the build command
-        if echo "$output" | grep -q "npx nx run-many\|yarn build"; then
+        if echo "$output" | grep -q "yarn build"; then
             echo "Correctly suggests build command for module errors"
         else
             echo "Module error detected but no build suggestion found in output:"

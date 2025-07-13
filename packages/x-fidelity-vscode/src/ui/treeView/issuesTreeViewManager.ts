@@ -55,7 +55,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
     // Load initial data
     this.refreshIssues();
-    
+
     // Register debug command for manual refresh
     if (!IssuesTreeViewManager.commandsRegistered) {
       this.context.subscriptions.push(
@@ -73,7 +73,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     this.disposables.push(this.treeView);
 
     // Debug logging for tree view creation
-    logger.info(`IssuesTreeViewManager created for view: ${this.viewId || 'xfidelityIssuesTreeView'}`);
+    logger.info(
+      `IssuesTreeViewManager created for view: ${this.viewId || 'xfidelityIssuesTreeView'}`
+    );
   }
 
   private registerCommands(): void {
@@ -153,7 +155,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
           'xfidelity.addIssueExemption',
           async (item: IssueTreeItem) => {
             if (IssuesTreeViewManager.activeInstance) {
-              await IssuesTreeViewManager.activeInstance.addIssueExemption(item);
+              await IssuesTreeViewManager.activeInstance.addIssueExemption(
+                item
+              );
             }
           }
         )
@@ -164,7 +168,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
           'xfidelity.showIssueRuleInfo',
           async (item: IssueTreeItem) => {
             if (IssuesTreeViewManager.activeInstance) {
-              await IssuesTreeViewManager.activeInstance.showIssueRuleInfo(item);
+              await IssuesTreeViewManager.activeInstance.showIssueRuleInfo(
+                item
+              );
             }
           }
         )
@@ -227,7 +233,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       logger.info(
         `Tree view updated with ${this.currentIssues.length} issues from ${diagnostics.length} diagnostic files`
       );
-      
+
       // Debug diagnostic data
       for (const [uri, diags] of diagnostics) {
         logger.debug(`File ${uri.fsPath}: ${diags.length} diagnostics`);
@@ -235,7 +241,8 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
       // Debug processed issues
       if (this.currentIssues.length > 0) {
-        logger.debug('Sample processed issues:', 
+        logger.debug(
+          'Sample processed issues:',
           this.currentIssues.slice(0, 3).map(issue => ({
             file: issue.file,
             rule: issue.rule,
@@ -246,7 +253,10 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       } else {
         logger.warn('No issues were processed from diagnostics', {
           diagnosticsCount: diagnostics.length,
-          totalDiagnostics: diagnostics.reduce((sum, [, diags]) => sum + diags.length, 0)
+          totalDiagnostics: diagnostics.reduce(
+            (sum, [, diags]) => sum + diags.length,
+            0
+          )
         });
       }
     } catch (error) {
@@ -264,19 +274,23 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
     for (const [uri, diags] of diagnostics) {
       logger.debug(`Processing ${diags.length} diagnostics for ${uri.fsPath}`);
-      
+
       for (const diag of diags) {
-        logger.debug(`Diagnostic: source='${diag.source}', message='${diag.message.substring(0, 50)}...'`);
-        
+        logger.debug(
+          `Diagnostic: source='${diag.source}', message='${diag.message.substring(0, 50)}...'`
+        );
+
         // Filter for X-Fidelity diagnostics
         if (diag.source !== 'X-Fidelity') {
           continue;
         }
-        
-        logger.info(`✅ Processing diagnostic: ${diag.message.substring(0, 50)}...`);
+
+        logger.info(
+          `✅ Processing diagnostic: ${diag.message.substring(0, 50)}...`
+        );
 
         // Use simple VSCode range data (convert back to 1-based for display)
-        let line = diag.range.start.line + 1; 
+        let line = diag.range.start.line + 1;
         let column = diag.range.start.character + 1;
 
         // Check if this issue was originally marked as exempt
@@ -345,13 +359,24 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     // Show issue counts in title
     if (stats.total > 0) {
       const counts: string[] = [];
-      if (stats.error > 0) {counts.push(`${stats.error}E`);}
-      if (stats.warning > 0) {counts.push(`${stats.warning}W`);}
-      if (stats.info > 0) {counts.push(`${stats.info}I`);}
-      if (stats.exempt > 0) {counts.push(`${stats.exempt}X`);}
-      if (stats.hint > 0) {counts.push(`${stats.hint}H`);}
-      
-      const countString = counts.length > 0 ? ` (${counts.join(' ')})` : ` (${stats.total})`;
+      if (stats.error > 0) {
+        counts.push(`${stats.error}E`);
+      }
+      if (stats.warning > 0) {
+        counts.push(`${stats.warning}W`);
+      }
+      if (stats.info > 0) {
+        counts.push(`${stats.info}I`);
+      }
+      if (stats.exempt > 0) {
+        counts.push(`${stats.exempt}X`);
+      }
+      if (stats.hint > 0) {
+        counts.push(`${stats.hint}H`);
+      }
+
+      const countString =
+        counts.length > 0 ? ` (${counts.join(' ')})` : ` (${stats.total})`;
       title += countString;
     }
 
@@ -360,8 +385,10 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     title += ` • ${modeIndicator}`;
 
     this.treeView.title = title;
-    
-    logger.info(`📝 Tree view title updated: '${title}' (current issues: ${this.currentIssues.length})`);
+
+    logger.info(
+      `📝 Tree view title updated: '${title}' (current issues: ${this.currentIssues.length})`
+    );
     //console.log(`[IssuesTreeViewManager] Title updated: ${title}`);
   }
 
@@ -372,7 +399,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       // Handle undefined/null parameters
       if (!issueOrItem) {
         logger.warn('goToIssue called with undefined/null parameter');
-        vscode.window.showWarningMessage('No issue data available for navigation');
+        vscode.window.showWarningMessage(
+          'No issue data available for navigation'
+        );
         return;
       }
 
@@ -391,7 +420,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       // Validate issue data
       if (!issue.file || !issue.line) {
         logger.warn('Issue missing required file or line data', { issue });
-        vscode.window.showWarningMessage('Issue missing required file or line data');
+        vscode.window.showWarningMessage(
+          'Issue missing required file or line data'
+        );
         return;
       }
 
@@ -424,13 +455,19 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         const markdownUri = vscode.Uri.file(
           path.join(workspaceFolder.uri.fsPath, '.xfiResults', 'XFI_RESULT.md')
         );
-        
+
         try {
-          const markdownDocument = await vscode.workspace.openTextDocument(markdownUri);
+          const markdownDocument =
+            await vscode.workspace.openTextDocument(markdownUri);
           await vscode.window.showTextDocument(markdownDocument);
-          logger.debug('Navigated to global check report', { file: issue.file });
+          logger.debug('Navigated to global check report', {
+            file: issue.file
+          });
         } catch (error) {
-          logger.warn('Failed to open global check report, trying to show error details', { error });
+          logger.warn(
+            'Failed to open global check report, trying to show error details',
+            { error }
+          );
           vscode.window.showWarningMessage(
             `Global check report not found. Issue: ${issue.message}`
           );
@@ -560,7 +597,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     if (IssuesTreeViewManager.activeInstance === this) {
       IssuesTreeViewManager.activeInstance = null;
     }
-    
+
     this.disposables.forEach(d => d.dispose());
   }
 

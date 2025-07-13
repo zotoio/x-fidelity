@@ -34,10 +34,10 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --frozen-lockfile
         
       - name: Build all packages
-        run: npx nx run-many --target=build --all
+        run: yarn build
         
       - name: Setup Xvfb for headless testing
         run: |
@@ -45,22 +45,22 @@ jobs:
           sudo apt-get install -y xvfb
           
       - name: Lint extension
-        run: npx nx run vscode:lint
+        run: yarn workspace x-fidelity-vscode lint
           
       - name: Type check extension
-        run: npx nx run vscode:check-types
+        run: yarn workspace x-fidelity-vscode check-types
           
       - name: Build VSCode extension
-        run: npx nx run vscode:build
+        run: yarn workspace x-fidelity-vscode build
           
       - name: Run unit tests
-        run: xvfb-run -a npx nx run vscode:test:unit
+        run: xvfb-run -a yarn workspace x-fidelity-vscode test:unit
           
       - name: Run integration tests
-        run: xvfb-run -a npx nx run vscode:test:integration
+        run: xvfb-run -a yarn workspace x-fidelity-vscode test:integration
           
       - name: Package extension
-        run: npx nx run vscode:package
+        run: yarn workspace x-fidelity-vscode package
           
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4
@@ -95,15 +95,15 @@ jobs:
           cache: 'yarn'
           
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --frozen-lockfile
         
       - name: Build all packages
-        run: npx nx run-many --target=build --all
+        run: yarn build
         
       - name: Build and package extension
         run: |
-          npx nx run vscode:build
-          npx nx run vscode:package
+          yarn workspace x-fidelity-vscode build
+          yarn workspace x-fidelity-vscode package
           
       - name: Verify extension package
         run: |

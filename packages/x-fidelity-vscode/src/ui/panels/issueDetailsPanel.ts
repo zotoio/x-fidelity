@@ -186,7 +186,8 @@ export class IssueDetailsPanel implements vscode.Disposable {
             try {
               range = {
                 start: {
-                  line: enhancedPos.range.start?.line || diag.range.start.line + 1,
+                  line:
+                    enhancedPos.range.start?.line || diag.range.start.line + 1,
                   column: enhancedPos.range.start?.column || column
                 },
                 end: {
@@ -195,7 +196,10 @@ export class IssueDetailsPanel implements vscode.Disposable {
                 }
               };
             } catch (error) {
-              console.warn('Failed to extract enhanced range, using fallback:', error);
+              console.warn(
+                'Failed to extract enhanced range, using fallback:',
+                error
+              );
             }
           }
           // Use enhanced position data for more accurate column
@@ -222,7 +226,10 @@ export class IssueDetailsPanel implements vscode.Disposable {
               };
               column = range.start.column;
             } catch (error) {
-              console.warn('Failed to extract match range, using fallback:', error);
+              console.warn(
+                'Failed to extract match range, using fallback:',
+                error
+              );
             }
           }
         }
@@ -1230,7 +1237,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
         fileUri = vscode.Uri.file(
           path.join(workspaceFolder.uri.fsPath, '.xfiResults', 'XFI_RESULT.md')
         );
-        
+
         try {
           const document = await vscode.workspace.openTextDocument(fileUri);
           await vscode.window.showTextDocument(document);

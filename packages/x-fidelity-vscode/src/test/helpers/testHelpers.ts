@@ -1,7 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { createCLISpawner, CLIResult, getEmbeddedCLIPath } from '../../utils/cliSpawner';
+import {
+  createCLISpawner,
+  CLIResult,
+  getEmbeddedCLIPath
+} from '../../utils/cliSpawner';
 
 // Global analysis results cache
 let cachedAnalysisResults: any = null;
@@ -10,10 +14,12 @@ let cachedWorkspacePath: string | null = null;
 /**
  * Ensure the X-Fidelity extension is activated
  */
-export async function ensureExtensionActivated(): Promise<vscode.Extension<any>> {
+export async function ensureExtensionActivated(): Promise<
+  vscode.Extension<any>
+> {
   const extensionId = 'zotoio.x-fidelity-vscode';
   const extension = vscode.extensions.getExtension(extensionId);
-  
+
   if (!extension) {
     throw new Error(`Extension ${extensionId} not found`);
   }
@@ -36,7 +42,7 @@ export function getTestWorkspace(): vscode.WorkspaceFolder {
   if (!workspaceFolders || workspaceFolders.length === 0) {
     throw new Error('No workspace folder found');
   }
-  
+
   return workspaceFolders[0];
 }
 
@@ -78,9 +84,9 @@ export async function executeCommandSafely(
     const result = await vscode.commands.executeCommand(command, ...args);
     return { success: true, result };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : String(error) 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
     };
   }
 }
@@ -94,7 +100,7 @@ export async function runCLIAnalysis(
   const cliSpawner = createCLISpawner();
   try {
     const analysisResult = await cliSpawner.runAnalysis({ workspacePath });
-    
+
     // Convert AnalysisResult to CLIResult format for test compatibility
     return {
       success: true,
@@ -117,7 +123,7 @@ export async function runCLIAnalysis(
  */
 export async function runExtensionAnalysis(): Promise<CLIResult> {
   const workspacePath = getWorkspaceRoot();
-  
+
   // Run analysis using the extension
   const result = await executeCommandSafely('xfidelity.runAnalysis');
   if (!result.success) {
@@ -132,7 +138,7 @@ export async function runExtensionAnalysis(): Promise<CLIResult> {
 
   // Get results
   const analysisResults = await getAnalysisResults(workspacePath, false);
-  
+
   // Return in CLI format for consistency with tests
   return {
     success: true,
@@ -153,19 +159,19 @@ export async function getAnalysisResults(
   forceRefresh = false
 ): Promise<any> {
   const targetPath = workspacePath || getWorkspaceRoot();
-  
+
   // Always try to read from XFI_RESULT.json first (most recent)
   const resultPath = path.join(targetPath, '.xfiResults', 'XFI_RESULT.json');
-  
+
   try {
     if (fs.existsSync(resultPath)) {
       const content = fs.readFileSync(resultPath, 'utf8');
       const parsed = JSON.parse(content);
-      
+
       // Cache the results for future use
       cachedAnalysisResults = parsed;
       cachedWorkspacePath = targetPath;
-      
+
       return parsed;
     }
   } catch (error) {
@@ -173,7 +179,11 @@ export async function getAnalysisResults(
   }
 
   // Fallback to cached results if file doesn't exist
-  if (!forceRefresh && cachedAnalysisResults && cachedWorkspacePath === targetPath) {
+  if (
+    !forceRefresh &&
+    cachedAnalysisResults &&
+    cachedWorkspacePath === targetPath
+  ) {
     return cachedAnalysisResults;
   }
 
@@ -216,7 +226,7 @@ export async function waitFor(
     }
     await new Promise(resolve => setTimeout(resolve, interval));
   }
-  
+
   throw new Error(`Condition not met within ${timeout}ms`);
 }
 
@@ -229,7 +239,7 @@ export async function waitForAnalysisCompletion(
 ): Promise<boolean> {
   const startTime = Date.now();
   const targetPath = workspacePath || getWorkspaceRoot();
-  
+
   while (Date.now() - startTime < timeout) {
     if (hasAnalysisResults(targetPath)) {
       // Give it a moment to ensure the file is fully written
@@ -238,7 +248,7 @@ export async function waitForAnalysisCompletion(
     }
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
-  
+
   return false;
 }
 
@@ -250,9 +260,13 @@ export async function runInitialAnalysis(
   forceRefresh: boolean = false
 ): Promise<any> {
   const targetPath = workspacePath || getWorkspaceRoot();
-  
+
   // Return cached results if available and not forcing refresh
-  if (!forceRefresh && cachedAnalysisResults && cachedWorkspacePath === targetPath) {
+  if (
+    !forceRefresh &&
+    cachedAnalysisResults &&
+    cachedWorkspacePath === targetPath
+  ) {
     return cachedAnalysisResults;
   }
 

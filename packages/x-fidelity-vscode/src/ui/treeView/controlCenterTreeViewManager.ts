@@ -37,7 +37,9 @@ export class ControlCenterTreeViewManager implements vscode.Disposable {
     this.disposables.push(this.treeView);
 
     // Debug logging for tree view creation
-    logger.info(`ControlCenterTreeViewManager created for view: ${this.viewId || 'xfidelityControlCenterView'}`);
+    logger.info(
+      `ControlCenterTreeViewManager created for view: ${this.viewId || 'xfidelityControlCenterView'}`
+    );
   }
 
   private setupEventListeners(): void {

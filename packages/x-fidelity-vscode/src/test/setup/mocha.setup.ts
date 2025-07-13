@@ -46,7 +46,7 @@ process.on('unhandledRejection', (reason, promise) => {
   // Don't exit the process - let tests continue
 });
 
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   if (!suppressConsole) {
     originalConsole.error('Uncaught exception:', error);
   }

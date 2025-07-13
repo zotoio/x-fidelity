@@ -81,7 +81,7 @@ export class IssuesTreeProvider
 
   setIssues(issues: ProcessedIssue[]): void {
     //console.log(`[IssuesTreeProvider] setIssues called with ${issues.length} issues`);
-    
+
     // Quick check if issues actually changed
     if (
       this.issues.length === issues.length &&
@@ -127,7 +127,9 @@ export class IssuesTreeProvider
   getChildren(element?: IssueTreeItem): Thenable<IssueTreeItem[]> {
     if (!element) {
       // Root level - return visible top-level nodes
-      const rootNodes = this.virtualTree.filter(node => node.visible).map(node => node.data);
+      const rootNodes = this.virtualTree
+        .filter(node => node.visible)
+        .map(node => node.data);
       //console.log(`[IssuesTreeProvider] getChildren(root): returning ${rootNodes.length} root nodes`);
       //console.log(`[IssuesTreeProvider] Virtual tree has ${this.virtualTree.length} total nodes`);
       return Promise.resolve(rootNodes);
@@ -136,7 +138,9 @@ export class IssuesTreeProvider
     // Find node in virtual tree and return visible children
     const node = this.nodeMap.get(element.id);
     if (node && node.expanded) {
-      const children = node.children.filter(child => child.visible).map(child => child.data);
+      const children = node.children
+        .filter(child => child.visible)
+        .map(child => child.data);
       //console.log(`[IssuesTreeProvider] getChildren(${element.id}): returning ${children.length} children`);
       return Promise.resolve(children);
     }
@@ -147,7 +151,7 @@ export class IssuesTreeProvider
 
   private rebuildTree(): void {
     //console.log(`[IssuesTreeProvider] rebuildTree called with ${this.issues.length} issues`);
-    
+
     // Clear existing tree
     this.virtualTree = [];
     this.nodeMap.clear();
@@ -353,14 +357,18 @@ export class IssuesTreeProvider
 
     // Details section
     markdown.appendMarkdown(`---\n\n`);
-    
+
     // File location
     const fileName = path.basename(issue.file);
-    const location = issue.line ? `:${issue.line}${issue.column ? `:${issue.column}` : ''}` : '';
+    const location = issue.line
+      ? `:${issue.line}${issue.column ? `:${issue.column}` : ''}`
+      : '';
     markdown.appendMarkdown(`**📁 File:** \`${fileName}${location}\`\n\n`);
-    
+
     // Severity
-    markdown.appendMarkdown(`**🔥 Severity:** ${issue.severity.toUpperCase()}\n\n`);
+    markdown.appendMarkdown(
+      `**🔥 Severity:** ${issue.severity.toUpperCase()}\n\n`
+    );
 
     // Category (if not general)
     if (issue.category && issue.category !== 'general') {
@@ -375,7 +383,7 @@ export class IssuesTreeProvider
     if (issue.exempted) {
       statusItems.push('⚠️ **Exempted**');
     }
-    
+
     if (statusItems.length > 0) {
       markdown.appendMarkdown(`${statusItems.join(' • ')}\n\n`);
     }
@@ -390,15 +398,30 @@ export class IssuesTreeProvider
   private getSeverityIcon(severity: string): vscode.ThemeIcon {
     switch (severity) {
       case 'error':
-        return new vscode.ThemeIcon('error', new vscode.ThemeColor('list.errorForeground'));
+        return new vscode.ThemeIcon(
+          'error',
+          new vscode.ThemeColor('list.errorForeground')
+        );
       case 'warning':
-        return new vscode.ThemeIcon('warning', new vscode.ThemeColor('list.warningForeground'));
+        return new vscode.ThemeIcon(
+          'warning',
+          new vscode.ThemeColor('list.warningForeground')
+        );
       case 'info':
-        return new vscode.ThemeIcon('info', new vscode.ThemeColor('list.warningForeground'));
+        return new vscode.ThemeIcon(
+          'info',
+          new vscode.ThemeColor('list.warningForeground')
+        );
       case 'hint':
-        return new vscode.ThemeIcon('lightbulb', new vscode.ThemeColor('editorLightBulb.foreground'));
+        return new vscode.ThemeIcon(
+          'lightbulb',
+          new vscode.ThemeColor('editorLightBulb.foreground')
+        );
       case 'exempt':
-        return new vscode.ThemeIcon('shield', new vscode.ThemeColor('charts.purple'));
+        return new vscode.ThemeIcon(
+          'shield',
+          new vscode.ThemeColor('charts.purple')
+        );
       default:
         return new vscode.ThemeIcon('circle-outline');
     }

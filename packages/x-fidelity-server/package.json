@@ -18,7 +18,7 @@
     "prebuild": "yarn clean",
     "build": "tsc",
     "build:watch": "tsc --watch --sourceMap",
-    "test": "yarn lint:fix && NODE_ENV=test jest --config jest.config.js",
+    "test": "cd ../../ && yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && cd packages/x-fidelity-server && yarn lint:fix && NODE_ENV=test jest --config jest.config.js",
     "test:coverage": "NODE_ENV=test jest --config jest.config.js --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -53,9 +53,9 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "@x-fidelity/types": "*",
-    "@x-fidelity/core": "*",
-    "@x-fidelity/plugins": "*",
+    "@x-fidelity/types": "file:../x-fidelity-types",
+    "@x-fidelity/core": "file:../x-fidelity-core",
+    "@x-fidelity/plugins": "file:../x-fidelity-plugins",
     "body-parser": "^1.20.3",
     "chokidar": "^3.6.0",
     "express": "^4.21.2",

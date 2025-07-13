@@ -21,9 +21,9 @@ console.log(`📂 CLI target: ${EMBEDDED_CLI_DIR}`);
 // Ensure CLI is built
 console.log('📦 Building CLI package...');
 try {
-  execSync('yarn build', { 
-    cwd: CLI_PACKAGE_DIR, 
-    stdio: 'inherit' 
+  execSync('yarn build', {
+    cwd: CLI_PACKAGE_DIR,
+    stdio: 'inherit'
   });
 } catch (error) {
   console.error('❌ Failed to build CLI package:', error.message);
@@ -57,11 +57,11 @@ fs.mkdirSync(EMBEDDED_CLI_DIR, { recursive: true });
 console.log('📋 Copying CLI files...');
 const copyRecursively = (src, dest) => {
   const stats = fs.statSync(src);
-  
+
   if (stats.isDirectory()) {
     fs.mkdirSync(dest, { recursive: true });
     const items = fs.readdirSync(src);
-    
+
     for (const item of items) {
       const srcPath = path.join(src, item);
       const destPath = path.join(dest, item);
@@ -88,7 +88,7 @@ if (!fs.existsSync(embeddedMainFile)) {
 }
 
 // Get file sizes for reporting
-const getFileSize = (filePath) => {
+const getFileSize = filePath => {
   const stats = fs.statSync(filePath);
   return (stats.size / 1024 / 1024).toFixed(2) + ' MB';
 };
@@ -101,4 +101,4 @@ console.log(`   Size: ${getFileSize(embeddedMainFile)}`);
 const embeddedFiles = fs.readdirSync(EMBEDDED_CLI_DIR);
 console.log(`   Files: ${embeddedFiles.join(', ')}`);
 
-console.log('🎉 CLI embedding completed successfully!'); 
+console.log('🎉 CLI embedding completed successfully!');
