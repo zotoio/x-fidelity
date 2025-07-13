@@ -20,7 +20,7 @@ updates:
           - "minor"
           - "patch"
   - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/website" # Location of package manifests
+    directory: "/packages/x-fidelity-website" # Location of package manifests
     schedule:
       interval: "weekly"
     groups:

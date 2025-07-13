@@ -1,5 +1,5 @@
 {
-  "name": "democonfig",
+  "name": "@x-fidelity/democonfig",
   "version": "0.0.0",
   "description": "Demo configuration files for X-Fidelity including rules, archetypes, and exemptions",
   "private": true,

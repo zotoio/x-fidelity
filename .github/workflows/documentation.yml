@@ -16,19 +16,15 @@ jobs:
           cache: yarn
 
       - name: Install dependencies
-        run: |
-          cd website
-          yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile
       
       - name: Build website
-        run: |
-          cd website
-          yarn build
+        run: nx build website
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./website/build
+          publish_dir: ./packages/x-fidelity-website/build
           user_name: github-actions[bot]
           user_email: 41898282+github-actions[bot]@users.noreply.github.com
