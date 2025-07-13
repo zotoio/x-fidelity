@@ -22,7 +22,11 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/src/test/setup/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-    '^vscode$': '<rootDir>/src/test/mocks/vscode.mock.ts'
+    '^vscode$': '<rootDir>/src/test/mocks/vscode.mock.ts',
+    '^@x-fidelity/core$': '<rootDir>/../x-fidelity-core/dist/index.js',
+    '^@x-fidelity/types$': '<rootDir>/../x-fidelity-types/dist/index.js',
+    '^@x-fidelity/plugins$': '<rootDir>/../x-fidelity-plugins/dist/index.js',
+    '^@x-fidelity/democonfig$': '<rootDir>/../x-fidelity-democonfig/dist/index.js'
   },
   testTimeout: 10000
 };
