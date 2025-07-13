@@ -20,13 +20,13 @@ jobs:
         cache: 'yarn'
 
     - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      run: yarn install
 
     - name: Run Build
-      run: yarn build  
+      run: npx nx run-many --target=build --all
 
     - name: Run tests
-      run: yarn test
+      run: npx nx run-many --target=test --all
       
     - name: Run semantic-release of cli
       run: yarn workspace x-fidelity semantic-release

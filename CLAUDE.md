@@ -17,81 +17,115 @@ This is a monorepo containing the X-Fidelity framework for opinionated code adhe
 
 ## Common Commands
 
-### Building and Development
+### Building and Development (Using Nx)
 ```bash
 # Install dependencies
 yarn install
 
-# Build all packages
-yarn build
+# Build all packages using Nx
+npx nx run-many --target=build --all
 
-# Build with clean slate
-yarn build:clean
+# Build specific packages
+npx nx run core:build
+npx nx run cli:build
+npx nx run vscode:build
+npx nx run plugins:build
 
-# Watch mode for development
-yarn build:watch
+# Build with dependencies (Nx handles dependency order automatically)
+npx nx run cli:build  # builds types, core, plugins, server first
 
 # Clean all build artifacts
-yarn clean
+npx nx reset
+npx nx run-many --target=clean --all
 ```
 
-### Testing
+### Testing (Using Nx)
 ```bash
 # Run all tests across packages
-yarn test
+npx nx run-many --target=test --all
 
-# Run consistency testing specifically
-yarn test:consistency
+# Run tests in parallel (faster)
+npx nx run-many --target=test --all --parallel
+
+# Test specific packages
+npx nx run core:test
+npx nx run plugins:test
+npx nx run vscode:test
+
+# Run consistency testing specifically (CLI package)
+npx nx run cli:test:consistency
 
 # Run quick consistency test
-yarn test:consistency:quick
-
-# Generate consistency baseline
-yarn test:consistency:baseline
-
-# Validate consistency
-yarn test:consistency:validate
+npx nx run cli:test:consistency:quick
 ```
 
-### CLI Global Install Testing
+### CLI Global Install Testing (Using Nx)
 ```bash
 # Set up Docker-based global install testing environment
-cd packages/x-fidelity-cli
-yarn global:setup
+npx nx run cli:global:setup
 
 # Test local package global installation (from workspace)
-yarn global:test:local
+npx nx run cli:global:test:local
 
 # Test published package global installation (from npm registry)
-yarn global:test:published
+npx nx run cli:global:test:published
 
 # Run both local and published package tests
-yarn global:test
+npx nx run cli:global:test
 ```
 
-### VSCode Extension Development
+### VSCode Extension Development (Using Nx)
 ```bash
 # Launch extension in debug mode
-yarn vscode:dev
+npx nx run vscode:dev
 
 # Launch with fresh user data
-yarn vscode:dev:fresh
+npx nx run vscode:dev:fresh
 
 # Launch with watch mode
-yarn vscode:dev:watch
+npx nx run vscode:dev:watch
 
 # Package extension
-yarn vscode:package
+npx nx run vscode:package
+
+# Build extension for development
+npx nx run vscode:dev:build
 ```
 
-### Linting and Code Quality
+### Linting and Code Quality (Using Nx)
 ```bash
 # Lint all packages
-yarn lint
+npx nx run-many --target=lint --all
 
-# Individual package linting (from workspace root)
-yarn workspace x-fidelity-core lint
-yarn workspace x-fidelity-vscode lint
+# Lint specific packages
+npx nx run core:lint
+npx nx run vscode:lint
+npx nx run cli:lint
+
+# Lint with auto-fix
+npx nx run-many --target=lint --all --fix
+```
+
+### Nx-Specific Commands
+```bash
+# Show project dependency graph
+npx nx graph
+
+# Show all available projects
+npx nx show projects
+
+# Show details about a specific project
+npx nx show project core
+npx nx show project vscode
+
+# Run affected tests (only test projects that changed)
+npx nx affected --target=test
+
+# Run affected builds (only build projects that changed)
+npx nx affected --target=build
+
+# Reset Nx cache (if having build issues)
+npx nx reset
 ```
 
 ## High-Level Architecture
@@ -150,12 +184,14 @@ JSON-based rule definitions using json-rules-engine:
 ## Development Guidelines
 
 ### Package Management
-- Use **yarn** instead of npm for all commands
-- Workspace commands: `yarn workspace <package-name> <command>`
-- Build dependencies between packages using `yarn build` from root
+- Use **yarn** for dependency installation: `yarn install`
+- Use **Nx** for build/test/lint commands: `npx nx run-many --target=build --all`
+- Nx automatically handles dependency order between packages
+- Build dependencies are automatically built when needed: `npx nx run cli:build` builds core, types, plugins first
 
 ### Testing Strategy
-- Always run `yarn test` from workspace root after significant changes
+- Always run `npx nx run-many --target=test --all` from workspace root after significant changes
+- Use `npx nx affected --target=test` to only test changed packages
 - VSCode extension tests use: `packages/x-fidelity-fixtures/node-fullstack` as test workspace
 - Fix failing tests without changing implementation unless test is incorrect
 

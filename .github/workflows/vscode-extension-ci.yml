@@ -34,10 +34,10 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
         
       - name: Build all packages
-        run: yarn build
+        run: npx nx run-many --target=build --all
         
       - name: Setup Xvfb for headless testing
         run: |
@@ -45,34 +45,22 @@ jobs:
           sudo apt-get install -y xvfb
           
       - name: Lint extension
-        run: |
-          cd packages/x-fidelity-vscode
-          yarn lint
+        run: npx nx run vscode:lint
           
       - name: Type check extension
-        run: |
-          cd packages/x-fidelity-vscode
-          yarn check-types
+        run: npx nx run vscode:check-types
           
       - name: Build VSCode extension
-        run: |
-          cd packages/x-fidelity-vscode
-          yarn build
+        run: npx nx run vscode:build
           
       - name: Run unit tests
-        run: |
-          cd packages/x-fidelity-vscode
-          xvfb-run -a yarn test:unit
+        run: xvfb-run -a npx nx run vscode:test:unit
           
       - name: Run integration tests
-        run: |
-          cd packages/x-fidelity-vscode
-          xvfb-run -a yarn test:integration
+        run: xvfb-run -a npx nx run vscode:test:integration
           
       - name: Package extension
-        run: |
-          cd packages/x-fidelity-vscode
-          yarn package
+        run: npx nx run vscode:package
           
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4
@@ -107,16 +95,15 @@ jobs:
           cache: 'yarn'
           
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
         
       - name: Build all packages
-        run: yarn build
+        run: npx nx run-many --target=build --all
         
       - name: Build and package extension
         run: |
-          cd packages/x-fidelity-vscode
-          yarn build
-          yarn package
+          npx nx run vscode:build
+          npx nx run vscode:package
           
       - name: Verify extension package
         run: |

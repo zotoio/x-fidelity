@@ -16,10 +16,10 @@ jobs:
           cache: yarn
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
       
       - name: Build website
-        run: nx build website
+        run: npx nx run website:build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
