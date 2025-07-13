@@ -157,6 +157,7 @@ export class IssueDetailsPanel implements vscode.Disposable {
 
         // Extract enhanced position data if available
         const enhancedPos = (diag as any).enhancedPosition;
+        const locationMetadata = (diag as any).locationMetadata;
         let range:
           | {
               start: { line: number; column: number };
@@ -165,10 +166,37 @@ export class IssueDetailsPanel implements vscode.Disposable {
           | undefined = undefined;
         let column = diag.range.start.character + 1; // Convert to 1-based
 
-        if (enhancedPos) {
-          // Use enhanced range if available
+        // Use new location metadata if available (from flexible extractor)
+        if (locationMetadata && locationMetadata.extractionFound) {
+          // Convert back to 1-based for display
+          range = {
+            start: {
+              line: diag.range.start.line + 1,
+              column: diag.range.start.character + 1
+            },
+            end: {
+              line: diag.range.end.line + 1,
+              column: diag.range.end.character + 1
+            }
+          };
+          column = range.start.column;
+        } else if (enhancedPos) {
+          // Fallback to legacy enhanced position data
           if (enhancedPos.range) {
-            range = enhancedPos.range;
+            try {
+              range = {
+                start: {
+                  line: enhancedPos.range.start?.line || diag.range.start.line + 1,
+                  column: enhancedPos.range.start?.column || column
+                },
+                end: {
+                  line: enhancedPos.range.end?.line || diag.range.end.line + 1,
+                  column: enhancedPos.range.end?.column || column
+                }
+              };
+            } catch (error) {
+              console.warn('Failed to extract enhanced range, using fallback:', error);
+            }
           }
           // Use enhanced position data for more accurate column
           if (enhancedPos.position && enhancedPos.position.column) {
@@ -180,8 +208,22 @@ export class IssueDetailsPanel implements vscode.Disposable {
             enhancedPos.matches.length > 0 &&
             enhancedPos.matches[0].range
           ) {
-            range = enhancedPos.matches[0].range;
-            column = enhancedPos.matches[0].range.start.column;
+            try {
+              const matchRange = enhancedPos.matches[0].range;
+              range = {
+                start: {
+                  line: matchRange.start?.line || diag.range.start.line + 1,
+                  column: matchRange.start?.column || column
+                },
+                end: {
+                  line: matchRange.end?.line || diag.range.end.line + 1,
+                  column: matchRange.end?.column || column
+                }
+              };
+              column = range.start.column;
+            } catch (error) {
+              console.warn('Failed to extract match range, using fallback:', error);
+            }
           }
         }
 
@@ -1062,12 +1104,24 @@ export class IssueDetailsPanel implements vscode.Disposable {
         }
         
         function navigateToIssue(file, line, column, range) {
+            // Ensure range is serializable or null
+            let safeRange = null;
+            if (range && typeof range === 'object') {
+                try {
+                    // Test serialization to catch toJSON issues early
+                    JSON.stringify(range);
+                    safeRange = range;
+                } catch (e) {
+                    console.warn('Range object cannot be serialized, sending null instead:', e);
+                }
+            }
+            
             vscode.postMessage({
                 command: 'navigateToIssue',
                 file: file,
                 line: line,
                 column: column,
-                range: range
+                range: safeRange
             });
         }
         

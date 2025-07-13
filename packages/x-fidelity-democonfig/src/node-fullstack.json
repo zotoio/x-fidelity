@@ -37,7 +37,7 @@
         },
         "blacklistPatterns": [
             ".*\\/\\..*",
-            ".*\\.(log|lock|txt|md|mdc|json)$",
+            ".*\\.(log|lock|txt)$",
             ".*\\/(dist|coverage|build|node_modules|tmp|temp|out)(\\/.*|$)"
         ],
         "whitelistPatterns": [

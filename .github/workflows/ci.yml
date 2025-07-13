@@ -58,10 +58,8 @@ jobs:
     - name: Install dependencies
       run: yarn install --frozen-lockfile
 
-    - name: Build CLI package
-      run: |
-        cd packages/x-fidelity-cli
-        yarn build
+    - name: Build all packages
+      run: yarn build
 
     - name: Run local package global install test
       run: |

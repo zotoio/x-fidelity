@@ -3,6 +3,7 @@ import type { AnalysisResult } from '../analysis/types';
 import { ConfigManager } from '../configuration/configManager';
 import { VSCodeLogger } from '../utils/vscodeLogger';
 import type { ResultMetadata } from '@x-fidelity/types';
+import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
 
 export interface DiagnosticIssue {
   file: string;
@@ -203,86 +204,17 @@ export class DiagnosticProvider implements vscode.Disposable {
         }
 
         for (const error of fileIssue.errors) {
-          // Extract location information from the actual XFI_RESULT structure
-          let startLine = 1;
-          let startColumn = 1;
-          let endLine = 1;
-          let endColumn = 1;
+          // Use enhanced location extraction
+          const locationResult = DiagnosticLocationExtractor.extractLocation(error);
+          const location = DiagnosticLocationExtractor.validateLocation(locationResult.location);
 
-          // Extract location information from various XFI_RESULT structures
-          let locationFound = false;
-
-          // METHOD 1: Check for location in complexities metrics (function complexity issues)
-          if (
-            error.details?.details?.complexities &&
-            error.details.details.complexities.length > 0
-          ) {
-            const location =
-              error.details.details.complexities[0].metrics?.location;
-            if (location) {
-              startLine = location.startLine || 1;
-              startColumn = location.startColumn || 1;
-              endLine = location.endLine || startLine;
-              endColumn = location.endColumn || startColumn;
-              locationFound = true;
-              this.logger.debug('Found location in complexities metrics');
-            }
-          }
-
-          // METHOD 2: Check for direct lineNumber in error.details (other rule types)
-          if (!locationFound && error.details?.lineNumber !== undefined) {
-            startLine = error.details.lineNumber;
-            startColumn = error.details.columnNumber || 1;
-            endLine = startLine;
-            endColumn = startColumn + 20; // Reasonable default range
-            locationFound = true;
-            this.logger.debug('Found location via lineNumber in details');
-          }
-
-          // METHOD 2.5: Check for matches array with location info (for pattern-based rules)
-          if (!locationFound && error.details?.details?.matches) {
-            const matches = error.details.details.matches;
-            if (
-              Array.isArray(matches) &&
-              matches.length > 0 &&
-              matches[0].lineNumber
-            ) {
-              startLine = matches[0].lineNumber;
-              startColumn = matches[0].columnNumber || 1;
-              endLine = startLine;
-              endColumn = startColumn + (matches[0].match?.length || 20);
-              locationFound = true;
-              this.logger.debug('Found location via matches array');
-            }
-          }
-
-          // METHOD 3: Fallback to legacy sources
-          if (!locationFound) {
-            if (error.lineNumber !== undefined) {
-              startLine = error.lineNumber;
-            } else if (error.line !== undefined) {
-              startLine = error.line;
-            }
-
-            if (error.columnNumber !== undefined) {
-              startColumn = error.columnNumber;
-            } else if (error.column !== undefined) {
-              startColumn = error.column;
-            }
-
-            endLine = startLine;
-            endColumn = startColumn + 10; // Default range
-            this.logger.debug('Using legacy line/column sources');
-          }
-
-          // Ensure all coordinates are positive integers
-          startLine = Math.max(1, parseInt(String(startLine)) || 1);
-          startColumn = Math.max(1, parseInt(String(startColumn)) || 1);
-          endLine = Math.max(startLine, parseInt(String(endLine)) || startLine);
-          endColumn = Math.max(
-            startColumn,
-            parseInt(String(endColumn)) || startColumn
-          );
+          this.logger.debug('Location extraction result', {
+            ruleFailure: error.ruleFailure,
+            found: locationResult.found,
+            confidence: locationResult.confidence,
+            source: location.source,
+            location: location
+          });
 
           const rawMessage =
             error.details?.message ||
@@ -290,34 +222,14 @@ export class DiagnosticProvider implements vscode.Disposable {
             error.ruleFailure ||
             'Issue detected';
 
-          // DEBUG: Log the enhanced coordinate extraction for debugging
-          this.logger.debug(`Enhanced coordinate extraction:`, {
-            filePath,
-            ruleFailure: error.ruleFailure,
-            locationFound,
-            hasComplexities: !!error.details?.details?.complexities,
-            complexityCount: error.details?.details?.complexities?.length || 0,
-            hasDirectLineNumber: error.details?.lineNumber !== undefined,
-            hasMatches: !!error.details?.details?.matches,
-            matchesCount: error.details?.details?.matches?.length || 0,
-            extractedStartLine: startLine,
-            extractedStartColumn: startColumn,
-            extractedEndLine: endLine,
-            extractedEndColumn: endColumn,
-            convertedStartLine: Math.max(0, startLine - 1),
-            convertedStartColumn: Math.max(0, startColumn - 1),
-            convertedEndLine: Math.max(0, endLine - 1),
-            convertedEndColumn: Math.max(0, endColumn - 1)
-          });
-
           const message = this.cleanMessage(rawMessage);
 
           const diagnosticIssue: DiagnosticIssue = {
             file: filePath,
-            line: Math.max(0, startLine - 1), // Convert 1-based to 0-based
-            column: Math.max(0, startColumn - 1), // Convert 1-based to 0-based
-            endLine: Math.max(0, endLine - 1), // Convert 1-based to 0-based
-            endColumn: Math.max(0, endColumn - 1), // Convert 1-based to 0-based
+            line: Math.max(0, location.startLine - 1), // Convert 1-based to 0-based
+            column: Math.max(0, location.startColumn - 1), // Convert 1-based to 0-based
+            endLine: Math.max(0, location.endLine - 1), // Convert 1-based to 0-based
+            endColumn: Math.max(0, location.endColumn - 1), // Convert 1-based to 0-based
             message: message,
             severity: this.mapSeverity(error.level),
             ruleId: error.ruleFailure || 'unknown-rule',
@@ -325,6 +237,11 @@ export class DiagnosticProvider implements vscode.Disposable {
             code: error.ruleFailure,
             source: 'X-Fidelity'
           };
+
+          // Preserve original XFI level and location metadata for debugging
+          (diagnosticIssue as any).originalLevel = error.level;
+          (diagnosticIssue as any).locationSource = location.source;
+          (diagnosticIssue as any).locationConfidence = locationResult.confidence;
 
           issues.push(diagnosticIssue);
         }
@@ -473,6 +390,12 @@ export class DiagnosticProvider implements vscode.Disposable {
         )
       ];
     }
+
+    // Preserve basic metadata for tree view processing
+    (diagnostic as any).category = issue.category;
+    (diagnostic as any).fixable = (issue as any).fixable || false;
+    (diagnostic as any).ruleId = issue.ruleId;
+    (diagnostic as any).originalLevel = (issue as any).originalLevel;
 
     return diagnostic;
   }

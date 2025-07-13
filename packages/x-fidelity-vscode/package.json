@@ -631,7 +631,7 @@
   },
   "scripts": {
     "vscode:prepublish": "yarn build",
-    "build": "yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "build": "yarn format && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "build:cli": "cd ../x-fidelity-cli && yarn build",
     "embed:cli": "node scripts/embed-cli.js",
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
@@ -670,6 +670,7 @@
     "test:watch": "node -e \"require('fs').mkdirSync('./.vscode-test-user-data', {recursive: true})\" && xvfb-run -a --server-args='-screen 0 1920x1080x24 -ac +extension GLX +render -noreset -nolisten tcp' vscode-test --config .vscode-test.mjs --label unit --watch",
     "debug": "yarn dev:build && code --extensionDevelopmentPath=. --new-window --enable-proposed-api",
     "verify": "node scripts/verify-extension.js",
+    "verify:ci": "yarn build && node scripts/verify-extension.js",
     "verify:full": "yarn build && node scripts/verify-extension.js"
   }
 }

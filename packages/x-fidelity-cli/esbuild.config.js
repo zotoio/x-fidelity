@@ -31,8 +31,8 @@ async function main() {
     ],
     logLevel: 'info',
     alias: {
-      '@x-fidelity/core': path.resolve(__dirname, '../x-fidelity-core/dist/index.js'),
-      '@x-fidelity/types': path.resolve(__dirname, '../x-fidelity-types/dist/index.js')
+      '@x-fidelity/core': path.resolve(__dirname, '../x-fidelity-core/src/index.ts'),
+      '@x-fidelity/types': path.resolve(__dirname, '../x-fidelity-types/src/index.ts')
     },
     target: 'node18',
     treeShaking: true,
@@ -53,32 +53,39 @@ async function main() {
     platform: 'node',
     outfile: 'dist/index.js',
     external: [
-      // Keep only runtime dependencies external
+      // Keep only runtime dependencies external that are listed in package.json dependencies
       'commander',
       'fs-extra', 
       'ora',
       'prettyjson',
       'pino',
       'pino-pretty',
-      // Core dependencies that should remain external
       'glob',
+      'chokidar',
+      'tree-sitter',
+      'tree-sitter-javascript',
+      'tree-sitter-typescript',
+      '@babel/parser',
+      '@babel/types',
+      '@yarnpkg/lockfile',
+      'axios',
+      'dotenv',
+      'esprima',
+      'lodash',
+      'openai',
+      'semver',
       // VSCode API is only available in VSCode extension context
       'vscode',
       // Native modules that contain .node files - these need platform-specific builds
-      'fsevents',
-      'chokidar',
-      // Keep tree-sitter modules external so they compile for target platform
-      'tree-sitter',
-      'tree-sitter-javascript',
-      'tree-sitter-typescript'
+      'fsevents'
     ],
     logLevel: 'info',
-    // Bundle all internal dependencies
+    // Bundle all internal dependencies from source
     alias: {
-      '@x-fidelity/core': path.resolve(__dirname, '../x-fidelity-core/dist/index.js'),
-      '@x-fidelity/types': path.resolve(__dirname, '../x-fidelity-types/dist/index.js'),
-      '@x-fidelity/plugins': path.resolve(__dirname, '../x-fidelity-plugins/dist/index.js'),
-      '@x-fidelity/server': path.resolve(__dirname, '../x-fidelity-server/dist/index.js'),
+      '@x-fidelity/core': path.resolve(__dirname, '../x-fidelity-core/src/index.ts'),
+      '@x-fidelity/types': path.resolve(__dirname, '../x-fidelity-types/src/index.ts'),
+      '@x-fidelity/plugins': path.resolve(__dirname, '../x-fidelity-plugins/src/index.ts'),
+      '@x-fidelity/server': path.resolve(__dirname, '../x-fidelity-server/src/index.ts'),
       '@x-fidelity/democonfig': path.resolve(__dirname, '../x-fidelity-democonfig/src/index.js')
     },
     define: {
