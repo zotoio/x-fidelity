@@ -357,6 +357,22 @@ export class ReportManager {
         const stat = await fs.stat(filepath);
 
         if (stat.mtime.getTime() < cutoffTime) {
+          // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
+          if (
+            file === 'XFI_RESULT.json' ||
+            filepath.includes('XFI_RESULT.json')
+          ) {
+            // Log error but don't throw to avoid breaking cleanup
+            console.error(
+              `🚨 CRITICAL: Attempted to delete XFI_RESULT.json - BLOCKED!`,
+              {
+                file,
+                filepath
+              }
+            );
+            continue;
+          }
+
           await fs.unlink(filepath);
         }
       }

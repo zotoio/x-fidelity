@@ -97,7 +97,11 @@ export class ConfigManager {
   }
 
   async updateConfig(updates: Partial<ExtensionConfig>): Promise<void> {
-    const workspaceConfig = vscode.workspace.getConfiguration('xfidelity');
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    const workspaceConfig = vscode.workspace.getConfiguration(
+      'xfidelity',
+      workspaceFolder?.uri
+    );
 
     for (const [key, value] of Object.entries(updates)) {
       await workspaceConfig.update(
@@ -111,7 +115,11 @@ export class ConfigManager {
   }
 
   private loadConfiguration(): void {
-    const workspaceConfig = vscode.workspace.getConfiguration('xfidelity');
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    const workspaceConfig = vscode.workspace.getConfiguration(
+      'xfidelity',
+      workspaceFolder?.uri
+    );
 
     this.config = {
       // Core Settings
@@ -133,7 +141,7 @@ export class ConfigManager {
 
       // Resource Limits - REDUCED FOR PERFORMANCE
       maxFileSize: workspaceConfig.get('maxFileSize', 524288), // 512KB instead of 1MB
-      analysisTimeout: workspaceConfig.get('analysisTimeout', 60000),
+      analysisTimeout: workspaceConfig.get('analysisTimeout', 120000), // Increased to 2 minutes
       excludePatterns: workspaceConfig.get('excludePatterns', [
         'node_modules/**',
         '.git/**',

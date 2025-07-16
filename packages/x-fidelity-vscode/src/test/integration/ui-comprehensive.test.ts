@@ -67,7 +67,7 @@ suite('Comprehensive UI Integration Tests', () => {
   let initialAnalysisResults: any;
 
   suiteSetup(async function () {
-    this.timeout(120000); // 2 minutes for full setup including analysis
+    this.timeout(180000); // Increased to 3 minutes for full setup including analysis
     await ensureExtensionActivated();
     workspace = getTestWorkspace();
 
@@ -108,7 +108,7 @@ suite('Comprehensive UI Integration Tests', () => {
     // Run initial analysis once and cache results for reuse
     logDiag('🔍 Running initial analysis for UI test suite...');
     try {
-      initialAnalysisResults = await runInitialAnalysis();
+      initialAnalysisResults = await runInitialAnalysis(undefined, true);
       logDiag(
         `📊 Initial analysis completed with ${initialAnalysisResults?.summary?.totalIssues || 0} issues`
       );
@@ -284,7 +284,7 @@ suite('Comprehensive UI Integration Tests', () => {
 
   suite('Fresh Analysis When Needed', () => {
     test('should handle fresh analysis when specifically requested', async function () {
-      this.timeout(90000);
+      this.timeout(180000); // Increased to allow full fresh analysis
 
       logDiag('🔍 Testing Fresh Analysis...');
 

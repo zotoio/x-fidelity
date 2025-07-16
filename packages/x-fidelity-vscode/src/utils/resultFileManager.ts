@@ -225,6 +225,21 @@ export class ResultFileManager {
 
         for (const file of filesToDelete) {
           try {
+            // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
+            if (
+              file.filename === 'XFI_RESULT.json' ||
+              file.fullPath.includes('XFI_RESULT.json')
+            ) {
+              logger.error(
+                `🚨 CRITICAL: Attempted to delete XFI_RESULT.json - BLOCKED!`,
+                {
+                  filename: file.filename,
+                  fullPath: file.fullPath
+                }
+              );
+              continue;
+            }
+
             fs.unlinkSync(file.fullPath);
             logger.debug(`Cleaned up old file: ${file.filename}`);
           } catch (deleteError) {

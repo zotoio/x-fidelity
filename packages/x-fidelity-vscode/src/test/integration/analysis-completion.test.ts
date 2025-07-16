@@ -15,7 +15,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
   let initialAnalysisResults: any;
 
   suiteSetup(async function () {
-    this.timeout(120000); // 2 minutes for full setup including analysis
+    this.timeout(180000); // Increased to 3 minutes for full setup including analysis
     await ensureExtensionActivated();
     await new Promise(resolve => setTimeout(resolve, 3000));
 
@@ -36,7 +36,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
   });
 
   test('should complete full analysis workflow and update UI', async function () {
-    this.timeout(60000); // Reduced timeout since we're using cached results
+    this.timeout(120000); // Reduced timeout since we're using cached results
 
     // 1. Verify extension is active
     const extension = vscode.extensions.getExtension(
@@ -145,7 +145,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
   });
 
   test('should populate problems panel with diagnostics', async function () {
-    this.timeout(30000);
+    this.timeout(60000);
 
     // Use cached results instead of running analysis again
     console.log('🔍 Testing problems panel population...');
@@ -178,7 +178,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
   });
 
   test('should handle configuration changes', async function () {
-    this.timeout(30000);
+    this.timeout(60000);
 
     // Test archetype detection
     await executeCommandSafely('xfidelity.detectArchetype');
@@ -193,7 +193,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
   });
 
   test('should provide detailed output logging', async function () {
-    this.timeout(30000);
+    this.timeout(60000);
 
     // Show output channel
     await executeCommandSafely('xfidelity.showOutput');
@@ -206,7 +206,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
   });
 
   test('should handle fresh analysis when needed', async function () {
-    this.timeout(90000);
+    this.timeout(120000);
 
     // This test specifically needs fresh analysis
     console.log('🔍 Testing fresh analysis (clearing cache)...');

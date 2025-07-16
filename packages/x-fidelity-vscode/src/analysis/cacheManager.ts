@@ -201,6 +201,18 @@ export class CacheManager {
     const cacheFile = path.join(repoPath, this.CACHE_FILE);
 
     try {
+      // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
+      if (cacheFile.includes('XFI_RESULT.json')) {
+        // Log error but don't throw to avoid breaking cleanup
+        console.error(
+          `🚨 CRITICAL: Attempted to delete XFI_RESULT.json - BLOCKED!`,
+          {
+            cacheFile
+          }
+        );
+        return;
+      }
+
       await fs.unlink(cacheFile);
     } catch {
       // File doesn't exist or can't be deleted, ignore

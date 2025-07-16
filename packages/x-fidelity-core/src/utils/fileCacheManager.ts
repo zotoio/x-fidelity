@@ -293,6 +293,14 @@ export class FileCacheManager {
         const cacheFile = path.join(this.cacheDir, this.CACHE_FILE);
         
         try {
+            // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
+            if (cacheFile.includes('XFI_RESULT.json')) {
+                logger.error(`🚨 CRITICAL: Attempted to delete XFI_RESULT.json via cache clear - BLOCKED!`, {
+                    cacheFile
+                });
+                return;
+            }
+            
             await fs.promises.unlink(cacheFile);
             logger.info('File cache cleared');
         } catch (error) {
@@ -475,6 +483,15 @@ export class FileCacheManager {
                     if (!dryRun) {
                         for (const file of uniqueFilesToDelete) {
                             try {
+                                // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
+                                if (file.filename === 'XFI_RESULT.json' || file.fullPath.includes('XFI_RESULT.json')) {
+                                    logger.error(`🚨 CRITICAL: Attempted to delete XFI_RESULT.json - BLOCKED!`, {
+                                        filename: file.filename,
+                                        fullPath: file.fullPath
+                                    });
+                                    continue;
+                                }
+                                
                                 await fs.promises.unlink(file.fullPath);
                                 logger.debug(`Deleted: ${file.filename}`);
                             } catch (deleteError) {

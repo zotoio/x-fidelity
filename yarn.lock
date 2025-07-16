@@ -474,9 +474,9 @@
     enabled "2.0.x"
     kuler "^2.0.0"
 
-"@electron/node-gyp@git+https://github.com/electron/node-gyp.git#06b29aafb7708acef8b3669835c8a7857ebc92d2":
+"@electron/node-gyp@https://github.com/electron/node-gyp#06b29aafb7708acef8b3669835c8a7857ebc92d2":
   version "10.2.0-electron.1"
-  resolved "git+https://github.com/electron/node-gyp.git#06b29aafb7708acef8b3669835c8a7857ebc92d2"
+  resolved "https://github.com/electron/node-gyp#06b29aafb7708acef8b3669835c8a7857ebc92d2"
   dependencies:
     env-paths "^2.2.0"
     exponential-backoff "^3.1.1"
@@ -2636,9 +2636,9 @@
     "@babel/types" "^7.23.0"
     "@types/body-parser" "^1.19.5"
     "@types/vscode" "^1.101.0"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-core-0.0.0-semantically-released-b36aba58-0ce7-44af-b1b9-f644afef5b4d-1752409240073/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-core-0.0.0-semantically-released-3aaaf291-f94a-4b69-9524-82cd61b431dc-1752664038887/node_modules/@x-fidelity/x-fidelity-types"
     "@yarnpkg/lockfile" "^1.1.0"
-    axios "^1.8.1"
+    axios "^1.10.0"
     body-parser "^1.20.3"
     commander "^11.0.0"
     dotenv "^16.4.7"
@@ -2672,8 +2672,8 @@
   dependencies:
     "@babel/parser" "^7.23.0"
     "@babel/types" "^7.23.0"
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-09bacc62-cca9-49ba-849b-243d3af82d05-1752409240069/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-09bacc62-cca9-49ba-849b-243d3af82d05-1752409240069/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-9b29c8ca-d082-43ed-a8ef-79c73f30a286-1752664038890/node_modules/@x-fidelity/x-fidelity-core"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-9b29c8ca-d082-43ed-a8ef-79c73f30a286-1752664038890/node_modules/@x-fidelity/x-fidelity-types"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.8.1"
     dotenv "^16.4.7"
@@ -2689,9 +2689,9 @@
 "@x-fidelity/server@file:packages/x-fidelity-server":
   version "0.0.0-semantically-released"
   dependencies:
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-240d50d3-6955-4edf-8bd2-e425cfc5c286-1752409240081/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/plugins" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-240d50d3-6955-4edf-8bd2-e425cfc5c286-1752409240081/node_modules/@x-fidelity/x-fidelity-plugins"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-240d50d3-6955-4edf-8bd2-e425cfc5c286-1752409240081/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-e3654393-a76d-4a06-9a89-f88f7883ae95-1752664038891/node_modules/@x-fidelity/x-fidelity-core"
+    "@x-fidelity/plugins" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-e3654393-a76d-4a06-9a89-f88f7883ae95-1752664038891/node_modules/@x-fidelity/x-fidelity-plugins"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-e3654393-a76d-4a06-9a89-f88f7883ae95-1752664038891/node_modules/@x-fidelity/x-fidelity-types"
     body-parser "^1.20.3"
     chokidar "^3.6.0"
     express "^4.21.2"
@@ -3010,7 +3010,7 @@ available-typed-arrays@^1.0.7:
   dependencies:
     possible-typed-array-names "^1.0.0"
 
-axios@^1.8.1:
+axios@^1.10.0, axios@^1.8.1:
   version "1.10.0"
   resolved "https://registry.yarnpkg.com/axios/-/axios-1.10.0.tgz#af320aee8632eaf2a400b6a1979fa75856f38d54"
   integrity sha512-/1xYAC4MP/HEG+3duIhFr4ZQXR4sQXOIe+o6sdqzeykGLx6Upp/1p8MHqhINOvGeP7xyNHe7tsiJByc4SSVUxw==

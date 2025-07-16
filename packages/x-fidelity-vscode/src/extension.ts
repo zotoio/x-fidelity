@@ -83,7 +83,8 @@ export async function activate(context: vscode.ExtensionContext) {
       );
     } else {
       // Show performance optimization notice for users
-      const config = vscode.workspace.getConfiguration('xfidelity');
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  const config = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
       const showPerformanceNotice = !config.get(
         'performance.hideOptimizationNotice',
         false

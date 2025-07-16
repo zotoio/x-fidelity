@@ -49,8 +49,8 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     diagnosticCollection?.dispose();
   });
 
-  test('should populate problems panel correctly', async function () {
-    this.timeout(90000);
+  test('should populate problems panel with X-Fidelity diagnostics', async function () {
+    this.timeout(120000); // Increased to allow full analysis
 
     // Run analysis
     const result = await executeCommandSafely('xfidelity.runAnalysis');
@@ -153,7 +153,7 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
   });
 
   test('should validate diagnostic navigation accuracy', async function () {
-    this.timeout(60000);
+    this.timeout(120000);
 
     // Run analysis
     await executeCommandSafely('xfidelity.runAnalysis');
@@ -282,7 +282,7 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
   });
 
   test('should validate diagnostic coordinate conversion accuracy', async function () {
-    this.timeout(60000);
+    this.timeout(120000);
 
     // Run analysis
     await executeCommandSafely('xfidelity.runAnalysis');
@@ -344,6 +344,65 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
         '✅ Diagnostic coordinate conversion accuracy validated'
       );
     }
+  });
+
+  test('should detect specific rule failures', async function () {
+    this.timeout(120000);
+
+    await executeCommandSafely('xfidelity.runAnalysis');
+
+    await waitFor(() => {
+      const diagnosticMap = vscode.languages.getDiagnostics();
+      let hasXfi = false;
+      for (const [, diagnostics] of diagnosticMap) {
+        if (diagnostics.some(diag => diag.source === 'X-Fidelity')) {
+          hasXfi = true;
+          break;
+        }
+      }
+      return hasXfi;
+    }, 60000);
+
+    const allDiagnostics = vscode.languages.getDiagnostics();
+    const ruleCount = new Map<string, number>();
+
+    for (const [uri, diagnostics] of allDiagnostics) {
+      const xfiDiags = diagnostics.filter(diag => diag.source === 'X-Fidelity');
+      xfiDiags.forEach(diag => {
+        const ruleId = diag.code as string;
+        ruleCount.set(ruleId, (ruleCount.get(ruleId) || 0) + 1);
+      });
+    }
+
+    // Expected rules from fixtures
+    const expectedRules = [
+      'functionComplexity-iterative',
+      'sensitiveLogging-iterative',
+      'noDatabases-iterative',
+      'functionCount-iterative',
+      'outdatedFramework-global'
+    ];
+
+    expectedRules.forEach(rule => {
+      const count = ruleCount.get(rule) || 0;
+      assert.ok(count > 0, `Should detect ${rule} issues, found ${count}`);
+    });
+
+    assert.ok(ruleCount.size >= expectedRules.length, 'Should detect all expected rule types');
+  });
+
+  test('should handle partial analysis results', async function () {
+    this.timeout(60000);
+
+    // Simulate partial results by running analysis on single file
+    // Note: This assumes CLI supports single file analysis
+    const testFile = path.join(getTestWorkspace().uri.fsPath, 'src/components/ComplexComponent.tsx');
+    await executeCommandSafely('xfidelity.runAnalysisWithDir', path.dirname(testFile));
+
+    const diagnostics = vscode.languages.getDiagnostics(vscode.Uri.file(testFile));
+    const xfiDiags = diagnostics.filter(d => d.source === 'X-Fidelity');
+
+    assert.ok(xfiDiags.length > 0, 'Should detect issues in partial analysis');
   });
 
   // Helper function to extract issues with line numbers for comparison

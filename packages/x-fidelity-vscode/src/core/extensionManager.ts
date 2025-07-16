@@ -411,7 +411,7 @@ export class ExtensionManager implements vscode.Disposable {
         'xfidelity.resetConfiguration',
         async () => {
           try {
-            const result = await vscode.window.showWarningMessage(
+            const result = await vscode.window.showInformationMessage(
               'Are you sure you want to reset X-Fidelity configuration to defaults?',
               { modal: true },
               'Reset',
@@ -419,7 +419,11 @@ export class ExtensionManager implements vscode.Disposable {
             );
 
             if (result === 'Reset') {
-              const config = vscode.workspace.getConfiguration('xfidelity');
+              const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+              const config = vscode.workspace.getConfiguration(
+                'xfidelity',
+                workspaceFolder?.uri
+              );
               const keys = ['cliExtraArgs'];
 
               for (const key of keys) {

@@ -104,7 +104,7 @@ export class DiagnosticLocationExtractor {
       }
     }
     return {
-      location: this.getDefaultLocation(),
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
       found: false,
       confidence: 'low'
     };
@@ -131,7 +131,7 @@ export class DiagnosticLocationExtractor {
       };
     }
     return {
-      location: this.getDefaultLocation(),
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
       found: false,
       confidence: 'low'
     };
@@ -161,7 +161,7 @@ export class DiagnosticLocationExtractor {
       };
     }
     return {
-      location: this.getDefaultLocation(),
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
       found: false,
       confidence: 'low'
     };
@@ -195,7 +195,7 @@ export class DiagnosticLocationExtractor {
       }
     }
     return {
-      location: this.getDefaultLocation(),
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
       found: false,
       confidence: 'low'
     };
@@ -224,7 +224,7 @@ export class DiagnosticLocationExtractor {
       }
     }
     return {
-      location: this.getDefaultLocation(),
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
       found: false,
       confidence: 'low'
     };
@@ -249,7 +249,7 @@ export class DiagnosticLocationExtractor {
       };
     }
     return {
-      location: this.getDefaultLocation(),
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
       found: false,
       confidence: 'low'
     };
@@ -276,7 +276,7 @@ export class DiagnosticLocationExtractor {
       };
     }
     return {
-      location: this.getDefaultLocation(),
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
       found: false,
       confidence: 'low'
     };
@@ -305,7 +305,7 @@ export class DiagnosticLocationExtractor {
       };
     }
     return {
-      location: this.getDefaultLocation(),
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
       found: false,
       confidence: 'low'
     };
@@ -344,7 +344,7 @@ export class DiagnosticLocationExtractor {
     }
 
     return {
-      location: this.getDefaultLocation(),
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
       found: false,
       confidence: 'low'
     };

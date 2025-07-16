@@ -273,10 +273,8 @@ export async function runInitialAnalysis(
   // Clear any existing results if forcing refresh
   if (forceRefresh) {
     clearAnalysisCache();
-    const resultPath = path.join(targetPath, '.xfiResults', 'XFI_RESULT.json');
-    if (fs.existsSync(resultPath)) {
-      await fs.promises.unlink(resultPath);
-    }
+    // NOTE: We never delete XFI_RESULT.json - it should always exist and be overwritten
+    // The core analyzer will always update it with fresh results
   }
 
   // Run analysis

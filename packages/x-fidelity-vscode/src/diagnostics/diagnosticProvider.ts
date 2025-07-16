@@ -203,7 +203,7 @@ export class DiagnosticProvider implements vscode.Disposable {
       );
       this.logger.info('=== END RECEIVED RESULT DEBUG ===');
 
-      // Get XFI_RESULT from the result
+      // Get XFI_RESULT from the result with more flexible handling
       let xfiResult;
       if ('metadata' in result && result.metadata?.XFI_RESULT) {
         xfiResult = result.metadata.XFI_RESULT;
@@ -211,9 +211,19 @@ export class DiagnosticProvider implements vscode.Disposable {
       } else if ('XFI_RESULT' in result) {
         xfiResult = result.XFI_RESULT;
         this.logger.debug('Found XFI_RESULT in result.XFI_RESULT');
+      } else if (result && 'issueDetails' in result) {
+        xfiResult = result; // Direct use if it has issueDetails
+        this.logger.debug('Using result directly as it has issueDetails');
       } else {
-        xfiResult = result;
-        this.logger.debug('Using entire result as XFI_RESULT (fallback)');
+        // Last resort: deep search for issueDetails
+        const found = this.deepSearchForIssueDetails(result);
+        if (found) {
+          xfiResult = { issueDetails: found };
+          this.logger.debug('Found issueDetails via deep search');
+        } else {
+          xfiResult = { issueDetails: [] };
+          this.logger.warn('No issueDetails found anywhere in result');
+        }
       }
 
       if (!xfiResult?.issueDetails) {
@@ -322,6 +332,28 @@ export class DiagnosticProvider implements vscode.Disposable {
     }
 
     return issues;
+  }
+
+  /**
+   * Deep search for issueDetails in complex result structures
+   */
+  private deepSearchForIssueDetails(obj: any): any[] | null {
+    if (!obj || typeof obj !== 'object') {
+      return null;
+    }
+
+    if (Array.isArray(obj.issueDetails)) {
+      return obj.issueDetails;
+    }
+
+    for (const value of Object.values(obj)) {
+      const found = this.deepSearchForIssueDetails(value);
+      if (found) {
+        return found;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -1026,7 +1058,21 @@ export class DiagnosticProvider implements vscode.Disposable {
 
     // Exemption option
     markdown.appendMarkdown(
-      `[Add Exemption](command:xfidelity.addExemption?${encodeURIComponent(JSON.stringify([ruleId, diagnostic.range]))})`
+      `[Add Exemption](command:xfidelity.addExemption?${encodeURIComponent(
+        JSON.stringify([
+          ruleId,
+          {
+            start: {
+              line: diagnostic.range.start.line,
+              character: diagnostic.range.start.character
+            },
+            end: {
+              line: diagnostic.range.end.line,
+              character: diagnostic.range.end.character
+            }
+          }
+        ])
+      )})`
     );
 
     return markdown;

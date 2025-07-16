@@ -39,8 +39,10 @@ export class PeriodicAnalysisManager {
   }
 
   private loadConfiguration(): PeriodicAnalysisConfig {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     const config = vscode.workspace.getConfiguration(
-      'xfidelity.periodicAnalysis'
+      'xfidelity.periodicAnalysis',
+      workspaceFolder?.uri
     );
 
     return {
@@ -191,7 +193,11 @@ export class PeriodicAnalysisManager {
         return;
       }
 
-      const config = vscode.workspace.getConfiguration('xfidelity');
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      const config = vscode.workspace.getConfiguration(
+        'xfidelity',
+        workspaceFolder?.uri
+      );
       const archetype = config.get('archetype', 'node-fullstack');
 
       // Convert absolute paths to relative paths
