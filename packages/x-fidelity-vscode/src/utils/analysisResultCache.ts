@@ -1,9 +1,10 @@
+import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { VSCodeLogger } from './vscodeLogger';
+import { createComponentLogger } from './globalLogger';
 import { getAnalysisTargetDirectory } from './workspaceUtils';
 
-const logger = new VSCodeLogger('AnalysisResultCache');
+const logger = createComponentLogger('AnalysisResultCache');
 
 export interface CacheInvalidationOptions {
   forceRefresh?: boolean;

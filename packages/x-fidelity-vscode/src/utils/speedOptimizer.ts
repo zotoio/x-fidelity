@@ -3,7 +3,10 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as crypto from 'crypto';
-import { logger } from './logger';
+import { createComponentLogger } from './globalLogger';
+
+// Global logger for speed optimizer
+const logger = createComponentLogger('SpeedOptimizer');
 
 // 🚀 CREATIVE SPEED OPTIMIZATION SYSTEM
 // This utility implements aggressive performance optimizations for VS Code extension analysis

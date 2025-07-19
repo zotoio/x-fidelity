@@ -1,9 +1,14 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import {
   ControlCenterTreeProvider,
   type ControlCenterTreeItem
 } from './controlCenterTreeProvider';
-import { logger } from '../../utils/logger';
+import { ExportManager } from '../../reports/exportManager';
+import { ReportHistoryManager } from '../../reports/reportHistoryManager';
+import { createComponentLogger } from '../../utils/globalLogger';
+
+const logger = createComponentLogger('ControlCenter');
 
 export class ControlCenterTreeViewManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];

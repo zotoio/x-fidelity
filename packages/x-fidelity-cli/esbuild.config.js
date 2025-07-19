@@ -53,31 +53,34 @@ async function main() {
     platform: 'node',
     outfile: 'dist/index.js',
     external: [
-      // Keep only runtime dependencies external that are listed in package.json dependencies
-      'commander',
-      'fs-extra', 
-      'ora',
-      'prettyjson',
-      'pino',
-      'pino-pretty',
-      'glob',
-      'chokidar',
+      // Keep only runtime dependencies external that MUST be provided by the environment
+      // or contain native binaries that can't be bundled
       'tree-sitter',
       'tree-sitter-javascript',
       'tree-sitter-typescript',
-      '@babel/parser',
-      '@babel/types',
-      '@yarnpkg/lockfile',
-      'axios',
-      'dotenv',
-      'esprima',
-      'lodash',
-      'openai',
-      'semver',
       // VSCode API is only available in VSCode extension context
       'vscode',
       // Native modules that contain .node files - these need platform-specific builds
-      'fsevents'
+      'fsevents',
+      // Pino transport modules that use dynamic imports and can't be bundled
+      'pino-pretty',
+      'pino/file'
+      // Bundle everything else to make CLI self-contained:
+      // - axios: HTTP client used by core
+      // - commander: CLI framework
+      // - fs-extra: Enhanced filesystem operations  
+      // - ora: Loading spinners
+      // - prettyjson: JSON formatting
+      // - pino: Core logging (without transports)
+      // - glob: File pattern matching
+      // - @babel/*: AST parsing
+      // - @yarnpkg/lockfile: Package lock parsing
+      // - dotenv: Environment variables
+      // - esprima: JavaScript parsing
+      // - lodash: Utility functions
+      // - openai: AI integration
+      // - semver: Version comparison
+      // - chokidar: File watching
       // NOTE: @x-fidelity/* packages are intentionally NOT listed here
       // They should be bundled via the alias configuration below
     ],

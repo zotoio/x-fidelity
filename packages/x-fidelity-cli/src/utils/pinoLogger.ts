@@ -5,15 +5,23 @@ export class PinoLogger implements ILogger {
   private logger: pino.Logger;
 
   constructor(config: SimpleLoggerConfig = {}) {
+    const transport = this.createTransports(config);
     const pinoConfig: pino.LoggerOptions = {
       level: config.level || 'info',
-      transport: this.createTransports(config)
+      ...(transport && { transport }) // Only add transport if it's not undefined
     };
 
     this.logger = pino(pinoConfig);
   }
 
-  private createTransports(config: SimpleLoggerConfig): pino.TransportMultiOptions | pino.TransportSingleOptions {
+  private createTransports(config: SimpleLoggerConfig): pino.TransportMultiOptions | pino.TransportSingleOptions | undefined {
+    // Detect if we're in a CLI bundled environment to avoid transport worker issues
+    if (this.detectBundledEnvironment()) {
+      // In bundled environments (like CLI), return undefined to use direct logging
+      // This avoids transport worker issues that cause "lib/worker.js" errors
+      return undefined;
+    }
+
     const targets: pino.TransportTargetOptions[] = [];
 
     // Console transport
@@ -67,6 +75,36 @@ export class PinoLogger implements ILogger {
     return {
       targets
     };
+  }
+
+  private detectBundledEnvironment(): boolean {
+    // Check if explicitly running from VSCode extension
+    if (process.env.XFI_VSCODE_MODE === 'true') {
+      return true; // Disable transport workers for VSCode - use direct logging
+    }
+    
+    // Detect if running from bundled CLI by checking the executable path
+    const mainScript = process.argv[1] || '';
+    const currentFile = __filename || '';
+    
+    // If the main script or current file contains 'dist/' it's likely bundled
+    if (mainScript.includes('/dist/') || currentFile.includes('/dist/')) {
+      return true; // Bundled environment - disable transport workers
+    }
+    
+    // Check if the main script is the bundled CLI executable
+    if (mainScript.endsWith('xfidelity') || mainScript.endsWith('index.js')) {
+      return true; // Bundled CLI - disable transport workers
+    }
+    
+    // For development/source code usage, try to use pretty printing if available
+    try {
+      require.resolve('pino-pretty');
+      return false; // pino-pretty available and not bundled, use transport workers
+    } catch (error) {
+      // pino-pretty not available, use direct logging
+      return true;
+    }
   }
 
   trace(msgOrMeta: string | any, metaOrMsg?: any): void {

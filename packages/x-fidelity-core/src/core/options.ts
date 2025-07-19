@@ -20,6 +20,11 @@ export interface CoreOptions {
     disableTreeSitterWorker?: boolean;
     zapFiles?: string[];
     fileCacheTTL?: number;
+    // WASM Tree-sitter options
+    useWasmTreeSitter?: boolean;
+    wasmPath?: string;
+    wasmLanguagesPath?: string;
+    wasmTimeout?: number;
 }
 
 // Default options for core functionality
@@ -40,7 +45,12 @@ export let options: CoreOptions = {
     timeout: 30000, // 30 seconds
     disableTreeSitterWorker: false,
     zapFiles: undefined,
-    fileCacheTTL: 60  // Default 60 minutes
+    fileCacheTTL: 60,  // Default 60 minutes
+    // WASM Tree-sitter defaults
+    useWasmTreeSitter: false,  // Default to native for now
+    wasmPath: undefined,
+    wasmLanguagesPath: undefined,
+    wasmTimeout: 30000  // 30 seconds
 };
 
 // Function to update options (used by CLI and other packages)

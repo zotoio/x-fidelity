@@ -9,6 +9,7 @@ class GlobalLoggerManager {
   private static instance: GlobalLoggerManager;
   private mainLogger: VSCodeLogger;
   private outputChannel: vscode.OutputChannel;
+  private componentLoggers: VSCodeLogger[] = [];
 
   private constructor() {
     // Create the main output channel that all loggers will share
@@ -19,6 +20,16 @@ class GlobalLoggerManager {
       '',
       this.outputChannel
     );
+
+    // Set initial log level based on current debug mode setting
+    this.updateLogLevelsFromConfig();
+
+    // Listen for configuration changes to update log levels
+    vscode.workspace.onDidChangeConfiguration(event => {
+      if (event.affectsConfiguration('xfidelity.debugMode')) {
+        this.updateLogLevelsFromConfig();
+      }
+    });
   }
 
   static getInstance(): GlobalLoggerManager {
@@ -26,6 +37,30 @@ class GlobalLoggerManager {
       GlobalLoggerManager.instance = new GlobalLoggerManager();
     }
     return GlobalLoggerManager.instance;
+  }
+
+  /**
+   * Update all logger levels based on debugMode configuration
+   */
+  private updateLogLevelsFromConfig(): void {
+    const config = vscode.workspace.getConfiguration('xfidelity');
+    const debugMode = config.get<boolean>('debugMode', false);
+
+    // Set log level: debug when debugMode is true, info otherwise
+    const logLevel = debugMode ? 'debug' : 'info';
+
+    // Update main logger level
+    this.mainLogger.setLevel(logLevel);
+
+    // Update all component logger levels
+    this.componentLoggers.forEach(logger => {
+      logger.setLevel(logLevel);
+    });
+
+    // Log the change
+    this.mainLogger.info(
+      `🔧 Debug mode ${debugMode ? 'enabled' : 'disabled'} - log level set to: ${logLevel}`
+    );
   }
 
   /**
@@ -37,15 +72,28 @@ class GlobalLoggerManager {
 
   /**
    * Create a component-specific logger that shares the same output channel
+   * and respects the global debug mode setting
    * @param componentName Name of the component for log prefixing
    */
   createComponentLogger(componentName: string): VSCodeLogger {
-    return new VSCodeLogger(
+    const config = vscode.workspace.getConfiguration('xfidelity');
+    const debugMode = config.get<boolean>('debugMode', false);
+    const logLevel = debugMode ? 'debug' : 'info';
+
+    const logger = new VSCodeLogger(
       'X-Fidelity',
       undefined,
       componentName,
       this.outputChannel
     );
+
+    // Set the appropriate log level
+    logger.setLevel(logLevel);
+
+    // Track this logger so we can update its level when config changes
+    this.componentLoggers.push(logger);
+
+    return logger;
   }
 
   /**
@@ -134,6 +182,12 @@ class GlobalLoggerManager {
   }
 
   dispose(): void {
+    this.componentLoggers.forEach(logger => {
+      if (logger.dispose) {
+        logger.dispose();
+      }
+    });
+    this.componentLoggers = [];
     this.outputChannel.dispose();
   }
 }
@@ -148,21 +202,25 @@ export const showXFidelityLogs = () => globalLogger.showOutputChannel();
 /**
  * Command execution logging helpers for consistent user-friendly logging
  */
-export const logCommandStart = (
-  commandId: string,
-  description: string,
-  args?: any[]
-) => globalLogger.logCommandExecution(commandId, description, args);
-
-export const logCommandSuccess = (
-  commandId: string,
-  description: string,
-  duration: number
-) => globalLogger.logCommandCompletion(commandId, description, duration, true);
-
-export const logCommandError = (
-  commandId: string,
-  description: string,
-  error: any,
-  duration: number
-) => globalLogger.logCommandError(commandId, description, error, duration);
+export const commandLogger = {
+  execution: (commandId: string, description: string, args?: any[]) =>
+    globalLogger.logCommandExecution(commandId, description, args),
+  completion: (
+    commandId: string,
+    description: string,
+    duration: number,
+    success?: boolean
+  ) =>
+    globalLogger.logCommandCompletion(
+      commandId,
+      description,
+      duration,
+      success
+    ),
+  error: (
+    commandId: string,
+    description: string,
+    error: any,
+    duration: number
+  ) => globalLogger.logCommandError(commandId, description, error, duration)
+};

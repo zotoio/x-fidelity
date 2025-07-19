@@ -1,9 +1,12 @@
+import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { createComponentLogger } from '../utils/globalLogger';
 import { ConfigManager } from '../configuration/configManager';
 import type { AnalysisResult } from './types';
-import { logger } from '../utils/logger';
+
+const logger = createComponentLogger('CacheManager');
 
 export interface CacheEntry {
   result: AnalysisResult;

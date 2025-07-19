@@ -38,6 +38,7 @@ export class DiagnosticLocationExtractor {
       this.extractFromDetailsArray,
       this.extractFromMatchesArray,
       this.extractFromRangeObject,
+      this.extractFromDetailsLineNumber, // New extractor for rules with lineNumber in details
 
       // Low confidence extractors (fallback)
       this.extractFromDirectProperties,
@@ -248,6 +249,49 @@ export class DiagnosticLocationExtractor {
         confidence: 'medium'
       };
     }
+    return {
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
+      found: false,
+      confidence: 'low'
+    };
+  }
+
+  /**
+   * Extract from details object if it has a lineNumber property
+   */
+  private static extractFromDetailsLineNumber(
+    error: any
+  ): LocationExtractionResult {
+    const details = error.details;
+    if (details && typeof details.lineNumber === 'number') {
+      return {
+        location: {
+          startLine: details.lineNumber,
+          startColumn: details.columnNumber || 1,
+          endLine: details.lineNumber,
+          endColumn: (details.columnNumber || 1) + this.DEFAULT_RANGE_LENGTH,
+          source: 'details-line-number'
+        },
+        found: true,
+        confidence: 'medium'
+      };
+    }
+
+    // Also check if the error itself has lineNumber (some rules put it at the top level)
+    if (typeof error.lineNumber === 'number') {
+      return {
+        location: {
+          startLine: error.lineNumber,
+          startColumn: error.columnNumber || 1,
+          endLine: error.lineNumber,
+          endColumn: (error.columnNumber || 1) + this.DEFAULT_RANGE_LENGTH,
+          source: 'error-line-number'
+        },
+        found: true,
+        confidence: 'medium'
+      };
+    }
+
     return {
       location: DiagnosticLocationExtractor.getDefaultLocation(),
       found: false,

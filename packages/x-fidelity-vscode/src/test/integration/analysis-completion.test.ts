@@ -1,6 +1,6 @@
 import assert from 'assert';
 import * as vscode from 'vscode';
-import { suite, test, suiteSetup } from 'mocha';
+import { suite, test, suiteSetup, setup } from 'mocha';
 import {
   ensureExtensionActivated,
   executeCommandSafely,
@@ -8,6 +8,7 @@ import {
   waitForAnalysisCompletion,
   getAnalysisResults,
   runInitialAnalysis,
+  runFreshAnalysisForTest,
   clearAnalysisCache
 } from '../helpers/testHelpers';
 
@@ -15,22 +16,19 @@ suite('Analysis Completion & UI Feature Tests', () => {
   let initialAnalysisResults: any;
 
   suiteSetup(async function () {
-    this.timeout(180000); // Increased to 3 minutes for full setup including analysis
+    this.timeout(180000); // Increased to 3 minutes for full setup
     await ensureExtensionActivated();
     await new Promise(resolve => setTimeout(resolve, 3000));
+  });
 
-    // Run analysis once and cache results for reuse
-    console.log('🔍 Running initial analysis for test suite...');
+  setup(async function () {
+    this.timeout(180000); // 3 minutes for fresh analysis before each test
+    console.log('🔍 Running fresh analysis before test...');
     try {
-      initialAnalysisResults = await runInitialAnalysis();
-      console.log(
-        `📊 Initial analysis completed with ${initialAnalysisResults?.summary?.totalIssues || 0} issues`
-      );
+      initialAnalysisResults = await runFreshAnalysisForTest(undefined, 150000); // 2.5 minute timeout
+      console.log(`📊 Fresh analysis completed with ${initialAnalysisResults?.summary?.totalIssues || 0} issues`);
     } catch (error) {
-      console.log(
-        '⚠️ Initial analysis failed (may be expected for test environment):',
-        error
-      );
+      console.error('⚠️ Fresh analysis failed:', error);
       initialAnalysisResults = null;
     }
   });

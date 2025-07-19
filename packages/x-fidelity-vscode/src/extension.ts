@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import { ExtensionManager } from './core/extensionManager';
-import { VSCodeLogger } from './utils/vscodeLogger';
+import { createComponentLogger } from './utils/globalLogger';
 import { setupTestEnvironmentPatching } from './utils/testDetection';
+import { TreeSitterManager } from './core/treeSitterManager';
 
 // Global logger for extension lifecycle
-const logger = new VSCodeLogger('X-Fidelity');
+const logger = createComponentLogger('Extension');
 
 let extensionManager: ExtensionManager | undefined;
 let extensionContext: vscode.ExtensionContext | undefined;
@@ -15,13 +16,11 @@ let isActivated = false;
  */
 export async function activate(context: vscode.ExtensionContext) {
   const startTime = performance.now();
-  let logger: VSCodeLogger | undefined; // Make logger optional initially
 
   try {
     // Set up test environment patching early to prevent external URL opens
     setupTestEnvironmentPatching();
 
-    logger = new VSCodeLogger('Extension'); // Initialize logger first
     logger.info('🚀 X-Fidelity extension activating..');
 
     // Set context immediately for UI elements
@@ -33,6 +32,25 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Store extension context globally for access by other components
     extensionContext = context;
+
+    // Initialize TreeSitter WASM before extension manager
+    try {
+      logger.info('🌲 Initializing TreeSitter WASM...');
+      const treeSitterManager = TreeSitterManager.getInstance();
+      await treeSitterManager.initialize();
+      
+      // Pre-load commonly used languages
+      await treeSitterManager.loadLanguage('javascript');
+      await treeSitterManager.loadLanguage('typescript');
+      
+      logger.info('✅ TreeSitter WASM initialization completed');
+    } catch (error) {
+      logger.warn('⚠️ TreeSitter WASM initialization failed - continuing without AST features', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      // Set flag to disable AST features if WASM fails
+      process.env.XFI_DISABLE_AST = 'true';
+    }
 
     // PERFORMANCE FIX: Fast initialization with macOS native module handling
     try {
@@ -120,11 +138,6 @@ export async function activate(context: vscode.ExtensionContext) {
   } catch (error) {
     const activationTime = performance.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
-
-    // Initialize logger if not already done
-    if (!logger) {
-      logger = new VSCodeLogger('Extension');
-    }
 
     logger.error('❌ X-Fidelity activation failed:', {
       error: errorMessage,

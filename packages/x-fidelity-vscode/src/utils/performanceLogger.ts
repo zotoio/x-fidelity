@@ -1,8 +1,8 @@
-import { performance } from 'perf_hooks';
-import { VSCodeLogger } from './vscodeLogger';
+import * as vscode from 'vscode';
+import { createComponentLogger } from './globalLogger';
 
-export interface PerformanceMetric {
-  operation: string;
+interface PerformanceMetric {
+  name: string;
   duration: number;
   timestamp: number;
   metadata?: Record<string, any>;
@@ -11,48 +11,36 @@ export interface PerformanceMetric {
 export class PerformanceLogger {
   private metrics: PerformanceMetric[] = [];
   private readonly MAX_METRICS = 1000;
-  private logger: VSCodeLogger;
+  private logger;
 
   constructor(private component: string) {
-    this.logger = new VSCodeLogger(`Performance-${component}`);
+    this.logger = createComponentLogger(`Performance-${component}`);
   }
 
-  startOperation(
-    operation: string,
-    metadata?: Record<string, any>
-  ): () => void {
+  /**
+   * Start timing an operation
+   */
+  startTiming(operation: string, metadata?: Record<string, any>): () => void {
     const startTime = performance.now();
     const operationId = `${operation}-${Date.now()}`;
 
-    this.logger.debug(`Operation started: ${operation}`, {
-      operationId,
-      ...metadata
-    });
+    this.logger.debug(`Starting ${operation}`, { operationId, metadata });
 
     return () => {
       const duration = performance.now() - startTime;
 
       this.recordMetric({
-        operation,
+        name: operation,
         duration,
         timestamp: Date.now(),
-        metadata: { ...metadata, operationId }
+        metadata
       });
 
-      this.logger.debug(`Operation completed: ${operation}`, {
+      this.logger.debug(`Completed ${operation}`, {
         operationId,
-        duration,
-        ...metadata
+        duration: `${duration.toFixed(2)}ms`,
+        metadata
       });
-
-      // Warn about slow operations
-      if (duration > 1000) {
-        this.logger.warn(`Slow operation detected: ${operation}`, {
-          operationId,
-          duration,
-          ...metadata
-        });
-      }
     };
   }
 
@@ -67,7 +55,7 @@ export class PerformanceLogger {
 
   getMetrics(operation?: string): PerformanceMetric[] {
     if (operation) {
-      return this.metrics.filter(m => m.operation === operation);
+      return this.metrics.filter(m => m.name === operation);
     }
     return [...this.metrics];
   }

@@ -159,7 +159,7 @@ export async function getAnalysisResults(
   forceRefresh = false
 ): Promise<any> {
   const targetPath = workspacePath || getWorkspaceRoot();
-
+  forceRefresh=false;
   // Always try to read from XFI_RESULT.json first (most recent)
   const resultPath = path.join(targetPath, '.xfiResults', 'XFI_RESULT.json');
 
@@ -260,22 +260,12 @@ export async function runInitialAnalysis(
   forceRefresh: boolean = false
 ): Promise<any> {
   const targetPath = workspacePath || getWorkspaceRoot();
-
-  // Return cached results if available and not forcing refresh
-  if (
-    !forceRefresh &&
-    cachedAnalysisResults &&
-    cachedWorkspacePath === targetPath
-  ) {
-    return cachedAnalysisResults;
-  }
-
-  // Clear any existing results if forcing refresh
-  if (forceRefresh) {
-    clearAnalysisCache();
-    // NOTE: We never delete XFI_RESULT.json - it should always exist and be overwritten
-    // The core analyzer will always update it with fresh results
-  }
+  
+  // ALWAYS run fresh analysis for integration tests to ensure consistent results
+  // Clear any existing results 
+  clearAnalysisCache();
+  // NOTE: We never delete XFI_RESULT.json - it should always exist and be overwritten
+  // The core analyzer will always update it with fresh results
 
   // Run analysis
   const result = await executeCommandSafely('xfidelity.runAnalysis');
@@ -291,6 +281,40 @@ export async function runInitialAnalysis(
 
   // Get and cache results
   const analysisResults = await getAnalysisResults(targetPath, true);
+  return analysisResults;
+}
+
+/**
+ * Run fresh CLI analysis before each test to ensure consistent state
+ */
+export async function runFreshAnalysisForTest(
+  workspacePath?: string,
+  timeoutMs: number = 120000
+): Promise<any> {
+  const targetPath = workspacePath || getWorkspaceRoot();
+  
+  console.log('🔍 Running fresh CLI analysis for test...');
+  
+  // Clear any existing cache
+  clearAnalysisCache();
+  
+  // Run fresh analysis
+  const result = await executeCommandSafely('xfidelity.runAnalysis');
+  if (!result.success) {
+    throw new Error(`Fresh analysis failed: ${result.error}`);
+  }
+
+  // Wait for completion with extended timeout
+  const completed = await waitForAnalysisCompletion(timeoutMs, targetPath);
+  if (!completed) {
+    throw new Error(`Fresh analysis did not complete within ${timeoutMs}ms timeout`);
+  }
+
+  // Get fresh results
+  const analysisResults = await getAnalysisResults(targetPath, true);
+  
+  console.log(`📊 Fresh analysis completed with ${analysisResults?.summary?.totalIssues || 0} issues`);
+  
   return analysisResults;
 }
 

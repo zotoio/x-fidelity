@@ -366,6 +366,7 @@ export class CLISpawner {
         options.workspacePath,
         '--output-format',
         'json',
+        '--enable-tree-sitter-worker', // Enable worker for VSCode extension
         ...(options.args || [])
       ];
 
@@ -387,8 +388,7 @@ export class CLISpawner {
             ...process.env,
             XFI_VSCODE_MODE: 'true', // Force console logging in CLI
             XFI_DISABLE_FILE_LOGGING: 'true', // Disable file logging
-            XFI_LOG_LEVEL: 'warn', // Reduce log verbosity from VSCode
-            PATH: process.env.PATH, // Ensure PATH is preserved
+            XFI_LOG_LEVEL: 'warn', // Use consistent log level
             ...options.env
           }
         });
@@ -411,8 +411,7 @@ export class CLISpawner {
                 ...process.env,
                 XFI_VSCODE_MODE: 'true',
                 XFI_DISABLE_FILE_LOGGING: 'true',
-                XFI_LOG_LEVEL: 'warn',
-                PATH: process.env.PATH,
+                XFI_LOG_LEVEL: 'warn', // Use consistent log level
                 ...options.env
               }
             });
@@ -559,34 +558,27 @@ export class CLISpawner {
       } catch (parseError) {
         this.logger.error('Failed to read CLI result file:', parseError);
         this.logger.debug('CLI stderr:', stderr);
+        this.logger.error('CLI parse error details:', {
+          error:
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError),
+          workspacePath: options.workspacePath,
+          resultFilePath: path.join(
+            options.workspacePath,
+            '.xfiResults',
+            'XFI_RESULT.json'
+          ),
+          cliStderr: stderr
+        });
 
-        // For tests, create a minimal successful result if file parsing fails
-        // This ensures tests can complete even if the CLI output format changes
-        const minimalResult: AnalysisResult = {
-          metadata: {
-            XFI_RESULT: this.createMinimalXFIResult()
-          },
-          diagnostics: new Map(),
-          timestamp: Date.now(),
-          duration: 0,
-          summary: {
-            totalIssues: 0,
-            filesAnalyzed: 0,
-            analysisTimeMs: 0,
-            issuesByLevel: {
-              warning: 0,
-              error: 0,
-              fatality: 0,
-              exempt: 0
-            }
-          },
-          operationId: `cli-${Date.now()}`
-        };
-
-        this.logger.info(
-          'Returning minimal result due to parse error for test compatibility'
+        // NEVER return a minimal result - always throw the error so it can be properly handled
+        // This ensures that CLI failures are visible and can be debugged/fixed
+        reject(
+          new Error(
+            `CLI analysis failed - unable to parse result file: ${parseError instanceof Error ? parseError.message : String(parseError)}. Check CLI stderr for details: ${stderr}`
+          )
         );
-        resolve(minimalResult);
       }
     });
 

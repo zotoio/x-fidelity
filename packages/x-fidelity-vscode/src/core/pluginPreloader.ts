@@ -1,11 +1,14 @@
 import { pluginRegistry, ConfigManager } from '@x-fidelity/core';
 import * as vscode from 'vscode';
-import { logger } from '../utils/logger';
+import { createComponentLogger } from '../utils/globalLogger';
+
+const logger = createComponentLogger('PluginPreloader');
 
 /**
- * Pre-loads X-Fidelity plugins into the plugin registry with WASM tree-sitter support
+ * Pre-loads X-Fidelity plugins into the plugin registry with WASM TreeSitter support
  * and overrides dynamic imports for the bundled VSCode environment.
  * This is necessary for bundled VSCode extensions where dynamic imports don't work at runtime.
+ * AST plugin now uses WASM TreeSitter instead of native modules for better compatibility.
  */
 export async function preloadDefaultPlugins(
   _extensionContext: vscode.ExtensionContext
@@ -18,13 +21,18 @@ export async function preloadDefaultPlugins(
     return;
   }
 
-  // Skip native modules if in safe mode (macOS fd issue mitigation)
+  // Check if AST features should be disabled due to WASM initialization failure
+  const disableAst = process.env.XFI_DISABLE_AST === 'true';
   const isSafeMode = process.env.XFI_SAFE_MODE === 'true';
   const disableNative = process.env.XFI_DISABLE_NATIVE === 'true';
 
-  if (isSafeMode || disableNative) {
+  if (disableAst) {
     logger.info(
-      `[X-Fidelity VSCode] Running in safe mode - skipping native module plugins`
+      `[X-Fidelity VSCode] AST features disabled - TreeSitter WASM initialization failed`
+    );
+  } else if (isSafeMode || disableNative) {
+    logger.info(
+      `[X-Fidelity VSCode] Running in safe mode - using WASM TreeSitter for AST plugin`
     );
   }
 
@@ -38,9 +46,9 @@ export async function preloadDefaultPlugins(
   let loadedCount = 0;
   let loadedPluginsMap: Record<string, any> = {};
 
-  // Define all plugins - filter out native modules if in safe mode
+  // Define all plugins - filter out AST plugin only if WASM failed
   let allPluginNames = [
-    'xfiPluginAst', // Uses centralized Tree-sitter worker (native)
+    'xfiPluginAst', // Uses WASM Tree-sitter (fallback to disable if WASM fails)
     'xfiPluginDependency',
     'xfiPluginFilesystem',
     'xfiPluginOpenAI',
@@ -51,19 +59,17 @@ export async function preloadDefaultPlugins(
     'xfiPluginSimpleExample'
   ];
 
-  // Filter out native module plugins in safe mode
-  if (isSafeMode || disableNative) {
-    const nativePlugins = ['xfiPluginAst']; // Plugins that use native modules
-    allPluginNames = allPluginNames.filter(
-      name => !nativePlugins.includes(name)
-    );
+  // Filter out AST plugin only if WASM initialization failed
+  if (disableAst) {
+    const astPlugins = ['xfiPluginAst']; // Plugins that require TreeSitter
+    allPluginNames = allPluginNames.filter(name => !astPlugins.includes(name));
     logger.info(
-      `[X-Fidelity VSCode] Safe mode: excluding native plugins: ${nativePlugins.join(', ')}`
+      `[X-Fidelity VSCode] WASM failed: excluding AST plugins: ${astPlugins.join(', ')}`
     );
   }
 
   logger.info(
-    `[X-Fidelity VSCode] Loading plugins with centralized worker support`
+    `[X-Fidelity VSCode] Loading plugins with WASM TreeSitter support`
   );
 
   // Import plugins with error handling
@@ -88,10 +94,10 @@ export async function preloadDefaultPlugins(
           `[X-Fidelity VSCode] Failed to pre-load plugin ${pluginName}:`,
           error
         );
-        // If AST plugin fails and we thought WASM was ready, remove it from loaded plugins
+        // If AST plugin fails, it means there's an issue with WASM TreeSitter
         if (pluginName === 'xfiPluginAst') {
           logger.warn(
-            `[X-Fidelity VSCode] AST plugin failed to load despite WASM being ready`
+            `[X-Fidelity VSCode] AST plugin failed to load - check WASM TreeSitter initialization`
           );
         }
       }

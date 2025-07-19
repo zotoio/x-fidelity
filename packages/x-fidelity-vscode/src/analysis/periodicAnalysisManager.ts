@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { VSCodeLogger } from '../utils/vscodeLogger';
+import { createComponentLogger } from '../utils/globalLogger';
 import { FileWatcherManager } from '../utils/fileWatcherManager';
 import { getAnalysisTargetDirectory } from '../utils/workspaceUtils';
 import { analyzeCodebase } from '@x-fidelity/core';
 import path from 'path';
 
-const logger = new VSCodeLogger('PeriodicAnalysisManager');
+const logger = createComponentLogger('PeriodicAnalysisManager');
 
 export interface PeriodicAnalysisConfig {
   enabled: boolean;

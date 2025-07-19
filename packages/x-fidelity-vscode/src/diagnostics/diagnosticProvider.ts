@@ -1,24 +1,40 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import type { AnalysisResult } from '../analysis/types';
 import { ConfigManager } from '../configuration/configManager';
-import { VSCodeLogger } from '../utils/vscodeLogger';
+import { createComponentLogger } from '../utils/globalLogger';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
 import { isTestEnvironment } from '../utils/testDetection';
 
-export interface DiagnosticIssue {
+// Extended interface for diagnostics with X-Fidelity metadata
+interface ExtendedDiagnostic extends vscode.Diagnostic {
+  issueId?: string;
+  ruleId?: string;
+  severity?: vscode.DiagnosticSeverity;
+  category?: string;
+  documentation?: string;
+}
+
+// Internal interface for processing issues from analysis results
+interface DiagnosticIssue {
   file: string;
   line: number;
   column: number;
-  endLine?: number;
-  endColumn?: number;
-  message: string;
   severity: 'error' | 'warning' | 'info';
+  message: string;
   ruleId: string;
+  issueId?: string;
   category?: string;
-  code?: string;
-  source?: string;
-  tags?: vscode.DiagnosticTag[];
+  documentation?: string;
+}
+
+// Internal issue metadata type for location resolution
+interface IssueLocation {
+  file: string;
+  line?: number;
+  column?: number;
+  snippet?: string;
 }
 
 /**
@@ -35,7 +51,7 @@ export class DiagnosticProvider implements vscode.Disposable {
   private decorationUpdateDebouncer?: NodeJS.Timeout;
   private readonly DECORATION_UPDATE_DELAY = 100; // ms
   private lastUpdateTime = 0;
-  private logger: VSCodeLogger;
+  private logger: any;
   private issueCount = 0;
 
   // Event emitter for diagnostic updates
@@ -49,9 +65,9 @@ export class DiagnosticProvider implements vscode.Disposable {
   }> = this.onDiagnosticsUpdated.event;
 
   constructor(private configManager: ConfigManager) {
-    this.logger = new VSCodeLogger('DiagnosticProvider');
     this.diagnosticCollection =
-      vscode.languages.createDiagnosticCollection('x-fidelity');
+      vscode.languages.createDiagnosticCollection('xfidelity');
+    this.logger = createComponentLogger('DiagnosticProvider');
     this.setupDecorations();
     this.setupEventListeners();
     this.disposables.push(this.diagnosticCollection);
@@ -63,9 +79,7 @@ export class DiagnosticProvider implements vscode.Disposable {
    * Update diagnostics from analysis result
    * Converts X-Fidelity issues to VS Code diagnostics for Problems panel integration
    */
-  public async updateDiagnostics(
-    result: AnalysisResult | ResultMetadata
-  ): Promise<void> {
+  public async updateDiagnostics(result: AnalysisResult): Promise<void> {
     const startTime = performance.now();
 
     try {
@@ -184,9 +198,7 @@ export class DiagnosticProvider implements vscode.Disposable {
   /**
    * Extract issues from analysis result in a standardized format
    */
-  private extractIssuesFromResult(
-    result: AnalysisResult | ResultMetadata
-  ): DiagnosticIssue[] {
+  private extractIssuesFromResult(result: AnalysisResult): DiagnosticIssue[] {
     const issues: DiagnosticIssue[] = [];
 
     try {
@@ -526,7 +538,6 @@ export class DiagnosticProvider implements vscode.Disposable {
    */
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
     try {
-      const path = require('path');
       const fs = require('fs');
 
       // CRITICAL FIX: Validate file path before processing

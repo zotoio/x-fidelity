@@ -1,12 +1,13 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { suite, test, suiteSetup, suiteTeardown } from 'mocha';
+import { suite, test, suiteSetup, suiteTeardown, setup } from 'mocha';
 import {
   ensureExtensionActivated,
   getTestWorkspace,
   runCLIAnalysis,
   runExtensionAnalysis,
+  runFreshAnalysisForTest,
   waitFor,
   executeCommandSafely
 } from '../helpers/testHelpers';
@@ -25,6 +26,7 @@ import type { ResultMetadata } from '@x-fidelity/types';
 suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
   let workspace: vscode.WorkspaceFolder;
   let diagnosticCollection: vscode.DiagnosticCollection;
+  let analysisResults: any;
 
   suiteSetup(async function () {
     this.timeout(60000);
@@ -42,6 +44,18 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
       global.testConsole.log(
         `✅ Diagnostic tests setup complete - workspace: ${workspace.uri.fsPath}`
       );
+    }
+  });
+
+  setup(async function () {
+    this.timeout(180000); // 3 minutes for fresh analysis before each test
+    console.log('🔍 Running fresh analysis before diagnostic test...');
+    try {
+      analysisResults = await runFreshAnalysisForTest(undefined, 150000); // 2.5 minute timeout
+      console.log(`📊 Fresh analysis completed with ${analysisResults?.summary?.totalIssues || 0} issues`);
+    } catch (error) {
+      console.error('⚠️ Fresh analysis failed:', error);
+      analysisResults = null;
     }
   });
 

@@ -32,26 +32,26 @@
     "yarn": ">=1.22.0"
   },
   "devDependencies": {
-    "@types/jest": "^30.0.0",
-    "@types/node": "^22.10.5",
     "@types/esprima": "^4.0.6",
+    "@types/jest": "^30.0.0",
     "@types/lodash": "^4.17.13",
+    "@types/node": "^22.10.5",
     "@types/semver": "^7.5.8",
+    "@types/yauzl": "^2.10.3",
     "@typescript-eslint/eslint-plugin": "^8.25.0",
     "@typescript-eslint/parser": "^8.25.0",
     "eslint": "^9.21.0",
     "jest": "^30.0.2",
+    "nodemon": "^3.1.9",
     "rimraf": "^6.0.1",
     "ts-jest": "^29.4.0",
-    "typescript": "^5.7.2",
-    "@types/yauzl": "^2.10.3",
-    "nodemon": "^3.1.9"
+    "typescript": "^5.7.2"
   },
   "dependencies": {
-    "@x-fidelity/types": "file:../x-fidelity-types",
-    "@x-fidelity/core": "file:../x-fidelity-core",
     "@babel/parser": "^7.23.0",
     "@babel/types": "^7.23.0",
+    "@x-fidelity/core": "file:../x-fidelity-core",
+    "@x-fidelity/types": "file:../x-fidelity-types",
     "@yarnpkg/lockfile": "^1.1.0",
     "axios": "^1.8.1",
     "dotenv": "^16.4.7",
@@ -62,6 +62,7 @@
     "semver": "^7.7.1",
     "tree-sitter": "^0.22.4",
     "tree-sitter-javascript": "^0.23.1",
-    "tree-sitter-typescript": "^0.23.2"
+    "tree-sitter-typescript": "^0.23.2",
+    "web-tree-sitter": "^0.25.0"
   }
-} 
+}

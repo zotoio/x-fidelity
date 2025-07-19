@@ -1,10 +1,12 @@
+import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as fsAsync from 'fs/promises';
+import { createComponentLogger } from './globalLogger';
 import { getAnalysisTargetDirectory } from './workspaceUtils';
-import { VSCodeLogger } from './vscodeLogger';
 import type { ResultMetadata } from '@x-fidelity/types';
 
-const logger = new VSCodeLogger('ResultFileManager');
+const logger = createComponentLogger('ResultFileManager');
 
 export interface XFIResultFile {
   filename: string;
@@ -79,7 +81,8 @@ export class ResultFileManager {
     targetDirectory?: string
   ): Promise<XFIResultFile | null> {
     try {
-      const repoRoot = targetDirectory || getAnalysisTargetDirectory();
+      const repoRoot =
+        targetDirectory || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
       if (!repoRoot) {
         logger.warn('No target directory available for saving results');
         return null;
@@ -88,16 +91,14 @@ export class ResultFileManager {
       const resultsDir = path.join(repoRoot, this.RESULTS_DIR);
 
       // Ensure results directory exists
-      if (!fs.existsSync(resultsDir)) {
-        fs.mkdirSync(resultsDir, { recursive: true });
-      }
+      await fsAsync.mkdir(resultsDir, { recursive: true });
 
       // Generate timestamped filename
       const filename = this.generateTimestampedFilename(prefix, extension);
       const filePath = path.join(resultsDir, filename);
 
       // Write the file
-      fs.writeFileSync(filePath, content, 'utf8');
+      await fsAsync.writeFile(filePath, content, 'utf8');
 
       const resultFile: XFIResultFile = {
         filename,
@@ -165,7 +166,8 @@ export class ResultFileManager {
     targetDirectory?: string
   ): Promise<void> {
     try {
-      const repoRoot = targetDirectory || getAnalysisTargetDirectory();
+      const repoRoot =
+        targetDirectory || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
       if (!repoRoot) {
         return;
       }
@@ -174,8 +176,8 @@ export class ResultFileManager {
       const latestPath = path.join(resultsDir, this.LATEST_RESULT_FILENAME);
 
       // Copy the source file content to the latest result file
-      const content = fs.readFileSync(sourceFile.fullPath, 'utf8');
-      fs.writeFileSync(latestPath, content, 'utf8');
+      const content = await fsAsync.readFile(sourceFile.fullPath, 'utf8');
+      await fsAsync.writeFile(latestPath, content, 'utf8');
 
       logger.info(`Latest result updated: ${this.LATEST_RESULT_FILENAME}`);
     } catch (error) {
@@ -196,7 +198,7 @@ export class ResultFileManager {
         return;
       }
 
-      const files = fs.readdirSync(resultsDir);
+      const files = await fsAsync.readdir(resultsDir);
 
       // Filter files by prefix and extension
       const prefixFiles = files
@@ -240,7 +242,7 @@ export class ResultFileManager {
               continue;
             }
 
-            fs.unlinkSync(file.fullPath);
+            await fsAsync.unlink(file.fullPath);
             logger.debug(`Cleaned up old file: ${file.filename}`);
           } catch (deleteError) {
             logger.warn(`Failed to delete old file: ${file.filename}`, {
@@ -265,11 +267,12 @@ export class ResultFileManager {
   /**
    * Get all result files grouped by prefix and type
    */
-  static getResultFiles(
+  static async getResultFiles(
     targetDirectory?: string
-  ): Record<string, XFIResultFile[]> {
+  ): Promise<Record<string, XFIResultFile[]>> {
     try {
-      const repoRoot = targetDirectory || getAnalysisTargetDirectory();
+      const repoRoot =
+        targetDirectory || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
       if (!repoRoot) {
         return {};
       }
@@ -279,7 +282,7 @@ export class ResultFileManager {
         return {};
       }
 
-      const files = fs.readdirSync(resultsDir);
+      const files = await fsAsync.readdir(resultsDir);
       const resultFiles: Record<string, XFIResultFile[]> = {};
 
       for (const file of files) {
@@ -327,7 +330,8 @@ export class ResultFileManager {
    */
   static getLatestResult(targetDirectory?: string): string | null {
     try {
-      const repoRoot = targetDirectory || getAnalysisTargetDirectory();
+      const repoRoot =
+        targetDirectory || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
       if (!repoRoot) {
         return null;
       }
@@ -363,7 +367,7 @@ export class ResultFileManager {
         const newContent =
           gitignoreContent.trim() +
           '\n\n# X-Fidelity analysis results\n.xfiResults/\n';
-        fs.writeFileSync(gitignorePath, newContent, 'utf8');
+        await fsAsync.writeFile(gitignorePath, newContent, 'utf8');
         logger.info('Added .xfiResults/ to .gitignore');
       }
     } catch (error) {
@@ -376,7 +380,8 @@ export class ResultFileManager {
    */
   static async cleanupAllOldFiles(targetDirectory?: string): Promise<void> {
     try {
-      const repoRoot = targetDirectory || getAnalysisTargetDirectory();
+      const repoRoot =
+        targetDirectory || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
       if (!repoRoot) {
         return;
       }
@@ -386,7 +391,7 @@ export class ResultFileManager {
         return;
       }
 
-      const resultFiles = this.getResultFiles(targetDirectory);
+      const resultFiles = await this.getResultFiles(targetDirectory);
 
       for (const [key, files] of Object.entries(resultFiles)) {
         const [prefix, extension] = key.split('-');

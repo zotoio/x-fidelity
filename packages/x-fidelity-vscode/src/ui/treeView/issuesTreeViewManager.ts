@@ -8,9 +8,11 @@ import {
 import type { ProcessedIssue } from '../../types/issues';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
 import { ConfigManager } from '../../configuration/configManager';
-import { logger } from '../../utils/logger';
+import { createComponentLogger } from '../../utils/globalLogger';
 import { getWorkspaceFolder } from '../../utils/workspaceUtils';
 import { REPO_GLOBAL_CHECK } from '@x-fidelity/core';
+
+const logger = createComponentLogger('IssuesTreeView');
 
 export class IssuesTreeViewManager implements vscode.Disposable {
   private static commandsRegistered = false;

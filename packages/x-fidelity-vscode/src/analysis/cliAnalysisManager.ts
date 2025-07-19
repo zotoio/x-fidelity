@@ -2,12 +2,7 @@ import * as vscode from 'vscode';
 import { ConfigManager } from '../configuration/configManager';
 import { DiagnosticProvider } from '../diagnostics/diagnosticProvider';
 import { VSCodeLogger } from '../utils/vscodeLogger';
-import {
-  createComponentLogger,
-  logCommandStart,
-  logCommandSuccess,
-  logCommandError
-} from '../utils/globalLogger';
+import { createComponentLogger, commandLogger } from '../utils/globalLogger';
 import { getAnalysisTargetDirectory } from '../utils/workspaceUtils';
 import { createCLISpawner, CLISpawner } from '../utils/cliSpawner';
 import { AnalysisResultCache } from '../utils/analysisResultCache';
@@ -22,7 +17,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   private isAnalyzing = false;
   private cancellationToken?: vscode.CancellationTokenSource;
   private logger: VSCodeLogger;
-  private globalLogger: VSCodeLogger;
   private lastAnalysisResult: AnalysisResult | null = null;
   private currentState: SimpleAnalysisState = 'idle';
   private cliSpawner!: CLISpawner;
@@ -37,8 +31,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     private configManager: ConfigManager,
     private diagnosticProvider: DiagnosticProvider
   ) {
-    this.globalLogger = createComponentLogger('CLI Analysis');
-    this.logger = this.globalLogger; // Use the same logger instance
+    this.logger = createComponentLogger('CLI Analysis');
     this.initializeCLISpawner();
     this.setupEventListeners();
   }
@@ -116,7 +109,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   ): Promise<void> {
     for (let i = 0; i < files.length; i += batchSize) {
       const batch = files.slice(i, i + batchSize);
-      this.globalLogger.debug(
+      this.logger.debug(
         `Processing batch ${i / batchSize + 1} of ${Math.ceil(files.length / batchSize)}`
       );
       // Simulate processing - replace with actual analysis
@@ -129,9 +122,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   }): Promise<AnalysisResult | null> {
     // Prevent concurrent execution
     if (this.isAnalyzing || AnalysisResultCache.isAnalysisRunning()) {
-      this.globalLogger.warn(
-        '🔄 Analysis already in progress, skipping request'
-      );
+      this.logger.warn('🔄 Analysis already in progress, skipping request');
       return null;
     }
 
@@ -139,7 +130,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     this.setState('analyzing');
     this.isAnalyzing = true;
 
-    logCommandStart('xfidelity.runAnalysis', 'Enhanced CLI Analysis');
+    commandLogger.execution('xfidelity.runAnalysis', 'Enhanced CLI Analysis');
 
     try {
       const workspacePath = getAnalysisTargetDirectory();
@@ -147,7 +138,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
         throw new Error('No workspace folder found');
       }
 
-      this.globalLogger.info('🔍 Starting enhanced fresh analysis', {
+      this.logger.info('🔍 Starting enhanced fresh analysis', {
         workspacePath,
         forceRefresh: _options?.forceRefresh,
         timestamp: new Date().toISOString()
@@ -165,7 +156,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       const validation = AnalysisResultCache.validateResultFile(workspacePath);
       const cacheStats = AnalysisResultCache.getCacheStatistics(workspacePath);
 
-      this.globalLogger.debug('Pre-analysis validation', {
+      this.logger.debug('Pre-analysis validation', {
         validation,
         cacheStats,
         workspacePath,
@@ -180,7 +171,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       // Instead, we clear cache manually via AnalysisResultCache above
       const freshAnalysisArgs = [...extraArgs];
 
-      this.globalLogger.debug('📋 Enhanced analysis configuration', {
+      this.logger.debug('📋 Enhanced analysis configuration', {
         workspacePath,
         args: freshAnalysisArgs,
         timeout: config.analysisTimeout,
@@ -200,7 +191,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
             increment: 10
           });
 
-          this.globalLogger.info('⚡ Executing enhanced CLI analysis...');
+          this.logger.info('⚡ Executing enhanced CLI analysis...');
 
           progress.report({
             message: 'Running analysis...',
@@ -226,7 +217,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
           const postCacheStats =
             AnalysisResultCache.getCacheStatistics(workspacePath);
 
-          this.globalLogger.info('📊 Enhanced CLI analysis completed', {
+          this.logger.info('📊 Enhanced CLI analysis completed', {
             postValidation,
             postCacheStats,
             filesAnalyzed: analysisResult.summary?.filesAnalyzed || 0,
@@ -240,7 +231,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
         }
       );
 
-      this.globalLogger.info(
+      this.logger.info(
         '🔄 Updating VSCode diagnostics with safe serialization...'
       );
 
@@ -254,13 +245,13 @@ export class CLIAnalysisManager implements IAnalysisEngine {
 
       // Ensure result has the required summary structure
       if (!safeResult.summary) {
-        this.globalLogger.error('❌ Result missing summary object', {
+        this.logger.error('❌ Result missing summary object', {
           result: safeResult
         });
         throw new Error('Analysis result missing summary object');
       }
 
-      this.globalLogger.info('✅ Enhanced analysis completed successfully', {
+      this.logger.info('✅ Enhanced analysis completed successfully', {
         duration: Math.round(duration),
         filesAnalyzed: safeResult.summary.filesAnalyzed,
         totalIssues: safeResult.summary.totalIssues,
@@ -271,7 +262,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       this.onAnalysisComplete.fire(safeResult);
       this.setState('complete');
 
-      logCommandSuccess(
+      commandLogger.completion(
         'xfidelity.runAnalysis',
         'Enhanced CLI Analysis',
         duration
@@ -282,20 +273,20 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       this.setState('error');
 
       if (error instanceof vscode.CancellationError) {
-        this.globalLogger.warn('⏹️ Analysis cancelled by user');
+        this.logger.warn('⏹️ Analysis cancelled by user');
         return null;
       }
 
       const duration = performance.now() - startTime;
 
-      this.globalLogger.error('❌ Enhanced analysis failed', {
+      this.logger.error('❌ Enhanced analysis failed', {
         error: error instanceof Error ? error.message : String(error),
         duration: Math.round(duration),
         workspacePath: getAnalysisTargetDirectory(),
         analysisId: this.currentAnalysisId
       });
 
-      logCommandError(
+      commandLogger.error(
         'xfidelity.runAnalysis',
         'Enhanced CLI Analysis',
         error,
@@ -330,7 +321,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       const safeResult = safeSerializeAnalysisResult(result);
 
       if (!safeResult) {
-        this.globalLogger.warn(
+        this.logger.warn(
           'Failed to safely serialize result, creating minimal fallback'
         );
         return this.createMinimalAnalysisResult();
@@ -358,7 +349,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
 
       return typedResult;
     } catch (error) {
-      this.globalLogger.error('Failed to create safe analysis result', {
+      this.logger.error('Failed to create safe analysis result', {
         error
       });
       return this.createMinimalAnalysisResult();

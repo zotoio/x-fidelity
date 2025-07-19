@@ -7,6 +7,7 @@ import { EnhancedLogger, EnhancedLoggerConfig } from '@x-fidelity/core';
 export class VSCodeLogger extends EnhancedLogger {
   private outputChannel: vscode.OutputChannel;
   private ownsChannel: boolean = true;
+  private simpleLogger: SimpleLogger;
 
   constructor(
     name: string = 'X-Fidelity',
@@ -27,6 +28,7 @@ export class VSCodeLogger extends EnhancedLogger {
     };
     super(config);
 
+    this.simpleLogger = baseLogger;
     this.outputChannel = baseLogger.getOutputChannel();
     this.ownsChannel = baseLogger.ownsChannel;
   }
@@ -61,6 +63,20 @@ export class VSCodeLogger extends EnhancedLogger {
 
   getOutputChannel(): vscode.OutputChannel {
     return this.outputChannel;
+  }
+
+  /**
+   * Set the log level for this logger
+   */
+  setLevel(level: LogLevel): void {
+    this.simpleLogger.setLevel(level);
+  }
+
+  /**
+   * Get the current log level
+   */
+  getLevel(): LogLevel {
+    return this.simpleLogger.getLevel();
   }
 
   dispose(): void {

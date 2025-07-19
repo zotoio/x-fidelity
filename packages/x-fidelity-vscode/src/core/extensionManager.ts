@@ -10,11 +10,11 @@ import { VSCodeLogger } from '../utils/vscodeLogger';
 import { getAnalysisTargetDirectory } from '../utils/workspaceUtils';
 import { preloadDefaultPlugins } from './pluginPreloader';
 import { LoggerProvider } from '@x-fidelity/core';
+import { showCLIDiagnosticsDialog } from '../utils/cliDiagnostics';
 
 export class ExtensionManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
   private logger: VSCodeLogger;
-  private globalLogger: VSCodeLogger;
 
   private configManager: ConfigManager;
   private diagnosticProvider: DiagnosticProvider;
@@ -36,32 +36,31 @@ export class ExtensionManager implements vscode.Disposable {
     }
 
     // PHASE 2: Create and inject VSCode logger using singleton pattern
-    this.globalLogger = createComponentLogger('Extension Manager');
-    this.logger = this.globalLogger; // Use the same logger instance
+    this.logger = createComponentLogger('Extension Manager');
 
     // Inject the VSCode logger into the provider for use by plugins
     LoggerProvider.setLogger(this.logger);
 
-    this.globalLogger.info('🚀 Initializing X-Fidelity Extension Manager...', {
+    this.logger.info('🚀 Initializing X-Fidelity Extension Manager...', {
       hasInjectedLogger: LoggerProvider.hasInjectedLogger(),
       loggerReady: LoggerProvider.hasLogger()
     });
 
     try {
       this.configManager = new ConfigManager(this.context);
-      this.globalLogger.debug('✅ ConfigManager initialized');
+      this.logger.debug('✅ ConfigManager initialized');
 
       this.diagnosticProvider = new DiagnosticProvider(this.configManager);
-      this.globalLogger.debug('✅ DiagnosticProvider initialized');
+      this.logger.debug('✅ DiagnosticProvider initialized');
 
       this.analysisEngine = new CLIAnalysisManager(
         this.configManager,
         this.diagnosticProvider
       );
-      this.globalLogger.debug('✅ CLIAnalysisManager initialized');
+      this.logger.debug('✅ CLIAnalysisManager initialized');
 
       this.statusBarProvider = new StatusBarProvider(this.analysisEngine);
-      this.globalLogger.debug('✅ StatusBarProvider initialized');
+      this.logger.debug('✅ StatusBarProvider initialized');
 
       this.issuesTreeViewManager = new IssuesTreeViewManager(
         this.context,
@@ -69,38 +68,35 @@ export class ExtensionManager implements vscode.Disposable {
         this.configManager,
         'xfidelityIssuesTreeView'
       );
-      this.globalLogger.debug('✅ IssuesTreeViewManager initialized');
+      this.logger.debug('✅ IssuesTreeViewManager initialized');
 
       this.controlCenterTreeViewManager = new ControlCenterTreeViewManager(
         this.context,
         'xfidelityControlCenterView'
       );
-      this.globalLogger.debug('✅ ControlCenterTreeViewManager initialized');
+      this.logger.debug('✅ ControlCenterTreeViewManager initialized');
 
       // PHASE 3: Initialize plugins AFTER logger setup
       this.initializePlugins();
 
       this.setupEventListeners();
       this.registerCommands();
-      this.globalLogger.info('✅ Extension Manager initialized successfully');
+      this.logger.info('✅ Extension Manager initialized successfully');
     } catch (error) {
-      this.globalLogger.error(
-        '❌ Extension Manager initialization failed:',
-        error
-      );
+      this.logger.error('❌ Extension Manager initialization failed:', error);
       throw error;
     }
   }
 
   private async initializePlugins(): Promise<void> {
     try {
-      this.globalLogger.info('🔌 Initializing plugins with logger context...');
+      this.logger.info('🔌 Initializing plugins with logger context...');
       await preloadDefaultPlugins(this.context);
-      this.globalLogger.info(
+      this.logger.info(
         `✅ Plugin initialization completed. Logger provider status: ${LoggerProvider.hasInjectedLogger() ? 'Injected' : 'Default'}`
       );
     } catch (error) {
-      this.globalLogger.warn('Plugin initialization failed:', error);
+      this.logger.warn('Plugin initialization failed:', error);
     }
   }
 
@@ -109,7 +105,7 @@ export class ExtensionManager implements vscode.Disposable {
       this.analysisEngine.onComplete(result => {
         // Validate result structure
         if (!result.summary) {
-          this.globalLogger.error('Analysis result missing summary object', {
+          this.logger.error('Analysis result missing summary object', {
             result
           });
           return;
@@ -118,7 +114,7 @@ export class ExtensionManager implements vscode.Disposable {
         const totalIssues = result.summary.totalIssues || 0;
         const filesAnalyzed = result.summary.filesAnalyzed || 0;
 
-        this.globalLogger.info(
+        this.logger.info(
           `📊 Analysis completed: ${totalIssues} issues found across ${filesAnalyzed} files`
         );
 
@@ -145,13 +141,13 @@ export class ExtensionManager implements vscode.Disposable {
 
     this.disposables.push(
       this.analysisEngine.onStateChanged(state => {
-        this.globalLogger.debug(`Analysis state changed: ${state}`);
+        this.logger.debug(`Analysis state changed: ${state}`);
       })
     );
 
     this.disposables.push(
       this.configManager.onConfigurationChanged.event(() => {
-        this.globalLogger.info('Configuration changed, updating components...');
+        this.logger.info('Configuration changed, updating components...');
       })
     );
   }
@@ -166,10 +162,10 @@ export class ExtensionManager implements vscode.Disposable {
             return;
           }
 
-          this.globalLogger.info('🔍 Starting analysis...');
+          this.logger.info('🔍 Starting analysis...');
           await this.analysisEngine.runAnalysis();
         } catch (error) {
-          this.globalLogger.error('Analysis failed:', error);
+          this.logger.error('Analysis failed:', error);
           vscode.window.showErrorMessage(
             `Analysis failed: ${error instanceof Error ? error.message : String(error)}`
           );
@@ -191,7 +187,7 @@ export class ExtensionManager implements vscode.Disposable {
             try {
               const fs = require('fs');
               if (!fs.existsSync(workspacePath)) {
-                this.globalLogger.warn(
+                this.logger.warn(
                   'Analysis directory does not exist:',
                   workspacePath
                 );
@@ -203,7 +199,7 @@ export class ExtensionManager implements vscode.Disposable {
 
               const stats = fs.statSync(workspacePath);
               if (!stats.isDirectory()) {
-                this.globalLogger.warn(
+                this.logger.warn(
                   'Analysis path is not a directory:',
                   workspacePath
                 );
@@ -213,7 +209,7 @@ export class ExtensionManager implements vscode.Disposable {
                 return;
               }
             } catch (fsError) {
-              this.globalLogger.warn(
+              this.logger.warn(
                 `Cannot access analysis directory: ${workspacePath} - ${fsError}`
               );
               vscode.window.showWarningMessage(
@@ -222,13 +218,13 @@ export class ExtensionManager implements vscode.Disposable {
               return;
             }
 
-            this.globalLogger.info(
+            this.logger.info(
               '🔍 Starting analysis with directory:',
               workspacePath
             );
             await this.analysisEngine.runAnalysis();
           } catch (error) {
-            this.globalLogger.error('Analysis with directory failed:', error);
+            this.logger.error('Analysis with directory failed:', error);
             vscode.window.showErrorMessage(
               `Analysis failed: ${error instanceof Error ? error.message : String(error)}`
             );
@@ -285,6 +281,15 @@ export class ExtensionManager implements vscode.Disposable {
       vscode.commands.registerCommand('xfidelity.debugCLISetup', async () => {
         await this.debugCLISetup();
       })
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        'xfidelity.diagnoseCLIResult',
+        async () => {
+          await showCLIDiagnosticsDialog();
+        }
+      )
     );
 
     this.disposables.push(
@@ -354,7 +359,7 @@ export class ExtensionManager implements vscode.Disposable {
 
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.showOutput', () => {
-        this.globalLogger.show();
+        this.logger.show();
       })
     );
 
@@ -367,12 +372,12 @@ export class ExtensionManager implements vscode.Disposable {
             return;
           }
 
-          this.globalLogger.info('🔍 Detecting project archetype...');
+          this.logger.info('🔍 Detecting project archetype...');
           vscode.window.showInformationMessage(
             'Archetype detection is handled automatically by the CLI during analysis'
           );
         } catch (error) {
-          this.globalLogger.error('Archetype detection failed:', error);
+          this.logger.error('Archetype detection failed:', error);
           vscode.window.showErrorMessage(
             `Archetype detection failed: ${error instanceof Error ? error.message : String(error)}`
           );
@@ -624,17 +629,17 @@ export class ExtensionManager implements vscode.Disposable {
 
     this.periodicAnalysisTimer = setInterval(async () => {
       try {
-        this.globalLogger.info('🔄 Running periodic analysis...');
+        this.logger.info('🔄 Running periodic analysis...');
         await this.analysisEngine.runAnalysis();
       } catch (error) {
-        this.globalLogger.error('❌ Periodic analysis failed:', error);
+        this.logger.error('❌ Periodic analysis failed:', error);
       }
     }, intervalMs);
 
     vscode.window.showInformationMessage(
       `Periodic analysis started (interval: ${runInterval}s)`
     );
-    this.globalLogger.info(
+    this.logger.info(
       `🔄 Periodic analysis started with ${runInterval}s interval`
     );
   }
@@ -652,7 +657,7 @@ export class ExtensionManager implements vscode.Disposable {
 
     this.isPeriodicAnalysisRunning = false;
     vscode.window.showInformationMessage('Periodic analysis stopped.');
-    this.globalLogger.info('⏹️ Periodic analysis stopped');
+    this.logger.info('⏹️ Periodic analysis stopped');
   }
 
   private restartPeriodicAnalysis(): void {
@@ -675,7 +680,7 @@ Interval: ${intervalText}
 CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
 
     vscode.window.showInformationMessage(message);
-    this.globalLogger.info(
+    this.logger.info(
       `🔍 Periodic analysis status: ${status}, interval: ${intervalText}`
     );
   }
@@ -691,7 +696,7 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
       // Get CLI diagnostics
       const diagnostics = await cliSpawner.getDiagnostics();
 
-      this.globalLogger.info('🔍 CLI Setup Diagnostics:', diagnostics);
+      this.logger.info('🔍 CLI Setup Diagnostics:', diagnostics);
 
       const message =
         `CLI Setup Diagnostics:\n` +
@@ -708,7 +713,7 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
         .showInformationMessage(message, 'Open Output', 'Copy Diagnostics')
         .then(choice => {
           if (choice === 'Open Output') {
-            this.globalLogger.show();
+            this.logger.show();
           } else if (choice === 'Copy Diagnostics') {
             vscode.env.clipboard.writeText(
               JSON.stringify(diagnostics, null, 2)
@@ -719,7 +724,7 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
           }
         });
     } catch (error) {
-      this.globalLogger.error('CLI diagnostics failed:', error);
+      this.logger.error('CLI diagnostics failed:', error);
       vscode.window.showErrorMessage(`CLI diagnostics failed: ${error}`);
     }
   }
@@ -766,7 +771,7 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
       treeViewTitle: this.issuesTreeViewManager.getTreeView().title
     };
 
-    this.globalLogger.info('🔍 DEBUG DIAGNOSTICS INFO:', debugInfo);
+    this.logger.info('🔍 DEBUG DIAGNOSTICS INFO:', debugInfo);
     console.log('[DEBUG] Full diagnostics info:', debugInfo);
 
     const message = `Debug Info:
@@ -790,7 +795,7 @@ Check Output Console (X-Fidelity) for full details.`;
   }
 
   dispose(): void {
-    this.globalLogger.info('🔄 Disposing Extension Manager...');
+    this.logger.info('🔄 Disposing Extension Manager...');
 
     this.stopPeriodicAnalysis();
 
@@ -799,6 +804,6 @@ Check Output Console (X-Fidelity) for full details.`;
     this.statusBarProvider.dispose();
     this.issuesTreeViewManager.dispose();
     this.controlCenterTreeViewManager.dispose();
-    this.globalLogger.info('✅ Extension Manager disposed');
+    this.logger.info('✅ Extension Manager disposed');
   }
 }

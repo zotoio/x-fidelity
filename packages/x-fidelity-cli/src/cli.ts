@@ -32,6 +32,22 @@ export const DEMO_CONFIG_PATH = (() => {
     return path.resolve(__dirname, '..', '..', 'x-fidelity-democonfig', 'src');
 })();
 
+// Helper function to determine if TreeSitter worker should be disabled
+function getTreeSitterWorkerDisabled(opts: any): boolean {
+    // If explicitly enabled via --enable-tree-sitter-worker, enable it (disable = false)
+    if (opts.enableTreeSitterWorker) {
+        return false;
+    }
+    
+    // If explicitly disabled via --disable-tree-sitter-worker, disable it (disable = true)
+    if (opts.disableTreeSitterWorker) {
+        return true;
+    }
+    
+    // Default for CLI: disable worker (standalone CLI doesn't need worker concurrency)
+    return true;
+}
+
 export function initCLI(): void {
     const program = new Command();
     
@@ -58,7 +74,8 @@ export function initCLI(): void {
         .option('--file-cache-ttl <minutes>', 'File modification cache TTL in minutes', '60')
         .option('--output-format <format>', 'Output format: human (default) or json')
         .option('--output-file <path>', 'Write structured output to file (works with --output-format json)')
-        .option('--disableTreeSitterWorker', 'Disable TreeSitter worker for performance testing (worker enabled by default)')
+        .option('--disable-tree-sitter-worker', 'Disable TreeSitter worker (for CLI, worker is disabled by default)')
+        .option('--enable-tree-sitter-worker', 'Enable TreeSitter worker (useful for VSCode extension integration)')
         .option('--enable-file-logging', 'Enable logging to x-fidelity.log file (disabled by default)');
 
     // Check if no arguments provided (only node and script path)
@@ -107,7 +124,7 @@ export function initCLI(): void {
         fileCacheTTL: opts.fileCacheTTL ? parseInt(opts.fileCacheTTL) : 60,
         outputFormat: opts.outputFormat,
         outputFile: opts.outputFile,
-        disableTreeSitterWorker: opts.disableTreeSitterWorker || false,
+        disableTreeSitterWorker: getTreeSitterWorkerDisabled(opts),
         enableFileLogging: opts.enableFileLogging || false
     };
 
@@ -123,7 +140,7 @@ export function initCLI(): void {
         port: opts.port ? parseInt(opts.port) : undefined,
         jsonTTL: opts.jsonTTL,
         extraPlugins: opts.extraPlugins || [],
-        disableTreeSitterWorker: opts.disableTreeSitterWorker || false,
+        disableTreeSitterWorker: getTreeSitterWorkerDisabled(opts),
         zapFiles,
         fileCacheTTL: opts.fileCacheTTL ? parseInt(opts.fileCacheTTL) : 60
     });

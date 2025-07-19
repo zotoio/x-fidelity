@@ -5,28 +5,39 @@ export class ServerLogger implements ILogger {
   private logger: pino.Logger;
 
   constructor(config: SimpleLoggerConfig = {}) {
+    const transport = this.createTransports(config);
     const pinoConfig: pino.LoggerOptions = {
       level: config.level || 'info',
-      transport: this.createTransports(config)
+      ...(transport && { transport }) // Only add transport if it's not undefined
     };
 
     this.logger = pino(pinoConfig);
   }
 
-  private createTransports(config: SimpleLoggerConfig): pino.TransportMultiOptions | pino.TransportSingleOptions {
+  private createTransports(config: SimpleLoggerConfig): pino.TransportMultiOptions | pino.TransportSingleOptions | undefined {
     const targets: pino.TransportTargetOptions[] = [];
 
-    // Console transport
+    // Console transport with fallback for bundled environments
     if (config.enableConsole !== false) {
-      targets.push({
-        target: 'pino-pretty',
-        level: config.level || 'info',
-        options: {
-          colorize: config.enableColors !== false,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname'
-        }
-      });
+      // Check if we're in a bundled environment to avoid transport worker issues
+      const isBundledEnvironment = this.detectBundledEnvironment();
+      
+      if (isBundledEnvironment) {
+        // In bundled environments (like CLI), return undefined to use direct logging
+        // This avoids transport worker issues that cause "lib/worker.js" errors
+        return undefined;
+      } else {
+        // In normal environments, use pino-pretty for formatted output
+        targets.push({
+          target: 'pino-pretty',
+          level: config.level || 'info',
+          options: {
+            colorize: config.enableColors !== false,
+            translateTime: 'SYS:standard',
+            ignore: 'pid,hostname'
+          }
+        });
+      }
     }
 
     // File transport
@@ -68,6 +79,54 @@ export class ServerLogger implements ILogger {
     return {
       targets
     };
+  }
+
+  private detectBundledEnvironment(): boolean {
+    // Detect if we're running in a bundled environment (like esbuild CLI)
+    // Always assume bundled environment to avoid transport worker issues
+    
+    // Debug info (remove in production)
+    const debugInfo = {
+      argv1: process.argv[1],
+      mainFilename: require.main?.filename,
+      cwd: process.cwd(),
+      dirname: __dirname,
+      vscodeMode: process.env.XFI_VSCODE_MODE,
+      disableFileLogging: process.env.XFI_DISABLE_FILE_LOGGING
+    };
+    
+    // For CLI environments, always avoid pino transports to prevent worker issues
+    // This is safer than trying to detect all possible CLI execution contexts
+    const isLikelyCLI = (
+      // Environment variables
+      process.env.XFI_VSCODE_MODE === 'true' || 
+      process.env.XFI_DISABLE_FILE_LOGGING === 'true' ||
+      
+      // File paths
+      (process.argv[1] || '').includes('x-fidelity') ||
+      (require.main?.filename || '').includes('x-fidelity') ||
+      process.cwd().includes('x-fidelity-cli') ||
+      __dirname.includes('x-fidelity') ||
+      
+      // Common CLI patterns
+      (process.argv[1] || '').includes('dist/index.js') ||
+      (process.argv[1] || '').endsWith('xfidelity') ||
+      (process.argv[1] || '') === '.' // yarn build-run uses "node ."
+    );
+    
+    if (isLikelyCLI) {
+      // console.log('[ServerLogger] Detected CLI environment, using direct logging:', debugInfo);
+      return true;
+    }
+    
+    // For any other case where pino-pretty might not be available, assume bundled
+    try {
+      require.resolve('pino-pretty');
+      return false; // pino-pretty available and not CLI context
+    } catch (error) {
+      // console.log('[ServerLogger] pino-pretty not available, assuming bundled environment');
+      return true;
+    }
   }
 
   trace(msgOrMeta: string | any, metaOrMsg?: any): void {

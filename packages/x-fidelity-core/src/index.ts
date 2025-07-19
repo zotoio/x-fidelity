@@ -12,6 +12,7 @@ export * from './facts';
 export * from './operators';
 export * from './notifications';
 export * from './utils/enhancedLogger';
+export * from './utils/wasmParser';
 
 // Re-export types from the types package
 export type {
