@@ -41,6 +41,7 @@ class GlobalLoggerManager {
 
   /**
    * Update all logger levels based on debugMode configuration
+   * 🎯 ENHANCED WITH CORE LOGGER PROVIDER INTEGRATION
    */
   private updateLogLevelsFromConfig(): void {
     const config = vscode.workspace.getConfiguration('xfidelity');
@@ -48,6 +49,19 @@ class GlobalLoggerManager {
 
     // Enhanced log level selection based on debug mode
     const logLevel = debugMode ? 'debug' : 'info';
+
+    // 🎯 PROPAGATE TO CORE LOGGER PROVIDER FIRST
+    try {
+      const { LoggerProvider } = require('@x-fidelity/core');
+      LoggerProvider.propagateLogLevel(logLevel);
+      this.mainLogger.info(
+        `🔄 Propagated log level to all plugins: ${logLevel.toUpperCase()}`
+      );
+    } catch (error) {
+      this.mainLogger.warn(
+        `⚠️  Failed to propagate log level to plugins: ${error}`
+      );
+    }
 
     // Update main logger level
     this.mainLogger.setLevel(logLevel);
@@ -71,7 +85,38 @@ class GlobalLoggerManager {
     this.outputChannel.appendLine(
       `🔍 Filter logs in Output panel by typing the level name (ERROR, WARN, INFO, DEBUG)`
     );
+    this.outputChannel.appendLine(
+      `🔌 All plugins and packages updated to: ${logLevel.toUpperCase()}`
+    );
     this.outputChannel.appendLine('─'.repeat(80));
+  }
+
+  /**
+   * 🎯 NEW: Manual log level update method for programmatic control
+   * @param level The log level to set
+   */
+  setLogLevel(level: 'debug' | 'info' | 'warn' | 'error'): void {
+    // Update VSCode configuration to persist the change
+    const config = vscode.workspace.getConfiguration('xfidelity');
+    const newDebugMode = level === 'debug';
+
+    Promise.resolve(
+      config.update(
+        'debugMode',
+        newDebugMode,
+        vscode.ConfigurationTarget.Workspace
+      )
+    )
+      .then(() => {
+        this.mainLogger.info(
+          `📊 VSCode debug mode ${newDebugMode ? 'enabled' : 'disabled'} - level: ${level.toUpperCase()}`
+        );
+      })
+      .catch(error => {
+        this.mainLogger.error(
+          `💥 Failed to update VSCode configuration: ${error}`
+        );
+      });
   }
 
   /**
@@ -122,7 +167,7 @@ class GlobalLoggerManager {
   }
 
   /**
-   * Log a user-friendly command execution message
+   * Enhanced command execution logging with tree-sitter mode awareness
    */
   logCommandExecution(
     commandId: string,
@@ -132,14 +177,38 @@ class GlobalLoggerManager {
     const timestamp = new Date().toLocaleTimeString();
     const argsInfo = args && args.length > 0 ? ` (${args.length} args)` : '';
 
-    this.mainLogger.info(`🔧 [${timestamp}] ${description}${argsInfo}`, {
-      command: commandId,
-      timestamp
-    });
+    // 🎯 CHECK FOR TREE-SITTER FLAGS AND LOG MODE
+    const treeSitterFlags = this.extractTreeSitterFlags(args || []);
+    const modeInfo = treeSitterFlags
+      ? ` | Tree-sitter: ${treeSitterFlags}`
+      : '';
+
+    this.mainLogger.info(
+      `🔧 [${timestamp}] ${description}${argsInfo}${modeInfo}`,
+      {
+        command: commandId,
+        timestamp,
+        treeSitterMode: treeSitterFlags
+      }
+    );
   }
 
   /**
-   * Log a user-friendly command completion message
+   * Extract tree-sitter mode information from CLI arguments
+   */
+  private extractTreeSitterFlags(args: any[]): string | null {
+    const hasWorker = args.includes('--enable-tree-sitter-worker');
+    const hasWasm = args.includes('--enable-tree-sitter-wasm');
+    const mode = args.find((arg, index) => args[index - 1] === '--mode');
+
+    if (hasWorker && hasWasm) return `WASM worker (${mode || 'unknown'})`;
+    if (hasWorker) return `native worker (${mode || 'unknown'})`;
+    if (hasWasm) return `WASM direct (${mode || 'unknown'})`;
+    return `native direct (${mode || 'unknown'})`;
+  }
+
+  /**
+   * Enhanced command completion logging with performance metrics
    */
   logCommandCompletion(
     commandId: string,
@@ -154,19 +223,25 @@ class GlobalLoggerManager {
         ? `${(duration / 1000).toFixed(1)}s`
         : `${Math.round(duration)}ms`;
 
-    this.mainLogger.debug(
-      `${icon} [${timestamp}] ${description} completed in ${durationStr}`,
+    // 🎯 ENHANCED COMPLETION LOGGING WITH PERFORMANCE CONTEXT
+    const performanceContext =
+      duration > 5000 ? ' (slow)' : duration > 1000 ? ' (normal)' : ' (fast)';
+
+    this.mainLogger.info(
+      `${icon} [${timestamp}] ${description} completed in ${durationStr}${performanceContext}`,
       {
         command: commandId,
         duration,
         success,
-        timestamp
+        timestamp,
+        performanceCategory:
+          duration > 5000 ? 'slow' : duration > 1000 ? 'normal' : 'fast'
       }
     );
   }
 
   /**
-   * Log a user-friendly error message
+   * Enhanced command error logging with detailed context
    */
   logCommandError(
     commandId: string,
@@ -181,13 +256,16 @@ class GlobalLoggerManager {
         : `${Math.round(duration)}ms`;
     const errorMessage = error instanceof Error ? error.message : String(error);
 
+    // 🎯 ENHANCED ERROR LOGGING WITH CONTEXT
     this.mainLogger.error(
-      `❌ [${timestamp}] ${description} failed after ${durationStr}: ${errorMessage}`,
+      `💥 [${timestamp}] ${description} failed after ${durationStr}: ${errorMessage}`,
       {
         command: commandId,
         error: errorMessage,
+        errorType: error instanceof Error ? error.constructor.name : 'Unknown',
         duration,
-        timestamp
+        timestamp,
+        stack: error instanceof Error ? error.stack : undefined
       }
     );
   }

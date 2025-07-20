@@ -7,20 +7,85 @@ export class PinoLogger implements ILogger {
   private logger: pino.Logger;
 
   constructor(config: SimpleLoggerConfig = {}) {
-    // Enhanced pino-pretty configuration for better datetime and colors
+    // 🎯 WORLD-CLASS PINO-PRETTY CONFIGURATION
     const prettyOptions = {
       colorize: config.enableColors !== false,
-      translateTime: 'SYS:yyyy-mm-dd HH:MM:ss', // More explicit datetime format
+      translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l', // Include milliseconds for precision
       ignore: 'pid,hostname',
       singleLine: false, // Allow multi-line for better readability
       hideObject: false, // Show metadata objects
       colorizeObjects: true, // Enable color for objects too
+      // 🎯 ENHANCED MESSAGE FORMATTING WITH TREE-SITTER MODE INDICATORS
+      messageFormat: (log: any, messageKey: string) => {
+        const message = log[messageKey];
+        
+        // Add tree-sitter mode indicator if present
+        if (log.treeSitterMode) {
+          return `🌳 ${log.treeSitterMode} | ${message}`;
+        }
+        
+        // Add performance indicators for timing
+        if (log.performanceCategory) {
+          const perfIcon = log.performanceCategory === 'slow' ? '🐌' : 
+                          log.performanceCategory === 'normal' ? '⚡' : '🚀';
+          return `${perfIcon} ${message}`;
+        }
+        
+        return message;
+      },
+             // 🎯 CUSTOM LEVEL FORMATTING WITH EMOJIS
+       customPrettifiers: {
+         level: (logLevel: any) => {
+           const levelMap: Record<string, string> = {
+             '60': '💀 FATAL',
+             '50': '🔴 ERROR',
+             '40': '🟡 WARN ',
+             '30': '🔵 INFO ',
+             '20': '🟢 DEBUG',
+             '10': '⚪ TRACE'
+           };
+           return levelMap[String(logLevel)] || `🔘 ${logLevel}`;
+         }
+       }
     };
 
     this.logger = pino({
       level: config.level || 'info',
-      // Add timestamp to base log record for consistency
       timestamp: pino.stdTimeFunctions.isoTime,
+      // 🎯 ENHANCED BASE CONFIGURATION WITH STRUCTURED DATA
+      formatters: {
+        level: (label: string) => ({ level: label }),
+        log: (object: any) => {
+          // Extract and format tree-sitter mode information
+          if (object.mode || object.treeSitterMode) {
+            object.treeSitterMode = object.mode || object.treeSitterMode;
+          }
+          
+          // Add CLI context markers
+          if (object.fileName && !object.context) {
+            object.context = 'file-processing';
+          }
+          
+          return object;
+        }
+      },
+      // 🎯 ENHANCED SERIALIZERS FOR BETTER ERROR HANDLING
+      serializers: {
+        error: (error: any) => {
+          if (error instanceof Error) {
+            return {
+              type: error.constructor.name,
+              message: error.message,
+              stack: error.stack,
+              code: (error as any).code,
+              errno: (error as any).errno,
+              syscall: (error as any).syscall,
+              path: (error as any).path
+            };
+          }
+          return error;
+        }
+      }
     }, pretty(prettyOptions));
   }
 

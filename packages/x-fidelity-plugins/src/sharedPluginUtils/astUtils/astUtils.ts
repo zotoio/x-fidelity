@@ -15,7 +15,8 @@ const isVSCodeEnvironment = () => {
 function createFailedAstResult(
   context: AstGenerationContext, 
   errorMessage: string, 
-  generationTime: number = 0
+  generationTime: number = 0,
+  mode: string = 'native-direct'
 ): AstResult {
   return {
     tree: null,
@@ -24,14 +25,14 @@ function createFailedAstResult(
     fileName: context.fileName,
     hasErrors: true,
     generationTime,
-    mode: 'native-direct' as const,
+    mode: mode as any,
     reason: errorMessage,
     fromCache: false
   };
 }
 
 /**
- * ✅ UNIFIED AST GENERATION FUNCTION
+ * ✅ UNIFIED AST GENERATION FUNCTION WITH WORLD-CLASS LOGGING
  * This replaces multiple scattered generateAst functions throughout the codebase
  */
 export async function generateAst(context: AstGenerationContext): Promise<AstResult> {
@@ -40,11 +41,13 @@ export async function generateAst(context: AstGenerationContext): Promise<AstRes
   // Auto-detect language if not provided
   const language = context.language || getLanguageFromPath(filePath);
   if (!language) {
+    logger.info(`🚫 AST: Unsupported file type for ${fileName}`);
     return createFailedAstResult(context, 'Unsupported file type for AST generation');
   }
 
   // Validate content
   if (!content || typeof content !== 'string') {
+    logger.warn(`⚠️  AST: No valid content for ${fileName}`);
     return createFailedAstResult({ ...context, language }, 'No valid content provided for AST generation');
   }
 
@@ -56,19 +59,15 @@ export async function generateAst(context: AstGenerationContext): Promise<AstRes
   const startTime = Date.now();
   
   try {
-    logger.debug({ fileName, language, contentLength: content.length }, 'Generating AST with unified function');
+    // 🎯 ALWAYS LOG AST GENERATION ATTEMPTS AT INFO LEVEL
+    logger.info(`🌳 AST: Generating ${language} AST for ${fileName} (${content.length} chars)`);
     
     const parseResult = await treeSitterManager.parseCode(content, language as 'javascript' | 'typescript', fileName);
     const generationTime = Date.now() - startTime;
     
     if (parseResult.tree) {
-      logger.debug({ 
-        fileName,
-        language,
-        hasTree: !!parseResult.tree,
-        generationTime,
-        mode: parseResult.mode
-      }, 'AST generation successful');
+      // 🎯 SUCCESS LOGGING WITH MODE AT INFO LEVEL
+      logger.info(`✅ AST: Generated ${language} AST for ${fileName} using ${parseResult.mode} (${generationTime}ms)`);
       
       return {
         tree: parseResult.tree,
@@ -83,7 +82,8 @@ export async function generateAst(context: AstGenerationContext): Promise<AstRes
         fromCache: false
       };
     } else {
-      logger.debug({ fileName, reason: parseResult.reason }, 'AST generation failed');
+      // 🎯 FAILURE LOGGING AT WARN LEVEL (NEVER HIDDEN)
+      logger.warn(`❌ AST: Failed to generate ${language} AST for ${fileName} using ${parseResult.mode} (${generationTime}ms): ${parseResult.reason}`);
       
       return {
         tree: null,
@@ -101,7 +101,8 @@ export async function generateAst(context: AstGenerationContext): Promise<AstRes
     const generationTime = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
     
-    logger.error({ fileName, error: errorMessage, generationTime }, 'AST generation exception');
+    // 🎯 ERRORS ALWAYS LOGGED AT ERROR LEVEL
+    logger.error(`💥 AST: Exception generating ${language} AST for ${fileName} (${generationTime}ms): ${errorMessage}`);
     
     return createFailedAstResult({ ...context, language }, `AST generation exception: ${errorMessage}`, generationTime);
   }
@@ -115,6 +116,7 @@ export async function generateAstFromFileData(fileData: FileData): Promise<AstRe
   const content = fileData.fileContent || fileData.content;
   
   if (!content) {
+    logger.warn(`⚠️  AST: No file content available for ${fileData.fileName}`);
     return createFailedAstResult({
       filePath: fileData.filePath,
       fileName: fileData.fileName,

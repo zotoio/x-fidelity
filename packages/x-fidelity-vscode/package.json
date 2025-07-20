@@ -241,10 +241,10 @@
           "default": true,
           "description": "Enable telemetry collection for usage analytics."
         },
-                        "xfidelity.enableTreeSitterWasm": {
+        "xfidelity.enableTreeSitterWasm": {
           "type": "boolean",
           "default": true,
-          "description": "Use WASM TreeSitter instead of native bindings (recommended for VSCode). Provides better compatibility than native modules."
+          "description": "Use WASM TreeSitter instead of native bindings (recommended for VSCode). Provides better compatibility and reliability in extension environments."
         },
         "xfidelity.generateReports": {
           "type": "boolean",

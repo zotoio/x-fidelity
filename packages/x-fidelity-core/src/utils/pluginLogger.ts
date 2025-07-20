@@ -8,7 +8,8 @@ import { LoggerProvider } from './loggerProvider';
  */
 
 /**
- * Create a plugin-specific logger with appropriate context
+ * Create a plugin-specific logger with appropriate context and enhanced error handling
+ * 🎯 ENHANCED WITH UNIVERSAL CORRELATION ID SUPPORT
  * @param pluginName The name of the plugin
  * @param additionalContext Additional context to include in logs
  * @returns A logger wrapper that includes plugin context in all log messages
@@ -18,45 +19,84 @@ export function createPluginLogger(pluginName: string, additionalContext?: Recor
   const currentMode = LoggerProvider.getCurrentExecutionMode();
   const baseLogger = LoggerProvider.getLoggerForMode(currentMode);
   
-  const context = { plugin: pluginName, ...additionalContext };
+  const baseContext = { plugin: pluginName, ...additionalContext };
 
-  // Create wrapper that adds plugin context to all log messages
+  /**
+   * 🎯 NEW: Create enhanced metadata with correlation ID and plugin context
+   */
+  const createEnhancedMetadata = (metaOrMsg?: any): any => {
+    // Get correlation metadata from LoggerProvider
+    const correlationMeta = LoggerProvider.createCorrelationMetadata();
+    
+    // Combine plugin context with correlation metadata
+    const enhancedContext = {
+      ...baseContext,
+      ...correlationMeta,
+      pluginContext: {
+        name: pluginName,
+        additionalContext
+      }
+    };
+
+    if (typeof metaOrMsg === 'object' && metaOrMsg !== null) {
+      return { ...enhancedContext, ...metaOrMsg };
+    }
+    
+    return enhancedContext;
+  };
+
+  // 🎯 ENHANCED ERROR HANDLING WRAPPER WITH NEVER-HIDDEN ERRORS AND CORRELATION
   return {
     trace: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
-        ? { ...context, ...metaOrMsg }
-        : context;
-      baseLogger.trace(msgOrMeta, enhancedMeta);
+      const enhancedMeta = createEnhancedMetadata(metaOrMsg);
+      baseLogger.trace(`🔌 [${pluginName}] ${msgOrMeta}`, enhancedMeta);
     },
     debug: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
-        ? { ...context, ...metaOrMsg }
-        : context;
-      baseLogger.debug(msgOrMeta, enhancedMeta);
+      const enhancedMeta = createEnhancedMetadata(metaOrMsg);
+      baseLogger.debug(`🔌 [${pluginName}] ${msgOrMeta}`, enhancedMeta);
     },
     info: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
-        ? { ...context, ...metaOrMsg }
-        : context;
-      baseLogger.info(msgOrMeta, enhancedMeta);
+      const enhancedMeta = createEnhancedMetadata(metaOrMsg);
+      baseLogger.info(`🔌 [${pluginName}] ${msgOrMeta}`, enhancedMeta);
     },
     warn: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
-        ? { ...context, ...metaOrMsg }
-        : context;
-      baseLogger.warn(msgOrMeta, enhancedMeta);
+      const enhancedMeta = createEnhancedMetadata(metaOrMsg);
+      // 🎯 ENSURE PLUGIN WARNINGS ARE NEVER HIDDEN
+      baseLogger.warn(`⚠️  [${pluginName}] ${msgOrMeta}`, enhancedMeta);
     },
     error: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
-        ? { ...context, ...metaOrMsg }
-        : context;
-      baseLogger.error(msgOrMeta, enhancedMeta);
+      const enhancedMeta = createEnhancedMetadata(metaOrMsg);
+      // 🎯 ENSURE PLUGIN ERRORS ARE NEVER HIDDEN - ALWAYS VISIBLE
+      baseLogger.error(`💥 [${pluginName}] ${msgOrMeta}`, enhancedMeta);
+      
+      // 🎯 ADDITIONAL ERROR ESCALATION FOR CRITICAL PLUGIN FAILURES
+      if (msgOrMeta && typeof msgOrMeta === 'string' && 
+          (msgOrMeta.toLowerCase().includes('fatal') || 
+           msgOrMeta.toLowerCase().includes('critical') ||
+           msgOrMeta.toLowerCase().includes('exception'))) {
+        baseLogger.error(`🚨 CRITICAL PLUGIN ERROR in ${pluginName}: ${msgOrMeta}`, {
+          ...enhancedMeta,
+          severity: 'CRITICAL',
+          pluginErrorEscalation: true
+        });
+      }
     },
     fatal: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
-        ? { ...context, ...metaOrMsg }
-        : context;
-      baseLogger.fatal(msgOrMeta, enhancedMeta);
+      const enhancedMeta = createEnhancedMetadata(metaOrMsg);
+      // 🎯 FATAL ERRORS GET MAXIMUM VISIBILITY
+      baseLogger.fatal(`💀 [${pluginName}] FATAL: ${msgOrMeta}`, {
+        ...enhancedMeta,
+        severity: 'FATAL',
+        pluginFatalError: true
+      });
+      
+      // 🎯 ADDITIONAL ESCALATION FOR FATAL PLUGIN ERRORS
+      baseLogger.error(`🚨🚨 FATAL PLUGIN ERROR in ${pluginName}: ${msgOrMeta}`, {
+        ...enhancedMeta,
+        severity: 'FATAL',
+        pluginErrorEscalation: true,
+        requiresAttention: true
+      });
     },
     setLevel: baseLogger.setLevel.bind(baseLogger),
     getLevel: baseLogger.getLevel.bind(baseLogger),

@@ -62,7 +62,7 @@ async function debugVSCodeCLIExecution() {
     
     console.log('\n🔧 STEP 3: Executing CLI exactly like VSCode extension');
     
-    // Build arguments EXACTLY like VSCode extension (updated for mode-based execution)
+    // Build arguments EXACTLY like VSCode extension with WASM enabled by default
     const args = [
       cliPath,
       '--dir',
@@ -71,7 +71,7 @@ async function debugVSCodeCLIExecution() {
       'json',
       '--mode',
       'vscode', // Use VSCode execution mode
-      '--enable-tree-sitter-worker' // Enable WASM tree-sitter for VSCode
+      '--enable-tree-sitter-wasm' // 🎯 ENABLE WASM BY DEFAULT (like VSCode extension)
     ];
     
     console.log(`Command: node ${args.join(' ')}`);

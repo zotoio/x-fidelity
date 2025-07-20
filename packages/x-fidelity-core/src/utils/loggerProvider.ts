@@ -4,6 +4,7 @@ import { createDefaultLogger, createVSCodeLogger } from './defaultLogger';
 
 /**
  * Logger wrapper that automatically prefixes all messages with execution ID
+ * 🎯 ENHANCED WITH UNIVERSAL CORRELATION ID METADATA
  */
 class PrefixingLogger implements ILogger {
   private baseLogger: ILogger;
@@ -22,6 +23,46 @@ class PrefixingLogger implements ILogger {
       return this.staticPrefix;
     }
     return ExecutionContext.getExecutionPrefix();
+  }
+
+  /**
+   * 🎯 NEW: Enhance metadata with correlation ID for universal traceability
+   */
+  private enhanceMetadata(metaOrMsg?: any): any {
+    const correlationId = ExecutionContext.getCurrentExecutionId();
+    const executionContext = ExecutionContext.getCurrentContext();
+    
+    if (!correlationId) {
+      return metaOrMsg;
+    }
+
+    // If no metadata provided, create it with correlation ID
+    if (!metaOrMsg) {
+      return {
+        correlationId,
+        component: executionContext?.component,
+        operation: executionContext?.operation
+      };
+    }
+
+    // If metadata is an object, enhance it with correlation info
+    if (typeof metaOrMsg === 'object' && metaOrMsg !== null) {
+      return {
+        ...metaOrMsg,
+        correlationId,
+        component: executionContext?.component,
+        operation: executionContext?.operation,
+        executionStartTime: executionContext?.startTime
+      };
+    }
+
+    // If metadata is a primitive, wrap it with correlation info
+    return {
+      originalMeta: metaOrMsg,
+      correlationId,
+      component: executionContext?.component,
+      operation: executionContext?.operation
+    };
   }
 
   /**
@@ -57,27 +98,27 @@ class PrefixingLogger implements ILogger {
   }
 
   trace(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.trace(this.prefixMessage(msgOrMeta), metaOrMsg);
+    this.baseLogger.trace(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
   }
 
   debug(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.debug(this.prefixMessage(msgOrMeta), metaOrMsg);
+    this.baseLogger.debug(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
   }
 
   info(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.info(this.prefixMessage(msgOrMeta), metaOrMsg);
+    this.baseLogger.info(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
   }
 
   warn(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.warn(this.prefixMessage(msgOrMeta), metaOrMsg);
+    this.baseLogger.warn(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
   }
 
   error(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.error(this.prefixMessage(msgOrMeta), metaOrMsg);
+    this.baseLogger.error(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
   }
 
   fatal(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.fatal(this.prefixMessage(msgOrMeta), metaOrMsg);
+    this.baseLogger.fatal(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
   }
 
   // Child logger method removed - use direct context passing instead
@@ -371,24 +412,95 @@ class LoggerProvider {
   }
 
   /**
-   * Set the current logger to one optimized for the specified mode and level
-   * @param mode The execution mode to optimize for
-   * @param level Optional log level to set
-   */
-  static setModeAndLevel(mode: ExecutionMode, level?: LogLevel): void {
-    const logger = this.createLoggerForMode(mode, level);
-    this.setLogger(logger);
-  }
-
-  /**
    * Update the log level for long-running modes (VSCode, Server, Hook)
    * This allows dynamic log level changes without recreating the logger
    * @param level The new log level to set
    */
   static updateLogLevel(level: LogLevel): void {
+    // 🎯 COMPREHENSIVE LOG LEVEL PROPAGATION
     const currentLogger = this.getBaseLogger();
     if (currentLogger && typeof currentLogger.setLevel === 'function') {
       currentLogger.setLevel(level);
+    }
+    
+    // 🎯 PROPAGATE TO ALL CACHED LOGGERS
+    this.loggerCache.forEach((logger, cacheKey) => {
+      if (logger && typeof logger.setLevel === 'function') {
+        logger.setLevel(level);
+      }
+      // Handle PrefixingLogger wrapper
+      if (logger && typeof (logger as any).getBaseLogger === 'function') {
+        const baseLogger = (logger as any).getBaseLogger();
+        if (baseLogger && typeof baseLogger.setLevel === 'function') {
+          baseLogger.setLevel(level);
+        }
+      }
+    });
+    
+    // 🎯 UPDATE ENVIRONMENT VARIABLE FOR FUTURE LOGGER INSTANCES
+    process.env.XFI_LOG_LEVEL = level;
+    
+    // 🎯 LOG THE LEVEL CHANGE FOR VISIBILITY
+    const logger = this.getLogger();
+    logger.info(`📊 Log level updated globally to: ${level.toUpperCase()}`);
+  }
+
+  /**
+   * 🎯 NEW: Universal log level propagation for all execution modes
+   * This ensures level changes flow to all loggers in the system
+   * @param level The new log level to propagate
+   * @param mode Optional specific mode to update (updates all if not specified)
+   */
+  static propagateLogLevel(level: LogLevel, mode?: ExecutionMode): void {
+    // Update environment variable first
+    process.env.XFI_LOG_LEVEL = level;
+    
+    if (mode) {
+      // Update specific mode loggers
+      const modePrefix = `${mode}:${level}:`;
+      this.loggerCache.forEach((logger, cacheKey) => {
+        if (cacheKey.startsWith(modePrefix)) {
+          this.updateCachedLogger(logger, level);
+        }
+      });
+    } else {
+      // Update ALL cached loggers
+      this.loggerCache.forEach((logger) => {
+        this.updateCachedLogger(logger, level);
+      });
+    }
+    
+    // Update injected logger if present
+    if (this.injectedLogger) {
+      this.updateCachedLogger(this.injectedLogger, level);
+    }
+    
+    // Clear cache to force recreation with new level
+    this.loggerCache.clear();
+    
+    // Log the propagation
+    const logger = this.getLogger();
+    const scope = mode ? `for ${mode} mode` : 'globally';
+    logger.info(`🔄 Log level propagated ${scope}: ${level.toUpperCase()}`);
+  }
+
+  /**
+   * Helper method to update a cached logger's level
+   */
+  private static updateCachedLogger(logger: ILogger, level: LogLevel): void {
+    if (!logger) return;
+    
+    // Direct logger update
+    if (typeof logger.setLevel === 'function') {
+      logger.setLevel(level);
+    }
+    
+    // Handle PrefixingLogger wrapper
+    if (typeof (logger as any).getBaseLogger === 'function') {
+      const baseLogger = (logger as any).getBaseLogger();
+      if (baseLogger && typeof baseLogger.setLevel === 'function') {
+        baseLogger.setLevel(level);
+      }
     }
   }
 
@@ -400,7 +512,12 @@ class LoggerProvider {
    * @param options Optional configuration for specific modes
    */
   static setLoggerForMode(mode: ExecutionMode, level?: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }): void {
-    const logger = this.getLoggerForMode(mode, level, options);
+    const finalLevel = level || (process.env.XFI_LOG_LEVEL as LogLevel) || 'info';
+    
+    // 🎯 ENSURE LEVEL IS PROPAGATED SYSTEM-WIDE
+    this.propagateLogLevel(finalLevel, mode);
+    
+    const logger = this.getLoggerForMode(mode, finalLevel, options);
     this.setLogger(logger);
   }
 
@@ -409,6 +526,80 @@ class LoggerProvider {
    */
   static clearCache(): void {
     this.loggerCache.clear();
+  }
+
+  static generateLogPrefix(): string {
+    // Simple random ID without crypto dependency
+    return Math.random().toString(36).substring(2, 10);
+  };
+
+  /**
+   * 🎯 NEW: Get current correlation ID from ExecutionContext
+   */
+  static getCurrentCorrelationId(): string | null {
+    try {
+      const { ExecutionContext } = require('./executionContext');
+      return ExecutionContext.getCurrentExecutionId();
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * 🎯 NEW: Create correlation-aware metadata for all logs
+   */
+  static createCorrelationMetadata(additionalMeta?: Record<string, any>): Record<string, any> {
+    const correlationId = this.getCurrentCorrelationId();
+    if (!correlationId) {
+      return additionalMeta || {};
+    }
+
+    try {
+      const { ExecutionContext } = require('./executionContext');
+      const context = ExecutionContext.getCurrentContext();
+      
+      return {
+        ...additionalMeta,
+        correlationId,
+        component: context?.component,
+        operation: context?.operation,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      return {
+        ...additionalMeta,
+        correlationId
+      };
+    }
+  }
+
+  /**
+   * 🎯 NEW: Log with automatic correlation ID inclusion
+   */
+  static logWithCorrelation(level: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal', message: string, metadata?: Record<string, any>): void {
+    const logger = this.getLogger();
+    const enhancedMetadata = this.createCorrelationMetadata(metadata);
+    
+    switch (level) {
+      case 'trace':
+        logger.trace(message, enhancedMetadata);
+        break;
+      case 'debug':
+        logger.debug(message, enhancedMetadata);
+        break;
+      case 'info':
+        logger.info(message, enhancedMetadata);
+        break;
+      case 'warn':
+        logger.warn(message, enhancedMetadata);
+        break;
+      case 'error':
+        logger.error(message, enhancedMetadata);
+        break;
+      case 'fatal':
+        logger.fatal(message, enhancedMetadata);
+        break;
+    }
   }
 
   /**
@@ -423,8 +614,8 @@ class LoggerProvider {
     }
     
     this.ensureInitialized();
-    // Log that the system is ready for plugin logging
-    this.getLogger().debug('Logger provider initialized for universal plugin logging');
+    // Log that the system is ready for plugin logging with correlation
+    this.logWithCorrelation('debug', 'Logger provider initialized for universal plugin logging with correlation ID support');
   }
 }
 

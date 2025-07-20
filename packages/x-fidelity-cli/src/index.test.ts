@@ -56,7 +56,10 @@ jest.mock('@x-fidelity/core', () => ({
             setLevel: jest.fn(),
             getLevel: jest.fn().mockReturnValue('info'),
             isLevelEnabled: jest.fn().mockReturnValue(true)
-        }))
+        })),
+        setLoggerForMode: jest.fn(),
+        propagateLogLevel: jest.fn(),
+        updateLogLevel: jest.fn()
     },
     // Add the logger export mock
     logger: {

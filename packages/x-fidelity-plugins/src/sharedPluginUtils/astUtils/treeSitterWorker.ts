@@ -7,6 +7,109 @@ import {
   checkTreeSitterAvailability 
 } from './treeSitterUtils';
 
+/**
+ * Get the CLI installation directory for bundled assets
+ * This works for both VSCode extension and standalone CLI scenarios
+ */
+function getCLIInstallationDirectory(): string {
+  const path = require('path');
+  
+  // Try multiple detection methods in order of reliability
+  const possiblePaths = [
+    // 1. Main module filename (most reliable for bundled CLI)
+    require.main?.filename,
+    // 2. Current script location
+    process.argv[1],
+    // 3. Current working directory (fallback)
+    process.cwd()
+  ].filter(Boolean);
+  
+  for (const candidatePath of possiblePaths) {
+    if (!candidatePath) continue;
+    
+    const dir = path.dirname(candidatePath);
+    
+    // Check if this looks like a CLI installation directory
+    const fs = require('fs');
+    
+    // Look for WASM files in the expected bundled location
+    const wasmIndicators = [
+      path.join(dir, 'tree-sitter.wasm'),
+      path.join(dir, 'tree-sitter-javascript.wasm'),
+      path.join(dir, 'tree-sitter-typescript.wasm'),
+      path.join(dir, 'web-tree-sitter')  // Directory containing WASM files
+    ];
+    
+    const hasWasmFiles = wasmIndicators.some(indicator => {
+      try {
+        return fs.existsSync(indicator);
+      } catch {
+        return false;
+      }
+    });
+    
+    if (hasWasmFiles) {
+      return dir;
+    }
+  }
+  
+  // Fallback: use the directory where this module is located
+  // This works when the CLI is bundled and WASM files are co-located
+  return path.dirname(require.main?.filename || process.argv[1] || __dirname);
+}
+
+/**
+ * Get the correct WASM language files directory
+ * This handles the different bundling structures between VSCode and standalone CLI
+ */
+function getWasmLanguagesDirectory(cliInstallDir: string): string {
+  const path = require('path');
+  const fs = require('fs');
+  
+  // 🎯 PRIORITY: Use VSCode extension path if provided via environment
+  const vscodeExtensionPath = process.env.XFI_VSCODE_EXTENSION_PATH;
+  if (vscodeExtensionPath) {
+    const vscodeWasmPath = path.join(vscodeExtensionPath, 'dist', 'wasm');
+    try {
+      // Verify the VSCode WASM directory exists and has TypeScript WASM file
+      const tsWasmPath = path.join(vscodeWasmPath, 'tree-sitter-typescript.wasm');
+      if (fs.existsSync(tsWasmPath)) {
+        return vscodeWasmPath;
+      }
+    } catch {
+      // Continue with fallback logic if VSCode path fails
+    }
+  }
+  
+  // Try different possible locations for language WASM files
+  const possibleLanguagePaths = [
+    // VSCode extension: language files in wasm directory
+    path.join(cliInstallDir, '..', 'wasm'),
+    path.join(cliInstallDir, 'wasm'),
+    // CLI bundled: language files co-located with CLI
+    cliInstallDir,
+    // CLI node_modules: language files in web-tree-sitter directory  
+    path.join(cliInstallDir, 'node_modules', 'web-tree-sitter'),
+    // Fallback: standard node_modules structure
+    path.join(cliInstallDir, 'node_modules')
+  ];
+  
+  for (const langPath of possibleLanguagePaths) {
+    try {
+      // Check if TypeScript WASM file exists (good indicator)
+      const tsWasmPath = path.join(langPath, 'tree-sitter-typescript.wasm');
+      if (fs.existsSync(tsWasmPath)) {
+        return langPath;
+      }
+    } catch {
+      continue;
+    }
+  }
+  
+  // Fallback to CLI installation directory
+  return cliInstallDir;
+}
+
 export interface TreeSitterRequest {
   id: string;
   type: 'initialize' | 'parse' | 'getStatus' | 'shutdown';
@@ -122,24 +225,25 @@ async function initializeWasmTreeSitter(config?: WasmConfig): Promise<void> {
         logger.debug(`[TreeSitter Worker] WASM requesting file: ${scriptName} from directory: ${scriptDirectory}`);
         
         if (scriptName === 'tree-sitter.wasm') {
-          const wasmPath = config?.wasmPath || `${scriptDirectory}tree-sitter.wasm`;
+          // 🎯 PRIORITY: Use VSCode extension path if provided via environment
+          const vscodeExtensionPath = process.env.XFI_VSCODE_EXTENSION_PATH;
+          let wasmPath: string;
           
-          // Convert to proper file:// URL for Node.js environment
+          if (vscodeExtensionPath) {
+            // In VSCode extension mode, use the bundled tree-sitter.wasm from CLI node_modules
+            wasmPath = config?.wasmPath || `${vscodeExtensionPath}/dist/cli/node_modules/web-tree-sitter/tree-sitter.wasm`;
+          } else {
+            // Fallback to CLI installation directory detection
+            const cliInstallDir = getCLIInstallationDirectory();
+            wasmPath = config?.wasmPath || `${cliInstallDir}/tree-sitter.wasm`;
+          }
+          
+          // 🎯 FIXED: In Node.js environment, return direct file path, not file:// URL
           const path = require('path');
           const filePath = path.resolve(wasmPath);
           
-          // Use platform-specific file URL format
-          let fileUrl: string;
-          if (process.platform === 'win32') {
-            // Windows file URLs need special handling
-            fileUrl = `file:///${filePath.replace(/\\/g, '/')}`;
-          } else {
-            // Unix-like systems (Linux, macOS)
-            fileUrl = `file://${filePath}`;
-          }
-          
-          logger.debug(`[TreeSitter Worker] Returning WASM file URL: ${fileUrl}`);
-          return fileUrl;
+          logger.debug(`[TreeSitter Worker] Returning WASM file path: ${filePath}`);
+          return filePath;
         }
         
         return scriptDirectory + scriptName;
@@ -150,36 +254,41 @@ async function initializeWasmTreeSitter(config?: WasmConfig): Promise<void> {
     wasmInitialized = true;
     
     // Preload common languages
-    const languagesPath = config?.languagesPath || './node_modules';
+    // 🎯 FIXED: Use CLI installation directory and detect correct language files location
+    const cliInstallDir = getCLIInstallationDirectory();
+    const languagesPath = config?.languagesPath || getWasmLanguagesDirectory(cliInstallDir);
     try {
-      // Convert language paths to file:// URLs as well
+      // 🎯 FIXED: Use direct file paths instead of file:// URLs for Node.js
       const path = require('path');
       
-      const jsWasmPath = path.resolve(`${languagesPath}/tree-sitter-javascript/tree-sitter-javascript.wasm`);
-      const tsWasmPath = path.resolve(`${languagesPath}/tree-sitter-typescript/tree-sitter-typescript.wasm`);
+      const jsWasmPath = path.resolve(`${languagesPath}/tree-sitter-javascript.wasm`);
+      const tsWasmPath = path.resolve(`${languagesPath}/tree-sitter-typescript.wasm`);
       
-      // Use platform-specific file URL format for language files
-      let jsWasmUrl: string, tsWasmUrl: string;
-      if (process.platform === 'win32') {
-        jsWasmUrl = `file:///${jsWasmPath.replace(/\\/g, '/')}`;
-        tsWasmUrl = `file:///${tsWasmPath.replace(/\\/g, '/')}`;
+      // 🎯 NO MORE file:// URLs - use direct paths for Node.js environment
+      logger.debug(`[TreeSitter Worker] Loading JavaScript WASM: ${jsWasmPath}`);
+      logger.debug(`[TreeSitter Worker] Loading TypeScript WASM: ${tsWasmPath}`);
+      
+      // Verify files exist before attempting to load
+      const fs = require('fs');
+      if (fs.existsSync(jsWasmPath)) {
+        const jsLang = await Parser.Language.load(jsWasmPath);
+        wasmLanguages.set('javascript', jsLang);
+        logger.debug('[TreeSitter Worker] JavaScript language loaded successfully');
       } else {
-        jsWasmUrl = `file://${jsWasmPath}`;
-        tsWasmUrl = `file://${tsWasmPath}`;
+        logger.warn(`[TreeSitter Worker] JavaScript WASM not found: ${jsWasmPath}`);
       }
       
-      logger.debug(`[TreeSitter Worker] Loading JavaScript from: ${jsWasmUrl}`);
-      logger.debug(`[TreeSitter Worker] Loading TypeScript from: ${tsWasmUrl}`);
+      if (fs.existsSync(tsWasmPath)) {
+        const tsLang = await Parser.Language.load(tsWasmPath);
+        wasmLanguages.set('typescript', tsLang);
+        logger.debug('[TreeSitter Worker] TypeScript language loaded successfully');
+      } else {
+        logger.warn(`[TreeSitter Worker] TypeScript WASM not found: ${tsWasmPath}`);
+      }
       
-      const jsLang = await Parser.Language.load(jsWasmUrl);
-      const tsLang = await Parser.Language.load(tsWasmUrl);
-      
-      wasmLanguages.set('javascript', jsLang);
-      wasmLanguages.set('typescript', tsLang);
-      
-      logger.info('[TreeSitter Worker] WASM Tree-sitter initialized with JavaScript and TypeScript');
-    } catch (langError) {
-      logger.warn('[TreeSitter Worker] Failed to preload WASM languages:', langError);
+      logger.info(`[TreeSitter Worker] WASM Tree-sitter initialized with ${wasmLanguages.size} languages`);
+    } catch (languageError) {
+      logger.warn(`[TreeSitter Worker] Failed to preload languages: ${languageError}`);
       // Continue without preloaded languages - they can be loaded on demand
     }
     

@@ -1,6 +1,6 @@
 import { Worker } from 'worker_threads';
 import * as path from 'path';
-import { logger, getOptions } from '@x-fidelity/core';
+import { logger, getOptions, LoggerProvider } from '@x-fidelity/core';
 import { TreeSitterRequest, TreeSitterResponse } from './treeSitterWorker';
 import { ParseResult, parseCode as sharedParseCode } from './treeSitterUtils';
 
@@ -9,6 +9,17 @@ process.setMaxListeners(20);
 
 // Global singleton symbol to prevent multiple instances
 const GLOBAL_SINGLETON_KEY = Symbol.for('x-fidelity.treeSitterManager');
+
+/**
+ * 🎯 CREATE CORRELATION-AWARE METADATA FOR ALL TREE-SITTER LOGS
+ */
+const createTreeSitterMeta = (additionalMeta: Record<string, any> = {}) => {
+  return LoggerProvider.createCorrelationMetadata({
+    ...additionalMeta,
+    component: 'tree-sitter',
+    subsystem: 'manager'
+  });
+};
 
 export class TreeSitterManager {
   private static instance: TreeSitterManager | null = null;
@@ -27,10 +38,6 @@ export class TreeSitterManager {
   }
 
   static getInstance(): TreeSitterManager {
-    if ((globalThis as any)[GLOBAL_SINGLETON_KEY]) {
-      return (globalThis as any)[GLOBAL_SINGLETON_KEY];
-    }
-    
     if (!TreeSitterManager.instance) {
       TreeSitterManager.instance = new TreeSitterManager();
     }
@@ -60,7 +67,7 @@ export class TreeSitterManager {
   }
 
   /**
-   * Initialize the Tree-sitter manager
+   * Initialize the Tree-sitter manager with enhanced logging
    */
   async initialize(): Promise<void> {
     const options = getOptions();
@@ -71,14 +78,26 @@ export class TreeSitterManager {
 
     this.isShuttingDown = false;
 
-    // If worker is disabled, just mark as initialized for direct parsing
+    // 🎯 ALWAYS LOG MODE SELECTION AT INFO LEVEL WITH CORRELATION
     if (!options.enableTreeSitterWorker) {
       this.isInitialized = true;
       const mode = options.enableTreeSitterWasm ? 'WASM direct' : 'native direct';
-      logger.info(`🔧 Tree-sitter Manager: Using ${mode} parsing mode`);
+      logger.info(`🌳 Tree-sitter: ${mode} parsing mode selected`, createTreeSitterMeta({
+        mode: mode,
+        workerEnabled: false,
+        wasmEnabled: options.enableTreeSitterWasm
+      }));
       return;
     }
 
+    // 🎯 LOG WORKER INITIALIZATION ATTEMPT WITH CORRELATION
+    logger.info(`🌳 Tree-sitter: Initializing worker mode (WASM: ${options.enableTreeSitterWasm ? 'enabled' : 'disabled'})`, 
+      createTreeSitterMeta({
+        action: 'initialize-worker',
+        wasmEnabled: options.enableTreeSitterWasm
+      })
+    );
+    
     try {
       // Clean up existing worker
       if (this.worker) {
@@ -87,6 +106,10 @@ export class TreeSitterManager {
 
       // Create and initialize worker
       const workerPath = this.getWorkerPath();
+      logger.debug(`🌳 Tree-sitter: Starting worker from ${workerPath}`, createTreeSitterMeta({
+        workerPath,
+        action: 'start-worker'
+      }));
       this.worker = new Worker(workerPath);
 
       this.worker.on('message', (response: TreeSitterResponse) => {
@@ -94,13 +117,20 @@ export class TreeSitterManager {
       });
 
       this.worker.on('error', (error) => {
-        logger.error('[Tree-sitter Manager] Worker error:', error);
+        logger.error(`💥 Tree-sitter: Worker error - ${error}`, createTreeSitterMeta({
+          error: error.message,
+          errorType: error.constructor.name,
+          action: 'worker-error'
+        }));
         this.cleanup();
       });
 
       this.worker.on('exit', (code) => {
         if (code !== 0) {
-          logger.error(`[Tree-sitter Manager] Worker stopped with exit code ${code}`);
+          logger.error(`💥 Tree-sitter: Worker stopped with exit code ${code}`, createTreeSitterMeta({
+            exitCode: code,
+            action: 'worker-exit'
+          }));
         }
         this.cleanup();
       });
@@ -120,30 +150,57 @@ export class TreeSitterManager {
       if (result.success) {
         this.isInitialized = true;
         const mode = options.enableTreeSitterWasm ? 'WASM worker' : 'native worker';
-        logger.info(`[Tree-sitter Manager] Initialized in ${mode} mode`);
+        logger.info(`✅ Tree-sitter: ${mode} mode initialized successfully`, createTreeSitterMeta({
+          mode: mode,
+          workerEnabled: true,
+          wasmEnabled: options.enableTreeSitterWasm,
+          action: 'initialize-success'
+        }));
       } else {
         throw new Error(`Worker initialization failed: ${result.error}`);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.warn(`[Tree-sitter Manager] Worker initialization failed: ${errorMessage}, falling back to direct parsing`);
+      logger.warn(`⚠️  Tree-sitter: Worker initialization failed - ${errorMessage}`, createTreeSitterMeta({
+        error: errorMessage,
+        errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+        action: 'initialize-failed'
+      }));
+      logger.info(`🔄 Tree-sitter: Falling back to direct parsing mode`, createTreeSitterMeta({
+        action: 'fallback-to-direct'
+      }));
       await this.cleanup();
       this.isInitialized = true; // Allow direct parsing fallback
     }
   }
 
   /**
-   * Parse code using worker or direct parsing as fallback
+   * Parse code using worker or direct parsing as fallback with enhanced logging
    */
   async parseCode(code: string, language: 'javascript' | 'typescript', fileName: string): Promise<ParseResult> {
     const options = getOptions();
 
     // Use direct parsing if worker is disabled or not ready
     if (!options.enableTreeSitterWorker || !this.isWorkerReady()) {
+      const directMode = options.enableTreeSitterWasm ? 'WASM-direct' : 'native-direct';
+      logger.debug(`🌳 Tree-sitter: Using ${directMode} for ${fileName}`, createTreeSitterMeta({
+        fileName,
+        mode: directMode,
+        codeLength: code.length,
+        language,
+        action: 'parse-direct'
+      }));
       return this.parseCodeDirectly(code, language, fileName);
     }
 
     try {
+      logger.debug(`🌳 Tree-sitter: Using worker mode for ${fileName}`, createTreeSitterMeta({
+        fileName,
+        mode: 'worker',
+        codeLength: code.length,
+        language,
+        action: 'parse-worker'
+      }));
       const result = await this.sendRequest('parse', { code, language, fileName });
       if (result.success) {
         return result.data as ParseResult;
@@ -151,7 +208,13 @@ export class TreeSitterManager {
         throw new Error(result.error || 'Parse request failed');
       }
     } catch (error) {
-      logger.warn(`[Tree-sitter Manager] Worker parsing failed, falling back to direct: ${error}`);
+      logger.warn(`⚠️  Tree-sitter: Worker parsing failed for ${fileName}, falling back to direct: ${error}`, createTreeSitterMeta({
+        fileName,
+        error: error instanceof Error ? error.message : String(error),
+        codeLength: code.length,
+        language,
+        action: 'parse-fallback'
+      }));
       return this.parseCodeDirectly(code, language, fileName);
     }
   }

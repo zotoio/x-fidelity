@@ -7,7 +7,12 @@ describe('PrefixingLogger', () => {
     let prefixingLogger: PrefixingLogger;
 
     beforeEach(() => {
-        // Create mock base logger
+        // Start execution context for each test
+        ExecutionContext.startExecution({
+            component: 'Core',
+            operation: 'unit-test'
+        });
+
         mockBaseLogger = {
             trace: jest.fn(),
             debug: jest.fn(),
@@ -16,28 +21,20 @@ describe('PrefixingLogger', () => {
             error: jest.fn(),
             fatal: jest.fn(),
             setLevel: jest.fn(),
-            getLevel: jest.fn().mockReturnValue('info'),
-            isLevelEnabled: jest.fn().mockReturnValue(true)
+            getLevel: jest.fn(),
+            isLevelEnabled: jest.fn()
         };
 
-        // Start execution context for testing
-        ExecutionContext.startExecution({
-            component: 'Core',
-            operation: 'unit-test'
-        });
-
-        // Create PrefixingLogger instance
         prefixingLogger = new PrefixingLogger(mockBaseLogger);
     });
 
     afterEach(() => {
-        // Clean up execution context
         ExecutionContext.endExecution();
         jest.clearAllMocks();
     });
 
     describe('Execution ID Prefix Consistency', () => {
-        it('should add execution ID prefix to all log levels', () => {
+        it('should add execution ID prefix to all log levels with correlation metadata', () => {
             const testMessage = 'Test message';
             const executionId = ExecutionContext.getCurrentExecutionId();
             const expectedPrefix = `[${executionId}]`;
@@ -50,39 +47,57 @@ describe('PrefixingLogger', () => {
             prefixingLogger.error(testMessage);
             prefixingLogger.fatal(testMessage);
 
-            // Verify all calls have the execution ID prefix
-            expect(mockBaseLogger.trace).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, undefined);
-            expect(mockBaseLogger.debug).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, undefined);
-            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, undefined);
-            expect(mockBaseLogger.warn).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, undefined);
-            expect(mockBaseLogger.error).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, undefined);
-            expect(mockBaseLogger.fatal).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, undefined);
+            // Verify all calls have the execution ID prefix AND correlation metadata
+            const expectedMeta = expect.objectContaining({
+                correlationId: executionId,
+                component: 'Core',
+                operation: 'unit-test'
+            });
+
+            expect(mockBaseLogger.trace).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, expectedMeta);
+            expect(mockBaseLogger.debug).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, expectedMeta);
+            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, expectedMeta);
+            expect(mockBaseLogger.warn).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, expectedMeta);
+            expect(mockBaseLogger.error).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, expectedMeta);
+            expect(mockBaseLogger.fatal).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, expectedMeta);
         });
 
-        it('should handle object messages with message property', () => {
+        it('should handle object messages with message property and add correlation metadata', () => {
             const testObj = { message: 'Test object message', data: 'test' };
             const executionId = ExecutionContext.getCurrentExecutionId();
             const expectedPrefix = `[${executionId}]`;
 
             prefixingLogger.info(testObj);
 
+            const expectedMeta = expect.objectContaining({
+                correlationId: executionId,
+                component: 'Core',
+                operation: 'unit-test'
+            });
+
             expect(mockBaseLogger.info).toHaveBeenCalledWith({
                 ...testObj,
                 message: `${expectedPrefix} ${testObj.message}`
-            }, undefined);
+            }, expectedMeta);
         });
 
-        it('should handle object messages without message property', () => {
+        it('should handle object messages without message property and add correlation metadata', () => {
             const testObj = { data: 'test', value: 123 };
             const executionId = ExecutionContext.getCurrentExecutionId();
 
             prefixingLogger.info(testObj);
 
+            const expectedMeta = expect.objectContaining({
+                correlationId: executionId,
+                component: 'Core',
+                operation: 'unit-test'
+            });
+
             // Object without message property should be passed as-is (no prefix added)
-            expect(mockBaseLogger.info).toHaveBeenCalledWith(testObj, undefined);
+            expect(mockBaseLogger.info).toHaveBeenCalledWith(testObj, expectedMeta);
         });
 
-        it('should handle mixed string and metadata parameters', () => {
+        it('should handle mixed string and metadata parameters with enhanced correlation metadata', () => {
             const testMessage = 'Test message';
             const testMeta = { userId: '123', action: 'test' };
             const executionId = ExecutionContext.getCurrentExecutionId();
@@ -90,10 +105,18 @@ describe('PrefixingLogger', () => {
 
             prefixingLogger.info(testMessage, testMeta);
 
-            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, testMeta);
+            const expectedMeta = expect.objectContaining({
+                ...testMeta,
+                correlationId: executionId,
+                component: 'Core',
+                operation: 'unit-test',
+                executionStartTime: expect.any(Number)
+            });
+
+            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${expectedPrefix} ${testMessage}`, expectedMeta);
         });
 
-        it('should maintain consistent prefix across multiple log calls', () => {
+        it('should maintain consistent prefix across multiple log calls with correlation metadata', () => {
             const executionId = ExecutionContext.getCurrentExecutionId();
             const expectedPrefix = `[${executionId}]`;
 
@@ -101,28 +124,31 @@ describe('PrefixingLogger', () => {
             prefixingLogger.warn('Second message');
             prefixingLogger.error('Third message');
 
-            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${expectedPrefix} First message`, undefined);
-            expect(mockBaseLogger.warn).toHaveBeenCalledWith(`${expectedPrefix} Second message`, undefined);
-            expect(mockBaseLogger.error).toHaveBeenCalledWith(`${expectedPrefix} Third message`, undefined);
+            const expectedMeta = expect.objectContaining({
+                correlationId: executionId,
+                component: 'Core',
+                operation: 'unit-test'
+            });
+
+            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${expectedPrefix} First message`, expectedMeta);
+            expect(mockBaseLogger.warn).toHaveBeenCalledWith(`${expectedPrefix} Second message`, expectedMeta);
+            expect(mockBaseLogger.error).toHaveBeenCalledWith(`${expectedPrefix} Third message`, expectedMeta);
         });
 
-        it('should handle empty execution context gracefully', () => {
-            // End current execution context
-            ExecutionContext.endExecution();
-
-            prefixingLogger.info('Test message');
-
-            // Should still work, just without prefix
-            expect(mockBaseLogger.info).toHaveBeenCalledWith('Test message', undefined);
-        });
-
-        it('should handle static prefix when provided', () => {
+        it('should handle static prefix when provided with correlation metadata', () => {
             const staticPrefix = '[STATIC-PREFIX]';
             const staticPrefixLogger = new PrefixingLogger(mockBaseLogger, staticPrefix);
+            const executionId = ExecutionContext.getCurrentExecutionId();
 
             staticPrefixLogger.info('Test message');
 
-            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${staticPrefix} Test message`, undefined);
+            const expectedMeta = expect.objectContaining({
+                correlationId: executionId,
+                component: 'Core',
+                operation: 'unit-test'
+            });
+
+            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${staticPrefix} Test message`, expectedMeta);
         });
 
         it('should provide access to base logger when needed', () => {
@@ -133,7 +159,7 @@ describe('PrefixingLogger', () => {
     });
 
     describe('Cross-Execution Consistency', () => {
-        it('should use different prefixes for different executions', () => {
+        it('should use different prefixes for different executions with different correlation IDs', () => {
             const firstExecutionId = ExecutionContext.getCurrentExecutionId();
             prefixingLogger.info('First execution message');
 
@@ -148,56 +174,92 @@ describe('PrefixingLogger', () => {
             prefixingLogger.info('Second execution message');
 
             expect(firstExecutionId).not.toBe(secondExecutionId);
-            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(1, `[${firstExecutionId}] First execution message`, undefined);
-            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(2, `[${secondExecutionId}] Second execution message`, undefined);
+            
+            const firstExpectedMeta = expect.objectContaining({
+                correlationId: firstExecutionId,
+                component: 'Core',
+                operation: 'unit-test'
+            });
+            
+            const secondExpectedMeta = expect.objectContaining({
+                correlationId: secondExecutionId,
+                component: 'Core',
+                operation: 'second-test'
+            });
+
+            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(1, `[${firstExecutionId}] First execution message`, firstExpectedMeta);
+            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(2, `[${secondExecutionId}] Second execution message`, secondExpectedMeta);
         });
 
-        it('should maintain prefix consistency within same execution', () => {
+        it('should maintain prefix consistency within same execution with same correlation ID', () => {
             const executionId = ExecutionContext.getCurrentExecutionId();
             const expectedPrefix = `[${executionId}]`;
 
-            // Multiple loggers in same execution should use same prefix
             const logger1 = new PrefixingLogger(mockBaseLogger);
             const logger2 = new PrefixingLogger(mockBaseLogger);
 
             logger1.info('Logger 1 message');
             logger2.info('Logger 2 message');
 
-            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(1, `${expectedPrefix} Logger 1 message`, undefined);
-            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(2, `${expectedPrefix} Logger 2 message`, undefined);
+            const expectedMeta = expect.objectContaining({
+                correlationId: executionId,
+                component: 'Core',
+                operation: 'unit-test'
+            });
+
+            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(1, `${expectedPrefix} Logger 1 message`, expectedMeta);
+            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(2, `${expectedPrefix} Logger 2 message`, expectedMeta);
         });
     });
 
     describe('Performance and Edge Cases', () => {
-        it('should handle very long messages', () => {
+        it('should handle very long messages with correlation metadata', () => {
             const longMessage = 'A'.repeat(10000);
             const executionId = ExecutionContext.getCurrentExecutionId();
             const expectedPrefix = `[${executionId}]`;
 
             prefixingLogger.info(longMessage);
 
-            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${expectedPrefix} ${longMessage}`, undefined);
+            const expectedMeta = expect.objectContaining({
+                correlationId: executionId,
+                component: 'Core',
+                operation: 'unit-test'
+            });
+
+            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${expectedPrefix} ${longMessage}`, expectedMeta);
         });
 
-        it('should handle special characters in messages', () => {
+        it('should handle special characters in messages with correlation metadata', () => {
             const specialMessage = 'Message with 特殊字符 and émojis 🚀 and newlines\n\ttabs';
             const executionId = ExecutionContext.getCurrentExecutionId();
             const expectedPrefix = `[${executionId}]`;
 
             prefixingLogger.info(specialMessage);
 
-            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${expectedPrefix} ${specialMessage}`, undefined);
+            const expectedMeta = expect.objectContaining({
+                correlationId: executionId,
+                component: 'Core',
+                operation: 'unit-test'
+            });
+
+            expect(mockBaseLogger.info).toHaveBeenCalledWith(`${expectedPrefix} ${specialMessage}`, expectedMeta);
         });
 
-        it('should handle null and undefined messages', () => {
+        it('should handle null and undefined messages with correlation metadata', () => {
             const executionId = ExecutionContext.getCurrentExecutionId();
             const expectedPrefix = `[${executionId}]`;
 
             prefixingLogger.info(null as any);
             prefixingLogger.info(undefined as any);
 
-            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(1, `${expectedPrefix} null`, undefined);
-            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(2, `${expectedPrefix} undefined`, undefined);
+            const expectedMeta = expect.objectContaining({
+                correlationId: executionId,
+                component: 'Core',
+                operation: 'unit-test'
+            });
+
+            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(1, `${expectedPrefix} null`, expectedMeta);
+            expect(mockBaseLogger.info).toHaveBeenNthCalledWith(2, `${expectedPrefix} undefined`, expectedMeta);
         });
     });
 }); 

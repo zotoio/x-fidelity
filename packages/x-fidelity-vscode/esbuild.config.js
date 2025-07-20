@@ -216,6 +216,27 @@ const copyXFidelityAssetsPlugin = {
           }
         }
 
+        // 🎯 COPY WEB-TREE-SITTER TO CLI DIRECTORY FOR WASM SUPPORT
+        try {
+          const webTreeSitterSrc = path.resolve(__dirname, 'node_modules', 'web-tree-sitter');
+          const webTreeSitterDest = path.join(cliBinaryDest, 'node_modules', 'web-tree-sitter');
+          
+          if (fs.existsSync(webTreeSitterSrc)) {
+            // Create node_modules directory in CLI
+            if (!fs.existsSync(path.join(cliBinaryDest, 'node_modules'))) {
+              fs.mkdirSync(path.join(cliBinaryDest, 'node_modules'), { recursive: true });
+            }
+            
+            // Copy web-tree-sitter module
+            fs.cpSync(webTreeSitterSrc, webTreeSitterDest, { recursive: true, force: true });
+            console.log('[cli] ✅ Copied web-tree-sitter for WASM support');
+          } else {
+            console.warn('[cli] ⚠️ web-tree-sitter not found - WASM mode will fail');
+          }
+        } catch (error) {
+          console.warn('[cli] ⚠️ Failed to copy web-tree-sitter:', error.message);
+        }
+
         // Copy demo config directory for bundled CLI
         const cliDemoConfigSrc = path.join(cliDistPath, 'demoConfig');
         const cliDemoConfigDest = path.join(cliBinaryDest, 'demoConfig');

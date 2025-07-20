@@ -36,7 +36,14 @@ describe('astFact', () => {
         const result = await astFact.fn({}, mockAlmanac);
 
         expect(result).toEqual({ tree: null });
-        expect(mockLogger.debug).toHaveBeenCalledWith('No fileData available for AST generation');
+        expect(mockLogger.debug).toHaveBeenCalledWith(
+            '🔍 AST Fact: No fileData available',
+            expect.objectContaining({
+                fact: 'ast',
+                factType: 'iterative-function',
+                factPriority: 1
+            })
+        );
     });
 
     it('should return null tree when no file content available', async () => {
@@ -48,7 +55,14 @@ describe('astFact', () => {
         const result = await astFact.fn({}, mockAlmanac);
 
         expect(result).toEqual({ tree: null });
-        expect(mockLogger.debug).toHaveBeenCalledWith('No file content available for AST generation');
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+            '⚠️  AST Fact: No file content available for test.ts',
+            expect.objectContaining({
+                fileName: 'test.ts',
+                issue: 'no-content',
+                fact: 'ast'
+            })
+        );
     });
 
     it('should return null tree when file content is not a valid string', async () => {
@@ -60,6 +74,14 @@ describe('astFact', () => {
         const result = await astFact.fn({}, mockAlmanac);
 
         expect(result).toEqual({ tree: null });
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+            '⚠️  AST Fact: No file content available for test.ts',
+            expect.objectContaining({
+                fileName: 'test.ts',
+                issue: 'no-content',
+                fact: 'ast'
+            })
+        );
     });
 
     it('should use content field when available', async () => {
@@ -69,7 +91,7 @@ describe('astFact', () => {
         };
         
         mockAlmanac.factValue.mockResolvedValue(fileData);
-        const mockResult = { tree: { type: 'program' } };
+        const mockResult = { tree: { type: 'program' }, mode: 'native-direct' } as any;
         mockGenerateAst.mockResolvedValue(mockResult);
 
         const result = await astFact.fn({}, mockAlmanac);
@@ -88,7 +110,7 @@ describe('astFact', () => {
         };
         
         mockAlmanac.factValue.mockResolvedValue(fileData);
-        const mockResult = { tree: { type: 'program' } };
+        const mockResult = { tree: { type: 'program' }, mode: 'native-direct' } as any;
         mockGenerateAst.mockResolvedValue(mockResult);
 
         const result = await astFact.fn({}, mockAlmanac);
@@ -100,7 +122,7 @@ describe('astFact', () => {
         expect(result).toBe(mockResult);
     });
 
-    it('should log timing information', async () => {
+    it('should log timing information with correlation metadata', async () => {
         let callCount = 0;
         jest.spyOn(Date, 'now').mockImplementation(() => {
             callCount++;
@@ -113,12 +135,20 @@ describe('astFact', () => {
         };
         
         mockAlmanac.factValue.mockResolvedValue(fileData);
-        mockGenerateAst.mockResolvedValue({ tree: { type: 'program' } });
+        mockGenerateAst.mockResolvedValue({ tree: { type: 'program' }, mode: 'native-direct' } as any);
 
         await astFact.fn({}, mockAlmanac);
 
-        expect(mockLogger.debug).toHaveBeenCalledWith(
-            'AST TIMING: test.ts - Total: 200ms, AST Gen: 100ms, Content size: 12 chars'
+        expect(mockLogger.info).toHaveBeenCalledWith(
+            '✅ AST Fact: Generated AST for test.ts using native-direct - Total: 200ms, AST: 100ms',
+            expect.objectContaining({
+                fileName: 'test.ts',
+                astMode: 'native-direct',
+                totalTime: 200,
+                astGenTime: 100,
+                success: true,
+                fact: 'ast'
+            })
         );
     });
 
@@ -128,14 +158,22 @@ describe('astFact', () => {
             fileName: 'test.ts',
             content: 'const x = 1;'
         };
-        const mockResult = { tree: { type: 'program' } };
+        const mockResult = { tree: { type: 'program' }, mode: 'native-direct' } as any;
         
         mockAlmanac.factValue.mockResolvedValue(fileData);
         mockGenerateAst.mockResolvedValue(mockResult);
 
         await astFact.fn(params, mockAlmanac);
 
-        expect(mockLogger.debug).toHaveBeenCalledWith('Adding generated AST to almanac:', 'myAstResult');
+        expect(mockLogger.debug).toHaveBeenCalledWith(
+            'Adding generated AST to almanac: myAstResult',
+            expect.objectContaining({
+                resultFact: 'myAstResult',
+                astSource: 'generated',
+                astMode: 'native-direct',
+                fact: 'ast'
+            })
+        );
         expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('myAstResult', mockResult);
     });
 
@@ -152,7 +190,15 @@ describe('astFact', () => {
         const result = await astFact.fn({}, mockAlmanac);
 
         expect(result).toEqual({ tree: null });
-        expect(mockLogger.error).toHaveBeenCalledWith('AST TIMING: Error after 100ms - Error: Test error');
+        expect(mockLogger.error).toHaveBeenCalledWith(
+            '💥 AST Fact: Exception after 100ms - Error: Test error',
+            expect.objectContaining({
+                totalTime: 100,
+                errorType: 'Error',
+                errorMessage: 'Test error',
+                fact: 'ast'
+            })
+        );
     });
 
     it('should handle generateAst errors gracefully', async () => {
@@ -168,32 +214,51 @@ describe('astFact', () => {
 
         expect(result).toEqual({ tree: null });
         expect(mockLogger.error).toHaveBeenCalledWith(
-            expect.stringContaining('AST TIMING: Error after')
+            expect.stringContaining('💥 AST Fact: Exception after'),
+            expect.objectContaining({
+                errorType: 'Error',
+                errorMessage: 'AST generation failed',
+                fact: 'ast'
+            })
         );
     });
 
     it('should handle empty content string', async () => {
         mockAlmanac.factValue.mockResolvedValue({
             fileName: 'test.ts',
-            content: '',
-            fileContent: '' // Both content and fileContent are empty to trigger the "no content" message
+            content: ''
         });
 
         const result = await astFact.fn({}, mockAlmanac);
 
         expect(result).toEqual({ tree: null });
-        expect(mockLogger.debug).toHaveBeenCalledWith('No file content available for AST generation');
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+            '⚠️  AST Fact: No file content available for test.ts',
+            expect.objectContaining({
+                fileName: 'test.ts',
+                issue: 'no-content',
+                fact: 'ast'
+            })
+        );
     });
 
     it('should handle non-string content types', async () => {
         mockAlmanac.factValue.mockResolvedValue({
             fileName: 'test.ts',
-            content: 123
+            content: 123 // Invalid type
         });
 
         const result = await astFact.fn({}, mockAlmanac);
 
         expect(result).toEqual({ tree: null });
-        expect(mockLogger.debug).toHaveBeenCalledWith('File content is not a valid string for AST generation');
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+            '⚠️  AST Fact: Invalid content type for test.ts',
+            expect.objectContaining({
+                fileName: 'test.ts',
+                contentType: 'number',
+                issue: 'invalid-content-type',
+                fact: 'ast'
+            })
+        );
     });
 }); 

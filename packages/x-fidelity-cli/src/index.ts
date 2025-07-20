@@ -71,17 +71,45 @@ if (require.main === module) {
 
 const executionLogPrefix = '';
 const repoPath = path.resolve(options.dir || '.');
+
+// 🎯 READ CORRELATION ID FROM ENVIRONMENT (SET BY VSCODE)
+const correlationId = process.env.XFI_CORRELATION_ID //|| LoggerProvider.generateLogPrefix();
+const isVSCodeSpawned = process.env.XFI_VSCODE_MODE === 'true';
+
 // Start execution context with consistent ID
-const executionId = ExecutionContext.startExecution({
+// If VSCode provided a correlation ID, use it; otherwise generate new one
+const executionId = correlationId || ExecutionContext.startExecution({
     component: 'CLI',
     operation: `${options.mode}-analyze`,
     archetype: options.archetype || 'node-fullstack',
     repoPath,
     metadata: {
         configServer: options.configServer,
-        localConfigPath: options.localConfigPath
+        localConfigPath: options.localConfigPath,
+        correlationId,
+        spawnedBy: isVSCodeSpawned ? 'VSCode' : 'direct',
+        parentCorrelationId: correlationId // Track original correlation ID if provided
     }
 });
+
+// 🎯 OVERRIDE EXECUTION ID IF CORRELATION ID PROVIDED BY VSCODE
+if (correlationId) {
+    // Use the provided correlation ID directly for consistency
+    ExecutionContext['currentExecutionId'] = correlationId;
+    const currentContext = ExecutionContext.getCurrentContext();
+    if (currentContext) {
+        ExecutionContext['currentContext'] = {
+            ...currentContext,
+            executionId: correlationId,
+            metadata: {
+                ...currentContext.metadata,
+                correlationId,
+                spawnedBy: 'VSCode',
+                inheritedCorrelationId: true
+            }
+        };
+    }
+}
 
 import json from 'prettyjson';
 
@@ -120,6 +148,9 @@ ${message}
 // Main function
 export async function main() {
     try { 
+        // 🎯 ENHANCED LOG LEVEL INITIALIZATION AND PROPAGATION
+        const logLevel = (process.env.XFI_LOG_LEVEL as LogLevel) || 'info';
+        
         // Initialize proper logger for CLI execution with current mode and options
         const logFilePath = path.join(repoPath, '.xfiResults', 'x-fidelity.log');
         const fileLoggingOptions = options.enableFileLogging === true ? {
@@ -129,7 +160,32 @@ export async function main() {
         
         // Get the current execution mode safely
         const currentMode = LoggerProvider.getCurrentExecutionMode();
-        logger = LoggerProvider.getLoggerForMode(currentMode, process.env.XFI_LOG_LEVEL as LogLevel, fileLoggingOptions);
+        
+        // 🎯 PROPAGATE LOG LEVEL TO ALL PLUGINS AND PACKAGES
+        LoggerProvider.setLoggerForMode(currentMode, logLevel, fileLoggingOptions);
+        logger = LoggerProvider.getLogger();
+        
+        // 🎯 LOG THE INITIALIZATION FOR VISIBILITY WITH CORRELATION INFO
+        const currentCorrelationId = ExecutionContext.getCurrentExecutionId();
+        const contextInfo = ExecutionContext.getCurrentContext();
+        
+        logger.info(`📊 CLI initialized with log level: ${logLevel.toUpperCase()} (mode: ${currentMode})`, {
+            correlationId: currentCorrelationId,
+            spawnedBy: contextInfo?.metadata?.spawnedBy,
+            inheritedCorrelationId: contextInfo?.metadata?.inheritedCorrelationId
+        });
+        logger.info(`🔌 All plugins and packages will use log level: ${logLevel.toUpperCase()}`, {
+            correlationId: currentCorrelationId
+        });
+        
+        // 🎯 LOG CORRELATION ID INHERITANCE IF FROM VSCODE
+        if (correlationId && isVSCodeSpawned) {
+            logger.info(`🔗 Using correlation ID from VSCode: ${correlationId}`, {
+                correlationId: currentCorrelationId,
+                spawnedBy: 'VSCode',
+                originalCorrelationId: correlationId
+            });
+        }
         
         if (options.examine && process.env.NODE_ENV !== 'test') {
             validateArchetypeConfig();

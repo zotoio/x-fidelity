@@ -49,7 +49,7 @@ export let options: CoreOptions = {
     zapFiles: undefined,
     fileCacheTTL: 60,  // Default 60 minutes
     // WASM Tree-sitter defaults
-    enableTreeSitterWasm: false,  // Default to native TreeSitter
+    enableTreeSitterWasm: true,  // Default to WASM TreeSitter (better compatibility)
     wasmPath: undefined,
     wasmLanguagesPath: undefined,
     wasmTimeout: 60000  // 60 seconds
