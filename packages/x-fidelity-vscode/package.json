@@ -121,6 +121,11 @@
         "icon": "$(trash)"
       },
       {
+        "command": "xfidelity.resetToDefaults",
+        "title": "X-Fidelity: Reset All Settings",
+        "icon": "$(clear-all)"
+      },
+      {
         "command": "xfidelity.showAdvancedSettings",
         "title": "X-Fidelity: Advanced Settings",
         "icon": "$(gear)"
@@ -196,41 +201,6 @@
           ],
           "description": "The X-Fidelity archetype to use for analysis."
         },
-        "xfidelity.analysisEngine": {
-          "type": "string",
-          "default": "cli",
-          "enum": [
-            "extension",
-            "cli"
-          ],
-          "enumDescriptions": [
-            "Run analysis within VSCode extension (built-in processing)",
-            "Use CLI binary (faster, includes bundled CLI by default)"
-          ],
-          "description": "Analysis execution mode: 'extension' (built-in) or 'cli' (external binary)"
-        },
-        "xfidelity.cliSource": {
-          "type": "string",
-          "default": "bundled",
-          "enum": [
-            "bundled",
-            "global",
-            "local",
-            "custom"
-          ],
-          "enumDescriptions": [
-            "Use CLI bundled with extension (default, no installation required)",
-            "Use globally installed CLI (npm install -g x-fidelity)",
-            "Use local development CLI (for monorepo development)",
-            "Use custom CLI path specified in cliBinaryPath"
-          ],
-          "description": "Which CLI binary to use when analysisEngine is 'cli'"
-        },
-        "xfidelity.cliBinaryPath": {
-          "type": "string",
-          "default": "",
-          "description": "Custom path to X-Fidelity CLI binary (only used when cliSource = 'custom'). Example: /usr/local/bin/xfidelity"
-        },
         "xfidelity.cliTimeout": {
           "type": "number",
           "default": 60000,
@@ -270,6 +240,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable telemetry collection for usage analytics."
+        },
+                        "xfidelity.enableTreeSitterWasm": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use WASM TreeSitter instead of native bindings (recommended for VSCode). Provides better compatibility than native modules."
         },
         "xfidelity.generateReports": {
           "type": "boolean",

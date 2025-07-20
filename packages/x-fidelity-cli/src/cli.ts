@@ -3,12 +3,12 @@ import { logger, setOptions } from '@x-fidelity/core';
 import path from "path";
 import fs from "fs";
 import json from 'prettyjson';
-import { CLIOptions } from '@x-fidelity/types';
+import { CLIOptions, ExecutionMode, EXECUTION_MODES } from '@x-fidelity/types';
 
 export let options: CLIOptions = {
     dir: '.',
     archetype: 'node-fullstack',
-    mode: 'client',
+    mode: 'cli',
     extraPlugins: []
 };
 
@@ -32,21 +32,7 @@ export const DEMO_CONFIG_PATH = (() => {
     return path.resolve(__dirname, '..', '..', 'x-fidelity-democonfig', 'src');
 })();
 
-// Helper function to determine if TreeSitter worker should be disabled
-function getTreeSitterWorkerDisabled(opts: any): boolean {
-    // If explicitly enabled via --enable-tree-sitter-worker, enable it (disable = false)
-    if (opts.enableTreeSitterWorker) {
-        return false;
-    }
-    
-    // If explicitly disabled via --disable-tree-sitter-worker, disable it (disable = true)
-    if (opts.disableTreeSitterWorker) {
-        return true;
-    }
-    
-    // Default for CLI: disable worker (standalone CLI doesn't need worker concurrency)
-    return true;
-}
+import { shouldDisableAllWorkers } from '@x-fidelity/core';
 
 export function initCLI(): void {
     const program = new Command();
@@ -65,7 +51,7 @@ export function initCLI(): void {
         .option('-l, --localConfigPath <path>', 'Path to local archetype config and rules')
         .option('-o, --openaiEnabled', 'Enable OpenAI analysis')
         .option('-t, --telemetryCollector <url>', 'The URL telemetry data will be sent to for usage analysis')
-        .option('-m, --mode <mode>', 'Run mode: \'client\' or \'server\'', 'client')
+        .option('-m, --mode <mode>', 'Run mode: \'cli\', \'vscode\', \'server\', or \'hook\' (\'client\' deprecated, use \'cli\')', 'cli')
         .option('-p, --port <number>', 'The port to run the server on', '8888')
         .option('-j, --jsonTTL <minutes>', 'Set the server JSON cache TTL in minutes', '10')
         .option('-e, --extraPlugins <modules...>', 'Space-separated list of npm module names to load as extra plugins')
@@ -74,8 +60,8 @@ export function initCLI(): void {
         .option('--file-cache-ttl <minutes>', 'File modification cache TTL in minutes', '60')
         .option('--output-format <format>', 'Output format: human (default) or json')
         .option('--output-file <path>', 'Write structured output to file (works with --output-format json)')
-        .option('--disable-tree-sitter-worker', 'Disable TreeSitter worker (for CLI, worker is disabled by default)')
-        .option('--enable-tree-sitter-worker', 'Enable TreeSitter worker (useful for VSCode extension integration)')
+        .option('--enable-tree-sitter-wasm', 'Use WASM TreeSitter instead of native bindings (for compatibility)')
+        .option('--enable-tree-sitter-worker', 'Enable TreeSitter worker mode (disabled by default, CLI uses direct parsing)')
         .option('--enable-file-logging', 'Enable logging to x-fidelity.log file (disabled by default)');
 
     // Check if no arguments provided (only node and script path)
@@ -108,6 +94,42 @@ export function initCLI(): void {
     // Determine directory: --dir option takes precedence over positional argument
     const directory = opts.dir || args[0] || '.';
 
+    // Validate and handle mode option with backward compatibility
+    const validateAndConvertMode = (inputMode: string): ExecutionMode => {
+        const validModes = Object.values(EXECUTION_MODES);
+        
+        // Handle backward compatibility for 'client' mode
+        if (inputMode === 'client') {
+            logger.warn('⚠️  DEPRECATION WARNING: Mode \'client\' is deprecated. Please use \'cli\' instead. Support for \'client\' will be removed in a future version.');
+            return EXECUTION_MODES.CLI;
+        }
+        
+        // Check if it's a valid new mode
+        if (validModes.includes(inputMode as ExecutionMode)) {
+            return inputMode as ExecutionMode;
+        }
+        
+        // Invalid mode
+        logger.error(`Invalid mode '${inputMode}'. Valid modes are: ${validModes.join(', ')} (or 'client' for backward compatibility)`);
+        process.exit(1);
+    };
+
+    const validatedMode = validateAndConvertMode(opts.mode || 'cli');
+    
+    // Log TreeSitter configuration for debugging
+    const enableTreeSitterWasm = opts.enableTreeSitterWasm || false;
+    const enableTreeSitterWorker = opts.enableTreeSitterWorker || false;
+    
+    if (enableTreeSitterWasm && enableTreeSitterWorker) {
+        logger.info('🔧 Tree-sitter: WASM worker mode requested');
+    } else if (enableTreeSitterWasm) {
+        logger.info('🔧 Tree-sitter: WASM direct mode requested');
+    } else if (enableTreeSitterWorker) {
+        logger.info('🔧 Tree-sitter: Native worker mode requested');
+    } else {
+        logger.info('🔧 Tree-sitter: Native direct mode (default)');
+    }
+
     options = {
         dir: directory,
         archetype: opts.archetype || 'node-fullstack',
@@ -115,7 +137,7 @@ export function initCLI(): void {
         localConfigPath: opts.localConfigPath || DEMO_CONFIG_PATH,
         openaiEnabled: opts.openaiEnabled || false,
         telemetryCollector: opts.telemetryCollector,
-        mode: opts.mode || 'client',
+        mode: validatedMode,
         port: opts.port ? parseInt(opts.port) : undefined,
         jsonTTL: opts.jsonTTL,
         extraPlugins: opts.extraPlugins || [],
@@ -124,7 +146,8 @@ export function initCLI(): void {
         fileCacheTTL: opts.fileCacheTTL ? parseInt(opts.fileCacheTTL) : 60,
         outputFormat: opts.outputFormat,
         outputFile: opts.outputFile,
-        disableTreeSitterWorker: getTreeSitterWorkerDisabled(opts),
+        enableTreeSitterWorker: enableTreeSitterWorker,
+        enableTreeSitterWasm: enableTreeSitterWasm,
         enableFileLogging: opts.enableFileLogging || false
     };
 
@@ -136,11 +159,12 @@ export function initCLI(): void {
         localConfigPath: opts.localConfigPath || DEMO_CONFIG_PATH,
         openaiEnabled: opts.openaiEnabled || false,
         telemetryCollector: opts.telemetryCollector,
-        mode: opts.mode || 'client',
+        mode: validatedMode,
         port: opts.port ? parseInt(opts.port) : undefined,
         jsonTTL: opts.jsonTTL,
         extraPlugins: opts.extraPlugins || [],
-        disableTreeSitterWorker: getTreeSitterWorkerDisabled(opts),
+        enableTreeSitterWorker: enableTreeSitterWorker,
+        enableTreeSitterWasm: enableTreeSitterWasm,
         zapFiles,
         fileCacheTTL: opts.fileCacheTTL ? parseInt(opts.fileCacheTTL) : 60
     });

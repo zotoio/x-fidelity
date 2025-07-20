@@ -1,5 +1,5 @@
 // Export shared utilities for plugins
-export * from './sharedPluginUtils/astUtils';
+export * from './sharedPluginUtils';
 
 // Export all plugins individually
 export { xfiPluginAst } from './xfiPluginAst';

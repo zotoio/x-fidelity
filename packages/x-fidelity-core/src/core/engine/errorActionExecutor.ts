@@ -1,7 +1,7 @@
 import { logger } from '../../utils/logger';
 import { LoggerProvider } from '../../utils/loggerProvider';
 import { pluginRegistry } from '../pluginRegistry';
-import { ErrorActionParams } from '@x-fidelity/types';
+import { ErrorActionParams, EXECUTION_MODES } from '@x-fidelity/types';
 
 // Sensitive field names to redact
 const SENSITIVE_FIELDS = ['password', 'apikey', 'token', 'secret', 'key', 'auth'];
@@ -66,7 +66,15 @@ function safeSerializeValue(value: any): any {
 
 export async function executeErrorAction(actionName: string, params: ErrorActionParams): Promise<any> {
     // Create a child logger without verbose bindings since execution ID is already in prefix
-    const childLogger = LoggerProvider.getLogger();
+    // Use CLI mode as default for error actions if no mode is detected
+    const currentMode = (() => {
+        try {
+            return LoggerProvider.getCurrentExecutionMode();
+        } catch (error) {
+            return EXECUTION_MODES.CLI; // Fallback for test environments
+        }
+    })();
+    const childLogger = LoggerProvider.getLoggerForMode(currentMode);
     
     try {
         // First check if it's a plugin action

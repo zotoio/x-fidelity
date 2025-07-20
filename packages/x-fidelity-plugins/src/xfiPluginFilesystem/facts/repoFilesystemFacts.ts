@@ -5,13 +5,13 @@ import { ArchetypeConfig, FileData, IsBlacklistedParams, isWhitelistedParams, Fa
 // Filesystem facts for repository analysis
 import { maskSensitiveData } from '@x-fidelity/core';
 // ✅ Import Tree-sitter manager for AST preprocessing
-import { treeSitterManager } from '../../xfiPluginAst/worker/treeSitterManager';
+import { treeSitterManager } from '../../sharedPluginUtils/astUtils/treeSitterManager';
 
 // ✅ Enhanced helper function to determine if file should have AST preprocessed
 function shouldPreprocessAst(filePath: string): boolean {
-    // ✅ Check if TreeSitter worker is disabled globally
-    const { disableTreeSitterWorker } = getOptions();
-    if (disableTreeSitterWorker) {
+    // ✅ Check if TreeSitter worker is enabled globally
+    const { enableTreeSitterWorker } = getOptions();
+    if (!enableTreeSitterWorker) {
         return false;
     }
     

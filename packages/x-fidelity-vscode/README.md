@@ -108,15 +108,9 @@ Access settings via: **File → Preferences → Settings → Extensions → X-Fi
 }
 ```
 
-#### Analysis Engine Options
+#### Analysis Execution
 
-- **Extension Engine:** Built-in analysis within VSCode process
-- **CLI Engine:** External CLI binary execution (faster, default)
-- **CLI Source Options:**
-  - **Bundled** (default): Zero-setup embedded CLI binary
-  - **Global**: System-wide installed CLI (`yarn global add x-fidelity`)
-  - **Local**: Project-specific CLI installation
-  - **Custom**: User-specified CLI binary path
+X-Fidelity VSCode extension automatically uses the embedded CLI binary with optimized settings for VSCode integration. No additional setup or configuration is required.
 
 #### Report Configuration
 

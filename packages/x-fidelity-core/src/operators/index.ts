@@ -14,10 +14,8 @@ export async function loadOperators(): Promise<Map<string, OperatorDefn>> {
         const wrappedOperator: OperatorDefn = {
             ...op,
             fn: (factValue: any, operatorValue: any) => {
-                // Ensure logger is available to plugin operators by checking LoggerProvider
-                if (!LoggerProvider.hasInjectedLogger()) {
-                    throw new Error(`No logger injected before executing plugin operator '${op.name}'. Please ensure LoggerProvider.setLogger() is called before plugin execution.`);
-                }
+                // Ensure logger is available to plugin operators - LoggerProvider now provides universal availability
+                LoggerProvider.ensureInitialized();
                 
                 return op.fn(factValue, operatorValue);
             }

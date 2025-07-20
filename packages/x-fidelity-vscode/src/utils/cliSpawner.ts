@@ -82,11 +82,14 @@ export class CLISpawner {
 
   /**
    * Get the embedded CLI path (bundled with extension)
+   * VSCode extension always spawns the CLI with --mode vscode argument
+   * This differentiates from manual CLI execution (--mode cli)
    */
   private getEmbeddedCLIPath(): string {
     // In development/test mode, try multiple possible paths
     const possiblePaths = [
-      path.resolve(__dirname, '../cli/index.js'), // From dist directory
+      path.resolve(__dirname, './cli/index.js'), // From dist directory (production)
+      path.resolve(__dirname, './dist/cli/index.js'), // From root directory (development)
       path.resolve(__dirname, '../../cli/index.js'), // From src directory in tests
       path.resolve(process.cwd(), 'cli/index.js'), // From current working directory
       path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js'), // From monorepo root
@@ -124,7 +127,7 @@ export class CLISpawner {
     }
 
     // If none found, return the default path and let validation handle the error
-    const defaultPath = path.resolve(__dirname, '../cli/index.js');
+    const defaultPath = path.resolve(__dirname, './cli/index.js');
     this.logger.warn(
       `CLI not found at any expected location. Trying default: ${defaultPath}`
     );
@@ -246,7 +249,8 @@ export class CLISpawner {
         '/usr/bin/node'
       ],
       possibleCliPaths: [
-        path.resolve(__dirname, '../cli/index.js'),
+        path.resolve(__dirname, './cli/index.js'),
+        path.resolve(__dirname, './dist/cli/index.js'),
         path.resolve(__dirname, '../../cli/index.js'),
         path.resolve(process.cwd(), 'cli/index.js'),
         path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js')
@@ -359,23 +363,51 @@ export class CLISpawner {
       await this.validateNodeJS(nodePath);
       await this.validateCLI();
 
-      // Build arguments
+      // Build arguments for VSCode mode execution
+      // CLI mode = manual user execution from command line
+      // VSCode mode = CLI spawned by VSCode extension with clean output for panels
+
+      // Check VSCode setting for WASM TreeSitter preference
+      // Default to WASM in VSCode for better compatibility
+      const config = vscode.workspace.getConfiguration('xfidelity');
+      const enableTreeSitterWasm = config.get<boolean>(
+        'enableTreeSitterWasm',
+        true
+      );
+
+      // Log TreeSitter mode selection with reasoning
+      if (!!enableTreeSitterWasm) {
+        this.logger.info(
+          '🔧 Tree-sitter WASM (default VSCode mode - better compatibility)'
+        );
+      } else {
+        this.logger.info('🔧 Tree-sitter Native (user disabled WASM mode)');
+      }
+
       const args = [
         cliPath,
         '--dir',
         options.workspacePath,
         '--output-format',
         'json',
-        '--enable-tree-sitter-worker', // Enable worker for VSCode extension
+        '--mode',
+        'vscode', // Use VSCode execution mode for clean output panel integration
+        // Only add WASM flag if user has enabled it in settings
+        ...(enableTreeSitterWasm ? ['--enable-tree-sitter-wasm'] : []),
         ...(options.args || [])
       ];
 
-      this.logger.debug(`Executing CLI: ${nodePath} ${args.join(' ')}`);
+      this.logger.debug(
+        `Executing CLI in VSCode mode: ${nodePath} ${args.join(' ')}`
+      );
       this.logger.debug(`CLI execution context:`, {
         nodePath,
         cliPath,
         cwd: options.workspacePath,
         platform: process.platform,
+        mode: 'vscode',
+        treeSitterMode: !!enableTreeSitterWasm ? 'wasm' : 'native',
+        enableTreeSitterWasm: !!enableTreeSitterWasm,
         args
       });
 
@@ -389,6 +421,9 @@ export class CLISpawner {
             XFI_VSCODE_MODE: 'true', // Force console logging in CLI
             XFI_DISABLE_FILE_LOGGING: 'true', // Disable file logging
             XFI_LOG_LEVEL: 'warn', // Use consistent log level
+            XFI_LOG_COLORS: 'true', // Enable colors for CLI output
+            XFI_LOG_TIMESTAMP: 'true', // Ensure timestamps are included
+            FORCE_COLOR: '1', // Force ANSI color support
             ...options.env
           }
         });
@@ -801,7 +836,8 @@ export function createCLISpawner(): CLISpawner {
 export function getEmbeddedCLIPath(): string {
   // Use the same logic as the class method
   const possiblePaths = [
-    path.resolve(__dirname, '../cli/index.js'), // From dist directory
+    path.resolve(__dirname, './cli/index.js'), // From dist directory (production)
+    path.resolve(__dirname, './dist/cli/index.js'), // From root directory (development)
     path.resolve(__dirname, '../../cli/index.js'), // From src directory in tests
     path.resolve(process.cwd(), 'cli/index.js'), // From current working directory
     path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js'), // From monorepo root

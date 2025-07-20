@@ -181,6 +181,17 @@ export class ControlCenterTreeProvider
             }
           },
           {
+            id: 'reset-settings',
+            label: 'Reset All Settings',
+            tooltip: 'Reset all X-Fidelity settings to defaults (user & workspace)',
+            iconPath: new vscode.ThemeIcon('clear-all'),
+            collapsibleState: vscode.TreeItemCollapsibleState.None,
+            command: {
+              command: 'xfidelity.resetToDefaults',
+              title: 'Reset All Settings'
+            }
+          },
+          {
             id: 'advanced-settings',
             label: 'Advanced Settings',
             tooltip: 'Open advanced configuration options',

@@ -1,5 +1,6 @@
 import pino from 'pino';
-import { ILogger, LogLevel, LogLevelValues, SimpleLoggerConfig } from '@x-fidelity/types';
+import { ILogger, LogLevel, LogLevelValues, SimpleLoggerConfig, EXECUTION_MODES } from '@x-fidelity/types';
+import { shouldUseDirectLogging } from '@x-fidelity/core';
 
 export class ServerLogger implements ILogger {
   private logger: pino.Logger;
@@ -19,13 +20,12 @@ export class ServerLogger implements ILogger {
 
     // Console transport with fallback for bundled environments
     if (config.enableConsole !== false) {
-      // Check if we're in a bundled environment to avoid transport worker issues
-      const isBundledEnvironment = this.detectBundledEnvironment();
+      // Check if we should use direct logging to avoid transport worker issues
+      const useDirectLogging = shouldUseDirectLogging();
       
-      if (isBundledEnvironment) {
-        // In bundled environments (like CLI), return undefined to use direct logging
-        // This avoids transport worker issues that cause "lib/worker.js" errors
-        return undefined;
+              if (useDirectLogging) {
+          // Use direct logging to avoid transport worker issues in bundled environments
+          return undefined;
       } else {
         // In normal environments, use pino-pretty for formatted output
         targets.push({
@@ -81,53 +81,7 @@ export class ServerLogger implements ILogger {
     };
   }
 
-  private detectBundledEnvironment(): boolean {
-    // Detect if we're running in a bundled environment (like esbuild CLI)
-    // Always assume bundled environment to avoid transport worker issues
-    
-    // Debug info (remove in production)
-    const debugInfo = {
-      argv1: process.argv[1],
-      mainFilename: require.main?.filename,
-      cwd: process.cwd(),
-      dirname: __dirname,
-      vscodeMode: process.env.XFI_VSCODE_MODE,
-      disableFileLogging: process.env.XFI_DISABLE_FILE_LOGGING
-    };
-    
-    // For CLI environments, always avoid pino transports to prevent worker issues
-    // This is safer than trying to detect all possible CLI execution contexts
-    const isLikelyCLI = (
-      // Environment variables
-      process.env.XFI_VSCODE_MODE === 'true' || 
-      process.env.XFI_DISABLE_FILE_LOGGING === 'true' ||
-      
-      // File paths
-      (process.argv[1] || '').includes('x-fidelity') ||
-      (require.main?.filename || '').includes('x-fidelity') ||
-      process.cwd().includes('x-fidelity-cli') ||
-      __dirname.includes('x-fidelity') ||
-      
-      // Common CLI patterns
-      (process.argv[1] || '').includes('dist/index.js') ||
-      (process.argv[1] || '').endsWith('xfidelity') ||
-      (process.argv[1] || '') === '.' // yarn build-run uses "node ."
-    );
-    
-    if (isLikelyCLI) {
-      // console.log('[ServerLogger] Detected CLI environment, using direct logging:', debugInfo);
-      return true;
-    }
-    
-    // For any other case where pino-pretty might not be available, assume bundled
-    try {
-      require.resolve('pino-pretty');
-      return false; // pino-pretty available and not CLI context
-    } catch (error) {
-      // console.log('[ServerLogger] pino-pretty not available, assuming bundled environment');
-      return true;
-    }
-  }
+
 
   trace(msgOrMeta: string | any, metaOrMsg?: any): void {
     if (typeof msgOrMeta === 'string') {
@@ -181,6 +135,14 @@ export class ServerLogger implements ILogger {
     this.logger.level = level;
   }
 
+  /**
+   * Update log level dynamically - useful for long-running server processes
+   * @param level The new log level to set
+   */
+  updateLevel(level: LogLevel): void {
+    this.setLevel(level);
+  }
+
   getLevel(): LogLevel {
     return this.logger.level as LogLevel;
   }
@@ -189,6 +151,11 @@ export class ServerLogger implements ILogger {
     const currentLevelValue = LogLevelValues[this.getLevel()];
     const checkLevelValue = LogLevelValues[level];
     return checkLevelValue >= currentLevelValue;
+  }
+
+  updateOptions(options?: { enableFileLogging?: boolean; filePath?: string }): void {
+    // ServerLogger configuration is set at creation time
+    // For now, this is a no-op - dynamic reconfiguration could be added if needed
   }
 
   // Child logger method removed - use direct context passing instead
@@ -213,4 +180,34 @@ export function resetLogPrefix(): void {
 
 export function setLogLevel(level: LogLevel): void {
   logger.setLevel(level);
+}
+
+// Register ServerLogger as the preferred logger for Server and Hook modes
+// This will be called when Server package is loaded
+try {
+  const { LoggerProvider } = require('@x-fidelity/core');
+  
+  // Register for server mode
+  LoggerProvider.registerLoggerFactory(EXECUTION_MODES.SERVER, (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => {
+    return new ServerLogger({
+      level,
+      enableConsole: true,
+      enableColors: false, // Server mode typically doesn't need colors
+      enableFile: options?.enableFileLogging || false,
+      filePath: options?.filePath
+    });
+  });
+  
+  // Register for hook mode (same as server for now)
+  LoggerProvider.registerLoggerFactory(EXECUTION_MODES.HOOK, (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => {
+    return new ServerLogger({
+      level,
+      enableConsole: true,
+      enableColors: false,
+      enableFile: options?.enableFileLogging || false,
+      filePath: options?.filePath
+    });
+  });
+} catch (error) {
+  // Ignore registration errors - LoggerProvider may not be available in all contexts
 } 

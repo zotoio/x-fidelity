@@ -46,7 +46,7 @@ class GlobalLoggerManager {
     const config = vscode.workspace.getConfiguration('xfidelity');
     const debugMode = config.get<boolean>('debugMode', false);
 
-    // Set log level: debug when debugMode is true, info otherwise
+    // Enhanced log level selection based on debug mode
     const logLevel = debugMode ? 'debug' : 'info';
 
     // Update main logger level
@@ -57,10 +57,21 @@ class GlobalLoggerManager {
       logger.setLevel(logLevel);
     });
 
-    // Log the change
+    // Enhanced logging with color-coded level indicator
+    const levelIndicator = debugMode ? '🔍 DEBUG' : 'ℹ️  INFO';
     this.mainLogger.info(
-      `🔧 Debug mode ${debugMode ? 'enabled' : 'disabled'} - log level set to: ${logLevel}`
+      `🔧 Debug mode ${debugMode ? 'enabled' : 'disabled'} - log level set to: ${levelIndicator} ${logLevel}`
     );
+
+    // Configure output channel for better filtering
+    this.outputChannel.clear(); // Clear previous logs when level changes
+    this.outputChannel.appendLine(
+      `📊 Log Level Changed: ${levelIndicator} (${logLevel.toUpperCase()})`
+    );
+    this.outputChannel.appendLine(
+      `🔍 Filter logs in Output panel by typing the level name (ERROR, WARN, INFO, DEBUG)`
+    );
+    this.outputChannel.appendLine('─'.repeat(80));
   }
 
   /**

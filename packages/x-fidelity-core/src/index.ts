@@ -12,7 +12,7 @@ export * from './facts';
 export * from './operators';
 export * from './notifications';
 export * from './utils/enhancedLogger';
-export * from './utils/wasmParser';
+export * from './utils/bundledEnvironmentDetector';
 
 // Re-export types from the types package
 export type {
@@ -48,6 +48,8 @@ export type {
     RuleReference,
     RepoXFIConfig,
     CLIOptions,
+    ExecutionMode,
+    EXECUTION_MODES,
     ArchetypeConfig,
     ExecutionConfig,
     GetConfigParams,

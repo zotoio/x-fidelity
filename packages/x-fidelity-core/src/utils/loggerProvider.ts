@@ -1,6 +1,6 @@
-import { ILogger, LogLevel } from '@x-fidelity/types';
+import { ILogger, LogLevel, ExecutionMode, EXECUTION_MODES } from '@x-fidelity/types';
 import { ExecutionContext } from './executionContext';
-import { createDefaultLogger } from './defaultLogger';
+import { createDefaultLogger, createVSCodeLogger } from './defaultLogger';
 
 /**
  * Logger wrapper that automatically prefixes all messages with execution ID
@@ -139,22 +139,58 @@ class LoggerProvider {
   }
 
   /**
+   * Get the current execution mode from options or detect from environment
+   * @returns The current execution mode
+   */
+  static getCurrentExecutionMode(): ExecutionMode {
+    try {
+      // Try to get mode from options
+      const { options } = require('../core/options');
+      if (options && options.mode) {
+        return options.mode as ExecutionMode;
+      }
+    } catch (error) {
+      // Ignore import errors
+    }
+
+    // Fallback detection based on environment
+    if (typeof window !== 'undefined') {
+      return EXECUTION_MODES.VSCODE;
+    }
+    
+    if (process.env.NODE_ENV === 'test') {
+      return EXECUTION_MODES.CLI;
+    }
+
+    // Check for server indicators
+    if (process.env.PORT || process.env.EXPRESS_ENV) {
+      return EXECUTION_MODES.SERVER;
+    }
+
+    // Default to CLI mode
+    return EXECUTION_MODES.CLI;
+  }
+
+  /**
    * Get the current logger instance (injected or default) with automatic prefixing
+   * Now uses mode-aware logger creation for consistency
    * @returns The current logger instance, wrapped with prefixing if enabled
    * @throws Never throws - always returns a valid logger (fallback if needed)
    */
   static getLogger(): ILogger {
-    this.ensureInitialized();
-    
-    // Use injected logger if available, otherwise use default
-    const baseLogger = this.injectedLogger || this.defaultLogger!;
-    
-    // Wrap with prefixing logger if enabled
-    if (this.enableAutoPrefixing) {
-      return new PrefixingLogger(baseLogger);
+    // If we have an injected logger, use it
+    if (this.injectedLogger) {
+      if (this.enableAutoPrefixing) {
+        return new PrefixingLogger(this.injectedLogger);
+      }
+      return this.injectedLogger;
     }
+
+    // Otherwise, get logger for current mode
+    const currentMode = this.getCurrentExecutionMode();
+    const currentLevel = (process.env.XFI_LOG_LEVEL as LogLevel) || 'info';
     
-    return baseLogger;
+    return this.getLoggerForMode(currentMode, currentLevel);
   }
 
   /**
@@ -209,6 +245,171 @@ class LoggerProvider {
   }
 
   // Child logger creation methods removed - use direct context passing instead
+
+  /**
+   * Logger factory functions for each mode
+   * Can be overridden by packages to provide their specific logger implementations
+   */
+  private static loggerFactories: Map<ExecutionMode, (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => ILogger> = new Map();
+
+  /**
+   * Singleton cache for loggers by mode and level combination
+   */
+  private static loggerCache: Map<string, ILogger> = new Map();
+
+  /**
+   * Whether the default factories have been registered
+   */
+  private static factoriesRegistered: boolean = false;
+
+  /**
+   * Register default logger factories for all modes
+   * This is called automatically when needed
+   */
+  private static registerDefaultFactories(): void {
+    if (this.factoriesRegistered) {
+      return;
+    }
+
+    // CLI mode: Use DefaultLogger as default (PinoLogger will be registered by CLI package if needed)
+    this.loggerFactories.set(EXECUTION_MODES.CLI, (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => {
+      const logger = createDefaultLogger('[CLI]');
+      logger.setLevel(level);
+      return logger;
+    });
+
+    // VSCode mode: Use DefaultLogger optimized for extension output
+    this.loggerFactories.set(EXECUTION_MODES.VSCODE, (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => {
+      const logger = createDefaultLogger('[VSCode]');
+      logger.setLevel(level);
+      return logger;
+    });
+
+    // Server mode: Use DefaultLogger as default (ServerLogger will be registered by server package if needed)
+    this.loggerFactories.set(EXECUTION_MODES.SERVER, (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => {
+      const logger = createDefaultLogger('[Server]');
+      logger.setLevel(level);
+      return logger;
+    });
+
+    // Hook mode: Same as server mode for now
+    this.loggerFactories.set(EXECUTION_MODES.HOOK, (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => {
+      return this.loggerFactories.get(EXECUTION_MODES.SERVER)!(level, options);
+    });
+
+    this.factoriesRegistered = true;
+  }
+
+  /**
+   * Register a logger factory for a specific execution mode
+   * @param mode The execution mode to register a factory for
+   * @param factory Function that creates a logger for the mode
+   */
+  static registerLoggerFactory(mode: ExecutionMode, factory: (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => ILogger): void {
+    this.loggerFactories.set(mode, factory);
+  }
+
+  /**
+   * Get a singleton logger instance for the specified mode and level
+   * This is the main public interface for getting loggers
+   * @param mode The execution mode
+   * @param level The log level
+   * @param options Optional configuration for specific modes (e.g., file logging for CLI)
+   * @returns A singleton logger instance for the mode/level combination
+   */
+  static getLoggerForMode(mode: ExecutionMode, level?: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }): ILogger {
+    const logLevel = level || (process.env.XFI_LOG_LEVEL as LogLevel) || 'info';
+    const cacheKey = `${mode}:${logLevel}:${JSON.stringify(options || {})}:${this.enableAutoPrefixing}`;
+    
+    // Return cached logger if available
+    const cachedLogger = this.loggerCache.get(cacheKey);
+    if (cachedLogger) {
+      return cachedLogger;
+    }
+
+    // Ensure default factories are registered
+    this.registerDefaultFactories();
+
+    // Handle CLI mode with file logging options
+    // Note: File logging support depends on CLI package registering a factory that supports it
+    if (mode === EXECUTION_MODES.CLI && options?.enableFileLogging) {
+      // For file logging, we expect the CLI package to register a specialized factory
+      // If not registered, fall back to default factory
+    }
+
+    // Get factory for this mode
+    const factory = this.loggerFactories.get(mode);
+    let baseLogger: ILogger;
+    
+    if (!factory) {
+      // Fallback to default logger
+      baseLogger = createDefaultLogger(`[${mode}]`);
+      baseLogger.setLevel(logLevel);
+    } else {
+      // Create logger using factory with options support
+      baseLogger = factory(logLevel, options);
+    }
+
+    // Apply auto-prefixing if enabled
+    const finalLogger = this.enableAutoPrefixing ? new PrefixingLogger(baseLogger) : baseLogger;
+    
+    this.loggerCache.set(cacheKey, finalLogger);
+    return finalLogger;
+  }
+
+  /**
+   * Create a logger instance optimized for the specified execution mode
+   * @param mode The execution mode to create a logger for
+   * @param level Optional log level override
+   * @returns A logger instance optimized for the specified mode
+   * @deprecated Use getLoggerForMode instead for consistent singleton behavior
+   */
+  static createLoggerForMode(mode: ExecutionMode, level?: LogLevel): ILogger {
+    // Delegate to getLoggerForMode for consistency
+    // This ensures all logger creation goes through the same path
+    return this.getLoggerForMode(mode, level);
+  }
+
+  /**
+   * Set the current logger to one optimized for the specified mode and level
+   * @param mode The execution mode to optimize for
+   * @param level Optional log level to set
+   */
+  static setModeAndLevel(mode: ExecutionMode, level?: LogLevel): void {
+    const logger = this.createLoggerForMode(mode, level);
+    this.setLogger(logger);
+  }
+
+  /**
+   * Update the log level for long-running modes (VSCode, Server, Hook)
+   * This allows dynamic log level changes without recreating the logger
+   * @param level The new log level to set
+   */
+  static updateLogLevel(level: LogLevel): void {
+    const currentLogger = this.getBaseLogger();
+    if (currentLogger && typeof currentLogger.setLevel === 'function') {
+      currentLogger.setLevel(level);
+    }
+  }
+
+  /**
+   * Set the current logger to one optimized for the specified mode and level
+   * This is the main method CLI and other packages should use
+   * @param mode The execution mode to optimize for
+   * @param level Optional log level to set
+   * @param options Optional configuration for specific modes
+   */
+  static setLoggerForMode(mode: ExecutionMode, level?: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }): void {
+    const logger = this.getLoggerForMode(mode, level, options);
+    this.setLogger(logger);
+  }
+
+  /**
+   * Clear the logger cache (useful for testing or when switching modes)
+   */
+  static clearCache(): void {
+    this.loggerCache.clear();
+  }
 
   /**
    * Initialize the logger provider with a default logger for universal availability

@@ -1,6 +1,6 @@
 import { FileData } from '@x-fidelity/types';
 import { logger } from '@x-fidelity/core';
-import { treeSitterManager } from '../xfiPluginAst/worker/treeSitterManager';
+import { treeSitterManager } from './astUtils/treeSitterManager';
 
 export interface AstResult {
     tree: any;

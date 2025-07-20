@@ -14,7 +14,8 @@ import {
     VersionData,
     RuleConfig, 
     RuleCondition, 
-    RepoXFIConfig 
+    RepoXFIConfig,
+    EXECUTION_MODES
 } from '@x-fidelity/types';
 import { version } from '../../../package.json';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
@@ -63,8 +64,15 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         LoggerProvider.setLogger(injectedLogger);
     }
     
-    // Use the logger from the provider (guaranteed to be available)
-    const logger = LoggerProvider.getLogger();
+    // Use mode-aware logger for consistency with fallback
+    const currentMode = (() => {
+        try {
+            return LoggerProvider.getCurrentExecutionMode();
+        } catch (error) {
+            return EXECUTION_MODES.CLI; // Fallback for test environments
+        }
+    })();
+    const logger = LoggerProvider.getLoggerForMode(currentMode);
     
     logger.info('🚀 Starting codebase analysis', {
         repoPath: params.repoPath,
@@ -191,7 +199,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             }
         }
 
-        // ✅ NEW: Apply file change detection for performance optimization
+        // ✅ NEW: Apply file change detection for performance optimization.
         const filePaths = fileData.map(f => f.filePath);
         const changedFiles = await fileCache.getChangedFiles(filePaths);
         
@@ -600,7 +608,14 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
 
 export async function analyzeFiles(engine: Engine, files: FileData[], logger?: import('@x-fidelity/types').ILogger): Promise<any[]> {
     const results = [];
-    const loggerInstance = logger || LoggerProvider.getLogger();
+    const loggerInstance = logger || (() => {
+        try {
+            const currentMode = LoggerProvider.getCurrentExecutionMode();
+            return LoggerProvider.getLoggerForMode(currentMode);
+        } catch (error) {
+            return LoggerProvider.getLoggerForMode(EXECUTION_MODES.CLI); // Fallback for test environments
+        }
+    })();
 
     // Add a global check file
     files.push({

@@ -8,12 +8,10 @@ import {
     sendTelemetry, 
     validateArchetypeConfig,
     ExecutionContext,
-    LoggerProvider
-} from '@x-fidelity/core';
+    LoggerProvider } from '@x-fidelity/core';
 
-import { PinoLogger } from './utils/pinoLogger';
-import { DefaultLogger } from '@x-fidelity/core';
-import { LogLevel } from '@x-fidelity/types';
+//import { PinoLogger } from './utils/pinoLogger';
+import { LogLevel, ILogger } from '@x-fidelity/types';
 import path from 'path';
 import fs from 'fs/promises';
 import { version as cliVersion } from '../package.json';  // Import CLI version
@@ -32,27 +30,6 @@ import { version } from '../package.json';
 
 // Initialize universal logging FIRST before any other operations
 LoggerProvider.initializeForPlugins();
-
-// Create CLI logger instance and inject it
-// When called from VSCode, use simple console logging to avoid file descriptor issues
-const isVSCodeMode = process.env.XFI_VSCODE_MODE === 'true';
-
-const logger = isVSCodeMode 
-    ? new DefaultLogger('[CLI]') // Use simple console logger for VSCode to avoid Pino issues
-    : new PinoLogger({
-        level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
-        enableConsole: true,
-        enableColors: true,
-        enableFile: false // Always disable file logging for initial setup
-    });
-
-// Set log level for DefaultLogger if in VSCode mode
-if (isVSCodeMode && process.env.XFI_LOG_LEVEL) {
-    logger.setLevel(process.env.XFI_LOG_LEVEL as LogLevel);
-}
-
-// Set the logger provider to use CLI's pino logger immediately
-LoggerProvider.setLogger(logger);
 
 export * from '@x-fidelity/core';
 export * from '@x-fidelity/types';
@@ -87,11 +64,32 @@ ${versionLine}
 
 if (require.main === module) {
     initCLI();
+    
+    // After CLI parsing, logger will be updated during main() execution
+    // The LoggerProvider is already initialized with a default logger
 }
 
 const executionLogPrefix = '';
+const repoPath = path.resolve(options.dir || '.');
+// Start execution context with consistent ID
+const executionId = ExecutionContext.startExecution({
+    component: 'CLI',
+    operation: `${options.mode}-analyze`,
+    archetype: options.archetype || 'node-fullstack',
+    repoPath,
+    metadata: {
+        configServer: options.configServer,
+        localConfigPath: options.localConfigPath
+    }
+});
 
 import json from 'prettyjson';
+
+// Import the proxy logger that handles mode detection gracefully
+import { logger as coreLogger } from '@x-fidelity/core';
+
+// Module-level logger fallback - will be replaced in main() with proper mode-aware logger
+let logger: ILogger = coreLogger;
 
 // Function to handle errors and send telemetry
 const handleError = async (error: Error) => {
@@ -118,17 +116,28 @@ const outcomeMessage = (message: string) => `\n
 ${message}
 ==========================================================================`;
 
-logger.debug('Startup options', { options });
 
 // Main function
 export async function main() {
     try { 
+        // Initialize proper logger for CLI execution with current mode and options
+        const logFilePath = path.join(repoPath, '.xfiResults', 'x-fidelity.log');
+        const fileLoggingOptions = options.enableFileLogging === true ? {
+            enableFileLogging: true,
+            filePath: logFilePath
+        } : undefined;
+        
+        // Get the current execution mode safely
+        const currentMode = LoggerProvider.getCurrentExecutionMode();
+        logger = LoggerProvider.getLoggerForMode(currentMode, process.env.XFI_LOG_LEVEL as LogLevel, fileLoggingOptions);
+        
         if (options.examine && process.env.NODE_ENV !== 'test') {
             validateArchetypeConfig();
         } else {
             // Display banner at the start
             if (process.env.NODE_ENV !== 'test') {
                 displayBanner();
+                console.log('Startup options', { options });
             }
             
             if (options.mode === 'server') {
@@ -137,50 +146,14 @@ export async function main() {
                     executionLogPrefix 
                 });
             } else {
-                const repoPath = path.resolve(options.dir || '.');
-                const logFilePath = path.join(repoPath, '.xfiResults', 'x-fidelity.log');
-                
-                // Start execution context with consistent ID
-                const executionId = ExecutionContext.startExecution({
-                    component: 'CLI',
-                    operation: 'client-analyze',
-                    archetype: options.archetype || 'node-fullstack',
-                    repoPath,
-                    metadata: {
-                        configServer: options.configServer,
-                        localConfigPath: options.localConfigPath
-                    }
-                });
-                
-                // Create logger with console output (file logging only if explicitly enabled)
-                const enableFileLogging = options.enableFileLogging === true;
-                const analysisLogger = isVSCodeMode 
-                    ? new DefaultLogger('[CLI-Analysis]') // Use simple console logger for VSCode
-                    : new PinoLogger({
-                        level: (process.env.XFI_LOG_LEVEL as LogLevel) || 'info',
-                        enableConsole: true,
-                        enableColors: true,
-                        enableFile: enableFileLogging, // File logging only if explicitly enabled
-                        filePath: logFilePath
-                    });
-
-                // Set log level for DefaultLogger if in VSCode mode
-                if (isVSCodeMode && process.env.XFI_LOG_LEVEL) {
-                    analysisLogger.setLevel(process.env.XFI_LOG_LEVEL as LogLevel);
-                }
-
-                // Update the logger provider to use CLI's pino logger with file output
-                LoggerProvider.setLogger(analysisLogger);
-
-                logger.info('Ready..');
-
+            
                 const resultMetadata: ResultMetadata = await analyzeCodebase({
                     repoPath,
                     archetype: options.archetype || 'node-fullstack',
                     configServer: options.configServer,
                     localConfigPath: options.localConfigPath,
                     executionLogPrefix: executionId, // Use execution ID as prefix
-                    logger: analysisLogger,
+                    logger: logger,
                     version: cliVersion // Pass CLI version
                 });
 
@@ -188,9 +161,9 @@ export async function main() {
 
                 const reportGenerationStartTime = new Date().getTime();
 
-                let resultString = JSON.stringify(resultMetadata);
                 let prettyResult = json.render(resultMetadata.XFI_RESULT);
-
+                let resultString = JSON.stringify(resultMetadata);
+                
                 const reportGenerationdurationSeconds = ((new Date().getTime()) - reportGenerationStartTime) / 1000;
                 logger.info(`PERFORMANCE: Report generation took ${reportGenerationdurationSeconds} seconds`);
 
@@ -220,11 +193,9 @@ export async function main() {
                 }
 
                 // Get the logger with execution ID prefixing for final output
-                const outputLogger = LoggerProvider.getLogger();
-
                 // if results are found, there were issues found in the codebase
                 if (resultMetadata.XFI_RESULT.totalIssues > 0) {
-                    outputLogger.warn(`WARNING: lo-fi attributes detected in codebase. ${resultMetadata.XFI_RESULT.warningCount} are warnings, ${resultMetadata.XFI_RESULT.fatalityCount} are fatal.`);
+                    logger.warn(`WARNING: lo-fi attributes detected in codebase. ${resultMetadata.XFI_RESULT.warningCount} are warnings, ${resultMetadata.XFI_RESULT.fatalityCount} are fatal.`);
                     
                     // Create a more detailed summary of issues
                     const issueSummary = {
@@ -247,18 +218,13 @@ export async function main() {
                         },
                     };
                     
-                    outputLogger.debug(JSON.stringify(issueSummary, null, 2));
+                    logger.debug(JSON.stringify(issueSummary, null, 2));
 
                     if (resultMetadata.XFI_RESULT.errorCount > 0) {
-                        outputLogger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
-                        outputLogger.info(resultString);
-                        outputLogger.error(`\n${prettyResult}\n\n`);
-                        outputLogger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
-                        
-                        // Flush logger before exit
-                        if (analysisLogger && 'flush' in analysisLogger && typeof analysisLogger.flush === 'function') {
-                            await analysisLogger.flush();
-                        }
+                        logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
+                        logger.info(resultString);
+                        logger.error(`\n${prettyResult}\n\n`);
+                        logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.errorCount} UNEXPECTED ERRORS!`));
                         
                         // Add a delay to ensure all async logging operations complete
                         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -266,44 +232,29 @@ export async function main() {
                     }
 
                     if (resultMetadata.XFI_RESULT.fatalityCount > 0) {
-                        outputLogger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
-                        outputLogger.info(resultString);
-                        outputLogger.error(`\n${prettyResult}\n\n`);
-                        outputLogger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
-                        
-                        // Flush logger before exit
-                        if (analysisLogger && 'flush' in analysisLogger && typeof analysisLogger.flush === 'function') {
-                            await analysisLogger.flush();
-                        }
+                        logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
+                        logger.info(resultString);
+                        logger.error(`\n${prettyResult}\n\n`);
+                        logger.error(outcomeMessage(`THERE WERE ${resultMetadata.XFI_RESULT.fatalityCount} FATAL ERRORS DETECTED TO BE IMMEDIATELY ADDRESSED!`));
                         
                         // Add a delay to ensure all async logging operations complete
                         await new Promise(resolve => setTimeout(resolve, 1000));
                         process.exit(1);
                     } else {
-                        outputLogger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
-                        outputLogger.info(resultString);
-                        outputLogger.warn(`\n${prettyResult}\n\n`);
-                        outputLogger.warn(outcomeMessage('Please review the warnings above.'));
-                        
-                        // Flush logger before exit
-                        if (analysisLogger && 'flush' in analysisLogger && typeof analysisLogger.flush === 'function') {
-                            await analysisLogger.flush();
-                        }
+                        logger.warn(outcomeMessage('No fatal errors were found, however please review the following warnings.'));
+                        logger.info(resultString);
+                        logger.warn(`\n${prettyResult}\n\n`);
+                        logger.warn(outcomeMessage('Please review the warnings above.'));
                         
                         // Add a delay to ensure all async logging operations complete
                         await new Promise(resolve => setTimeout(resolve, 1000));
                         process.exit(0);
                     }
                 } else {
-                    outputLogger.info(outcomeMessage('HIGH FIDELITY APPROVED! No issues were found in the codebase.'));
-                    outputLogger.info(resultString);
-                    outputLogger.info(`\n${prettyResult}\n\n`);
-                    outputLogger.info(outcomeMessage('HIGH FIDELITY APPROVED! No issues were found in the codebase.'));
-                    
-                    // Flush logger before exit
-                    if (analysisLogger.flush) {
-                        await analysisLogger.flush();
-                    }
+                    logger.info(outcomeMessage('HIGH FIDELITY codebase detected! No issues were found in the codebase.'));
+                    logger.info(resultString);
+                    logger.info(`\n${prettyResult}\n\n`);
+                    logger.info(outcomeMessage('HIGH FIDELITY codebase detected! No issues were found in the codebase.'));
                     
                     // Add a delay to ensure all async logging operations complete
                     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -316,10 +267,10 @@ export async function main() {
         
         // Try to flush logger before exit if available
         try {
-            const currentLogger = LoggerProvider.getLogger();
-            if (currentLogger && 'flush' in currentLogger && typeof currentLogger.flush === 'function') {
-                await currentLogger.flush();
+            if (logger && 'flush' in logger && typeof logger.flush === 'function') {
+                await logger.flush();
             }
+            await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (flushError) {
             // Ignore flush errors during error handling
         }

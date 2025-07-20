@@ -1,110 +1,27 @@
 import pino from 'pino';
-import { ILogger, SimpleLoggerConfig, LogLevel, LogLevelValues } from '@x-fidelity/types';
+import pretty from 'pino-pretty';
+import { ILogger, SimpleLoggerConfig, LogLevel, LogLevelValues, EXECUTION_MODES } from '@x-fidelity/types';
+import { DefaultLogger, options, shouldUseDirectLogging } from '@x-fidelity/core';
 
 export class PinoLogger implements ILogger {
   private logger: pino.Logger;
 
   constructor(config: SimpleLoggerConfig = {}) {
-    const transport = this.createTransports(config);
-    const pinoConfig: pino.LoggerOptions = {
+    // Enhanced pino-pretty configuration for better datetime and colors
+    const prettyOptions = {
+      colorize: config.enableColors !== false,
+      translateTime: 'SYS:yyyy-mm-dd HH:MM:ss', // More explicit datetime format
+      ignore: 'pid,hostname',
+      singleLine: false, // Allow multi-line for better readability
+      hideObject: false, // Show metadata objects
+      colorizeObjects: true, // Enable color for objects too
+    };
+
+    this.logger = pino({
       level: config.level || 'info',
-      ...(transport && { transport }) // Only add transport if it's not undefined
-    };
-
-    this.logger = pino(pinoConfig);
-  }
-
-  private createTransports(config: SimpleLoggerConfig): pino.TransportMultiOptions | pino.TransportSingleOptions | undefined {
-    // Detect if we're in a CLI bundled environment to avoid transport worker issues
-    if (this.detectBundledEnvironment()) {
-      // In bundled environments (like CLI), return undefined to use direct logging
-      // This avoids transport worker issues that cause "lib/worker.js" errors
-      return undefined;
-    }
-
-    const targets: pino.TransportTargetOptions[] = [];
-
-    // Console transport
-    if (config.enableConsole !== false) {
-      targets.push({
-        target: 'pino-pretty',
-        level: config.level || 'info',
-        options: {
-          colorize: config.enableColors !== false,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname'
-        }
-      });
-    }
-
-    // File transport (skip if explicitly disabled or in VSCode mode)
-    if (config.enableFile === true && config.filePath && process.env.XFI_VSCODE_MODE !== 'true') {
-      try {
-        // Ensure directory exists
-        const fs = require('fs');
-        const path = require('path');
-        const logDir = path.dirname(config.filePath);
-        if (!fs.existsSync(logDir)) {
-          fs.mkdirSync(logDir, { recursive: true });
-        }
-        
-        // Clear the log file at the start of each execution
-        try {
-          fs.writeFileSync(config.filePath, '');
-        } catch (error) {
-          // Silent fail - log file clearing is not critical
-        }
-        
-        targets.push({
-          target: 'pino/file',
-          level: config.level || 'info',
-          options: {
-            destination: config.filePath
-          }
-        });
-      } catch (error) {
-        // If file logging fails, just continue with console logging
-        // Silent fail - file logging is not critical
-      }
-    }
-
-    if (targets.length === 1) {
-      return targets[0];
-    }
-
-    return {
-      targets
-    };
-  }
-
-  private detectBundledEnvironment(): boolean {
-    // Check if explicitly running from VSCode extension
-    if (process.env.XFI_VSCODE_MODE === 'true') {
-      return true; // Disable transport workers for VSCode - use direct logging
-    }
-    
-    // Detect if running from bundled CLI by checking the executable path
-    const mainScript = process.argv[1] || '';
-    const currentFile = __filename || '';
-    
-    // If the main script or current file contains 'dist/' it's likely bundled
-    if (mainScript.includes('/dist/') || currentFile.includes('/dist/')) {
-      return true; // Bundled environment - disable transport workers
-    }
-    
-    // Check if the main script is the bundled CLI executable
-    if (mainScript.endsWith('xfidelity') || mainScript.endsWith('index.js')) {
-      return true; // Bundled CLI - disable transport workers
-    }
-    
-    // For development/source code usage, try to use pretty printing if available
-    try {
-      require.resolve('pino-pretty');
-      return false; // pino-pretty available and not bundled, use transport workers
-    } catch (error) {
-      // pino-pretty not available, use direct logging
-      return true;
-    }
+      // Add timestamp to base log record for consistency
+      timestamp: pino.stdTimeFunctions.isoTime,
+    }, pretty(prettyOptions));
   }
 
   trace(msgOrMeta: string | any, metaOrMsg?: any): void {
@@ -170,15 +87,37 @@ export class PinoLogger implements ILogger {
   }
 
   // Child logger method removed - use direct context passing instead
-
   async flush(): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       if (this.logger.flush) {
-        this.logger.flush(() => resolve());
+        return this.logger.flush(() => resolve());
       } else {
         // If flush is not available, just resolve immediately
         resolve();
       }
     });
   }
+
+  updateOptions(options?: { enableFileLogging?: boolean; filePath?: string }): void {
+    // PinoLogger could potentially support dynamic reconfiguration
+    // For now, this is a no-op as pino logger configuration is set at creation time
+    // TODO: Implement dynamic file logging configuration if needed
+  }
+}
+
+// Register PinoLogger as the preferred logger for CLI mode
+// This will be called when CLI package is loaded
+try {
+  const { LoggerProvider } = require('@x-fidelity/core');
+  LoggerProvider.registerLoggerFactory(EXECUTION_MODES.CLI, (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => {
+    return new PinoLogger({
+      level,
+      enableConsole: true,
+      enableColors: true, // Ensure colors are always enabled for CLI
+      enableFile: options?.enableFileLogging || false,
+      filePath: options?.filePath
+    });
+  });
+} catch (error) {
+  // Ignore registration errors - LoggerProvider may not be available in all contexts
 } 

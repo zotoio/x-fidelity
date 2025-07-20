@@ -1,7 +1,6 @@
 ---
-description: VSCode extension development patterns and requirements
+alwaysApply: false
 ---
-
 # VSCode Extension Development
 
 ## Key Components

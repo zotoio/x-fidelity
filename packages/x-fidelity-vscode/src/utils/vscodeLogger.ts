@@ -161,6 +161,9 @@ class SimpleLogger implements ILogger {
     const timestamp = new Date().toISOString();
     const levelStr = level.toUpperCase().padEnd(5);
 
+    // Add color coding based on log level for VSCode output
+    const colorizedLevel = this.colorizeLevel(level, levelStr);
+
     let message: string;
     let meta: any;
 
@@ -173,15 +176,33 @@ class SimpleLogger implements ILogger {
     }
 
     const prefixStr = this.prefix ? `[${this.prefix}] ` : '';
-    let logLine = `${timestamp} ${levelStr} ${prefixStr}${message}`;
+    let logLine = `${timestamp} ${colorizedLevel} ${prefixStr}${message}`;
 
     if (meta && typeof meta === 'object') {
-      logLine += ` ${JSON.stringify(meta)}`;
+      logLine += ` ${JSON.stringify(meta, null, 2)}`;
     } else if (meta) {
       logLine += ` ${meta}`;
     }
 
     return logLine;
+  }
+
+  private colorizeLevel(level: LogLevel, levelStr: string): string {
+    // Use ANSI color codes for VSCode output panel colorization
+    switch (level) {
+      case 'error':
+        return `\x1b[31m${levelStr}\x1b[0m`; // Red
+      case 'warn':
+        return `\x1b[33m${levelStr}\x1b[0m`; // Yellow
+      case 'info':
+        return `\x1b[36m${levelStr}\x1b[0m`; // Cyan
+      case 'debug':
+        return `\x1b[32m${levelStr}\x1b[0m`; // Green
+      case 'trace':
+        return `\x1b[90m${levelStr}\x1b[0m`; // Gray
+      default:
+        return levelStr;
+    }
   }
 
   private log(level: LogLevel, msgOrMeta: string | any, metaOrMsg?: any): void {

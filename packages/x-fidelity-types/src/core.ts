@@ -465,6 +465,28 @@ export interface AstResult {
     hasErrors?: boolean;  // Whether the AST contains parsing errors
     errorCount?: number;  // Number of parsing errors
     generationTime?: number;  // Time taken to generate AST in milliseconds
+    filePath?: string;  // File path for context
+    fileName?: string;  // File name for context
+    mode?: 'native' | 'wasm' | 'native-direct' | 'wasm-direct' | 'worker' | 'fallback';  // Generation mode used
+    fromCache?: boolean;  // Whether result came from cache
+}
+
+// AST generation context interface
+export interface AstGenerationContext {
+    filePath: string;  // Full file path
+    fileName: string;  // File name only
+    content: string;   // File content to parse
+    language?: string; // Language for parsing (auto-detected if not provided)
+    options?: AstGenerationOptions;  // Additional options
+}
+
+// AST generation options interface
+export interface AstGenerationOptions {
+    useWorker?: boolean;        // Whether to use worker thread for parsing
+    timeout?: number;           // Parsing timeout in milliseconds
+    includeComments?: boolean;  // Whether to include comments in AST
+    includeTrivia?: boolean;    // Whether to include whitespace/trivia
+    maxFileSize?: number;       // Maximum file size to parse
 }
 
 export interface ValidationResult {
@@ -518,6 +540,19 @@ export interface RatioThreshold {
 // Additional interfaces for backward compatibility
 export type IssueDetail = ScanResult; // Alias for v4 compatibility
 
+// Execution Mode types
+export type ExecutionMode = 'cli' | 'vscode' | 'server' | 'hook';
+
+export const EXECUTION_MODES = {
+    CLI: 'cli' as const,
+    VSCODE: 'vscode' as const,
+    SERVER: 'server' as const,
+    HOOK: 'hook' as const
+} as const;
+
+// Legacy mode for backward compatibility
+export type LegacyMode = 'client' | 'server';
+
 // CLI Options interface
 export interface CLIOptions {
     dir: string;
@@ -526,14 +561,15 @@ export interface CLIOptions {
     localConfigPath?: string;
     openaiEnabled?: boolean;
     telemetryCollector?: string;
-    mode: 'client' | 'server';
+    mode: ExecutionMode | LegacyMode; // Support both new and legacy modes
     port?: number;
     jsonTTL?: string;
     extensions?: string[];
     examine?: boolean;
     outputFormat?: 'human' | 'json';
     outputFile?: string;
-    disableTreeSitterWorker?: boolean;  // ✅ Option to disable TreeSitter worker for performance testing (worker enabled by default)
+    enableTreeSitterWorker?: boolean;  // ✅ Option to enable TreeSitter worker mode (disabled by default, CLI uses direct parsing)
+    enableTreeSitterWasm?: boolean;  // ✅ Option to use WASM TreeSitter instead of native bindings (for compatibility)
     enableFileLogging?: boolean;  // ✅ Option to enable logging to x-fidelity.log file (disabled by default)
     zapFiles?: string[];  // ✅ New option for targeted file analysis
     fileCacheTTL?: number;  // ✅ TTL for file modification time cache in minutes (default: 60)

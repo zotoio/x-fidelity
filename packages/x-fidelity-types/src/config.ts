@@ -2,6 +2,7 @@
 // Moved from packages/x-fidelity-core/src/types/config.ts
 
 import { JSONSchemaType } from 'ajv';
+import { ExecutionMode, LegacyMode } from './core';
 
 // Forward declare types to avoid circular imports
 export interface RuleCondition {
@@ -92,7 +93,7 @@ export interface RuleReference {
 
 // CLI options
 export interface CLIOptions {
-    mode?: 'client' | 'server';
+    mode?: ExecutionMode | LegacyMode;
     examine?: boolean;
     archetype?: string;
     configServer?: string;

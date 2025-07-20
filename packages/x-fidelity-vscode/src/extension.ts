@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ExtensionManager } from './core/extensionManager';
 import { createComponentLogger } from './utils/globalLogger';
 import { setupTestEnvironmentPatching } from './utils/testDetection';
-import { TreeSitterManager } from './core/treeSitterManager';
+
 
 // Global logger for extension lifecycle
 const logger = createComponentLogger('Extension');
@@ -33,24 +33,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // Store extension context globally for access by other components
     extensionContext = context;
 
-    // Initialize TreeSitter WASM before extension manager
-    try {
-      logger.info('🌲 Initializing TreeSitter WASM...');
-      const treeSitterManager = TreeSitterManager.getInstance();
-      await treeSitterManager.initialize();
-      
-      // Pre-load commonly used languages
-      await treeSitterManager.loadLanguage('javascript');
-      await treeSitterManager.loadLanguage('typescript');
-      
-      logger.info('✅ TreeSitter WASM initialization completed');
-    } catch (error) {
-      logger.warn('⚠️ TreeSitter WASM initialization failed - continuing without AST features', {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      // Set flag to disable AST features if WASM fails
-      process.env.XFI_DISABLE_AST = 'true';
-    }
+    // TreeSitter operations are handled by the embedded CLI
+    // No need to initialize TreeSitter in the extension itself
 
     // PERFORMANCE FIX: Fast initialization with macOS native module handling
     try {

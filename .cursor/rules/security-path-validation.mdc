@@ -7,9 +7,6 @@ description: Security patterns and path validation requirements
 ## Critical Security Pattern
 The X-Fidelity project implements strict path validation to prevent directory traversal attacks and unauthorized file access.
 
-## ConfigManager Security Implementation
-Located in **[packages/x-fidelity-core/src/core/configManager.ts](mdc:packages/x-fidelity-core/src/core/configManager.ts)**, the `loadLocalConfig` method enforces:
-
 ### Allowed Path Patterns
 ```typescript
 const allowedBasePaths = [

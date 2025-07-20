@@ -19,7 +19,7 @@ async function ensureXFIResultExists() {
   }
   
   // Run CLI to create initial XFI_RESULT.json
-  const cliPath = path.resolve(__dirname, 'cli/index.js');
+  const cliPath = path.resolve(__dirname, 'dist/cli/index.js');
   console.log(`Running CLI: node ${cliPath} --dir ${fixturesDir} --output-format json`);
   
   const cliResult = spawn('node', [cliPath, '--dir', fixturesDir, '--output-format', 'json'], {

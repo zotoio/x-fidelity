@@ -41,13 +41,14 @@ async function testVSCodeCLIExecution() {
     '--dir',
     testWorkspace,
     '--output-format',
-    'json'
+    'json',
+    '--mode',
+    'vscode', // Use VSCode execution mode
+    '--enable-tree-sitter-worker' // Enable WASM tree-sitter for VSCode
   ];
   
   console.log('🔧 CLI command:', 'node', args.join(' '));
   console.log('🌍 Environment variables:');
-  console.log('   XFI_VSCODE_MODE=true');
-  console.log('   XFI_DISABLE_FILE_LOGGING=true');
   console.log('   XFI_LOG_LEVEL=warn');
   
   return new Promise((resolve, reject) => {
@@ -57,9 +58,7 @@ async function testVSCodeCLIExecution() {
       timeout: 120000,
       env: {
         ...process.env,
-        XFI_VSCODE_MODE: 'true',
-        XFI_DISABLE_FILE_LOGGING: 'true', 
-        XFI_LOG_LEVEL: 'warn'
+        XFI_LOG_LEVEL: 'warn' // Use consistent log level for CLI output
       }
     });
     

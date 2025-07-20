@@ -8,8 +8,9 @@ import { ControlCenterTreeViewManager } from '../ui/treeView/controlCenterTreeVi
 import { createComponentLogger } from '../utils/globalLogger';
 import { VSCodeLogger } from '../utils/vscodeLogger';
 import { getAnalysisTargetDirectory } from '../utils/workspaceUtils';
-import { preloadDefaultPlugins } from './pluginPreloader';
+
 import { LoggerProvider } from '@x-fidelity/core';
+import { EXECUTION_MODES } from '@x-fidelity/types';
 import { showCLIDiagnosticsDialog } from '../utils/cliDiagnostics';
 
 export class ExtensionManager implements vscode.Disposable {
@@ -35,11 +36,13 @@ export class ExtensionManager implements vscode.Disposable {
       LoggerProvider.initializeForPlugins();
     }
 
-    // PHASE 2: Create and inject VSCode logger using singleton pattern
-    this.logger = createComponentLogger('Extension Manager');
+    // PHASE 2: Create VSCode mode logger and inject it into the provider
+    // Use standardized getLoggerForMode for consistent behavior
+    const modeLogger = LoggerProvider.getLoggerForMode(EXECUTION_MODES.VSCODE);
+    LoggerProvider.setLogger(modeLogger);
 
-    // Inject the VSCode logger into the provider for use by plugins
-    LoggerProvider.setLogger(this.logger);
+    // Also create component-specific logger for extension manager specific logging
+    this.logger = createComponentLogger('Extension Manager');
 
     this.logger.info('🚀 Initializing X-Fidelity Extension Manager...', {
       hasInjectedLogger: LoggerProvider.hasInjectedLogger(),
@@ -76,8 +79,8 @@ export class ExtensionManager implements vscode.Disposable {
       );
       this.logger.debug('✅ ControlCenterTreeViewManager initialized');
 
-      // PHASE 3: Initialize plugins AFTER logger setup
-      this.initializePlugins();
+      // PHASE 3: Plugin initialization is handled by the spawned CLI
+      // No need to initialize plugins in the extension itself
 
       this.setupEventListeners();
       this.registerCommands();
@@ -85,18 +88,6 @@ export class ExtensionManager implements vscode.Disposable {
     } catch (error) {
       this.logger.error('❌ Extension Manager initialization failed:', error);
       throw error;
-    }
-  }
-
-  private async initializePlugins(): Promise<void> {
-    try {
-      this.logger.info('🔌 Initializing plugins with logger context...');
-      await preloadDefaultPlugins(this.context);
-      this.logger.info(
-        `✅ Plugin initialization completed. Logger provider status: ${LoggerProvider.hasInjectedLogger() ? 'Injected' : 'Default'}`
-      );
-    } catch (error) {
-      this.logger.warn('Plugin initialization failed:', error);
     }
   }
 
@@ -268,6 +259,12 @@ export class ExtensionManager implements vscode.Disposable {
           'workbench.action.openSettings',
           'xfidelity'
         );
+      })
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.resetToDefaults', async () => {
+        await this.resetSettingsToDefaults();
       })
     );
 
@@ -792,6 +789,98 @@ Check Output Console (X-Fidelity) for full details.`;
           );
         }
       });
+  }
+
+  /**
+   * Reset all X-Fidelity settings to their default values
+   */
+  private async resetSettingsToDefaults(): Promise<void> {
+    try {
+      const config = vscode.workspace.getConfiguration('xfidelity');
+
+      // List of all X-Fidelity settings that can be reset
+      const settingsToReset = [
+        'enableTreeSitterWasm',
+        'generateReports',
+        'reportOutputDir',
+        'enableTelemetry',
+        'logLevel',
+        'performance.hideOptimizationNotice',
+        'periodicAnalysis.enabled',
+        'periodicAnalysis.intervalMinutes',
+        'analysis.enableFileWatcher',
+        'analysis.debounceMs',
+        'analysis.excludePatterns',
+        'analysis.includePatterns'
+      ];
+
+      const choice = await vscode.window.showWarningMessage(
+        '🔄 Reset X-Fidelity Settings\n\nThis will reset ALL X-Fidelity settings to their default values at both user and workspace levels. This action cannot be undone.',
+        { modal: true },
+        'Reset All Settings',
+        'Cancel'
+      );
+
+      if (choice !== 'Reset All Settings') {
+        return;
+      }
+
+      // Reset settings at workspace level
+      for (const setting of settingsToReset) {
+        try {
+          await config.update(
+            setting,
+            undefined,
+            vscode.ConfigurationTarget.Workspace
+          );
+        } catch (error) {
+          this.logger.debug(
+            `Failed to reset workspace setting ${setting}:`,
+            error
+          );
+        }
+      }
+
+      // Reset settings at user level
+      for (const setting of settingsToReset) {
+        try {
+          await config.update(
+            setting,
+            undefined,
+            vscode.ConfigurationTarget.Global
+          );
+        } catch (error) {
+          this.logger.debug(`Failed to reset user setting ${setting}:`, error);
+        }
+      }
+
+      this.logger.info('✅ All X-Fidelity settings reset to defaults');
+
+      const restartChoice = await vscode.window.showInformationMessage(
+        '✅ Settings Reset Complete\n\nAll X-Fidelity settings have been reset to their default values. A restart is recommended for all changes to take effect.',
+        'Restart Extension',
+        'Continue'
+      );
+
+      if (restartChoice === 'Restart Extension') {
+        // Restart the extension by disabling and re-enabling it
+        await vscode.commands.executeCommand(
+          'workbench.extensions.action.disableWorkspace',
+          'zotoio.x-fidelity-vscode'
+        );
+        await vscode.commands.executeCommand(
+          'workbench.extensions.action.enableWorkspace',
+          'zotoio.x-fidelity-vscode'
+        );
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error('❌ Failed to reset settings to defaults:', error);
+      vscode.window.showErrorMessage(
+        `Failed to reset settings: ${errorMessage}`
+      );
+    }
   }
 
   dispose(): void {

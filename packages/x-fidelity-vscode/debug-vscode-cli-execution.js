@@ -13,7 +13,7 @@ const xfiResultFile = path.join(resultsDir, 'XFI_RESULT.json');
 // Check CLI path exactly like VSCode extension does
 function getEmbeddedCLIPath() {
   const possiblePaths = [
-    path.resolve(__dirname, 'cli/index.js'), // From VSCode package 
+    path.resolve(__dirname, 'dist/cli/index.js'), // From VSCode package 
     path.resolve(__dirname, '../cli/index.js'),
     path.resolve(__dirname, '../../cli/index.js'),
     path.resolve(process.cwd(), 'cli/index.js'),
@@ -62,14 +62,16 @@ async function debugVSCodeCLIExecution() {
     
     console.log('\n🔧 STEP 3: Executing CLI exactly like VSCode extension');
     
-    // Build arguments EXACTLY like VSCode extension (after fix)
+    // Build arguments EXACTLY like VSCode extension (updated for mode-based execution)
     const args = [
       cliPath,
       '--dir',
       fixturesDir,
       '--output-format',
-      'json'
-      // REMOVED: '--force-refresh', '--no-cache' - these don't exist in CLI
+      'json',
+      '--mode',
+      'vscode', // Use VSCode execution mode
+      '--enable-tree-sitter-worker' // Enable WASM tree-sitter for VSCode
     ];
     
     console.log(`Command: node ${args.join(' ')}`);
@@ -84,9 +86,7 @@ async function debugVSCodeCLIExecution() {
         timeout: 120000,
         env: {
           ...process.env,
-          XFI_VSCODE_MODE: 'true',
-          XFI_DISABLE_FILE_LOGGING: 'true',
-          XFI_LOG_LEVEL: 'warn',
+          XFI_LOG_LEVEL: 'warn', // Use consistent log level for CLI output
           PATH: process.env.PATH
         }
       });

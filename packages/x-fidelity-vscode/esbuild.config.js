@@ -9,7 +9,7 @@ async function main() {
   // Build TreeSitter worker first - WITH tree-sitter bundled for VSIX compatibility
   const workerCtx = await esbuild.context({
     entryPoints: [
-      '../x-fidelity-plugins/src/xfiPluginAst/worker/treeSitterWorker.ts'
+      '../x-fidelity-plugins/src/sharedPluginUtils/astUtils/treeSitterWorker.ts'
     ],
     bundle: true,
     format: 'cjs',
@@ -69,7 +69,9 @@ async function main() {
       'original-fs',
       // Native modules that contain .node files
       'fsevents',
-      'chokidar'
+      'chokidar',
+      // Keep web-tree-sitter external to prevent class name mangling
+      'web-tree-sitter'
     ],
     logLevel: 'info',
     plugins: [

@@ -1,5 +1,11 @@
 import { parentPort, isMainThread, workerData } from 'worker_threads';
 import { logger } from '@x-fidelity/core';
+import { 
+  ParseResult, 
+  WasmConfig, 
+  parseCode as sharedParseCode,
+  checkTreeSitterAvailability 
+} from './treeSitterUtils';
 
 export interface TreeSitterRequest {
   id: string;
@@ -13,25 +19,11 @@ export interface TreeSitterRequest {
   };
 }
 
-export interface WasmConfig {
-  wasmPath?: string;
-  languagesPath?: string;
-  timeout?: number;
-}
-
 export interface TreeSitterResponse {
   id: string;
   success: boolean;
   data?: any;
   error?: string;
-}
-
-export interface ParseResult {
-  tree: any;
-  rootNode?: any;
-  reason?: string;
-  mode?: 'native' | 'wasm' | 'native-direct';
-  parseTime?: number;
 }
 
 // Worker state
@@ -198,57 +190,24 @@ async function initializeWasmTreeSitter(config?: WasmConfig): Promise<void> {
 }
 
 /**
- * Convert a Tree-sitter node to a serializable format
- */
-function nodeToSerializable(node: any): any {
-  if (!node) return null;
-
-  const result: any = {
-    type: node.type,
-    text: node.text,
-    startPosition: {
-      row: node.startPosition.row,
-      column: node.startPosition.column
-    },
-    endPosition: {
-      row: node.endPosition.row,
-      column: node.endPosition.column
-    },
-    startIndex: node.startIndex,
-    endIndex: node.endIndex,
-    childCount: node.childCount,
-    children: []
-  };
-
-  // Recursively convert children (limit depth to prevent stack overflow)
-  if (node.children && node.children.length > 0) {
-    for (const child of node.children) {
-      result.children.push(nodeToSerializable(child));
-    }
-  }
-
-  return result;
-}
-
-/**
- * Get parser status
+ * Get parser status using shared availability checker
  */
 function getStatus(): any {
+  const availability = checkTreeSitterAvailability();
+  
   return {
     initialized: isInitialized,
     failed: initializationFailed,
     reason: failureReason,
     mode: useWasmMode ? 'wasm' : 'native',
-    wasmAvailable: wasmInitialized,
-    nativeAvailable: ParserClass !== null,
-    supportedLanguages: useWasmMode ? 
-      Array.from(wasmLanguages.keys()) : 
-      ['javascript', 'typescript']
+    wasmAvailable: availability.wasmAvailable,
+    nativeAvailable: availability.nativeAvailable,
+    supportedLanguages: availability.supportedLanguages
   };
 }
 
 /**
- * Parse code using Tree-sitter (native or WASM)
+ * Parse code using Tree-sitter (native or WASM) via shared utilities
  */
 async function parseCode(code: string, language: 'javascript' | 'typescript', fileName: string): Promise<ParseResult> {
   if (!isInitialized || initializationFailed) {
@@ -259,98 +218,19 @@ async function parseCode(code: string, language: 'javascript' | 'typescript', fi
     };
   }
 
-  const startTime = Date.now();
-
-  try {
-    if (useWasmMode) {
-      return await parseWithWasm(code, language, fileName, startTime);
-    } else {
-      return parseWithNative(code, language, fileName, startTime);
-    }
-  } catch (error) {
-    const parseTime = Date.now() - startTime;
-    return {
-      tree: null,
-      reason: `Parse error: ${error instanceof Error ? error.message : String(error)}`,
-      mode: useWasmMode ? 'wasm' : 'native',
-      parseTime
-    };
-  }
+  // Use shared parsing utilities for consistency
+  return sharedParseCode(code, language, fileName, {
+    useWasm: useWasmMode,
+    wasmConfig: {
+      wasmPath: undefined, // Let shared utils use defaults
+      languagesPath: undefined,
+      timeout: undefined
+    },
+    mode: 'worker'
+  });
 }
 
-/**
- * Parse with WASM Tree-sitter
- */
-async function parseWithWasm(code: string, language: string, fileName: string, startTime: number): Promise<ParseResult> {
-  if (!wasmParser) {
-    throw new Error('WASM parser not initialized');
-  }
 
-  // Get or load language
-  let lang = wasmLanguages.get(language);
-  if (!lang) {
-    try {
-      const Parser = require('web-tree-sitter');
-      const path = require('path');
-      const languagesPath = './node_modules';
-      
-      // Convert to proper file:// URL for dynamic language loading
-      const wasmPath = path.resolve(`${languagesPath}/tree-sitter-${language}/tree-sitter-${language}.wasm`);
-      
-      // Use platform-specific file URL format
-      let wasmUrl: string;
-      if (process.platform === 'win32') {
-        wasmUrl = `file:///${wasmPath.replace(/\\/g, '/')}`;
-      } else {
-        wasmUrl = `file://${wasmPath}`;
-      }
-      
-      logger.debug(`[TreeSitter Worker] Dynamically loading ${language} from: ${wasmUrl}`);
-      lang = await Parser.Language.load(wasmUrl);
-      wasmLanguages.set(language, lang);
-    } catch (error) {
-      throw new Error(`Failed to load WASM language ${language}: ${error}`);
-    }
-  }
-
-  wasmParser.setLanguage(lang);
-  const tree = wasmParser.parse(code);
-  const parseTime = Date.now() - startTime;
-
-  const serializableTree = nodeToSerializable(tree.rootNode);
-  
-  return {
-    tree: serializableTree,
-    rootNode: serializableTree,
-    mode: 'wasm',
-    parseTime
-  };
-}
-
-/**
- * Parse with native Tree-sitter
- */
-function parseWithNative(code: string, language: string, fileName: string, startTime: number): ParseResult {
-  const parser = new ParserClass();
-  const lang = language === 'typescript' ? tsLanguage : jsLanguage;
-
-  if (!lang) {
-    throw new Error(`Language not available: ${language}`);
-  }
-
-  parser.setLanguage(lang);
-  const tree = parser.parse(code);
-  const parseTime = Date.now() - startTime;
-
-  const serializableTree = nodeToSerializable(tree.rootNode);
-
-  return {
-    tree: serializableTree,
-    rootNode: serializableTree,
-    mode: 'native',
-    parseTime
-  };
-}
 
 /**
  * Worker message handler

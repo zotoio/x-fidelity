@@ -20,7 +20,7 @@ export interface ExtensionConfig {
   autoAnalyzeOnFileChange: boolean; // Trigger analysis on file change (debounced)
   archetype: string; // X-Fidelity archetype
 
-  // CLI Settings (simplified - bundled CLI only)
+  // CLI Settings - VSCode extension always spawns CLI with --mode vscode
   cliExtraArgs: string[]; // Additional CLI arguments
 
   // Connection Settings
@@ -57,10 +57,11 @@ export interface ExtensionConfig {
   debugMode: boolean; // Enable debug logging
   customPlugins: string[]; // Additional plugin paths
   ruleOverrides: Record<string, RuleOverride>; // Rule-specific overrides
-  cacheResults: boolean; // Cache analysis results
-  cacheTTL: number; // Cache TTL in minutes
-  // Add analyzeOnStartup config
-  analyzeOnStartup: boolean; // Run analysis on extension startup
+
+  // Enhanced Logging Settings
+  logColorization: boolean; // Enable ANSI color codes in output
+  logTimestampFormat: 'iso' | 'short' | 'none'; // Timestamp format preference
+  logLevelFiltering: boolean; // Enable log level filtering hints
 }
 
 export class ConfigManager {
@@ -127,7 +128,7 @@ export class ConfigManager {
       configServer: workspaceConfig.get('configServer', ''),
       localConfigPath: workspaceConfig.get('localConfigPath', ''),
 
-      // CLI Settings (simplified - bundled CLI only)
+      // CLI Settings - VSCode extension always spawns CLI with --mode vscode
       cliExtraArgs: workspaceConfig.get('cliExtraArgs', []),
 
       // Performance Settings - OPTIMIZED FOR SPEED
@@ -186,10 +187,11 @@ export class ConfigManager {
       debugMode: workspaceConfig.get('debugMode', false),
       customPlugins: workspaceConfig.get('customPlugins', []),
       ruleOverrides: workspaceConfig.get('ruleOverrides', {}),
-      cacheResults: workspaceConfig.get('cacheResults', true),
-      cacheTTL: workspaceConfig.get('cacheTTL', 10), // 10 minutes instead of 5 for better caching
-      // Add analyzeOnStartup config (default true)
-      analyzeOnStartup: workspaceConfig.get('analyzeOnStartup', true)
+
+      // Enhanced Logging Settings
+      logColorization: workspaceConfig.get('logColorization', false),
+      logTimestampFormat: workspaceConfig.get('logTimestampFormat', 'iso'),
+      logLevelFiltering: workspaceConfig.get('logLevelFiltering', false)
     };
   }
 

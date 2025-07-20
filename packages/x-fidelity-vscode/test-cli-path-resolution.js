@@ -12,7 +12,7 @@ function testCLIPathResolution() {
   const possiblePaths = [
     path.resolve(currentDir, '../cli/index.js'), // From dist directory
     path.resolve(currentDir, '../../cli/index.js'), // From src directory in tests
-    path.resolve(process.cwd(), 'cli/index.js'), // From current working directory
+    path.resolve(process.cwd(), './cli/index.js'), // From current working directory
     path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js'), // From monorepo root
     // CRITICAL: Add the actual monorepo CLI location for tests
     path.resolve(currentDir, '../../../x-fidelity-cli/dist/index.js'), // From VSCode src to CLI dist

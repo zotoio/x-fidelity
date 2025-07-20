@@ -28,11 +28,11 @@ jest.mock('@x-fidelity/core', () => ({
         trace: jest.fn(),
     },
     maskSensitiveData: jest.fn(data => data),
-    getOptions: jest.fn(() => ({ disableTreeSitterWorker: false }))
+    getOptions: jest.fn(() => ({ enableTreeSitterWorker: true }))
 }));
 
 // Mock TreeSitterManager to prevent real AST processing that causes 15s timeouts
-jest.mock('../../xfiPluginAst/worker/treeSitterManager', () => ({
+jest.mock('../../sharedPluginUtils/astUtils/treeSitterManager', () => ({
     TreeSitterManager: {
         getInstance: jest.fn(() => ({
             parseCode: jest.fn().mockResolvedValue({
@@ -127,14 +127,14 @@ describe('File operations', () => {
             });
         });
 
-        it('should skip AST preprocessing when disableTreeSitterWorker is true', async () => {
+        it('should skip AST preprocessing when enableTreeSitterWorker is false', async () => {
             const filePath = 'test/path/testFile.js';
             const mockContent = 'const x = 1;';
             (fs.readFileSync as jest.Mock).mockReturnValue(mockContent);
             
-            // Mock getOptions to return disableTreeSitterWorker: true
+            // Mock getOptions to return enableTreeSitterWorker: false
             const mockGetOptions = require('@x-fidelity/core').getOptions as jest.Mock;
-            mockGetOptions.mockReturnValue({ disableTreeSitterWorker: true });
+            mockGetOptions.mockReturnValue({ enableTreeSitterWorker: false });
 
             const result = await parseFile(filePath);
             expect(result).toEqual({
@@ -146,11 +146,11 @@ describe('File operations', () => {
             });
             
             // Verify TreeSitterManager was not called
-            const TreeSitterManager = require('../../xfiPluginAst/worker/treeSitterManager').TreeSitterManager;
+            const TreeSitterManager = require('../../sharedPluginUtils/astUtils/treeSitterManager').TreeSitterManager;
             expect(TreeSitterManager.getInstance).not.toHaveBeenCalled();
             
             // Reset for subsequent tests
-            mockGetOptions.mockReturnValue({ disableTreeSitterWorker: false });
+            mockGetOptions.mockReturnValue({ enableTreeSitterWorker: true });
         });
 
         it('should handle symlinks', async () => {
@@ -178,7 +178,7 @@ describe('File operations', () => {
             (fs.readdirSync as jest.Mock).mockReturnValue(['file1.js', 'file2.tsx', 'file3.txt']);
             jest.mocked(fs.realpathSync).mockImplementation(path => path.toString());
             
-            const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+            const mockedFsPromises = jest.mocked(fs.promises);
             mockedFsPromises.stat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
 
             const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
@@ -195,7 +195,7 @@ describe('File operations', () => {
                 .mockReturnValueOnce(['file2.js', 'file3.txt']);
             // fs.realpathSync is already mocked in the jest.mock setup
             
-            const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+            const mockedFsPromises = jest.mocked(fs.promises);
             mockedFsPromises.stat.mockResolvedValueOnce({ isDirectory: () => true } as fs.Stats)
                 .mockResolvedValueOnce({ isDirectory: () => false } as fs.Stats)
                 .mockResolvedValueOnce({ isDirectory: () => false } as fs.Stats)

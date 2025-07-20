@@ -14,47 +14,53 @@ import { LoggerProvider } from './loggerProvider';
  * @returns A logger wrapper that includes plugin context in all log messages
  */
 export function createPluginLogger(pluginName: string, additionalContext?: Record<string, any>): ILogger {
-  // Ensure LoggerProvider is initialized
-  LoggerProvider.ensureInitialized();
+  // Get mode-aware logger for consistency
+  const currentMode = LoggerProvider.getCurrentExecutionMode();
+  const baseLogger = LoggerProvider.getLoggerForMode(currentMode);
   
-  const baseLogger = LoggerProvider.getLogger();
   const context = { plugin: pluginName, ...additionalContext };
-  
-  // Create a wrapper that includes context in all log messages
+
+  // Create wrapper that adds plugin context to all log messages
   return {
     trace: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const message = typeof msgOrMeta === 'string' ? `[${pluginName}] ${msgOrMeta}` : msgOrMeta;
-      const meta = typeof msgOrMeta === 'string' ? { ...context, ...metaOrMsg } : { ...context, ...msgOrMeta };
-      baseLogger.trace(message, meta);
+      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
+        ? { ...context, ...metaOrMsg }
+        : context;
+      baseLogger.trace(msgOrMeta, enhancedMeta);
     },
     debug: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const message = typeof msgOrMeta === 'string' ? `[${pluginName}] ${msgOrMeta}` : msgOrMeta;
-      const meta = typeof msgOrMeta === 'string' ? { ...context, ...metaOrMsg } : { ...context, ...msgOrMeta };
-      baseLogger.debug(message, meta);
+      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
+        ? { ...context, ...metaOrMsg }
+        : context;
+      baseLogger.debug(msgOrMeta, enhancedMeta);
     },
     info: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const message = typeof msgOrMeta === 'string' ? `[${pluginName}] ${msgOrMeta}` : msgOrMeta;
-      const meta = typeof msgOrMeta === 'string' ? { ...context, ...metaOrMsg } : { ...context, ...msgOrMeta };
-      baseLogger.info(message, meta);
+      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
+        ? { ...context, ...metaOrMsg }
+        : context;
+      baseLogger.info(msgOrMeta, enhancedMeta);
     },
     warn: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const message = typeof msgOrMeta === 'string' ? `[${pluginName}] ${msgOrMeta}` : msgOrMeta;
-      const meta = typeof msgOrMeta === 'string' ? { ...context, ...metaOrMsg } : { ...context, ...msgOrMeta };
-      baseLogger.warn(message, meta);
+      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
+        ? { ...context, ...metaOrMsg }
+        : context;
+      baseLogger.warn(msgOrMeta, enhancedMeta);
     },
     error: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const message = typeof msgOrMeta === 'string' ? `[${pluginName}] ${msgOrMeta}` : msgOrMeta;
-      const meta = typeof msgOrMeta === 'string' ? { ...context, ...metaOrMsg } : { ...context, ...msgOrMeta };
-      baseLogger.error(message, meta);
+      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
+        ? { ...context, ...metaOrMsg }
+        : context;
+      baseLogger.error(msgOrMeta, enhancedMeta);
     },
     fatal: (msgOrMeta: string | any, metaOrMsg?: any) => {
-      const message = typeof msgOrMeta === 'string' ? `[${pluginName}] ${msgOrMeta}` : msgOrMeta;
-      const meta = typeof msgOrMeta === 'string' ? { ...context, ...metaOrMsg } : { ...context, ...msgOrMeta };
-      baseLogger.fatal(message, meta);
+      const enhancedMeta = typeof metaOrMsg === 'object' && metaOrMsg !== null 
+        ? { ...context, ...metaOrMsg }
+        : context;
+      baseLogger.fatal(msgOrMeta, enhancedMeta);
     },
-    setLevel: (level: any) => baseLogger.setLevel(level),
-    getLevel: () => baseLogger.getLevel(),
-    isLevelEnabled: (level: any) => baseLogger.isLevelEnabled(level)
+    setLevel: baseLogger.setLevel.bind(baseLogger),
+    getLevel: baseLogger.getLevel.bind(baseLogger),
+    isLevelEnabled: baseLogger.isLevelEnabled.bind(baseLogger)
   };
 }
 
@@ -64,8 +70,8 @@ export function createPluginLogger(pluginName: string, additionalContext?: Recor
  * @returns The current logger instance (never null)
  */
 export function getPluginLogger(): ILogger {
-  LoggerProvider.ensureInitialized();
-  return LoggerProvider.getLogger();
+  const currentMode = LoggerProvider.getCurrentExecutionMode();
+  return LoggerProvider.getLoggerForMode(currentMode);
 }
 
 /**
