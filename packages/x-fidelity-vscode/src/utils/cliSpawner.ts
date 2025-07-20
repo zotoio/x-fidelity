@@ -461,11 +461,11 @@ export class CLISpawner {
             XFI_VSCODE_MODE: 'true', // Force console logging in CLI
             XFI_DISABLE_FILE_LOGGING: 'true', // Disable file logging
             XFI_LOG_LEVEL: 'warn', // Use consistent log level
-            XFI_LOG_COLORS: 'true', // Enable colors for CLI output
+            XFI_LOG_COLORS: 'false', // Disable colors for CLI output
             XFI_LOG_TIMESTAMP: 'true', // Ensure timestamps are included
             // 🎯 PASS VSCODE EXTENSION PATH FOR PROPER WASM FILE ACCESS
             XFI_VSCODE_EXTENSION_PATH: path.dirname(__dirname), // Extension root directory
-            FORCE_COLOR: '1', // Force ANSI color support
+            FORCE_COLOR: '0', // Disable ANSI color support
             ...options.env
           }
         });

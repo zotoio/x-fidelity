@@ -93,17 +93,6 @@ export class ControlCenterTreeProvider
               command: 'xfidelity.openSettings',
               title: 'Open Settings'
             }
-          },
-          {
-            id: 'control-center',
-            label: 'Control Center',
-            tooltip: 'Open X-Fidelity Control Center',
-            iconPath: new vscode.ThemeIcon('dashboard'),
-            collapsibleState: vscode.TreeItemCollapsibleState.None,
-            command: {
-              command: 'xfidelity.showControlCenter',
-              title: 'Show Control Center'
-            }
           }
         ]
       },

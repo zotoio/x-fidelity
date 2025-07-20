@@ -268,18 +268,14 @@ export class VSCodeLogger {
     line: string,
     source: 'stdout' | 'stderr' = 'stdout'
   ): void {
-    const emoji = source === 'stderr' ? '📛' : '📤';
+    //const emoji = source === 'stderr' ? '📛' : '📤';
     const level = source === 'stderr' ? 'warn' : 'info';
 
     // Try to parse JSON lines from CLI
     if (line.trim().startsWith('{') && line.trim().endsWith('}')) {
       try {
         const jsonData = JSON.parse(line.trim());
-        this.logWithMetadata(
-          level,
-          `${emoji} CLI ${source.toUpperCase()}`,
-          jsonData
-        );
+        this.logWithMetadata(level, `CLI ${source.toUpperCase()}`, jsonData);
         return;
       } catch (e) {
         // Not JSON, log as regular text
@@ -287,10 +283,7 @@ export class VSCodeLogger {
     }
 
     // Log regular text lines
-    this.logWithMetadata(
-      level,
-      `${emoji} CLI ${source.toUpperCase()}: ${line.trim()}`
-    );
+    this.logWithMetadata(level, `CLI ${source.toUpperCase()}: ${line.trim()}`);
   }
 
   // 🎯 NEW: Clear output before analysis

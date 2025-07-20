@@ -8,7 +8,10 @@ import { createCLISpawner, CLISpawner } from '../utils/cliSpawner';
 import { AnalysisResultCache } from '../utils/analysisResultCache';
 import { safeSerializeAnalysisResult } from '../utils/serialization';
 import type { AnalysisResult } from './types';
-import type { IAnalysisEngine } from './analysisEngineInterface';
+import type {
+  IAnalysisEngine,
+  AnalysisTriggerSource
+} from './analysisEngineInterface';
 
 type SimpleAnalysisState = 'idle' | 'analyzing' | 'complete' | 'error';
 
@@ -117,8 +120,9 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     }
   }
 
-  async runAnalysis(_options?: {
+  async runAnalysis(options?: {
     forceRefresh?: boolean;
+    triggerSource?: AnalysisTriggerSource;
   }): Promise<AnalysisResult | null> {
     // Prevent concurrent execution
     if (this.isAnalyzing || AnalysisResultCache.isAnalysisRunning()) {
@@ -130,7 +134,12 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     this.setState('analyzing');
     this.isAnalyzing = true;
 
-    commandLogger.execution('xfidelity.runAnalysis', 'Enhanced CLI Analysis');
+    const triggerSource = options?.triggerSource || 'automatic';
+
+    commandLogger.execution(
+      'xfidelity.runAnalysis',
+      `Enhanced CLI Analysis (${triggerSource})`
+    );
 
     try {
       const workspacePath = getAnalysisTargetDirectory();
@@ -140,7 +149,8 @@ export class CLIAnalysisManager implements IAnalysisEngine {
 
       this.logger.info('🔍 Starting enhanced fresh analysis', {
         workspacePath,
-        forceRefresh: _options?.forceRefresh,
+        forceRefresh: options?.forceRefresh,
+        triggerSource,
         timestamp: new Date().toISOString()
       });
 
@@ -262,9 +272,25 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       this.onAnalysisComplete.fire(safeResult);
       this.setState('complete');
 
+      // 🎯 NEW: Open side panel for manual analysis triggers
+      if (triggerSource === 'manual') {
+        try {
+          await vscode.commands.executeCommand(
+            'workbench.view.extension.xfidelity'
+          );
+          this.logger.info(
+            '📋 Opened X-Fidelity side panel for manual analysis'
+          );
+        } catch (error) {
+          this.logger.warn('Failed to open side panel after manual analysis', {
+            error
+          });
+        }
+      }
+
       commandLogger.completion(
         'xfidelity.runAnalysis',
-        'Enhanced CLI Analysis',
+        `Enhanced CLI Analysis (${triggerSource})`,
         duration
       );
 

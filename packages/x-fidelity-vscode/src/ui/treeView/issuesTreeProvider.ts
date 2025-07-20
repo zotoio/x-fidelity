@@ -345,7 +345,10 @@ export class IssuesTreeProvider
 
   private buildIssueTooltip(issue: ProcessedIssue): vscode.MarkdownString {
     const markdown = new vscode.MarkdownString();
+    
+    // ENHANCEMENT: Enable HTML support and make it trusted for better interactivity
     markdown.isTrusted = true;
+    markdown.supportHtml = true;
 
     // Title with rule and severity
     const severityIcon = this.getSeverityIcon(issue.severity);
@@ -388,9 +391,46 @@ export class IssuesTreeProvider
       markdown.appendMarkdown(`${statusItems.join(' • ')}\n\n`);
     }
 
-    // Action hint
+    // ENHANCEMENT: Add actions section with command links
     markdown.appendMarkdown(`---\n\n`);
-    markdown.appendMarkdown(`💫 *Click to navigate to issue*`);
+    markdown.appendMarkdown(`**🛠️ Actions:**\n\n`);
+
+    // Create issue context for commands
+    const issueContext = {
+      message: issue.message,
+      ruleId: issue.rule,
+      category: issue.category,
+      severity: issue.severity,
+      file: issue.file,
+      line: issue.line || 1,
+      column: issue.column || 1,
+      fixable: issue.fixable || false,
+      exempted: issue.exempted || false
+    };
+
+    // ENHANCEMENT: Add Explain Issue action link
+    markdown.appendMarkdown(
+      `[🤔 Explain Issue](command:xfidelity.explainIssue?${encodeURIComponent(JSON.stringify(issueContext))}) • `
+    );
+
+    // ENHANCEMENT: Add Fix Issue action link (always available)
+    const fixLabel = issue.fixable ? '🔧 Fix Issue' : '🔧 Try Fix';
+    markdown.appendMarkdown(
+      `[${fixLabel}](command:xfidelity.fixIssue?${encodeURIComponent(JSON.stringify(issueContext))}) • `
+    );
+
+    // Navigate to issue action
+    markdown.appendMarkdown(
+      `[📍 Go To Issue](command:xfidelity.goToIssue?${encodeURIComponent(JSON.stringify(issueContext))})`
+    );
+
+    markdown.appendMarkdown(`\n\n`);
+
+    // ENHANCEMENT: Add footer with tip about hover persistence
+    markdown.appendMarkdown(`---\n\n`);
+    markdown.appendMarkdown(
+      `💡 *Tip: This tooltip stays open when you hover over it for easy interaction*`
+    );
 
     return markdown;
   }

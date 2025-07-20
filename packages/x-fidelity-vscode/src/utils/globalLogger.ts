@@ -201,9 +201,15 @@ class GlobalLoggerManager {
     const hasWasm = args.includes('--enable-tree-sitter-wasm');
     const mode = args.find((arg, index) => args[index - 1] === '--mode');
 
-    if (hasWorker && hasWasm) return `WASM worker (${mode || 'unknown'})`;
-    if (hasWorker) return `native worker (${mode || 'unknown'})`;
-    if (hasWasm) return `WASM direct (${mode || 'unknown'})`;
+    if (hasWorker && hasWasm) {
+      return `WASM worker (${mode || 'unknown'})`;
+    }
+    if (hasWorker) {
+      return `native worker (${mode || 'unknown'})`;
+    }
+    if (hasWasm) {
+      return `WASM direct (${mode || 'unknown'})`;
+    }
     return `native direct (${mode || 'unknown'})`;
   }
 

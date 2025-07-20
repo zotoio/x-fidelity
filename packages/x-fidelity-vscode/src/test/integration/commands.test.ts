@@ -56,14 +56,11 @@ suite('Extension Commands Tests', () => {
       'xfidelity.issuesTreeGroupByFile',
       'xfidelity.issuesTreeGroupByCategory',
       'xfidelity.goToIssue',
-      'xfidelity.addIssueExemption',
       'xfidelity.showIssueRuleInfo',
 
       // Test/helper commands
       'xfidelity.runAnalysisWithDir',
-      'xfidelity.showRuleDocumentation',
-      'xfidelity.addExemption',
-      'xfidelity.addBulkExemptions'
+      'xfidelity.showRuleDocumentation'
     ];
 
     for (const command of allCommands) {

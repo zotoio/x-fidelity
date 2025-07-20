@@ -154,19 +154,6 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
       IssuesTreeViewManager.globalDisposables.push(
         vscode.commands.registerCommand(
-          'xfidelity.addIssueExemption',
-          async (item: IssueTreeItem) => {
-            if (IssuesTreeViewManager.activeInstance) {
-              await IssuesTreeViewManager.activeInstance.addIssueExemption(
-                item
-              );
-            }
-          }
-        )
-      );
-
-      IssuesTreeViewManager.globalDisposables.push(
-        vscode.commands.registerCommand(
           'xfidelity.showIssueRuleInfo',
           async (item: IssueTreeItem) => {
             if (IssuesTreeViewManager.activeInstance) {
@@ -178,9 +165,10 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         )
       );
 
+      // ENHANCEMENT: Register tree-specific versions of the commands
       IssuesTreeViewManager.globalDisposables.push(
         vscode.commands.registerCommand(
-          'xfidelity.explainIssue',
+          'xfidelity.explainIssueFromTree',
           async (item: IssueTreeItem) => {
             if (IssuesTreeViewManager.activeInstance) {
               await IssuesTreeViewManager.activeInstance.explainIssue(item);
@@ -191,7 +179,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
       IssuesTreeViewManager.globalDisposables.push(
         vscode.commands.registerCommand(
-          'xfidelity.fixIssue',
+          'xfidelity.fixIssueFromTree',
           async (item: IssueTreeItem) => {
             if (IssuesTreeViewManager.activeInstance) {
               await IssuesTreeViewManager.activeInstance.fixIssue(item);
@@ -413,7 +401,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
       const countString =
         counts.length > 0 ? ` (${counts.join(' ')})` : ` (${stats.total})`;
-      title += countString;
+      //title += countString;
     }
 
     // Add grouping mode indicator
@@ -565,25 +553,6 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         issue: issueOrItem
       });
       vscode.window.showErrorMessage(`Failed to navigate to issue: ${error}`);
-    }
-  }
-
-  private async addIssueExemption(item: IssueTreeItem): Promise<void> {
-    if (!item || !item.issue) {
-      vscode.window.showWarningMessage('No issue data available for exemption');
-      return;
-    }
-
-    try {
-      // Use the existing exemption command
-      await vscode.commands.executeCommand('xfidelity.addExemption', {
-        file: item.issue.file,
-        rule: item.issue.rule,
-        line: item.issue.line
-      });
-    } catch (error) {
-      logger.error('Failed to add exemption', error);
-      vscode.window.showErrorMessage(`Failed to add exemption: ${error}`);
     }
   }
 

@@ -4,6 +4,15 @@ import type { AnalysisResult } from './types';
 type SimpleAnalysisState = 'idle' | 'analyzing' | 'complete' | 'error';
 
 /**
+ * Analysis trigger sources for different types of analysis runs
+ */
+export type AnalysisTriggerSource =
+  | 'manual'
+  | 'automatic'
+  | 'periodic'
+  | 'file-save';
+
+/**
  * Common interface for all analysis engines (extension and CLI)
  */
 export interface IAnalysisEngine extends vscode.Disposable {
@@ -17,6 +26,7 @@ export interface IAnalysisEngine extends vscode.Disposable {
   // Core analysis methods
   runAnalysis(options?: {
     forceRefresh?: boolean;
+    triggerSource?: AnalysisTriggerSource;
   }): Promise<AnalysisResult | null>;
   cancelAnalysis(): Promise<void>;
 

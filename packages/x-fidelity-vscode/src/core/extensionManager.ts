@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { ConfigManager } from '../configuration/configManager';
 import { DiagnosticProvider } from '../diagnostics/diagnosticProvider';
 import { CLIAnalysisManager } from '../analysis/cliAnalysisManager';
@@ -27,6 +29,7 @@ export class ExtensionManager implements vscode.Disposable {
 
   private periodicAnalysisTimer?: NodeJS.Timeout;
   private isPeriodicAnalysisRunning = false;
+  private lastTriggerSource: string = 'unknown'; // Track the last analysis trigger source
 
   constructor(private context: vscode.ExtensionContext) {
     // PHASE 1: Initialize logger provider FIRST for universal logging
@@ -85,6 +88,9 @@ export class ExtensionManager implements vscode.Disposable {
       this.setupEventListeners();
       this.registerCommands();
       this.logger.info('✅ Extension Manager initialized successfully');
+
+      // ENHANCEMENT: Run automatic analysis on extension activation (but don't open sidebar)
+      this.scheduleStartupAnalysis();
     } catch (error) {
       this.logger.error('❌ Extension Manager initialization failed:', error);
       throw error;
@@ -111,20 +117,32 @@ export class ExtensionManager implements vscode.Disposable {
 
         this.issuesTreeViewManager.refresh();
 
-        if (totalIssues > 0) {
-          vscode.window
-            .showInformationMessage(
-              `X-Fidelity found ${totalIssues} issues across ${filesAnalyzed} files`,
-              'View Issues'
-            )
-            .then(choice => {
-              if (choice === 'View Issues') {
-                this.issuesTreeViewManager.refresh();
-              }
-            });
+        // ENHANCEMENT: Only show notifications for manual analysis, not automatic startup analysis
+        if (this.lastTriggerSource === 'manual') {
+          if (totalIssues > 0) {
+            vscode.window
+              .showInformationMessage(
+                `X-Fidelity found ${totalIssues} issues across ${filesAnalyzed} files`,
+                'View Issues'
+              )
+              .then(choice => {
+                if (choice === 'View Issues') {
+                  // Open the X-Fidelity sidebar and refresh the tree view
+                  vscode.commands.executeCommand(
+                    'workbench.view.extension.xfidelity'
+                  );
+                  this.issuesTreeViewManager.refresh();
+                }
+              });
+          } else {
+            vscode.window.showInformationMessage(
+              'X-Fidelity analysis completed - no issues found! 🎉'
+            );
+          }
         } else {
-          vscode.window.showInformationMessage(
-            'X-Fidelity analysis completed - no issues found! 🎉'
+          // For automatic analysis, just log the results without user notification
+          this.logger.info(
+            `🔍 Automatic analysis completed: ${totalIssues} issues found across ${filesAnalyzed} files`
           );
         }
       })
@@ -153,8 +171,9 @@ export class ExtensionManager implements vscode.Disposable {
             return;
           }
 
-          this.logger.info('🔍 Starting analysis...');
-          await this.analysisEngine.runAnalysis();
+          this.logger.info('🔍 Starting manual analysis...');
+          this.lastTriggerSource = 'manual'; // Track trigger source for notification handling
+          await this.analysisEngine.runAnalysis({ triggerSource: 'manual' });
         } catch (error) {
           this.logger.error('Analysis failed:', error);
           vscode.window.showErrorMessage(
@@ -210,10 +229,10 @@ export class ExtensionManager implements vscode.Disposable {
             }
 
             this.logger.info(
-              '🔍 Starting analysis with directory:',
+              '🔍 Starting manual analysis with directory:',
               workspacePath
             );
-            await this.analysisEngine.runAnalysis();
+            await this.analysisEngine.runAnalysis({ triggerSource: 'manual' });
           } catch (error) {
             this.logger.error('Analysis with directory failed:', error);
             vscode.window.showErrorMessage(
@@ -232,9 +251,15 @@ export class ExtensionManager implements vscode.Disposable {
     );
 
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.showDashboard', () => {
-        this.issuesTreeViewManager.refresh();
-        vscode.commands.executeCommand('workbench.view.extension.xfidelity');
+      vscode.commands.registerCommand('xfidelity.showDashboard', async () => {
+        try {
+          await this.openDashboardMarkdownPreview();
+        } catch (error) {
+          this.logger.error('Failed to open dashboard:', error);
+          // Fallback to original behavior
+          this.issuesTreeViewManager.refresh();
+          vscode.commands.executeCommand('workbench.view.extension.xfidelity');
+        }
       })
     );
 
@@ -501,36 +526,115 @@ export class ExtensionManager implements vscode.Disposable {
       })
     );
 
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.addExemption', async () => {
-        try {
-          vscode.window.showInformationMessage(
-            'Use the context menu on issues in the tree view to add exemptions.'
-          );
-        } catch (error) {
-          vscode.window.showErrorMessage(
-            `Add exemption failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      })
-    );
-
+    // ENHANCEMENT: Register enhanced explainIssue command that handles both diagnostic and tree view contexts
     this.disposables.push(
       vscode.commands.registerCommand(
-        'xfidelity.addBulkExemptions',
-        async () => {
+        'xfidelity.explainIssue',
+        async (context?: any) => {
           try {
-            vscode.window.showInformationMessage(
-              'Bulk exemptions can be added by editing the .xfi-config.json file directly.'
-            );
+            if (!context) {
+              vscode.window.showWarningMessage(
+                'No issue data available to explain'
+              );
+              return;
+            }
+
+            // Handle diagnostic context from hover
+            if (context.ruleId && context.message && !context.issue) {
+              await this.explainIssueFromDiagnostic(context);
+            }
+            // Handle tree view item context (delegate to tree view manager)
+            else if (context.issue || context.id) {
+              if (this.issuesTreeViewManager) {
+                await vscode.commands.executeCommand(
+                  'xfidelity.explainIssueFromTree',
+                  context
+                );
+              }
+            } else {
+              vscode.window.showWarningMessage(
+                'Invalid issue context for explanation'
+              );
+            }
           } catch (error) {
+            this.logger.error('Failed to explain issue:', error);
             vscode.window.showErrorMessage(
-              `Add bulk exemptions failed: ${error instanceof Error ? error.message : String(error)}`
+              `Failed to explain issue: ${error instanceof Error ? error.message : String(error)}`
             );
           }
         }
       )
     );
+
+    // ENHANCEMENT: Register enhanced fixIssue command that handles both diagnostic and tree view contexts
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        'xfidelity.fixIssue',
+        async (context?: any) => {
+          try {
+            if (!context) {
+              vscode.window.showWarningMessage(
+                'No issue data available to fix'
+              );
+              return;
+            }
+
+            // Handle diagnostic context from hover
+            if (context.ruleId && context.message && !context.issue) {
+              await this.fixIssueFromDiagnostic(context);
+            }
+            // Handle tree view item context (delegate to tree view manager)
+            else if (context.issue || context.id) {
+              if (this.issuesTreeViewManager) {
+                await vscode.commands.executeCommand(
+                  'xfidelity.fixIssueFromTree',
+                  context
+                );
+              }
+            } else {
+              vscode.window.showWarningMessage('Invalid issue context for fix');
+            }
+          } catch (error) {
+            this.logger.error('Failed to fix issue:', error);
+            vscode.window.showErrorMessage(
+              `Failed to fix issue: ${error instanceof Error ? error.message : String(error)}`
+            );
+          }
+        }
+      )
+    );
+
+    // REMOVED: Exemption commands are no longer supported
+    // this.disposables.push(
+    //   vscode.commands.registerCommand('xfidelity.addExemption', async () => {
+    //     try {
+    //       vscode.window.showInformationMessage(
+    //         'Use the context menu on issues in the tree view to add exemptions.'
+    //       );
+    //     } catch (error) {
+    //       vscode.window.showErrorMessage(
+    //         `Add exemption failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   })
+    // );
+
+    // this.disposables.push(
+    //   vscode.commands.registerCommand(
+    //     'xfidelity.addBulkExemptions',
+    //     async () => {
+    //       try {
+    //         vscode.window.showInformationMessage(
+    //           'Bulk exemptions can be added by editing the .xfi-config.json file directly.'
+    //         );
+    //       } catch (error) {
+    //         vscode.window.showErrorMessage(
+    //           `Add bulk exemptions failed: ${error instanceof Error ? error.message : String(error)}`
+    //         );
+    //       }
+    //     }
+    //   )
+    // );
 
     this.disposables.push(
       vscode.commands.registerCommand(
@@ -627,7 +731,7 @@ export class ExtensionManager implements vscode.Disposable {
     this.periodicAnalysisTimer = setInterval(async () => {
       try {
         this.logger.info('🔄 Running periodic analysis...');
-        await this.analysisEngine.runAnalysis();
+        await this.analysisEngine.runAnalysis({ triggerSource: 'periodic' });
       } catch (error) {
         this.logger.error('❌ Periodic analysis failed:', error);
       }
@@ -724,6 +828,254 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
       this.logger.error('CLI diagnostics failed:', error);
       vscode.window.showErrorMessage(`CLI diagnostics failed: ${error}`);
     }
+  }
+
+  /**
+   * ENHANCEMENT: Explain issue from diagnostic context (hover tooltip)
+   */
+  private async explainIssueFromDiagnostic(
+    diagnosticContext: any
+  ): Promise<void> {
+    const { ruleId, message, category, severity, file, line } =
+      diagnosticContext;
+
+    // Create a comprehensive explanation
+    const explanation = await this.generateIssueExplanation(
+      ruleId,
+      message,
+      category,
+      severity
+    );
+
+    // Show explanation in a dedicated panel or information message
+    const choice = await vscode.window.showInformationMessage(
+      `**${ruleId}** explanation:\n\n${explanation}`,
+      {
+        modal: false,
+        detail: `Rule: ${ruleId}\nSeverity: ${severity}\nCategory: ${category}\nLocation: ${file}:${line}`
+      },
+      'View Details',
+      'Copy Explanation'
+    );
+
+    if (choice === 'View Details') {
+      // Open a dedicated webview or output channel with detailed explanation
+      await this.showDetailedExplanation(
+        ruleId,
+        message,
+        category,
+        severity,
+        diagnosticContext
+      );
+    } else if (choice === 'Copy Explanation') {
+      await vscode.env.clipboard.writeText(
+        `Rule: ${ruleId}\n\nExplanation: ${explanation}`
+      );
+      vscode.window.showInformationMessage('Explanation copied to clipboard');
+    }
+  }
+
+  /**
+   * ENHANCEMENT: Fix issue from diagnostic context (hover tooltip)
+   */
+  private async fixIssueFromDiagnostic(diagnosticContext: any): Promise<void> {
+    const { ruleId, message, fixable, file, line } = diagnosticContext;
+
+    if (!fixable) {
+      vscode.window.showInformationMessage(
+        `Rule ${ruleId} does not have an automated fix available.`
+      );
+      return;
+    }
+
+    // Generate fix suggestions
+    const fixSuggestions = await this.generateFixSuggestions(
+      ruleId,
+      message,
+      diagnosticContext
+    );
+
+    if (fixSuggestions.length === 0) {
+      vscode.window.showInformationMessage(
+        `No automated fixes available for rule ${ruleId}.`
+      );
+      return;
+    }
+
+    // Show fix options to user
+    const choice = await vscode.window.showQuickPick(
+      fixSuggestions.map(fix => ({
+        label: fix.title,
+        description: fix.description,
+        detail: fix.preview,
+        fix: fix
+      })),
+      {
+        placeHolder: `Select a fix for ${ruleId}`,
+        canPickMany: false
+      }
+    );
+
+    if (choice && choice.fix) {
+      await this.applyFix(choice.fix, diagnosticContext);
+    }
+  }
+
+  /**
+   * Generate issue explanation based on rule context
+   */
+  private async generateIssueExplanation(
+    ruleId: string,
+    message: string,
+    category: string,
+    severity: string
+  ): Promise<string> {
+    // This would ideally integrate with the CLI or a knowledge base
+    // For now, provide a structured explanation
+
+    const explanations: { [key: string]: string } = {
+      // Add rule-specific explanations
+      complexity:
+        'This rule checks for excessive complexity in code blocks. High complexity makes code harder to understand and maintain.',
+      'inconsistent-naming':
+        'This rule ensures consistent naming conventions across your codebase for better readability.',
+      'unused-import':
+        'This rule identifies imports that are not used in the code, which can improve bundle size and clarity.',
+      'missing-documentation':
+        'This rule checks for proper documentation in code to improve maintainability.'
+      // Add more rule-specific explanations as needed
+    };
+
+    const baseExplanation =
+      explanations[ruleId] ||
+      `This rule (${ruleId}) has flagged an issue that needs attention. The issue is categorized as '${category}' with ${severity} severity.`;
+
+    return `${baseExplanation}\n\nIssue details: ${message}\n\nCategory: ${category}\nSeverity: ${severity}`;
+  }
+
+  /**
+   * Generate fix suggestions for a specific rule
+   */
+  private async generateFixSuggestions(
+    ruleId: string,
+    message: string,
+    context: any
+  ): Promise<any[]> {
+    // This would ideally integrate with the CLI's fix capabilities
+    // For now, provide common fix patterns
+
+    const fixes: { [key: string]: any[] } = {
+      'unused-import': [
+        {
+          title: 'Remove unused import',
+          description: 'Automatically remove the unused import statement',
+          preview: 'Remove the import line',
+          type: 'remove-line'
+        }
+      ],
+      'inconsistent-naming': [
+        {
+          title: 'Fix naming convention',
+          description: 'Rename to follow project naming conventions',
+          preview: 'Apply consistent naming pattern',
+          type: 'rename'
+        }
+      ],
+      'missing-documentation': [
+        {
+          title: 'Add documentation',
+          description: 'Generate appropriate documentation',
+          preview: 'Add JSDoc or comments',
+          type: 'add-documentation'
+        }
+      ]
+    };
+
+    return (
+      fixes[ruleId] || [
+        {
+          title: 'Manual fix required',
+          description: 'This issue requires manual attention',
+          preview: 'Please review and fix manually',
+          type: 'manual'
+        }
+      ]
+    );
+  }
+
+  /**
+   * Apply a fix to the code
+   */
+  private async applyFix(fix: any, context: any): Promise<void> {
+    // This would integrate with VSCode's edit capabilities
+    vscode.window.showInformationMessage(`Applying fix: ${fix.title}`, {
+      modal: false
+    });
+
+    // For now, show what would be done
+    vscode.window.showInformationMessage(
+      `Fix "${fix.title}" would be applied. Integration with automated fixes coming soon.`
+    );
+  }
+
+  /**
+   * Show detailed explanation in a dedicated view
+   */
+  private async showDetailedExplanation(
+    ruleId: string,
+    message: string,
+    category: string,
+    severity: string,
+    context: any
+  ): Promise<void> {
+    // Create a webview or use the output channel for detailed explanation
+    const outputChannel = vscode.window.createOutputChannel(
+      `X-Fidelity: ${ruleId} Explanation`
+    );
+
+    outputChannel.appendLine(`=== X-Fidelity Rule Explanation ===`);
+    outputChannel.appendLine(`Rule: ${ruleId}`);
+    outputChannel.appendLine(`Category: ${category}`);
+    outputChannel.appendLine(`Severity: ${severity}`);
+    outputChannel.appendLine(`Message: ${message}`);
+    outputChannel.appendLine(``);
+    outputChannel.appendLine(`=== Detailed Explanation ===`);
+
+    const explanation = await this.generateIssueExplanation(
+      ruleId,
+      message,
+      category,
+      severity
+    );
+    outputChannel.appendLine(explanation);
+
+    outputChannel.appendLine(``);
+    outputChannel.appendLine(`=== Context ===`);
+    outputChannel.appendLine(`File: ${context.file || 'Unknown'}`);
+    outputChannel.appendLine(`Line: ${context.line || 'Unknown'}`);
+    outputChannel.appendLine(`Column: ${context.column || 'Unknown'}`);
+
+    outputChannel.show();
+  }
+
+  /**
+   * ENHANCEMENT: Schedule automatic analysis on startup (without opening sidebar)
+   */
+  private scheduleStartupAnalysis(): void {
+    // Run analysis after a short delay to ensure everything is initialized
+    setTimeout(async () => {
+      try {
+        this.logger.info('🔄 Running automatic startup analysis...');
+        this.lastTriggerSource = 'automatic'; // Track trigger source for notification handling
+        await this.analysisEngine.runAnalysis({
+          forceRefresh: false,
+          triggerSource: 'automatic' // This will NOT open the sidebar
+        });
+      } catch (error) {
+        this.logger.warn('Startup analysis failed:', error);
+        // Don't show error messages for automatic startup analysis
+      }
+    }, 2000); // 2-second delay to ensure full initialization
   }
 
   private debugDiagnosticsInfo(): void {
@@ -880,6 +1232,63 @@ Check Output Console (X-Fidelity) for full details.`;
       vscode.window.showErrorMessage(
         `Failed to reset settings: ${errorMessage}`
       );
+    }
+  }
+
+  /**
+   * ENHANCEMENT: Open dashboard markdown preview - assumes XFI_RESULT.md exists
+   */
+  private async openDashboardMarkdownPreview(): Promise<void> {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      vscode.window.showWarningMessage('No workspace folder found');
+      return;
+    }
+
+    const workspacePath = workspaceFolder.uri.fsPath;
+    const markdownPath = path.join(
+      workspacePath,
+      '.xfiResults',
+      'XFI_RESULT.md'
+    );
+
+    // Check if XFI_RESULT.md exists
+    if (!fs.existsSync(markdownPath)) {
+      const choice = await vscode.window.showWarningMessage(
+        'No dashboard found. Would you like to run an analysis first?',
+        'Run Analysis',
+        'Cancel'
+      );
+
+      if (choice === 'Run Analysis') {
+        await vscode.commands.executeCommand('xfidelity.runAnalysis');
+        return;
+      }
+      return;
+    }
+
+    try {
+      // Open the existing XFI_RESULT.md file directly
+      const markdownUri = vscode.Uri.file(markdownPath);
+
+      // Open markdown preview with mermaid support
+      await vscode.commands.executeCommand('markdown.showPreview', markdownUri);
+
+      this.logger.info(`✅ Dashboard opened: ${markdownPath}`);
+    } catch (error) {
+      this.logger.error('Failed to open dashboard:', error);
+
+      // Show error and offer fallback
+      const choice = await vscode.window.showErrorMessage(
+        'Failed to open dashboard. Would you like to open the issues panel instead?',
+        'Open Issues Panel',
+        'Cancel'
+      );
+
+      if (choice === 'Open Issues Panel') {
+        this.issuesTreeViewManager.refresh();
+        vscode.commands.executeCommand('workbench.view.extension.xfidelity');
+      }
     }
   }
 

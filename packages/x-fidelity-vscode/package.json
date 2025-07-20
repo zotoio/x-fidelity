@@ -2,7 +2,7 @@
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity",
   "description": "VSCode extension for X-Fidelity code quality analysis real-time diagnostics, and comprehensive UI integration",
-  "version": "4.2.2",
+  "version": "4.2.3",
   "publisher": "zotoio",
   "private": true,
   "license": "MIT",
@@ -495,52 +495,43 @@
           "when": "true",
           "visibility": "visible"
         }
-      ],
-      "explorer": [
-        {
-          "icon": "$(warning)",
-          "id": "xfidelityIssuesTreeViewExplorer",
-          "name": "X-Fidelity Issues",
-          "when": "true",
-          "visibility": "collapsed"
-        }
       ]
     },
     "menus": {
       "view/title": [
         {
           "command": "xfidelity.refreshIssuesTree",
-          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "when": "view == xfidelityIssuesTreeView",
           "group": "navigation@1"
         },
         {
           "command": "xfidelity.cancelAnalysis",
-          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && xfidelity.analysisRunning",
+          "when": "view == xfidelityIssuesTreeView && xfidelity.analysisRunning",
           "group": "navigation@2"
         },
         {
           "command": "xfidelity.showControlCenter",
-          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "when": "view == xfidelityIssuesTreeView",
           "group": "navigation@3"
         },
         {
           "command": "xfidelity.issuesTreeGroupBySeverity",
-          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "when": "view == xfidelityIssuesTreeView",
           "group": "1_grouping@1"
         },
         {
           "command": "xfidelity.issuesTreeGroupByRule",
-          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "when": "view == xfidelityIssuesTreeView",
           "group": "1_grouping@2"
         },
         {
           "command": "xfidelity.issuesTreeGroupByFile",
-          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "when": "view == xfidelityIssuesTreeView",
           "group": "1_grouping@3"
         },
         {
           "command": "xfidelity.issuesTreeGroupByCategory",
-          "when": "view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer",
+          "when": "view == xfidelityIssuesTreeView",
           "group": "1_grouping@4"
         }
       ],
@@ -553,28 +544,23 @@
       "view/item/context": [
         {
           "command": "xfidelity.goToIssue",
-          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
+          "when": "view == xfidelityIssuesTreeView && viewItem == issue",
           "group": "navigation@1"
         },
         {
-          "command": "xfidelity.addIssueExemption",
-          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
+          "command": "xfidelity.showIssueRuleInfo",
+          "when": "view == xfidelityIssuesTreeView && viewItem == issue",
           "group": "1_actions@1"
         },
         {
-          "command": "xfidelity.showIssueRuleInfo",
-          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
+          "command": "xfidelity.explainIssue",
+          "when": "view == xfidelityIssuesTreeView && viewItem == issue",
           "group": "1_actions@2"
         },
         {
-          "command": "xfidelity.explainIssue",
-          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
-          "group": "1_actions@3"
-        },
-        {
           "command": "xfidelity.fixIssue",
-          "when": "(view == xfidelityIssuesTreeView || view == xfidelityIssuesTreeViewExplorer) && viewItem == issue",
-          "group": "1_actions@4"
+          "when": "view == xfidelityIssuesTreeView && viewItem == issue",
+          "group": "1_actions@3"
         }
       ]
     },
@@ -582,10 +568,6 @@
       {
         "view": "xfidelityIssuesTreeView",
         "contents": "Welcome to X-Fidelity! 🚀\n\nNo issues found yet. Run analysis to detect architectural problems in your code.\n\n[Run Analysis](command:xfidelity.runAnalysis)\n\n[Open Control Center](command:xfidelity.showControlCenter)\n\n[Configure Settings](command:xfidelity.openSettings)"
-      },
-      {
-        "view": "xfidelityIssuesTreeViewExplorer",
-        "contents": "No X-Fidelity issues found! ✅\n\n[Run Analysis](command:xfidelity.runAnalysis)\n\n[View Dashboard](command:xfidelity.showDashboard)"
       },
       {
         "view": "xfidelityControlCenterView",

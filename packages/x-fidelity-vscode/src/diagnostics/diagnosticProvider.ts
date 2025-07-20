@@ -11,7 +11,6 @@ import { isTestEnvironment } from '../utils/testDetection';
 interface ExtendedDiagnostic extends vscode.Diagnostic {
   issueId?: string;
   ruleId?: string;
-  severity?: vscode.DiagnosticSeverity;
   category?: string;
   documentation?: string;
 }
@@ -21,12 +20,17 @@ interface DiagnosticIssue {
   file: string;
   line: number;
   column: number;
+  endLine?: number;
+  endColumn?: number;
   severity: 'error' | 'warning' | 'info';
   message: string;
   ruleId: string;
   issueId?: string;
   category?: string;
   documentation?: string;
+  source?: string;
+  code?: string;
+  tags?: vscode.DiagnosticTag[];
 }
 
 // Internal issue metadata type for location resolution
@@ -524,7 +528,8 @@ export class DiagnosticProvider implements vscode.Disposable {
       ];
     }
 
-    // Preserve basic metadata for tree view processing
+    // ENHANCEMENT: Preserve file path for hover context and other metadata
+    (diagnostic as any).filePath = issue.file;
     (diagnostic as any).category = issue.category;
     (diagnostic as any).fixable = (issue as any).fixable || false;
     (diagnostic as any).ruleId = issue.ruleId;
@@ -562,8 +567,8 @@ export class DiagnosticProvider implements vscode.Disposable {
 
         // Try to find a suitable file to open for global checks
         const candidateFiles = [
-          'README.md',
           'package.json',
+          'README.md',
           'tsconfig.json',
           'src/index.js',
           'src/index.ts',
@@ -1035,11 +1040,16 @@ export class DiagnosticProvider implements vscode.Disposable {
     const config = this.configManager.getConfig();
     const ruleId = (diagnostic as any).ruleId;
     const category = (diagnostic as any).category;
+    const fixable = (diagnostic as any).fixable;
+    const filePath = (diagnostic as any).filePath || '';
 
     const markdown = new vscode.MarkdownString();
-    markdown.isTrusted = true;
 
-    // Main message
+    // ENHANCEMENT: Enable HTML support and make it trusted for better interactivity
+    markdown.isTrusted = true;
+    markdown.supportHtml = true;
+
+    // Main message with enhanced styling
     markdown.appendMarkdown(`**X-Fidelity: ${diagnostic.message}**\n\n`);
 
     // Rule information
@@ -1055,35 +1065,47 @@ export class DiagnosticProvider implements vscode.Disposable {
     const severityText = this.getSeverityText(diagnostic.severity);
     markdown.appendMarkdown(`**Severity:** ${severityText}\n\n`);
 
-    // Rule documentation link (if enabled)
+    // ENHANCEMENT: Add separator for actions section
+    markdown.appendMarkdown(`---\n\n`);
+    markdown.appendMarkdown(`**🛠️ Actions:**\n\n`);
+
+    // Create diagnostic context for commands
+    const diagnosticContext = {
+      message: diagnostic.message,
+      ruleId: ruleId,
+      category: category,
+      severity: this.mapFromVSCodeSeverity(diagnostic.severity),
+      file: filePath,
+      line: diagnostic.range.start.line + 1, // Convert to 1-based
+      column: diagnostic.range.start.character + 1, // Convert to 1-based
+      fixable: fixable || false,
+      code: diagnostic.code
+    };
+
+    // ENHANCEMENT: Add Explain Issue action link
+    markdown.appendMarkdown(
+      `[🤔 Explain Issue](command:xfidelity.explainIssue?${encodeURIComponent(JSON.stringify(diagnosticContext))}) • `
+    );
+
+    // ENHANCEMENT: Add Fix Issue action link (always available)
+    const fixLabel = fixable ? '🔧 Fix Issue' : '🔧 Fix Issue';
+    markdown.appendMarkdown(
+      `[${fixLabel}](command:xfidelity.fixIssue?${encodeURIComponent(JSON.stringify(diagnosticContext))}) • `
+    );
+
+    //Rule documentation link (if enabled)
     if (config.showRuleDocumentation && ruleId) {
       markdown.appendMarkdown(
-        `[View Rule Documentation](command:xfidelity.showRuleDocumentation?${encodeURIComponent(JSON.stringify([ruleId]))})\n\n`
+        `[📖 View Documentation](command:xfidelity.showRuleDocumentation?${encodeURIComponent(JSON.stringify([ruleId]))})`
       );
     }
 
-    // Quick actions
-    if ((diagnostic as any).fixable) {
-      markdown.appendMarkdown(`💡 **Quick Fix Available**\n\n`);
-    }
+    markdown.appendMarkdown(`\n\n`);
 
-    // Exemption option
+    // ENHANCEMENT: Add footer with tip about hover persistence
+    markdown.appendMarkdown(`---\n\n`);
     markdown.appendMarkdown(
-      `[Add Exemption](command:xfidelity.addExemption?${encodeURIComponent(
-        JSON.stringify([
-          ruleId,
-          {
-            start: {
-              line: diagnostic.range.start.line,
-              character: diagnostic.range.start.character
-            },
-            end: {
-              line: diagnostic.range.end.line,
-              character: diagnostic.range.end.character
-            }
-          }
-        ])
-      )})`
+      `💡 *Tip: This tooltip stays open when you hover over it for easy interaction*`
     );
 
     return markdown;

@@ -137,80 +137,13 @@ export class ReportManager {
   }
 
   private generateMarkdownContent(result: ResultMetadata): string {
-    const data = result.XFI_RESULT;
-    const date = new Date().toISOString();
+    // Use the enhanced ReportGenerator from core for consistent formatting
+    const {
+      ReportGenerator
+    } = require('@x-fidelity/core/src/notifications/reportGenerator');
 
-    let md = `# X-Fidelity Analysis Report\n\n`;
-    md += `**Generated:** ${date}\n`;
-    md += `**Archetype:** ${data.archetype}\n`;
-    md += `**Repository:** ${data.repoPath}\n`;
-    md += `**Files Analyzed:** ${data.fileCount}\n`;
-    md += `**Analysis Duration:** ${data.durationSeconds.toFixed(2)}s\n\n`;
-
-    // Summary
-    md += `## Summary\n\n`;
-    md += `| Metric | Count |\n`;
-    md += `|--------|-------|\n`;
-    md += `| Total Issues | ${data.totalIssues} |\n`;
-    md += `| Errors | ${data.errorCount} |\n`;
-    md += `| Warnings | ${data.warningCount} |\n`;
-    md += `| Fatal | ${data.fatalityCount} |\n`;
-    md += `| Exempt | ${data.exemptCount} |\n\n`;
-
-    // Issues by File
-    if (data.issueDetails.length > 0) {
-      md += `## Issues by File\n\n`;
-
-      for (const detail of data.issueDetails) {
-        if (detail.filePath === 'REPO_GLOBAL_CHECK') {
-          md += `### Global Issues\n\n`;
-        } else {
-          md += `### ${detail.filePath}\n\n`;
-        }
-
-        if (detail.errors.length > 0) {
-          for (const error of detail.errors) {
-            const level = (error.level || 'unknown').toUpperCase();
-            const rule = error.ruleFailure;
-            const message = error.details?.message || error.ruleFailure;
-            const line = error.details?.lineNumber
-              ? ` (Line ${error.details.lineNumber})`
-              : '';
-
-            md += `- **${level}** [${rule}]: ${message}${line}\n`;
-          }
-        } else {
-          md += `*No issues found.*\n`;
-        }
-        md += `\n`;
-      }
-    }
-
-    // Performance Metrics
-    if (data.factMetrics) {
-      md += `## Performance Metrics\n\n`;
-      md += `| Fact | Executions | Total Time (ms) | Avg Time (ms) |\n`;
-      md += `|------|------------|-----------------|---------------|\n`;
-
-      for (const [factName, metrics] of Object.entries(data.factMetrics)) {
-        const avgTime =
-          (metrics as any).totalExecutionTime / (metrics as any).executionCount;
-        md += `| ${factName} | ${(metrics as any).executionCount} | ${(metrics as any).totalExecutionTime} | ${avgTime.toFixed(2)} |\n`;
-      }
-      md += `\n`;
-    }
-
-    // Memory Usage
-    if (data.memoryUsage) {
-      md += `## Memory Usage\n\n`;
-      md += `| Metric | Value (MB) |\n`;
-      md += `|--------|------------|\n`;
-      md += `| Heap Used | ${(data.memoryUsage.heapUsed / 1024 / 1024).toFixed(2)} |\n`;
-      md += `| Heap Total | ${(data.memoryUsage.heapTotal / 1024 / 1024).toFixed(2)} |\n`;
-      md += `| RSS | ${(data.memoryUsage.rss / 1024 / 1024).toFixed(2)} |\n\n`;
-    }
-
-    return md;
+    const reportGenerator = new ReportGenerator(result);
+    return reportGenerator.generateReport();
   }
 
   private generateHTMLContent(result: ResultMetadata): string {
