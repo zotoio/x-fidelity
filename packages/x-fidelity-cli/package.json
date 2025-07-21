@@ -78,8 +78,8 @@
     "@types/node": "^22.10.5",
     "@types/uuid": "^10.0.0",
     "@types/yauzl": "^2.10.3",
-    "@typescript-eslint/eslint-plugin": "^8.35.0",
-    "@typescript-eslint/parser": "^8.35.0",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
     "commitizen": "^4.3.1",
     "conventional-changelog-conventionalcommits": "^8.0.0",
     "cz-conventional-changelog": "^3.3.0",
@@ -96,7 +96,7 @@
     "@x-fidelity/plugins": "file:../x-fidelity-plugins",
     "@x-fidelity/server": "file:../x-fidelity-server",
     "@x-fidelity/democonfig": "file:../x-fidelity-democonfig",
-    "esbuild": "^0.25.5"
+    "esbuild": "^0.25.8"
   },
   "dependencies": {
     "commander": "^14.0.0",
@@ -107,7 +107,7 @@
     "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
     "chokidar": "^3.6.0",
-    "tree-sitter": "^0.22.4",
+    "tree-sitter": "^0.25.0",
     "tree-sitter-javascript": "^0.23.1",
     "tree-sitter-typescript": "^0.23.2",
     "@babel/parser": "^7.23.0",
