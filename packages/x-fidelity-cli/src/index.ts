@@ -10,8 +10,8 @@ import {
     ExecutionContext,
     LoggerProvider } from '@x-fidelity/core';
 
-//import { PinoLogger } from './utils/pinoLogger';
-import { LogLevel, ILogger } from '@x-fidelity/types';
+import { PinoLogger } from './utils/pinoLogger';
+import { LogLevel, ILogger, EXECUTION_MODES } from '@x-fidelity/types';
 import path from 'path';
 import fs from 'fs/promises';
 import { version as cliVersion } from '../package.json';  // Import CLI version
@@ -28,8 +28,23 @@ import type {
 import { initCLI, options } from './cli';
 import { version } from '../package.json';
 
+// Disable auto-prefixing IMMEDIATELY for CLI mode to prevent [CLI] prefix wrapping
+// This must happen before any LoggerProvider operations
+LoggerProvider.setAutoPrefixing(false);
+
 // Initialize universal logging FIRST before any other operations
 LoggerProvider.initializeForPlugins();
+
+// Force registration of PinoLogger for CLI mode (redundant but ensures it happens)
+LoggerProvider.registerLoggerFactory(EXECUTION_MODES.CLI, (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => {
+  return new PinoLogger({
+    level,
+    enableConsole: true,
+    enableColors: true,
+    enableFile: options?.enableFileLogging || false,
+    filePath: options?.filePath
+  });
+});
 
 export * from '@x-fidelity/core';
 export * from '@x-fidelity/types';
@@ -169,12 +184,12 @@ export async function main() {
         const currentCorrelationId = ExecutionContext.getCurrentExecutionId();
         const contextInfo = ExecutionContext.getCurrentContext();
         
-        logger.info(`📊 CLI initialized with log level: ${logLevel.toUpperCase()} (mode: ${currentMode})`, {
+        logger.debug(`📊 CLI initialized with log level: ${logLevel.toUpperCase()} (mode: ${currentMode})`, {
             correlationId: currentCorrelationId,
             spawnedBy: contextInfo?.metadata?.spawnedBy,
             inheritedCorrelationId: contextInfo?.metadata?.inheritedCorrelationId
         });
-        logger.info(`🔌 All plugins and packages will use log level: ${logLevel.toUpperCase()}`, {
+        logger.debug(`🔌 All plugins and packages will use log level: ${logLevel.toUpperCase()}`, {
             correlationId: currentCorrelationId
         });
         

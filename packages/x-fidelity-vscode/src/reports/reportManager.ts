@@ -316,11 +316,17 @@ export class ReportManager {
 
   // Enhanced Stage 3 Methods
 
-  async showInteractiveReport(result: ResultMetadata): Promise<void> {
-    await this.reportViewer.showReport({
-      reportData: result,
-      theme: 'auto'
-    });
+  async showInteractiveReport(
+    result: ResultMetadata,
+    preserveFocus: boolean = true
+  ): Promise<void> {
+    await this.reportViewer.showReport(
+      {
+        reportData: result,
+        theme: 'auto'
+      },
+      preserveFocus
+    );
   }
 
   async exportReport(

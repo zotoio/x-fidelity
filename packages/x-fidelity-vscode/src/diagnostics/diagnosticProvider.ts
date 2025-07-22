@@ -1088,7 +1088,7 @@ export class DiagnosticProvider implements vscode.Disposable {
     );
 
     // ENHANCEMENT: Add Fix Issue action link (always available)
-    const fixLabel = fixable ? '🔧 Fix Issue' : '🔧 Fix Issue';
+    const fixLabel = fixable ? '✨ Fix Issue' : '✨ Fix Issue';
     markdown.appendMarkdown(
       `[${fixLabel}](command:xfidelity.fixIssue?${encodeURIComponent(JSON.stringify(diagnosticContext))}) • `
     );

@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ILogger, LogLevel, LogLevelValues } from '@x-fidelity/types';
 import { EnhancedLogger, EnhancedLoggerConfig } from '@x-fidelity/core';
+import type { AnalysisTriggerSource } from '../analysis/analysisEngineInterface';
 
 // Use LogLevel from @x-fidelity/types - no need to redefine
 // Map string log levels to numeric values for internal use
@@ -30,6 +31,7 @@ export class VSCodeLogger {
   private readonly componentName: string;
   private readonly prefix: string;
   private isStreaming: boolean = false;
+  private currentTriggerSource: AnalysisTriggerSource = 'automatic';
 
   constructor(
     componentName: string,
@@ -55,6 +57,15 @@ export class VSCodeLogger {
       this.onConfigurationChanged,
       this
     );
+  }
+
+  /**
+   * Set the current analysis trigger source to control output panel behavior
+   */
+  public setTriggerSource(
+    triggerSource: AnalysisTriggerSource = 'automatic'
+  ): void {
+    this.currentTriggerSource = triggerSource;
   }
 
   private onConfigurationChanged(event: vscode.ConfigurationChangeEvent) {
@@ -176,16 +187,19 @@ export class VSCodeLogger {
     return formatted;
   }
 
-  private log(entry: LogEntry) {
-    if (!this.shouldLog(entry.level)) {
-      return;
-    }
+  private log(entry: LogEntry): void {
+    const timestamp = new Date().toISOString();
 
-    const formattedMessage = this.formatLogEntry(entry);
+    // Consistent timestamp format for all log levels
+    const formattedMessage = `[${timestamp}] ${entry.level.toUpperCase()}: ${entry.message}`;
+
     this.outputChannel.appendLine(formattedMessage);
 
-    // Auto-show output channel for errors and when streaming
-    if (entry.level === 'error' || this.isStreaming) {
+    // Auto-show output channel for errors and when streaming ONLY for manual analysis
+    if (
+      entry.level === 'error' ||
+      (this.isStreaming && this.currentTriggerSource === 'manual')
+    ) {
       this.outputChannel.show(true);
     }
   }

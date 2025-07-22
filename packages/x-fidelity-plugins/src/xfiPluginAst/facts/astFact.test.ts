@@ -3,7 +3,21 @@ import { logger } from '@x-fidelity/core';
 import { generateAst } from '../../sharedPluginUtils/astUtils';
 
 // Mock dependencies
-jest.mock('@x-fidelity/core');
+jest.mock('@x-fidelity/core', () => ({
+    logger: {
+        debug: jest.fn(),
+        info: jest.fn(),
+        warn: jest.fn(),
+        error: jest.fn()
+    },
+    LoggerProvider: {
+        createCorrelationMetadata: jest.fn((meta = {}) => ({
+            ...meta,
+            correlationId: 'test-correlation-id',
+            timestamp: '2024-01-01T00:00:00.000Z'
+        }))
+    }
+}));
 jest.mock('../../sharedPluginUtils/astUtils');
 
 const mockGenerateAst = generateAst as jest.MockedFunction<typeof generateAst>;
@@ -37,11 +51,12 @@ describe('astFact', () => {
 
         expect(result).toEqual({ tree: null });
         expect(mockLogger.debug).toHaveBeenCalledWith(
-            '🔍 AST Fact: No fileData available',
+            'AST Fact: No fileData available',
             expect.objectContaining({
                 fact: 'ast',
                 factType: 'iterative-function',
-                factPriority: 1
+                factPriority: 1,
+                correlationId: 'test-correlation-id'
             })
         );
     });
@@ -56,7 +71,7 @@ describe('astFact', () => {
 
         expect(result).toEqual({ tree: null });
         expect(mockLogger.warn).toHaveBeenCalledWith(
-            '⚠️  AST Fact: No file content available for test.ts',
+            'AST Fact: No file content available for test.ts',
             expect.objectContaining({
                 fileName: 'test.ts',
                 issue: 'no-content',
@@ -75,7 +90,7 @@ describe('astFact', () => {
 
         expect(result).toEqual({ tree: null });
         expect(mockLogger.warn).toHaveBeenCalledWith(
-            '⚠️  AST Fact: No file content available for test.ts',
+            'AST Fact: No file content available for test.ts',
             expect.objectContaining({
                 fileName: 'test.ts',
                 issue: 'no-content',
@@ -140,7 +155,7 @@ describe('astFact', () => {
         await astFact.fn({}, mockAlmanac);
 
         expect(mockLogger.info).toHaveBeenCalledWith(
-            '✅ AST Fact: Generated AST for test.ts using native-direct - Total: 200ms, AST: 100ms',
+            'AST Fact: Generated AST for test.ts using native-direct - Total: 200ms, AST: 100ms',
             expect.objectContaining({
                 fileName: 'test.ts',
                 astMode: 'native-direct',
@@ -191,7 +206,7 @@ describe('astFact', () => {
 
         expect(result).toEqual({ tree: null });
         expect(mockLogger.error).toHaveBeenCalledWith(
-            '💥 AST Fact: Exception after 100ms - Error: Test error',
+            'AST Fact: Exception after 100ms - Error: Test error',
             expect.objectContaining({
                 totalTime: 100,
                 errorType: 'Error',
@@ -214,7 +229,7 @@ describe('astFact', () => {
 
         expect(result).toEqual({ tree: null });
         expect(mockLogger.error).toHaveBeenCalledWith(
-            expect.stringContaining('💥 AST Fact: Exception after'),
+            expect.stringContaining('AST Fact: Exception after'),
             expect.objectContaining({
                 errorType: 'Error',
                 errorMessage: 'AST generation failed',
@@ -233,7 +248,7 @@ describe('astFact', () => {
 
         expect(result).toEqual({ tree: null });
         expect(mockLogger.warn).toHaveBeenCalledWith(
-            '⚠️  AST Fact: No file content available for test.ts',
+            'AST Fact: No file content available for test.ts',
             expect.objectContaining({
                 fileName: 'test.ts',
                 issue: 'no-content',
@@ -252,7 +267,7 @@ describe('astFact', () => {
 
         expect(result).toEqual({ tree: null });
         expect(mockLogger.warn).toHaveBeenCalledWith(
-            '⚠️  AST Fact: Invalid content type for test.ts',
+            'AST Fact: Invalid content type for test.ts',
             expect.objectContaining({
                 fileName: 'test.ts',
                 contentType: 'number',

@@ -153,10 +153,10 @@ class GlobalLoggerManager {
   }
 
   /**
-   * Show the X-Fidelity output channel
+   * Show the X-Fidelity output channel (preserves focus by default)
    */
-  showOutputChannel(): void {
-    this.outputChannel.show();
+  showOutputChannel(preserveFocus: boolean = true): void {
+    this.outputChannel.show(preserveFocus);
   }
 
   /**

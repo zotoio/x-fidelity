@@ -127,7 +127,10 @@ describe('LoggerProvider', () => {
             LoggerProvider.setLogger(mockLogger);
             
             const logger = LoggerProvider.getLogger();
-            expect(logger).toBe(mockLogger);
+            // Logger is always wrapped in PrefixingLogger for correlation ID support
+            expect(logger).toBeInstanceOf(PrefixingLogger);
+            expect((logger as any).enablePrefix).toBe(false);
+            expect((logger as any).enableCorrelationMetadata).toBe(true);
             
             LoggerProvider.setAutoPrefixing(true);
         });
@@ -166,7 +169,10 @@ describe('LoggerProvider', () => {
             LoggerProvider.setAutoPrefixing(false);
             
             const logger = LoggerProvider.getLogger();
-            expect(logger).toBe(mockLogger);
+            // Logger is always wrapped in PrefixingLogger for correlation ID support
+            expect(logger).toBeInstanceOf(PrefixingLogger);
+            expect((logger as any).enablePrefix).toBe(false);
+            expect((logger as any).enableCorrelationMetadata).toBe(true);
         });
 
         it('should re-enable auto-prefixing when requested', () => {

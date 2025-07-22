@@ -51,7 +51,8 @@ export class XFiPluginRegistry implements PluginRegistry {
             this.initializePluginSafe(plugin);
         } catch (error) {
             // Log the error but don't throw to avoid breaking plugin registration flow
-            logger.error(`Plugin ${plugin.name} initialization failed: ${error}`);
+            const currentLogger = LoggerProvider.getLogger();
+            currentLogger.error(`Plugin ${plugin.name} initialization failed: ${error}`);
             this.initializationStatus.set(plugin.name, 'failed');
             // Re-throw for test environments or when plugin initialization is critical
             if (process.env.NODE_ENV === 'test') {

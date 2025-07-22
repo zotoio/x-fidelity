@@ -3,22 +3,29 @@ import { ExecutionContext } from './executionContext';
 import { createDefaultLogger, createVSCodeLogger } from './defaultLogger';
 
 /**
- * Logger wrapper that automatically prefixes all messages with execution ID
- * 🎯 ENHANCED WITH UNIVERSAL CORRELATION ID METADATA
+ * Logger wrapper that automatically adds correlation ID metadata and optionally prefixes messages
+ * 🎯 ENHANCED WITH INDEPENDENT CORRELATION ID SUPPORT
  */
 class PrefixingLogger implements ILogger {
   private baseLogger: ILogger;
   private staticPrefix?: string;
+  private enablePrefix: boolean;
+  private enableCorrelationMetadata: boolean;
 
-  constructor(baseLogger: ILogger, staticPrefix?: string) {
+  constructor(baseLogger: ILogger, staticPrefix?: string, options: { enablePrefix?: boolean; enableCorrelationMetadata?: boolean } = {}) {
     this.baseLogger = baseLogger;
     this.staticPrefix = staticPrefix;
+    this.enablePrefix = options.enablePrefix !== false; // Default to true
+    this.enableCorrelationMetadata = options.enableCorrelationMetadata !== false; // Default to true
   }
 
   /**
-   * Get the current prefix (static or from execution context)
+   * Get the current prefix (static or from execution context) - only if prefixing is enabled
    */
   private getPrefix(): string {
+    if (!this.enablePrefix) {
+      return '';
+    }
     if (this.staticPrefix) {
       return this.staticPrefix;
     }
@@ -26,9 +33,13 @@ class PrefixingLogger implements ILogger {
   }
 
   /**
-   * 🎯 NEW: Enhance metadata with correlation ID for universal traceability
+   * 🎯 ENHANCED: Metadata enhancement with independent correlation ID support
    */
   private enhanceMetadata(metaOrMsg?: any): any {
+    if (!this.enableCorrelationMetadata) {
+      return metaOrMsg;
+    }
+
     const correlationId = ExecutionContext.getCurrentExecutionId();
     const executionContext = ExecutionContext.getCurrentContext();
     
@@ -65,84 +76,80 @@ class PrefixingLogger implements ILogger {
     };
   }
 
-  /**
-   * Add prefix to a message
-   */
-  private prefixMessage(msgOrMeta: string | any): string | any {
+  // Helper method to process messages and metadata
+  private processLogCall(msgOrMeta: string | any, metaOrMsg?: any): { message: string | any; metadata?: any } {
     const prefix = this.getPrefix();
-    
-    if (!prefix) {
-      return msgOrMeta;
-    }
+    const enhancedMeta = this.enhanceMetadata(metaOrMsg);
 
-    // If it's a string message, prefix it
     if (typeof msgOrMeta === 'string') {
-      return `${prefix} ${msgOrMeta}`;
+      // String message - add prefix if enabled
+      const finalMessage = prefix ? `${prefix} ${msgOrMeta}` : msgOrMeta;
+      return { message: finalMessage, metadata: enhancedMeta };
+    } else if (typeof msgOrMeta === 'object' && msgOrMeta !== null) {
+      // Object message - handle different cases
+      if (msgOrMeta.message && typeof msgOrMeta.message === 'string') {
+        // Object with message property - prefix the message
+        const finalMessage = prefix ? `${prefix} ${msgOrMeta.message}` : msgOrMeta.message;
+        return { 
+          message: { ...msgOrMeta, message: finalMessage }, 
+          metadata: enhancedMeta 
+        };
+      } else {
+        // Object without message property - pass as-is
+        return { message: msgOrMeta, metadata: enhancedMeta };
+      }
+    } else {
+      // Other types - convert to string and prefix if enabled
+      const strMessage = String(msgOrMeta);
+      const finalMessage = prefix ? `${prefix} ${strMessage}` : strMessage;
+      return { message: finalMessage, metadata: enhancedMeta };
     }
-
-    // Handle null and undefined by converting to string and prefixing
-    if (msgOrMeta === null || msgOrMeta === undefined) {
-      return `${prefix} ${String(msgOrMeta)}`;
-    }
-
-    // If it's an object with a message property, prefix that
-    if (msgOrMeta && typeof msgOrMeta === 'object' && typeof msgOrMeta.message === 'string') {
-      return {
-        ...msgOrMeta,
-        message: `${prefix} ${msgOrMeta.message}`
-      };
-    }
-
-    // Otherwise return as-is
-    return msgOrMeta;
   }
 
   trace(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.trace(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
+    const { message, metadata } = this.processLogCall(msgOrMeta, metaOrMsg);
+    this.baseLogger.trace(message, metadata);
   }
 
   debug(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.debug(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
+    const { message, metadata } = this.processLogCall(msgOrMeta, metaOrMsg);
+    this.baseLogger.debug(message, metadata);
   }
 
   info(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.info(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
+    const { message, metadata } = this.processLogCall(msgOrMeta, metaOrMsg);
+    this.baseLogger.info(message, metadata);
   }
 
   warn(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.warn(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
+    const { message, metadata } = this.processLogCall(msgOrMeta, metaOrMsg);
+    this.baseLogger.warn(message, metadata);
   }
 
   error(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.error(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
+    const { message, metadata } = this.processLogCall(msgOrMeta, metaOrMsg);
+    this.baseLogger.error(message, metadata);
   }
 
   fatal(msgOrMeta: string | any, metaOrMsg?: any): void {
-    this.baseLogger.fatal(this.prefixMessage(msgOrMeta), this.enhanceMetadata(metaOrMsg));
+    const { message, metadata } = this.processLogCall(msgOrMeta, metaOrMsg);
+    this.baseLogger.fatal(message, metadata);
   }
 
-  // Child logger method removed - use direct context passing instead
-
-  setLevel(level: LogLevel): void {
-    this.baseLogger.setLevel(level);
+  setLevel(level: any): void {
+    return this.baseLogger.setLevel(level);
   }
 
-  getLevel(): LogLevel {
+  getLevel(): any {
     return this.baseLogger.getLevel();
   }
 
-  isLevelEnabled(level: LogLevel): boolean {
+  isLevelEnabled(level: any): boolean {
     return this.baseLogger.isLevelEnabled(level);
   }
 
-  dispose?(): void {
-    if (this.baseLogger.dispose) {
-      this.baseLogger.dispose();
-    }
-  }
-
   /**
-   * Get the underlying base logger (for cases where direct access is needed)
+   * Access to the underlying logger
    */
   getBaseLogger(): ILogger {
     return this.baseLogger;
@@ -219,12 +226,12 @@ class LoggerProvider {
    * @throws Never throws - always returns a valid logger (fallback if needed)
    */
   static getLogger(): ILogger {
-    // If we have an injected logger, use it
+    // If we have an injected logger, use it with correlation ID support
     if (this.injectedLogger) {
-      if (this.enableAutoPrefixing) {
-        return new PrefixingLogger(this.injectedLogger);
-      }
-      return this.injectedLogger;
+      return new PrefixingLogger(this.injectedLogger, undefined, {
+        enablePrefix: this.enableAutoPrefixing,
+        enableCorrelationMetadata: true // Always enable correlation ID metadata
+      });
     }
 
     // Otherwise, get logger for current mode
@@ -245,10 +252,12 @@ class LoggerProvider {
 
   /**
    * Enable or disable automatic prefixing
+   * Note: Correlation ID metadata is always included regardless of this setting
    * @param enabled Whether to enable automatic prefixing
    */
   static setAutoPrefixing(enabled: boolean): void {
     this.enableAutoPrefixing = enabled;
+    this.loggerCache.clear(); // Clear cache to force re-creation with new prefixing behavior
   }
 
   /**
@@ -359,6 +368,14 @@ class LoggerProvider {
    * @returns A singleton logger instance for the mode/level combination
    */
   static getLoggerForMode(mode: ExecutionMode, level?: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }): ILogger {
+    // If we have an injected logger and no special options, use it (for test environments)
+    if (this.injectedLogger && !options?.enableFileLogging) {
+      return new PrefixingLogger(this.injectedLogger, undefined, {
+        enablePrefix: this.enableAutoPrefixing,
+        enableCorrelationMetadata: true // Always enable correlation ID metadata
+      });
+    }
+
     const logLevel = level || (process.env.XFI_LOG_LEVEL as LogLevel) || 'info';
     const cacheKey = `${mode}:${logLevel}:${JSON.stringify(options || {})}:${this.enableAutoPrefixing}`;
     
@@ -391,8 +408,11 @@ class LoggerProvider {
       baseLogger = factory(logLevel, options);
     }
 
-    // Apply auto-prefixing if enabled
-    const finalLogger = this.enableAutoPrefixing ? new PrefixingLogger(baseLogger) : baseLogger;
+    // Always wrap in PrefixingLogger for correlation ID support, but control prefixing independently
+    const finalLogger = new PrefixingLogger(baseLogger, undefined, {
+      enablePrefix: this.enableAutoPrefixing,
+      enableCorrelationMetadata: true // Always enable correlation ID metadata
+    });
     
     this.loggerCache.set(cacheKey, finalLogger);
     return finalLogger;

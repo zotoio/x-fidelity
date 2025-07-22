@@ -11,7 +11,15 @@ const vscodeWindowMock: any = {
   onDidChangeVisibleTextEditors: jest.fn(() => ({ dispose: jest.fn() })),
   showInformationMessage: jest.fn(),
   showErrorMessage: jest.fn(),
-  visibleTextEditors: []
+  visibleTextEditors: [],
+  createOutputChannel: jest.fn(() => ({
+    append: jest.fn(),
+    appendLine: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+    clear: jest.fn(),
+    dispose: jest.fn()
+  }))
 };
 
 jest.mock('vscode', () => {

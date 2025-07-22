@@ -25,7 +25,10 @@ describe('PrefixingLogger', () => {
             isLevelEnabled: jest.fn()
         };
 
-        prefixingLogger = new PrefixingLogger(mockBaseLogger);
+        prefixingLogger = new PrefixingLogger(mockBaseLogger, undefined, {
+            enablePrefix: true,
+            enableCorrelationMetadata: true
+        });
     });
 
     afterEach(() => {
@@ -137,7 +140,10 @@ describe('PrefixingLogger', () => {
 
         it('should handle static prefix when provided with correlation metadata', () => {
             const staticPrefix = '[STATIC-PREFIX]';
-            const staticPrefixLogger = new PrefixingLogger(mockBaseLogger, staticPrefix);
+            const staticPrefixLogger = new PrefixingLogger(mockBaseLogger, staticPrefix, {
+                enablePrefix: true,
+                enableCorrelationMetadata: true
+            });
             const executionId = ExecutionContext.getCurrentExecutionId();
 
             staticPrefixLogger.info('Test message');
@@ -195,8 +201,14 @@ describe('PrefixingLogger', () => {
             const executionId = ExecutionContext.getCurrentExecutionId();
             const expectedPrefix = `[${executionId}]`;
 
-            const logger1 = new PrefixingLogger(mockBaseLogger);
-            const logger2 = new PrefixingLogger(mockBaseLogger);
+            const logger1 = new PrefixingLogger(mockBaseLogger, undefined, {
+                enablePrefix: true,
+                enableCorrelationMetadata: true
+            });
+            const logger2 = new PrefixingLogger(mockBaseLogger, undefined, {
+                enablePrefix: true,
+                enableCorrelationMetadata: true
+            });
 
             logger1.info('Logger 1 message');
             logger2.info('Logger 2 message');

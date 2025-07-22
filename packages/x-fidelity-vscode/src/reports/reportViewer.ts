@@ -23,9 +23,12 @@ export class ReportViewer implements vscode.Disposable {
     private configManager: ConfigManager
   ) {}
 
-  async showReport(options: ReportViewerOptions): Promise<void> {
+  async showReport(
+    options: ReportViewerOptions,
+    preserveFocus: boolean = false
+  ): Promise<void> {
     if (this.panel) {
-      this.panel.reveal();
+      this.panel.reveal(undefined, preserveFocus);
       await this.updateContent(options);
       return;
     }

@@ -2,7 +2,7 @@
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity",
   "description": "VSCode extension for X-Fidelity code quality analysis real-time diagnostics, and comprehensive UI integration",
-  "version": "4.2.3",
+  "version": "4.2.4",
   "publisher": "zotoio",
   "private": true,
   "license": "MIT",
@@ -167,7 +167,12 @@
       },
       {
         "command": "xfidelity.fixIssue",
-        "title": "Fix Issue",
+        "title": "✨ Fix Issue",
+        "icon": "$(wrench)"
+      },
+      {
+        "command": "xfidelity.fixAllIssues",
+        "title": "✨ Fix All",
         "icon": "$(wrench)"
       }
     ],
@@ -561,6 +566,11 @@
           "command": "xfidelity.fixIssue",
           "when": "view == xfidelityIssuesTreeView && viewItem == issue",
           "group": "1_actions@3"
+        },
+        {
+          "command": "xfidelity.fixAllIssues",
+          "when": "view == xfidelityIssuesTreeView && viewItem == issueGroup",
+          "group": "1_actions@1"
         }
       ]
     },
@@ -593,7 +603,7 @@
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.x",
-    "@types/vscode": "^1.101.0",
+    "@types/vscode": "^1.99.0",
     "@typescript-eslint/eslint-plugin": "^8.35.0",
     "@typescript-eslint/parser": "^8.35.0",
     "@vscode/test-cli": "^0.0.11",

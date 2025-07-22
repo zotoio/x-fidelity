@@ -225,6 +225,7 @@ export class IssuesTreeProvider
         description: `${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
         tooltip: `${severity.toUpperCase()}: ${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
         iconPath: this.getSeverityIcon(severity),
+        contextValue: 'issueGroup',
         collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
         groupKey: severity,
         count: issues.length
@@ -247,6 +248,7 @@ export class IssuesTreeProvider
         description: `${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
         tooltip: `Rule: ${rule}\\n${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
         iconPath: new vscode.ThemeIcon('symbol-method'),
+        contextValue: 'issueGroup',
         collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
         groupKey: rule,
         count: issues.length
@@ -269,6 +271,7 @@ export class IssuesTreeProvider
         description: path.dirname(file),
         tooltip: `File: ${file}\\n${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
         iconPath: vscode.ThemeIcon.File,
+        contextValue: 'issueGroup',
         collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
         groupKey: file,
         count: issues.length
@@ -294,6 +297,7 @@ export class IssuesTreeProvider
         description: `${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
         tooltip: `Category: ${category}\\n${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
         iconPath: new vscode.ThemeIcon('symbol-class'),
+        contextValue: 'issueGroup',
         collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
         groupKey: category,
         count: issues.length
@@ -414,7 +418,7 @@ export class IssuesTreeProvider
     );
 
     // ENHANCEMENT: Add Fix Issue action link (always available)
-    const fixLabel = issue.fixable ? '🔧 Fix Issue' : '🔧 Try Fix';
+    const fixLabel = issue.fixable ? '✨ Fix Issue' : '✨ Try Fix';
     markdown.appendMarkdown(
       `[${fixLabel}](command:xfidelity.fixIssue?${encodeURIComponent(JSON.stringify(issueContext))}) • `
     );

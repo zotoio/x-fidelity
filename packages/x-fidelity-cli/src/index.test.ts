@@ -59,7 +59,9 @@ jest.mock('@x-fidelity/core', () => ({
         })),
         setLoggerForMode: jest.fn(),
         propagateLogLevel: jest.fn(),
-        updateLogLevel: jest.fn()
+        updateLogLevel: jest.fn(),
+        setAutoPrefixing: jest.fn(),
+        registerLoggerFactory: jest.fn()
     },
     // Add the logger export mock
     logger: {

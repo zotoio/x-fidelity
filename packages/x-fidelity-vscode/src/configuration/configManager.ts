@@ -229,8 +229,16 @@ export class ConfigManager {
 
     // 1. Check home directory ~/.config/x-fidelity (XDG_CONFIG_HOME/x-fidelity)
     const homeDir = os.homedir();
-    const xdgConfigHome =
-      process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
+    // Platform-agnostic XDG config home resolution
+    let xdgConfigHome: string;
+    if (process.platform === 'win32') {
+      // On Windows, use %APPDATA% or fallback to home directory
+      xdgConfigHome = process.env.APPDATA || path.join(homeDir, '.config');
+    } else {
+      // On Unix-like systems, use XDG_CONFIG_HOME or ~/.config
+      xdgConfigHome =
+        process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
+    }
     const homeConfigPath = path.join(xdgConfigHome, 'x-fidelity');
 
     if (fs.existsSync(homeConfigPath)) {

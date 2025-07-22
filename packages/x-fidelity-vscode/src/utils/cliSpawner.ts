@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { createComponentLogger } from './globalLogger';
 import type { AnalysisResult } from '../analysis/types';
+import type { AnalysisTriggerSource } from '../analysis/analysisEngineInterface';
 
 export interface CLISpawnOptions {
   workspacePath: string;
@@ -12,6 +13,7 @@ export interface CLISpawnOptions {
   cancellationToken?: vscode.CancellationToken;
   progress?: vscode.Progress<{ message?: string; increment?: number }>;
   env?: Record<string, string>;
+  triggerSource?: AnalysisTriggerSource;
 }
 
 export interface CLIResult {
@@ -350,9 +352,11 @@ export class CLISpawner {
     // 🎯 GENERATE CORRELATION ID FOR END-TO-END TRACEABILITY
     const correlationId = this.generateCorrelationId();
     const analysisStartTime = Date.now();
+    const triggerSource = options.triggerSource || 'automatic';
 
-    // 🎯 CLEAR OUTPUT AND START STREAMING
+    // 🎯 CLEAR OUTPUT AND START STREAMING WITH TRIGGER SOURCE CONTEXT
     this.logger.clearForNewAnalysis(correlationId);
+    this.logger.setTriggerSource(triggerSource);
     this.logger.startStreaming();
 
     // Check for concurrent execution
@@ -450,25 +454,51 @@ export class CLISpawner {
       });
 
       return new Promise((resolve, reject) => {
-        const child = spawn(nodePath, args, {
-          cwd: options.workspacePath,
-          stdio: ['pipe', 'pipe', 'pipe'],
-          timeout: options.timeout || 120000,
-          env: {
-            ...process.env,
-            // 🎯 PASS CORRELATION ID TO CLI VIA ENVIRONMENT
-            XFI_CORRELATION_ID: correlationId,
-            XFI_VSCODE_MODE: 'true', // Force console logging in CLI
-            XFI_DISABLE_FILE_LOGGING: 'true', // Disable file logging
-            XFI_LOG_LEVEL: 'warn', // Use consistent log level
-            XFI_LOG_COLORS: 'false', // Disable colors for CLI output
-            XFI_LOG_TIMESTAMP: 'true', // Ensure timestamps are included
-            // 🎯 PASS VSCODE EXTENSION PATH FOR PROPER WASM FILE ACCESS
-            XFI_VSCODE_EXTENSION_PATH: path.dirname(__dirname), // Extension root directory
-            FORCE_COLOR: '0', // Disable ANSI color support
-            ...options.env
-          }
-        });
+        let child: ChildProcess;
+
+        try {
+          // Use global spawn if available (for testing), otherwise use imported spawn
+          const spawnFn = (global as any).spawn || spawn;
+          child = spawnFn(nodePath, args, {
+            cwd: options.workspacePath,
+            stdio: ['pipe', 'pipe', 'pipe'],
+            timeout: options.timeout || 120000,
+            env: {
+              ...process.env,
+              // 🎯 PASS CORRELATION ID TO CLI VIA ENVIRONMENT
+              XFI_CORRELATION_ID: correlationId,
+              XFI_VSCODE_MODE: 'true', // Force console logging in CLI
+              XFI_DISABLE_FILE_LOGGING: 'true', // Disable file logging
+              XFI_LOG_LEVEL: 'warn', // Use consistent log level
+              XFI_LOG_COLORS: 'false', // Disable colors for CLI output
+              XFI_LOG_TIMESTAMP: 'true', // Ensure timestamps are included
+              // 🎯 PASS VSCODE EXTENSION PATH FOR PROPER WASM FILE ACCESS
+              XFI_VSCODE_EXTENSION_PATH: path.dirname(__dirname), // Extension root directory
+              FORCE_COLOR: '0', // Disable ANSI color support
+              ...options.env
+            }
+          });
+        } catch (spawnError) {
+          // Handle synchronous spawn failures
+          CLISpawner.isExecuting = false; // Release mutex
+          this.logger.error('Failed to spawn CLI process:', {
+            correlationId,
+            error:
+              spawnError instanceof Error
+                ? spawnError.message
+                : String(spawnError),
+            nodePath,
+            cliPath,
+            command: 'spawn-failure'
+          });
+
+          reject(
+            new Error(
+              `Failed to spawn CLI process: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`
+            )
+          );
+          return;
+        }
 
         this.setupChildProcessHandlers(
           child,

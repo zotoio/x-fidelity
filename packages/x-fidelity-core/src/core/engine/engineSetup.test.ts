@@ -77,6 +77,8 @@ describe('engineSetup - Enhanced Test Suite', () => {
         };
         
         (LoggerProvider.getLogger as jest.Mock) = jest.fn().mockReturnValue(mockChildLogger);
+        (LoggerProvider.getLoggerForMode as jest.Mock) = jest.fn().mockReturnValue(mockChildLogger);
+        (LoggerProvider.getCurrentExecutionMode as jest.Mock) = jest.fn().mockReturnValue('CLI');
         
         // Set up the mockChildLogger as a property so we can access it in tests
         (global as any).mockChildLogger = mockChildLogger;

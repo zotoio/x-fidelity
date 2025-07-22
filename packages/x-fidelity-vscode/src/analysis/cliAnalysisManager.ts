@@ -213,7 +213,8 @@ export class CLIAnalysisManager implements IAnalysisEngine {
             args: freshAnalysisArgs,
             timeout: config.analysisTimeout,
             cancellationToken: token,
-            progress
+            progress,
+            triggerSource
           });
 
           progress.report({

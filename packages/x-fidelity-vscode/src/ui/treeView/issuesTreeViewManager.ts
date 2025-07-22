@@ -187,6 +187,18 @@ export class IssuesTreeViewManager implements vscode.Disposable {
           }
         )
       );
+
+      // ENHANCEMENT: Register fixAllIssues command for group items
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand(
+          'xfidelity.fixAllIssues',
+          async (item: IssueTreeItem) => {
+            if (IssuesTreeViewManager.activeInstance) {
+              await IssuesTreeViewManager.activeInstance.fixAllIssues(item);
+            }
+          }
+        )
+      );
     }
   }
 
@@ -600,12 +612,72 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
     try {
       vscode.window.showInformationMessage(
-        `Fix Issue: ${item.issue.rule} - This feature will provide automated fixes for the issue.`
+        `✨ Fix Issue: ${item.issue.rule} - This feature will provide automated fixes for the issue.`
       );
     } catch (error) {
       logger.error('Failed to fix issue', error);
       vscode.window.showErrorMessage(`Failed to fix issue: ${error}`);
     }
+  }
+
+  private async fixAllIssues(item: IssueTreeItem): Promise<void> {
+    if (!item || (!item.groupKey && !item.count)) {
+      vscode.window.showWarningMessage('No group data available to fix all issues');
+      return;
+    }
+
+    try {
+      // Find all child issues for this group
+      const groupIssues = this.getChildIssuesForGroup(item);
+      
+      if (groupIssues.length === 0) {
+        vscode.window.showInformationMessage('No fixable issues found in this group');
+        return;
+      }
+
+      const fixableIssues = groupIssues.filter(issue => issue.fixable);
+      const fixableCount = fixableIssues.length;
+      const totalCount = groupIssues.length;
+
+      // Show confirmation dialog
+      const action = await vscode.window.showInformationMessage(
+        `✨ Fix All Issues in "${item.label}"?\n\nThis will attempt to fix ${fixableCount} fixable issues out of ${totalCount} total issues in this group.`,
+        { modal: true },
+        'Fix All',
+        'Cancel'
+      );
+
+      if (action === 'Fix All') {
+        vscode.window.showInformationMessage(
+          `✨ Fixing ${fixableCount} issues in group "${item.label}" - This feature will provide automated fixes for all issues in the group.`
+        );
+      }
+    } catch (error) {
+      logger.error('Failed to fix all issues', error);
+      vscode.window.showErrorMessage(`Failed to fix all issues: ${error}`);
+    }
+  }
+
+  private getChildIssuesForGroup(groupItem: IssueTreeItem): ProcessedIssue[] {
+    if (!groupItem.groupKey) {
+      return [];
+    }
+
+    // Filter current issues based on the group type and key
+    const groupKey = groupItem.groupKey;
+    const groupId = groupItem.id;
+
+    if (groupId.startsWith('severity-')) {
+      return this.currentIssues.filter(issue => issue.severity === groupKey);
+    } else if (groupId.startsWith('rule-')) {
+      return this.currentIssues.filter(issue => issue.rule === groupKey);
+    } else if (groupId.startsWith('file-')) {
+      return this.currentIssues.filter(issue => issue.file === groupKey);
+    } else if (groupId.startsWith('category-')) {
+      return this.currentIssues.filter(issue => (issue.category || 'General') === groupKey);
+    }
+
+    return [];
   }
 
   // Public methods for external use

@@ -24,13 +24,13 @@ export const astFact: FactDefn = {
             const fileData: FileData = await almanac.factValue('fileData');
             
             if (!fileData) {
-                logger.debug('🔍 AST Fact: No fileData available', createCorrelatedMeta());
+                logger.debug('AST Fact: No fileData available', createCorrelatedMeta());
                 return { tree: null };
             }
 
             // ✅ OPTIMIZATION: Check for precomputed AST first
             if (fileData.ast) {
-                logger.info(`🚀 AST Fact: Using precomputed AST for ${fileData.fileName} (${fileData.astGenerationTime || 0}ms)`, 
+                logger.info(`AST Fact: Using precomputed AST for ${fileData.fileName} (${fileData.astGenerationTime || 0}ms)`, 
                     createCorrelatedMeta({
                         fileName: fileData.fileName,
                         astGenerationTime: fileData.astGenerationTime,
@@ -51,7 +51,7 @@ export const astFact: FactDefn = {
             }
 
             // ✅ FALLBACK: Generate AST if not precomputed (for backward compatibility)
-            logger.info(`🔄 AST Fact: Generating on-demand AST for ${fileData.fileName}`, 
+            logger.info(`AST Fact: Generating on-demand AST for ${fileData.fileName}`, 
                 createCorrelatedMeta({
                     fileName: fileData.fileName,
                     onDemand: true
@@ -59,7 +59,7 @@ export const astFact: FactDefn = {
             );
 
             if (!fileData.content && !fileData.fileContent) {
-                logger.warn(`⚠️  AST Fact: No file content available for ${fileData.fileName}`, 
+                logger.warn(`AST Fact: No file content available for ${fileData.fileName}`, 
                     createCorrelatedMeta({
                         fileName: fileData.fileName,
                         issue: 'no-content'
@@ -71,7 +71,7 @@ export const astFact: FactDefn = {
             // Use content or fileContent, whichever is available
             const content = fileData.content || fileData.fileContent;
             if (!content || typeof content !== 'string') {
-                logger.warn(`⚠️  AST Fact: Invalid content type for ${fileData.fileName}`, 
+                logger.warn(`AST Fact: Invalid content type for ${fileData.fileName}`, 
                     createCorrelatedMeta({
                         fileName: fileData.fileName,
                         contentType: typeof content,
@@ -95,7 +95,7 @@ export const astFact: FactDefn = {
             
             // 🎯 ALWAYS LOG AST FACT RESULTS AT INFO LEVEL WITH CORRELATION
             if (result.tree) {
-                logger.info(`✅ AST Fact: Generated AST for ${fileData.fileName} using ${result.mode || 'unknown'} - Total: ${totalTime}ms, AST: ${astGenTime}ms`, 
+                logger.info(`AST Fact: Generated AST for ${fileData.fileName} using ${result.mode || 'unknown'} - Total: ${totalTime}ms, AST: ${astGenTime}ms`, 
                     createCorrelatedMeta({
                         fileName: fileData.fileName,
                         astMode: result.mode,
@@ -132,7 +132,7 @@ export const astFact: FactDefn = {
         } catch (error) {
             const totalTime = Date.now() - startTime;
             // 🎯 ERRORS NEVER HIDDEN - WITH CORRELATION
-            logger.error(`💥 AST Fact: Exception after ${totalTime}ms - ${error}`, 
+            logger.error(`AST Fact: Exception after ${totalTime}ms - ${error}`, 
                 createCorrelatedMeta({
                     totalTime,
                     errorType: error instanceof Error ? error.constructor.name : 'Unknown',
