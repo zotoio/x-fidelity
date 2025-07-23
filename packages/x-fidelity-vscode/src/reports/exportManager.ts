@@ -218,45 +218,17 @@ export class ExportManager {
     result: ResultMetadata,
     options: ExportOptions
   ): Promise<string> {
+    // Use the enhanced ReportGenerator from core for consistent formatting
+    const { ReportGenerator } = await import(
+      '@x-fidelity/core/src/notifications/reportGenerator'
+    );
+
     const data = options.filterSeverity?.length
       ? this.filterResultBySeverity(result, options.filterSeverity)
       : result;
 
-    let md = `# X-Fidelity Analysis Report\n\n`;
-    md += `**Generated:** ${new Date().toISOString()}\n`;
-    md += `**Repository:** ${data.XFI_RESULT.repoPath}\n`;
-    md += `**Archetype:** ${data.XFI_RESULT.archetype}\n\n`;
-
-    // Summary
-    md += `## Summary\n\n`;
-    md += `| Metric | Count |\n`;
-    md += `|--------|-------|\n`;
-    md += `| Total Issues | ${data.XFI_RESULT.totalIssues} |\n`;
-    md += `| Errors | ${data.XFI_RESULT.errorCount} |\n`;
-    md += `| Warnings | ${data.XFI_RESULT.warningCount} |\n`;
-    md += `| Fatal | ${data.XFI_RESULT.fatalityCount} |\n\n`;
-
-    // Issues by severity
-    const severityGroups = this.groupIssuesBySeverity(data);
-    for (const [severity, issues] of Object.entries(severityGroups)) {
-      if (issues.length === 0) {
-        continue;
-      }
-
-      md += `## ${severity.toUpperCase()} Issues (${issues.length})\n\n`;
-
-      for (const issue of issues) {
-        md += `### ${issue.file}\n\n`;
-        md += `- **Rule:** \`${issue.rule}\`\n`;
-        md += `- **Message:** ${issue.message}\n`;
-        if (issue.line) {
-          md += `- **Location:** Line ${issue.line}\n`;
-        }
-        md += `\n`;
-      }
-    }
-
-    return md;
+    const reportGenerator = new ReportGenerator(data);
+    return reportGenerator.generateReport();
   }
 
   private async exportSARIF(

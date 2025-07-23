@@ -176,6 +176,18 @@ export class ReportHistoryManager {
       } else {
         // Delete the report file
         try {
+          // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
+          if (entry.filePath.includes('XFI_RESULT.json')) {
+            // Log error but don't throw to avoid breaking cleanup
+            console.error(
+              `🚨 CRITICAL: Attempted to delete XFI_RESULT.json - BLOCKED!`,
+              {
+                filePath: entry.filePath
+              }
+            );
+            continue;
+          }
+
           await fs.unlink(entry.filePath);
         } catch {
           // Ignore file deletion errors

@@ -16,7 +16,8 @@ suite('Configuration Management Tests', () => {
   test('should have all required configuration properties', async function () {
     this.timeout(10000);
 
-    const config = vscode.workspace.getConfiguration('xfidelity');
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    const config = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
 
     const requiredProperties = [
       'archetype',
@@ -81,7 +82,8 @@ suite('Configuration Management Tests', () => {
     if (result.success) {
       await new Promise(resolve => setTimeout(resolve, 3000));
 
-      const config = vscode.workspace.getConfiguration('xfidelity');
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      const config = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
       const detectedArchetype = config.get('archetype');
 
       assert.ok(detectedArchetype, 'Archetype should be detected');
@@ -117,7 +119,8 @@ suite('Configuration Management Tests', () => {
   test('should validate configuration values', async function () {
     this.timeout(5000);
 
-    const config = vscode.workspace.getConfiguration('xfidelity');
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    const config = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
 
     // Test numeric values
     const runInterval = config.get('runInterval') as number;

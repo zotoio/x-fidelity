@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { createComponentLogger } from './globalLogger';
 import type { AnalysisResult } from '../analysis/types';
+import type { AnalysisTriggerSource } from '../analysis/analysisEngineInterface';
 
 export interface CLISpawnOptions {
   workspacePath: string;
@@ -12,6 +13,7 @@ export interface CLISpawnOptions {
   cancellationToken?: vscode.CancellationToken;
   progress?: vscode.Progress<{ message?: string; increment?: number }>;
   env?: Record<string, string>;
+  triggerSource?: AnalysisTriggerSource;
 }
 
 export interface CLIResult {
@@ -82,14 +84,21 @@ export class CLISpawner {
 
   /**
    * Get the embedded CLI path (bundled with extension)
+   * VSCode extension always spawns the CLI with --mode vscode argument
+   * This differentiates from manual CLI execution (--mode cli)
    */
   private getEmbeddedCLIPath(): string {
     // In development/test mode, try multiple possible paths
     const possiblePaths = [
-      path.resolve(__dirname, '../cli/index.js'), // From dist directory
+      path.resolve(__dirname, './cli/index.js'), // From dist directory (production)
+      path.resolve(__dirname, './dist/cli/index.js'), // From root directory (development)
       path.resolve(__dirname, '../../cli/index.js'), // From src directory in tests
       path.resolve(process.cwd(), 'cli/index.js'), // From current working directory
-      path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js') // From monorepo root
+      path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js'), // From monorepo root
+      // CRITICAL: Add the actual monorepo CLI location for tests
+      path.resolve(__dirname, '../../../x-fidelity-cli/dist/index.js'), // From VSCode src to CLI dist
+      path.resolve(__dirname, '../../x-fidelity-cli/dist/index.js'), // From VSCode dist to CLI dist
+      path.resolve(process.cwd(), '../x-fidelity-cli/dist/index.js') // From VSCode package to CLI package
     ];
 
     // Log detailed path information for debugging
@@ -120,7 +129,7 @@ export class CLISpawner {
     }
 
     // If none found, return the default path and let validation handle the error
-    const defaultPath = path.resolve(__dirname, '../cli/index.js');
+    const defaultPath = path.resolve(__dirname, './cli/index.js');
     this.logger.warn(
       `CLI not found at any expected location. Trying default: ${defaultPath}`
     );
@@ -242,7 +251,8 @@ export class CLISpawner {
         '/usr/bin/node'
       ],
       possibleCliPaths: [
-        path.resolve(__dirname, '../cli/index.js'),
+        path.resolve(__dirname, './cli/index.js'),
+        path.resolve(__dirname, './dist/cli/index.js'),
         path.resolve(__dirname, '../../cli/index.js'),
         path.resolve(process.cwd(), 'cli/index.js'),
         path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js')
@@ -336,16 +346,39 @@ export class CLISpawner {
 
   /**
    * Execute CLI analysis and return parsed results
+   * 🎯 ENHANCED WITH CORRELATION ID GENERATION, STREAMING, AND RESULT DISPLAY
    */
   async runAnalysis(options: CLISpawnOptions): Promise<AnalysisResult> {
+    // 🎯 GENERATE CORRELATION ID FOR END-TO-END TRACEABILITY
+    const correlationId = this.generateCorrelationId();
+    const analysisStartTime = Date.now();
+    const triggerSource = options.triggerSource || 'automatic';
+
+    // 🎯 CLEAR OUTPUT AND START STREAMING WITH TRIGGER SOURCE CONTEXT
+    this.logger.clearForNewAnalysis(correlationId);
+    this.logger.setTriggerSource(triggerSource);
+    this.logger.startStreaming();
+
     // Check for concurrent execution
     if (CLISpawner.isExecuting) {
-      throw new Error(
-        'CLI analysis is already running. Please wait for completion.'
-      );
+      const errorMsg =
+        'CLI analysis is already running. Please wait for completion.';
+      this.logger.error(errorMsg, { correlationId, command: 'runAnalysis' });
+      throw new Error(errorMsg);
     }
 
     CLISpawner.isExecuting = true;
+
+    // 🎯 LOG ANALYSIS START WITH CORRELATION ID
+    this.logger.info(
+      `🚀 Starting CLI analysis with correlation ID: ${correlationId}`,
+      {
+        correlationId,
+        workspacePath: options.workspacePath,
+        analysisStartTime,
+        command: 'runAnalysis'
+      }
+    );
 
     try {
       const cliPath = this.getEmbeddedCLIPath();
@@ -355,101 +388,158 @@ export class CLISpawner {
       await this.validateNodeJS(nodePath);
       await this.validateCLI();
 
-      // Build arguments
+      // Build arguments for VSCode mode execution
+      // CLI mode = manual user execution from command line
+      // VSCode mode = CLI spawned by VSCode extension with clean output for panels
+
+      // Check VSCode setting for WASM TreeSitter preference
+      // Default to WASM in VSCode for better compatibility and reliability
+      const config = vscode.workspace.getConfiguration('xfidelity');
+      const enableTreeSitterWasm = config.get<boolean>(
+        'enableTreeSitterWasm',
+        true // 🎯 DEFAULT TO WASM FOR VSCODE - better compatibility in extension environment
+      );
+
+      // Log TreeSitter mode selection with reasoning and correlation
+      if (!!enableTreeSitterWasm) {
+        this.logger.info(
+          '🔧 Tree-sitter WASM (recommended VSCode mode - better compatibility)',
+          {
+            correlationId,
+            treeSitterMode: 'wasm',
+            reason: 'VSCode default for better extension compatibility'
+          }
+        );
+      } else {
+        this.logger.info('🔧 Tree-sitter Native (user disabled WASM mode)', {
+          correlationId,
+          treeSitterMode: 'native',
+          reason: 'user disabled WASM mode'
+        });
+      }
+
       const args = [
         cliPath,
         '--dir',
         options.workspacePath,
         '--output-format',
         'json',
+        '--mode',
+        'vscode', // Use VSCode execution mode for clean output panel integration
+        // 🎯 FORCE NATIVE MODE - WASM REQUIRES SPECIAL SETUP
+        // Only add WASM flag if user has explicitly enabled it AND has proper setup
+        ...(enableTreeSitterWasm ? ['--enable-tree-sitter-wasm'] : []),
         ...(options.args || [])
       ];
 
-      this.logger.debug(`Executing CLI: ${nodePath} ${args.join(' ')}`);
+      // 🎯 ENHANCED LOGGING WITH CORRELATION ID
+      this.logger.debug(
+        `Executing CLI in VSCode mode: ${nodePath} ${args.join(' ')}`,
+        {
+          correlationId,
+          command: 'cli-spawn'
+        }
+      );
       this.logger.debug(`CLI execution context:`, {
+        correlationId,
         nodePath,
         cliPath,
         cwd: options.workspacePath,
         platform: process.platform,
-        args
+        mode: 'vscode',
+        treeSitterMode: !!enableTreeSitterWasm ? 'wasm' : 'native',
+        enableTreeSitterWasm: !!enableTreeSitterWasm,
+        args,
+        command: 'cli-execution-context'
       });
 
       return new Promise((resolve, reject) => {
-        const child = spawn(nodePath, args, {
-          cwd: options.workspacePath,
-          stdio: ['pipe', 'pipe', 'pipe'],
-          timeout: options.timeout || 120000,
-          env: {
-            ...process.env,
-            XFI_VSCODE_MODE: 'true', // Force console logging in CLI
-            XFI_DISABLE_FILE_LOGGING: 'true', // Disable file logging
-            XFI_LOG_LEVEL: 'warn', // Reduce log verbosity from VSCode
-            PATH: process.env.PATH, // Ensure PATH is preserved
-            ...options.env
-          }
-        });
+        let child: ChildProcess;
 
-        // Special error handler for the primary spawn attempt
-        child.on('error', error => {
-          if ((error as any).code === 'ENOENT' && nodePath !== 'node') {
-            CLISpawner.isExecuting = false; // Release mutex temporarily
-            this.logger.warn(
-              `Primary Node.js path failed (${nodePath}), trying fallback with 'node'`
-            );
-
-            // Try fallback with system 'node' command
-            CLISpawner.isExecuting = true; // Re-acquire mutex
-            const fallbackChild = spawn('node', args, {
-              cwd: options.workspacePath,
-              stdio: ['pipe', 'pipe', 'pipe'],
-              timeout: options.timeout || 120000,
-              env: {
-                ...process.env,
-                XFI_VSCODE_MODE: 'true',
-                XFI_DISABLE_FILE_LOGGING: 'true',
-                XFI_LOG_LEVEL: 'warn',
-                PATH: process.env.PATH,
-                ...options.env
-              }
-            });
-
-            // Set up handlers for the fallback attempt
-            this.setupChildProcessHandlers(
-              fallbackChild,
-              options,
-              resolve,
-              reject,
-              'node',
-              cliPath
-            );
-            return;
-          }
-
-          // For non-ENOENT errors or when already using 'node', use standard handler
-          this.setupChildProcessHandlers(
-            child,
-            options,
-            resolve,
-            reject,
+        try {
+          // Use global spawn if available (for testing), otherwise use imported spawn
+          const spawnFn = (global as any).spawn || spawn;
+          child = spawnFn(nodePath, args, {
+            cwd: options.workspacePath,
+            stdio: ['pipe', 'pipe', 'pipe'],
+            timeout: options.timeout || 120000,
+            env: {
+              ...process.env,
+              // 🎯 PASS CORRELATION ID TO CLI VIA ENVIRONMENT
+              XFI_CORRELATION_ID: correlationId,
+              XFI_VSCODE_MODE: 'true', // Force console logging in CLI
+              XFI_DISABLE_FILE_LOGGING: 'true', // Disable file logging
+              XFI_LOG_LEVEL: 'warn', // Use consistent log level
+              XFI_LOG_COLORS: 'false', // Disable colors for CLI output
+              XFI_LOG_TIMESTAMP: 'true', // Ensure timestamps are included
+              // 🎯 PASS VSCODE EXTENSION PATH FOR PROPER WASM FILE ACCESS
+              XFI_VSCODE_EXTENSION_PATH: path.dirname(__dirname), // Extension root directory
+              FORCE_COLOR: '0', // Disable ANSI color support
+              ...options.env
+            }
+          });
+        } catch (spawnError) {
+          // Handle synchronous spawn failures
+          CLISpawner.isExecuting = false; // Release mutex
+          this.logger.error('Failed to spawn CLI process:', {
+            correlationId,
+            error:
+              spawnError instanceof Error
+                ? spawnError.message
+                : String(spawnError),
             nodePath,
-            cliPath
-          );
-        });
+            cliPath,
+            command: 'spawn-failure'
+          });
 
-        // Set up standard handlers for the primary attempt
+          reject(
+            new Error(
+              `Failed to spawn CLI process: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`
+            )
+          );
+          return;
+        }
+
         this.setupChildProcessHandlers(
           child,
           options,
           resolve,
           reject,
           nodePath,
-          cliPath
+          cliPath,
+          correlationId // 🎯 PASS CORRELATION ID TO HANDLERS
         );
       });
     } catch (error) {
-      CLISpawner.isExecuting = false; // Release mutex on any error
+      const duration = Date.now() - analysisStartTime;
+      this.logger.error('❌ CLI analysis setup failed', {
+        correlationId,
+        error: error instanceof Error ? error.message : String(error),
+        duration,
+        command: 'runAnalysis'
+      });
+
+      this.logger.stopStreaming();
+      CLISpawner.isExecuting = false;
       throw error;
+    } finally {
+      // Correlation ID logging in finally block
+      const totalDuration = Date.now() - analysisStartTime;
+      this.logger.debug(`🔍 Analysis attempt completed`, {
+        correlationId,
+        totalDuration,
+        command: 'runAnalysis'
+      });
     }
+  }
+
+  /**
+   * 🎯 NEW: Generate correlation ID for VSCode-to-CLI traceability
+   */
+  private generateCorrelationId(): string {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 8);
+    return `vscode-${timestamp}-${random}`;
   }
 
   /**
@@ -473,9 +563,47 @@ export class CLISpawner {
     resolve: (value: AnalysisResult) => void,
     reject: (reason?: any) => void,
     nodePath: string,
-    cliPath: string
+    cliPath: string,
+    correlationId: string // 🎯 ADD CORRELATION ID TO PARAMETERS
   ): void {
     let stderr = '';
+
+    // 🎯 LOG CHILD PROCESS SETUP WITH CORRELATION ID
+    this.logger.debug(
+      `Setting up child process handlers with correlation ID: ${correlationId}`,
+      {
+        correlationId,
+        command: 'setup-handlers'
+      }
+    );
+
+    // 🎯 REAL-TIME STREAMING OF CLI OUTPUT
+    if (child.stdout) {
+      child.stdout.on('data', (data: Buffer) => {
+        const output = data.toString();
+        const lines = output.split('\n');
+
+        for (const line of lines) {
+          if (line.trim()) {
+            this.logger.streamLine(line, 'stdout');
+          }
+        }
+      });
+    }
+
+    if (child.stderr) {
+      child.stderr.on('data', (data: Buffer) => {
+        const output = data.toString();
+        stderr += output;
+        const lines = output.split('\n');
+
+        for (const line of lines) {
+          if (line.trim()) {
+            this.logger.streamLine(line, 'stderr');
+          }
+        }
+      });
+    }
 
     // Set up cancellation
     const cancelHandler = () => {
@@ -485,10 +613,16 @@ export class CLISpawner {
 
     options.cancellationToken?.onCancellationRequested(cancelHandler);
 
-    // Handle stdout for progress updates
+    // 🎯 REAL-TIME STREAMING OF CLI OUTPUT
     child.stdout?.on('data', data => {
-      const dataStr = data.toString();
-      this.logger.debug(`CLI stdout: ${dataStr.trim()}`);
+      const output = data.toString();
+      const lines = output.split('\n');
+
+      for (const line of lines) {
+        if (line.trim()) {
+          this.logger.streamLine(line, 'stdout');
+        }
+      }
 
       // Update progress if available
       if (options.progress) {
@@ -496,17 +630,30 @@ export class CLISpawner {
       }
     });
 
-    // Handle stderr
+    // Handle stderr with streaming
     child.stderr?.on('data', data => {
-      const dataStr = data.toString();
-      stderr += dataStr;
-      this.logger.debug(`CLI stderr: ${dataStr.trim()}`);
+      const output = data.toString();
+      stderr += output;
+      const lines = output.split('\n');
+
+      for (const line of lines) {
+        if (line.trim()) {
+          this.logger.streamLine(line, 'stderr');
+        }
+      }
     });
 
     // Handle completion
     child.on('close', async code => {
       CLISpawner.isExecuting = false; // Release mutex
-      this.logger.debug(`CLI process exited with code ${code}`);
+
+      // 🎯 STOP STREAMING AFTER ANALYSIS COMPLETION
+      this.logger.stopStreaming();
+
+      this.logger.debug(`CLI process exited with code ${code}`, {
+        correlationId,
+        exitCode: code
+      });
 
       // Exit code 0 = success, 1 = analysis complete with issues found (still success)
       // Any other exit code is an error
@@ -542,7 +689,8 @@ export class CLISpawner {
         // Ensure the result has XFI_RESULT data for test compatibility
         if (!result.metadata?.XFI_RESULT) {
           this.logger.warn(
-            'XFI_RESULT missing from parsed result, creating minimal structure'
+            'XFI_RESULT missing from parsed result, creating minimal structure',
+            { correlationId }
           );
           // Create a minimal but complete XFI_RESULT structure
           const minimalXFIResult = this.createMinimalXFIResult();
@@ -551,38 +699,35 @@ export class CLISpawner {
           };
         }
 
+        // 🎯 DISPLAY ANALYSIS RESULTS IN FORMATTED WAY
+        this.logger.displayAnalysisResult(result.metadata, correlationId);
+
         resolve(result);
       } catch (parseError) {
         this.logger.error('Failed to read CLI result file:', parseError);
         this.logger.debug('CLI stderr:', stderr);
+        this.logger.error('CLI parse error details:', {
+          error:
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError),
+          workspacePath: options.workspacePath,
+          resultFilePath: path.join(
+            options.workspacePath,
+            '.xfiResults',
+            'XFI_RESULT.json'
+          ),
+          cliStderr: stderr,
+          correlationId
+        });
 
-        // For tests, create a minimal successful result if file parsing fails
-        // This ensures tests can complete even if the CLI output format changes
-        const minimalResult: AnalysisResult = {
-          metadata: {
-            XFI_RESULT: this.createMinimalXFIResult()
-          },
-          diagnostics: new Map(),
-          timestamp: Date.now(),
-          duration: 0,
-          summary: {
-            totalIssues: 0,
-            filesAnalyzed: 0,
-            analysisTimeMs: 0,
-            issuesByLevel: {
-              warning: 0,
-              error: 0,
-              fatality: 0,
-              exempt: 0
-            }
-          },
-          operationId: `cli-${Date.now()}`
-        };
-
-        this.logger.info(
-          'Returning minimal result due to parse error for test compatibility'
+        // NEVER return a minimal result - always throw the error so it can be properly handled
+        // This ensures that CLI failures are visible and can be debugged/fixed
+        reject(
+          new Error(
+            `CLI analysis failed - unable to parse result file: ${parseError instanceof Error ? parseError.message : String(parseError)}. Check CLI stderr for details: ${stderr}`
+          )
         );
-        resolve(minimalResult);
       }
     });
 
@@ -598,7 +743,8 @@ export class CLISpawner {
         path: (error as any).path,
         nodePath,
         cliPath,
-        platform: process.platform
+        platform: process.platform,
+        correlationId // 🎯 ADD CORRELATION ID TO ERROR LOGGING
       });
 
       // Provide specific guidance for different error types
@@ -805,10 +951,15 @@ export function createCLISpawner(): CLISpawner {
 export function getEmbeddedCLIPath(): string {
   // Use the same logic as the class method
   const possiblePaths = [
-    path.resolve(__dirname, '../cli/index.js'), // From dist directory
+    path.resolve(__dirname, './cli/index.js'), // From dist directory (production)
+    path.resolve(__dirname, './dist/cli/index.js'), // From root directory (development)
     path.resolve(__dirname, '../../cli/index.js'), // From src directory in tests
     path.resolve(process.cwd(), 'cli/index.js'), // From current working directory
-    path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js') // From monorepo root
+    path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js'), // From monorepo root
+    // CRITICAL: Add the actual monorepo CLI location for tests
+    path.resolve(__dirname, '../../../x-fidelity-cli/dist/index.js'), // From VSCode src to CLI dist
+    path.resolve(__dirname, '../../x-fidelity-cli/dist/index.js'), // From VSCode dist to CLI dist
+    path.resolve(process.cwd(), '../x-fidelity-cli/dist/index.js') // From VSCode package to CLI package
   ];
 
   for (const cliPath of possiblePaths) {

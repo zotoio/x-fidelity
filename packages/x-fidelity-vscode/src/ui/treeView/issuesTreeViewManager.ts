@@ -8,9 +8,11 @@ import {
 import type { ProcessedIssue } from '../../types/issues';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
 import { ConfigManager } from '../../configuration/configManager';
-import { logger } from '../../utils/logger';
+import { createComponentLogger } from '../../utils/globalLogger';
 import { getWorkspaceFolder } from '../../utils/workspaceUtils';
 import { REPO_GLOBAL_CHECK } from '@x-fidelity/core';
+
+const logger = createComponentLogger('IssuesTreeView');
 
 export class IssuesTreeViewManager implements vscode.Disposable {
   private static commandsRegistered = false;
@@ -152,19 +154,6 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
       IssuesTreeViewManager.globalDisposables.push(
         vscode.commands.registerCommand(
-          'xfidelity.addIssueExemption',
-          async (item: IssueTreeItem) => {
-            if (IssuesTreeViewManager.activeInstance) {
-              await IssuesTreeViewManager.activeInstance.addIssueExemption(
-                item
-              );
-            }
-          }
-        )
-      );
-
-      IssuesTreeViewManager.globalDisposables.push(
-        vscode.commands.registerCommand(
           'xfidelity.showIssueRuleInfo',
           async (item: IssueTreeItem) => {
             if (IssuesTreeViewManager.activeInstance) {
@@ -176,9 +165,10 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         )
       );
 
+      // ENHANCEMENT: Register tree-specific versions of the commands
       IssuesTreeViewManager.globalDisposables.push(
         vscode.commands.registerCommand(
-          'xfidelity.explainIssue',
+          'xfidelity.explainIssueFromTree',
           async (item: IssueTreeItem) => {
             if (IssuesTreeViewManager.activeInstance) {
               await IssuesTreeViewManager.activeInstance.explainIssue(item);
@@ -189,10 +179,22 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
       IssuesTreeViewManager.globalDisposables.push(
         vscode.commands.registerCommand(
-          'xfidelity.fixIssue',
+          'xfidelity.fixIssueFromTree',
           async (item: IssueTreeItem) => {
             if (IssuesTreeViewManager.activeInstance) {
               await IssuesTreeViewManager.activeInstance.fixIssue(item);
+            }
+          }
+        )
+      );
+
+      // ENHANCEMENT: Register fixAllIssues command for group items
+      IssuesTreeViewManager.globalDisposables.push(
+        vscode.commands.registerCommand(
+          'xfidelity.fixAllIssues',
+          async (item: IssueTreeItem) => {
+            if (IssuesTreeViewManager.activeInstance) {
+              await IssuesTreeViewManager.activeInstance.fixAllIssues(item);
             }
           }
         )
@@ -411,7 +413,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
       const countString =
         counts.length > 0 ? ` (${counts.join(' ')})` : ` (${stats.total})`;
-      title += countString;
+      //title += countString;
     }
 
     // Add grouping mode indicator
@@ -566,25 +568,6 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     }
   }
 
-  private async addIssueExemption(item: IssueTreeItem): Promise<void> {
-    if (!item || !item.issue) {
-      vscode.window.showWarningMessage('No issue data available for exemption');
-      return;
-    }
-
-    try {
-      // Use the existing exemption command
-      await vscode.commands.executeCommand('xfidelity.addExemption', {
-        file: item.issue.file,
-        rule: item.issue.rule,
-        line: item.issue.line
-      });
-    } catch (error) {
-      logger.error('Failed to add exemption', error);
-      vscode.window.showErrorMessage(`Failed to add exemption: ${error}`);
-    }
-  }
-
   private async showIssueRuleInfo(item: IssueTreeItem): Promise<void> {
     if (!item || !item.issue) {
       vscode.window.showWarningMessage('No issue data available for rule info');
@@ -629,12 +612,78 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
     try {
       vscode.window.showInformationMessage(
-        `Fix Issue: ${item.issue.rule} - This feature will provide automated fixes for the issue.`
+        `✨ Fix Issue: ${item.issue.rule} - This feature will provide automated fixes for the issue.`
       );
     } catch (error) {
       logger.error('Failed to fix issue', error);
       vscode.window.showErrorMessage(`Failed to fix issue: ${error}`);
     }
+  }
+
+  private async fixAllIssues(item: IssueTreeItem): Promise<void> {
+    if (!item || (!item.groupKey && !item.count)) {
+      vscode.window.showWarningMessage('No group data available to fix all issues');
+      return;
+    }
+
+    try {
+      // Find all child issues for this group
+      const groupIssues = this.getChildIssuesForGroup(item);
+      
+      if (groupIssues.length === 0) {
+        vscode.window.showInformationMessage('No issues found in this group');
+        return;
+      }
+
+      const totalCount = groupIssues.length;
+
+      // Show confirmation dialog - ignore fixable flag and ask about ALL issues
+      const action = await vscode.window.showInformationMessage(
+        `✨ Fix All Issues in "${item.label}"?\n\nThis will attempt to fix all ${totalCount} issue${totalCount !== 1 ? 's' : ''} in this group.\n\nNote: Some issues may not have automated fixes available, but the system will attempt to fix them anyway.`,
+        { modal: true },
+        'Fix All',
+        'Cancel'
+      );
+
+      if (action === 'Fix All') {
+        // Pass ALL issues in the group to the fix command (not just fixable ones)
+        vscode.window.showInformationMessage(
+          `✨ Attempting to fix all ${totalCount} issue${totalCount !== 1 ? 's' : ''} in group "${item.label}" - This feature will provide automated fixes for all issues in the group.`
+        );
+        
+        // TODO: Here you would call the actual fix implementation with all groupIssues
+        // For now, we're just showing the message as per the existing pattern
+        logger.info(`Attempting to fix all ${totalCount} issues in group: ${item.label}`, {
+          groupKey: item.groupKey,
+          issueIds: groupIssues.map(issue => issue.id)
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to fix all issues', error);
+      vscode.window.showErrorMessage(`Failed to fix all issues: ${error}`);
+    }
+  }
+
+  private getChildIssuesForGroup(groupItem: IssueTreeItem): ProcessedIssue[] {
+    if (!groupItem.groupKey) {
+      return [];
+    }
+
+    // Filter current issues based on the group type and key
+    const groupKey = groupItem.groupKey;
+    const groupId = groupItem.id;
+
+    if (groupId.startsWith('severity-')) {
+      return this.currentIssues.filter(issue => issue.severity === groupKey);
+    } else if (groupId.startsWith('rule-')) {
+      return this.currentIssues.filter(issue => issue.rule === groupKey);
+    } else if (groupId.startsWith('file-')) {
+      return this.currentIssues.filter(issue => issue.file === groupKey);
+    } else if (groupId.startsWith('category-')) {
+      return this.currentIssues.filter(issue => (issue.category || 'General') === groupKey);
+    }
+
+    return [];
   }
 
   // Public methods for external use

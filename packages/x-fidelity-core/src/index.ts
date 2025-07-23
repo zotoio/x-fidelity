@@ -12,6 +12,8 @@ export * from './facts';
 export * from './operators';
 export * from './notifications';
 export * from './utils/enhancedLogger';
+export * from './utils/bundledEnvironmentDetector';
+export * from './utils/yamlHighlighter';
 
 // Re-export types from the types package
 export type {
@@ -47,6 +49,8 @@ export type {
     RuleReference,
     RepoXFIConfig,
     CLIOptions,
+    ExecutionMode,
+    EXECUTION_MODES,
     ArchetypeConfig,
     ExecutionConfig,
     GetConfigParams,

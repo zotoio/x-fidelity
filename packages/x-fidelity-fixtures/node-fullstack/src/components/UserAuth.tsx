@@ -13,7 +13,7 @@ export const UserAuth: React.FC = () => {
       // These trigger noDatabases-iterative (just logging, not actual requires)
       console.log('About to require oracle database package...');
       console.log('About to require postgres database package...');
-      console.log('About to require mongodb database package...');
+      console.log('About to require mongodb database package oracle...');
 
       // Only 2 sensitive logging violations in this file
       console.log('Using auth_token:', credentials.authToken); // Pattern: (api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key)

@@ -1,21 +1,46 @@
-import { ILogger, LogLevel } from '@x-fidelity/types';
+import { ILogger, LogLevel, EXECUTION_MODES } from '@x-fidelity/types';
+
+export interface DefaultLoggerOptions {
+  prefix?: string;
+  silentInTests?: boolean;
+  enableConsoleOutput?: boolean;
+  vscodeMode?: boolean;
+}
 
 /**
  * Default logger implementation that provides fallback logging
  * when no logger has been injected into the system.
  * 
  * This logger provides console-based logging with environment-aware behavior:
- * - Silent in test environments
+ * - Silent in test environments (configurable)
  * - Console output in development/production
  * - Proper error handling and graceful degradation
+ * - Optimized for VSCode extension output when configured
  */
 export class DefaultLogger implements ILogger {
   private level: LogLevel = 'info';
   private isTestEnvironment: boolean;
   private prefix: string;
+  private silentInTests: boolean;
+  private enableConsoleOutput: boolean;
+  private vscodeMode: boolean;
 
-  constructor(prefix?: string) {
-    this.prefix = prefix || '[X-Fidelity]';
+  constructor(prefixOrOptions?: string | DefaultLoggerOptions) {
+    if (typeof prefixOrOptions === 'string') {
+      // Legacy constructor with prefix only
+      this.prefix = prefixOrOptions || '[X-Fidelity]';
+      this.silentInTests = true;
+      this.enableConsoleOutput = true;
+      this.vscodeMode = false;
+    } else {
+      // New constructor with options
+      const options = prefixOrOptions || {};
+      this.prefix = options.prefix || '[X-Fidelity]';
+      this.silentInTests = options.silentInTests !== false; // Default true
+      this.enableConsoleOutput = options.enableConsoleOutput !== false; // Default true
+      this.vscodeMode = options.vscodeMode || false;
+    }
+    
     this.isTestEnvironment = this.detectTestEnvironment();
   }
 
@@ -28,11 +53,14 @@ export class DefaultLogger implements ILogger {
   }
 
   private shouldLog(level: LogLevel): boolean {
-    // In VSCode mode, allow logging even in test-like environments
-    const isVSCodeMode = process.env.XFI_VSCODE_MODE === 'true';
+    // Check if console output is enabled
+    if (!this.enableConsoleOutput) {
+      return false;
+    }
     
-    // Always silent in test environment (unless in VSCode mode)
-    if (this.isTestEnvironment && !isVSCodeMode) {
+    // In VSCode mode, allow logging even in test-like environments
+    // Otherwise, respect the silentInTests setting
+    if (this.isTestEnvironment && this.silentInTests && !this.vscodeMode) {
       return false;
     }
 
@@ -163,6 +191,11 @@ export class DefaultLogger implements ILogger {
     return Promise.resolve();
   }
 
+  updateOptions(options?: { enableFileLogging?: boolean; filePath?: string }): void {
+    // DefaultLogger doesn't support file logging, so this is a no-op
+    // File logging would be handled by more specialized loggers like PinoLogger
+  }
+
   dispose?(): void {
     // No resources to dispose for console-based logger
   }
@@ -184,6 +217,7 @@ export class SilentLogger implements ILogger {
   getLevel(): LogLevel { return 'fatal'; }
   isLevelEnabled(): boolean { return false; }
   async flush(): Promise<void> { return Promise.resolve(); }
+  updateOptions(options?: { enableFileLogging?: boolean; filePath?: string }): void {}
   dispose?(): void {}
 }
 
@@ -197,9 +231,34 @@ export function createDefaultLogger(prefix?: string): ILogger {
     process.env.JEST_WORKER_ID !== undefined
   );
 
-  //if (isTestEnvironment) {
+  if (isTestEnvironment) {
     return new SilentLogger();
-  //}
+  }
 
-  //return new DefaultLogger(prefix);
+  return new DefaultLogger(prefix);
+}
+
+/**
+ * Factory function to create a VSCode-optimized logger
+ */
+export function createVSCodeLogger(prefix?: string): ILogger {
+  return new DefaultLogger({
+    prefix: prefix || '[VSCode]',
+    silentInTests: false, // Allow logging in test-like environments when in VSCode
+    enableConsoleOutput: true,
+    vscodeMode: true
+  });
+}
+
+// Register DefaultLogger as the preferred logger for VSCode mode
+// This will be called when Core package is loaded
+try {
+  const { LoggerProvider } = require('./loggerProvider');
+  LoggerProvider.registerLoggerFactory(EXECUTION_MODES.VSCODE, (level: LogLevel) => {
+    const logger = createVSCodeLogger('[VSCode]');
+    logger.setLevel(level);
+    return logger;
+  });
+} catch (error) {
+  // Ignore registration errors - LoggerProvider may not be available in all contexts
 } 

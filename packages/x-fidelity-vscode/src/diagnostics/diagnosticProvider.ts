@@ -1,24 +1,45 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import type { AnalysisResult } from '../analysis/types';
 import { ConfigManager } from '../configuration/configManager';
-import { VSCodeLogger } from '../utils/vscodeLogger';
+import { createComponentLogger } from '../utils/globalLogger';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
 import { isTestEnvironment } from '../utils/testDetection';
 
-export interface DiagnosticIssue {
+// Extended interface for diagnostics with X-Fidelity metadata
+interface ExtendedDiagnostic extends vscode.Diagnostic {
+  issueId?: string;
+  ruleId?: string;
+  category?: string;
+  documentation?: string;
+}
+
+// Internal interface for processing issues from analysis results
+interface DiagnosticIssue {
   file: string;
   line: number;
   column: number;
   endLine?: number;
   endColumn?: number;
-  message: string;
   severity: 'error' | 'warning' | 'info';
+  message: string;
   ruleId: string;
+  issueId?: string;
   category?: string;
-  code?: string;
+  documentation?: string;
   source?: string;
+  code?: string;
   tags?: vscode.DiagnosticTag[];
+  isFileLevelRule?: boolean;
+}
+
+// Internal issue metadata type for location resolution
+interface IssueLocation {
+  file: string;
+  line?: number;
+  column?: number;
+  snippet?: string;
 }
 
 /**
@@ -35,7 +56,7 @@ export class DiagnosticProvider implements vscode.Disposable {
   private decorationUpdateDebouncer?: NodeJS.Timeout;
   private readonly DECORATION_UPDATE_DELAY = 100; // ms
   private lastUpdateTime = 0;
-  private logger: VSCodeLogger;
+  private logger: any;
   private issueCount = 0;
 
   // Event emitter for diagnostic updates
@@ -49,9 +70,9 @@ export class DiagnosticProvider implements vscode.Disposable {
   }> = this.onDiagnosticsUpdated.event;
 
   constructor(private configManager: ConfigManager) {
-    this.logger = new VSCodeLogger('DiagnosticProvider');
     this.diagnosticCollection =
-      vscode.languages.createDiagnosticCollection('x-fidelity');
+      vscode.languages.createDiagnosticCollection('xfidelity');
+    this.logger = createComponentLogger('DiagnosticProvider');
     this.setupDecorations();
     this.setupEventListeners();
     this.disposables.push(this.diagnosticCollection);
@@ -63,9 +84,7 @@ export class DiagnosticProvider implements vscode.Disposable {
    * Update diagnostics from analysis result
    * Converts X-Fidelity issues to VS Code diagnostics for Problems panel integration
    */
-  public async updateDiagnostics(
-    result: AnalysisResult | ResultMetadata
-  ): Promise<void> {
+  public async updateDiagnostics(result: AnalysisResult): Promise<void> {
     const startTime = performance.now();
 
     try {
@@ -184,9 +203,7 @@ export class DiagnosticProvider implements vscode.Disposable {
   /**
    * Extract issues from analysis result in a standardized format
    */
-  private extractIssuesFromResult(
-    result: AnalysisResult | ResultMetadata
-  ): DiagnosticIssue[] {
+  private extractIssuesFromResult(result: AnalysisResult): DiagnosticIssue[] {
     const issues: DiagnosticIssue[] = [];
 
     try {
@@ -203,7 +220,7 @@ export class DiagnosticProvider implements vscode.Disposable {
       );
       this.logger.info('=== END RECEIVED RESULT DEBUG ===');
 
-      // Get XFI_RESULT from the result
+      // Get XFI_RESULT from the result with more flexible handling
       let xfiResult;
       if ('metadata' in result && result.metadata?.XFI_RESULT) {
         xfiResult = result.metadata.XFI_RESULT;
@@ -211,9 +228,19 @@ export class DiagnosticProvider implements vscode.Disposable {
       } else if ('XFI_RESULT' in result) {
         xfiResult = result.XFI_RESULT;
         this.logger.debug('Found XFI_RESULT in result.XFI_RESULT');
+      } else if (result && 'issueDetails' in result) {
+        xfiResult = result; // Direct use if it has issueDetails
+        this.logger.debug('Using result directly as it has issueDetails');
       } else {
-        xfiResult = result;
-        this.logger.debug('Using entire result as XFI_RESULT (fallback)');
+        // Last resort: deep search for issueDetails
+        const found = this.deepSearchForIssueDetails(result);
+        if (found) {
+          xfiResult = { issueDetails: found };
+          this.logger.debug('Found issueDetails via deep search');
+        } else {
+          xfiResult = { issueDetails: [] };
+          this.logger.warn('No issueDetails found anywhere in result');
+        }
       }
 
       if (!xfiResult?.issueDetails) {
@@ -290,7 +317,12 @@ export class DiagnosticProvider implements vscode.Disposable {
             error.ruleFailure ||
             'Issue detected';
 
-          const message = this.cleanMessage(rawMessage);
+          // Enhance message for file-level rules
+          let message = this.cleanMessage(rawMessage);
+          if (location.source === 'file-level-rule') {
+            const fileName = fileIssue.filePath.split('/').pop() || 'file';
+            message = `[File-level] ${message} (affects entire ${fileName})`;
+          }
 
           const diagnosticIssue: DiagnosticIssue = {
             file: filePath,
@@ -311,6 +343,8 @@ export class DiagnosticProvider implements vscode.Disposable {
           (diagnosticIssue as any).locationSource = location.source;
           (diagnosticIssue as any).locationConfidence =
             locationResult.confidence;
+          (diagnosticIssue as any).isFileLevelRule =
+            location.source === 'file-level-rule';
 
           issues.push(diagnosticIssue);
         }
@@ -322,6 +356,28 @@ export class DiagnosticProvider implements vscode.Disposable {
     }
 
     return issues;
+  }
+
+  /**
+   * Deep search for issueDetails in complex result structures
+   */
+  private deepSearchForIssueDetails(obj: any): any[] | null {
+    if (!obj || typeof obj !== 'object') {
+      return null;
+    }
+
+    if (Array.isArray(obj.issueDetails)) {
+      return obj.issueDetails;
+    }
+
+    for (const value of Object.values(obj)) {
+      const found = this.deepSearchForIssueDetails(value);
+      if (found) {
+        return found;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -480,7 +536,8 @@ export class DiagnosticProvider implements vscode.Disposable {
       ];
     }
 
-    // Preserve basic metadata for tree view processing
+    // ENHANCEMENT: Preserve file path for hover context and other metadata
+    (diagnostic as any).filePath = issue.file;
     (diagnostic as any).category = issue.category;
     (diagnostic as any).fixable = (issue as any).fixable || false;
     (diagnostic as any).ruleId = issue.ruleId;
@@ -494,7 +551,6 @@ export class DiagnosticProvider implements vscode.Disposable {
    */
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
     try {
-      const path = require('path');
       const fs = require('fs');
 
       // CRITICAL FIX: Validate file path before processing
@@ -519,8 +575,8 @@ export class DiagnosticProvider implements vscode.Disposable {
 
         // Try to find a suitable file to open for global checks
         const candidateFiles = [
-          'README.md',
           'package.json',
+          'README.md',
           'tsconfig.json',
           'src/index.js',
           'src/index.ts',
@@ -992,11 +1048,16 @@ export class DiagnosticProvider implements vscode.Disposable {
     const config = this.configManager.getConfig();
     const ruleId = (diagnostic as any).ruleId;
     const category = (diagnostic as any).category;
+    const fixable = (diagnostic as any).fixable;
+    const filePath = (diagnostic as any).filePath || '';
 
     const markdown = new vscode.MarkdownString();
-    markdown.isTrusted = true;
 
-    // Main message
+    // ENHANCEMENT: Enable HTML support and make it trusted for better interactivity
+    markdown.isTrusted = true;
+    markdown.supportHtml = true;
+
+    // Main message with enhanced styling
     markdown.appendMarkdown(`**X-Fidelity: ${diagnostic.message}**\n\n`);
 
     // Rule information
@@ -1012,21 +1073,47 @@ export class DiagnosticProvider implements vscode.Disposable {
     const severityText = this.getSeverityText(diagnostic.severity);
     markdown.appendMarkdown(`**Severity:** ${severityText}\n\n`);
 
-    // Rule documentation link (if enabled)
+    // ENHANCEMENT: Add separator for actions section
+    markdown.appendMarkdown(`---\n\n`);
+    markdown.appendMarkdown(`**🛠️ Actions:**\n\n`);
+
+    // Create diagnostic context for commands
+    const diagnosticContext = {
+      message: diagnostic.message,
+      ruleId: ruleId,
+      category: category,
+      severity: this.mapFromVSCodeSeverity(diagnostic.severity),
+      file: filePath,
+      line: diagnostic.range.start.line + 1, // Convert to 1-based
+      column: diagnostic.range.start.character + 1, // Convert to 1-based
+      fixable: fixable || false,
+      code: diagnostic.code
+    };
+
+    // ENHANCEMENT: Add Explain Issue action link
+    markdown.appendMarkdown(
+      `[🤔 Explain Issue](command:xfidelity.explainIssue?${encodeURIComponent(JSON.stringify(diagnosticContext))}) • `
+    );
+
+    // ENHANCEMENT: Add Fix Issue action link (always available)
+    const fixLabel = fixable ? '✨ Fix Issue' : '✨ Fix Issue';
+    markdown.appendMarkdown(
+      `[${fixLabel}](command:xfidelity.fixIssue?${encodeURIComponent(JSON.stringify(diagnosticContext))}) • `
+    );
+
+    //Rule documentation link (if enabled)
     if (config.showRuleDocumentation && ruleId) {
       markdown.appendMarkdown(
-        `[View Rule Documentation](command:xfidelity.showRuleDocumentation?${encodeURIComponent(JSON.stringify([ruleId]))})\n\n`
+        `[📖 View Documentation](command:xfidelity.showRuleDocumentation?${encodeURIComponent(JSON.stringify([ruleId]))})`
       );
     }
 
-    // Quick actions
-    if ((diagnostic as any).fixable) {
-      markdown.appendMarkdown(`💡 **Quick Fix Available**\n\n`);
-    }
+    markdown.appendMarkdown(`\n\n`);
 
-    // Exemption option
+    // ENHANCEMENT: Add footer with tip about hover persistence
+    markdown.appendMarkdown(`---\n\n`);
     markdown.appendMarkdown(
-      `[Add Exemption](command:xfidelity.addExemption?${encodeURIComponent(JSON.stringify([ruleId, diagnostic.range]))})`
+      `💡 *Tip: This tooltip stays open when you hover over it for easy interaction*`
     );
 
     return markdown;

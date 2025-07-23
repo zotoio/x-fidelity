@@ -400,18 +400,13 @@ export class StandardErrorHandler {
   }
   
   private getSeverityColor(severity: string): string {
-    // ANSI color codes for CLI
-    switch (severity) {
-      case 'fatal': return '\x1b[95m'; // Magenta
-      case 'error': return '\x1b[91m'; // Red
-      case 'warning': return '\x1b[93m'; // Yellow
-      case 'info': return '\x1b[94m'; // Blue
-      default: return '\x1b[91m'; // Red
-    }
+    // Colors disabled - return empty string
+    return '';
   }
   
   private getColorReset(): string {
-    return '\x1b[0m'; // Reset color
+    // Colors disabled - return empty string
+    return '';
   }
 }
 

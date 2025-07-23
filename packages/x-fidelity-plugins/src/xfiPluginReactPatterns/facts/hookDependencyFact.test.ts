@@ -1,6 +1,5 @@
 import { hookDependencyFact } from './hookDependencyFact';
-import { FileData } from '@x-fidelity/types';
-import { AstResult } from '../../sharedPluginUtils/astUtils';
+import { FileData, AstResult } from '@x-fidelity/types';
 
 // Mock logger
 jest.mock('@x-fidelity/core', () => ({
@@ -73,9 +72,9 @@ describe('hookDependencyFact', () => {
     it('should return empty results when AST tree is not available', async () => {
       const astResult: AstResult = {
         tree: null,
-        success: false,
+        hasErrors: true,
         language: 'tsx',
-        parseTime: 100
+        generationTime: 100
       };
       mockAlmanac.factValue.mockResolvedValue(astResult);
 
@@ -120,9 +119,9 @@ describe('hookDependencyFact', () => {
 
       const astResult: AstResult = {
         tree: mockAstTree,
-        success: true,
+        hasErrors: false,
         language: 'tsx',
-        parseTime: 150
+        generationTime: 150
       };
       mockAlmanac.factValue.mockResolvedValue(astResult);
 
@@ -163,9 +162,9 @@ describe('hookDependencyFact', () => {
 
       const astResult: AstResult = {
         tree: mockAstTree,
-        success: true,
+        hasErrors: false,
         language: 'tsx',
-        parseTime: 200
+        generationTime: 200
       };
       mockAlmanac.factValue.mockResolvedValue(astResult);
 
@@ -200,9 +199,9 @@ describe('hookDependencyFact', () => {
 
       const astResult: AstResult = {
         tree: mockAstTree,
-        success: true,
+        hasErrors: false,
         language: 'jsx',
-        parseTime: 120
+        generationTime: 120
       };
       mockAlmanac.factValue.mockResolvedValue(astResult);
 
@@ -231,9 +230,9 @@ describe('hookDependencyFact', () => {
 
       const astResult: AstResult = {
         tree: mockAstTree,
-        success: true,
+        hasErrors: false,
         language: 'typescript',
-        parseTime: 80
+        generationTime: 80
       };
       mockAlmanac.factValue.mockResolvedValue(astResult);
 
@@ -312,9 +311,9 @@ describe('hookDependencyFact', () => {
 
       const astResult: AstResult = {
         tree: mockAstTree,
-        success: true,
+        hasErrors: false,
         language: 'typescript',
-        parseTime: 180
+        generationTime: 180
       };
       mockAlmanac.factValue.mockResolvedValue(astResult);
 
@@ -359,9 +358,9 @@ describe('hookDependencyFact', () => {
 
       const astResult: AstResult = {
         tree: mockAstTree,
-        success: true,
+        hasErrors: false,
         language: 'tsx',
-        parseTime: 250
+        generationTime: 250
       };
       mockAlmanac.factValue.mockResolvedValue(astResult);
 
@@ -383,9 +382,9 @@ describe('hookDependencyFact', () => {
 
       const astResult: AstResult = {
         tree: { type: 'program', children: [] },
-        success: true,
+        hasErrors: false,
         language: 'tsx',
-        parseTime: 10
+        generationTime: 10
       };
       mockAlmanac.factValue.mockResolvedValue(astResult);
 
@@ -400,9 +399,9 @@ describe('hookDependencyFact', () => {
     it('should handle malformed AST', async () => {
       const malformedAst: AstResult = {
         tree: { type: 'invalid', children: null },
-        success: false,
+        hasErrors: true,
         language: 'tsx',
-        parseTime: 0
+        generationTime: 0
       };
       mockAlmanac.factValue.mockResolvedValue(malformedAst);
 
@@ -434,9 +433,9 @@ describe('hookDependencyFact', () => {
 
       const astResult: AstResult = {
         tree: mockAstTree,
-        success: true,
+        hasErrors: false,
         language: 'tsx',
-        parseTime: 5000
+        generationTime: 5000
       };
       mockAlmanac.factValue.mockResolvedValue(astResult);
 
@@ -471,9 +470,9 @@ describe('hookDependencyFact', () => {
 
       const astResult: AstResult = {
         tree: mockAstTree,
-        success: true,
+        hasErrors: false,
         language: 'tsx',
-        parseTime: 100
+        generationTime: 100
       };
       mockAlmanac.factValue.mockResolvedValue(astResult);
 

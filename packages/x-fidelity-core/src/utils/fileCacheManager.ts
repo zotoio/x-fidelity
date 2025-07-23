@@ -293,6 +293,14 @@ export class FileCacheManager {
         const cacheFile = path.join(this.cacheDir, this.CACHE_FILE);
         
         try {
+            // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
+            if (cacheFile.includes('XFI_RESULT.json')) {
+                logger.error(`🚨 CRITICAL: Attempted to delete XFI_RESULT.json via cache clear - BLOCKED!`, {
+                    cacheFile
+                });
+                return;
+            }
+            
             await fs.promises.unlink(cacheFile);
             logger.info('File cache cleared');
         } catch (error) {
@@ -475,6 +483,15 @@ export class FileCacheManager {
                     if (!dryRun) {
                         for (const file of uniqueFilesToDelete) {
                             try {
+                                // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
+                                if (file.filename === 'XFI_RESULT.json' || file.fullPath.includes('XFI_RESULT.json')) {
+                                    logger.error(`🚨 CRITICAL: Attempted to delete XFI_RESULT.json - BLOCKED!`, {
+                                        filename: file.filename,
+                                        fullPath: file.fullPath
+                                    });
+                                    continue;
+                                }
+                                
                                 await fs.promises.unlink(file.fullPath);
                                 logger.debug(`Deleted: ${file.filename}`);
                             } catch (deleteError) {
@@ -491,12 +508,13 @@ export class FileCacheManager {
                 .flat()
                 .reduce((sum, f) => sum + f.size, 0);
             
-            logger.info(`✅ Startup cleanup completed:`);
-            logger.info(`   📁 Total groups: ${Object.keys(fileGroups).length}`);
-            logger.info(`   📄 Total files processed: ${totalFiles}`);
-            logger.info(`   📏 Total size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
-            logger.info(`   🗑️  Groups exceeding limit: ${oversizedGroups}`);
-            logger.info(`   ⏰ Old files cleaned: ${oldFiles}`);
+            logger.info('Startup cleanup completed', {
+                totalGroups: Object.keys(fileGroups).length,
+                totalFilesProcessed: totalFiles,
+                totalSizeMB: Number((totalSize / 1024 / 1024).toFixed(2)),
+                groupsExceedingLimit: oversizedGroups,
+                oldFilesCleaned: oldFiles
+            });
             
         } catch (error) {
             logger.error('Failed to perform startup cleanup:', error);

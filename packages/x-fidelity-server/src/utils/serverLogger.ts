@@ -1,32 +1,28 @@
 import pino from 'pino';
-import { ILogger, LogLevel, LogLevelValues, SimpleLoggerConfig } from '@x-fidelity/types';
+import { ILogger, LogLevel, LogLevelValues, SimpleLoggerConfig, EXECUTION_MODES } from '@x-fidelity/types';
+import { shouldUseDirectLogging } from '@x-fidelity/core';
 
 export class ServerLogger implements ILogger {
   private logger: pino.Logger;
 
   constructor(config: SimpleLoggerConfig = {}) {
+    const transport = this.createTransports(config);
     const pinoConfig: pino.LoggerOptions = {
       level: config.level || 'info',
-      transport: this.createTransports(config)
+      ...(transport && { transport }) // Only add transport if it's not undefined
     };
 
     this.logger = pino(pinoConfig);
   }
 
-  private createTransports(config: SimpleLoggerConfig): pino.TransportMultiOptions | pino.TransportSingleOptions {
+  private createTransports(config: SimpleLoggerConfig): pino.TransportMultiOptions | pino.TransportSingleOptions | undefined {
     const targets: pino.TransportTargetOptions[] = [];
 
-    // Console transport
+    // Console transport with fallback for bundled environments
     if (config.enableConsole !== false) {
-      targets.push({
-        target: 'pino-pretty',
-        level: config.level || 'info',
-        options: {
-          colorize: config.enableColors !== false,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname'
-        }
-      });
+      // Always use direct logging to avoid transport worker issues
+      // This also removes the dependency on pino-pretty
+      return undefined;
     }
 
     // File transport
@@ -69,6 +65,8 @@ export class ServerLogger implements ILogger {
       targets
     };
   }
+
+
 
   trace(msgOrMeta: string | any, metaOrMsg?: any): void {
     if (typeof msgOrMeta === 'string') {
@@ -122,6 +120,14 @@ export class ServerLogger implements ILogger {
     this.logger.level = level;
   }
 
+  /**
+   * Update log level dynamically - useful for long-running server processes
+   * @param level The new log level to set
+   */
+  updateLevel(level: LogLevel): void {
+    this.setLevel(level);
+  }
+
   getLevel(): LogLevel {
     return this.logger.level as LogLevel;
   }
@@ -130,6 +136,11 @@ export class ServerLogger implements ILogger {
     const currentLevelValue = LogLevelValues[this.getLevel()];
     const checkLevelValue = LogLevelValues[level];
     return checkLevelValue >= currentLevelValue;
+  }
+
+  updateOptions(options?: { enableFileLogging?: boolean; filePath?: string }): void {
+    // ServerLogger configuration is set at creation time
+    // For now, this is a no-op - dynamic reconfiguration could be added if needed
   }
 
   // Child logger method removed - use direct context passing instead
@@ -154,4 +165,34 @@ export function resetLogPrefix(): void {
 
 export function setLogLevel(level: LogLevel): void {
   logger.setLevel(level);
+}
+
+// Register ServerLogger as the preferred logger for Server and Hook modes
+// This will be called when Server package is loaded
+try {
+  const { LoggerProvider } = require('@x-fidelity/core');
+  
+  // Register for server mode
+  LoggerProvider.registerLoggerFactory(EXECUTION_MODES.SERVER, (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => {
+    return new ServerLogger({
+      level,
+      enableConsole: true,
+      enableColors: false, // Server mode typically doesn't need colors
+      enableFile: options?.enableFileLogging || false,
+      filePath: options?.filePath
+    });
+  });
+  
+  // Register for hook mode (same as server for now)
+  LoggerProvider.registerLoggerFactory(EXECUTION_MODES.HOOK, (level: LogLevel, options?: { enableFileLogging?: boolean; filePath?: string }) => {
+    return new ServerLogger({
+      level,
+      enableConsole: true,
+      enableColors: false,
+      enableFile: options?.enableFileLogging || false,
+      filePath: options?.filePath
+    });
+  });
+} catch (error) {
+  // Ignore registration errors - LoggerProvider may not be available in all contexts
 } 

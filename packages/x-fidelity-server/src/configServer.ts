@@ -8,7 +8,7 @@ import { expressLogger } from './expressLogger'
 import { options } from '@x-fidelity/core';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { StartServerParams } from '@x-fidelity/types';
+import { StartServerParams, EXECUTION_MODES } from '@x-fidelity/types';
 import { archetypeRoute } from './routes/archetypeRoute';
 import { archetypeRulesRoute } from './routes/archetypeRulesRoute';
 import { archetypeRuleRoute } from './routes/archetypeRuleRoute';
@@ -71,6 +71,9 @@ app.post('/github-pull-request-check', validateGithubWebhook, githubWebhookPullR
 export function startServer({ customPort, executionLogPrefix }: StartServerParams): any {
     const serverPort = customPort ? parseInt(customPort.toString()) : port;
     executionLogPrefix && setLogPrefix(executionLogPrefix);
+    
+    // Log that server is starting in server mode
+    logger.info(`Starting X-Fidelity in ${EXECUTION_MODES.SERVER} mode on port ${serverPort}`);
 
     // Read SSL certificate and key
     try {

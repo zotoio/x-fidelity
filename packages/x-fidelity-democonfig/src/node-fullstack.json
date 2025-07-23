@@ -15,7 +15,10 @@
         "lowMigrationToNewComponentLib-global",
         "functionComplexity-iterative",
         "functionCount-iterative",
-        "codeRhythm-iterative"
+        "codeRhythm-iterative",
+        "reactHooksDependency-iterative",
+        "reactHooksMigration-global",
+        "customFactExample-iterative"
     ],
     "config": {
         "minimumDependencyVersions": {
@@ -30,20 +33,33 @@
             "@colors/colors": "1.7.0 || 1.6.0"
         },
         "standardStructure": {
-            "app": {
-                "frontend": null,
-                "server": null
-            }
+            "src": {
+                "components": null,
+                "utils": null,
+                "config": null,
+                "facts": null
+            },
+            "package.json": null,
+            "README.md": null
         },
         "blacklistPatterns": [
             ".*\\/\\..*",
             ".*\\.(log|lock|txt)$",
-            ".*\\/(dist|coverage|build|node_modules|tmp|temp|out)(\\/.*|$)"
+            ".*\\/(dist|coverage|build|node_modules|tmp|temp|out|x-fidelity-vscode\\/cli)(\\/.*|$)"
         ],
         "whitelistPatterns": [
-            ".*\\.(ts|tsx|js|jsx)$",
+            ".*\\.(ts|tsx|js|jsx|json)$",
             ".*xfiTestMatch\\.json$",
+            ".*customExample\\.json$",
             ".*\\/README\\.md$"
+        ],
+        "requiredFiles": [
+            "README.md",
+            "package.json",
+            "src/index.js"
+        ],
+        "sensitiveFileFalsePositives": [
+            "src/components/SensitiveLogging.tsx"
         ],
         "notifications": {
             "enabled": true,
@@ -55,8 +71,8 @@
             "notifyOnSuccess": true,
             "notifyOnFailure": true,
             "customTemplates": {
-                "success": "All checks passed successfully! 🎉\n\nArchetype: ${archetype}\nFiles analyzed: ${fileCount}\nExecution time: ${executionTime}s",
-                "failure": "Issues found in codebase:\n\nArchetype: ${archetype}\nTotal issues: ${totalIssues}\n- Warnings: ${warningCount}\n- Errors: ${errorCount}\n- Fatalities: ${fatalityCount}\n\nAffected files:\n${affectedFiles}"
+                "success": "All checks passed successfully! 🎉\n\nArchetype: ${archetype}\nFiles analyzed: ${fileCount}\nExecution time: ${executionTime}s\n\nPlugin coverage:\n- AST Analysis: ✅\n- Pattern Matching: ✅\n- React Patterns: ✅\n- Sensitive Logging: ✅\n- Database Checks: ✅\n- OpenAI Analysis: ✅\n- Required Files: ✅\n- Custom Examples: ✅",
+                "failure": "Issues found in codebase:\n\nArchetype: ${archetype}\nTotal issues: ${totalIssues}\n- Warnings: ${warningCount}\n- Errors: ${errorCount}\n- Fatalities: ${fatalityCount}\n\nAffected files:\n${affectedFiles}\n\nPlugin analysis results:\n- Function complexity issues detected\n- Sensitive logging patterns found\n- React hooks dependency issues\n- Code rhythm concerns identified"
             }
         }
     }

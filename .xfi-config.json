@@ -13,7 +13,7 @@
         },
         {
             "name": "remote-rule",
-            "url": "https://example.com/rules/custom-rule.json"
+            "url": "https://localhost:8888/rules/custom-rule.json"
         }
     ],
     "additionalPlugins": ["xfiPluginSimpleExample", "xfiPluginAst"],

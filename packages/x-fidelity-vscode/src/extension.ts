@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import { ExtensionManager } from './core/extensionManager';
-import { VSCodeLogger } from './utils/vscodeLogger';
+import { createComponentLogger } from './utils/globalLogger';
 import { setupTestEnvironmentPatching } from './utils/testDetection';
 
+
 // Global logger for extension lifecycle
-const logger = new VSCodeLogger('X-Fidelity');
+const logger = createComponentLogger('Extension');
 
 let extensionManager: ExtensionManager | undefined;
 let extensionContext: vscode.ExtensionContext | undefined;
@@ -15,13 +16,11 @@ let isActivated = false;
  */
 export async function activate(context: vscode.ExtensionContext) {
   const startTime = performance.now();
-  let logger: VSCodeLogger | undefined; // Make logger optional initially
 
   try {
     // Set up test environment patching early to prevent external URL opens
     setupTestEnvironmentPatching();
 
-    logger = new VSCodeLogger('Extension'); // Initialize logger first
     logger.info('🚀 X-Fidelity extension activating..');
 
     // Set context immediately for UI elements
@@ -33,6 +32,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Store extension context globally for access by other components
     extensionContext = context;
+
+    // TreeSitter operations are handled by the embedded CLI
+    // No need to initialize TreeSitter in the extension itself
 
     // PERFORMANCE FIX: Fast initialization with macOS native module handling
     try {
@@ -83,7 +85,8 @@ export async function activate(context: vscode.ExtensionContext) {
       );
     } else {
       // Show performance optimization notice for users
-      const config = vscode.workspace.getConfiguration('xfidelity');
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  const config = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
       const showPerformanceNotice = !config.get(
         'performance.hideOptimizationNotice',
         false
@@ -119,11 +122,6 @@ export async function activate(context: vscode.ExtensionContext) {
   } catch (error) {
     const activationTime = performance.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
-
-    // Initialize logger if not already done
-    if (!logger) {
-      logger = new VSCodeLogger('Extension');
-    }
 
     logger.error('❌ X-Fidelity activation failed:', {
       error: errorMessage,

@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { VSCodeLogger } from './vscodeLogger';
+import { createComponentLogger } from './globalLogger';
 import { getAnalysisTargetDirectory } from './workspaceUtils';
 import { FileCacheManager } from '@x-fidelity/core';
 
-const logger = new VSCodeLogger('FileWatcherManager');
+const logger = createComponentLogger('FileWatcherManager');
 
 export interface FileChangeInfo {
   filePath: string;

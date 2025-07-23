@@ -55,8 +55,8 @@ describe('ConfigManager Unit Tests', () => {
 
     await configManager.updateConfig(newConfig);
 
-    // Verify that workspace.getConfiguration was called
-    expect(workspace.getConfiguration).toHaveBeenCalledWith('xfidelity');
+    // Verify that workspace.getConfiguration was called with proper resource context
+    expect(workspace.getConfiguration).toHaveBeenCalledWith('xfidelity', undefined);
 
     // Verify that update was called for each config key (with ConfigurationTarget.Workspace = 2)
     const mockConfigObject = (workspace.getConfiguration as jest.Mock).mock

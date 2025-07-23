@@ -137,6 +137,47 @@ describe('CLI', () => {
     expect(options.port).toBe(8888);
   });
 
+  it('should default to cli mode when no mode specified', () => {
+    (mockProgram.opts as jest.Mock).mockReturnValue({});
+    
+    initCLI();
+    
+    expect(options.mode).toBe('cli');
+  });
+
+  it('should handle new execution modes', () => {
+    // Test cli mode
+    (mockProgram.opts as jest.Mock).mockReturnValue({ mode: 'cli' });
+    initCLI();
+    expect(options.mode).toBe('cli');
+
+    // Test vscode mode
+    (mockProgram.opts as jest.Mock).mockReturnValue({ mode: 'vscode' });
+    initCLI();
+    expect(options.mode).toBe('vscode');
+
+    // Test hook mode
+    (mockProgram.opts as jest.Mock).mockReturnValue({ mode: 'hook' });
+    initCLI();
+    expect(options.mode).toBe('hook');
+  });
+
+  it('should handle backward compatibility for client mode with deprecation warning', () => {
+    (mockProgram.opts as jest.Mock).mockReturnValue({ mode: 'client' });
+    
+    initCLI();
+    
+    // Should map client to cli internally
+    expect(options.mode).toBe('cli');
+    // Should show deprecation warning
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('DEPRECATION WARNING')
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('client\' is deprecated')
+    );
+  });
+
   it('should handle test environment', () => {
     process.env.NODE_ENV = 'test';
     

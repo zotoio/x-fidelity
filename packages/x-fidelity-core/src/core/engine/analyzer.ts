@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import * as fsSync from 'fs';
 import path from 'path';
 import { getFormattedDate } from '../../utils/utils';
 import { LoggerProvider } from '../../utils/loggerProvider';
@@ -13,7 +14,8 @@ import {
     VersionData,
     RuleConfig, 
     RuleCondition, 
-    RepoXFIConfig 
+    RepoXFIConfig,
+    EXECUTION_MODES
 } from '@x-fidelity/types';
 import { version } from '../../../package.json';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
@@ -62,8 +64,15 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         LoggerProvider.setLogger(injectedLogger);
     }
     
-    // Use the logger from the provider (guaranteed to be available)
-    const logger = LoggerProvider.getLogger();
+    // Use mode-aware logger for consistency with fallback
+    const currentMode = (() => {
+        try {
+            return LoggerProvider.getCurrentExecutionMode();
+        } catch (error) {
+            return EXECUTION_MODES.CLI; // Fallback for test environments
+        }
+    })();
+    const logger = LoggerProvider.getLoggerForMode(currentMode);
     
     logger.info('🚀 Starting codebase analysis', {
         repoPath: params.repoPath,
@@ -190,7 +199,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             }
         }
 
-        // ✅ NEW: Apply file change detection for performance optimization
+        // ✅ NEW: Apply file change detection for performance optimization.
         const filePaths = fileData.map(f => f.filePath);
         const changedFiles = await fileCache.getChangedFiles(filePaths);
         
@@ -487,7 +496,14 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 });
                 
                 // Clean up temp file
-                await fs.unlink(markdownReportPath);
+                // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json (even though this should be a temp file)
+                if (markdownReportPath === path.join(resultsDir, 'XFI_RESULT.json')) {
+                    logger.error(`🚨 CRITICAL: Attempted to delete XFI_RESULT.json via temp file cleanup - BLOCKED!`, {
+                        markdownReportPath
+                    });
+                } else {
+                    await fs.unlink(markdownReportPath);
+                }
             } catch (error) {
                 logger.warn('Failed to generate markdown report:', error);
             }
@@ -508,6 +524,21 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                     await fs.writeFile(fullPath, format.content, 'utf8');
                     logger.info(`${format.extension.toUpperCase()} report saved: ${filename}`);
                     
+                    // CRITICAL: Immediately overwrite XFI_RESULT.json with latest content for JSON files
+                    // This ensures the file is ALWAYS up-to-date and never deleted
+                    if (format.extension === 'json') {
+                        const latestResultPath = path.join(resultsDir, 'XFI_RESULT.json');
+                        await fs.writeFile(latestResultPath, format.content, 'utf8');
+                        logger.info('✅ XFI_RESULT.json updated with latest analysis results');
+                    }
+                    
+                    // Also update XFI_RESULT.md for markdown files
+                    if (format.extension === 'md') {
+                        const latestMdPath = path.join(resultsDir, 'XFI_RESULT.md');
+                        await fs.writeFile(latestMdPath, format.content, 'utf8');
+                        logger.info('✅ XFI_RESULT.md updated with latest analysis results');
+                    }
+                    
                     savedFiles.push({ 
                         filename, 
                         fullPath, 
@@ -522,20 +553,18 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 }
             }
             
-            // Always maintain latest result copy for JSON files
-            const jsonFile = savedFiles.find(f => f.extension === 'json');
-            if (jsonFile) {
-                const latestResultPath = path.join(resultsDir, 'XFI_RESULT.json');
-                await fs.writeFile(latestResultPath, reportFormats.find(f => f.extension === 'json')?.content || '{}', 'utf8');
-                logger.info('Latest result updated: XFI_RESULT.json');
-            }
+            // NOTE: XFI_RESULT.json and XFI_RESULT.md are now updated inline above 
+            // when each timestamped file is created, ensuring they're always current
             
-            // Always maintain latest result copy for markdown files
-            const mdFile = savedFiles.find(f => f.extension === 'md');
-            if (mdFile) {
-                const latestMdPath = path.join(resultsDir, 'XFI_RESULT.md');
-                await fs.writeFile(latestMdPath, reportFormats.find(f => f.extension === 'md')?.content || '', 'utf8');
-                logger.info('Latest result updated: XFI_RESULT.md');
+            // SAFETY NET: Ensure XFI_RESULT.json exists even if report generation failed
+            const latestResultPath = path.join(resultsDir, 'XFI_RESULT.json');
+            if (!fsSync.existsSync(latestResultPath)) {
+                try {
+                    await fs.writeFile(latestResultPath, JSON.stringify(resultMetadata, null, 2), 'utf8');
+                    logger.warn('⚠️ Created fallback XFI_RESULT.json - report generation may have failed');
+                } catch (fallbackError) {
+                    logger.error('💥 Critical: Cannot create fallback XFI_RESULT.json:', fallbackError);
+                }
             }
             
             // Save file cache to disk
@@ -549,7 +578,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             }
             
         } catch (error) {
-            logger.error('Failed to save enhanced analysis reports - continuing with execution', error);
+            logger.error('Failed to save analysis reports - continuing with execution', error);
         }
         
         // Send telemetry for analysis end
@@ -579,7 +608,14 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
 
 export async function analyzeFiles(engine: Engine, files: FileData[], logger?: import('@x-fidelity/types').ILogger): Promise<any[]> {
     const results = [];
-    const loggerInstance = logger || LoggerProvider.getLogger();
+    const loggerInstance = logger || (() => {
+        try {
+            const currentMode = LoggerProvider.getCurrentExecutionMode();
+            return LoggerProvider.getLoggerForMode(currentMode);
+        } catch (error) {
+            return LoggerProvider.getLoggerForMode(EXECUTION_MODES.CLI); // Fallback for test environments
+        }
+    })();
 
     // Add a global check file
     files.push({
@@ -633,6 +669,15 @@ async function cleanupOldResultsByType(resultsDir: string, fileType: string): Pr
             
             for (const file of filesToDelete) {
                 if (file) {
+                    // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
+                    if (file.fullPath === path.join(resultsDir, 'XFI_RESULT.json')) {
+                        logger.error(`🚨 CRITICAL: Attempted to delete XFI_RESULT.json - BLOCKED!`, {
+                            filename: file.filename,
+                            fullPath: file.fullPath
+                        });
+                        continue;
+                    }
+                    
                     await fs.unlink(file.fullPath);
                     logger.debug(`Cleaned up old ${fileType} result: ${file.filename}`);
                 }
@@ -677,6 +722,15 @@ async function cleanupOldResultsByPrefix(resultsDir: string, prefix: string, ext
             
             for (const file of filesToDelete) {
                 if (file) {
+                    // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
+                    if (file.fullPath === path.join(resultsDir, 'XFI_RESULT.json')) {
+                        logger.error(`🚨 CRITICAL: Attempted to delete XFI_RESULT.json - BLOCKED!`, {
+                            filename: file.filename,
+                            fullPath: file.fullPath
+                        });
+                        continue;
+                    }
+                    
                     await fs.unlink(file.fullPath);
                     logger.debug(`Cleaned up old file: ${file.filename}`);
                 }
@@ -705,7 +759,7 @@ async function ensureGitIgnoreEntry(repoRoot: string): Promise<void> {
         }
 
         // Check if .xfiResults is already in .gitignore
-        if (!gitignoreContent.includes('.xfiResults')) {
+        if (!gitignoreContent.includes(xfiResultsEntry)) {
             const newContent = gitignoreContent.trim() + '\n\n# X-Fidelity analysis results\n.xfiResults/\n';
             await fs.writeFile(gitignorePath, newContent, 'utf8');
             logger.info('Added .xfiResults/ to .gitignore');

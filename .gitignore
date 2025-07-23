@@ -225,3 +225,4 @@ test*.json
 test*.log
 .vscode*/
 global-install-testing/fixtures/
+temp/

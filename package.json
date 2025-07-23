@@ -43,7 +43,7 @@
     "lint": "yarn workspaces run lint",
     "lint:fix": "yarn workspaces run lint:fix",
     "commit": "yarn test && git-cz",
-    "build-run": "yarn build && yarn workspace x-fidelity run build-run",
+    "build-run": "yarn workspace x-fidelity run build-run",
     "vscode:dev": "yarn workspace x-fidelity-vscode dev",
     "vscode:dev:fresh": "yarn workspace x-fidelity-vscode dev:fresh",
     "vscode:dev:watch": "yarn workspace x-fidelity-vscode dev:watch",

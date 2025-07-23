@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { CLIAnalysisManager } from '../analysis/cliAnalysisManager';
-import { VSCodeLogger } from '../utils/vscodeLogger';
+import { createComponentLogger } from '../utils/globalLogger';
 import type { AnalysisResult } from '../analysis/types';
 import type { IAnalysisEngine } from '../analysis/analysisEngineInterface';
 
@@ -9,12 +9,12 @@ type SimpleAnalysisState = 'idle' | 'analyzing' | 'complete' | 'error';
 export class StatusBarProvider implements vscode.Disposable {
   private statusBarItem: vscode.StatusBarItem;
   private disposables: vscode.Disposable[] = [];
-  private logger: VSCodeLogger;
+  private logger;
   private currentState: SimpleAnalysisState = 'idle';
   private lastResult: AnalysisResult | null = null;
 
   constructor(private analysisEngine: IAnalysisEngine) {
-    this.logger = new VSCodeLogger('StatusBar');
+    this.logger = createComponentLogger('StatusBar');
 
     this.statusBarItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Left,

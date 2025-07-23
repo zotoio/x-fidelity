@@ -35,9 +35,11 @@ jest.mock('../../utils/logger', () => ({
 jest.mock('../../utils/loggerProvider', () => ({
     LoggerProvider: {
         getLogger: jest.fn(() => mockChildLogger),
+        getLoggerForMode: jest.fn(() => mockChildLogger),
         setLogger: jest.fn(),
         hasInjectedLogger: jest.fn(),
-        clearInjectedLogger: jest.fn()
+        clearInjectedLogger: jest.fn(),
+        getCurrentExecutionMode: jest.fn(() => 'CLI')
     }
 }));
 
@@ -48,6 +50,8 @@ describe('executeErrorAction', () => {
         jest.clearAllMocks();
         // Reset all mocks after each test
         (LoggerProvider.getLogger as jest.Mock).mockReturnValue(mockChildLogger);
+        (LoggerProvider.getLoggerForMode as jest.Mock).mockReturnValue(mockChildLogger);
+        (LoggerProvider.getCurrentExecutionMode as jest.Mock).mockReturnValue('CLI');
     });
 
     describe('Notification Actions', () => {

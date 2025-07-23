@@ -28,11 +28,11 @@ jest.mock('@x-fidelity/core', () => ({
         trace: jest.fn(),
     },
     maskSensitiveData: jest.fn(data => data),
-    getOptions: jest.fn(() => ({ disableTreeSitterWorker: false }))
+    getOptions: jest.fn(() => ({ enableTreeSitterWorker: true }))
 }));
 
 // Mock TreeSitterManager to prevent real AST processing that causes 15s timeouts
-jest.mock('../../xfiPluginAst/worker/treeSitterManager', () => ({
+jest.mock('../../sharedPluginUtils/astUtils/treeSitterManager', () => ({
     TreeSitterManager: {
         getInstance: jest.fn(() => ({
             parseCode: jest.fn().mockResolvedValue({
@@ -127,30 +127,35 @@ describe('File operations', () => {
             });
         });
 
-        it('should skip AST preprocessing when disableTreeSitterWorker is true', async () => {
+        it('should always attempt AST preprocessing for supported file types', async () => {
             const filePath = 'test/path/testFile.js';
             const mockContent = 'const x = 1;';
             (fs.readFileSync as jest.Mock).mockReturnValue(mockContent);
             
-            // Mock getOptions to return disableTreeSitterWorker: true
+            // Mock getOptions to return enableTreeSitterWorker: false (doesn't matter anymore)
             const mockGetOptions = require('@x-fidelity/core').getOptions as jest.Mock;
-            mockGetOptions.mockReturnValue({ disableTreeSitterWorker: true });
+            mockGetOptions.mockReturnValue({ enableTreeSitterWorker: false });
 
             const result = await parseFile(filePath);
+            
+            // With the new eager preprocessing, AST is always attempted for supported files
             expect(result).toEqual({
                 fileName: path.basename(filePath),
                 filePath,
                 fileContent: mockContent,
                 content: mockContent,
-                astGenerationReason: 'File type not supported for AST generation',
+                ast: expect.objectContaining({
+                    tree: null, // Failed due to test environment
+                    hasErrors: true,
+                    language: 'javascript',
+                    reason: expect.stringMatching(/AST generation failed/)
+                }),
+                astGenerationTime: expect.any(Number),
+                astGenerationReason: expect.stringMatching(/AST generation failed/)
             });
             
-            // Verify TreeSitterManager was not called
-            const TreeSitterManager = require('../../xfiPluginAst/worker/treeSitterManager').TreeSitterManager;
-            expect(TreeSitterManager.getInstance).not.toHaveBeenCalled();
-            
-            // Reset for subsequent tests
-            mockGetOptions.mockReturnValue({ disableTreeSitterWorker: false });
+            // Verify timing is reasonable (should be >= 0)
+            expect(result.astGenerationTime).toBeGreaterThanOrEqual(0);
         });
 
         it('should handle symlinks', async () => {
@@ -178,7 +183,7 @@ describe('File operations', () => {
             (fs.readdirSync as jest.Mock).mockReturnValue(['file1.js', 'file2.tsx', 'file3.txt']);
             jest.mocked(fs.realpathSync).mockImplementation(path => path.toString());
             
-            const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+            const mockedFsPromises = jest.mocked(fs.promises);
             mockedFsPromises.stat.mockResolvedValue({ isDirectory: () => false } as fs.Stats);
 
             const result = await collectRepoFileData(repoPath, mockArchetypeConfig);
@@ -195,7 +200,7 @@ describe('File operations', () => {
                 .mockReturnValueOnce(['file2.js', 'file3.txt']);
             // fs.realpathSync is already mocked in the jest.mock setup
             
-            const mockedFsPromises = jest.mocked(fs.promises, { shallow: true });
+            const mockedFsPromises = jest.mocked(fs.promises);
             mockedFsPromises.stat.mockResolvedValueOnce({ isDirectory: () => true } as fs.Stats)
                 .mockResolvedValueOnce({ isDirectory: () => false } as fs.Stats)
                 .mockResolvedValueOnce({ isDirectory: () => false } as fs.Stats)

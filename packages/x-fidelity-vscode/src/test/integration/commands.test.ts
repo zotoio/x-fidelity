@@ -28,7 +28,6 @@ suite('Extension Commands Tests', () => {
       // UI commands
       'xfidelity.showControlCenter',
       'xfidelity.showDashboard',
-      'xfidelity.showAdvancedSettings',
       'xfidelity.showPerformanceMetrics',
 
       // Periodic analysis commands
@@ -56,14 +55,11 @@ suite('Extension Commands Tests', () => {
       'xfidelity.issuesTreeGroupByFile',
       'xfidelity.issuesTreeGroupByCategory',
       'xfidelity.goToIssue',
-      'xfidelity.addIssueExemption',
       'xfidelity.showIssueRuleInfo',
 
       // Test/helper commands
       'xfidelity.runAnalysisWithDir',
-      'xfidelity.showRuleDocumentation',
-      'xfidelity.addExemption',
-      'xfidelity.addBulkExemptions'
+      'xfidelity.showRuleDocumentation'
     ];
 
     for (const command of allCommands) {
@@ -83,7 +79,6 @@ suite('Extension Commands Tests', () => {
     const uiCommands = [
       'xfidelity.showControlCenter',
       'xfidelity.showDashboard',
-      'xfidelity.showAdvancedSettings',
       'xfidelity.showPerformanceMetrics'
     ];
 

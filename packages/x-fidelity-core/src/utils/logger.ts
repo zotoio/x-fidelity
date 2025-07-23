@@ -1,16 +1,52 @@
 import { LoggerProvider } from './loggerProvider';
 import { ILogger } from '@x-fidelity/types';
 
-// Create a proxy logger that dynamically delegates to the current logger from the provider
+// Create a proxy logger that dynamically delegates to the mode-aware logger from the provider
 export const logger: ILogger = {
-  trace: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().trace(msgOrMeta, metaOrMsg),
-  debug: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().debug(msgOrMeta, metaOrMsg),
-  info: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().info(msgOrMeta, metaOrMsg),
-  warn: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().warn(msgOrMeta, metaOrMsg),
-  error: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().error(msgOrMeta, metaOrMsg),
-  fatal: (msgOrMeta: string | any, metaOrMsg?: any) => LoggerProvider.getLogger().fatal(msgOrMeta, metaOrMsg),
-  setLevel: (level: any) => LoggerProvider.getLogger().setLevel(level),
-  getLevel: () => LoggerProvider.getLogger().getLevel(),
-  isLevelEnabled: (level: any) => LoggerProvider.getLogger().isLevelEnabled(level)
+  trace: (msgOrMeta: string | any, metaOrMsg?: any) => {
+    const currentMode = LoggerProvider.getCurrentExecutionMode();
+    const currentLogger = LoggerProvider.getLoggerForMode(currentMode);
+    return currentLogger.trace(msgOrMeta, metaOrMsg);
+  },
+  debug: (msgOrMeta: string | any, metaOrMsg?: any) => {
+    const currentMode = LoggerProvider.getCurrentExecutionMode();
+    const currentLogger = LoggerProvider.getLoggerForMode(currentMode);
+    return currentLogger.debug(msgOrMeta, metaOrMsg);
+  },
+  info: (msgOrMeta: string | any, metaOrMsg?: any) => {
+    const currentMode = LoggerProvider.getCurrentExecutionMode();
+    const currentLogger = LoggerProvider.getLoggerForMode(currentMode);
+    return currentLogger.info(msgOrMeta, metaOrMsg);
+  },
+  warn: (msgOrMeta: string | any, metaOrMsg?: any) => {
+    const currentMode = LoggerProvider.getCurrentExecutionMode();
+    const currentLogger = LoggerProvider.getLoggerForMode(currentMode);
+    return currentLogger.warn(msgOrMeta, metaOrMsg);
+  },
+  error: (msgOrMeta: string | any, metaOrMsg?: any) => {
+    const currentMode = LoggerProvider.getCurrentExecutionMode();
+    const currentLogger = LoggerProvider.getLoggerForMode(currentMode);
+    return currentLogger.error(msgOrMeta, metaOrMsg);
+  },
+  fatal: (msgOrMeta: string | any, metaOrMsg?: any) => {
+    const currentMode = LoggerProvider.getCurrentExecutionMode();
+    const currentLogger = LoggerProvider.getLoggerForMode(currentMode);
+    return currentLogger.fatal(msgOrMeta, metaOrMsg);
+  },
+  setLevel: (level: any) => {
+    const currentMode = LoggerProvider.getCurrentExecutionMode();
+    const currentLogger = LoggerProvider.getLoggerForMode(currentMode);
+    return currentLogger.setLevel(level);
+  },
+  getLevel: () => {
+    const currentMode = LoggerProvider.getCurrentExecutionMode();
+    const currentLogger = LoggerProvider.getLoggerForMode(currentMode);
+    return currentLogger.getLevel();
+  },
+  isLevelEnabled: (level: any) => {
+    const currentMode = LoggerProvider.getCurrentExecutionMode();
+    const currentLogger = LoggerProvider.getLoggerForMode(currentMode);
+    return currentLogger.isLevelEnabled(level);
+  }
 };
 

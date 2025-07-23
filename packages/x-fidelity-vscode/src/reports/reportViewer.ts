@@ -3,6 +3,10 @@ import * as path from 'path';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { ConfigManager } from '../configuration/configManager';
 import { REPO_GLOBAL_CHECK } from '@x-fidelity/core';
+import {
+  safeSerializeRange,
+  safeSerializeForVSCode
+} from '../utils/serialization';
 
 export interface ReportViewerOptions {
   reportData: ResultMetadata;
@@ -19,9 +23,12 @@ export class ReportViewer implements vscode.Disposable {
     private configManager: ConfigManager
   ) {}
 
-  async showReport(options: ReportViewerOptions): Promise<void> {
+  async showReport(
+    options: ReportViewerOptions,
+    preserveFocus: boolean = false
+  ): Promise<void> {
     if (this.panel) {
-      this.panel.reveal();
+      this.panel.reveal(undefined, preserveFocus);
       await this.updateContent(options);
       return;
     }
@@ -515,11 +522,14 @@ export class ReportViewer implements vscode.Disposable {
   }
 
   private getJavaScript(data: any): string {
+    // CRITICAL FIX: Safely serialize the data to prevent toJSON errors
+    const safeData = safeSerializeForVSCode(data);
+
     return `
         const vscode = acquireVsCodeApi();
         
         // Data store
-        const analysisData = ${JSON.stringify(data)};
+        const analysisData = ${JSON.stringify(safeData)};
         let filteredData = [...analysisData.issueDetails];
         
         // DOM elements
@@ -685,8 +695,20 @@ export class ReportViewer implements vscode.Disposable {
             const column = issue.details?.columnNumber || '';
             const location = line ? \`Line \${line}\${column ? \`:\${column}\` : ''}\` : '';
             
+            // CRITICAL FIX: Safely serialize range to prevent toJSON errors
+            const safeRange = issue.details?.range ? JSON.stringify({
+                start: {
+                    line: issue.details.range.start?.line || 0,
+                    character: issue.details.range.start?.character || 0
+                },
+                end: {
+                    line: issue.details.range.end?.line || 0,
+                    character: issue.details.range.end?.character || 0
+                }
+            }) : 'null';
+            
             return \`
-                <div class="issue-item" onclick="navigateToIssue('\${issue.filePath}', \${line || 1}, \${column || 1}, \${issue.details?.range})">
+                <div class="issue-item" onclick="navigateToIssue('\${issue.filePath}', \${line || 1}, \${column || 1}, \${safeRange})">
                     <div class="issue-header">
                         <span class="issue-severity \${issue.level || 'hint'}">\${(issue.level || 'hint').toUpperCase()}</span>
                         <span class="issue-rule">\${issue.ruleFailure}</span>
@@ -694,7 +716,7 @@ export class ReportViewer implements vscode.Disposable {
                     </div>
                     <div class="issue-message">\${issue.details?.message || issue.ruleFailure}</div>
                     <div class="issue-actions">
-                        <button class="btn btn-primary" onclick="event.stopPropagation(); navigateToIssue('\${issue.filePath}', \${line || 1}, \${column || 1}, \${issue.details?.range})">
+                        <button class="btn btn-primary" onclick="event.stopPropagation(); navigateToIssue('\${issue.filePath}', \${line || 1}, \${column || 1}, \${safeRange})">
                             Go to Issue
                         </button>
                         <button class="btn btn-secondary" onclick="event.stopPropagation(); showRuleInfo('\${issue.ruleFailure}')">
@@ -788,10 +810,9 @@ export class ReportViewer implements vscode.Disposable {
     const column = error.details?.columnNumber || '';
     const location = line ? `Line ${line}${column ? `:${column}` : ''}` : '';
 
-    // Safely serialize range object to avoid toJSON errors
-    const rangeJson = error.details?.range
-      ? JSON.stringify(error.details.range)
-      : 'null';
+    // CRITICAL FIX: Use safe serialization to avoid toJSON errors
+    const safeRange = safeSerializeRange(error.details?.range);
+    const rangeJson = safeRange ? JSON.stringify(safeRange) : 'null';
 
     return `
       <div class="issue-item" onclick="navigateToIssue('${filePath}', ${line || 1}, ${column || 1}, ${rangeJson})">

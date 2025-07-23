@@ -1,12 +1,6 @@
-import { FileData } from '@x-fidelity/types';
+import { FileData, AstResult } from '@x-fidelity/types';
 import { logger } from '@x-fidelity/core';
-import { treeSitterManager } from '../xfiPluginAst/worker/treeSitterManager';
-
-export interface AstResult {
-    tree: any;
-    rootNode?: any;
-    reason?: string;
-}
+import { treeSitterManager } from './astUtils/treeSitterManager';
 
 // Environment detection - simplified since we use native everywhere
 const isVSCodeEnvironment = () => {

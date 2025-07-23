@@ -20,7 +20,7 @@ export interface ExtensionConfig {
   autoAnalyzeOnFileChange: boolean; // Trigger analysis on file change (debounced)
   archetype: string; // X-Fidelity archetype
 
-  // CLI Settings (simplified - bundled CLI only)
+  // CLI Settings - VSCode extension always spawns CLI with --mode vscode
   cliExtraArgs: string[]; // Additional CLI arguments
 
   // Connection Settings
@@ -57,10 +57,11 @@ export interface ExtensionConfig {
   debugMode: boolean; // Enable debug logging
   customPlugins: string[]; // Additional plugin paths
   ruleOverrides: Record<string, RuleOverride>; // Rule-specific overrides
-  cacheResults: boolean; // Cache analysis results
-  cacheTTL: number; // Cache TTL in minutes
-  // Add analyzeOnStartup config
-  analyzeOnStartup: boolean; // Run analysis on extension startup
+
+  // Enhanced Logging Settings
+  logColorization: boolean; // Enable ANSI color codes in output
+  logTimestampFormat: 'iso' | 'short' | 'none'; // Timestamp format preference
+  logLevelFiltering: boolean; // Enable log level filtering hints
 }
 
 export class ConfigManager {
@@ -97,7 +98,11 @@ export class ConfigManager {
   }
 
   async updateConfig(updates: Partial<ExtensionConfig>): Promise<void> {
-    const workspaceConfig = vscode.workspace.getConfiguration('xfidelity');
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    const workspaceConfig = vscode.workspace.getConfiguration(
+      'xfidelity',
+      workspaceFolder?.uri
+    );
 
     for (const [key, value] of Object.entries(updates)) {
       await workspaceConfig.update(
@@ -111,7 +116,11 @@ export class ConfigManager {
   }
 
   private loadConfiguration(): void {
-    const workspaceConfig = vscode.workspace.getConfiguration('xfidelity');
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    const workspaceConfig = vscode.workspace.getConfiguration(
+      'xfidelity',
+      workspaceFolder?.uri
+    );
 
     this.config = {
       // Core Settings
@@ -119,7 +128,7 @@ export class ConfigManager {
       configServer: workspaceConfig.get('configServer', ''),
       localConfigPath: workspaceConfig.get('localConfigPath', ''),
 
-      // CLI Settings (simplified - bundled CLI only)
+      // CLI Settings - VSCode extension always spawns CLI with --mode vscode
       cliExtraArgs: workspaceConfig.get('cliExtraArgs', []),
 
       // Performance Settings - OPTIMIZED FOR SPEED
@@ -132,8 +141,8 @@ export class ConfigManager {
       generateReports: workspaceConfig.get('generateReports', false), // DISABLED for performance
 
       // Resource Limits - REDUCED FOR PERFORMANCE
-      maxFileSize: workspaceConfig.get('maxFileSize', 524288), // 512KB instead of 1MB
-      analysisTimeout: workspaceConfig.get('analysisTimeout', 60000),
+      maxFileSize: workspaceConfig.get('maxFileSize', 128000),
+      analysisTimeout: workspaceConfig.get('analysisTimeout', 120000), // Increased to 2 minutes
       excludePatterns: workspaceConfig.get('excludePatterns', [
         'node_modules/**',
         '.git/**',
@@ -178,10 +187,11 @@ export class ConfigManager {
       debugMode: workspaceConfig.get('debugMode', false),
       customPlugins: workspaceConfig.get('customPlugins', []),
       ruleOverrides: workspaceConfig.get('ruleOverrides', {}),
-      cacheResults: workspaceConfig.get('cacheResults', true),
-      cacheTTL: workspaceConfig.get('cacheTTL', 10), // 10 minutes instead of 5 for better caching
-      // Add analyzeOnStartup config (default true)
-      analyzeOnStartup: workspaceConfig.get('analyzeOnStartup', true)
+
+      // Enhanced Logging Settings
+      logColorization: workspaceConfig.get('logColorization', false),
+      logTimestampFormat: workspaceConfig.get('logTimestampFormat', 'iso'),
+      logLevelFiltering: workspaceConfig.get('logLevelFiltering', false)
     };
   }
 
@@ -219,8 +229,16 @@ export class ConfigManager {
 
     // 1. Check home directory ~/.config/x-fidelity (XDG_CONFIG_HOME/x-fidelity)
     const homeDir = os.homedir();
-    const xdgConfigHome =
-      process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
+    // Platform-agnostic XDG config home resolution
+    let xdgConfigHome: string;
+    if (process.platform === 'win32') {
+      // On Windows, use %APPDATA% or fallback to home directory
+      xdgConfigHome = process.env.APPDATA || path.join(homeDir, '.config');
+    } else {
+      // On Unix-like systems, use XDG_CONFIG_HOME or ~/.config
+      xdgConfigHome =
+        process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
+    }
     const homeConfigPath = path.join(xdgConfigHome, 'x-fidelity');
 
     if (fs.existsSync(homeConfigPath)) {

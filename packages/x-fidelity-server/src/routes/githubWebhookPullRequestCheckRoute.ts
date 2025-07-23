@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
-import { analyzeCodebase } from '@x-fidelity/core';
+import { analyzeCodebase, LoggerProvider } from '@x-fidelity/core';
 import { logger, setLogPrefix, ServerLogger } from '../utils/serverLogger';
+import { EXECUTION_MODES } from '@x-fidelity/types';
+// TODO: In Phase 2, this webhook route should be updated to support EXECUTION_MODES.HOOK mode
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -573,12 +575,8 @@ async function handlePullRequestCheck(payload: any) {
         ], { cwd: tempDir, timeout: 60000 });
         await checkoutCmd.execute();
         
-        // Create logger for analysis
-        const analysisLogger = new ServerLogger({
-            level: 'info',
-            enableConsole: true,
-            enableColors: true
-        });
+        // Create logger for analysis using standardized approach
+        const analysisLogger = LoggerProvider.getLoggerForMode(EXECUTION_MODES.SERVER, 'info');
         
         // Security: Validate tempDir before using in analysis
         if (!validateDirectoryPath(tempDir)) {
@@ -679,12 +677,8 @@ async function handlePushCheck(payload: any) {
         ], { cwd: tempDir, timeout: 60000 });
         await checkoutCmd.execute();
         
-        // Create logger for analysis
-        const analysisLogger = new ServerLogger({
-            level: 'info',
-            enableConsole: true,
-            enableColors: true
-        });
+        // Create logger for analysis using standardized approach
+        const analysisLogger = LoggerProvider.getLoggerForMode(EXECUTION_MODES.SERVER, 'info');
         
         // Security: Validate tempDir before using in analysis
         if (!validateDirectoryPath(tempDir)) {

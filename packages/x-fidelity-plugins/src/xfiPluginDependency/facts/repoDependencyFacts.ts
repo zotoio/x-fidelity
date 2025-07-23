@@ -48,7 +48,7 @@ function getDependencyCacheKey(repoPath?: string): string {
         path.join(actualRepoPath, 'package-lock.json'),
         path.join(actualRepoPath, 'npm-shrinkwrap.json')
     ];
-    
+
     const mtimes: string[] = [];
     for (const file of files) {
         try {
@@ -60,7 +60,7 @@ function getDependencyCacheKey(repoPath?: string): string {
             // File doesn't exist or can't be accessed, skip
         }
     }
-    
+
     return mtimes.join('|');
 }
 
@@ -81,7 +81,7 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
     const startTime = Date.now();
     const actualRepoPath = repoPath || options.dir || process.cwd();
     const cacheKey = getDependencyCacheKey(actualRepoPath);
-    
+
     // Check cache first
     const cached = dependencyCache.get(cacheKey);
     if (cached && cached.cacheKey === cacheKey) {
@@ -89,9 +89,9 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
         logger.debug(`Using cached dependency data (age: ${cacheAge}ms)`);
         return cached.dependencies;
     }
-    
+
     logger.debug('Cache miss, collecting dependencies from package manager...');
-    
+
     let result: LocalDependencies[] = [];
     if (fs.existsSync(path.join(actualRepoPath, 'yarn.lock'))) {
         result = await collectNodeDependencies('yarn', actualRepoPath);
@@ -101,35 +101,43 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
         logger.warn('No yarn.lock or package-lock.json found - returning empty dependencies array');
         return []; // ✅ Return empty array instead of exiting process
     }
-    
+
     // Cache the result
     dependencyCache.set(cacheKey, {
         dependencies: result,
         cacheKey,
         timestamp: Date.now()
     });
-    
+
     const executionTime = Date.now() - startTime;
     logger.debug(`collectLocalDependencies completed in ${executionTime}ms (cache: ${cached ? 'HIT' : 'MISS'})`);
     logger.trace(`collectLocalDependencies: ${safeStringify(result)}`);
     return result;
 }
 
-async function collectNodeDependencies(packageManager: string, repoPath?: string): Promise<LocalDependencies[]>  {
+async function collectNodeDependencies(packageManager: string, repoPath?: string): Promise<LocalDependencies[]> {
     const emptyDeps: LocalDependencies[] = [];
     const actualRepoPath = repoPath || options.dir || process.cwd();
     try {
         let stdout: string;
         let stderr: string = '';
-        
+
         try {
             // Use execSync as a fallback if execPromise fails
             if (packageManager === 'npm') {
-                const result = await execPromise('npm ls -a --json', { cwd: actualRepoPath, maxBuffer: 10485760 });
+                const result = await execPromise('npm ls -a --json', {
+                    cwd: actualRepoPath, maxBuffer: 10485760, env: {
+                        ...process.env
+                    }
+                });
                 stdout = result.stdout;
                 stderr = result.stderr;
             } else {
-                const result = await execPromise('yarn list --json', { cwd: actualRepoPath, maxBuffer: 10485760 });
+                const result = await execPromise('yarn list --json', {
+                    cwd: actualRepoPath, maxBuffer: 10485760, env: {
+                        ...process.env
+                    }
+                });
                 stdout = result.stdout;
                 stderr = result.stderr;
             }
@@ -137,8 +145,12 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             // If promisified exec fails, fall back to execSync
             logger.warn(`Falling back to execSync for ${packageManager} dependencies`);
             const output = execSync(
-                packageManager === 'npm' ? 'npm ls -a --json' : 'yarn list --json', 
-                { cwd: actualRepoPath, maxBuffer: 10485760 }
+                packageManager === 'npm' ? 'npm ls -a --json' : 'yarn list --json',
+                {
+                    cwd: actualRepoPath, maxBuffer: 10485760, env: {
+                        ...process.env
+                    }
+                }
             );
             stdout = output.toString();
         }
@@ -156,9 +168,9 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
         try {
             const result = JSON.parse(stdout);
             logger.trace(`collectNodeDependencies ${packageManager}: ${JSON.stringify(result)}`);
-            return packageManager === 'npm' ? 
-            processNpmDependencies(result) :
-            processYarnDependencies(result)
+            return packageManager === 'npm' ?
+                processNpmDependencies(result) :
+                processYarnDependencies(result)
 
         } catch (e) {
             logger.error({
@@ -217,7 +229,7 @@ function processYarnDependencies(yarnOutput: any): LocalDependencies[] {
 function processNpmDependencies(npmOutput: any): LocalDependencies[] {
     const dependencies: LocalDependencies[] = [];
     const processDependency = (name: string, info: any) => {
-        const newDep: LocalDependencies = {name, version: info.version };
+        const newDep: LocalDependencies = { name, version: info.version };
         if (info.dependencies) {
             newDep.dependencies = [];
             Object.entries(info.dependencies).forEach(([childName, childInfo]: [string, any]) => {
@@ -244,7 +256,7 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
     const startTime = Date.now();
     const dependencyCacheKey = getDependencyCacheKey(repoPath);
     const versionCacheKey = getVersionDataCacheKey(dependencyCacheKey, archetypeConfig);
-    
+
     // Check cache first
     const cached = versionDataCache.get(versionCacheKey);
     if (cached && cached.cacheKey === versionCacheKey) {
@@ -252,9 +264,9 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
         logger.debug(`Using cached version data (age: ${cacheAge}ms)`);
         return cached.versionData;
     }
-    
+
     logger.debug('Cache miss, computing dependency version facts...');
-    
+
     const localDependencies = await collectLocalDependencies(repoPath);
     const minimumDependencyVersions = archetypeConfig.config.minimumDependencyVersions;
 
@@ -264,17 +276,17 @@ export async function getDependencyVersionFacts(archetypeConfig: ArchetypeConfig
     }
 
     const installedDependencyVersions = findPropertiesInTree(localDependencies, minimumDependencyVersions);
-    
+
     // Cache the result
     versionDataCache.set(versionCacheKey, {
         versionData: installedDependencyVersions,
         cacheKey: versionCacheKey,
         timestamp: Date.now()
     });
-    
+
     const executionTime = Date.now() - startTime;
     logger.debug(`getDependencyVersionFacts completed in ${executionTime}ms (cache: ${cached ? 'HIT' : 'MISS'})`);
-    
+
     return installedDependencyVersions;
 }
 
@@ -301,10 +313,10 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
             const minVersionKey = Object.keys(minVersions).find(key => key === dep.name || `@${key}` === dep.name);
             if (minVersionKey) {
                 // Use optional chaining and nullish coalescing to avoid errors
-                results.push({ 
-                    dep: fullName, 
-                    ver: dep.version, 
-                    min: minVersions[minVersionKey] 
+                results.push({
+                    dep: fullName,
+                    ver: dep.version,
+                    min: minVersions[minVersionKey]
                 });
             }
         }
@@ -325,8 +337,8 @@ export function findPropertiesInTree(depGraph: LocalDependencies[], minVersions:
 }
 
 export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
-    const result: any = {'result': []};
-    
+    const result: any = { 'result': [] };
+
     try {
         // ✅ REMOVED: No longer need REPO_GLOBAL_CHECK since this is now a global fact that runs once per repo
 
@@ -337,21 +349,21 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
         logger.debug(`repoDependencyAnalysis: found ${installedVersions.length} installed dependencies`);
 
         // Use rule-provided versions if they exist, otherwise use the ones from repoDependencyVersions
-        const versionsToCheck = params?.minimumDependencyVersions ? 
-            installedVersions.filter((versionData: VersionData) => 
+        const versionsToCheck = params?.minimumDependencyVersions ?
+            installedVersions.filter((versionData: VersionData) =>
                 params.minimumDependencyVersions[versionData.dep]) :
             installedVersions;
 
         logger.debug(`repoDependencyAnalysis: checking ${versionsToCheck.length} dependencies against requirements`);
 
-        versionsToCheck.forEach((versionData: VersionData) => { 
+        versionsToCheck.forEach((versionData: VersionData) => {
             logger.debug(`outdatedFramework: checking ${versionData.dep}`);
 
             try {
                 // Check if the installed version satisfies the required version, supporting both ranges and specific versions
                 // Get required version from rule params if it exists, otherwise from archetype config
                 const requiredVersion = params?.minimumDependencyVersions?.[versionData.dep] || versionData.min;
-                
+
                 // Check if the installed version satisfies the required version
                 const isValid = semverValid(versionData.ver, requiredVersion);
                 if (!isValid && semver.valid(versionData.ver)) {
@@ -360,7 +372,7 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
                         'currentVersion': versionData.ver,
                         'requiredVersion': requiredVersion
                     };
-                    
+
                     logger.error(`dependencyFailure: ${safeStringify(dependencyFailure)}`);
                     analysis.push(dependencyFailure);
                 }
@@ -375,7 +387,7 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
         logger.debug(`repoDependencyAnalysis result: ${safeStringify(result)}`);
         logger.debug(`repoDependencyAnalysis returning analysis array directly: ${safeStringify(analysis)}`);
-        
+
         // Return just the analysis array for the outdatedFramework operator
         return analysis;
     } catch (error) {
@@ -386,7 +398,7 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 }
 
 export function semverValid(installed: string, required: string): boolean {
-    
+
     // Remove potential @namespace from installed version
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     installed = installed.includes('@') ? installed.split('@').pop()! : installed;

@@ -12,7 +12,7 @@ const SCRIPT_DIR = __dirname;
 const VSCODE_ROOT = path.resolve(SCRIPT_DIR, '..');
 const CLI_PACKAGE_DIR = path.resolve(VSCODE_ROOT, '../x-fidelity-cli');
 const CLI_DIST_DIR = path.join(CLI_PACKAGE_DIR, 'dist');
-const EMBEDDED_CLI_DIR = path.join(VSCODE_ROOT, 'cli');
+const EMBEDDED_CLI_DIR = path.join(VSCODE_ROOT, 'dist', 'cli');
 
 console.log('🔧 Embedding X-Fidelity CLI into VSCode extension...');
 console.log(`📂 CLI source: ${CLI_DIST_DIR}`);

@@ -1,0 +1,36 @@
+{
+    "name": "reactHooksDependency-iterative",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "notEqual",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "fileData",
+                "path": "$.filePath",
+                "operator": "regexMatch",
+                "value": ".*\\.(tsx|jsx)$"
+            },
+            {
+                "fact": "hookDependency",
+                "params": {
+                    "resultFact": "hookDependencyResult"
+                },
+                "operator": "equal",
+                "value": true
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "React hooks have missing or incorrect dependencies that could cause bugs.",
+            "details": {
+                "fact": "hookDependencyResult"
+            }
+        }
+    }
+} 

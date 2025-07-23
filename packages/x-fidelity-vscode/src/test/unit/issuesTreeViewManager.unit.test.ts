@@ -11,6 +11,14 @@ const vscodeWindowMock: any = {
     onDidChangeSelection: jest.fn(),
     reveal: jest.fn(),
     dispose: jest.fn()
+  })),
+  createOutputChannel: jest.fn(() => ({
+    append: jest.fn(),
+    appendLine: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+    clear: jest.fn(),
+    dispose: jest.fn()
   }))
 };
 

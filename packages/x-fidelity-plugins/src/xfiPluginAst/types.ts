@@ -2,9 +2,6 @@ import { SyntaxNode } from 'tree-sitter';
 
 // AST Plugin specific types
 
-// AST result type - for compatibility, import from baseUtils
-export type { AstResult } from '../sharedPluginUtils/astUtils';
-
 // Function metrics type
 export interface FunctionMetrics {
     name: string;

@@ -159,7 +159,7 @@ export async function getAnalysisResults(
   forceRefresh = false
 ): Promise<any> {
   const targetPath = workspacePath || getWorkspaceRoot();
-
+  
   // Always try to read from XFI_RESULT.json first (most recent)
   const resultPath = path.join(targetPath, '.xfiResults', 'XFI_RESULT.json');
 
@@ -260,24 +260,12 @@ export async function runInitialAnalysis(
   forceRefresh: boolean = false
 ): Promise<any> {
   const targetPath = workspacePath || getWorkspaceRoot();
-
-  // Return cached results if available and not forcing refresh
-  if (
-    !forceRefresh &&
-    cachedAnalysisResults &&
-    cachedWorkspacePath === targetPath
-  ) {
-    return cachedAnalysisResults;
-  }
-
-  // Clear any existing results if forcing refresh
-  if (forceRefresh) {
-    clearAnalysisCache();
-    const resultPath = path.join(targetPath, '.xfiResults', 'XFI_RESULT.json');
-    if (fs.existsSync(resultPath)) {
-      await fs.promises.unlink(resultPath);
-    }
-  }
+  
+  // ALWAYS run fresh analysis for integration tests to ensure consistent results
+  // Clear any existing results 
+  clearAnalysisCache();
+  // NOTE: We never delete XFI_RESULT.json - it should always exist and be overwritten
+  // The core analyzer will always update it with fresh results
 
   // Run analysis
   const result = await executeCommandSafely('xfidelity.runAnalysis');
@@ -294,6 +282,79 @@ export async function runInitialAnalysis(
   // Get and cache results
   const analysisResults = await getAnalysisResults(targetPath, true);
   return analysisResults;
+}
+
+/**
+ * ENHANCED: Run fresh analysis specifically for tests with better error handling
+ */
+export async function runFreshAnalysisForTest(
+  workspacePath?: string,
+  timeoutMs: number = 120000
+): Promise<any> {
+  const targetPath = workspacePath || getWorkspaceRoot();
+  
+  try {
+    console.log('🚀 Starting fresh analysis for test...');
+    
+    // Clear any cached results first
+    cachedAnalysisResults = null;
+    cachedWorkspacePath = null;
+    
+    // Trigger analysis via extension
+    const result = await executeCommandSafely('xfidelity.runAnalysis');
+    if (!result.success) {
+      throw new Error(`Extension analysis command failed: ${result.error}`);
+    }
+
+    // Wait for analysis to complete with proper timeout
+    const completed = await waitForAnalysisCompletion(timeoutMs, targetPath);
+    if (!completed) {
+      throw new Error(`Analysis did not complete within ${timeoutMs}ms timeout`);
+    }
+
+    // ENHANCED: Wait for diagnostics to be processed
+    await waitForDiagnosticProcessing(10000); // Wait up to 10 seconds
+
+    // Get results
+    const analysisResults = await getAnalysisResults(targetPath, true);
+    
+    console.log(`✅ Fresh analysis completed: ${analysisResults?.summary?.totalIssues || 0} issues`);
+    return analysisResults;
+    
+  } catch (error) {
+    console.error('❌ Fresh analysis failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * NEW: Wait for diagnostic processing to complete
+ */
+async function waitForDiagnosticProcessing(timeoutMs: number): Promise<void> {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < timeoutMs) {
+    // Check if we have any X-Fidelity diagnostics
+    const allDiagnostics = vscode.languages.getDiagnostics();
+    let hasXFIDiagnostics = false;
+    
+    for (const [, diagnostics] of allDiagnostics) {
+      if (diagnostics.some(d => d.source === 'X-Fidelity')) {
+        hasXFIDiagnostics = true;
+        break;
+      }
+    }
+    
+    if (hasXFIDiagnostics) {
+      console.log('✅ Diagnostics processing completed');
+      return;
+    }
+    
+    // Wait a bit before checking again
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  
+  console.warn('⚠️ Timeout waiting for diagnostic processing');
 }
 
 /**

@@ -1,20 +1,16 @@
 import fs from 'fs';
 import path from 'path';
 import { logger, getOptions } from '@x-fidelity/core';
-import { ArchetypeConfig, FileData, IsBlacklistedParams, isWhitelistedParams, FactDefn, AstResult } from '@x-fidelity/types';
+import { ArchetypeConfig, FileData, IsBlacklistedParams, isWhitelistedParams, FactDefn, AstResult, AstGenerationContext } from '@x-fidelity/types';
 // Filesystem facts for repository analysis
 import { maskSensitiveData } from '@x-fidelity/core';
-// ✅ Import Tree-sitter manager for AST preprocessing
-import { treeSitterManager } from '../../xfiPluginAst/worker/treeSitterManager';
+// ✅ Use the same generateAst function that working AST facts use
+import { generateAst } from '../../sharedPluginUtils/astUtils';
 
 // ✅ Enhanced helper function to determine if file should have AST preprocessed
 function shouldPreprocessAst(filePath: string): boolean {
-    // ✅ Check if TreeSitter worker is disabled globally
-    const { disableTreeSitterWorker } = getOptions();
-    if (disableTreeSitterWorker) {
-        return false;
-    }
-    
+    // ✅ Always preprocess AST for supported file types regardless of worker settings
+    // The AST generation will use the best available method (native, WASM, etc.)
     const ext = path.extname(filePath).toLowerCase();
     const astSupportedExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs'];
     return astSupportedExtensions.includes(ext);
@@ -46,27 +42,33 @@ async function generateAstForFile(filePath: string, content: string): Promise<As
     }
 
     const startTime = Date.now();
-    const manager = treeSitterManager;
     
     try {
-        const parseResult = await manager.parseCode(content, language, path.basename(filePath));
+        // Use the same generateAst function that working AST facts use
+        const astData = {
+            fileName: path.basename(filePath),
+            filePath: filePath,
+            fileContent: content,
+            content: content
+        };
+        const astResult = await generateAst(astData);
         const generationTime = Date.now() - startTime;
         
-        if (parseResult.tree) {
+        if (astResult.tree) {
             logger.debug(`[AST Preprocessing] Successfully generated AST for ${filePath} in ${generationTime}ms`);
             return {
-                tree: parseResult.tree,
-                rootNode: parseResult.tree.rootNode,
+                tree: astResult.tree,
+                rootNode: astResult.tree.rootNode,
                 language,
-                hasErrors: parseResult.tree.rootNode?.hasError() || false,
+                hasErrors: astResult.tree.rootNode?.hasError() || false,
                 errorCount: 0, // Tree-sitter doesn't provide direct error count
                 generationTime
             };
         } else {
-            logger.debug(`[AST Preprocessing] Failed to generate AST for ${filePath}: ${parseResult.reason}`);
+            logger.debug(`[AST Preprocessing] Failed to generate AST for ${filePath}: ${astResult.reason}`);
             return {
                 tree: null,
-                reason: parseResult.reason || 'Unknown AST generation failure',
+                reason: astResult.reason || 'Unknown AST generation failure',
                 language,
                 hasErrors: true,
                 generationTime
@@ -86,7 +88,7 @@ async function generateAstForFile(filePath: string, content: string): Promise<As
     }
 }
 
-// ✅ Enhanced parseFile function with lazy AST generation for performance
+// ✅ Enhanced parseFile function with eager AST preprocessing for better performance
 async function parseFile(filePath: string): Promise<FileData> {
     try {
         const content = fs.readFileSync(filePath, 'utf8');
@@ -100,58 +102,27 @@ async function parseFile(filePath: string): Promise<FileData> {
             content: content  // Add required content property
         };
 
-        // ✅ Performance optimization: Lazy AST generation instead of immediate preprocessing
+        // ✅ EAGER AST PREPROCESSING: Generate AST immediately during fileData collection
         if (shouldPreprocessAst(filePath)) {
-            // Don't generate AST immediately - provide lazy generation function
-            let astCache: AstResult | undefined = undefined;
-            let astGenerationPromise: Promise<AstResult | undefined> | undefined = undefined;
+            const astStartTime = Date.now();
+            logger.debug(`[AST Preprocessing] Generating AST for ${fileName} during fileData collection`);
             
-            // Add lazy AST getter function to fileData
-            (fileData as any).getAst = async (): Promise<AstResult | undefined> => {
-                // Return cached result if already generated
-                if (astCache !== undefined) {
-                    return astCache;
+            const astResult = await generateAstForFile(filePath, content);
+            const astGenerationTime = Date.now() - astStartTime;
+            
+            if (astResult) {
+                // Add the precomputed AST directly to fileData
+                fileData.ast = astResult;
+                fileData.astGenerationTime = astGenerationTime;
+                
+                if (astResult.reason) {
+                    fileData.astGenerationReason = astResult.reason;
                 }
                 
-                // If generation is already in progress, return the same promise
-                if (astGenerationPromise) {
-                    return astGenerationPromise;
-                }
-                
-                // Start AST generation
-                astGenerationPromise = (async () => {
-                    const astStartTime = Date.now();
-                    logger.debug(`[Lazy AST] Generating AST for ${fileName} (on-demand)`);
-                    
-                    const astResult = await generateAstForFile(filePath, content);
-                    const astGenerationTime = Date.now() - astStartTime;
-                    
-                    if (astResult) {
-                        astResult.generationTime = astGenerationTime;
-                        fileData.astGenerationTime = astGenerationTime;
-                        
-                        if (astResult.reason) {
-                            fileData.astGenerationReason = astResult.reason;
-                        }
-                        
-                        logger.debug(`[Lazy AST] ${fileName}: ${astResult.tree ? 'SUCCESS' : 'FAILED'} (${astGenerationTime}ms)`);
-                    } else {
-                        fileData.astGenerationReason = 'File type not supported for AST generation';
-                    }
-                    
-                    // Cache the result
-                    astCache = astResult;
-                    return astResult;
-                })();
-                
-                return astGenerationPromise;
-            };
-            
-            // Add sync check for AST availability
-            (fileData as any).hasAst = (): boolean => astCache !== undefined;
-            (fileData as any).isAstGenerating = (): boolean => astGenerationPromise !== undefined && astCache === undefined;
-            
-            fileData.astGenerationReason = 'AST generation available on-demand (lazy)';
+                logger.debug(`[AST Preprocessing] ${fileName}: ${astResult.tree ? 'SUCCESS' : 'FAILED'} (${astGenerationTime}ms)`);
+            } else {
+                fileData.astGenerationReason = 'File type not supported for AST generation';
+            }
         } else {
             fileData.astGenerationReason = 'File type not supported for AST generation';
         }

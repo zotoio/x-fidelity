@@ -44,7 +44,36 @@ jest.mock('@x-fidelity/core', () => ({
             isLevelEnabled: jest.fn().mockReturnValue(true)
         })),
         hasInjectedLogger: jest.fn().mockReturnValue(false),
-        clearInjectedLogger: jest.fn()
+        clearInjectedLogger: jest.fn(),
+        getCurrentExecutionMode: jest.fn().mockReturnValue('cli'),
+        getLoggerForMode: jest.fn().mockImplementation(() => ({
+            info: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+            debug: jest.fn(),
+            trace: jest.fn(),
+            fatal: jest.fn(),
+            setLevel: jest.fn(),
+            getLevel: jest.fn().mockReturnValue('info'),
+            isLevelEnabled: jest.fn().mockReturnValue(true)
+        })),
+        setLoggerForMode: jest.fn(),
+        propagateLogLevel: jest.fn(),
+        updateLogLevel: jest.fn(),
+        setAutoPrefixing: jest.fn(),
+        registerLoggerFactory: jest.fn()
+    },
+    // Add the logger export mock
+    logger: {
+        info: jest.fn(),
+        warn: jest.fn(),
+        error: jest.fn(),
+        debug: jest.fn(),
+        trace: jest.fn(),
+        fatal: jest.fn(),
+        setLevel: jest.fn(),
+        getLevel: jest.fn().mockReturnValue('info'),
+        isLevelEnabled: jest.fn().mockReturnValue(true)
     }
 }));
 
@@ -71,7 +100,7 @@ jest.mock('@x-fidelity/server', () => ({
 jest.mock('./cli', () => ({
     initCLI: jest.fn(),
     options: {
-        mode: 'client',
+        mode: 'cli',
         dir: '.',
         archetype: 'node-fullstack',
         configServer: undefined,
@@ -105,7 +134,7 @@ describe('index', () => {
         mockConsoleWarn.mockClear();
         mockConsoleError.mockClear();
         // Reset options to default values for each test
-        (options as any).mode = 'client';
+        (options as any).mode = 'cli';
         (options as any).dir = '.';
         (options as any).archetype = 'node-fullstack';
         (options as any).configServer = undefined;
@@ -129,7 +158,7 @@ describe('index', () => {
     });
 
     it('should handle non-fatal warnings in codebase analysis', async () => {
-        (options as any).mode = 'client';
+        (options as any).mode = 'cli';
 
         const mockAnalyzeCodebase = analyzeCodebase as jest.MockedFunction<typeof analyzeCodebase>;
         mockAnalyzeCodebase.mockResolvedValue({
@@ -152,7 +181,7 @@ describe('index', () => {
     });
 
     it('should fail when errorCount > 0', async () => {
-        (options as any).mode = 'client';
+        (options as any).mode = 'cli';
 
         const mockAnalyzeCodebase = analyzeCodebase as jest.MockedFunction<typeof analyzeCodebase>;
         mockAnalyzeCodebase.mockResolvedValue({
@@ -178,7 +207,7 @@ describe('index', () => {
     });
 
     it('should handle errors during execution', async () => {
-        (options as any).mode = 'client';
+        (options as any).mode = 'cli';
 
         const mockAnalyzeCodebase = analyzeCodebase as jest.MockedFunction<typeof analyzeCodebase>;
         mockAnalyzeCodebase.mockRejectedValue(new Error('Test error'));
@@ -198,5 +227,5 @@ describe('index', () => {
             })
         );
         expect(process.exit).toHaveBeenCalledWith(1);
-    }, 10000);
+    });
 });

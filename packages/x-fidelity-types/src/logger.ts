@@ -33,6 +33,9 @@ export interface ILogger {
   /** Flush any pending log entries */
   flush?(): Promise<void>;
   
+  /** Update logger options/configuration */
+  updateOptions?(options?: { enableFileLogging?: boolean; filePath?: string }): void;
+  
   /** Dispose of logger resources (if applicable) */
   dispose?(): void;
 }

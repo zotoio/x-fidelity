@@ -1,5 +1,4 @@
-import { FactDefn, FileData } from '@x-fidelity/types';
-import { AstResult, generateAst } from '../../sharedPluginUtils/astUtils';
+import { FactDefn, FileData, AstResult } from '@x-fidelity/types';
 import { logger } from '@x-fidelity/core';
 
 // Simple regex-based parsing for testing reliability
@@ -102,7 +101,19 @@ export const effectCleanupFact: FactDefn = {
     priority: 2,                 // ✅ Lower priority than AST fact (depends on AST)
     fn: async (params: unknown, almanac?: any) => {
         try {
-            const fileData = params as FileData;
+            // Get fileData from almanac - SAME AS FUNCTIONCOMPLEXITY
+            const fileData = await almanac?.factValue('fileData');
+            
+            if (!fileData) {
+                logger.debug('No fileData available for effectCleanup fact');
+                return { effects: [] };
+            }
+
+            if (!fileData.content && !fileData.fileContent) {
+                logger.debug('No file content available for effectCleanup fact');
+                return { effects: [] };
+            }
+
             const effects: any[] = [];
 
             // Try to get AST from almanac
@@ -114,12 +125,14 @@ export const effectCleanupFact: FactDefn = {
                     effects.push(...astEffects);
                 } else {
                     // Fallback to regex parsing if no AST available
-                    const regexEffects = parseUseEffectWithRegex(fileData.fileContent, fileData.fileName, fileData.filePath);
+                    const content = fileData.content || fileData.fileContent || '';
+                    const regexEffects = parseUseEffectWithRegex(content, fileData.fileName, fileData.filePath);
                     effects.push(...regexEffects);
                 }
             } catch (astError) {
                 logger.debug(`AST unavailable for ${fileData.fileName}, using regex parsing`);
-                const regexEffects = parseUseEffectWithRegex(fileData.fileContent, fileData.fileName, fileData.filePath);
+                const content = fileData.content || fileData.fileContent || '';
+                const regexEffects = parseUseEffectWithRegex(content, fileData.fileName, fileData.filePath);
                 effects.push(...regexEffects);
             }
 

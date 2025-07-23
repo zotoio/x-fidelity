@@ -93,17 +93,6 @@ export class ControlCenterTreeProvider
               command: 'xfidelity.openSettings',
               title: 'Open Settings'
             }
-          },
-          {
-            id: 'control-center',
-            label: 'Control Center',
-            tooltip: 'Open X-Fidelity Control Center',
-            iconPath: new vscode.ThemeIcon('dashboard'),
-            collapsibleState: vscode.TreeItemCollapsibleState.None,
-            command: {
-              command: 'xfidelity.showControlCenter',
-              title: 'Show Control Center'
-            }
           }
         ]
       },
@@ -178,6 +167,17 @@ export class ControlCenterTreeProvider
             command: {
               command: 'xfidelity.resetConfiguration',
               title: 'Reset Configuration'
+            }
+          },
+          {
+            id: 'reset-settings',
+            label: 'Reset All Settings',
+            tooltip: 'Reset all X-Fidelity settings to defaults (user & workspace)',
+            iconPath: new vscode.ThemeIcon('clear-all'),
+            collapsibleState: vscode.TreeItemCollapsibleState.None,
+            command: {
+              command: 'xfidelity.resetToDefaults',
+              title: 'Reset All Settings'
             }
           },
           {

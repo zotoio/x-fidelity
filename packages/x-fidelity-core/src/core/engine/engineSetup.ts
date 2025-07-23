@@ -1,5 +1,5 @@
 import { Engine, Event, RuleProperties } from 'json-rules-engine';
-import { SetupEngineParams, ArchetypeConfig, ExecutionConfig } from '@x-fidelity/types';
+import { SetupEngineParams, ArchetypeConfig, ExecutionConfig, EXECUTION_MODES } from '@x-fidelity/types';
 import { loadRepoXFIConfig } from '../../utils/repoXFIConfigLoader';
 import { logger } from '../../utils/logger';
 import { LoggerProvider } from '../../utils/loggerProvider';
@@ -106,7 +106,15 @@ export async function setupEngine(params: SetupEngineParams): Promise<Engine> {
             const ruleName = name || 'unknown-rule';
             
             // Create a child logger without verbose bindings since execution ID is already in prefix
-            const childLogger = LoggerProvider.getLogger();
+            // Use CLI mode as default if no mode is detected
+            const currentMode = (() => {
+                try {
+                    return LoggerProvider.getCurrentExecutionMode();
+                } catch (error) {
+                    return EXECUTION_MODES.CLI; // Fallback for test environments
+                }
+            })();
+            const childLogger = LoggerProvider.getLoggerForMode(currentMode);
             
             // Extract condition details from conditions
             let conditionDetails: { fact: string; operator: string; value: any; params?: any } | undefined = undefined;

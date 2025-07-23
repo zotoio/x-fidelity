@@ -54,7 +54,7 @@ jobs:
           yarn rebuild-native || echo "Native rebuild failed, continuing..."
 
       - name: Build extension
-        run: yarn workspace x-fidelity-vscode dev:build
+        run: yarn workspace x-fidelity-vscode build
 
       - name: Run comprehensive verification
         run: yarn workspace x-fidelity-vscode verify:ci

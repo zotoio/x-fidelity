@@ -6,10 +6,10 @@ const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
 
 async function main() {
-  // Build TreeSitter worker first
+  // Build TreeSitter worker first - WITH tree-sitter bundled for VSIX compatibility
   const workerCtx = await esbuild.context({
     entryPoints: [
-      '../x-fidelity-plugins/src/xfiPluginAst/worker/treeSitterWorker.ts'
+      '../x-fidelity-plugins/src/sharedPluginUtils/astUtils/treeSitterWorker.ts'
     ],
     bundle: true,
     format: 'cjs',
@@ -22,13 +22,10 @@ async function main() {
       'vscode',
       'electron',
       'original-fs',
-      // Keep tree-sitter modules external to use rebuilt versions
-      'tree-sitter',
-      'tree-sitter-javascript',
-      'tree-sitter-typescript',
       // Native modules that contain .node files
       'fsevents',
       'chokidar'
+      // REMOVED: tree-sitter modules - now bundled to prevent VSIX failures
     ],
     logLevel: 'info',
     alias: {
@@ -45,7 +42,13 @@ async function main() {
     treeShaking: true,
     loader: {
       '.json': 'json',
-      '.node': 'file'
+      '.node': 'copy'  // Changed from 'file' to 'copy' for better .node handling
+    },
+    // Additional options for proper tree-sitter bundling
+    mainFields: ['main', 'module'],
+    conditions: ['node'],
+    define: {
+      'process.env.NODE_ENV': production ? '"production"' : '"development"'
     }
   });
 
@@ -64,13 +67,11 @@ async function main() {
       // Keep these external as they should be available in VS Code environment
       'electron',
       'original-fs',
-      // Exclude native tree-sitter packages since we're using WASM versions
-      'tree-sitter',
-      'tree-sitter-javascript',
-      'tree-sitter-typescript',
       // Native modules that contain .node files
       'fsevents',
-      'chokidar'
+      'chokidar',
+      // Keep web-tree-sitter external to prevent class name mangling
+      'web-tree-sitter'
     ],
     logLevel: 'info',
     plugins: [
@@ -114,10 +115,11 @@ async function main() {
     conditions: ['node'],
     // Drop console logs and debugger in production only
     drop: production ? ['console', 'debugger'] : [],
-    // Loader for JSON files
+    // Loader for JSON and WASM files
     loader: {
       '.json': 'json',
-      '.node': 'file'
+      '.node': 'file',
+      '.wasm': 'copy'
     },
     // Bundle splitting for better performance
     splitting: false, // VSCode extensions can't use splitting
@@ -214,6 +216,27 @@ const copyXFidelityAssetsPlugin = {
           }
         }
 
+        // 🎯 COPY WEB-TREE-SITTER TO CLI DIRECTORY FOR WASM SUPPORT
+        try {
+          const webTreeSitterSrc = path.resolve(__dirname, 'node_modules', 'web-tree-sitter');
+          const webTreeSitterDest = path.join(cliBinaryDest, 'node_modules', 'web-tree-sitter');
+          
+          if (fs.existsSync(webTreeSitterSrc)) {
+            // Create node_modules directory in CLI
+            if (!fs.existsSync(path.join(cliBinaryDest, 'node_modules'))) {
+              fs.mkdirSync(path.join(cliBinaryDest, 'node_modules'), { recursive: true });
+            }
+            
+            // Copy web-tree-sitter module
+            fs.cpSync(webTreeSitterSrc, webTreeSitterDest, { recursive: true, force: true });
+            console.log('[cli] ✅ Copied web-tree-sitter for WASM support');
+          } else {
+            console.warn('[cli] ⚠️ web-tree-sitter not found - WASM mode will fail');
+          }
+        } catch (error) {
+          console.warn('[cli] ⚠️ Failed to copy web-tree-sitter:', error.message);
+        }
+
         // Copy demo config directory for bundled CLI
         const cliDemoConfigSrc = path.join(cliDistPath, 'demoConfig');
         const cliDemoConfigDest = path.join(cliBinaryDest, 'demoConfig');
@@ -297,13 +320,73 @@ const copyXFidelityAssetsPlugin = {
         );
       }
 
+      // Copy WASM files for web-tree-sitter
+      console.log('[wasm] 📦 Copying Tree-sitter WASM files...');
+      
+      try {
+        // Create wasm directory
+        const wasmDest = 'dist/wasm';
+        if (!fs.existsSync(wasmDest)) {
+          fs.mkdirSync(wasmDest, { recursive: true });
+        }
+
+        // Copy main tree-sitter WASM file from web-tree-sitter
+        const treeSitterWasm = path.resolve(__dirname, 'node_modules', 'web-tree-sitter', 'tree-sitter.wasm');
+        const treeSitterWasmDest = path.join(wasmDest, 'tree-sitter.wasm');
+        
+        if (fs.existsSync(treeSitterWasm)) {
+          fs.copyFileSync(treeSitterWasm, treeSitterWasmDest);
+          console.log('[wasm] ✓ Copied tree-sitter.wasm');
+        } else {
+          console.warn('[wasm] ⚠️ tree-sitter.wasm not found at', treeSitterWasm);
+          // Try alternative path
+          const altPath = path.resolve(__dirname, 'node_modules', 'web-tree-sitter', 'lib', 'tree-sitter.wasm');
+          if (fs.existsSync(altPath)) {
+            fs.copyFileSync(altPath, treeSitterWasmDest);
+            console.log('[wasm] ✓ Copied tree-sitter.wasm from lib/ directory');
+          }
+        }
+
+        // Copy language parser WASM files
+        const languageFiles = [
+          { pkg: 'tree-sitter-javascript', file: 'tree-sitter-javascript.wasm' },
+          { pkg: 'tree-sitter-typescript', file: 'tree-sitter-typescript.wasm' },
+          { pkg: 'tree-sitter-typescript', file: 'tree-sitter-tsx.wasm' }
+        ];
+
+        for (const { pkg, file } of languageFiles) {
+          const srcPath = path.resolve(__dirname, 'node_modules', pkg, file);
+          const destPath = path.join(wasmDest, file);
+          
+          if (fs.existsSync(srcPath)) {
+            fs.copyFileSync(srcPath, destPath);
+            console.log(`[wasm] ✓ Copied ${file}`);
+          } else {
+            console.warn(`[wasm] ⚠️ ${file} not found at`, srcPath);
+          }
+        }
+
+        // Verify copied files
+        const wasmFiles = fs.readdirSync(wasmDest).filter(f => f.endsWith('.wasm'));
+        console.log(`[wasm] ✅ WASM files copied successfully: ${wasmFiles.join(', ')}`);
+        
+        if (wasmFiles.length === 0) {
+          console.error('[wasm] ❌ No WASM files were copied! This will cause TreeSitter initialization to fail.');
+        }
+        
+      } catch (error) {
+        console.error('[wasm] ❌ Failed to copy WASM files:', error.message);
+        console.error('[wasm] This will cause TreeSitter WASM initialization to fail in the extension.');
+      }
+
       // Create a manifest file with version information
       const manifest = {
         version: '4.0.0',
         buildTime: new Date().toISOString(),
         components: {
           demoConfig: fs.existsSync(demoConfigDest),
-          plugins: fs.existsSync(pluginsDest)
+          plugins: fs.existsSync(pluginsDest),
+          wasm: fs.existsSync('dist/wasm')
         }
       };
 

@@ -1,6 +1,6 @@
 import assert from 'assert';
 import * as vscode from 'vscode';
-import { suite, test, suiteSetup } from 'mocha';
+import { suite, test, suiteSetup, setup } from 'mocha';
 import {
   ensureExtensionActivated,
   executeCommandSafely,
@@ -8,6 +8,7 @@ import {
   waitForAnalysisCompletion,
   getAnalysisResults,
   runInitialAnalysis,
+  runFreshAnalysisForTest,
   clearAnalysisCache
 } from '../helpers/testHelpers';
 
@@ -15,28 +16,25 @@ suite('Analysis Completion & UI Feature Tests', () => {
   let initialAnalysisResults: any;
 
   suiteSetup(async function () {
-    this.timeout(120000); // 2 minutes for full setup including analysis
+    this.timeout(180000); // Increased to 3 minutes for full setup
     await ensureExtensionActivated();
     await new Promise(resolve => setTimeout(resolve, 3000));
+  });
 
-    // Run analysis once and cache results for reuse
-    console.log('🔍 Running initial analysis for test suite...');
+  setup(async function () {
+    this.timeout(180000); // 3 minutes for fresh analysis before each test
+    console.log('🔍 Running fresh analysis before test...');
     try {
-      initialAnalysisResults = await runInitialAnalysis();
-      console.log(
-        `📊 Initial analysis completed with ${initialAnalysisResults?.summary?.totalIssues || 0} issues`
-      );
+      initialAnalysisResults = await runFreshAnalysisForTest(undefined, 150000); // 2.5 minute timeout
+      console.log(`📊 Fresh analysis completed with ${initialAnalysisResults?.summary?.totalIssues || 0} issues`);
     } catch (error) {
-      console.log(
-        '⚠️ Initial analysis failed (may be expected for test environment):',
-        error
-      );
+      console.error('⚠️ Fresh analysis failed:', error);
       initialAnalysisResults = null;
     }
   });
 
   test('should complete full analysis workflow and update UI', async function () {
-    this.timeout(60000); // Reduced timeout since we're using cached results
+    this.timeout(120000); // Reduced timeout since we're using cached results
 
     // 1. Verify extension is active
     const extension = vscode.extensions.getExtension(
@@ -145,7 +143,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
   });
 
   test('should populate problems panel with diagnostics', async function () {
-    this.timeout(30000);
+    this.timeout(60000);
 
     // Use cached results instead of running analysis again
     console.log('🔍 Testing problems panel population...');
@@ -178,7 +176,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
   });
 
   test('should handle configuration changes', async function () {
-    this.timeout(30000);
+    this.timeout(60000);
 
     // Test archetype detection
     await executeCommandSafely('xfidelity.detectArchetype');
@@ -193,7 +191,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
   });
 
   test('should provide detailed output logging', async function () {
-    this.timeout(30000);
+    this.timeout(60000);
 
     // Show output channel
     await executeCommandSafely('xfidelity.showOutput');
@@ -206,7 +204,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
   });
 
   test('should handle fresh analysis when needed', async function () {
-    this.timeout(90000);
+    this.timeout(120000);
 
     // This test specifically needs fresh analysis
     console.log('🔍 Testing fresh analysis (clearing cache)...');

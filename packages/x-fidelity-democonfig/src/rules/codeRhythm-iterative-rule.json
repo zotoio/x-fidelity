@@ -13,7 +13,7 @@
                 "params": {
                     "resultFact": "codeRhythmResult"
                 },
-                "operator": "astComplexity",
+                "operator": "codeRhythmComplexity",
                 "value": {
                     "consistency": 0.6,
                     "complexity": 0.7,

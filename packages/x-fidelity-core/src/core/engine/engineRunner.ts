@@ -1,4 +1,4 @@
-import { ScanResult, RuleFailure, ErrorLevel, RunEngineOnFilesParams, ILogger } from '@x-fidelity/types';
+import { ScanResult, RuleFailure, ErrorLevel, RunEngineOnFilesParams, ILogger, EXECUTION_MODES } from '@x-fidelity/types';
 import { Engine } from 'json-rules-engine';
 import { REPO_GLOBAL_CHECK } from '../configManager';
 import { executeErrorAction } from './errorActionExecutor';
@@ -221,7 +221,15 @@ async function buildRuleFailureFromResult(result: any, rule: any, file: any, alm
 export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<ScanResult[]> {
     const { engine, fileData, installedDependencyVersions, minimumDependencyVersions, standardStructure, logger: loggerParam } = params;
     // Use the passed logger or fall back to the logger provider
-    const logger = loggerParam || LoggerProvider.getLogger();
+    // Use provided logger or get mode-aware logger with fallback
+    const logger = loggerParam || (() => {
+        try {
+            const currentMode = LoggerProvider.getCurrentExecutionMode();
+            return LoggerProvider.getLoggerForMode(currentMode);
+        } catch (error) {
+            return LoggerProvider.getLoggerForMode(EXECUTION_MODES.CLI); // Fallback for test environments
+        }
+    })();
     const results: ScanResult[] = [];
 
     // Performance tracking with much more detail

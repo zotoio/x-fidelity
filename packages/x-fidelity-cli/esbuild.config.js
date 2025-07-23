@@ -8,40 +8,6 @@ async function main() {
   // First ensure all dependencies are built
   console.log('[cli] Building dependencies...');
   
-  // Build TreeSitter worker first
-  const workerCtx = await esbuild.context({
-    entryPoints: [
-      '../x-fidelity-plugins/src/xfiPluginAst/worker/treeSitterWorker.ts'
-    ],
-    bundle: true,
-    format: 'cjs',
-    minify: production,
-    sourcemap: !production,
-    sourcesContent: false,
-    platform: 'node',
-    outfile: 'dist/treeSitterWorker.js',
-    external: [
-      // Native modules that contain .node files - these need platform-specific builds
-      'fsevents',
-      'chokidar',
-      // Keep tree-sitter modules external so they compile for target platform
-      'tree-sitter',
-      'tree-sitter-javascript',
-      'tree-sitter-typescript'
-    ],
-    logLevel: 'info',
-    alias: {
-      '@x-fidelity/core': path.resolve(__dirname, '../x-fidelity-core/src/index.ts'),
-      '@x-fidelity/types': path.resolve(__dirname, '../x-fidelity-types/src/index.ts')
-    },
-    target: 'node18',
-    treeShaking: true,
-    loader: {
-      '.json': 'json',
-      '.node': 'file'
-    }
-  });
-  
   // Build main CLI
   const ctx = await esbuild.context({
     entryPoints: ['src/index.ts'],
@@ -53,31 +19,34 @@ async function main() {
     platform: 'node',
     outfile: 'dist/index.js',
     external: [
-      // Keep only runtime dependencies external that are listed in package.json dependencies
-      'commander',
-      'fs-extra', 
-      'ora',
-      'prettyjson',
-      'pino',
-      'pino-pretty',
-      'glob',
-      'chokidar',
-      'tree-sitter',
-      'tree-sitter-javascript',
-      'tree-sitter-typescript',
-      '@babel/parser',
-      '@babel/types',
-      '@yarnpkg/lockfile',
-      'axios',
-      'dotenv',
-      'esprima',
-      'lodash',
-      'openai',
-      'semver',
+      // Keep only runtime dependencies external that MUST be provided by the environment
+      // or contain native binaries that can't be bundled
       // VSCode API is only available in VSCode extension context
       'vscode',
       // Native modules that contain .node files - these need platform-specific builds
-      'fsevents'
+      'fsevents',
+      // TreeSitter native modules - these contain platform-specific .node binaries
+      'tree-sitter',
+      'tree-sitter-javascript', 
+      'tree-sitter-typescript',
+      'web-tree-sitter',
+
+      // Bundle everything else to make CLI self-contained:
+      // - axios: HTTP client used by core
+      // - commander: CLI framework
+      // - fs-extra: Enhanced filesystem operations  
+      // - ora: Loading spinners
+      // - prettyjson: JSON formatting
+      // - pino: Core logging (without transports)
+      // - glob: File pattern matching
+      // - @babel/*: AST parsing
+      // - @yarnpkg/lockfile: Package lock parsing
+      // - dotenv: Environment variables
+      // - esprima: JavaScript parsing
+      // - lodash: Utility functions
+      // - openai: AI integration
+      // - semver: Version comparison
+      // - chokidar: File watching
       // NOTE: @x-fidelity/* packages are intentionally NOT listed here
       // They should be bundled via the alias configuration below
     ],
@@ -106,6 +75,7 @@ async function main() {
     plugins: [
       // Plugin to replace dynamic imports with static ones for bundling
       {
+        
         name: 'replace-dynamic-imports',
         setup(build) {
           build.onLoad({ filter: /\.ts$/ }, async (args) => {
@@ -128,20 +98,15 @@ async function main() {
     ]
   });
 
-  // Build worker and CLI
-  const [, cliResult] = await Promise.all([
-    workerCtx.rebuild(),
-    ctx.rebuild()
-  ]);
+  // Build CLI
+  const cliResult = await ctx.rebuild();
   
   if (cliResult.metafile) {
     const cliSize = fs.statSync('dist/index.js').size;
-    const workerSize = fs.statSync('dist/treeSitterWorker.js').size;
     console.log(`[cli] CLI bundle size: ${Math.round(cliSize / 1024)}KB`);
-    console.log(`[cli] Worker bundle size: ${Math.round(workerSize / 1024)}KB`);
   }
 
-  await Promise.all([workerCtx.dispose(), ctx.dispose()]);
+  await ctx.dispose();
 }
 
 /**
