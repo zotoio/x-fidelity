@@ -1,92 +1,115 @@
-import React,{useState,useEffect}from 'react';
-import{Button}from 'antd';
-// Poor formatting and inconsistent style to trigger codeRhythm rule
+import React,{useState,useEffect}from'react';
 
-interface Data{id:string;name:string;}
+// This component has poor code rhythm and should trigger the codeRhythm-iterative rule
+// Inconsistent spacing, mixed styles, poor readability
 
-const PoorRhythmComponent:React.FC=()=>{
-const[items,setItems]=useState<Data[]>([]);
-const[loading,setLoading]=useState(false);
-const [count,setCount ] = useState( 0 );
+export function PoorRhythmComponent({items,loading,onItemClick}:any){
+const[selectedItems,setSelectedItems]=useState<string[]>([]);
+const[filter,setFilter]=useState('');
 
-// Inconsistent indentation and spacing
-useEffect(()=>
-{
+// Inconsistent spacing and formatting
+useEffect(()=>{
 if(loading){
-console.log('loading...');
+console.log('Loading items...');
 }else{
-    console.log('not loading');
-        if(items.length>0)
-    {
-        console.log( 'has items' );
-            for(let i=0;i<items.length;i++){
-                const item=items[i];
-if(item.id==='special'){
-console.log('found special item');
-break;
-}
-            }
+if(items&&items.length>0){
+console.log('Items loaded:',items.length);
 }
 }
 },[loading,items]);
 
-// More inconsistent formatting
-const handleClick=()=>{
-    setLoading(true);
-setTimeout(()=>{
-const newItems=[
-{id:'1',name:'Item 1'},
-    {id: '2', name: 'Item 2' },
-        { id : '3' , name : 'Item 3' }
-];
-        setItems(newItems);
-            setLoading(false);
-},1000);
-};
-
-const processItems=(items:Data[])=>{
-return items.map(item=>
-{
-return{
-...item,
+// Poor nesting and complex logic
+const processItems=(items:any[])=>{
+let result=[];
+for(let i=0;i<items.length;i++){
+if(items[i]){
+if(items[i].active){
+if(items[i].category==='important'){
+if(items[i].status==='pending'){
+if(items[i].priority>5){
+result.push({
+...items[i],
 processed:true,
-    timestamp:Date.now()
-};
-}).filter(item=>
-    item.id!=='exclude'
-);
+timestamp:Date.now()
+});
+}
+}
+}
+}
+}
+}
+return result;
 };
 
-// Inconsistent spacing and formatting
+const handleItemSelection=(itemId:string)=>{
+if(selectedItems.includes(itemId)){
+setSelectedItems(prev=>prev.filter(id=>id!==itemId));
+}else{
+setSelectedItems(prev=>[...prev,itemId]);
+}
+};
+
+// Mixed code styles and poor formatting
+const filteredItems=items?items.filter((item:any)=>{
+if(!filter)return true;
+if(item.name&&item.name.toLowerCase().includes(filter.toLowerCase()))return true;
+if(item.description&&item.description.toLowerCase().includes(filter.toLowerCase()))return true;
+return false;
+}):[];
+
+const processedItems=processItems(filteredItems);
+
 return(
-<div style={{padding:'10px',margin:'5px'}}>
-<h3>Poor Rhythm Component</h3>
-        <p>This component has intentionally poor code rhythm</p>
-    <Button onClick={handleClick} loading={loading}
-        type="primary"
-    >
-Load Items
-    </Button>
-    
-<div style={{marginTop:'20px'}}>
-{items.length>0&&(
-<ul>
-{items.map(item=>(
-    <li key={item.id} style={{listStyle:'none',padding:'2px'}}>
-        {item.name}
-            </li>
+<div className="poor-rhythm-component">
+<div className="header">
+<h2>Poor Rhythm Component</h2>
+<input type="text"value={filter}onChange={(e)=>setFilter(e.target.value)}placeholder="Filter items"/>
+</div>
+<div className="content">
+{loading?(
+<div>Loading...</div>
+):(
+<div>
+{processedItems.map((item:any)=>(
+<div key={item.id}className={`item ${selectedItems.includes(item.id)?'selected':''}`}onClick={()=>{
+handleItemSelection(item.id);
+onItemClick&&onItemClick(item);
+}}>
+<div className="item-header">
+<span className="item-name">{item.name}</span>
+<span className="item-status">{item.status}</span>
+</div>
+<div className="item-body">
+<p>{item.description}</p>
+{item.metadata&&(
+<div className="metadata">
+{Object.entries(item.metadata).map(([key,value]:any)=>(
+<span key={key}className="metadata-item">{key}:{typeof value==='object'?JSON.stringify(value):value}</span>
 ))}
-</ul>
+</div>
 )}
-    </div>
-        
-        <div>
-Count: {count}
-<Button onClick={()=>setCount(count+1)} size="small">+</Button>
-            <Button onClick={()=>setCount(count-1)} size="small">-</Button>
+</div>
+{item.actions&&item.actions.length>0&&(
+<div className="item-actions">
+{item.actions.map((action:any,index:number)=>(
+<button key={index}onClick={(e)=>{
+e.stopPropagation();
+if(action.handler){
+action.handler(item);
+}
+}}>{action.label}</button>
+))}
+</div>
+)}
+</div>
+))}
+</div>
+)}
+</div>
+<div className="footer">
+<span>Selected: {selectedItems.length}</span>
+<span>Total: {processedItems.length}</span>
 </div>
 </div>
 );
-};
-
-export default PoorRhythmComponent; 
+} 

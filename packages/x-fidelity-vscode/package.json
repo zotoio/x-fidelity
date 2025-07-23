@@ -419,7 +419,7 @@
         },
         "xfidelity.performance.hideOptimizationNotice": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Hide the performance optimization notice on activation"
         },
         "xfidelity.periodicAnalysis.enabled": {
@@ -614,7 +614,7 @@
   },
   "scripts": {
     "vscode:prepublish": "yarn build",
-    "build": "yarn lint:fix && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "build": "yarn clean && yarn build:dependencies && yarn lint:fix && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "build:cli": "cd ../../ && yarn workspace x-fidelity build",
     "build:dependencies": "cd ../../ && yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && yarn workspace @x-fidelity/democonfig build && echo 'Dependencies built successfully'",
     "verify:dependencies": "node -e \"const fs = require('fs'); const deps = ['../x-fidelity-types/dist/index.js', '../x-fidelity-core/dist/index.js', '../x-fidelity-plugins/dist/index.js']; deps.forEach(dep => { if (!fs.existsSync(dep)) { console.error('Missing dependency:', dep); process.exit(1); } }); console.log('All dependencies verified');\"",
@@ -629,9 +629,9 @@
     "test": "yarn format && yarn test:all",
     "test:coverage": "yarn build:dependencies && jest --coverage",
     "test:unit": "yarn build:dependencies && yarn verify:dependencies && jest",
-    "test:integration": "yarn build:dependencies && yarn verify:dependencies && node scripts/test-cross-platform.js integration",
-    "test:e2e": "node scripts/test-cross-platform.js e2e",
-    "test:ci": "node scripts/test-cross-platform.js comprehensive",
+    "test:integration": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration",
+    "test:e2e": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js e2e",
+    "test:ci": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js comprehensive",
     "test:simple": "vscode-test --config .vscode-test.mjs --label all",
     "test:debug": "yarn build:test && code --extensionDevelopmentPath=. --extensionTestsPath=./out/test/test/suite",
     "lint": "eslint src --ext ts && prettier --check src/**/*.ts",
@@ -642,7 +642,7 @@
     "build:production": "yarn check-types && node --no-warnings=ExperimentalWarning esbuild.config.js --production",
     "check-types": "tsc --noEmit",
     "build:test": "tsc -p tsconfig.test.json",
-    "clean": "rimraf dist dist-test config .vscode-test .vscode-test-profile && node -e \"try { require('fs').readdirSync('.').filter(f => f.endsWith('.tsbuildinfo')).forEach(f => require('fs').unlinkSync(f)); } catch(e) { /* ignore */ }\"",
+    "clean": "rimraf out dist dist-test config .vscode-test .vscode-test-profile && node -e \"try { require('fs').readdirSync('.').filter(f => f.endsWith('.tsbuildinfo')).forEach(f => require('fs').unlinkSync(f)); } catch(e) { /* ignore */ }\"",
     "clean:test-artifacts": "rm -rf .vscode-test/user-data/Crashpad/pending/*.lock .vscode-test/user-data/logs/* ./.vscode-test-user-data || true",
     "publish": "yarn package && vsce publish",
     "install-vsix": "code --install-extension $(ls *.vsix | head -1) --force",

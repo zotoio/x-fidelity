@@ -1,0 +1,22 @@
+{
+  "value": "custom fact data",
+  "description": "This JSON file contains data that should trigger the customFact and customOperator from the simple example plugin",
+  "metadata": {
+    "purpose": "testing",
+    "plugin": "xfiPluginSimpleExample",
+    "fact": "customFact",
+    "operator": "customOperator"
+  },
+  "testCases": [
+    {
+      "name": "basic_test",
+      "value": "custom fact data",
+      "expected": true
+    },
+    {
+      "name": "mismatch_test", 
+      "value": "different data",
+      "expected": false
+    }
+  ]
+} 

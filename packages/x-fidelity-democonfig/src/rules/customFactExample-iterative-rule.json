@@ -1,0 +1,30 @@
+{
+    "name": "customFactExample-iterative",
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "customExample.json"
+            },
+            {
+                "fact": "customFact",
+                "params": {
+                    "resultFact": "customFactResult"
+                },
+                "operator": "customOperator",
+                "value": "custom fact data"
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "Custom fact example rule triggered - demonstrates plugin extensibility",
+            "details": {
+                "fact": "customFactResult"
+            }
+        }
+    }
+} 

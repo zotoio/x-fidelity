@@ -198,40 +198,40 @@ suite('CLI Spawner Logging Integration Tests', () => {
   });
 
   suite('CLI Log Format Verification', () => {
-    xtest('should correctly parse and forward CLI logs with timezone and correlation ID', async () => {
-      const cliOptions: CLISpawnOptions = {
-        workspacePath: '/test/path',
-        args: ['--mode', 'cli', '--log-level', 'info'],
-        env: {
-          XFI_CORRELATION_ID: 'abc123'
-        }
-      };
+    // xtest('should correctly parse and forward CLI logs with timezone and correlation ID', async () => {
+    //   const cliOptions: CLISpawnOptions = {
+    //     workspacePath: '/test/path',
+    //     args: ['--mode', 'cli', '--log-level', 'info'],
+    //     env: {
+    //       XFI_CORRELATION_ID: 'abc123'
+    //     }
+    //   };
 
-      const promise = cliSpawner.runAnalysis(cliOptions);
+    //   const promise = cliSpawner.runAnalysis(cliOptions);
 
-      // Simulate CLI output with proper format
-      const expectedOutput = '[2025-07-21 20:22:57.780 +1000] INFO: [abc123] 📊 CLI initialized with log level: INFO';
-      mockChildProcess.simulateStdoutData(expectedOutput + '\n');
+    //   // Simulate CLI output with proper format
+    //   const expectedOutput = '[2025-07-21 20:22:57.780 +1000] INFO: [abc123] 📊 CLI initialized with log level: INFO';
+    //   mockChildProcess.simulateStdoutData(expectedOutput + '\n');
       
-      // Use setTimeout to ensure async operations complete
-      setTimeout(() => {
-        // Simulate successful completion
-        mockChildProcess.simulateClose(0);
-      }, 100);
+    //   // Use setTimeout to ensure async operations complete
+    //   setTimeout(() => {
+    //     // Simulate successful completion
+    //     mockChildProcess.simulateClose(0);
+    //   }, 100);
 
-      try {
-        const result = await promise;
+    //   try {
+    //     const result = await promise;
         
-        // Verify analysis result structure
-        assert.ok(result, 'Result should be defined');
-        assert.ok(result.metadata, 'Result metadata should be defined');
-        assert.ok(result.metadata.XFI_RESULT, 'XFI_RESULT should be defined');
-      } catch (error) {
-        // For this test, we expect success, so log any error for debugging
-        console.error('Test failed with error:', error);
-        throw error;
-      }
-    }).timeout(10000); // Reduce timeout since we're using mocks
+    //     // Verify analysis result structure
+    //     assert.ok(result, 'Result should be defined');
+    //     assert.ok(result.metadata, 'Result metadata should be defined');
+    //     assert.ok(result.metadata.XFI_RESULT, 'XFI_RESULT should be defined');
+    //   } catch (error) {
+    //     // For this test, we expect success, so log any error for debugging
+    //     console.error('Test failed with error:', error);
+    //     throw error;
+    //   }
+    // });
 
     test('should handle correlation ID inheritance from VSCode to CLI', async () => {
       const correlationId = 'parent-correlation-123';
@@ -265,7 +265,7 @@ suite('CLI Spawner Logging Integration Tests', () => {
         // Graceful error handling - some errors are acceptable in test environment
         assert.ok(error, 'Error should be defined');
       }
-    }).timeout(10000);
+    });
 
     test('should properly forward different log levels from CLI to VSCode', async () => {
       const cliOptions: CLISpawnOptions = {
@@ -305,7 +305,7 @@ suite('CLI Spawner Logging Integration Tests', () => {
         // Graceful error handling
         assert.ok(error, 'Error should be defined');
       }
-    }).timeout(10000);
+    });
 
     test('should handle CLI process errors gracefully', async () => {
       const cliOptions: CLISpawnOptions = {
@@ -333,7 +333,7 @@ suite('CLI Spawner Logging Integration Tests', () => {
         // If it throws, that's also acceptable behavior for error handling
         assert.ok(error, 'Error should be defined');
       }
-    }).timeout(10000);
+    });
   });
 
   suite('VSCode Mode Environment Setup', () => {
@@ -362,7 +362,7 @@ suite('CLI Spawner Logging Integration Tests', () => {
         // Graceful error handling
         assert.ok(error, 'Error should be handled gracefully');
       }
-    }).timeout(10000);
+    });
   });
 
   suite('Output Processing and Forwarding', () => {
@@ -400,7 +400,7 @@ suite('CLI Spawner Logging Integration Tests', () => {
         // Graceful error handling
         assert.ok(error, 'Error should be handled gracefully');
       }
-    }).timeout(10000);
+    });
   });
 
   suite('Error Handling and Recovery', () => {
@@ -431,7 +431,7 @@ suite('CLI Spawner Logging Integration Tests', () => {
           errorMessage.includes('spawn');
         assert.ok(containsExpectedText, `Error message should contain spawn-related text. Got: ${errorMessage}`);
       }
-    }).timeout(10000);
+    });
   });
 
   suite('Correlation ID Management', () => {
@@ -465,6 +465,6 @@ suite('CLI Spawner Logging Integration Tests', () => {
         // Graceful error handling
         assert.ok(error, 'Error should be handled gracefully');
       }
-    }).timeout(10000);
+    });
   });
 }); 
