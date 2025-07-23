@@ -8,7 +8,17 @@ export const hookDependencyFact: FactDefn = {
     priority: 2,                 // ✅ Lower priority than AST fact (depends on AST)
     fn: async (params: unknown, almanac?: unknown) => {
         try {
-            const fileData = params as FileData;
+            // Get fileData from almanac - SAME AS FUNCTIONCOMPLEXITY
+            const fileData = await (almanac as any)?.factValue('fileData');
+            
+            if (!fileData) {
+                logger.debug('No fileData available for hookDependency fact');
+                return {
+                    missingDependencies: [],
+                    unnecessaryDependencies: []
+                };
+            }
+
             const ast = await (almanac as any)?.factValue('ast') as AstResult;
 
             if (!ast || !ast.tree) {

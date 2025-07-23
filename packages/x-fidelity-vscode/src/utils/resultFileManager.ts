@@ -230,7 +230,7 @@ export class ResultFileManager {
             // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
             if (
               file.filename === 'XFI_RESULT.json' ||
-              file.fullPath.includes('XFI_RESULT.json')
+              file.fullPath.endsWith('.xfiResults/XFI_RESULT.json')
             ) {
               logger.error(
                 `🚨 CRITICAL: Attempted to delete XFI_RESULT.json - BLOCKED!`,

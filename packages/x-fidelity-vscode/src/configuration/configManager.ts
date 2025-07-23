@@ -141,7 +141,7 @@ export class ConfigManager {
       generateReports: workspaceConfig.get('generateReports', false), // DISABLED for performance
 
       // Resource Limits - REDUCED FOR PERFORMANCE
-      maxFileSize: workspaceConfig.get('maxFileSize', 524288), // 512KB instead of 1MB
+      maxFileSize: workspaceConfig.get('maxFileSize', 128000),
       analysisTimeout: workspaceConfig.get('analysisTimeout', 120000), // Increased to 2 minutes
       excludePatterns: workspaceConfig.get('excludePatterns', [
         'node_modules/**',

@@ -197,22 +197,6 @@ describe('PinoLogger', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle pino-pretty loading errors gracefully', () => {
-      // Mock require to throw error for pino-pretty
-      const originalRequire = require;
-      const mockRequire = jest.fn((module) => {
-        if (module === 'pino-pretty') {
-          throw new Error('Module not found');
-        }
-        return originalRequire(module);
-      });
-      
-      // This would need proper module mocking in a real implementation
-      // For now, just verify logger can be created
-      const logger = new PinoLogger({ level: 'info' });
-      expect(logger).toBeDefined();
-    });
-
     it('should not throw when updateOptions is called', () => {
       const logger = new PinoLogger({ level: 'info' });
       expect(() => {

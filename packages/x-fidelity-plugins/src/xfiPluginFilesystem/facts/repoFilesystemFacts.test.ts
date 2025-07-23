@@ -127,30 +127,35 @@ describe('File operations', () => {
             });
         });
 
-        it('should skip AST preprocessing when enableTreeSitterWorker is false', async () => {
+        it('should always attempt AST preprocessing for supported file types', async () => {
             const filePath = 'test/path/testFile.js';
             const mockContent = 'const x = 1;';
             (fs.readFileSync as jest.Mock).mockReturnValue(mockContent);
             
-            // Mock getOptions to return enableTreeSitterWorker: false
+            // Mock getOptions to return enableTreeSitterWorker: false (doesn't matter anymore)
             const mockGetOptions = require('@x-fidelity/core').getOptions as jest.Mock;
             mockGetOptions.mockReturnValue({ enableTreeSitterWorker: false });
 
             const result = await parseFile(filePath);
+            
+            // With the new eager preprocessing, AST is always attempted for supported files
             expect(result).toEqual({
                 fileName: path.basename(filePath),
                 filePath,
                 fileContent: mockContent,
                 content: mockContent,
-                astGenerationReason: 'File type not supported for AST generation',
+                ast: expect.objectContaining({
+                    tree: null, // Failed due to test environment
+                    hasErrors: true,
+                    language: 'javascript',
+                    reason: expect.stringMatching(/AST generation failed/)
+                }),
+                astGenerationTime: expect.any(Number),
+                astGenerationReason: expect.stringMatching(/AST generation failed/)
             });
             
-            // Verify TreeSitterManager was not called
-            const TreeSitterManager = require('../../sharedPluginUtils/astUtils/treeSitterManager').TreeSitterManager;
-            expect(TreeSitterManager.getInstance).not.toHaveBeenCalled();
-            
-            // Reset for subsequent tests
-            mockGetOptions.mockReturnValue({ enableTreeSitterWorker: true });
+            // Verify timing is reasonable (should be >= 0)
+            expect(result.astGenerationTime).toBeGreaterThanOrEqual(0);
         });
 
         it('should handle symlinks', async () => {

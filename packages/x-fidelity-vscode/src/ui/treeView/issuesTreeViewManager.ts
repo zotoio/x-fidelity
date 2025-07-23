@@ -631,26 +631,32 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       const groupIssues = this.getChildIssuesForGroup(item);
       
       if (groupIssues.length === 0) {
-        vscode.window.showInformationMessage('No fixable issues found in this group');
+        vscode.window.showInformationMessage('No issues found in this group');
         return;
       }
 
-      const fixableIssues = groupIssues.filter(issue => issue.fixable);
-      const fixableCount = fixableIssues.length;
       const totalCount = groupIssues.length;
 
-      // Show confirmation dialog
+      // Show confirmation dialog - ignore fixable flag and ask about ALL issues
       const action = await vscode.window.showInformationMessage(
-        `✨ Fix All Issues in "${item.label}"?\n\nThis will attempt to fix ${fixableCount} fixable issues out of ${totalCount} total issues in this group.`,
+        `✨ Fix All Issues in "${item.label}"?\n\nThis will attempt to fix all ${totalCount} issue${totalCount !== 1 ? 's' : ''} in this group.\n\nNote: Some issues may not have automated fixes available, but the system will attempt to fix them anyway.`,
         { modal: true },
         'Fix All',
         'Cancel'
       );
 
       if (action === 'Fix All') {
+        // Pass ALL issues in the group to the fix command (not just fixable ones)
         vscode.window.showInformationMessage(
-          `✨ Fixing ${fixableCount} issues in group "${item.label}" - This feature will provide automated fixes for all issues in the group.`
+          `✨ Attempting to fix all ${totalCount} issue${totalCount !== 1 ? 's' : ''} in group "${item.label}" - This feature will provide automated fixes for all issues in the group.`
         );
+        
+        // TODO: Here you would call the actual fix implementation with all groupIssues
+        // For now, we're just showing the message as per the existing pattern
+        logger.info(`Attempting to fix all ${totalCount} issues in group: ${item.label}`, {
+          groupKey: item.groupKey,
+          issueIds: groupIssues.map(issue => issue.id)
+        });
       }
     } catch (error) {
       logger.error('Failed to fix all issues', error);

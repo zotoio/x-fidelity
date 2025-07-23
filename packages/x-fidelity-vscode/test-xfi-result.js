@@ -7,6 +7,7 @@ try {
   const resultPath = path.join('../x-fidelity-fixtures/node-fullstack/.xfiResults/XFI_RESULT.json');
   console.log('📁 Checking file path:', resultPath);
   
+  if (!fs.existsSync(resultPath)) {
     console.log('❌ XFI_RESULT.json file does not exist!');
     process.exit(1);
   }

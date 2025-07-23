@@ -497,7 +497,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 
                 // Clean up temp file
                 // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json (even though this should be a temp file)
-                if (markdownReportPath.includes('XFI_RESULT.json')) {
+                if (markdownReportPath === path.join(resultsDir, 'XFI_RESULT.json')) {
                     logger.error(`🚨 CRITICAL: Attempted to delete XFI_RESULT.json via temp file cleanup - BLOCKED!`, {
                         markdownReportPath
                     });
@@ -578,7 +578,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             }
             
         } catch (error) {
-            logger.error('Failed to save enhanced analysis reports - continuing with execution', error);
+            logger.error('Failed to save analysis reports - continuing with execution', error);
         }
         
         // Send telemetry for analysis end
@@ -670,7 +670,7 @@ async function cleanupOldResultsByType(resultsDir: string, fileType: string): Pr
             for (const file of filesToDelete) {
                 if (file) {
                     // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
-                    if (file.filename === 'XFI_RESULT.json' || file.fullPath.includes('XFI_RESULT.json')) {
+                    if (file.fullPath === path.join(resultsDir, 'XFI_RESULT.json')) {
                         logger.error(`🚨 CRITICAL: Attempted to delete XFI_RESULT.json - BLOCKED!`, {
                             filename: file.filename,
                             fullPath: file.fullPath
@@ -723,7 +723,7 @@ async function cleanupOldResultsByPrefix(resultsDir: string, prefix: string, ext
             for (const file of filesToDelete) {
                 if (file) {
                     // CRITICAL SAFETY CHECK: Never delete XFI_RESULT.json
-                    if (file.filename === 'XFI_RESULT.json' || file.fullPath.includes('XFI_RESULT.json')) {
+                    if (file.fullPath === path.join(resultsDir, 'XFI_RESULT.json')) {
                         logger.error(`🚨 CRITICAL: Attempted to delete XFI_RESULT.json - BLOCKED!`, {
                             filename: file.filename,
                             fullPath: file.fullPath
@@ -759,7 +759,7 @@ async function ensureGitIgnoreEntry(repoRoot: string): Promise<void> {
         }
 
         // Check if .xfiResults is already in .gitignore
-        if (!gitignoreContent.includes('.xfiResults')) {
+        if (!gitignoreContent.includes(xfiResultsEntry)) {
             const newContent = gitignoreContent.trim() + '\n\n# X-Fidelity analysis results\n.xfiResults/\n';
             await fs.writeFile(gitignorePath, newContent, 'utf8');
             logger.info('Added .xfiResults/ to .gitignore');

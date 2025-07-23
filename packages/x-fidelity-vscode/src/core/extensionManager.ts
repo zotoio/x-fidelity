@@ -162,6 +162,61 @@ export class ExtensionManager implements vscode.Disposable {
   }
 
   private registerCommands(): void {
+    // NOTE: xfidelity.refreshIssuesTree is registered by IssuesTreeViewManager, not here
+
+    // 🆕 NEW: Force refresh with cache clearing
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand(
+        'xfidelity.forceRefreshWithDiagnostics',
+        async () => {
+          this.logger.info('🔍 Force refresh with diagnostics triggered');
+
+          // Step 1: Show current state before refresh
+          this.debugDiagnosticsInfo();
+
+          // Step 2: Clear diagnostics
+          this.logger.info('🧹 Clearing all diagnostics...');
+          vscode.languages.getDiagnostics().forEach(([uri, diagnostics]) => {
+            if (diagnostics.some(d => d.source === 'X-Fidelity')) {
+              this.logger.debug(`Clearing diagnostics for ${uri.fsPath}`);
+            }
+          });
+
+          // Step 3: Force fresh analysis
+          this.logger.info('🔄 Running fresh analysis...');
+          try {
+            await this.analysisEngine.runAnalysis({
+              forceRefresh: true,
+              triggerSource: 'manual'
+            });
+
+            // Step 4: Wait for diagnostics to settle
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Step 5: Show final state
+            this.logger.info('📊 Final state after refresh:');
+            this.debugDiagnosticsInfo();
+
+            vscode.window
+              .showInformationMessage(
+                'X-Fidelity: Force refresh completed. Check Output console for diagnostics.',
+                'View Output'
+              )
+              .then(choice => {
+                if (choice === 'View Output') {
+                  vscode.commands.executeCommand(
+                    'workbench.action.output.show.x-fidelity'
+                  );
+                }
+              });
+          } catch (error) {
+            this.logger.error('Force refresh failed:', error);
+            vscode.window.showErrorMessage(`Force refresh failed: ${error}`);
+          }
+        }
+      )
+    );
+
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.runAnalysis', async () => {
         try {
@@ -271,15 +326,6 @@ export class ExtensionManager implements vscode.Disposable {
 
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.showSettingsUI', () => {
-        vscode.commands.executeCommand(
-          'workbench.action.openSettings',
-          'xfidelity'
-        );
-      })
-    );
-
-    this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.showAdvancedSettings', () => {
         vscode.commands.executeCommand(
           'workbench.action.openSettings',
           'xfidelity'

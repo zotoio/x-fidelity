@@ -508,12 +508,13 @@ export class FileCacheManager {
                 .flat()
                 .reduce((sum, f) => sum + f.size, 0);
             
-            logger.info(`✅ Startup cleanup completed:`);
-            logger.info(`   📁 Total groups: ${Object.keys(fileGroups).length}`);
-            logger.info(`   📄 Total files processed: ${totalFiles}`);
-            logger.info(`   📏 Total size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
-            logger.info(`   🗑️  Groups exceeding limit: ${oversizedGroups}`);
-            logger.info(`   ⏰ Old files cleaned: ${oldFiles}`);
+            logger.info('Startup cleanup completed', {
+                totalGroups: Object.keys(fileGroups).length,
+                totalFilesProcessed: totalFiles,
+                totalSizeMB: Number((totalSize / 1024 / 1024).toFixed(2)),
+                groupsExceedingLimit: oversizedGroups,
+                oldFilesCleaned: oldFiles
+            });
             
         } catch (error) {
             logger.error('Failed to perform startup cleanup:', error);

@@ -28,7 +28,6 @@ suite('Extension Commands Tests', () => {
       // UI commands
       'xfidelity.showControlCenter',
       'xfidelity.showDashboard',
-      'xfidelity.showAdvancedSettings',
       'xfidelity.showPerformanceMetrics',
 
       // Periodic analysis commands
@@ -80,7 +79,6 @@ suite('Extension Commands Tests', () => {
     const uiCommands = [
       'xfidelity.showControlCenter',
       'xfidelity.showDashboard',
-      'xfidelity.showAdvancedSettings',
       'xfidelity.showPerformanceMetrics'
     ];
 

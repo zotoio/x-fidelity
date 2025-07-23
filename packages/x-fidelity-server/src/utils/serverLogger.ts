@@ -20,24 +20,9 @@ export class ServerLogger implements ILogger {
 
     // Console transport with fallback for bundled environments
     if (config.enableConsole !== false) {
-      // Check if we should use direct logging to avoid transport worker issues
-      const useDirectLogging = shouldUseDirectLogging();
-      
-              if (useDirectLogging) {
-          // Use direct logging to avoid transport worker issues in bundled environments
-          return undefined;
-      } else {
-        // In normal environments, use pino-pretty for formatted output
-        targets.push({
-          target: 'pino-pretty',
-          level: config.level || 'info',
-          options: {
-            colorize: config.enableColors !== false,
-            translateTime: 'SYS:standard',
-            ignore: 'pid,hostname'
-          }
-        });
-      }
+      // Always use direct logging to avoid transport worker issues
+      // This also removes the dependency on pino-pretty
+      return undefined;
     }
 
     // File transport

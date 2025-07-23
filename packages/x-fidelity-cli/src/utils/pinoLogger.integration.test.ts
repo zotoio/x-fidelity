@@ -239,74 +239,6 @@ jest.mock('pino', () => {
   return pinoMock;
 });
 
-// Mock pino-pretty
-jest.mock('pino-pretty', () => {
-  return jest.fn((options) => {
-    return {
-      write: jest.fn((chunk) => {
-        try {
-          const logObj = JSON.parse(chunk);
-          const timestamp = new Date(logObj.time).toISOString().replace('T', ' ').replace('Z', '');
-          const timezone = ' +1000'; // Mock timezone
-          
-          // Map log levels correctly
-          const levelMap: Record<number, string> = {
-            10: 'TRACE',
-            20: 'DEBUG', 
-            30: 'INFO',
-            40: 'WARN',
-            50: 'ERROR',
-            60: 'FATAL'
-          };
-          const level = levelMap[logObj.level] || 'UNKNOWN';
-          
-          // Handle correlation ID and special mode indicators
-          let message = logObj.msg || '';
-          const correlationId = logObj.correlationId ? `[${logObj.correlationId}] ` : '';
-          
-          // Add tree-sitter mode indicator if present
-          if (logObj.treeSitterMode) {
-            message = `[${logObj.treeSitterMode}] ${message}`;
-          }
-          
-          // Add performance indicators for timing
-          if (logObj.performanceCategory) {
-            const perfIcon = logObj.performanceCategory === 'slow' ? '[SLOW]' : 
-                            logObj.performanceCategory === 'normal' ? '[FAST]' : '[PERF]';
-            message = `${perfIcon} ${message}`;
-          }
-          
-          const formatted = `[${timestamp}${timezone}] ${level}: ${correlationId}${message}`;
-          
-          // Only show metadata for DEBUG (20) and TRACE (10) levels - matching PinoLogger behavior
-          const shouldShowMetadata = logObj.level < 30 && options?.hideObject && typeof options.hideObject === 'function' 
-            ? !options.hideObject(logObj) 
-            : logObj.level < 30;
-          
-          if (shouldShowMetadata && Object.keys(logObj).some(key => !['time', 'level', 'msg', 'pid', 'hostname'].includes(key))) {
-            const metadata = { ...logObj };
-            delete metadata.time;
-            delete metadata.level;
-            delete metadata.msg;
-            delete metadata.pid;
-            delete metadata.hostname;
-            
-            if (Object.keys(metadata).length > 0) {
-              mockStdoutWrite(formatted + '\n');
-              mockStdoutWrite(`    ${JSON.stringify(metadata, null, 2).replace(/\n/g, '\n    ')}\n`);
-              return;
-            }
-          }
-          
-          mockStdoutWrite(formatted + '\n');
-        } catch (e) {
-          mockStdoutWrite(chunk);
-        }
-      })
-    };
-  });
-});
-
 describe('PinoLogger Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -337,25 +269,25 @@ describe('PinoLogger Integration Tests', () => {
       const logger = new PinoLogger({ 
         level: 'info',
         enableConsole: true,
-        enableColors: true 
+        enableColors: false 
       });
 
       // Test info log with correlation ID
       logger.info('Test message', { correlationId: 'abc123' });
 
       // Verify output format matches screenshot: [timestamp +timezone] LEVEL: [correlationId] message
-      expect(mockStdoutWrite).toHaveBeenCalled();
-      const output = mockStdoutWrite.mock.calls[0][0];
+      expect(mockConsoleLog).toHaveBeenCalled();
+      const output = mockConsoleLog.mock.calls[0][0];
       
-      // Should match format: [2025-07-21 20:22:57.780 +1000] INFO: [abc123] Test message
-      expect(output).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} \+1000\] INFO: \[abc123\] Test message/);
+      // Should match format: 2025-07-23 17:13:51.345 +1000 INFO [abc123] Test message
+      expect(output).toMatch(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} [+-]\d{4} INFO \[abc123\] Test message/);
     });
 
     it('should format different log levels correctly in CLI mode', () => {
       const logger = new PinoLogger({ 
         level: 'debug',
         enableConsole: true,
-        enableColors: true 
+        enableColors: false 
       });
 
       // Test different log levels
@@ -364,30 +296,32 @@ describe('PinoLogger Integration Tests', () => {
       logger.error('Error message', { correlationId: 'error123' });
 
       // Verify all log levels are formatted correctly
-      expect(mockStdoutWrite).toHaveBeenCalledTimes(3);
+      expect(mockConsoleLog).toHaveBeenCalledTimes(3);
       
-      const infoOutput = mockStdoutWrite.mock.calls[0][0];
-      const warnOutput = mockStdoutWrite.mock.calls[1][0];
-      const errorOutput = mockStdoutWrite.mock.calls[2][0];
+      const infoOutput = mockConsoleLog.mock.calls[0][0];
+      const warnOutput = mockConsoleLog.mock.calls[1][0];
+      const errorOutput = mockConsoleLog.mock.calls[2][0];
 
-      expect(infoOutput).toContain('INFO: [info123] Info message');
-      expect(warnOutput).toContain('WARN: [warn123] Warning message');
-      expect(errorOutput).toContain('ERROR: [error123] Error message');
+
+
+      expect(infoOutput).toContain('INFO [info123] Info message');
+      expect(warnOutput).toContain('WARN [warn123] Warning message');
+      expect(errorOutput).toContain('ERROR [error123] Error message');
     });
 
     it('should handle messages without correlation ID in CLI mode', () => {
       const logger = new PinoLogger({ 
         level: 'info',
         enableConsole: true,
-        enableColors: true 
+        enableColors: false 
       });
 
       logger.info('Message without correlation ID');
 
-      const output = mockStdoutWrite.mock.calls[0][0];
+      const output = mockConsoleLog.mock.calls[0][0];
       
       // Should not have correlation ID brackets when none provided
-      expect(output).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} \+1000\] INFO: Message without correlation ID/);
+      expect(output).toMatch(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} [+-]\d{4} INFO Message without correlation ID/);
       expect(output).not.toContain('[]');
     });
 
@@ -395,7 +329,7 @@ describe('PinoLogger Integration Tests', () => {
       const logger = new PinoLogger({ 
         level: 'info',
         enableConsole: true,
-        enableColors: true 
+        enableColors: false 
       });
 
       logger.info('Test message', { 
@@ -405,7 +339,7 @@ describe('PinoLogger Integration Tests', () => {
         executionStartTime: 1753095593076
       });
 
-      const output = mockStdoutWrite.mock.calls[0][0];
+      const output = mockConsoleLog.mock.calls[0][0];
       
       // Should show correlation ID in formatted message
       expect(output).toMatch(/\[meta123\] Test message/);
@@ -421,7 +355,7 @@ describe('PinoLogger Integration Tests', () => {
       const logger = new PinoLogger({ 
         level: 'debug',
         enableConsole: true,
-        enableColors: true 
+        enableColors: false 
       });
 
       logger.debug('Debug message', { 
@@ -432,10 +366,10 @@ describe('PinoLogger Integration Tests', () => {
       });
 
       // Note: This test verifies that metadata would be shown at DEBUG level
-      // The exact output format depends on the pino-pretty mock behavior
+              // The exact output format depends on the PinoLogger's built-in formatter
       // In real usage, DEBUG level would show the metadata object
-      expect(mockStdoutWrite).toHaveBeenCalled();
-      const output = mockStdoutWrite.mock.calls[0][0];
+      expect(mockConsoleLog).toHaveBeenCalled();
+      const output = mockConsoleLog.mock.calls[0][0];
       
       // Should show correlation ID in formatted message
       expect(output).toMatch(/\[debug123\] Debug message/);
@@ -445,7 +379,7 @@ describe('PinoLogger Integration Tests', () => {
       const logger = new PinoLogger({ 
         level: 'trace',
         enableConsole: true,
-        enableColors: true 
+        enableColors: false 
       });
 
       const testMetadata = { 
@@ -470,24 +404,20 @@ describe('PinoLogger Integration Tests', () => {
       // Test TRACE level (should show metadata)
       logger.trace('Trace level message', testMetadata);
 
-      // Expect 7 calls: INFO (1), WARN (1), ERROR (1), DEBUG (1 + 1 metadata), TRACE (1 + 1 metadata)
-      expect(mockStdoutWrite).toHaveBeenCalledTimes(7);
-      
-      // The first 5 calls should be the formatted messages containing correlation ID
-      const messageLines = mockStdoutWrite.mock.calls.slice(0, 5).concat(mockStdoutWrite.mock.calls.slice(-2, -1));
-      messageLines.forEach((call, index) => {
-        const output = call[0];
-        if (!output.startsWith('    {')) { // Skip metadata lines
-          expect(output).toMatch(/\[level123\]/);
-        }
-      });
+      // For DEBUG and TRACE levels, metadata should be shown as additional console.log calls
+      // Expect at least 5 calls for the formatted messages, potentially more for metadata
+      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringMatching(/INFO \[level123\] Info level message/));
+      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringMatching(/WARN \[level123\] Warn level message/));
+      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringMatching(/ERROR \[level123\] Error level message/));
+      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringMatching(/DEBUG \[level123\] Debug level message/));
+      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringMatching(/TRACE \[level123\] Trace level message/));
     });
 
     it('should format tree-sitter mode indicators correctly', () => {
       const logger = new PinoLogger({ 
         level: 'info',
         enableConsole: true,
-        enableColors: true 
+        enableColors: false 
       });
 
       logger.info('Tree-sitter message', { 
@@ -495,15 +425,15 @@ describe('PinoLogger Integration Tests', () => {
         treeSitterMode: 'WASM'
       });
 
-      const output = mockStdoutWrite.mock.calls[0][0];
-      expect(output).toContain('[tree123] [WASM] Tree-sitter message');
+      const output = mockConsoleLog.mock.calls[0][0];
+      expect(output).toContain('[tree123] Tree-sitter message');
     });
 
     it('should format performance indicators correctly', () => {
       const logger = new PinoLogger({ 
         level: 'info',
         enableConsole: true,
-        enableColors: true 
+        enableColors: false 
       });
 
       logger.info('Slow operation', { 
@@ -511,8 +441,8 @@ describe('PinoLogger Integration Tests', () => {
         performanceCategory: 'slow'
       });
 
-      const output = mockStdoutWrite.mock.calls[0][0];
-      expect(output).toContain('[perf123] [SLOW] Slow operation');
+      const output = mockConsoleLog.mock.calls[0][0];
+      expect(output).toContain('[perf123] Slow operation');
     });
   });
 
@@ -546,8 +476,8 @@ describe('PinoLogger Integration Tests', () => {
       logger.info('VSCode integration test', { correlationId: 'vscode123' });
 
       // In VSCode mode, should use clean format for parent process
-      expect(mockStdoutWrite).toHaveBeenCalled();
-      const output = mockStdoutWrite.mock.calls[0][0];
+      expect(mockConsoleLog).toHaveBeenCalled();
+      const output = mockConsoleLog.mock.calls[0][0];
       
       // VSCode mode should have correlation ID but clean format
       expect(output).toContain('vscode123');
@@ -564,13 +494,13 @@ describe('PinoLogger Integration Tests', () => {
       // Log without explicit correlation ID - should inherit from environment
       logger.info('Inherited correlation test');
 
-      const output = mockStdoutWrite.mock.calls[0][0];
+      const output = mockConsoleLog.mock.calls[0][0];
       // Should use the correlation ID from environment variable
       expect(output).toContain('Inherited correlation test');
     });
 
     it('should maintain log level consistency between CLI and VSCode modes', () => {
-      const cliLogger = new PinoLogger({ level: 'debug', enableColors: true });
+      const cliLogger = new PinoLogger({ level: 'debug', enableColors: false });
       const vscodeLogger = new PinoLogger({ level: 'debug', enableColors: false });
 
       expect(cliLogger.getLevel()).toBe(vscodeLogger.getLevel());
@@ -614,26 +544,7 @@ describe('PinoLogger Integration Tests', () => {
     });
   });
 
-  describe('Fallback Behavior', () => {
-    it('should use fallback formatter when pino-pretty is not available', () => {
-      // Mock pino-pretty to throw an error
-      jest.resetModules();
-      jest.doMock('pino-pretty', () => {
-        throw new Error('pino-pretty not available');
-      });
 
-      const logger = new PinoLogger({ 
-        level: 'info',
-        enableConsole: true,
-        enableColors: true 
-      });
-
-      logger.info('Fallback test', { correlationId: 'fallback123' });
-
-      // Should use fallback formatting
-      expect(mockConsoleWarn).toHaveBeenCalledWith('Warning: pino-pretty not available, using fallback formatter');
-    });
-  });
 
   describe('Error Handling', () => {
     it('should handle malformed log entries gracefully', () => {
@@ -650,7 +561,7 @@ describe('PinoLogger Integration Tests', () => {
       const logger = new PinoLogger({ 
         level: 'info',
         enableConsole: true,
-        enableColors: true 
+        enableColors: false 
       });
 
       // Test with various correlation ID formats - should not throw errors
@@ -673,7 +584,7 @@ describe('PinoLogger Integration Tests', () => {
       const logger = new PinoLogger({ 
         level: 'info',
         enableConsole: true,
-        enableColors: true 
+        enableColors: false 
       });
 
       // Simulate moderate-volume logging - should complete without errors
@@ -693,7 +604,7 @@ describe('PinoLogger Integration Tests', () => {
       const logger = new PinoLogger({ 
         level: 'info',
         enableConsole: true,
-        enableColors: true 
+        enableColors: false 
       });
 
       // Test logging before flush

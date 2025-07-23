@@ -49,7 +49,7 @@ Extension Manager          - Main coordinator
 ### CLI-Extension Consistency
 
 - **VSCode extension** always spawns CLI with `--mode vscode` for clean output panel integration
-- **Manual CLI execution** uses `--mode cli` for human-readable pino-pretty output
+- **Manual CLI execution** uses `--mode cli` for human-readable colored output
 - **Exact match** requirement between `yarn build-run` and extension analysis results
 - **Blocking CI** check on PR reviews
 

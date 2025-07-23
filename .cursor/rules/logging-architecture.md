@@ -24,7 +24,7 @@ The XFI_LOG_LEVEL env var sets the initial loglevel for all loggers uniformly re
 
 ## PRD: Specific Requirements and instructions
 
-### 1. in the default 'cli' mode (manual user execution) needs to use pino and pino-pretty.
+### 1. in the default 'cli' mode (manual user execution) needs to use pino with custom pretty formatting.
 Ensure that this is the case and any logger selection logic is in the logger setup rather than in other code.
 
 ### 2. plugins must use the logger the are provided with.
@@ -151,7 +151,7 @@ During the phases of this refactor, make a list of any other potential improveme
    ```
 
 2. Implement logger selection logic based on mode:
-   - 'cli': PinoLogger with pino-pretty
+   - 'cli': PinoLogger with custom pretty formatting
    - 'vscode': DefaultLogger (no pino, VSCode-friendly output)
    - 'server': ServerLogger (existing)
    - 'hook': ServerLogger (for now, may specialize later)
@@ -168,7 +168,7 @@ During the phases of this refactor, make a list of any other potential improveme
 
 **Tasks:**
 1. **PinoLogger**: Ensure it's optimized for 'cli' mode
-   - Keep pino-pretty for human-readable output
+   - Keep custom pretty formatting for human-readable output
    - Remove mode-detection logic, let LoggerProvider handle selection
    - Ensure XFI_LOG_LEVEL support
 

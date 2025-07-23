@@ -181,7 +181,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       // Instead, we clear cache manually via AnalysisResultCache above
       const freshAnalysisArgs = [...extraArgs];
 
-      this.logger.debug('📋 Enhanced analysis configuration', {
+      this.logger.debug('Analysis configuration', {
         workspacePath,
         args: freshAnalysisArgs,
         timeout: config.analysisTimeout,
@@ -192,7 +192,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
       const result = await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Window,
-          title: 'X-Fidelity Enhanced Analysis',
+          title: 'X-Fi',
           cancellable: true
         },
         async (progress, token) => {
@@ -262,7 +262,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
         throw new Error('Analysis result missing summary object');
       }
 
-      this.logger.info('✅ Enhanced analysis completed successfully', {
+      this.logger.info('✅ Analysis completed successfully', {
         duration: Math.round(duration),
         filesAnalyzed: safeResult.summary.filesAnalyzed,
         totalIssues: safeResult.summary.totalIssues,
@@ -306,7 +306,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
 
       const duration = performance.now() - startTime;
 
-      this.logger.error('❌ Enhanced analysis failed', {
+      this.logger.error('❌ Analysis failed', {
         error: error instanceof Error ? error.message : String(error),
         duration: Math.round(duration),
         workspacePath: getAnalysisTargetDirectory(),

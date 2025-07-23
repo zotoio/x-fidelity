@@ -418,7 +418,7 @@ export class IssuesTreeProvider
     );
 
     // ENHANCEMENT: Add Fix Issue action link (always available)
-    const fixLabel = issue.fixable ? '✨ Fix Issue' : '✨ Try Fix';
+    const fixLabel = '✨ Fix Issue';
     markdown.appendMarkdown(
       `[${fixLabel}](command:xfidelity.fixIssue?${encodeURIComponent(JSON.stringify(issueContext))}) • `
     );

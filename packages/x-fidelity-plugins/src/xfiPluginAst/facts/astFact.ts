@@ -28,12 +28,14 @@ export const astFact: FactDefn = {
                 return { tree: null };
             }
 
-            // ✅ OPTIMIZATION: Check for precomputed AST first
+            // ✅ USE PRECOMPUTED AST: Check for precomputed AST from fileData collection (priority 15)
             if (fileData.ast) {
+                const totalTime = Date.now() - startTime;
                 logger.info(`AST Fact: Using precomputed AST for ${fileData.fileName} (${fileData.astGenerationTime || 0}ms)`, 
                     createCorrelatedMeta({
                         fileName: fileData.fileName,
                         astGenerationTime: fileData.astGenerationTime,
+                        totalTime,
                         precomputed: true
                     })
                 );
@@ -50,11 +52,11 @@ export const astFact: FactDefn = {
                 return fileData.ast;
             }
 
-            // ✅ FALLBACK: Generate AST if not precomputed (for backward compatibility)
-            logger.info(`AST Fact: Generating on-demand AST for ${fileData.fileName}`, 
+            // ✅ FALLBACK: Generate AST if not precomputed (for backward compatibility or unsupported files)
+            logger.info(`AST Fact: No precomputed AST available for ${fileData.fileName}, generating on-demand`, 
                 createCorrelatedMeta({
                     fileName: fileData.fileName,
-                    onDemand: true
+                    fallback: true
                 })
             );
 
@@ -102,18 +104,20 @@ export const astFact: FactDefn = {
                         totalTime,
                         astGenTime,
                         success: true,
-                        hasErrors: result.hasErrors
+                        hasErrors: result.hasErrors,
+                        fallback: true
                     })
                 );
             } else {
-                logger.warn(`❌ AST Fact: Failed AST for ${fileData.fileName} using ${result.mode || 'unknown'} - Total: ${totalTime}ms, Reason: ${result.reason}`, 
+                logger.warn(`AST Fact: Failed AST for ${fileData.fileName} using ${result.mode || 'unknown'} - Total: ${totalTime}ms, Reason: ${result.reason}`, 
                     createCorrelatedMeta({
                         fileName: fileData.fileName,
                         astMode: result.mode,
                         totalTime,
                         astGenTime,
                         success: false,
-                        reason: result.reason
+                        reason: result.reason,
+                        fallback: true
                     })
                 );
             }

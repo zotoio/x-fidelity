@@ -29,6 +29,9 @@ export class DiagnosticLocationExtractor {
    */
   public static extractLocation(error: any): LocationExtractionResult {
     const extractors = [
+      // File-level rules handler (new - highest priority for these specific rules)
+      this.extractFromFileLevelRules,
+
       // High confidence extractors (precise location data)
       this.extractFromComplexityMetrics,
       this.extractFromLocationObject,
@@ -76,6 +79,51 @@ export class DiagnosticLocationExtractor {
         endColumn: this.DEFAULT_RANGE_LENGTH,
         source: 'fallback'
       },
+      found: false,
+      confidence: 'low'
+    };
+  }
+
+  /**
+   * Handle file-level rules that don't have specific line information
+   * These rules analyze the entire file and should be displayed at line 1
+   */
+  private static extractFromFileLevelRules(
+    error: any
+  ): LocationExtractionResult {
+    const fileLevelRules = [
+      'functionCount-iterative',
+      'codeRhythm-iterative',
+      'functionComplexity-iterative', // when no specific function location
+      'outdatedFramework-global',
+      'invalidSystemIdConfigured-iterative'
+    ];
+
+    const ruleFailure = error?.ruleFailure;
+    if (fileLevelRules.includes(ruleFailure)) {
+      // Check if this rule has specific location data anyway
+      const hasSpecificLocation =
+        error.details?.details?.some?.((detail: any) => detail.lineNumber) ||
+        error.details?.lineNumber ||
+        error.lineNumber;
+
+      if (!hasSpecificLocation) {
+        return {
+          location: {
+            startLine: 1,
+            startColumn: 1,
+            endLine: 1,
+            endColumn: DiagnosticLocationExtractor.DEFAULT_RANGE_LENGTH,
+            source: 'file-level-rule'
+          },
+          found: true,
+          confidence: 'medium' // Medium because it's intentionally file-level
+        };
+      }
+    }
+
+    return {
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
       found: false,
       confidence: 'low'
     };
@@ -210,7 +258,9 @@ export class DiagnosticLocationExtractor {
     if (Array.isArray(matches) && matches.length > 0) {
       const match = matches[0];
       if (typeof match.lineNumber === 'number') {
-        const matchLength = match.match?.length || this.DEFAULT_RANGE_LENGTH;
+        const matchLength =
+          match.match?.length ||
+          DiagnosticLocationExtractor.DEFAULT_RANGE_LENGTH;
         return {
           location: {
             startLine: match.lineNumber,
@@ -269,7 +319,9 @@ export class DiagnosticLocationExtractor {
           startLine: details.lineNumber,
           startColumn: details.columnNumber || 1,
           endLine: details.lineNumber,
-          endColumn: (details.columnNumber || 1) + this.DEFAULT_RANGE_LENGTH,
+          endColumn:
+            (details.columnNumber || 1) +
+            DiagnosticLocationExtractor.DEFAULT_RANGE_LENGTH,
           source: 'details-line-number'
         },
         found: true,
@@ -284,7 +336,9 @@ export class DiagnosticLocationExtractor {
           startLine: error.lineNumber,
           startColumn: error.columnNumber || 1,
           endLine: error.lineNumber,
-          endColumn: (error.columnNumber || 1) + this.DEFAULT_RANGE_LENGTH,
+          endColumn:
+            (error.columnNumber || 1) +
+            DiagnosticLocationExtractor.DEFAULT_RANGE_LENGTH,
           source: 'error-line-number'
         },
         found: true,
@@ -312,7 +366,9 @@ export class DiagnosticLocationExtractor {
           startLine: details.lineNumber,
           startColumn: details.columnNumber || 1,
           endLine: details.lineNumber,
-          endColumn: (details.columnNumber || 1) + this.DEFAULT_RANGE_LENGTH,
+          endColumn:
+            (details.columnNumber || 1) +
+            DiagnosticLocationExtractor.DEFAULT_RANGE_LENGTH,
           source: 'direct-properties'
         },
         found: true,
@@ -341,7 +397,8 @@ export class DiagnosticLocationExtractor {
           startColumn: nestedDetails.columnNumber || 1,
           endLine: nestedDetails.lineNumber,
           endColumn:
-            (nestedDetails.columnNumber || 1) + this.DEFAULT_RANGE_LENGTH,
+            (nestedDetails.columnNumber || 1) +
+            DiagnosticLocationExtractor.DEFAULT_RANGE_LENGTH,
           source: 'nested-details'
         },
         found: true,
@@ -365,7 +422,9 @@ export class DiagnosticLocationExtractor {
           startLine: error.lineNumber,
           startColumn: error.columnNumber || 1,
           endLine: error.lineNumber,
-          endColumn: (error.columnNumber || 1) + this.DEFAULT_RANGE_LENGTH,
+          endColumn:
+            (error.columnNumber || 1) +
+            DiagnosticLocationExtractor.DEFAULT_RANGE_LENGTH,
           source: 'legacy-fields'
         },
         found: true,
@@ -379,7 +438,9 @@ export class DiagnosticLocationExtractor {
           startLine: error.line,
           startColumn: error.column || 1,
           endLine: error.line,
-          endColumn: (error.column || 1) + this.DEFAULT_RANGE_LENGTH,
+          endColumn:
+            (error.column || 1) +
+            DiagnosticLocationExtractor.DEFAULT_RANGE_LENGTH,
           source: 'legacy-line-column'
         },
         found: true,
@@ -402,7 +463,7 @@ export class DiagnosticLocationExtractor {
       startLine: 1,
       startColumn: 1,
       endLine: 1,
-      endColumn: this.DEFAULT_RANGE_LENGTH,
+      endColumn: DiagnosticLocationExtractor.DEFAULT_RANGE_LENGTH,
       source: 'default'
     };
   }

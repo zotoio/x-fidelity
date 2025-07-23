@@ -94,17 +94,4 @@ export function shouldDisableAllWorkers(): boolean {
   }
   
   return false;
-}
-
-/**
- * Check if pino-pretty is available for formatted output
- * @returns true if pino-pretty can be resolved
- */
-export function isPinoPrettyAvailable(): boolean {
-  try {
-    require.resolve('pino-pretty');
-    return true;
-  } catch (error) {
-    return false;
-  }
 } 

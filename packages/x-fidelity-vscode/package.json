@@ -61,6 +61,11 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "xfidelity.forceRefreshWithDiagnostics",
+        "title": "X-Fidelity: Force Refresh (Clear Cache & Debug)",
+        "icon": "$(debug-refresh)"
+      },
+      {
         "command": "xfidelity.issuesTreeGroupBySeverity",
         "title": "Group by Severity",
         "icon": "$(symbol-operator)"
@@ -124,11 +129,6 @@
         "command": "xfidelity.resetToDefaults",
         "title": "X-Fidelity: Reset All Settings",
         "icon": "$(clear-all)"
-      },
-      {
-        "command": "xfidelity.showAdvancedSettings",
-        "title": "X-Fidelity: Advanced Settings",
-        "icon": "$(gear)"
       },
       {
         "command": "xfidelity.test",
@@ -573,17 +573,7 @@
           "group": "1_actions@1"
         }
       ]
-    },
-    "viewsWelcome": [
-      {
-        "view": "xfidelityIssuesTreeView",
-        "contents": "Welcome to X-Fidelity! 🚀\n\nNo issues found yet. Run analysis to detect architectural problems in your code.\n\n[Run Analysis](command:xfidelity.runAnalysis)\n\n[Open Control Center](command:xfidelity.showControlCenter)\n\n[Configure Settings](command:xfidelity.openSettings)"
-      },
-      {
-        "view": "xfidelityControlCenterView",
-        "contents": "X-Fidelity Control Center 🎛️\n\nManage your code analysis from here.\n\n[Run Analysis](command:xfidelity.runAnalysis)\n\n[Open Settings](command:xfidelity.openSettings)\n\n[View Documentation](https://github.com/zotoio/x-fidelity)"
-      }
-    ]
+    }
   },
   "dependencies": {
     "@x-fidelity/core": "file:../x-fidelity-core",
@@ -624,7 +614,7 @@
   },
   "scripts": {
     "vscode:prepublish": "yarn build",
-    "build": "yarn format && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
+    "build": "yarn lint:fix && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
     "build:cli": "cd ../../ && yarn workspace x-fidelity build",
     "build:dependencies": "cd ../../ && yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && yarn workspace @x-fidelity/democonfig build && echo 'Dependencies built successfully'",
     "verify:dependencies": "node -e \"const fs = require('fs'); const deps = ['../x-fidelity-types/dist/index.js', '../x-fidelity-core/dist/index.js', '../x-fidelity-plugins/dist/index.js']; deps.forEach(dep => { if (!fs.existsSync(dep)) { console.error('Missing dependency:', dep); process.exit(1); } }); console.log('All dependencies verified');\"",

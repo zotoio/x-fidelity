@@ -31,6 +31,7 @@ interface DiagnosticIssue {
   source?: string;
   code?: string;
   tags?: vscode.DiagnosticTag[];
+  isFileLevelRule?: boolean;
 }
 
 // Internal issue metadata type for location resolution
@@ -316,7 +317,12 @@ export class DiagnosticProvider implements vscode.Disposable {
             error.ruleFailure ||
             'Issue detected';
 
-          const message = this.cleanMessage(rawMessage);
+          // Enhance message for file-level rules
+          let message = this.cleanMessage(rawMessage);
+          if (location.source === 'file-level-rule') {
+            const fileName = fileIssue.filePath.split('/').pop() || 'file';
+            message = `[File-level] ${message} (affects entire ${fileName})`;
+          }
 
           const diagnosticIssue: DiagnosticIssue = {
             file: filePath,
@@ -337,6 +343,8 @@ export class DiagnosticProvider implements vscode.Disposable {
           (diagnosticIssue as any).locationSource = location.source;
           (diagnosticIssue as any).locationConfidence =
             locationResult.confidence;
+          (diagnosticIssue as any).isFileLevelRule =
+            location.source === 'file-level-rule';
 
           issues.push(diagnosticIssue);
         }

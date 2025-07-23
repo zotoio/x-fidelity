@@ -54,7 +54,7 @@ export class ReportGenerator {
         this.data = data;
         this.repoName = this.data.XFI_RESULT.repoUrl?.split(':')[1]?.split('.git')[0] || '';
         this.githubHostname = this.data.XFI_RESULT.repoUrl?.split(':')[1]?.split('/')[0] || '';
-        this.reportDate = new Date().toISOString().split('T')[0].replace(/-/g, '-');
+        this.reportDate = new Date().toISOString().split('T')[0];
     }
 
     public generateReport(): string {

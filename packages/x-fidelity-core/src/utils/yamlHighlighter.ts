@@ -20,6 +20,34 @@ export function colorizeYamlString(yamlStr: string): string {
 }
 
 function colorizeYamlLine(line: string): string {
+  // Check if this is a level field line first, before processing quotes
+  const levelFieldMatch = line.match(/^(\s*)(level):\s*["']([^"']+)["']/);
+  if (levelFieldMatch) {
+    const [, indent, key, levelValue] = levelFieldMatch;
+    const coloredKey = `${indent}${chalk.blue(key)}:`;
+    const coloredValue = colorizeLevelValue(`"${levelValue}"`);
+    
+    // Handle any comments
+    const commentIndex = line.indexOf('#');
+    const commentPart = commentIndex !== -1 ? chalk.gray(line.substring(commentIndex)) : '';
+    
+    return `${coloredKey} ${coloredValue}${commentPart}`;
+  }
+  
+  // Check if this is a filePath field in an issueDetails array item, before processing quotes
+  const issueDetailsFilePathMatch = line.match(/^(\s*- )(filePath):\s*["']([^"']+)["']/);
+  if (issueDetailsFilePathMatch) {
+    const [, arrayItemPrefix, key, filePathValue] = issueDetailsFilePathMatch;
+    const coloredKey = `${arrayItemPrefix}${chalk.blue(key)}:`;
+    const coloredValue = colorizeFilePathValue(`"${filePathValue}"`);
+    
+    // Handle any comments
+    const commentIndex = line.indexOf('#');
+    const commentPart = commentIndex !== -1 ? chalk.gray(line.substring(commentIndex)) : '';
+    
+    return `${coloredKey} ${coloredValue}${commentPart}`;
+  }
+  
   // Extract quoted strings first and replace with placeholders
   const quotedStrings: string[] = [];
   let workingLine = line;
@@ -58,8 +86,22 @@ function colorizeYamlLine(line: string): string {
 }
 
 function applySyntaxHighlighting(line: string): string {
-  // Array items
+  // Array items - special handling for filePath fields
   if (/^\s*-\s/.test(line)) {
+    // Check if this array item contains a filePath field
+    const arrayFilePathMatch = line.match(/^(\s*-\s)(filePath):\s*(.*)$/);
+    if (arrayFilePathMatch) {
+      const [, prefix, key, valueContent] = arrayFilePathMatch;
+      const coloredPrefix = prefix.replace(/^(\s*)-(\s)/, `$1${chalk.cyan('-')}$2`);
+      const coloredKey = `${chalk.blue(key)}:`;
+      
+      if (!valueContent.trim()) return `${coloredPrefix}${coloredKey}`;
+      
+      const coloredValue = colorizeFilePathValue(valueContent);
+      return `${coloredPrefix}${coloredKey} ${coloredValue}`;
+    }
+    
+    // Regular array item processing
     return line.replace(/^(\s*)-(\s)/, `$1${chalk.cyan('-')}$2`);
   }
   
@@ -70,6 +112,14 @@ function applySyntaxHighlighting(line: string): string {
     const coloredKey = `${indent}${chalk.blue(key)}:`;
     
     if (!valueContent.trim()) return coloredKey;
+    
+    // Special handling for 'level' field values
+    if (key === 'level') {
+      const coloredValue = colorizeLevelValue(valueContent);
+      return `${coloredKey} ${coloredValue}`;
+    }
+    
+
     
     // Color the value (which may contain placeholders for quoted strings)
     const coloredValue = colorizeUnquotedValue(valueContent);
@@ -104,6 +154,46 @@ function colorizeUnquotedValue(value: string): string {
   
   // Default unquoted strings
   return chalk.white(trimmed);
+}
+
+function colorizeLevelValue(value: string): string {
+  const trimmed = value.trim();
+  
+  // Skip if it contains quoted string placeholders
+  if (trimmed.includes('__QUOTED_')) {
+    return trimmed;
+  }
+  
+  // Remove quotes if present to get the actual value
+  const cleanValue = trimmed.toLowerCase().replace(/^["']|["']$/g, '');
+  
+  // Apply level-specific colors
+  if (cleanValue === 'fatality' || cleanValue === 'error') {
+    return chalk.red.bold(trimmed); // Bright red
+  }
+  
+  if (cleanValue === 'warning') {
+    return chalk.hex('#FF8C00').bold(trimmed); // Bright orange
+  }
+  
+  if (cleanValue === 'exempt') {
+    return chalk.magenta.bold(trimmed); // Bright purple
+  }
+  
+  // Default coloring for unknown level values
+  return chalk.white(trimmed);
+}
+
+function colorizeFilePathValue(value: string): string {
+  const trimmed = value.trim();
+  
+  // Skip if it contains quoted string placeholders
+  if (trimmed.includes('__QUOTED_')) {
+    return trimmed;
+  }
+  
+  // Apply bright cyan coloring to file paths
+  return chalk.cyan.bold(trimmed);
 }
 
 /**

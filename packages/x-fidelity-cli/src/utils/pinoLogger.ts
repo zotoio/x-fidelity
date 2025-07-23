@@ -1,6 +1,6 @@
 import pino from 'pino';
-import { ILogger, SimpleLoggerConfig, LogLevel, LogLevelValues, EXECUTION_MODES, LogEntry } from '@x-fidelity/types';
-import { DefaultLogger, options, shouldUseDirectLogging } from '@x-fidelity/core';
+import { ILogger, SimpleLoggerConfig, LogLevel, LogLevelValues, EXECUTION_MODES } from '@x-fidelity/types';
+import { options } from '@x-fidelity/core';
 
 /**
  * Raw pino log chunk format as received from pino logger
@@ -41,10 +41,10 @@ export class PinoLogger implements ILogger {
 
   constructor(config: SimpleLoggerConfig = {}) {
     const isDirectCliExecution = this.isDirectCliExecution();
-    const shouldUsePrettyFormatting = this.shouldUsePrettyFormatting(config, isDirectCliExecution);
+    const shouldEnableColors = this.shouldEnableColors(config, isDirectCliExecution);
     
-    // Create logger with appropriate formatting based on execution context
-    this.logger = this.createLogger(config, shouldUsePrettyFormatting, isDirectCliExecution);
+    // Always use pretty formatting, but conditionally enable colors
+    this.logger = this.createLogger(config, shouldEnableColors, isDirectCliExecution);
   
   }
 
@@ -72,22 +72,20 @@ export class PinoLogger implements ILogger {
   }
 
   /**
-   * Determine if we should use pretty formatting based on context
+   * Determine if colors should be enabled based on context
    */
-  private shouldUsePrettyFormatting(config: SimpleLoggerConfig, isDirectCliExecution: boolean): boolean {
-    // If explicitly disabled in config, respect that
+  private shouldEnableColors(config: SimpleLoggerConfig, isDirectCliExecution: boolean): boolean {
+    // If explicitly disabled in config or CI environment, disable colors
     if (config.enableColors === false || process.env.CI === 'true') {
       return false;
     }
 
-    // For direct CLI execution, always try to use pretty formatting
+    // For direct CLI execution, enable colors by default
     if (isDirectCliExecution) {
-      // Override VSCode environment variables that might disable formatting
-      // These are meant for VSCode output panels, not direct CLI usage
       return true;
     }
 
-    // For VSCode spawned execution, use simpler formatting
+    // For VSCode spawned execution, disable colors by default
     // VSCode output panels work better with plain text
     return false;
   }
@@ -95,12 +93,11 @@ export class PinoLogger implements ILogger {
   /**
    * Create the appropriate pino logger instance
    */
-  private createLogger(config: SimpleLoggerConfig, shouldUsePrettyFormatting: boolean, isDirectCliExecution: boolean): pino.Logger {
-    const baseOptions = {
+  private createLogger(config: SimpleLoggerConfig, shouldEnableColors: boolean, isDirectCliExecution: boolean): pino.Logger {
+    const baseOptions: pino.LoggerOptions = {
       level: config.level || 'info',
       timestamp: pino.stdTimeFunctions.isoTime,
       formatters: {
-        level: (label: string) => ({ level: label }),
         log: (object: any) => {
           // Extract and format tree-sitter mode information
           if (object.mode || object.treeSitterMode) {
@@ -133,48 +130,82 @@ export class PinoLogger implements ILogger {
       }
     };
 
-    if (shouldUsePrettyFormatting) {
-      return this.createPrettyLogger(baseOptions, isDirectCliExecution);
-    } else {
-      // Create plain logger for VSCode mode
-      return pino(baseOptions);
-    }
+    // Always use pretty logger, pass color enablement flag
+    return this.createPrettyLogger(baseOptions, config, shouldEnableColors, isDirectCliExecution);
   }
 
   /**
    * Create a pretty logger
    */
-  private createPrettyLogger(baseOptions: any, isDirectCliExecution: boolean): pino.Logger {
+  private createPrettyLogger(loggerOptions: pino.LoggerOptions, config: SimpleLoggerConfig, shouldEnableColors: boolean, isDirectCliExecution: boolean): pino.Logger {
     const stream: pino.DestinationStream = {
       write: (chunk) => {
         try {
           const logObj: PinoLogChunk = JSON.parse(chunk);
           
-          // Format timestamp with timezone offset like the main formatter
+          // Format timestamp in local timezone with proper offset
           const date = new Date(logObj.time);
-          const timestamp = date.toISOString().replace('T', ' ').replace('Z', '') + 
-                           ' ' + date.toTimeString().slice(9, 14); // Add timezone offset
           
-          // Color mapping matching the main formatter
-          const colorMap: Record<string, string> = {
-            'fatal': '\x1b[95mFATAL\x1b[0m', // Bright Magenta
-            'error': '\x1b[91mERROR\x1b[0m', // Bright Red
-            'warn': '\x1b[93mWARN \x1b[0m', // Bright Yellow
-            'info': '\x1b[92mINFO \x1b[0m', // Bright Green
-            'debug': '\x1b[92mDEBUG\x1b[0m', // Bright Green
-            'trace': '\x1b[37mTRACE\x1b[0m'  // White
+          // Get local time components
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          const seconds = String(date.getSeconds()).padStart(2, '0');
+          const ms = String(date.getMilliseconds()).padStart(3, '0');
+          
+          // Get timezone offset in proper format (e.g., +1000, -0500)
+          const timezoneOffset = -date.getTimezoneOffset(); // getTimezoneOffset returns negative for positive offsets
+          const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
+          const offsetMinutes = Math.abs(timezoneOffset) % 60;
+          const offsetSign = timezoneOffset >= 0 ? '+' : '-';
+          const formattedOffset = `${offsetSign}${String(offsetHours).padStart(2, '0')}${String(offsetMinutes).padStart(2, '0')}`;
+          
+          const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${ms} ${formattedOffset}`;
+          
+          // Map pino level numbers to level names
+          const levelMap: Record<number, string> = {
+            10: 'trace',
+            20: 'debug', 
+            30: 'info',
+            40: 'warn',
+            50: 'error',
+            60: 'fatal'
           };
           
-          const levelStr = colorMap[String(logObj.level)] || `\x1b[37m${String(logObj.level).toUpperCase()}\x1b[0m`;
-          const colorizedTimestamp = isDirectCliExecution ? `\x1b[90m${timestamp}\x1b[0m` : timestamp;
+          const levelName = levelMap[logObj.level] || 'unknown';
+          
+          // Color mapping - only apply if colors are enabled
+          const colorMap: Record<string, string> = shouldEnableColors ? {
+            'fatal': '\x1b[95mFATAL\x1b[0m', // Bright Magenta
+            'error': '\x1b[91mERROR\x1b[0m', // Bright Red
+            'warn': '\x1b[93mWARN\x1b[0m', // Bright Yellow
+            'info': '\x1b[92mINFO\x1b[0m', // Bright Green
+            'debug': '\x1b[92mDEBUG\x1b[0m', // Bright Green
+            'trace': '\x1b[37mTRACE\x1b[0m'  // White
+          } : {
+            'fatal': 'FATAL',
+            'error': 'ERROR', 
+            'warn': 'WARN',
+            'info': 'INFO',
+            'debug': 'DEBUG',
+            'trace': 'TRACE'
+          };
+          
+          const levelStr = colorMap[levelName] || (shouldEnableColors ? `\x1b[37m${levelName.toUpperCase()}\x1b[0m` : levelName.toUpperCase());
+          const colorizedTimestamp = (shouldEnableColors && isDirectCliExecution) ? `\x1b[90m${timestamp}\x1b[0m` : timestamp;
           
           const message = logObj.msg || '';
           
-          // Add correlation ID if present (matching screenshot format)
+          // Add correlation ID if present - conditionally colored
           const correlationId = logObj.correlationId;
-          const correlationPrefix = correlationId ? `[\x1b[33m${correlationId}\x1b[0m] ` : '';
+          const correlationPrefix = correlationId ? 
+            (shouldEnableColors ? `[\x1b[33m${correlationId}\x1b[0m] ` : `[${correlationId}] `) : '';
           
-          const formatted = `${colorizedTimestamp} ${levelStr} ${correlationPrefix}\x1b[36m${message}\x1b[0m`;
+          // Format message - conditionally colored
+          const formattedMessage = shouldEnableColors ? `\x1b[36m${message}\x1b[0m` : message;
+          const formatted = `${colorizedTimestamp} ${levelStr} ${correlationPrefix}${formattedMessage}`;
           
           // Only show metadata for DEBUG (20) and TRACE (10) levels
           const level = logObj.level;
@@ -204,7 +235,7 @@ export class PinoLogger implements ILogger {
       }
     };
 
-    return pino(baseOptions, stream);
+    return pino(loggerOptions, stream);
   }
 
   trace(msgOrMeta: string | any, metaOrMsg?: any): void {

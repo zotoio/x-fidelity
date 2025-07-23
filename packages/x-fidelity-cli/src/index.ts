@@ -109,6 +109,12 @@ async function gracefulShutdown(logger: ILogger, exitCode: number = 0, error?: E
             await logger?.flush();
         }
 
+        // In test environment, exit immediately for proper test assertions
+        if (process.env.NODE_ENV === 'test') {
+            process.exit(exitCode);
+            return;
+        }
+
         // Small delay to ensure all async operations complete
         await new Promise(resolve => setTimeout(resolve, 1000));
         
@@ -118,7 +124,6 @@ async function gracefulShutdown(logger: ILogger, exitCode: number = 0, error?: E
             process.exit(exitCode);
             });
         });
-        //process.exit(exitCode);
     } catch (error) {
         // If graceful shutdown fails, force exit
         console.error('Error during graceful shutdown:', error);
@@ -129,17 +134,19 @@ async function gracefulShutdown(logger: ILogger, exitCode: number = 0, error?: E
 // Enhanced error handler with proper async handling
 async function handleError(error: Error, logger: ILogger): Promise<void> {
     try {
+        // Safely access options with fallbacks for test environments
+        const safeOptions = options || {};
         await sendTelemetry({
             eventType: 'execution failure',
             metadata: {
-                archetype: options.archetype,
-                repoPath: options.dir,
+                archetype: safeOptions.archetype || 'unknown',
+                repoPath: safeOptions.dir || process.cwd(),
                 telemetryData: undefined,
                 errorMessage: error.message,
                 errorStack: error.stack,
                 options: {
-                    ...options,
-                    port: options.port?.toString()
+                    ...safeOptions,
+                    port: safeOptions.port?.toString()
                 }
             },
             timestamp: new Date().toISOString()
@@ -307,7 +314,7 @@ async function handleResults(resultMetadata: any, logger: ILogger): Promise<void
 
     try {
         const jsonToYaml = await import('json-to-pretty-yaml');
-        const yamlResult = jsonToYaml.stringify(resultMetadata.XFI_RESULT);
+        const yamlResult = jsonToYaml.stringify(resultMetadata);
         
         //loadLanguages(['yaml']);
         resultString = JSON.stringify(resultMetadata);

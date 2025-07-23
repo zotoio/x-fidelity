@@ -39,7 +39,7 @@ describe('functionCountFact', () => {
 
     it('should count function declarations', async () => {
         const mockAst = {
-            rootNode: {
+            tree: {
                 type: 'program',
                 children: [
                     {
@@ -54,7 +54,13 @@ describe('functionCountFact', () => {
             }
         };
 
-        mockAlmanac.factValue.mockResolvedValue(mockAst);
+        mockAlmanac.factValue
+            .mockResolvedValueOnce({
+                fileName: 'test.ts',
+                fileContent: 'function test() {}',
+                content: 'function test() {}'
+            }) // First call for fileData
+            .mockResolvedValueOnce(mockAst); // Second call for AST
 
         const result = await functionCountFact.fn({}, mockAlmanac);
 
@@ -63,7 +69,7 @@ describe('functionCountFact', () => {
 
     it('should count arrow functions', async () => {
         const mockAst = {
-            rootNode: {
+            tree: {
                 type: 'program',
                 children: [
                     {
@@ -74,7 +80,13 @@ describe('functionCountFact', () => {
             }
         };
 
-        mockAlmanac.factValue.mockResolvedValue(mockAst);
+        mockAlmanac.factValue
+            .mockResolvedValueOnce({
+                fileName: 'test.ts',
+                fileContent: 'function test() {}',
+                content: 'function test() {}'
+            }) // First call for fileData
+            .mockResolvedValueOnce(mockAst); // Second call for AST
 
         const result = await functionCountFact.fn({}, mockAlmanac);
 
@@ -83,7 +95,7 @@ describe('functionCountFact', () => {
 
     it('should count nested functions', async () => {
         const mockAst = {
-            rootNode: {
+            tree: {
                 type: 'program',
                 children: [
                     {
@@ -104,7 +116,13 @@ describe('functionCountFact', () => {
             }
         };
 
-        mockAlmanac.factValue.mockResolvedValue(mockAst);
+        mockAlmanac.factValue
+            .mockResolvedValueOnce({
+                fileName: 'test.ts',
+                fileContent: 'function test() {}',
+                content: 'function test() {}'
+            }) // First call for fileData
+            .mockResolvedValueOnce(mockAst); // Second call for AST
 
         const result = await functionCountFact.fn({}, mockAlmanac);
 
@@ -113,13 +131,19 @@ describe('functionCountFact', () => {
 
     it('should handle nodes without children', async () => {
         const mockAst = {
-            rootNode: {
+            tree: {
                 type: 'function_declaration'
                 // No children property
             }
         };
 
-        mockAlmanac.factValue.mockResolvedValue(mockAst);
+        mockAlmanac.factValue
+            .mockResolvedValueOnce({
+                fileName: 'test.ts',
+                fileContent: 'function test() {}',
+                content: 'function test() {}'
+            }) // First call for fileData
+            .mockResolvedValueOnce(mockAst); // Second call for AST
 
         const result = await functionCountFact.fn({}, mockAlmanac);
 
@@ -128,7 +152,7 @@ describe('functionCountFact', () => {
 
     it('should count multiple functions at same level', async () => {
         const mockAst = {
-            rootNode: {
+            tree: {
                 type: 'program',
                 children: [
                     {
@@ -147,7 +171,13 @@ describe('functionCountFact', () => {
             }
         };
 
-        mockAlmanac.factValue.mockResolvedValue(mockAst);
+        mockAlmanac.factValue
+            .mockResolvedValueOnce({
+                fileName: 'test.ts',
+                fileContent: 'function test() {}',
+                content: 'function test() {}'
+            }) // First call for fileData
+            .mockResolvedValueOnce(mockAst); // Second call for AST
 
         const result = await functionCountFact.fn({}, mockAlmanac);
 
@@ -161,12 +191,12 @@ describe('functionCountFact', () => {
         const result = await functionCountFact.fn({}, mockAlmanac);
 
         expect(result).toEqual({ count: 0 });
-        expect(mockLogger.error).toHaveBeenCalledWith('Error in functionCount fact:', error);
+        expect(mockLogger.error).toHaveBeenCalledWith('Error in functionCount fact: Error: Test error');
     });
 
     it('should ignore non-function node types', async () => {
         const mockAst = {
-            rootNode: {
+            tree: {
                 type: 'program',
                 children: [
                     {
@@ -185,7 +215,13 @@ describe('functionCountFact', () => {
             }
         };
 
-        mockAlmanac.factValue.mockResolvedValue(mockAst);
+        mockAlmanac.factValue
+            .mockResolvedValueOnce({
+                fileName: 'test.ts',
+                fileContent: 'function test() {}',
+                content: 'function test() {}'
+            }) // First call for fileData
+            .mockResolvedValueOnce(mockAst); // Second call for AST
 
         const result = await functionCountFact.fn({}, mockAlmanac);
 
@@ -194,7 +230,7 @@ describe('functionCountFact', () => {
 
     it('should handle deeply nested structure', async () => {
         const mockAst = {
-            rootNode: {
+            tree: {
                 type: 'program',
                 children: [
                     {
@@ -225,10 +261,16 @@ describe('functionCountFact', () => {
             }
         };
 
-        mockAlmanac.factValue.mockResolvedValue(mockAst);
+        mockAlmanac.factValue
+            .mockResolvedValueOnce({
+                fileName: 'test.ts',
+                fileContent: 'function test() {}',
+                content: 'function test() {}'
+            }) // First call for fileData
+            .mockResolvedValueOnce(mockAst); // Second call for AST
 
         const result = await functionCountFact.fn({}, mockAlmanac);
 
-        expect(result).toEqual({ count: 2 });
+        expect(result).toEqual({ count: 3 });
     });
 }); 

@@ -159,7 +159,7 @@ export async function getAnalysisResults(
   forceRefresh = false
 ): Promise<any> {
   const targetPath = workspacePath || getWorkspaceRoot();
-  forceRefresh=false;
+  
   // Always try to read from XFI_RESULT.json first (most recent)
   const resultPath = path.join(targetPath, '.xfiResults', 'XFI_RESULT.json');
 
@@ -285,7 +285,7 @@ export async function runInitialAnalysis(
 }
 
 /**
- * Run fresh CLI analysis before each test to ensure consistent state
+ * ENHANCED: Run fresh analysis specifically for tests with better error handling
  */
 export async function runFreshAnalysisForTest(
   workspacePath?: string,
@@ -293,29 +293,68 @@ export async function runFreshAnalysisForTest(
 ): Promise<any> {
   const targetPath = workspacePath || getWorkspaceRoot();
   
-  console.log('🔍 Running fresh CLI analysis for test...');
-  
-  // Clear any existing cache
-  clearAnalysisCache();
-  
-  // Run fresh analysis
-  const result = await executeCommandSafely('xfidelity.runAnalysis');
-  if (!result.success) {
-    throw new Error(`Fresh analysis failed: ${result.error}`);
-  }
+  try {
+    console.log('🚀 Starting fresh analysis for test...');
+    
+    // Clear any cached results first
+    cachedAnalysisResults = null;
+    cachedWorkspacePath = null;
+    
+    // Trigger analysis via extension
+    const result = await executeCommandSafely('xfidelity.runAnalysis');
+    if (!result.success) {
+      throw new Error(`Extension analysis command failed: ${result.error}`);
+    }
 
-  // Wait for completion with extended timeout
-  const completed = await waitForAnalysisCompletion(timeoutMs, targetPath);
-  if (!completed) {
-    throw new Error(`Fresh analysis did not complete within ${timeoutMs}ms timeout`);
-  }
+    // Wait for analysis to complete with proper timeout
+    const completed = await waitForAnalysisCompletion(timeoutMs, targetPath);
+    if (!completed) {
+      throw new Error(`Analysis did not complete within ${timeoutMs}ms timeout`);
+    }
 
-  // Get fresh results
-  const analysisResults = await getAnalysisResults(targetPath, true);
+    // ENHANCED: Wait for diagnostics to be processed
+    await waitForDiagnosticProcessing(10000); // Wait up to 10 seconds
+
+    // Get results
+    const analysisResults = await getAnalysisResults(targetPath, true);
+    
+    console.log(`✅ Fresh analysis completed: ${analysisResults?.summary?.totalIssues || 0} issues`);
+    return analysisResults;
+    
+  } catch (error) {
+    console.error('❌ Fresh analysis failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * NEW: Wait for diagnostic processing to complete
+ */
+async function waitForDiagnosticProcessing(timeoutMs: number): Promise<void> {
+  const startTime = Date.now();
   
-  console.log(`📊 Fresh analysis completed with ${analysisResults?.summary?.totalIssues || 0} issues`);
+  while (Date.now() - startTime < timeoutMs) {
+    // Check if we have any X-Fidelity diagnostics
+    const allDiagnostics = vscode.languages.getDiagnostics();
+    let hasXFIDiagnostics = false;
+    
+    for (const [, diagnostics] of allDiagnostics) {
+      if (diagnostics.some(d => d.source === 'X-Fidelity')) {
+        hasXFIDiagnostics = true;
+        break;
+      }
+    }
+    
+    if (hasXFIDiagnostics) {
+      console.log('✅ Diagnostics processing completed');
+      return;
+    }
+    
+    // Wait a bit before checking again
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
   
-  return analysisResults;
+  console.warn('⚠️ Timeout waiting for diagnostic processing');
 }
 
 /**
