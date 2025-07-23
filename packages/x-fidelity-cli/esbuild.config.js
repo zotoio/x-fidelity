@@ -1,4 +1,5 @@
 const esbuild = require('esbuild');
+const esbuildPluginPino = require("esbuild-plugin-pino");
 const path = require('path');
 const fs = require('fs');
 
@@ -17,7 +18,7 @@ async function main() {
     sourcemap: !production,
     sourcesContent: false,
     platform: 'node',
-    outfile: 'dist/index.js',
+    outdir: 'dist',
     external: [
       // Keep only runtime dependencies external that MUST be provided by the environment
       // or contain native binaries that can't be bundled
@@ -30,9 +31,7 @@ async function main() {
       'tree-sitter-javascript', 
       'tree-sitter-typescript',
       'web-tree-sitter',
-      // Pino transport modules that use dynamic imports and can't be bundled
-      'pino-pretty',
-      'pino/file'
+
       // Bundle everything else to make CLI self-contained:
       // - axios: HTTP client used by core
       // - commander: CLI framework
@@ -75,8 +74,10 @@ async function main() {
     },
     metafile: true,
     plugins: [
+      esbuildPluginPino({ transports: ["pino-pretty"] }),
       // Plugin to replace dynamic imports with static ones for bundling
       {
+        
         name: 'replace-dynamic-imports',
         setup(build) {
           build.onLoad({ filter: /\.ts$/ }, async (args) => {

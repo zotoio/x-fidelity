@@ -13,6 +13,7 @@ export * from './operators';
 export * from './notifications';
 export * from './utils/enhancedLogger';
 export * from './utils/bundledEnvironmentDetector';
+export * from './utils/yamlHighlighter';
 
 // Re-export types from the types package
 export type {

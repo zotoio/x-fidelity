@@ -1,13 +1,7 @@
-import { FileData, AstResult, AstGenerationContext, AstGenerationOptions } from '@x-fidelity/types';
+import { FileData, AstResult, AstGenerationContext } from '@x-fidelity/types';
 import { logger } from '@x-fidelity/core';
 import { treeSitterManager } from './treeSitterManager';
 import { getLanguageFromPath } from './languageUtils';
-
-// Environment detection - simplified since we use native everywhere
-const isVSCodeEnvironment = () => {
-  // Check for Electron environment (VSCode runs in Electron)
-  return typeof process !== 'undefined' && process.versions && process.versions.electron;
-};
 
 /**
  * Create a failed AST result with standardized error information

@@ -1,6 +1,5 @@
-import { FactDefn, FileData } from '@x-fidelity/types';
+import { FactDefn, FileData, AstResult } from '@x-fidelity/types';
 import { logger } from '@x-fidelity/core';
-import { AstResult } from '../../sharedPluginUtils/astUtils';
 
 export interface CodeMetrics {
     cyclomaticComplexity: number;

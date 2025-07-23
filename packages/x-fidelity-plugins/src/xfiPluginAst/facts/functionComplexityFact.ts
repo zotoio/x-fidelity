@@ -1,8 +1,8 @@
 import { SyntaxNode } from 'tree-sitter';
-import { FactDefn, FileData } from '@x-fidelity/types';
+import { FactDefn } from '@x-fidelity/types';
 import { FunctionMetrics } from '../types';
 import { logger } from '@x-fidelity/core';
-import { AstResult, generateAst } from '../../sharedPluginUtils/astUtils';
+import { generateAst } from '../../sharedPluginUtils/astUtils';
 
 export const functionComplexityFact: FactDefn = {
     name: 'functionComplexity',

@@ -1,6 +1,36 @@
 import pino from 'pino';
-import { ILogger, SimpleLoggerConfig, LogLevel, LogLevelValues, EXECUTION_MODES } from '@x-fidelity/types';
+import { ILogger, SimpleLoggerConfig, LogLevel, LogLevelValues, EXECUTION_MODES, LogEntry } from '@x-fidelity/types';
 import { DefaultLogger, options, shouldUseDirectLogging } from '@x-fidelity/core';
+
+/**
+ * Raw pino log chunk format as received from pino logger
+ * This represents the raw JSON format that pino outputs
+ */
+interface PinoLogChunk {
+  /** Pino timestamp (ISO string or number) */
+  time: string | number;
+  
+  /** Pino log level as number (10=trace, 20=debug, 30=info, 40=warn, 50=error, 60=fatal) */
+  level: number;
+  
+  /** Pino message field */
+  msg?: string;
+  
+  /** Process ID from pino */
+  pid?: number;
+  
+  /** Hostname from pino */
+  hostname?: string;
+  
+  /** Correlation ID for request tracing */
+  correlationId?: string;
+  
+  /** Tree-sitter mode information */
+  treeSitterMode?: string;
+  
+  /** Any additional pino properties */
+  [key: string]: any;
+}
 
 /**
  * Enhanced PinoLogger with robust error handling and proper CLI mode detection
@@ -15,6 +45,7 @@ export class PinoLogger implements ILogger {
     
     // Create logger with appropriate formatting based on execution context
     this.logger = this.createLogger(config, shouldUsePrettyFormatting, isDirectCliExecution);
+  
   }
 
   /**
@@ -45,7 +76,7 @@ export class PinoLogger implements ILogger {
    */
   private shouldUsePrettyFormatting(config: SimpleLoggerConfig, isDirectCliExecution: boolean): boolean {
     // If explicitly disabled in config, respect that
-    if (config.enableColors === false) {
+    if (config.enableColors === false || process.env.CI === 'true') {
       return false;
     }
 
@@ -111,69 +142,13 @@ export class PinoLogger implements ILogger {
   }
 
   /**
-   * Create logger with pretty formatting, with fallback handling
+   * Create a pretty logger
    */
   private createPrettyLogger(baseOptions: any, isDirectCliExecution: boolean): pino.Logger {
-    try {
-      // Try to load pino-pretty at runtime
-      const pretty = require('pino-pretty');
-      
-      const prettyOptions = {
-        // Force colors on for direct CLI execution, ignoring environment variables
-        colorize: true,
-        translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l o',  // Added 'o' for timezone offset
-        ignore: 'pid,hostname',
-        singleLine: false,
-        // Hide metadata object at INFO level and above (INFO=30, WARN=40, ERROR=50, FATAL=60)
-        // Show metadata only at DEBUG (20) and TRACE (10) levels for debugging
-        hideObject: (log: any) => {
-          const level = log.level;
-          // Show metadata only for DEBUG (20) and TRACE (10) levels
-          return level >= 30; // Hide for INFO (30) and above
-        },
-        colorizeObjects: true,
-        levelFirst: false, // Keep level after timestamp
-        // Enhanced message formatting with correlation ID support
-        messageFormat: (log: any, messageKey: string) => {
-          const message = log[messageKey];
-          
-          // Add correlation ID if present (matching screenshot format)
-          const correlationId = log.correlationId;
-          const correlationPrefix = correlationId ? `[${correlationId}] ` : '';
-          
-          // Add tree-sitter mode indicator if present
-          if (log.treeSitterMode) {
-            return `${correlationPrefix}[${log.treeSitterMode}] ${message}`;
-          }
-          
-          // Add performance indicators for timing
-          if (log.performanceCategory) {
-            const perfIcon = log.performanceCategory === 'slow' ? '[SLOW]' : 
-                            log.performanceCategory === 'normal' ? '[FAST]' : '[PERF]';
-            return `${correlationPrefix}${perfIcon} ${message}`;
-          }
-          
-          return `${correlationPrefix}${message}`;
-        }
-        // Removed customPrettifiers - let pino-pretty handle level colors with default configuration
-      };
-
-      return pino(baseOptions, pretty(prettyOptions));
-    } catch (error) {
-      // If pino-pretty fails to load, fall back to custom pretty formatter
-      console.warn('Warning: pino-pretty not available, using fallback formatter');
-      return this.createFallbackPrettyLogger(baseOptions, isDirectCliExecution);
-    }
-  }
-
-  /**
-   * Create a fallback pretty logger if pino-pretty is not available
-   */
-  private createFallbackPrettyLogger(baseOptions: any, isDirectCliExecution: boolean): pino.Logger {
-    const stream = {
-      write: (chunk: string) => {
+    const stream: pino.DestinationStream = {
+      write: (chunk) => {
         try {
-          const logObj = JSON.parse(chunk);
+          const logObj: PinoLogChunk = JSON.parse(chunk);
           
           // Format timestamp with timezone offset like the main formatter
           const date = new Date(logObj.time);
@@ -182,24 +157,24 @@ export class PinoLogger implements ILogger {
           
           // Color mapping matching the main formatter
           const colorMap: Record<string, string> = {
-            '60': '\x1b[95mFATAL\x1b[0m', // Bright Magenta
-            '50': '\x1b[91mERROR\x1b[0m', // Bright Red
-            '40': '\x1b[93mWARN \x1b[0m', // Bright Yellow
-            '30': '\x1b[96mINFO \x1b[0m', // Bright Cyan
-            '20': '\x1b[92mDEBUG\x1b[0m', // Bright Green
-            '10': '\x1b[37mTRACE\x1b[0m'  // White
+            'fatal': '\x1b[95mFATAL\x1b[0m', // Bright Magenta
+            'error': '\x1b[91mERROR\x1b[0m', // Bright Red
+            'warn': '\x1b[93mWARN \x1b[0m', // Bright Yellow
+            'info': '\x1b[92mINFO \x1b[0m', // Bright Green
+            'debug': '\x1b[92mDEBUG\x1b[0m', // Bright Green
+            'trace': '\x1b[37mTRACE\x1b[0m'  // White
           };
           
-          const levelStr = colorMap[String(logObj.level)] || `\x1b[37mLEVEL_${logObj.level}\x1b[0m`;
+          const levelStr = colorMap[String(logObj.level)] || `\x1b[37m${String(logObj.level).toUpperCase()}\x1b[0m`;
           const colorizedTimestamp = isDirectCliExecution ? `\x1b[90m${timestamp}\x1b[0m` : timestamp;
           
           const message = logObj.msg || '';
           
           // Add correlation ID if present (matching screenshot format)
           const correlationId = logObj.correlationId;
-          const correlationPrefix = correlationId ? `[${correlationId}] ` : '';
+          const correlationPrefix = correlationId ? `[\x1b[33m${correlationId}\x1b[0m] ` : '';
           
-          const formatted = `${colorizedTimestamp} ${levelStr} ${correlationPrefix}${message}`;
+          const formatted = `${colorizedTimestamp} ${levelStr} ${correlationPrefix}\x1b[36m${message}\x1b[0m`;
           
           // Only show metadata for DEBUG (20) and TRACE (10) levels
           const level = logObj.level;
@@ -207,7 +182,7 @@ export class PinoLogger implements ILogger {
           
           // Add metadata if present and level allows it
           if (shouldShowMetadata && (logObj.correlationId || logObj.treeSitterMode || Object.keys(logObj).length > 4)) {
-            const metadata = { ...logObj };
+            const metadata: any = { ...logObj };
             delete metadata.time;
             delete metadata.level;
             delete metadata.msg;

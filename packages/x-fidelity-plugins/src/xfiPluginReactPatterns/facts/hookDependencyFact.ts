@@ -1,5 +1,4 @@
-import { FactDefn, FileData } from '@x-fidelity/types';
-import { AstResult, generateAst } from '../../sharedPluginUtils/astUtils';
+import { FactDefn, FileData, AstResult } from '@x-fidelity/types';
 import { logger } from '@x-fidelity/core';
 
 export const hookDependencyFact: FactDefn = {
