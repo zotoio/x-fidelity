@@ -14,6 +14,7 @@ import { getAnalysisTargetDirectory } from '../utils/workspaceUtils';
 import { LoggerProvider } from '@x-fidelity/core';
 import { EXECUTION_MODES } from '@x-fidelity/types';
 import { showCLIDiagnosticsDialog } from '../utils/cliDiagnostics';
+import { CommandDelegationRegistry } from './commandDelegationRegistry';
 
 export class ExtensionManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
@@ -26,6 +27,7 @@ export class ExtensionManager implements vscode.Disposable {
   private statusBarProvider: StatusBarProvider;
   private issuesTreeViewManager: IssuesTreeViewManager;
   private controlCenterTreeViewManager: ControlCenterTreeViewManager;
+  private commandDelegationRegistry: CommandDelegationRegistry;
 
   private periodicAnalysisTimer?: NodeJS.Timeout;
   private isPeriodicAnalysisRunning = false;
@@ -81,6 +83,11 @@ export class ExtensionManager implements vscode.Disposable {
         'xfidelityControlCenterView'
       );
       this.logger.debug('✅ ControlCenterTreeViewManager initialized');
+
+      this.commandDelegationRegistry = new CommandDelegationRegistry(
+        this.context
+      );
+      this.logger.debug('✅ CommandDelegationRegistry initialized');
 
       // PHASE 3: Plugin initialization is handled by the spawned CLI
       // No need to initialize plugins in the extension itself
@@ -572,7 +579,7 @@ export class ExtensionManager implements vscode.Disposable {
       })
     );
 
-    // ENHANCEMENT: Register enhanced explainIssue command that handles both diagnostic and tree view contexts
+    // ENHANCEMENT: Register delegating explainIssue command that handles both diagnostic and tree view contexts
     this.disposables.push(
       vscode.commands.registerCommand(
         'xfidelity.explainIssue',
@@ -585,23 +592,10 @@ export class ExtensionManager implements vscode.Disposable {
               return;
             }
 
-            // Handle diagnostic context from hover
-            if (context.ruleId && context.message && !context.issue) {
-              await this.explainIssueFromDiagnostic(context);
-            }
-            // Handle tree view item context (delegate to tree view manager)
-            else if (context.issue || context.id) {
-              if (this.issuesTreeViewManager) {
-                await vscode.commands.executeCommand(
-                  'xfidelity.explainIssueFromTree',
-                  context
-                );
-              }
-            } else {
-              vscode.window.showWarningMessage(
-                'Invalid issue context for explanation'
-              );
-            }
+            const issueContext = this.extractIssueContext(context);
+            await this.commandDelegationRegistry.delegateExplainIssue(
+              issueContext
+            );
           } catch (error) {
             this.logger.error('Failed to explain issue:', error);
             vscode.window.showErrorMessage(
@@ -612,7 +606,7 @@ export class ExtensionManager implements vscode.Disposable {
       )
     );
 
-    // ENHANCEMENT: Register enhanced fixIssue command that handles both diagnostic and tree view contexts
+    // ENHANCEMENT: Register delegating fixIssue command that handles both diagnostic and tree view contexts
     this.disposables.push(
       vscode.commands.registerCommand(
         'xfidelity.fixIssue',
@@ -625,25 +619,56 @@ export class ExtensionManager implements vscode.Disposable {
               return;
             }
 
-            // Handle diagnostic context from hover
-            if (context.ruleId && context.message && !context.issue) {
-              await this.fixIssueFromDiagnostic(context);
-            }
-            // Handle tree view item context (delegate to tree view manager)
-            else if (context.issue || context.id) {
-              if (this.issuesTreeViewManager) {
-                await vscode.commands.executeCommand(
-                  'xfidelity.fixIssueFromTree',
-                  context
-                );
-              }
-            } else {
-              vscode.window.showWarningMessage('Invalid issue context for fix');
-            }
+            const issueContext = this.extractIssueContext(context);
+            await this.commandDelegationRegistry.delegateFixIssue(issueContext);
           } catch (error) {
             this.logger.error('Failed to fix issue:', error);
             vscode.window.showErrorMessage(
               `Failed to fix issue: ${error instanceof Error ? error.message : String(error)}`
+            );
+          }
+        }
+      )
+    );
+
+    // NEW: Register fixIssueGroup command for batch fixing
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        'xfidelity.fixIssueGroup',
+        async (context?: any) => {
+          try {
+            if (!context) {
+              vscode.window.showWarningMessage(
+                'No group data available to fix'
+              );
+              return;
+            }
+
+            const groupContext = this.extractGroupContext(context);
+            await this.commandDelegationRegistry.delegateFixIssueGroup(
+              groupContext
+            );
+          } catch (error) {
+            this.logger.error('Failed to fix issue group:', error);
+            vscode.window.showErrorMessage(
+              `Failed to fix issue group: ${error instanceof Error ? error.message : String(error)}`
+            );
+          }
+        }
+      )
+    );
+
+    // NEW: Register command provider configuration command
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        'xfidelity.configureCommandProviders',
+        async () => {
+          try {
+            await this.commandDelegationRegistry.showConfigurationUI();
+          } catch (error) {
+            this.logger.error('Failed to configure command providers:', error);
+            vscode.window.showErrorMessage(
+              `Failed to configure command providers: ${error instanceof Error ? error.message : String(error)}`
             );
           }
         }
@@ -1338,6 +1363,59 @@ Check Output Console (X-Fidelity) for full details.`;
     }
   }
 
+  /**
+   * Extract issue context from various input formats
+   */
+  private extractIssueContext(context: any): any {
+    // Handle tree view item context
+    if (context.issue) {
+      return {
+        ruleId: context.issue.rule || 'unknown',
+        message: context.issue.message || '',
+        file: context.issue.file || '',
+        line: context.issue.line || 1,
+        column: context.issue.column || 1,
+        severity: context.issue.severity || 'info',
+        category: context.issue.category || 'general',
+        fixable: context.issue.fixable || false
+      };
+    }
+
+    // Handle diagnostic context from hover
+    return {
+      ruleId: context.ruleId || context.code || 'unknown',
+      message: context.message || '',
+      file: context.file || '',
+      line: context.line || 1,
+      column: context.column || 1,
+      severity: context.severity || 'info',
+      category: context.category || 'general',
+      fixable: context.fixable || false
+    };
+  }
+
+  /**
+   * Extract group context for batch operations
+   */
+  private extractGroupContext(context: any): any {
+    // Handle tree view group context
+    if (context.groupKey) {
+      const issues = context.issues || [];
+      return {
+        groupKey: context.groupKey,
+        issues: issues.map((issue: any) => this.extractIssueContext({ issue })),
+        groupType: context.groupType || 'rule'
+      };
+    }
+
+    // Fallback for single issue
+    return {
+      groupKey: 'single-issue',
+      issues: [this.extractIssueContext(context)],
+      groupType: 'rule'
+    };
+  }
+
   dispose(): void {
     this.logger.info('🔄 Disposing Extension Manager...');
 
@@ -1345,6 +1423,7 @@ Check Output Console (X-Fidelity) for full details.`;
 
     this.disposables.forEach(d => d.dispose());
     this.analysisEngine.dispose();
+    this.commandDelegationRegistry.dispose();
     this.statusBarProvider.dispose();
     this.issuesTreeViewManager.dispose();
     this.controlCenterTreeViewManager.dispose();
