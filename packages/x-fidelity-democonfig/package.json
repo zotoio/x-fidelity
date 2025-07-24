@@ -12,7 +12,8 @@
     "test:unit": "echo 'No tests for democonfig package'",
     "test:coverage": "echo 'No tests for democonfig package'",
     "lint": "echo 'No linting for democonfig package'",
-    "lint:fix": "echo 'No linting for democonfig package'"
+    "lint:fix": "echo 'No linting for democonfig package'",
+    "check-types": "echo 'Type checking noop for democonfig - no TypeScript files'"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",

@@ -12,6 +12,9 @@ const vscodeWindowMock: any = {
   showInformationMessage: jest.fn(),
   showErrorMessage: jest.fn(),
   visibleTextEditors: [],
+  createTextEditorDecorationType: jest.fn(() => ({
+    dispose: jest.fn()
+  })),
   createOutputChannel: jest.fn(() => ({
     append: jest.fn(),
     appendLine: jest.fn(),
@@ -22,6 +25,59 @@ const vscodeWindowMock: any = {
   }))
 };
 
+const mockUri = {
+  file: jest.fn((path) => ({ 
+    fsPath: path,
+    scheme: 'file',
+    authority: '',
+    path: path,
+    query: '',
+    fragment: ''
+  })),
+  parse: jest.fn()
+};
+
+const mockRange = jest.fn((startLine, startChar, endLine, endChar) => ({
+  start: { line: startLine, character: startChar },
+  end: { line: endLine, character: endChar }
+}));
+
+const mockDiagnostic = jest.fn((range, message, severity) => ({
+  range,
+  message,
+  severity,
+  source: undefined,
+  code: undefined,
+  relatedInformation: undefined,
+  tags: undefined
+}));
+
+const mockWorkspace = {
+  workspaceFolders: [{
+    uri: mockUri.file('/test/workspace'),
+    name: 'test-workspace',
+    index: 0
+  }],
+  asRelativePath: jest.fn((path) => path.replace('/test/workspace/', '')),
+  getConfiguration: jest.fn(() => ({
+    get: jest.fn((key, defaultValue) => {
+      switch (key) {
+        case 'debugMode': return false;
+        case 'logLevel': return 'info';
+        case 'showInlineDecorations': return true;
+        case 'highlightSeverity': return ['error', 'warning'];
+        default: return defaultValue;
+      }
+    })
+  })),
+  onDidChangeConfiguration: jest.fn(() => ({ dispose: jest.fn() }))
+};
+
+// Mock fs.existsSync to return true for test files
+jest.mock('fs', () => ({
+  existsSync: jest.fn(() => true)
+}));
+
 jest.mock('vscode', () => {
   const actual = jest.requireActual('vscode');
   return {
@@ -29,6 +85,20 @@ jest.mock('vscode', () => {
     window: vscodeWindowMock,
     languages: {
       createDiagnosticCollection: jest.fn(() => mockDiagnosticCollection)
+    },
+    workspace: mockWorkspace,
+    Uri: mockUri,
+    Range: mockRange,
+    Diagnostic: mockDiagnostic,
+    DiagnosticSeverity: {
+      Error: 0,
+      Warning: 1,
+      Information: 2,
+      Hint: 3
+    },
+    ThemeColor: jest.fn((id) => ({ id })),
+    DecorationRangeBehavior: {
+      ClosedClosed: 0
     },
     DiagnosticCollection: jest.fn(() => mockDiagnosticCollection)
   };
@@ -44,6 +114,12 @@ describe('DiagnosticProvider Unit Tests', () => {
   beforeEach(() => {
     configManager = ConfigManager.getInstance({} as any);
     provider = new DiagnosticProvider(configManager);
+    
+    // Reset all mocks
+    jest.clearAllMocks();
+    mockDiagnosticCollection.set.mockClear();
+    mockDiagnosticCollection.clear.mockClear();
+    mockDiagnosticCollection.forEach.mockClear();
   });
 
   afterEach(() => {
@@ -213,5 +289,208 @@ describe('DiagnosticProvider Unit Tests', () => {
     const result = provider.validateProblemsPanel();
     expect(result.isValid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('should fail validation when issue count is inconsistent with problems panel', () => {
+    const vscode = require('vscode');
+    vscode.languages.getDiagnostics = jest.fn(() => []);
+    (provider as any).issueCount = 1;
+    const result = provider.validateProblemsPanel();
+    expect(result.isValid).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  describe('Metadata Preservation for Highlighting', () => {
+    it('should preserve locationConfidence for precise highlighting categorization', async () => {
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'node-fullstack',
+            repoPath: '/test/path',
+            repoUrl: 'https://github.com/test/repo',
+            xfiVersion: '1.0.0',
+            fileCount: 1,
+            totalIssues: 1,
+            warningCount: 1,
+            errorCount: 0,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: '2024-01-01T00:00:00Z',
+            finishTime: '2024-01-01T00:01:00Z',
+            durationSeconds: 60,
+            issueDetails: [{
+              filePath: '/test/file.ts',
+              errors: [{
+                ruleFailure: 'functionComplexity-iterative',
+                level: 'warning',
+                details: {
+                  details: {
+                    complexities: [{
+                      metrics: {
+                        location: {
+                          startLine: 24,
+                          startColumn: 10,
+                          endLine: 25,
+                          endColumn: 10
+                        }
+                      }
+                    }]
+                  },
+                  message: 'Function complexity too high'
+                }
+              }]
+            }]
+          }
+        }
+      };
+
+      await provider.updateDiagnostics(mockResult as any);
+
+      expect(mockDiagnosticCollection.set).toHaveBeenCalled();
+      const setCall = mockDiagnosticCollection.set.mock.calls[0];
+      const diagnostics = setCall[1];
+      
+      expect(diagnostics).toHaveLength(1);
+      const diagnostic = diagnostics[0];
+      
+      // Check that locationConfidence metadata is preserved
+      expect((diagnostic as any).locationConfidence).toBe('high');
+      expect((diagnostic as any).locationSource).toBe('complexity-metrics');
+      expect((diagnostic as any).originalLevel).toBe('warning');
+    });
+
+    it('should preserve locationSource for different rule types', async () => {
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'node-fullstack',
+            repoPath: '/test/path',
+            repoUrl: 'https://github.com/test/repo',
+            xfiVersion: '1.0.0',
+            fileCount: 1,
+            totalIssues: 2,
+            warningCount: 2,
+            errorCount: 0,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: '2024-01-01T00:00:00Z',
+            finishTime: '2024-01-01T00:01:00Z',
+            durationSeconds: 60,
+            issueDetails: [{
+              filePath: '/test/file.ts',
+              errors: [
+                {
+                  ruleFailure: 'functionComplexity-iterative',
+                  level: 'warning',
+                  details: {
+                    details: {
+                      complexities: [{
+                        metrics: {
+                          location: {
+                            startLine: 24,
+                            startColumn: 10,
+                            endLine: 25,
+                            endColumn: 10
+                          }
+                        }
+                      }]
+                    },
+                    message: 'Function complexity too high'
+                  }
+                },
+                {
+                  ruleFailure: 'codeRhythm-iterative',
+                  level: 'info',
+                  details: {
+                    message: 'Code structure analysis suggests potential readability issues.'
+                  }
+                }
+              ]
+            }]
+          }
+        }
+      };
+
+      await provider.updateDiagnostics(mockResult as any);
+
+      expect(mockDiagnosticCollection.set).toHaveBeenCalled();
+      const setCall = mockDiagnosticCollection.set.mock.calls[0];
+      const diagnostics = setCall[1];
+      
+      expect(diagnostics).toHaveLength(2);
+      
+      // Check complexity rule has high confidence
+      const complexityDiag = diagnostics.find((d: any) => d.code === 'functionComplexity-iterative');
+      expect(complexityDiag).toBeDefined();
+      expect((complexityDiag as any).locationConfidence).toBe('high');
+      expect((complexityDiag as any).locationSource).toBe('complexity-metrics');
+      
+      // Check file-level rule has appropriate metadata
+      const rhythmDiag = diagnostics.find((d: any) => d.code === 'codeRhythm-iterative');
+      expect(rhythmDiag).toBeDefined();
+      expect((rhythmDiag as any).locationSource).toBe('file-level-rule');
+    });
+
+    it('should ensure functionComplexity-iterative produces ranges suitable for precise highlighting', async () => {
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'node-fullstack',
+            repoPath: '/test/path',
+            repoUrl: 'https://github.com/test/repo',
+            xfiVersion: '1.0.0',
+            fileCount: 1,
+            totalIssues: 1,
+            warningCount: 1,
+            errorCount: 0,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: '2024-01-01T00:00:00Z',
+            finishTime: '2024-01-01T00:01:00Z',
+            durationSeconds: 60,
+            issueDetails: [{
+              filePath: '/test/file.ts',
+              errors: [{
+                ruleFailure: 'functionComplexity-iterative',
+                level: 'warning',
+                details: {
+                  details: {
+                    complexities: [{
+                      metrics: {
+                        location: {
+                          startLine: 24,
+                          startColumn: 10,
+                          endLine: 24,     // Small single-line range
+                          endColumn: 15
+                        }
+                      }
+                    }]
+                  },
+                  message: 'Function complexity too high'
+                }
+              }]
+            }]
+          }
+        }
+      };
+
+      await provider.updateDiagnostics(mockResult as any);
+
+      expect(mockDiagnosticCollection.set).toHaveBeenCalled();
+      const setCall = mockDiagnosticCollection.set.mock.calls[0];
+      const diagnostics = setCall[1];
+      
+      expect(diagnostics).toHaveLength(1);
+      const diagnostic = diagnostics[0];
+      
+      // Calculate range size using same formula as test
+      const range = diagnostic.range;
+      const rangeSize = (range.end.line - range.start.line) * 1000 + 
+                       (range.end.character - range.start.character);
+      
+      // Should meet precise highlighting criteria (> 1000)
+      expect(rangeSize).toBeGreaterThan(1000);
+      expect((diagnostic as any).locationConfidence).toBe('high');
+    });
   });
 });

@@ -145,7 +145,7 @@ export function safeSerializeForVSCode<T>(obj: T): T | null {
 function createSafeReplacer(): (key: string, value: any) => any {
   const seen = new WeakSet();
 
-  return function (key: string, value: any) {
+  return function (this: any, key: string, value: any) {
     // Handle circular references
     if (typeof value === 'object' && value !== null) {
       if (seen.has(value)) {
@@ -333,12 +333,13 @@ export function safeSerializeAnalysisResult(result: any): any {
   }
 
   try {
-    const safeResult = {
+    const safeResult: any = {
       metadata: safeSerializeForVSCode(result.metadata),
       timestamp: result.timestamp || Date.now(),
       duration: result.duration || 0,
       summary: safeSerializeForVSCode(result.summary),
-      operationId: result.operationId || `safe-${Date.now()}`
+      operationId: result.operationId || `safe-${Date.now()}`,
+      diagnostics: {}
     };
 
     // Handle diagnostics Map specially

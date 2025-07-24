@@ -202,7 +202,7 @@ class LoggerProvider {
     }
 
     // Fallback detection based on environment
-    if (typeof window !== 'undefined') {
+    if (typeof globalThis !== 'undefined' && typeof (globalThis as any).window !== 'undefined') {
       return EXECUTION_MODES.VSCODE;
     }
     

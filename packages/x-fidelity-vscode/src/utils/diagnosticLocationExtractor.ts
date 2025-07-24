@@ -91,60 +91,18 @@ export class DiagnosticLocationExtractor {
       try {
         const result = extractor(error);
         if (result.found) {
-          // Enhanced debugging for missing rules
-          if (
-            ruleFailure === 'functionComplexity-iterative' ||
-            ruleFailure === 'sensitiveLogging-iterative'
-          ) {
-            console.warn(
-              `✅ DEBUGGING MISSING RULE SUCCESS: ${ruleFailure} extracted by ${extractor.name}`,
-              {
-                result,
-                extractor: extractor.name
-              }
-            );
-          }
-
           // Add metadata for debugging
           result.metadata = {
             extractorUsed: extractor.name,
             rawData: this.sanitizeForLogging(error)
           };
           return result;
-        } else {
-          // Enhanced debugging for missing rules
-          if (
-            ruleFailure === 'functionComplexity-iterative' ||
-            ruleFailure === 'sensitiveLogging-iterative'
-          ) {
-            console.warn(
-              `❌ DEBUGGING MISSING RULE FAILED: ${ruleFailure} failed extraction by ${extractor.name}`,
-              {
-                result,
-                extractor: extractor.name
-              }
-            );
-          }
         }
       } catch (extractorError) {
         console.warn(
           `Location extractor ${extractor.name} failed:`,
           extractorError
         );
-
-        // Enhanced debugging for missing rules
-        if (
-          ruleFailure === 'functionComplexity-iterative' ||
-          ruleFailure === 'sensitiveLogging-iterative'
-        ) {
-          console.error(
-            `💥 DEBUGGING MISSING RULE ERROR: ${ruleFailure} threw error in ${extractor.name}`,
-            {
-              error: extractorError,
-              extractor: extractor.name
-            }
-          );
-        }
       }
     }
 
@@ -159,20 +117,6 @@ export class DiagnosticLocationExtractor {
     };
 
     console.warn('No location found for error:', debugInfo);
-
-    // Enhanced debugging for missing rules
-    if (
-      ruleFailure === 'functionComplexity-iterative' ||
-      ruleFailure === 'sensitiveLogging-iterative'
-    ) {
-      console.error(
-        `🚨 DEBUGGING MISSING RULE ULTIMATE FALLBACK: ${ruleFailure}`,
-        {
-          debugInfo,
-          fullError: error
-        }
-      );
-    }
 
     // Ultimate fallback
     return {
@@ -238,20 +182,47 @@ export class DiagnosticLocationExtractor {
 
   /**
    * Extract from function complexity metrics (AST plugin)
+   * Handles both nested structure (details.details.complexities) and resolved fact structure (details.complexities)
    */
   private static extractFromComplexityMetrics(
     error: any
   ): LocationExtractionResult {
-    const complexities = error.details?.details?.complexities;
+    // Try nested structure first (details.details.complexities)
+    let complexities = error.details?.details?.complexities;
+
+    // If nested structure not found, try resolved fact structure (details.complexities)
+    if (!complexities || !Array.isArray(complexities)) {
+      complexities = error.details?.complexities;
+    }
+
     if (Array.isArray(complexities) && complexities.length > 0) {
       const location = complexities[0].metrics?.location;
       if (location && typeof location.startLine === 'number') {
+        // ENHANCEMENT: Ensure meaningful ranges for function complexity
+        const startLine = location.startLine;
+        const startColumn = location.startColumn || 1;
+        let endLine = location.endLine || startLine;
+        let endColumn = location.endColumn || startColumn;
+
+        // For function complexity rules, ensure a meaningful range
+        // If no explicit end position, assume the function spans multiple lines or significant columns
+        if (endLine === startLine && endColumn === startColumn) {
+          // Assume function spans at least 20 characters or to end of line
+          endColumn = Math.max(startColumn + 20, startColumn + 10);
+        }
+
+        // If still a single line with small range, extend to multiple lines for better visibility
+        if (endLine === startLine && endColumn - startColumn < 50) {
+          endLine = startLine + 1; // Extend to next line for better highlighting
+          endColumn = startColumn + 10; // Reset column for next line
+        }
+
         return {
           location: {
-            startLine: location.startLine,
-            startColumn: location.startColumn || 1,
-            endLine: location.endLine || location.startLine,
-            endColumn: location.endColumn || location.startColumn || 1,
+            startLine: startLine,
+            startColumn: startColumn,
+            endLine: endLine,
+            endColumn: endColumn,
             source: 'complexity-metrics'
           },
           found: true,

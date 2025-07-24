@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { createCLISpawner } from './cliSpawner';
 import { getAnalysisTargetDirectory } from './workspaceUtils';
+import type { AnalysisResult } from '../analysis/types';
 
 export async function diagnoseCLIResultIssue(): Promise<string> {
   const diagnostics: string[] = [];
@@ -121,16 +122,16 @@ export async function diagnoseCLIResultIssue(): Promise<string> {
         diagnostics.push(`🧪 Testing CLI analysis on: ${testDir}`);
 
         // Run with a very short timeout for testing
-        const testResult = await Promise.race([
+        const testResult = (await Promise.race([
           cliSpawner.runAnalysis({
             workspacePath,
             args: ['--file-cache-ttl', '1'],
             timeout: 30000 // 30 seconds
           }),
-          new Promise((_, reject) =>
+          new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Test timeout')), 30000)
           )
-        ]);
+        ])) as AnalysisResult;
 
         diagnostics.push('✅ CLI execution completed successfully');
         diagnostics.push(

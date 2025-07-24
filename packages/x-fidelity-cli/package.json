@@ -24,8 +24,9 @@
   "scripts": {
     "clean": "rimraf dist/",
     "prebuild": "yarn clean",
-    "build": "yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && node esbuild.config.js",
-    "build:production": "yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && node esbuild.config.js --production",
+    "build": "yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && yarn check-types && node esbuild.config.js",
+    "check-types": "tsc --noEmit",
+    "build:production": "yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && yarn check-types && node esbuild.config.js --production",
     "build:fresh": "yarn workspaces run clean && yarn build",
     "prepublishOnly": "yarn build:production",
     "build:watch": "node esbuild.config.js --watch",
