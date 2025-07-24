@@ -158,7 +158,47 @@ Full access to all 9 X-Fidelity plugins with universal logging:
 - **Required Files Plugin** (`xfiPluginRequiredFiles`): File existence verification
 - **Simple Example Plugin** (`xfiPluginSimpleExample`): Template for custom plugins
 
-### 8. Report Management
+### 8. Command Delegation System
+
+#### Extensible Command Architecture
+X-Fidelity features a powerful command delegation system that allows other VSCode extensions to provide enhanced implementations for issue explanation, fixing, and batch operations:
+
+- **Issue Explanation**: Other extensions can provide AI-powered or specialized explanations
+- **Issue Fixing**: Extensions can offer automated fixes tailored to specific rule types
+- **Batch Operations**: Support for fixing multiple issues simultaneously
+- **Discovery**: Automatic detection of compatible extensions in your VSCode environment
+
+#### Extension Points
+Other extensions can integrate with X-Fidelity by declaring extension points:
+
+```json
+{
+  "contributes": {
+    "xfidelity.issueExplainer": [{
+      "id": "ai-explainer",
+      "displayName": "AI Code Explainer", 
+      "command": "myExtension.explainXFidelityIssue"
+    }],
+    "xfidelity.issueFixer": [{
+      "id": "auto-fixer",
+      "displayName": "Auto Code Fixer",
+      "command": "myExtension.fixXFidelityIssue",
+      "supportsBatch": true
+    }]
+  }
+}
+```
+
+#### User Configuration
+Users can easily configure which extensions handle different command types:
+
+- **Command Palette**: `X-Fidelity: Configure Command Providers`
+- **Settings**: Direct configuration through VSCode settings
+- **Built-in Fallbacks**: Default implementations when no external extension is configured
+
+For detailed information, see the [Command Delegation Guide](command-delegation.md).
+
+### 9. Report Management
 
 #### Analysis Reports
 - **JSON Reports**: Machine-readable analysis results
