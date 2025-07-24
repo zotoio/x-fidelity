@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import type { AnalysisResult } from '../analysis/types';
 import { ConfigManager } from '../configuration/configManager';
 import { createComponentLogger } from '../utils/globalLogger';
@@ -742,8 +743,6 @@ export class DiagnosticProvider implements vscode.Disposable {
    */
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
     try {
-      const fs = require('fs');
-
       // CRITICAL FIX: Validate file path before processing
       if (!filePath || typeof filePath !== 'string') {
         this.logger.warn('Invalid file path provided', { filePath });
