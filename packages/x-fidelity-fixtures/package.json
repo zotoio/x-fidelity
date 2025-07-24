@@ -12,7 +12,8 @@
     "test:unit": "echo 'No tests for fixtures package'",
     "test:coverage": "echo 'No tests for fixtures package'",
     "lint": "echo 'No linting for fixtures package'",
-    "lint:fix": "echo 'No linting for fixtures package'"
+    "lint:fix": "echo 'No linting for fixtures package'",
+    "check-types": "echo 'Type checking noop for fixtures - test fixture package'"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",

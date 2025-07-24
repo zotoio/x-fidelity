@@ -4,9 +4,7 @@ import { suite, test, suiteSetup, setup } from 'mocha';
 import {
   ensureExtensionActivated,
   executeCommandSafely,
-  waitForAnalysisCompletion,
   getAnalysisResults,
-  runInitialAnalysis,
   runFreshAnalysisForTest,
   getTestWorkspace
 } from '../helpers/testHelpers';
@@ -38,14 +36,14 @@ suite('Navigation & Line/Column Accuracy Tests', () => {
     this.timeout(30000);
 
     // Use cached analysis results
-    const results = await getAnalysisResults();
+    await getAnalysisResults();
     console.log(`📊 Using cached analysis results for line number validation`);
 
     // Get diagnostics
     const diagnostics = vscode.languages.getDiagnostics();
     let validatedDiagnostics = 0;
 
-    for (const [uri, diags] of diagnostics) {
+    for (const [_uri, diags] of diagnostics) {
       const xfidelityDiags = diags.filter(d => d.source === 'X-Fidelity');
 
       for (const diagnostic of xfidelityDiags) {
@@ -117,7 +115,7 @@ suite('Navigation & Line/Column Accuracy Tests', () => {
     this.timeout(30000);
 
     // Use cached results to find issues that might have go-to-definition
-    const results = await getAnalysisResults();
+    await getAnalysisResults();
     console.log(`📊 Testing go-to-definition with cached results`);
 
     // Test the go-to-issue command

@@ -1,8 +1,6 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
-import { ILogger, LogLevel, LogLevelValues } from '@x-fidelity/types';
-import { EnhancedLogger, EnhancedLoggerConfig } from '@x-fidelity/core';
+import { ILogger, LogLevel } from '@x-fidelity/types';
+import { EnhancedLogger } from '@x-fidelity/core';
 import type { AnalysisTriggerSource } from '../analysis/analysisEngineInterface';
 
 // Use LogLevel from @x-fidelity/types - no need to redefine
@@ -291,7 +289,7 @@ export class VSCodeLogger {
         const jsonData = JSON.parse(line.trim());
         this.logWithMetadata(level, `CLI ${source.toUpperCase()}`, jsonData);
         return;
-      } catch (e) {
+      } catch (_e) {
         // Not JSON, log as regular text
       }
     }

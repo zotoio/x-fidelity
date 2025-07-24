@@ -5,7 +5,6 @@ import {
   ensureExtensionActivated,
   executeCommandSafely,
   assertCommandExists,
-  waitForAnalysisCompletion,
   getAnalysisResults,
   runInitialAnalysis,
   runFreshAnalysisForTest,
@@ -153,7 +152,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
     let xfidelityFiles = 0;
     let totalXfidelityDiagnostics = 0;
 
-    for (const [uri, diags] of diagnostics) {
+    for (const [_uri, diags] of diagnostics) {
       const xfidelityDiags = diags.filter(d => d.source === 'X-Fidelity');
       if (xfidelityDiags.length > 0) {
         xfidelityFiles++;

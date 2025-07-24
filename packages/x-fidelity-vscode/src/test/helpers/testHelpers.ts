@@ -174,7 +174,7 @@ export async function getAnalysisResults(
 
       return parsed;
     }
-  } catch (error) {
+  } catch (_error) {
     // Continue to try cache if file read fails
   }
 
@@ -257,7 +257,7 @@ export async function waitForAnalysisCompletion(
  */
 export async function runInitialAnalysis(
   workspacePath?: string,
-  forceRefresh: boolean = false
+  _forceRefresh: boolean = false
 ): Promise<any> {
   const targetPath = workspacePath || getWorkspaceRoot();
   

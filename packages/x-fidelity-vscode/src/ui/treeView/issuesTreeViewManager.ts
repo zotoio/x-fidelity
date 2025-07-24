@@ -411,8 +411,8 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         counts.push(`${stats.hint}H`);
       }
 
-      const countString =
-        counts.length > 0 ? ` (${counts.join(' ')})` : ` (${stats.total})`;
+      // const countString =
+      //   counts.length > 0 ? ` (${counts.join(' ')})` : ` (${stats.total})`;
       //title += countString;
     }
 

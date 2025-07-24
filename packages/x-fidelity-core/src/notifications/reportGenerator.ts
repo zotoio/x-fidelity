@@ -58,7 +58,7 @@ export class ReportGenerator {
     }
 
     public generateReport(): string {
-        const report = [];
+        const report: string[] = [];
 
         report.push(this.generateHeader());
         report.push(this.generateExecutiveSummary());

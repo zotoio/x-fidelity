@@ -17,12 +17,12 @@ import {
  */
 suite('VSIX Validation Integration Tests', () => {
   let extension: vscode.Extension<any>;
-  let testWorkspace: vscode.WorkspaceFolder;
+
 
   suiteSetup(async function () {
     this.timeout(60000);
     extension = await ensureExtensionActivated();
-    testWorkspace = getTestWorkspace();
+    getTestWorkspace();
     await new Promise(resolve => setTimeout(resolve, 3000));
   });
 
@@ -111,7 +111,7 @@ suite('VSIX Validation Integration Tests', () => {
 
     try {
       // Try to run analysis which should initialize plugins
-      const result = await executeCommandSafely('xfidelity.runAnalysis');
+      await executeCommandSafely('xfidelity.runAnalysis');
       
       // Wait for analysis to complete or fail
       await new Promise(resolve => setTimeout(resolve, 10000));

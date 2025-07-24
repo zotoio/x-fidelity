@@ -25,6 +25,7 @@
     "clean:artifacts": "find . -name '*.d.ts' -o -name '*.map' -o -name '*.js.map' | grep -v node_modules | grep -v dist | xargs rm -f || true",
     "build:clean": "yarn clean && yarn build",
     "build": "yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && yarn workspace @x-fidelity/democonfig build && yarn workspace @x-fidelity/server build && yarn workspace x-fidelity build && yarn workspace x-fidelity-vscode build",
+    "check-types:all": "yarn workspaces run check-types",
     "test": "yarn workspaces run test:unit",
     "test:unit": "yarn workspaces run test:unit",
     "test:integration": "yarn workspace x-fidelity test:integration && yarn workspace x-fidelity-vscode test:integration",

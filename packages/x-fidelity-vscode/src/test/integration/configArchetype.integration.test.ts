@@ -6,13 +6,11 @@ import * as os from 'os';
 import { suite, test, suiteSetup, suiteTeardown, teardown } from 'mocha';
 import { ConfigManager } from '../../configuration/configManager';
 import {
-  ensureExtensionActivated,
-  executeCommandSafely
+  ensureExtensionActivated
 } from '../helpers/testHelpers';
 
 suite('ConfigManager Archetype Resolution Integration Tests', () => {
   let configManager: ConfigManager;
-  let originalConfig: any;
   let tempDir: string;
 
   suiteSetup(async function () {
@@ -44,7 +42,7 @@ suite('ConfigManager Archetype Resolution Integration Tests', () => {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       const workspaceConfig = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
       await workspaceConfig.update('localConfigPath', '', vscode.ConfigurationTarget.Workspace);
-    } catch (error) {
+    } catch (_error) {
       // Ignore reset errors
     }
   });
@@ -118,9 +116,6 @@ suite('ConfigManager Archetype Resolution Integration Tests', () => {
   test('should handle workspace configuration updates', async function () {
     this.timeout(10000);
 
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    const workspaceConfig = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
-    
     // Test updating a configuration value
     const originalTimeout = configManager.getConfig().analysisTimeout;
     const newTimeout = originalTimeout + 5000;

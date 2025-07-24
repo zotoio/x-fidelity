@@ -16,8 +16,9 @@
   "scripts": {
     "clean": "rimraf dist/",
     "prebuild": "yarn clean",
-    "build": "tsc",
+    "build": "yarn check-types && tsc",
     "build:watch": "tsc --watch --sourceMap",
+    "check-types": "tsc --noEmit",
     "test": "cd ../../ && yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && cd packages/x-fidelity-server && yarn lint:fix && NODE_ENV=test jest --config jest.config.js",
     "test:unit": "cd ../../ && yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && cd packages/x-fidelity-server && yarn lint:fix && NODE_ENV=test jest --config jest.config.js",
     "test:coverage": "NODE_ENV=test jest --config jest.config.js --coverage",

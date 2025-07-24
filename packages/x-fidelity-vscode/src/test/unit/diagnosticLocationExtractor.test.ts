@@ -233,4 +233,166 @@ describe('Enhanced DiagnosticLocationExtractor Tests', () => {
       // Should be truncated or handled gracefully
     });
   });
+
+  describe('Function Complexity Range Enhancement', () => {
+    it('should enhance small ranges for functionComplexity-iterative to ensure precise highlighting', () => {
+      const error = {
+        ruleFailure: 'functionComplexity-iterative',
+        details: {
+          details: {
+            complexities: [{
+              metrics: {
+                location: {
+                  startLine: 24,
+                  startColumn: 10,
+                  endLine: 24,     // Same line
+                  endColumn: 10    // Same column - point location
+                }
+              }
+            }]
+          }
+        }
+      };
+
+      const result = DiagnosticLocationExtractor.extractLocation(error);
+      
+      expect(result.found).toBe(true);
+      expect(result.confidence).toBe('high');
+      expect(result.location.source).toBe('complexity-metrics');
+      expect(result.location.startLine).toBe(24);
+      expect(result.location.startColumn).toBe(10);
+      
+      // Should enhance the range for better highlighting
+      // Either extend to next line OR extend character range significantly
+      const rangeSize = (result.location.endLine - result.location.startLine) * 1000 + 
+                       (result.location.endColumn - result.location.startColumn);
+      expect(rangeSize).toBeGreaterThan(1000); // Should meet 'precise' highlighting criteria
+    });
+
+    it('should enhance single-line small ranges for functionComplexity', () => {
+      const error = {
+        ruleFailure: 'functionComplexity-iterative',
+        details: {
+          details: {
+            complexities: [{
+              metrics: {
+                location: {
+                  startLine: 15,
+                  startColumn: 5,
+                  endLine: 15,     // Same line
+                  endColumn: 15    // Small range (10 characters)
+                }
+              }
+            }]
+          }
+        }
+      };
+
+      const result = DiagnosticLocationExtractor.extractLocation(error);
+      
+      expect(result.found).toBe(true);
+      expect(result.confidence).toBe('high');
+      
+      // Should enhance small single-line range
+      const rangeSize = (result.location.endLine - result.location.startLine) * 1000 + 
+                       (result.location.endColumn - result.location.startColumn);
+      expect(rangeSize).toBeGreaterThan(1000); // Should meet 'precise' highlighting criteria
+    });
+
+    it('should not modify already large ranges for functionComplexity', () => {
+      const error = {
+        ruleFailure: 'functionComplexity-iterative',
+        details: {
+          details: {
+            complexities: [{
+              metrics: {
+                location: {
+                  startLine: 10,
+                  startColumn: 1,
+                  endLine: 50,     // Multi-line
+                  endColumn: 20
+                }
+              }
+            }]
+          }
+        }
+      };
+
+      const result = DiagnosticLocationExtractor.extractLocation(error);
+      
+      expect(result.found).toBe(true);
+      expect(result.confidence).toBe('high');
+      
+      // Should preserve original large range
+      expect(result.location.startLine).toBe(10);
+      expect(result.location.startColumn).toBe(1);
+      expect(result.location.endLine).toBe(50);
+      expect(result.location.endColumn).toBe(20);
+    });
+
+    it('should handle missing endLine/endColumn in complexity metrics', () => {
+      const error = {
+        ruleFailure: 'functionComplexity-iterative',
+        details: {
+          details: {
+            complexities: [{
+              metrics: {
+                location: {
+                  startLine: 30,
+                  startColumn: 8
+                  // No endLine or endColumn provided
+                }
+              }
+            }]
+          }
+        }
+      };
+
+      const result = DiagnosticLocationExtractor.extractLocation(error);
+      
+      expect(result.found).toBe(true);
+      expect(result.confidence).toBe('high');
+      expect(result.location.startLine).toBe(30);
+      expect(result.location.startColumn).toBe(8);
+      
+      // Should provide meaningful defaults for missing end positions
+      expect(result.location.endLine).toBeGreaterThanOrEqual(30);
+      expect(result.location.endColumn).toBeGreaterThan(8);
+      
+      // Should meet precise highlighting criteria
+      const rangeSize = (result.location.endLine - result.location.startLine) * 1000 + 
+                       (result.location.endColumn - result.location.startColumn);
+      expect(rangeSize).toBeGreaterThan(1000);
+    });
+
+    it('should handle resolved fact structure for complexity metrics', () => {
+      const error = {
+        ruleFailure: 'functionComplexity-iterative',
+        details: {
+          // Direct complexities array (resolved fact structure)
+          complexities: [{
+            metrics: {
+              location: {
+                startLine: 42,
+                startColumn: 1,
+                endLine: 42,
+                endColumn: 5
+              }
+            }
+          }]
+        }
+      };
+
+      const result = DiagnosticLocationExtractor.extractLocation(error);
+      
+      expect(result.found).toBe(true);
+      expect(result.confidence).toBe('high');
+      expect(result.location.source).toBe('complexity-metrics');
+      
+      // Should enhance small range
+      const rangeSize = (result.location.endLine - result.location.startLine) * 1000 + 
+                       (result.location.endColumn - result.location.startColumn);
+      expect(rangeSize).toBeGreaterThan(1000);
+    });
+  });
 }); 

@@ -355,7 +355,6 @@ export class IssuesTreeProvider
     markdown.supportHtml = true;
 
     // Title with rule and severity
-    const severityIcon = this.getSeverityIcon(issue.severity);
     const severityEmoji = this.getSeverityEmoji(issue.severity);
     markdown.appendMarkdown(`**${severityEmoji} ${issue.rule}**\n\n`);
 

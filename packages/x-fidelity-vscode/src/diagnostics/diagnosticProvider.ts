@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import type { AnalysisResult } from '../analysis/types';
 import { ConfigManager } from '../configuration/configManager';
 import { createComponentLogger } from '../utils/globalLogger';
@@ -7,13 +8,13 @@ import type { ResultMetadata } from '@x-fidelity/types';
 import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
 import { isTestEnvironment } from '../utils/testDetection';
 
-// Extended interface for diagnostics with X-Fidelity metadata
-interface ExtendedDiagnostic extends vscode.Diagnostic {
-  issueId?: string;
-  ruleId?: string;
-  category?: string;
-  documentation?: string;
-}
+// Extended interface for diagnostics with X-Fidelity metadata (currently unused)
+// interface ExtendedDiagnostic extends vscode.Diagnostic {
+//   issueId?: string;
+//   ruleId?: string;
+//   category?: string;
+//   documentation?: string;
+// }
 
 // Internal interface for processing issues from analysis results
 interface DiagnosticIssue {
@@ -34,13 +35,13 @@ interface DiagnosticIssue {
   isFileLevelRule?: boolean;
 }
 
-// Internal issue metadata type for location resolution
-interface IssueLocation {
-  file: string;
-  line?: number;
-  column?: number;
-  snippet?: string;
-}
+// Internal issue metadata type for location resolution (currently unused)
+// interface IssueLocation {
+//   file: string;
+//   line?: number;
+//   column?: number;
+//   snippet?: string;
+// }
 
 /**
  * Enhanced Diagnostic Provider implementing VS Code best practices
@@ -201,183 +202,370 @@ export class DiagnosticProvider implements vscode.Disposable {
   }
 
   /**
-   * Extract issues from analysis result in a standardized format
+   * Extract issues from analysis result using proper ResultMetadata validation
    */
   private extractIssuesFromResult(result: AnalysisResult): DiagnosticIssue[] {
     const issues: DiagnosticIssue[] = [];
 
     try {
-      // CRITICAL DEBUG: Log what we received
-      this.logger.info('=== RECEIVED RESULT DEBUG ===');
-      this.logger.info(`Result type: ${typeof result}`);
-      this.logger.info(
-        `Result keys: ${result ? Object.keys(result) : 'null/undefined'}`
-      );
-      this.logger.info(`Has metadata: ${'metadata' in result}`);
-      this.logger.info(`Has XFI_RESULT: ${'XFI_RESULT' in result}`);
-      this.logger.info(
-        `Full result JSON: ${JSON.stringify(result).substring(0, 500)}...`
-      );
-      this.logger.info('=== END RECEIVED RESULT DEBUG ===');
+      // Type-safe validation of ResultMetadata structure
+      const resultMetadata = this.validateAndExtractResultMetadata(result);
 
-      // Get XFI_RESULT from the result with more flexible handling
-      let xfiResult;
-      if ('metadata' in result && result.metadata?.XFI_RESULT) {
-        xfiResult = result.metadata.XFI_RESULT;
-        this.logger.debug('Found XFI_RESULT in result.metadata.XFI_RESULT');
-      } else if ('XFI_RESULT' in result) {
-        xfiResult = result.XFI_RESULT;
-        this.logger.debug('Found XFI_RESULT in result.XFI_RESULT');
-      } else if (result && 'issueDetails' in result) {
-        xfiResult = result; // Direct use if it has issueDetails
-        this.logger.debug('Using result directly as it has issueDetails');
-      } else {
-        // Last resort: deep search for issueDetails
-        const found = this.deepSearchForIssueDetails(result);
-        if (found) {
-          xfiResult = { issueDetails: found };
-          this.logger.debug('Found issueDetails via deep search');
-        } else {
-          xfiResult = { issueDetails: [] };
-          this.logger.warn('No issueDetails found anywhere in result');
-        }
+      if (!resultMetadata) {
+        this.logger.warn('No valid ResultMetadata found in analysis result');
+        return issues;
       }
 
-      if (!xfiResult?.issueDetails) {
-        this.logger.warn('No issueDetails found in XFI_RESULT', {
-          hasXfiResult: !!xfiResult,
-          xfiResultKeys: xfiResult ? Object.keys(xfiResult) : 'null',
-          hasIssueDetails: !!xfiResult?.issueDetails
+      const xfiResult = resultMetadata.XFI_RESULT;
+
+      // Log comprehensive metadata for debugging
+      this.logger.info('=== XFI_RESULT STRUCTURE VALIDATION ===');
+      this.logger.info(`Archive type: ${xfiResult.archetype}`);
+      this.logger.info(`Repository path: ${xfiResult.repoPath}`);
+      this.logger.info(`Repository URL: ${xfiResult.repoUrl}`);
+      this.logger.info(`XFI version: ${xfiResult.xfiVersion}`);
+      this.logger.info(`Total files analyzed: ${xfiResult.fileCount}`);
+      this.logger.info(`Total issues found: ${xfiResult.totalIssues}`);
+      this.logger.info(
+        `Issue breakdown - Errors: ${xfiResult.errorCount}, Warnings: ${xfiResult.warningCount}, Fatalities: ${xfiResult.fatalityCount}, Exempt: ${xfiResult.exemptCount}`
+      );
+      this.logger.info(`Analysis duration: ${xfiResult.durationSeconds}s`);
+      this.logger.info(
+        `Issue details count: ${xfiResult.issueDetails?.length || 0}`
+      );
+
+      // Validate telemetry data structure
+      if (xfiResult.telemetryData) {
+        this.logger.debug(`Telemetry data available:`, {
+          configServer: xfiResult.telemetryData.configServer,
+          repoUrl: xfiResult.telemetryData.repoUrl,
+          hasHostInfo: !!xfiResult.telemetryData.hostInfo,
+          hasUserInfo: !!xfiResult.telemetryData.userInfo
+        });
+      }
+
+      // Validate repo configuration
+      if (xfiResult.repoXFIConfig) {
+        this.logger.debug(`Repository configuration:`, {
+          archetype: xfiResult.repoXFIConfig.archetype,
+          exemptionsCount: xfiResult.repoXFIConfig.exemptions?.length || 0,
+          hasRules: Array.isArray(xfiResult.repoXFIConfig.rules),
+          rulesCount: xfiResult.repoXFIConfig.rules?.length || 0
+        });
+      }
+
+      // Validate fact metrics
+      if (xfiResult.factMetrics) {
+        const factNames = Object.keys(xfiResult.factMetrics);
+        this.logger.debug(
+          `Fact metrics available for ${factNames.length} facts:`,
+          factNames
+        );
+      }
+
+      this.logger.info('=== END XFI_RESULT VALIDATION ===');
+
+      // Process issue details using proper ScanResult type
+      if (!xfiResult.issueDetails || !Array.isArray(xfiResult.issueDetails)) {
+        this.logger.warn('Issue details is not a valid array', {
+          hasIssueDetails: !!xfiResult.issueDetails,
+          type: typeof xfiResult.issueDetails,
+          isArray: Array.isArray(xfiResult.issueDetails)
         });
         return issues;
       }
 
-      // DEBUG: Log the actual XFI_RESULT structure to see what we're getting
-      this.logger.debug('=== XFI_RESULT CONTENT DEBUG ===');
-      this.logger.debug(`XFI_RESULT keys: ${Object.keys(xfiResult)}`);
-      this.logger.debug(
-        `issueDetails length: ${xfiResult.issueDetails?.length || 0}`
-      );
-      this.logger.debug(`Full XFI_RESULT structure:`, xfiResult);
-
-      if (xfiResult.issueDetails && xfiResult.issueDetails.length > 0) {
-        const firstFileIssue = xfiResult.issueDetails[0];
-        this.logger.debug(`First file issue structure:`, {
-          filePath: firstFileIssue.filePath,
-          errorsCount: firstFileIssue.errors?.length || 0,
-          firstErrorKeys: firstFileIssue.errors?.[0]
-            ? Object.keys(firstFileIssue.errors[0])
-            : [],
-          firstErrorSample: firstFileIssue.errors?.[0] || null
-        });
-
-        if (firstFileIssue.errors && firstFileIssue.errors.length > 0) {
-          const firstError = firstFileIssue.errors[0];
-          this.logger.debug(`First error detailed structure:`, {
-            ruleFailure: firstError.ruleFailure,
-            level: firstError.level,
-            detailsKeys: firstError.details
-              ? Object.keys(firstError.details)
-              : [],
-            detailsMessage: firstError.details?.message || 'NO DETAILS MESSAGE',
-            detailsLineNumber:
-              firstError.details?.lineNumber || 'NO LINE NUMBER',
-            rawDetailsObject: firstError.details
+      // Convert ScanResult[] to DiagnosticIssue[]
+      for (const scanResult of xfiResult.issueDetails) {
+        if (!this.isValidScanResult(scanResult)) {
+          this.logger.warn('Invalid ScanResult structure, skipping', {
+            filePath: scanResult.filePath,
+            hasErrors: !!scanResult.errors,
+            errorsType: typeof scanResult.errors,
+            errorsIsArray: Array.isArray(scanResult.errors)
           });
-        }
-      }
-      this.logger.debug('=== END XFI_RESULT DEBUG ===');
-
-      // Simple direct mapping: XFI_RESULT.issueDetails -> VSCode diagnostics
-      for (const fileIssue of xfiResult.issueDetails) {
-        const filePath = fileIssue.filePath;
-        if (!filePath || !fileIssue.errors) {
           continue;
         }
 
-        for (const error of fileIssue.errors) {
-          // Use enhanced location extraction
+        const filePath = scanResult.filePath;
+
+        for (const ruleFailure of scanResult.errors) {
+          if (!this.isValidRuleFailure(ruleFailure)) {
+            this.logger.warn('Invalid RuleFailure structure, skipping', {
+              file: filePath,
+              ruleFailure: ruleFailure.ruleFailure,
+              hasDetails: !!ruleFailure.details,
+              level: ruleFailure.level
+            });
+            continue;
+          }
+
+          // Use enhanced location extraction with proper fallbacks
           const locationResult =
-            DiagnosticLocationExtractor.extractLocation(error);
+            DiagnosticLocationExtractor.extractLocation(ruleFailure);
           const location = DiagnosticLocationExtractor.validateLocation(
             locationResult.location
           );
 
-          this.logger.debug('Location extraction result', {
-            ruleFailure: error.ruleFailure,
-            found: locationResult.found,
+          this.logger.debug('Processing rule failure', {
+            rule: ruleFailure.ruleFailure,
+            level: ruleFailure.level,
+            file: filePath,
+            locationSource: location.source,
             confidence: locationResult.confidence,
-            source: location.source,
-            location: location
+            hasMessage: !!ruleFailure.details?.message
           });
 
+          // Extract clean message with enhanced context
           const rawMessage =
-            error.details?.message ||
-            error.message ||
-            error.ruleFailure ||
-            'Issue detected';
+            ruleFailure.details?.message ||
+            ruleFailure.message ||
+            `Rule violation: ${ruleFailure.ruleFailure}`;
+
+          let message = this.cleanMessage(rawMessage);
 
           // Enhance message for file-level rules
-          let message = this.cleanMessage(rawMessage);
           if (location.source === 'file-level-rule') {
-            const fileName = fileIssue.filePath.split('/').pop() || 'file';
-            message = `[File-level] ${message} (affects entire ${fileName})`;
+            const fileName = filePath.split('/').pop() || 'file';
+            message = `${message} (affects entire ${fileName})`;
           }
 
           const diagnosticIssue: DiagnosticIssue = {
             file: filePath,
-            line: Math.max(0, location.startLine - 1), // Convert 1-based to 0-based for VS Code
-            column: Math.max(0, location.startColumn - 1), // Convert 1-based to 0-based for VS Code
-            endLine: Math.max(0, location.endLine - 1), // Convert 1-based to 0-based for VS Code
-            endColumn: Math.max(0, location.endColumn - 1), // Convert 1-based to 0-based for VS Code
+            line: Math.max(0, location.startLine - 1), // Convert 1-based to 0-based
+            column: Math.max(0, location.startColumn - 1), // Convert 1-based to 0-based
+            endLine: Math.max(0, location.endLine - 1), // Convert 1-based to 0-based
+            endColumn: Math.max(0, location.endColumn - 1), // Convert 1-based to 0-based
             message: message,
-            severity: this.mapSeverity(error.level),
-            ruleId: error.ruleFailure || 'unknown-rule',
-            category: error.category,
-            code: error.ruleFailure,
+            severity: this.mapSeverity(ruleFailure.level),
+            ruleId: ruleFailure.ruleFailure || 'unknown-rule',
+            category: this.extractCategory(ruleFailure),
+            code: ruleFailure.ruleFailure,
             source: 'X-Fidelity'
           };
 
-          // Preserve original XFI level and location metadata for debugging
-          (diagnosticIssue as any).originalLevel = error.level;
+          // Preserve metadata for debugging and enhanced features
+          (diagnosticIssue as any).originalLevel = ruleFailure.level;
           (diagnosticIssue as any).locationSource = location.source;
           (diagnosticIssue as any).locationConfidence =
             locationResult.confidence;
           (diagnosticIssue as any).isFileLevelRule =
             location.source === 'file-level-rule';
+          (diagnosticIssue as any).hasDetails = !!ruleFailure.details;
+          (diagnosticIssue as any).detailsKeys = ruleFailure.details
+            ? Object.keys(ruleFailure.details)
+            : [];
 
           issues.push(diagnosticIssue);
         }
       }
 
-      this.logger.debug(`Extracted ${issues.length} issues from XFI_RESULT`);
+      this.logger.info(
+        `Successfully extracted ${issues.length} diagnostic issues from XFI_RESULT`,
+        {
+          totalFiles: xfiResult.fileCount,
+          filesWithIssues: xfiResult.issueDetails.length,
+          totalIssuesInResult: xfiResult.totalIssues,
+          extractedDiagnostics: issues.length
+        }
+      );
     } catch (error) {
-      this.logger.error('Error extracting issues from XFI_RESULT:', error);
+      this.logger.error('Error extracting issues from analysis result:', {
+        error: error instanceof Error ? error.message : String(error),
+        resultType: typeof result,
+        resultKeys: result ? Object.keys(result) : 'null/undefined'
+      });
     }
 
     return issues;
   }
 
   /**
-   * Deep search for issueDetails in complex result structures
+   * Validate and extract ResultMetadata from AnalysisResult
    */
-  private deepSearchForIssueDetails(obj: any): any[] | null {
-    if (!obj || typeof obj !== 'object') {
+  private validateAndExtractResultMetadata(
+    result: AnalysisResult
+  ): ResultMetadata | null {
+    if (!result || typeof result !== 'object') {
+      this.logger.warn('Analysis result is not a valid object', {
+        resultType: typeof result
+      });
       return null;
     }
 
-    if (Array.isArray(obj.issueDetails)) {
-      return obj.issueDetails;
-    }
-
-    for (const value of Object.values(obj)) {
-      const found = this.deepSearchForIssueDetails(value);
-      if (found) {
-        return found;
+    // Check for metadata.XFI_RESULT (preferred structure)
+    if (result.metadata?.XFI_RESULT) {
+      if (this.isValidXFIResult(result.metadata.XFI_RESULT)) {
+        this.logger.debug('Found valid XFI_RESULT in result.metadata');
+        return result.metadata as ResultMetadata;
+      } else {
+        this.logger.warn('XFI_RESULT in metadata has invalid structure');
       }
     }
 
+    // Check for direct XFI_RESULT property (alternative structure)
+    if ((result as any).XFI_RESULT) {
+      if (this.isValidXFIResult((result as any).XFI_RESULT)) {
+        this.logger.debug('Found valid XFI_RESULT in result root');
+        return { XFI_RESULT: (result as any).XFI_RESULT } as ResultMetadata;
+      } else {
+        this.logger.warn('XFI_RESULT in root has invalid structure');
+      }
+    }
+
+    // Check if result itself looks like XFI_RESULT (fallback)
+    if (this.isValidXFIResult(result)) {
+      this.logger.debug('Result itself appears to be XFI_RESULT');
+      return { XFI_RESULT: result as any } as ResultMetadata;
+    }
+
+    this.logger.error(
+      'No valid XFI_RESULT structure found in analysis result',
+      {
+        hasMetadata: !!result.metadata,
+        metadataKeys: result.metadata ? Object.keys(result.metadata) : [],
+        hasXFIResult: !!(result as any).XFI_RESULT,
+        resultKeys: Object.keys(result),
+        resultSample: JSON.stringify(result).substring(0, 200)
+      }
+    );
+
     return null;
+  }
+
+  /**
+   * Validate XFI_RESULT structure against expected fields
+   */
+  private isValidXFIResult(xfiResult: any): boolean {
+    if (!xfiResult || typeof xfiResult !== 'object') {
+      return false;
+    }
+
+    // Check required fields according to ResultMetadata.XFI_RESULT
+    const requiredFields = [
+      'archetype',
+      'repoPath',
+      'repoUrl',
+      'xfiVersion',
+      'fileCount',
+      'totalIssues',
+      'warningCount',
+      'errorCount',
+      'fatalityCount',
+      'exemptCount',
+      'startTime',
+      'finishTime',
+      'durationSeconds',
+      'issueDetails'
+    ];
+
+    const missingFields = requiredFields.filter(field => !(field in xfiResult));
+
+    if (missingFields.length > 0) {
+      this.logger.debug('XFI_RESULT missing required fields', {
+        missingFields,
+        availableFields: Object.keys(xfiResult)
+      });
+      return false;
+    }
+
+    // Validate types of critical fields
+    const typeValidations = [
+      { field: 'archetype', type: 'string' },
+      { field: 'fileCount', type: 'number' },
+      { field: 'totalIssues', type: 'number' },
+      { field: 'issueDetails', type: 'object', isArray: true }
+    ];
+
+    for (const validation of typeValidations) {
+      const value = xfiResult[validation.field];
+      const actualType = typeof value;
+
+      if (validation.isArray && !Array.isArray(value)) {
+        this.logger.debug(
+          `XFI_RESULT field ${validation.field} should be array but is ${actualType}`
+        );
+        return false;
+      } else if (!validation.isArray && actualType !== validation.type) {
+        this.logger.debug(
+          `XFI_RESULT field ${validation.field} should be ${validation.type} but is ${actualType}`
+        );
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Validate ScanResult structure
+   */
+  private isValidScanResult(scanResult: any): boolean {
+    return (
+      scanResult &&
+      typeof scanResult === 'object' &&
+      typeof scanResult.filePath === 'string' &&
+      Array.isArray(scanResult.errors)
+    );
+  }
+
+  /**
+   * Validate RuleFailure structure
+   */
+  private isValidRuleFailure(ruleFailure: any): boolean {
+    return (
+      ruleFailure &&
+      typeof ruleFailure === 'object' &&
+      typeof ruleFailure.ruleFailure === 'string' &&
+      (ruleFailure.level === undefined || typeof ruleFailure.level === 'string')
+    );
+  }
+
+  /**
+   * Extract category from rule failure with enhanced logic
+   */
+  private extractCategory(ruleFailure: any): string | undefined {
+    // Direct category field
+    if (ruleFailure.category) {
+      return ruleFailure.category;
+    }
+
+    // Extract from rule name patterns
+    const ruleName = ruleFailure.ruleFailure || '';
+
+    // Common category patterns
+    if (ruleName.includes('security') || ruleName.includes('sensitive')) {
+      return 'Security';
+    }
+    if (ruleName.includes('performance') || ruleName.includes('optimization')) {
+      return 'Performance';
+    }
+    if (
+      ruleName.includes('maintainability') ||
+      ruleName.includes('complexity')
+    ) {
+      return 'Maintainability';
+    }
+    if (ruleName.includes('dependency') || ruleName.includes('version')) {
+      return 'Dependencies';
+    }
+    if (ruleName.includes('style') || ruleName.includes('format')) {
+      return 'Code Style';
+    }
+    if (ruleName.includes('architecture') || ruleName.includes('structure')) {
+      return 'Architecture';
+    }
+
+    // Extract from details message
+    const message = ruleFailure.details?.message || '';
+    if (message.toLowerCase().includes('security')) {
+      return 'Security';
+    }
+    if (message.toLowerCase().includes('performance')) {
+      return 'Performance';
+    }
+
+    return 'General';
   }
 
   /**
@@ -551,8 +739,6 @@ export class DiagnosticProvider implements vscode.Disposable {
    */
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
     try {
-      const fs = require('fs');
-
       // CRITICAL FIX: Validate file path before processing
       if (!filePath || typeof filePath !== 'string') {
         this.logger.warn('Invalid file path provided', { filePath });
@@ -593,7 +779,7 @@ export class DiagnosticProvider implements vscode.Disposable {
               );
               return vscode.Uri.file(candidatePath);
             }
-          } catch (error) {
+          } catch (_error) {
             // Continue to next candidate
           }
         }

@@ -58,6 +58,10 @@ export interface ExtensionConfig {
   customPlugins: string[]; // Additional plugin paths
   ruleOverrides: Record<string, RuleOverride>; // Rule-specific overrides
 
+  // Cache Settings
+  cacheResults: boolean; // Enable result caching
+  cacheTTL: number; // Cache time-to-live in minutes
+
   // Enhanced Logging Settings
   logColorization: boolean; // Enable ANSI color codes in output
   logTimestampFormat: 'iso' | 'short' | 'none'; // Timestamp format preference
@@ -187,6 +191,10 @@ export class ConfigManager {
       debugMode: workspaceConfig.get('debugMode', false),
       customPlugins: workspaceConfig.get('customPlugins', []),
       ruleOverrides: workspaceConfig.get('ruleOverrides', {}),
+
+      // Cache Settings
+      cacheResults: workspaceConfig.get('cacheResults', true),
+      cacheTTL: workspaceConfig.get('cacheTTL', 30),
 
       // Enhanced Logging Settings
       logColorization: workspaceConfig.get('logColorization', false),

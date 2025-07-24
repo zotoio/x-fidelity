@@ -42,7 +42,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   private initializeCLISpawner(): void {
     try {
       this.cliSpawner = createCLISpawner();
-    } catch (error) {
+    } catch (_error) {
       this.cliSpawner = createCLISpawner();
     }
   }
@@ -111,7 +111,6 @@ export class CLIAnalysisManager implements IAnalysisEngine {
     batchSize: number = 50
   ): Promise<void> {
     for (let i = 0; i < files.length; i += batchSize) {
-      const batch = files.slice(i, i + batchSize);
       this.logger.debug(
         `Processing batch ${i / batchSize + 1} of ${Math.ceil(files.length / batchSize)}`
       );

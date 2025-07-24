@@ -165,7 +165,7 @@ export function setupTestEnvironmentPatching(): void {
         try {
           console.log('🔄 Restoring original vscode.env.openExternal function');
           (vscode.env as any).openExternal = originalOpenExternal;
-        } catch (restoreError) {
+        } catch (_restoreError) {
           console.log(
             '⚠️ Could not restore original openExternal function (property is read-only)'
           );
