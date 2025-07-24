@@ -6,8 +6,7 @@ import { suite, test, suiteSetup, suiteTeardown, setup } from 'mocha';
 import {
   ensureExtensionActivated,
   getTestWorkspace,
-  runCLIAnalysis,
-  runExtensionAnalysis,
+
   runFreshAnalysisForTest,
   waitFor,
   executeCommandSafely
@@ -693,55 +692,5 @@ suite('Diagnostic Validation & Problems Panel Integration Tests', () => {
     assert.ok(xfiDiags.length > 0, 'Should detect issues in partial analysis');
   });
 
-  // Helper function to extract issues with line numbers for comparison
-  function extractIssuesWithLineNumbers(result: ResultMetadata): Array<{
-    file: string;
-    line: number;
-    column?: number;
-    rule: string;
-    message: string;
-    severity: string;
-  }> {
-    const issues: Array<{
-      file: string;
-      line: number;
-      column?: number;
-      rule: string;
-      message: string;
-      severity: string;
-    }> = [];
 
-    for (const detail of result.XFI_RESULT.issueDetails) {
-      for (const error of detail.errors) {
-        if (error.details?.lineNumber) {
-          issues.push({
-            file: detail.filePath,
-            line: error.details.lineNumber,
-            column: error.details.columnNumber,
-            rule: error.ruleFailure,
-            message: error.details.message || error.ruleFailure,
-            severity: error.level || 'info'
-          });
-        }
-      }
-    }
-
-    return issues;
-  }
-
-  // Helper function to extract severity mapping for comparison
-  function extractSeverityMapping(
-    result: ResultMetadata
-  ): Record<string, string> {
-    const severityMap: Record<string, string> = {};
-
-    for (const detail of result.XFI_RESULT.issueDetails) {
-      for (const error of detail.errors) {
-        const key = `${detail.filePath}:${error.ruleFailure}:${error.details?.lineNumber || 0}`;
-        severityMap[key] = error.level || 'info';
-      }
-    }
-
-    return severityMap;
-  }
 });

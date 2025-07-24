@@ -115,7 +115,6 @@ export class XFidelityCodeActionProvider implements vscode.CodeActionProvider {
     diagnostic: vscode.Diagnostic
   ): vscode.WorkspaceEdit | null {
     const edit = new vscode.WorkspaceEdit();
-    const text = document.getText(diagnostic.range);
 
     // Extract the missing import name from the diagnostic message
     const importMatch = diagnostic.message.match(/['"`]([^'"`]+)['"`]/);

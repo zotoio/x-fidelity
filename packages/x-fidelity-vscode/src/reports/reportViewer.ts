@@ -878,7 +878,7 @@ export class ReportViewer implements vscode.Disposable {
           const document = await vscode.workspace.openTextDocument(fileUri);
           await vscode.window.showTextDocument(document);
           return;
-        } catch (error) {
+        } catch (_error) {
           vscode.window.showWarningMessage(
             `Global check report not found. Details: ${filePath}`
           );

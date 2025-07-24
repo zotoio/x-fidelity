@@ -950,7 +950,7 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
    * ENHANCEMENT: Fix issue from diagnostic context (hover tooltip)
    */
   private async fixIssueFromDiagnostic(diagnosticContext: any): Promise<void> {
-    const { ruleId, message, fixable, file, line } = diagnosticContext;
+    const { ruleId, message, fixable } = diagnosticContext;
 
     if (!fixable) {
       vscode.window.showInformationMessage(
@@ -1029,8 +1029,8 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
    */
   private async generateFixSuggestions(
     ruleId: string,
-    message: string,
-    context: any
+    _message: string,
+    _context: any
   ): Promise<any[]> {
     // This would ideally integrate with the CLI's fix capabilities
     // For now, provide common fix patterns
@@ -1077,7 +1077,7 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
   /**
    * Apply a fix to the code
    */
-  private async applyFix(fix: any, context: any): Promise<void> {
+  private async applyFix(fix: any, _context: any): Promise<void> {
     // This would integrate with VSCode's edit capabilities
     vscode.window.showInformationMessage(`Applying fix: ${fix.title}`, {
       modal: false

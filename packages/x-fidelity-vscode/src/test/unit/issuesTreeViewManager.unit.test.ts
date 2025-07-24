@@ -38,7 +38,7 @@ jest.mock('vscode', () => {
 import { IssuesTreeViewManager } from '../../ui/treeView/issuesTreeViewManager';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
 import { ConfigManager } from '../../configuration/configManager';
-import * as vscode from 'vscode';
+
 
 describe('IssuesTreeViewManager Unit Tests', () => {
   let manager: IssuesTreeViewManager;

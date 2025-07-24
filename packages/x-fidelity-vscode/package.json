@@ -2,7 +2,7 @@
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity",
   "description": "VSCode extension for X-Fidelity code quality analysis real-time diagnostics, and comprehensive UI integration",
-  "version": "4.2.4",
+  "version": "4.2.5",
   "publisher": "zotoio",
   "private": true,
   "license": "MIT",

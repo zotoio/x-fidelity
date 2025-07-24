@@ -34,7 +34,7 @@ export class AnalysisEngineFactory {
   /**
    * Validate CLI analysis engine configuration
    */
-  static async validateConfiguration(configManager: ConfigManager): Promise<{
+  static async validateConfiguration(_configManager: ConfigManager): Promise<{
     isValid: boolean;
     errors: string[];
     warnings: string[];

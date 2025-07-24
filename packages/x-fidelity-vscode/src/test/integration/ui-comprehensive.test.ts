@@ -1,18 +1,15 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as path from 'path';
+
 import { suite, test, suiteSetup, suiteTeardown } from 'mocha';
 import {
   ensureExtensionActivated,
   getTestWorkspace,
   executeCommandSafely,
-  waitFor,
-  waitForAnalysisCompletion,
+
   getAnalysisResults,
   validateWorkspaceStructure,
-  ensureXfiTreeAndProblemsPopulated,
-  runInitialAnalysis,
-  clearAnalysisCache
+  runInitialAnalysis
 } from '../helpers/testHelpers';
 import { ScreenshotHelper } from '../helpers/screenshotHelper';
 
@@ -43,7 +40,7 @@ async function logAndCaptureOnError(testName: string, error: any) {
 }
 
 // Wrapper function for robust testing with shared analysis results
-function robustTest(testName: string, testFn: any) {
+function robustTest(_testName: string, testFn: any) {
   return async function (this: Mocha.Context) {
     await testFn.call(this);
   };
@@ -232,7 +229,7 @@ suite('Comprehensive UI Integration Tests', () => {
 
       const totalXfidelityDiagnostics = diagnosticEntries
         .flatMap(
-          ([uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => diagnostics
+          ([_uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => diagnostics
         )
         .filter((d: vscode.Diagnostic) => d.source === 'X-Fidelity').length;
 

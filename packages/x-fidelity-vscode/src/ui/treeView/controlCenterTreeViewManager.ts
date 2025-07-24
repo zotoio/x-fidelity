@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
+
 import {
   ControlCenterTreeProvider,
   type ControlCenterTreeItem
 } from './controlCenterTreeProvider';
-import { ExportManager } from '../../reports/exportManager';
-import { ReportHistoryManager } from '../../reports/reportHistoryManager';
+
 import { createComponentLogger } from '../../utils/globalLogger';
 
 const logger = createComponentLogger('ControlCenter');

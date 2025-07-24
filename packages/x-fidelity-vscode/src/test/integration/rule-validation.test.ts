@@ -3,10 +3,7 @@ import * as vscode from 'vscode';
 import { suite, test, suiteSetup, setup } from 'mocha';
 import {
   ensureExtensionActivated,
-  executeCommandSafely,
-  waitFor,
-  getAnalysisResults,
-  runInitialAnalysis,
+
   runFreshAnalysisForTest,
   getTestWorkspace
 } from '../helpers/testHelpers';
@@ -19,7 +16,7 @@ import {
  * issues across various rule types.
  */
 suite('Rule Validation Integration Tests', () => {
-  let testWorkspace: vscode.WorkspaceFolder;
+
   let analysisResults: any;
 
   // Expected issues based on CLI analysis results  
@@ -34,14 +31,14 @@ suite('Rule Validation Integration Tests', () => {
   };
 
   const EXPECTED_TOTAL_ISSUES = 26; // Actual CLI output: totalIssues:26
-  const EXPECTED_WARNING_COUNT = 19; // Actual CLI output: warningCount:19  
-  const EXPECTED_FATALITY_COUNT = 2; // Actual CLI output: fatalityCount:2
-  const EXPECTED_EXEMPT_COUNT = 5; // Actual CLI output: exemptCount:5
+  // const EXPECTED_WARNING_COUNT = 19; // Actual CLI output: warningCount:19  
+  // const EXPECTED_FATALITY_COUNT = 2; // Actual CLI output: fatalityCount:2
+  // const EXPECTED_EXEMPT_COUNT = 5; // Actual CLI output: exemptCount:5
 
   suiteSetup(async function () {
     this.timeout(120000); // 2 minutes for full setup
     await ensureExtensionActivated();
-    testWorkspace = getTestWorkspace();
+    getTestWorkspace();
     await new Promise(resolve => setTimeout(resolve, 3000));
   });
 

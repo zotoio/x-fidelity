@@ -14,12 +14,11 @@ import {
  * without running fresh analysis, to understand what's actually being detected.
  */
 suite('Diagnostic Detection Test', () => {
-  let testWorkspace: vscode.WorkspaceFolder;
 
   suiteSetup(async function () {
     this.timeout(30000);
     await ensureExtensionActivated();
-    testWorkspace = getTestWorkspace();
+    getTestWorkspace();
     await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for any existing analysis
   });
 

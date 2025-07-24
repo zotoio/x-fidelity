@@ -4,21 +4,17 @@ import * as fs from 'fs';
 import type { AnalysisResult } from '../analysis/types';
 import { ConfigManager } from '../configuration/configManager';
 import { createComponentLogger } from '../utils/globalLogger';
-import type {
-  ResultMetadata,
-  ScanResult,
-  RuleFailure
-} from '@x-fidelity/types';
+import type { ResultMetadata } from '@x-fidelity/types';
 import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
 import { isTestEnvironment } from '../utils/testDetection';
 
-// Extended interface for diagnostics with X-Fidelity metadata
-interface ExtendedDiagnostic extends vscode.Diagnostic {
-  issueId?: string;
-  ruleId?: string;
-  category?: string;
-  documentation?: string;
-}
+// Extended interface for diagnostics with X-Fidelity metadata (currently unused)
+// interface ExtendedDiagnostic extends vscode.Diagnostic {
+//   issueId?: string;
+//   ruleId?: string;
+//   category?: string;
+//   documentation?: string;
+// }
 
 // Internal interface for processing issues from analysis results
 interface DiagnosticIssue {
@@ -39,13 +35,13 @@ interface DiagnosticIssue {
   isFileLevelRule?: boolean;
 }
 
-// Internal issue metadata type for location resolution
-interface IssueLocation {
-  file: string;
-  line?: number;
-  column?: number;
-  snippet?: string;
-}
+// Internal issue metadata type for location resolution (currently unused)
+// interface IssueLocation {
+//   file: string;
+//   line?: number;
+//   column?: number;
+//   snippet?: string;
+// }
 
 /**
  * Enhanced Diagnostic Provider implementing VS Code best practices
@@ -783,7 +779,7 @@ export class DiagnosticProvider implements vscode.Disposable {
               );
               return vscode.Uri.file(candidatePath);
             }
-          } catch (error) {
+          } catch (_error) {
             // Continue to next candidate
           }
         }

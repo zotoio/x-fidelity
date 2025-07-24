@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as fsAsync from 'fs/promises';
 import { createComponentLogger } from './globalLogger';
-import { getAnalysisTargetDirectory } from './workspaceUtils';
+
 import type { ResultMetadata } from '@x-fidelity/types';
 
 const logger = createComponentLogger('ResultFileManager');

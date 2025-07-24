@@ -1,10 +1,8 @@
 import * as assert from 'assert';
-import { ChildProcess, spawn } from 'child_process';
-import { join } from 'path';
+import { spawn } from 'child_process';
 import { suite, test, setup, teardown } from 'mocha';
 import { CLISpawner, CLISpawnOptions } from '../../utils/cliSpawner';
-import type { AnalysisResult } from '../../analysis/types';
-import * as path from 'path';
+
 
 // FIXED: Import fs and use module replacement approach
 const Module = require('module');
@@ -14,9 +12,9 @@ const originalRequire = Module.prototype.require;
 const originalSpawn = spawn;
 
 // Mock console methods to capture output
-const mockConsoleLog = (...args: any[]) => {};
-const mockConsoleWarn = (...args: any[]) => {};
-const mockConsoleError = (...args: any[]) => {};
+const mockConsoleLog = (..._args: any[]) => {};
+const mockConsoleWarn = (..._args: any[]) => {};
+const mockConsoleError = (..._args: any[]) => {};
 const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
@@ -28,17 +26,17 @@ const originalStdoutWrite = process.stdout.write;
 // Mock EventEmitter for ChildProcess
 class MockChildProcess {
   stdout = {
-    on: (...args: any[]) => {},
-    pipe: (...args: any[]) => {},
-    setEncoding: (...args: any[]) => {}
+    on: (..._args: any[]) => {},
+    pipe: (..._args: any[]) => {},
+    setEncoding: (..._args: any[]) => {}
   };
   stderr = {
-    on: (...args: any[]) => {},
-    pipe: (...args: any[]) => {},
-    setEncoding: (...args: any[]) => {}
+    on: (..._args: any[]) => {},
+    pipe: (..._args: any[]) => {},
+    setEncoding: (..._args: any[]) => {}
   };
-  on = (...args: any[]) => {};
-  kill = (...args: any[]) => {};
+  on = (..._args: any[]) => {};
+  kill = (..._args: any[]) => {};
   pid = 12345;
   exitCode = null;
   signalCode = null;
@@ -110,7 +108,7 @@ suite('CLI Spawner Logging Integration Tests', () => {
     mockChildProcess = new MockChildProcess();
     
     // Mock spawn function
-    mockSpawn = (cmd: any, args: any, options: any) => {
+    mockSpawn = (_cmd: any, _args: any, _options: any) => {
       return mockChildProcess as any;
     };
     

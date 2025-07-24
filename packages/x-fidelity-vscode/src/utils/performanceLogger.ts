@@ -1,4 +1,3 @@
-import * as vscode from 'vscode';
 import { createComponentLogger } from './globalLogger';
 
 interface PerformanceMetric {
