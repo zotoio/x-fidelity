@@ -14,10 +14,10 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html', 'json'],
   coverageThreshold: {
     global: {
-      statements: 50,
-      branches: 45,
-      functions: 55,
-      lines: 50
+      statements: 52.9,
+      branches: 47.7,
+      functions: 55.9,
+      lines: 52.5
     }
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
