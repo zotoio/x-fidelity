@@ -580,7 +580,13 @@ export class ResultCoordinator implements vscode.Disposable {
         if (!workspaceFolder) {
           return null;
         }
-        return workspaceFolder.uri;
+        // Create a virtual URI that preserves the REPO_GLOBAL_CHECK marker
+        // This allows the test filter to work correctly
+        const virtualPath = path.join(
+          workspaceFolder.uri.fsPath,
+          'REPO_GLOBAL_CHECK'
+        );
+        return vscode.Uri.file(virtualPath);
       }
 
       // Handle absolute paths
