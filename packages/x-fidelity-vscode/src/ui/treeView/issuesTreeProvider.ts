@@ -211,7 +211,7 @@ export class IssuesTreeProvider
 
   private buildSeverityTree(): void {
     const severityGroups = this.groupBy(this.issues, issue => issue.severity);
-    const severityOrder = ['error', 'warning', 'info', 'hint', 'exempt'];
+    const severityOrder = ['error', 'warning', 'info', 'hint', 'exempt', 'unhandled'];
 
     for (const severity of severityOrder) {
       if (!severityGroups[severity]?.length) {
@@ -219,11 +219,16 @@ export class IssuesTreeProvider
       }
 
       const issues = severityGroups[severity];
+      const displayLabel = severity === 'unhandled' ? 'UNHANDLED' : severity.toUpperCase();
+      const tooltip = severity === 'unhandled' 
+        ? `Issues that could not be converted to VSCode diagnostics`
+        : `${severity.toUpperCase()}: ${issues.length} issue${issues.length !== 1 ? 's' : ''}`;
+
       const groupNode = this.createVirtualNode({
         id: `severity-${severity}`,
-        label: severity.toUpperCase(),
+        label: displayLabel,
         description: `${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
-        tooltip: `${severity.toUpperCase()}: ${issues.length} issue${issues.length !== 1 ? 's' : ''}`,
+        tooltip: tooltip,
         iconPath: this.getSeverityIcon(severity),
         contextValue: 'issueGroup',
         collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
@@ -465,6 +470,11 @@ export class IssuesTreeProvider
           'shield',
           new vscode.ThemeColor('charts.purple')
         );
+      case 'unhandled':
+        return new vscode.ThemeIcon(
+          'question',
+          new vscode.ThemeColor('problemsWarningIcon.foreground')
+        );
       default:
         return new vscode.ThemeIcon('circle-outline');
     }
@@ -517,6 +527,7 @@ export class IssuesTreeProvider
       info: 0,
       hint: 0,
       exempt: 0,
+      unhandled: 0,
       fixable: 0,
       exempted: 0
     };
@@ -537,6 +548,9 @@ export class IssuesTreeProvider
           break;
         case 'exempt':
           stats.exempt++;
+          break;
+        case 'unhandled':
+          stats.unhandled++;
           break;
       }
 

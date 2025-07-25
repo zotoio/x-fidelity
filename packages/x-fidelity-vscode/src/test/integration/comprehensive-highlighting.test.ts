@@ -92,6 +92,15 @@ suite('Comprehensive Highlighting Integration Tests', () => {
     });
 
          assert.ok(totalHighlighted > 0);
+     
+     // DEBUGGING: Show validation errors before assertion
+     if (validationErrors.length > 0) {
+       console.log(`\n❌ DETAILED VALIDATION ERRORS:`);
+       validationErrors.forEach((error, index) => {
+         console.log(`   ${index + 1}. ${error}`);
+       });
+     }
+     
      assert.strictEqual(validationErrors.length, 0, `Found ${validationErrors.length} validation errors`);
   });
 

@@ -28,4 +28,40 @@ export interface ProcessedIssue {
   fixable: boolean;
   exempted: boolean;
   dateFound: number;
+  isUnhandled?: boolean;
+  failureReason?: string;
+  originalData?: any;
+}
+
+// New interface for tracking failed diagnostic conversions
+export interface FailedIssue {
+  originalData: any;
+  filePath: string;
+  ruleId: string;
+  message: string;
+  failureReason: string;
+  severity: string;
+  rawError?: any;
+  category?: string;
+}
+
+// New interface for comprehensive processed analysis results
+export interface ProcessedAnalysisResult {
+  totalIssues: number;
+  successfulIssues: number;
+  failedIssuesCount: number;
+  issueBreakdown: {
+    error: number;
+    warning: number;
+    info: number;
+    hint: number;
+    exempt: number;
+    unhandled: number;
+  };
+  diagnostics: Map<string, any[]>;
+  processedIssues: ProcessedIssue[];
+  failedIssues: FailedIssue[];
+  metadata: any;
+  timestamp: number;
+  duration: number;
 }

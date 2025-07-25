@@ -5,7 +5,7 @@ import {
   type GroupingMode,
   type IssueTreeItem
 } from './issuesTreeProvider';
-import type { ProcessedIssue } from '../../types/issues';
+import type { ProcessedIssue, ProcessedAnalysisResult, FailedIssue } from '../../types/issues';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
 import { ConfigManager } from '../../configuration/configManager';
 import { createComponentLogger } from '../../utils/globalLogger';
@@ -301,6 +301,67 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         'Failed to refresh X-Fidelity issues tree view'
       );
     }
+  }
+
+  /**
+   * NEW: Direct update method for ResultCoordinator pattern
+   * Updates tree view directly from pre-processed results including unhandled issues
+   */
+  public updateFromProcessedResult(processed: ProcessedAnalysisResult): void {
+    try {
+      logger.info('Updating tree view from processed result', {
+        totalIssues: processed.totalIssues,
+        successfulIssues: processed.successfulIssues,
+        failedIssues: processed.failedIssues,
+        breakdown: processed.issueBreakdown
+      });
+
+      // Combine successful and failed (unhandled) issues
+              const failedIssuesArray = processed.failedIssues;
+      this.currentIssues = [
+        ...processed.processedIssues,
+        ...this.convertFailedToUnhandled(failedIssuesArray)
+      ];
+
+      // Update tree data provider
+      this.treeDataProvider.setIssues(this.currentIssues);
+      this.updateTreeViewTitle();
+
+      logger.info(
+        `Tree view updated with ${this.currentIssues.length} total issues ` +
+                    `(${processed.successfulIssues} successful, ${processed.failedIssuesCount} unhandled)`
+      );
+
+      // NO EVENT EMISSION - direct update pattern eliminates events
+
+    } catch (error) {
+      logger.error('Failed to update tree view from processed result', error);
+      vscode.window.showErrorMessage(
+        'Failed to update X-Fidelity issues tree view from processed result'
+      );
+    }
+  }
+
+  /**
+   * Convert failed diagnostic conversions to unhandled issues for tree display
+   */
+  private convertFailedToUnhandled(failedIssues: FailedIssue[]): ProcessedIssue[] {
+    return failedIssues.map((failed, index) => ({
+      id: `unhandled-${index}-${failed.ruleId}`,
+      file: failed.filePath,
+      rule: failed.ruleId,
+      severity: 'unhandled',
+      message: `${failed.message} (${failed.failureReason})`,
+      line: 1, // Default to line 1 for unhandled issues
+      column: 1,
+      category: 'unhandled',
+      fixable: false,
+      exempted: false,
+      isUnhandled: true,
+      failureReason: failed.failureReason,
+      originalData: failed.originalData,
+      dateFound: Date.now()
+    }));
   }
 
   private processDiagnostics(

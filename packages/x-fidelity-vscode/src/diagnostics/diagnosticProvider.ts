@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import type { AnalysisResult } from '../analysis/types';
+import type { ProcessedAnalysisResult, FailedIssue } from '../types/issues';
 import { ConfigManager } from '../configuration/configManager';
 import { createComponentLogger } from '../utils/globalLogger';
 import type { ResultMetadata } from '@x-fidelity/types';
@@ -199,6 +200,87 @@ export class DiagnosticProvider implements vscode.Disposable {
     return new Promise(resolve => {
       setTimeout(resolve, 50); // Small delay to ensure diagnostics are fully set
     });
+  }
+
+  /**
+   * NEW: Direct update method for ResultCoordinator pattern
+   * Updates diagnostics directly from pre-processed results to ensure consistent counts
+   */
+  public async updateFromProcessedResult(
+    processed: ProcessedAnalysisResult
+  ): Promise<void> {
+    const startTime = performance.now();
+
+    const diagnosticFileCount =
+      processed.diagnostics instanceof Map
+        ? processed.diagnostics.size
+        : Object.keys(processed.diagnostics).length;
+
+    this.logger.info('Updating diagnostics from processed result', {
+      totalIssues: processed.totalIssues,
+      successfulIssues: processed.successfulIssues,
+      failedIssues: processed.failedIssues,
+      diagnosticFiles: diagnosticFileCount
+    });
+
+    try {
+      // Clear existing diagnostics
+      this.diagnosticCollection.clear();
+
+      // Convert diagnostic map to VSCode format and set directly
+      const diagnosticEntries =
+        processed.diagnostics instanceof Map
+          ? Array.from(processed.diagnostics.entries())
+          : Object.entries(processed.diagnostics);
+
+      for (const [uriString, diagnostics] of diagnosticEntries) {
+        try {
+          const uri = vscode.Uri.parse(uriString);
+          // Ensure diagnostics are properly typed
+          const validDiagnostics = Array.isArray(diagnostics)
+            ? (diagnostics as vscode.Diagnostic[])
+            : [];
+          this.diagnosticCollection.set(uri, validDiagnostics);
+        } catch (error) {
+          this.logger.warn('Failed to parse URI for diagnostics', {
+            uriString,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+
+      // Update internal state
+      this.issueCount = processed.totalIssues;
+      this.lastUpdateTime = performance.now() - startTime;
+
+      // Store failed issues for potential retrieval
+      (this as any).failedIssues = processed.failedIssues;
+
+      this.logger.info('Diagnostics updated from processed result', {
+        issueCount: this.issueCount,
+        fileCount: diagnosticFileCount,
+        failedIssues: processed.failedIssuesCount,
+        updateTime: `${this.lastUpdateTime.toFixed(2)}ms`
+      });
+
+      // Ensure diagnostics settle
+      await this.waitForDiagnosticsToSettle();
+
+      // NO EVENT EMISSION - direct update pattern eliminates events
+    } catch (error) {
+      this.logger.error(
+        'Failed to update diagnostics from processed result',
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get failed issues that couldn't be converted to diagnostics
+   */
+  public getFailedIssues(): FailedIssue[] {
+    return (this as any).failedIssues || [];
   }
 
   /**

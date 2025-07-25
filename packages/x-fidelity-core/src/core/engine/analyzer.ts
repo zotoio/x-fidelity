@@ -35,6 +35,27 @@ import { createTimingTracker } from '../../utils/timingUtils';
 import { logger } from '../../utils/logger';
 import { ExecutionContext } from '../../utils/executionContext';
 
+/**
+ * Format date with local timezone offset (e.g., "2024-01-01T00:00:00+10:00")
+ */
+function formatDateWithTimezone(date: Date): string {
+    const offset = -date.getTimezoneOffset();
+    const offsetHours = Math.floor(Math.abs(offset) / 60);
+    const offsetMinutes = Math.abs(offset) % 60;
+    const offsetSign = offset >= 0 ? '+' : '-';
+    const offsetString = `${offsetSign}${offsetHours.toString().padStart(2, '0')}:${offsetMinutes.toString().padStart(2, '0')}`;
+    
+    // Get the date components in local time
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetString}`;
+}
+
 export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<ResultMetadata> {
     // PHASE 1: Initialize logger provider FIRST before any other operations
     // This ensures universal logging availability for all plugins and components
@@ -445,8 +466,10 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 },
                 factMetrics: factMetricsTracker.getMetrics(),
                 options,
-                startTime: telemetryData.startTime,
-                finishTime,
+                startTime: formatDateWithTimezone(new Date(telemetryData.startTime)),
+                finishTime: formatDateWithTimezone(new Date(finishTime)),
+                startTimeStamp: telemetryData.startTime,
+                finishTimeStamp: finishTime,
                 durationSeconds: (finishTime - telemetryData.startTime) / 1000,
                 xfiVersion: passedVersion || version, // Use passed version from CLI, fallback to core version
                 archetype,

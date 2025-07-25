@@ -361,8 +361,10 @@ export interface ResultMetadata {
             [factName: string]: FactMetrics;
         };
         options: any;
-        startTime: number;
-        finishTime: number;
+        startTime: string;
+        finishTime: string;
+        startTimeStamp: number;
+        finishTimeStamp: number;
         durationSeconds: number;
         xfiVersion: string;
         archetype: string;

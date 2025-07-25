@@ -11,14 +11,7 @@
             {
                 "fact": "functionComplexity",
                 "params": {
-                    "resultFact": "complexityResult",
-                    "thresholds": {
-                        "cyclomaticComplexity": 20,
-                        "cognitiveComplexity": 30,
-                        "nestingDepth": 10,
-                        "parameterCount": 5,
-                        "returnCount": 10
-                    }
+                    "resultFact": "complexityResult"
                 },
                 "operator": "astComplexity",
                 "value": {

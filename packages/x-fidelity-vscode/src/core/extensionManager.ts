@@ -15,6 +15,7 @@ import { LoggerProvider } from '@x-fidelity/core';
 import { EXECUTION_MODES } from '@x-fidelity/types';
 import { showCLIDiagnosticsDialog } from '../utils/cliDiagnostics';
 import { CommandDelegationRegistry } from './commandDelegationRegistry';
+import { ResultCoordinator } from './resultCoordinator';
 
 export class ExtensionManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
@@ -28,6 +29,7 @@ export class ExtensionManager implements vscode.Disposable {
   private issuesTreeViewManager: IssuesTreeViewManager;
   private controlCenterTreeViewManager: ControlCenterTreeViewManager;
   private commandDelegationRegistry: CommandDelegationRegistry;
+  private resultCoordinator: ResultCoordinator;
 
   private periodicAnalysisTimer?: NodeJS.Timeout;
   private isPeriodicAnalysisRunning = false;
@@ -89,6 +91,10 @@ export class ExtensionManager implements vscode.Disposable {
       );
       this.logger.debug('✅ CommandDelegationRegistry initialized');
 
+      // NEW: Initialize ResultCoordinator after all components are created
+      this.resultCoordinator = new ResultCoordinator();
+      this.logger.debug('✅ ResultCoordinator initialized');
+
       // PHASE 3: Plugin initialization is handled by the spawned CLI
       // No need to initialize plugins in the extension itself
 
@@ -106,50 +112,32 @@ export class ExtensionManager implements vscode.Disposable {
 
   private setupEventListeners(): void {
     this.disposables.push(
-      this.analysisEngine.onComplete(result => {
-        // Validate result structure
-        if (!result.summary) {
-          this.logger.error('Analysis result missing summary object', {
-            result
-          });
-          return;
-        }
+      this.analysisEngine.onComplete(async result => {
+        try {
+          // NEW: Use ResultCoordinator for direct, consistent updates
+          const processed =
+            await this.resultCoordinator.processAndDistributeResults(result, {
+              diagnosticProvider: this.diagnosticProvider,
+              issuesTreeViewManager: this.issuesTreeViewManager,
+              statusBarProvider: this.statusBarProvider
+            });
 
-        const totalIssues = result.summary.totalIssues || 0;
-        const filesAnalyzed = result.summary.filesAnalyzed || 0;
-
-        this.logger.info(
-          `📊 Analysis completed: ${totalIssues} issues found across ${filesAnalyzed} files`
-        );
-
-        this.issuesTreeViewManager.refresh();
-
-        // ENHANCEMENT: Only show notifications for manual analysis, not automatic startup analysis
-        if (this.lastTriggerSource === 'manual') {
-          if (totalIssues > 0) {
-            vscode.window
-              .showInformationMessage(
-                `X-Fidelity found ${totalIssues} issues across ${filesAnalyzed} files`,
-                'View Issues'
-              )
-              .then(choice => {
-                if (choice === 'View Issues') {
-                  // Open the X-Fidelity sidebar and refresh the tree view
-                  vscode.commands.executeCommand(
-                    'workbench.view.extension.xfidelity'
-                  );
-                  this.issuesTreeViewManager.refresh();
-                }
-              });
-          } else {
-            vscode.window.showInformationMessage(
-              'X-Fidelity analysis completed - no issues found! 🎉'
-            );
-          }
-        } else {
-          // For automatic analysis, just log the results without user notification
           this.logger.info(
-            `🔍 Automatic analysis completed: ${totalIssues} issues found across ${filesAnalyzed} files`
+            `📊 Analysis completed and distributed: ${processed.totalIssues} total issues ` +
+              `(${processed.successfulIssues} successful, ${processed.failedIssuesCount} unhandled)`
+          );
+
+          // Show user notifications based on trigger source and results
+          this.showAnalysisCompleteNotification(processed);
+        } catch (error) {
+          this.logger.error(
+            'Failed to process and distribute analysis results',
+            error
+          );
+
+          // Fallback to basic notification
+          vscode.window.showErrorMessage(
+            `X-Fidelity analysis failed to process results: ${error instanceof Error ? error.message : 'Unknown error'}`
           );
         }
       })
@@ -1416,6 +1404,45 @@ Check Output Console (X-Fidelity) for full details.`;
     };
   }
 
+  /**
+   * Show user notifications after analysis completion based on trigger source and results
+   */
+  private showAnalysisCompleteNotification(processed: any): void {
+    try {
+      const totalIssues = processed.totalIssues || 0;
+      const unhandledIssues = processed.failedIssuesCount || 0;
+
+      // ENHANCEMENT: Only show notifications for manual analysis, not automatic startup analysis
+      if (this.lastTriggerSource === 'manual') {
+        if (totalIssues > 0) {
+          const message = `X-Fidelity found ${totalIssues} issues${unhandledIssues > 0 ? ` (${unhandledIssues} unhandled)` : ''}`;
+          vscode.window
+            .showInformationMessage(message, 'View Issues')
+            .then(choice => {
+              if (choice === 'View Issues') {
+                // Open the X-Fidelity sidebar
+                vscode.commands.executeCommand(
+                  'workbench.view.extension.xfidelity'
+                );
+              }
+            });
+        } else {
+          vscode.window.showInformationMessage(
+            'X-Fidelity analysis completed - no issues found! 🎉'
+          );
+        }
+      } else {
+        // For automatic analysis, just log the results without user notification
+        this.logger.info(
+          `🔍 Automatic analysis completed: ${totalIssues} total issues ` +
+            `(${processed.successfulIssues || 0} successful, ${unhandledIssues} unhandled)`
+        );
+      }
+    } catch (error) {
+      this.logger.error('Failed to show analysis complete notification', error);
+    }
+  }
+
   dispose(): void {
     this.logger.info('🔄 Disposing Extension Manager...');
 
@@ -1427,6 +1454,7 @@ Check Output Console (X-Fidelity) for full details.`;
     this.statusBarProvider.dispose();
     this.issuesTreeViewManager.dispose();
     this.controlCenterTreeViewManager.dispose();
+    this.resultCoordinator.dispose();
     this.logger.info('✅ Extension Manager disposed');
   }
 }

@@ -2,13 +2,35 @@
 // This allows unit tests to run without requiring the actual VSCode environment
 
 export const Uri = {
-  parse: jest.fn((uri: string) => ({ toString: () => uri })),
-  file: jest.fn((path: string) => ({ toString: () => `file://${path}` }))
+  parse: jest.fn((uri: string) => ({ 
+    toString: () => uri,
+    fsPath: uri 
+  })),
+  file: jest.fn((path: string) => ({ 
+    toString: () => `file://${path}`,
+    fsPath: path
+  }))
 };
 
-export const Range = jest.fn();
-export const Position = jest.fn();
+export const Range = jest.fn((startLine: number, startColumn: number, endLine: number, endColumn: number) => ({
+  start: { line: startLine, character: startColumn },
+  end: { line: endLine, character: endColumn }
+}));
+
+export const Position = jest.fn((line: number, character: number) => ({
+  line,
+  character
+}));
+
 export const Location = jest.fn();
+
+export const Diagnostic = jest.fn((range: any, message: string, severity: number) => ({
+  range,
+  message,
+  severity,
+  source: 'X-Fidelity',
+  code: undefined
+}));
 
 export const DiagnosticSeverity = {
   Error: 0,
@@ -36,6 +58,7 @@ export const window = {
   createOutputChannel: jest.fn(() => ({
     appendLine: jest.fn(),
     show: jest.fn(),
+    clear: jest.fn(),
     dispose: jest.fn()
   })),
   createTreeView: jest.fn(() => ({
@@ -141,7 +164,16 @@ export const workspace = {
   getConfiguration: jest.fn((_section?: string) => {
     return mockConfigObject;
   }),
-  workspaceFolders: [],
+  workspaceFolders: [{
+    uri: Uri.file('/test/workspace'),
+    name: 'test-workspace',
+    index: 0
+  }],
+  asRelativePath: jest.fn((uri: any) => {
+    if (typeof uri === 'string') {return uri.replace('/test/workspace/', '');}
+    if (uri.fsPath) {return uri.fsPath.replace('/test/workspace/', '');}
+    return uri.toString().replace('/test/workspace/', '');
+  }),
   onDidSaveTextDocument: jest.fn(),
   onDidChangeWorkspaceFolders: jest.fn(),
   onDidChangeConfiguration: jest.fn((listener: (e: any) => void) => {
@@ -282,6 +314,7 @@ const vscode = {
   Range,
   Position,
   Location,
+  Diagnostic,
   DiagnosticSeverity,
   ConfigurationTarget,
   ExtensionMode,
