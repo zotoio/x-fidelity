@@ -328,7 +328,7 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
       logger.info(
         `Tree view updated with ${this.currentIssues.length} total issues ` +
-                    `(${processed.successfulIssues} successful, ${processed.failedIssuesCount} unhandled)`
+                    `(${processed.successfulIssues} successful, ${processed.failedIssues.length} unhandled)`
       );
 
       // NO EVENT EMISSION - direct update pattern eliminates events
