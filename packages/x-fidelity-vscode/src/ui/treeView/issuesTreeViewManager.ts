@@ -317,10 +317,9 @@ export class IssuesTreeViewManager implements vscode.Disposable {
       });
 
       // Combine successful and failed (unhandled) issues
-              const failedIssuesArray = processed.failedIssues;
       this.currentIssues = [
         ...processed.processedIssues,
-        ...this.convertFailedToUnhandled(failedIssuesArray)
+        ...this.convertFailedToUnhandled(processed.failedIssues)
       ];
 
       // Update tree data provider
