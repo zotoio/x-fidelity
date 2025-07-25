@@ -404,7 +404,8 @@ export class VSCodeLogger implements ILogger {
   }
 
   public getLevel(): LogLevel {
-    const numericLevel = LOG_LEVEL_NUMERIC[this.currentLogLevel as keyof typeof LOG_LEVEL_NUMERIC];
+    const numericLevel =
+      LOG_LEVEL_NUMERIC[this.currentLogLevel as keyof typeof LOG_LEVEL_NUMERIC];
     if (numericLevel === undefined) {
       throw new Error(`Invalid log level: ${this.currentLogLevel}`);
     }
