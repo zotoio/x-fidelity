@@ -1,167 +1,172 @@
 name: CI
 
 on:
-  pull_request:
-    types: [opened, synchronize]
-    branches:
-      - master
   push:
-    branches:
-      - master
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  NODE_VERSION: '22.16.0'
 
 jobs:
-  build:
+  changes:
     runs-on: ubuntu-latest
     outputs:
-      cache-hit: ${{ steps.cache.outputs.cache-hit }}
-    
+      vscode: ${{ steps.filter.outputs.vscode }}
+      cli: ${{ steps.filter.outputs.cli }}
+      core: ${{ steps.filter.outputs.core }}
+      website: ${{ steps.filter.outputs.website }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            vscode:
+              - 'packages/x-fidelity-vscode/**'
+              - 'packages/x-fidelity-core/**'
+              - 'packages/x-fidelity-types/**'
+              - 'packages/x-fidelity-plugins/**'
+            cli:
+              - 'packages/x-fidelity-cli/**'
+              - 'packages/x-fidelity-core/**'
+              - 'packages/x-fidelity-types/**'
+              - 'packages/x-fidelity-plugins/**'
+            core:
+              - 'packages/x-fidelity-core/**'
+              - 'packages/x-fidelity-types/**'
+              - 'packages/x-fidelity-plugins/**'
+            website:
+              - 'website/**'
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'yarn'
-
-    - name: Cache dependencies
-      id: cache
-      uses: actions/cache@v4
-      with:
-        path: |
-          **/node_modules
-          ~/.cache/yarn
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-yarn-
-
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
-
-    - name: Build all packages
-      run: yarn build
-
-    - name: Run fixture validation
-      run: yarn workspace @x-fidelity/fixtures test
-
-  unit-tests:
+  build-and-test:
     runs-on: ubuntu-latest
-    needs: build
-    strategy:
-      matrix:
-        package: ['core', 'plugins', 'types', 'server', 'cli']
-    
+    needs: changes
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'yarn'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
 
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      - name: Setup Turborepo Remote Cache
+        uses: dtinth/setup-github-actions-caching-for-turbo@v1
 
-    - name: Build dependencies
-      run: yarn build
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
-    - name: Run unit tests for ${{ matrix.package }}
-      run: yarn test:unit
+      - name: Build all packages
+        run: yarn build
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Type check
+        run: yarn check-types
+
+      - name: Run unit tests with coverage
+        run: yarn test:coverage
+
+      - name: Generate unified coverage report
+        run: yarn coverage:merge && yarn coverage:report
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Coverage check
+        run: yarn coverage:check
 
   integration-tests:
+    needs: [build-and-test, changes]
+    if: needs.changes.outputs.cli == 'true' || needs.changes.outputs.vscode == 'true'
     runs-on: ubuntu-latest
-    needs: build
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'yarn'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
 
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      - name: Setup Turborepo Remote Cache
+        uses: dtinth/setup-github-actions-caching-for-turbo@v1
 
-    - name: Build all packages
-      run: yarn build
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
-    - name: Install xvfb for VSCode extension tests
-      run: sudo apt-get update && sudo apt-get install -y xvfb
+      - name: Setup Xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb
 
-    - name: Run CLI integration tests
-      run: yarn workspace x-fidelity test:integration
-      env:
-        DISPLAY: ':99.0'
+      - name: Build all packages
+        run: yarn build
 
-    - name: Run VSCode extension integration tests
-      run: |
-        # Verify workspace dependencies are built
-        yarn workspace @x-fidelity/types build
-        yarn workspace @x-fidelity/core build  
-        yarn workspace @x-fidelity/plugins build
-        yarn workspace @x-fidelity/democonfig build
-        # Verify the built files exist
-        ls -la packages/x-fidelity-types/dist/ || echo "Types dist not found"
-        ls -la packages/x-fidelity-core/dist/ || echo "Core dist not found"
-        ls -la packages/x-fidelity-plugins/dist/ || echo "Plugins dist not found"
-        # Run the extension tests
-        xvfb-run -a yarn workspace x-fidelity-vscode test:integration
-      env:
-        DISPLAY: ':99.0'
+      - name: Run CLI integration tests
+        if: needs.changes.outputs.cli == 'true'
+        run: yarn workspace x-fidelity test:integration
 
-  global-install-test:
+      - name: Run VSCode integration tests
+        if: needs.changes.outputs.vscode == 'true'
+        run: xvfb-run -a yarn workspace x-fidelity-vscode test:integration
+
+  security-scan:
     runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests]
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'yarn'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
 
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
-    - name: Build all packages
-      run: yarn build
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
 
-    - name: Run local package global install test
-      run: yarn workspace x-fidelity global:test:local
+      - name: Run security audit
+        run: yarn security-audit
 
-  lint-and-typecheck:
+  website-build:
+    needs: [changes]
+    if: needs.changes.outputs.website == 'true'
     runs-on: ubuntu-latest
-    needs: build
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'yarn'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
 
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
-    - name: Build all packages
-      run: yarn build
-
-    - name: Run linting
-      run: yarn ci:lint
-
-    - name: Run type checking
-      run: yarn ci:typecheck
+      - name: Build website
+        run: yarn website:build
 
 

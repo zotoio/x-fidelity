@@ -1,77 +1,69 @@
+# .vscodeignore
+
 # Source files
 src/**
-*.ts
-*.map
-tsconfig*.json
+test/**
+scripts/**
+docs/**
 
-# Build artifacts
+# Build and development files
 out/
 dist-test/
-.tsbuildinfo
-
-# Dependencies that shouldn't be bundled
-node_modules/**
-!node_modules/web-tree-sitter/tree-sitter.wasm
-!node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm
-!node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm
-
-# Development files
-.vscode/
+config/
 .vscode-test/
 .vscode-test-profile/
-.vscode-test-user-data/
-*.vsix
-.xfiResults/
-
-# Build configuration
+*.tsbuildinfo
+tsconfig*.json
 esbuild.config.js
-webpack.config.js
-
-# Testing
-test/
-**/*.test.ts
-**/*.spec.ts
-.nyc_output/
-coverage/
-
-# Linting and formatting
+jest.config.js
 .eslintrc*
-eslint.config.js
+eslint.config.*
 .prettierrc*
 
-# Documentation (keep README.md and CHANGELOG.md)
-docs/
-temp/
-*.md
-!README.md
-!CHANGELOG.md
-!LICENSE*
+# Coverage and testing
+coverage/
+.nyc_output/
+test-results/
+junit.xml
 
-# Scripts
-scripts/
+# Semantic release
+.releaserc.json
+CHANGELOG.md
 
-# Git
+# Development documentation
+DEVELOPMENT.md
+CONTRIBUTOR_GUIDE.md
+debug*.js
+
+# Dependencies (bundled)
+node_modules/
+yarn.lock
+
+# Git and CI
 .git/
-.gitignore
-.gitattributes
-
-# CI/CD
 .github/
+.gitignore
 
-# OS files
+# IDE and OS
+.vscode/
+.idea/
 .DS_Store
 Thumbs.db
 
-# Logs
+# Logs and temporary files
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.tmp/
+.temp/
+*.tmp
+*.temp
 
-# Environment
-.env*
+# Package manager files
+package-lock.json
+pnpm-lock.yaml
 
-# Cache
-.cache/ 
-
-.nx/
+# Turborepo
+.turbo/
+turbo.json

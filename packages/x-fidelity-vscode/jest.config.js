@@ -18,7 +18,15 @@ module.exports = {
     '!src/**/*.test.ts'
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageReporters: ['text', 'lcov', 'html', 'json'],
+  coverageThreshold: {
+    global: {
+      statements: 75,
+      branches: 70,
+      functions: 75,
+      lines: 75
+    }
+  },
   setupFilesAfterEnv: ['<rootDir>/src/test/setup/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',

@@ -14,16 +14,15 @@
     "./*": "./dist/*"
   },
   "scripts": {
-    "clean": "rimraf dist/",
-    "prebuild": "yarn clean",
-    "build": "yarn check-types && tsc",
-    "build:watch": "tsc --watch --sourceMap",
-    "check-types": "tsc --noEmit",
-    "test": "yarn lint:fix && NODE_ENV=test jest --config jest.config.js",
-    "test:unit": "yarn lint:fix && NODE_ENV=test jest --config jest.config.js",
-    "test:coverage": "NODE_ENV=test jest --config jest.config.js --coverage",
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:unit": "jest",
+    "test:coverage": "jest --coverage",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "check-types": "tsc --noEmit"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
@@ -35,13 +34,11 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.5",
-    "@typescript-eslint/eslint-plugin": "^8.25.0",
-    "@typescript-eslint/parser": "^8.25.0",
+
     "eslint": "^9.21.0",
     "jest": "^30.0.2",
     "rimraf": "^6.0.1",
     "ts-jest": "^29.4.0",
-    "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   },
   "dependencies": {}

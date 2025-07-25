@@ -1,0 +1,25 @@
+{
+  "name": "@x-fidelity/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.js",
+  "files": ["base.js", "node.js", "vscode.js"],
+  "scripts": {
+    "build": "echo 'Build noop for eslint-config - using configs directly'",
+    "clean": "echo 'Clean noop for eslint-config'",
+    "dev": "echo 'Dev noop for eslint-config'",
+    "test": "echo 'No tests for eslint-config package'",
+    "test:unit": "echo 'No tests for eslint-config package'",
+    "test:coverage": "echo 'No tests for eslint-config package'",
+    "lint": "echo 'No linting for eslint-config package'",
+    "lint:fix": "echo 'No linting for eslint-config package'",
+    "check-types": "echo 'Type checking noop for eslint-config - no TypeScript files'"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-turbo": "^2.4.0"
+  }
+} 
