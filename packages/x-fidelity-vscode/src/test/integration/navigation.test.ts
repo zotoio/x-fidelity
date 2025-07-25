@@ -43,7 +43,7 @@ suite('Navigation & Line/Column Accuracy Tests', () => {
     const diagnostics = vscode.languages.getDiagnostics();
     let validatedDiagnostics = 0;
 
-    for (const [_uri, diags] of diagnostics) {
+    for (const [, diags] of diagnostics) {
       const xfidelityDiags = diags.filter(d => d.source === 'X-Fidelity');
 
       for (const diagnostic of xfidelityDiags) {

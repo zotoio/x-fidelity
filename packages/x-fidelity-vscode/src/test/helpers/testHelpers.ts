@@ -174,7 +174,7 @@ export async function getAnalysisResults(
 
       return parsed;
     }
-  } catch (_error) {
+  } catch {
     // Continue to try cache if file read fails
   }
 

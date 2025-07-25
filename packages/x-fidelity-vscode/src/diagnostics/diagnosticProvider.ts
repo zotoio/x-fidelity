@@ -861,7 +861,7 @@ export class DiagnosticProvider implements vscode.Disposable {
               );
               return vscode.Uri.file(candidatePath);
             }
-          } catch (_error) {
+          } catch {
             // Continue to next candidate
           }
         }

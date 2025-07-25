@@ -22,29 +22,9 @@ function logDiag(...args: any[]) {
   }
 }
 
-function logError(...args: any[]) {
-  if (global.testConsole) {
-    global.testConsole.error(...args);
-  } else {
-    console.error(...args);
-  }
-}
 
-async function logAndCaptureOnError(testName: string, error: any) {
-  logError(`❌ Test failed: ${testName}`, error);
-  if (process.env.SCREENSHOTS === 'true') {
-    await ScreenshotHelper.captureScreen(testName + '-failure', {
-      description: 'failure'
-    });
-  }
-}
 
-// Wrapper function for robust testing with shared analysis results
-function robustTest(_testName: string, testFn: any) {
-  return async function (this: Mocha.Context) {
-    await testFn.call(this);
-  };
-}
+
 
 /**
  * Comprehensive UI Integration Tests
@@ -220,7 +200,7 @@ suite('Comprehensive UI Integration Tests', () => {
       const diagnosticEntries = Array.from(allDiagnostics);
 
       const xfidelityFiles = diagnosticEntries.filter(
-        ([uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => {
+        ([_uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => {
           return diagnostics.some(
             (d: vscode.Diagnostic) => d.source === 'X-Fidelity'
           );

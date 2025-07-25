@@ -152,7 +152,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
     let xfidelityFiles = 0;
     let totalXfidelityDiagnostics = 0;
 
-    for (const [_uri, diags] of diagnostics) {
+    for (const [, diags] of diagnostics) {
       const xfidelityDiags = diags.filter(d => d.source === 'X-Fidelity');
       if (xfidelityDiags.length > 0) {
         xfidelityFiles++;

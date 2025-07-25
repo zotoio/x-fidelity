@@ -369,7 +369,7 @@ suite('Comprehensive Highlighting Integration Tests', () => {
       let edgeCasesHandled = 0;
       let totalDiagnostics = 0;
 
-      for (const [_, diagnostics] of allDiagnostics) {
+      for (const [, diagnostics] of allDiagnostics) {
         const xfiDiags = diagnostics.filter(d => d.source === 'X-Fidelity');
         totalDiagnostics += xfiDiags.length;
         
@@ -423,7 +423,7 @@ suite('Comprehensive Highlighting Integration Tests', () => {
     const allDiagnostics = vscode.languages.getDiagnostics();
     let totalDiagnostics = 0;
     
-    for (const [_, diagnostics] of allDiagnostics) {
+    for (const [, diagnostics] of allDiagnostics) {
       totalDiagnostics += diagnostics.filter(d => d.source === 'X-Fidelity').length;
     }
 

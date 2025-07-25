@@ -42,7 +42,7 @@ suite('ConfigManager Archetype Resolution Integration Tests', () => {
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       const workspaceConfig = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
       await workspaceConfig.update('localConfigPath', '', vscode.ConfigurationTarget.Workspace);
-    } catch (_error) {
+    } catch {
       // Ignore reset errors
     }
   });

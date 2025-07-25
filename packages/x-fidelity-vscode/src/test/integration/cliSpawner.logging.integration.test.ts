@@ -20,7 +20,7 @@ const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
 
 // Mock process.stdout.write to capture formatted output
-const mockStdoutWrite = (...args: any[]) => {};
+const mockStdoutWrite = (..._args: any[]) => {};
 const originalStdoutWrite = process.stdout.write;
 
 // Mock EventEmitter for ChildProcess

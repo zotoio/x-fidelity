@@ -42,7 +42,7 @@ export class CLIAnalysisManager implements IAnalysisEngine {
   private initializeCLISpawner(): void {
     try {
       this.cliSpawner = createCLISpawner();
-    } catch (_error) {
+    } catch {
       this.cliSpawner = createCLISpawner();
     }
   }

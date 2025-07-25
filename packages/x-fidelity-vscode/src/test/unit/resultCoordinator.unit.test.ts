@@ -1,17 +1,9 @@
 import * as assert from 'assert';
-import * as vscode from 'vscode';
 import { ResultCoordinator } from '../../core/resultCoordinator';
 import { ProcessedAnalysisResult } from '../../types/issues';
 import type { AnalysisResult } from '../../analysis/types';
 
 // Mock VSCode API
-const mockDiagnostic = {
-  range: new vscode.Range(0, 0, 0, 10),
-  message: 'Test message',
-  severity: vscode.DiagnosticSeverity.Warning,
-  source: 'X-Fidelity',
-  code: 'test-rule'
-};
 
 // Mock components
 class MockDiagnosticProvider {

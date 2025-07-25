@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { ILogger, LogLevel } from '@x-fidelity/types';
-import { EnhancedLogger } from '@x-fidelity/core';
 import type { AnalysisTriggerSource } from '../analysis/analysisEngineInterface';
 
 // Use LogLevel from @x-fidelity/types - no need to redefine
@@ -23,7 +22,7 @@ export interface LogEntry {
   data?: any;
 }
 
-export class VSCodeLogger {
+export class VSCodeLogger implements ILogger {
   private outputChannel: vscode.OutputChannel;
   private currentLogLevel: LogLevel = 'info';
   private readonly componentName: string;
@@ -289,7 +288,7 @@ export class VSCodeLogger {
         const jsonData = JSON.parse(line.trim());
         this.logWithMetadata(level, `CLI ${source.toUpperCase()}`, jsonData);
         return;
-      } catch (_e) {
+      } catch {
         // Not JSON, log as regular text
       }
     }
@@ -404,7 +403,7 @@ export class VSCodeLogger {
     this.setLogLevel(level);
   }
 
-  public getLevel(): string {
+  public getLevel(): LogLevel {
     const levels = ['error', 'warn', 'info', 'debug', 'trace'];
     return levels[this.currentLogLevel];
   }

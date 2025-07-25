@@ -1143,7 +1143,7 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
     const info = {
       totalFiles: diagnostics.length,
       totalDiagnostics: diagnostics.reduce(
-        (sum, [uri, diags]) => sum + diags.length,
+        (sum, [_uri, diags]) => sum + diags.length,
         0
       ),
       xfidelityDiagnostics: 0,

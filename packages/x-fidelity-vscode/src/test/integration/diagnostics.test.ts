@@ -11,7 +11,6 @@ import {
   waitFor,
   executeCommandSafely
 } from '../helpers/testHelpers';
-import type { ResultMetadata } from '@x-fidelity/types';
 
 /**
  * Comprehensive Diagnostic Validation Tests
