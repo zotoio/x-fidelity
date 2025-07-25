@@ -100,7 +100,7 @@ class ExtensionVerifier {
 
       // Check view contributions
       const views = packageJson.contributes?.views || {};
-      if (views.explorer && views.explorer.length > 0) {
+      if (views.xfidelity && views.xfidelity.length > 0) {
         this.success('Tree view contribution found');
       } else {
         this.fail('Tree view contribution missing');
