@@ -404,8 +404,11 @@ export class VSCodeLogger implements ILogger {
   }
 
   public getLevel(): LogLevel {
-    const levels = ['error', 'warn', 'info', 'debug', 'trace'];
-    return levels[this.currentLogLevel];
+    const numericLevel = LOG_LEVEL_NUMERIC[this.currentLogLevel as keyof typeof LOG_LEVEL_NUMERIC];
+    if (numericLevel === undefined) {
+      throw new Error(`Invalid log level: ${this.currentLogLevel}`);
+    }
+    return this.currentLogLevel as LogLevel;
   }
 
   public isLevelEnabled(level: string): boolean {
