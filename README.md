@@ -445,33 +445,38 @@ The X-Fidelity VSCode extension provides a comprehensive development experience 
 Use command-line options for more control:
 
 ```sh
-Usage: x-fidelity [options] [directory]
+Usage: xfidelity [options] [directory]
 
 Arguments:
-  directory                                      code directory to analyze
+  directory                                      path to repository root (default: current directory)
 
 Options:
-  -d, --dir [directory]                          code directory to analyze. if an arg was passed to command it
-                                                 will be treated as the dir (default: ".")
-  -a, --archetype [archetype]                    The archetype to use for analysis (default: "node-fullstack")
-  -c, --configServer [configServer]              The config server URL for fetching remote archetype
-                                                 configurations and rules
-  -o, --openaiEnabled [boolean]                 Enable OpenAI analysis (default: false)
-  -t, --telemetryCollector [<telemetryCollector]  The URL telemetry data will be sent to for usage analysis
-  -m, --mode [mode]                              Run mode: 'client' or 'server' (default: "client")
-  -p, --port [port]                              The port to run the server on (default: "8888")
-  -l, --localConfigPath [path]                   Path to local archetype config and rules
-  -j, --jsonTTL [minutes]                        Set the server JSON cache TTL in minutes (default: "10")
-  -e, --extensions <modules...>                  Space-separated list of npm module names to load as external plugin extensions
+  -d, --dir <path>                               path to repository root (overrides positional argument)
+  -a, --archetype <archetype>                    The archetype to use for analysis (default: "node-fullstack")
+  -c, --configServer <url>                       The config server URL for fetching remote archetype configuration
+  -l, --localConfigPath <path>                   Path to local archetype config and rules
+  -o, --openaiEnabled                            Enable OpenAI analysis
+  -t, --telemetryCollector <url>                 The URL telemetry data will be sent to for usage analysis
+  -m, --mode <mode>                              Run mode: 'cli', 'vscode', 'server', or 'hook' ('client' deprecated, use 'cli') (default: "cli")
+  -p, --port <number>                            The port to run the server on (default: "8888")
+  -j, --jsonTTL <minutes>                        Set the server JSON cache TTL in minutes (default: "10")
+  -e, --extraPlugins <modules...>                Space-separated list of npm module names to load as extra plugins
   -x, --examine                                  Validate archetype config only
-  -v, --version                                  Output the version number of xfidelity
-  -h, --help                                     Display help for command
+  -z, --zap <files>                              JSON array of specific files to analyze (relative to --dir or absolute paths)
+  --file-cache-ttl <minutes>                     File modification cache TTL in minutes (default: "60")
+  --output-format <format>                       Output format: human (default) or json
+  --output-file <path>                           Write structured output to file (works with --output-format json)
+  --enable-tree-sitter-wasm                      Use WASM TreeSitter instead of native bindings (for compatibility)
+  --enable-tree-sitter-worker                    Enable TreeSitter worker mode (disabled by default, CLI uses direct parsing)
+  --enable-file-logging                          Enable logging to x-fidelity.log file (disabled by default)
+  -v, --version                                  output the version number
+  -h, --help                                     display help for command
 ```
 
 Examples:
 
 ```sh
-# Run client to analyse current dir using config from remote config server
+# Run CLI to analyse current dir using config from remote config server
 xfidelity --configServer http://localhost:8888
 
 # Analyze a specific directory with java-microservice archetype config from remote config server and enable OpenAI analysis
@@ -578,7 +583,7 @@ x-fidelity allows for centrally managed, hot-updatable custom rulesets that can 
 
 ### Docker Example
 
-x-fidelity server can run in Docker for easy deployment and configuration.  Here is a basic example for local testing.  A full repo example is available here: todo
+x-fidelity server can run in Docker for easy deployment and configuration.  Here is a basic example for local testing.  A full repo example is available in our documentation.
 
 #### Using Docker Compose
 
@@ -917,7 +922,7 @@ X-Fi has a comprehensive plugin system, with core plugins for many purposes embe
 
 There are two ways to load plugins:
 
-1. **Via CLI option**: Pass plugin module names via the `-e` (or `--extraPlugins`) CLI option.
+1. **Via CLI option**: Pass plugin module names via the `-e` or `--extraPlugins` CLI option.
 2. **Via archetype configuration**: Specify plugins in the `plugins` array of your archetype JSON file.
 
 x-fidelity supports custom extensions through npm modules. To use extensions:
