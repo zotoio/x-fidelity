@@ -141,7 +141,9 @@ export class DiagnosticLocationExtractor {
       'functionCount-iterative',
       'codeRhythm-iterative',
       'outdatedFramework-global',
-      'invalidSystemIdConfigured-iterative'
+      'invalidSystemIdConfigured-iterative',
+      'factDoesNotAddResultToAlmanac-iterative',
+      'sensitiveLogging-iterative'
     ];
 
     const ruleFailure = error?.ruleFailure;

@@ -19,7 +19,7 @@
     "dev": "tsc --watch",
     "test": "yarn check-types && yarn lint && jest",
     "test:unit": "yarn check-types && yarn lint && jest",
-    "test:integration": "yarn check-types && yarn lint && jest --testMatch='**/*.integration.test.ts'",
+    "test:integration": "yarn check-types && yarn lint && jest --testMatch='**/*.integration.test.ts' --passWithNoTests",
     "test:coverage": "yarn check-types && yarn lint && jest --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

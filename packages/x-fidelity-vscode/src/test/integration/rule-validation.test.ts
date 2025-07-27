@@ -224,7 +224,7 @@ suite('Rule Validation Integration Tests', () => {
           // Validate required properties
           assert.ok(diag.message, 'Diagnostic should have a message');
           assert.ok(diag.range, 'Diagnostic should have a range');
-          assert.ok(diag.severity, 'Diagnostic should have severity');
+          assert.ok(typeof diag.severity === 'number' && diag.severity >= 0 && diag.severity <= 3, 'Diagnostic should have valid severity (0-3)');
           assert.ok(diag.source === 'X-Fidelity', 'Diagnostic source should be X-Fidelity');
           assert.ok(diag.code, 'Diagnostic should have a code (rule ID)');
 
