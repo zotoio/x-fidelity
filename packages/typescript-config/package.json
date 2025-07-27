@@ -10,7 +10,7 @@
     "dev": "echo 'Dev noop for typescript-config'",
     "test": "echo 'No tests for typescript-config package'",
     "test:unit": "echo 'No tests for typescript-config package'",
-    "test:coverage": "echo 'No tests for typescript-config package'",
+    "test:coverage": "echo 'No tests for typescript-config package' && mkdir -p coverage && exit 0",
     "lint": "echo 'No linting for typescript-config package'",
     "lint:fix": "echo 'No linting for typescript-config package'",
     "check-types": "echo 'Type checking noop for typescript-config - no TypeScript files'"
