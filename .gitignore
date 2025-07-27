@@ -227,3 +227,5 @@ test*.log
 global-install-testing/fixtures/
 temp/
 .turbo/
+jest-results.json
+*.tgz

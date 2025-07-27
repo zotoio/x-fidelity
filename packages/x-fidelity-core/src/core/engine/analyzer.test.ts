@@ -118,10 +118,10 @@ describe('Analyzer', () => {
             expect(typeof results.XFI_RESULT.exemptCount).toBe('number');
             expect(Array.isArray(results.XFI_RESULT.issueDetails)).toBe(true);
             expect(typeof results.XFI_RESULT.durationSeconds).toBe('number');
-            expect(typeof results.XFI_RESULT.finishTime).toBe('string');
-            expect(typeof results.XFI_RESULT.startTime).toBe('string');
-            expect(typeof results.XFI_RESULT.finishTimeStamp).toBe('number');
-            expect(typeof results.XFI_RESULT.startTimeStamp).toBe('number');
+            expect(typeof results.XFI_RESULT.finishTime).toBe('number');
+            expect(typeof results.XFI_RESULT.startTime).toBe('number');
+            expect(typeof results.XFI_RESULT.finishTimeString).toBe('string');
+            expect(typeof results.XFI_RESULT.startTimeString).toBe('string');
             expect(typeof results.XFI_RESULT.memoryUsage).toBe('object');
             expect(typeof results.XFI_RESULT.repoUrl).toBe('string');
             expect(typeof results.XFI_RESULT.xfiVersion).toBe('string');

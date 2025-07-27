@@ -188,8 +188,8 @@ export class NotificationManager {
                 // Failure template
                 fileDetails = results.XFI_RESULT.issueDetails.map(issue => {
                     logger.trace(issue, `generating report content for issue: ${issue.filePath}`);
-                    // Remove local path prefix from file paths
-                    const relativePath = issue.filePath.replace(results.XFI_RESULT.repoPath + '/', '');
+                    // filePath is already relative to repo root
+                    const relativePath = issue.filePath;
                     const fileIssues = issue.errors;
 
                     // Start with file name as bold list item with link

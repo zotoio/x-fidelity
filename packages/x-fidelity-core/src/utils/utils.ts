@@ -35,3 +35,51 @@ export function safeClone(obj: any): any {
     }));
 }
 
+/**
+ * Creates a localized timestamp with GMT offset showing local time
+ * @returns Formatted timestamp like "2025-07-27 16:22 GMT+1000"
+ */
+export function createLocalizedTimestamp(): string {
+  const now = new Date();
+  
+  // Get timezone offset in minutes and convert to GMT offset format
+  const offsetMinutes = now.getTimezoneOffset();
+  const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+  const offsetMins = Math.abs(offsetMinutes) % 60;
+  const offsetSign = offsetMinutes <= 0 ? '+' : '-'; // Note: getTimezoneOffset returns positive for behind UTC
+  const offsetString = `GMT${offsetSign}${offsetHours.toString().padStart(2, '0')}${offsetMins.toString().padStart(2, '0')}`;
+  
+  // Format as local date and time with GMT offset
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const day = now.getDate().toString().padStart(2, '0');
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes} ${offsetString}`;
+}
+
+/**
+ * Creates an ISO timestamp with local timezone offset for logging
+ * @returns Formatted timestamp like "2025-07-27T16:22GMT+1000"
+ */
+export function createLocalizedISOTimestamp(): string {
+  const now = new Date();
+  
+  // Get timezone offset in minutes and convert to GMT offset format
+  const offsetMinutes = now.getTimezoneOffset();
+  const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+  const offsetMins = Math.abs(offsetMinutes) % 60;
+  const offsetSign = offsetMinutes <= 0 ? '+' : '-';
+  const offsetString = `GMT${offsetSign}${offsetHours.toString().padStart(2, '0')}${offsetMins.toString().padStart(2, '0')}`;
+  
+  // Format as local date and time in ISO-like format with GMT offset
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const day = now.getDate().toString().padStart(2, '0');
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}${offsetString}`;
+}
+

@@ -5,6 +5,7 @@ import { executeErrorAction } from './errorActionExecutor';
 import { createTimingTracker } from '../../utils/timingUtils';
 import { pluginRegistry } from '../pluginRegistry';
 import { LoggerProvider } from '../../utils/loggerProvider';
+import * as path from 'path';
 
 // Rule registry to map event types to rule names
 const ruleEventTypeRegistry = new Map<string, { name: string; rule: any }[]>();
@@ -219,7 +220,7 @@ async function buildRuleFailureFromResult(result: any, rule: any, file: any, alm
 }
 
 export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<ScanResult[]> {
-    const { engine, fileData, installedDependencyVersions, minimumDependencyVersions, standardStructure, logger: loggerParam } = params;
+    const { engine, fileData, installedDependencyVersions, minimumDependencyVersions, standardStructure, logger: loggerParam, repoPath } = params;
     // Use the passed logger or fall back to the logger provider
     // Use provided logger or get mode-aware logger with fallback
     const logger = loggerParam || (() => {
@@ -257,8 +258,9 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
         const file = iterativeFiles[i];
         const fileStartTime = Date.now();
         
-        // Show progress for iterative files
-        logger.info(`analysing (${i + 1} of ${iterativeFiles.length}) ${file.filePath} ...`);
+        // Show progress for iterative files  
+        const displayPath = repoPath ? path.relative(repoPath, file.filePath) : file.filePath;
+        logger.info(`analysing (${i + 1} of ${iterativeFiles.length}) ${displayPath} ...`);
         
         try {
             timingTracker.recordDetailedTiming('file_start', i, file.fileName, iterativeFiles.length);
@@ -341,7 +343,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
 
                 if (processedResults.length > 0) {
                     results.push({
-                        filePath: file.filePath,
+                        filePath: repoPath ? path.relative(repoPath, file.filePath) : file.filePath,
                         errors: processedResults
                     });
                 }

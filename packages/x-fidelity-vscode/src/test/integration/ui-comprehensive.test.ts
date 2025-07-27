@@ -9,7 +9,9 @@ import {
 
   getAnalysisResults,
   validateWorkspaceStructure,
-  runInitialAnalysis
+  ensureGlobalAnalysisCompleted,
+  runGlobalFreshAnalysis,
+  waitForTreeViewUpdate
 } from '../helpers/testHelpers';
 import { ScreenshotHelper } from '../helpers/screenshotHelper';
 
@@ -82,16 +84,16 @@ suite('Comprehensive UI Integration Tests', () => {
     // Wait for extension to fully initialize
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    // Run initial analysis once and cache results for reuse
-    logDiag('🔍 Running initial analysis for UI test suite...');
+    // Ensure global analysis is completed and cached for reuse
+    logDiag('🔍 Ensuring analysis for UI test suite...');
     try {
-      initialAnalysisResults = await runInitialAnalysis(undefined, true);
+      initialAnalysisResults = await ensureGlobalAnalysisCompleted();
       logDiag(
-        `📊 Initial analysis completed with ${initialAnalysisResults?.summary?.totalIssues || 0} issues`
+        `📊 Analysis results available: ${initialAnalysisResults?.summary?.totalIssues || 0} issues`
       );
     } catch (error) {
       logDiag(
-        '⚠️ Initial analysis failed (may be expected for test environment):',
+        '⚠️ Failed to get analysis results (may be expected for test environment):',
         error
       );
       initialAnalysisResults = null;
@@ -248,8 +250,8 @@ suite('Comprehensive UI Integration Tests', () => {
 
       logDiag('🔍 Testing UI Updates...');
 
-      // Refresh tree views
-      await executeCommandSafely('xfidelity.refreshIssuesTree');
+      // Wait for tree view to be properly updated (fixes race condition)
+      await waitForTreeViewUpdate(10000);
 
       logDiag('✅ UI updates test passed');
     });
@@ -266,7 +268,7 @@ suite('Comprehensive UI Integration Tests', () => {
       logDiag('🔍 Testing Fresh Analysis...');
 
       // Run fresh analysis
-      const freshResults = await runInitialAnalysis(undefined, true); // Force fresh
+      const freshResults = await runGlobalFreshAnalysis(); // Force fresh
 
       // Verify fresh results are available
       assert.ok(

@@ -119,8 +119,10 @@ export const openaiAnalysisFn = async (params: any, almanac: Almanac) => {
 
 const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
 
-    const formattedFileData = fileData.map((file: FileData) => {     
-        logger.debug(`formatting ${file.filePath} of length: ${file.fileContent.length}`);                                                                                                             
+    const formattedFileData = fileData.map((file: FileData) => {
+        // Use relativePath if available (it should be), otherwise fall back to filePath
+        const displayPath = file.relativePath || file.filePath;
+        logger.debug(`formatting ${displayPath} of length: ${file.fileContent.length}`);                                                                                                             
         if (!['REPO_GLOBAL_CHECK'].includes(file.fileName)) {
             // Create a copy to avoid modifying the original
             const formattedFile = { ...file };
@@ -128,7 +130,7 @@ const collectOpenaiAnalysisFacts = async (fileData: FileData[]) => {
             formattedFile.fileContent = formattedFile.fileContent.replace(/ {2,}/g, " ");
             return formattedFile;
         } else {
-            logger.debug(file.filePath + ' skipped.');
+            logger.debug((file.relativePath || file.filePath) + ' skipped.');
             return null;  // Return null for files to skip
         }                                                                                                         
     }).filter(file => file !== null);  // Filter out null values (skipped files)

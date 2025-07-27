@@ -192,7 +192,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         logger.info(`ANALYZER TIMING: File data collection found ${rawFileData.length} files`);
 
         // ✅ NEW: Initialize file cache manager
-        const fileCache = FileCacheManager.getInstance(resultsDir);
+        const fileCache = FileCacheManager.getInstance(resultsDir, repoPath);
         
         // ✅ NEW: Handle targeted file analysis (zap files)
         let fileData: FileData[] = rawFileData;
@@ -216,7 +216,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             const foundFiles = fileData.map(f => path.resolve(f.filePath));
             const missingFiles = zapFilesAbsolute.filter(f => !foundFiles.includes(f));
             if (missingFiles.length > 0) {
-                logger.warn(`⚠️ Zap files not found: ${missingFiles.join(', ')}`);
+                const missingFilesRelative = missingFiles.map(f => path.relative(repoPath, f));
+                logger.warn(`⚠️ Zap files not found: ${missingFilesRelative.join(', ')}`);
             }
         }
 
@@ -426,7 +427,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             installedDependencyVersions: Object.fromEntries(installedDependencyVersions.map((v: any) => [v.name, v.version])),
             minimumDependencyVersions: dependencyVersionRequirements,
             standardStructure,
-            logger
+            logger,
+            repoPath
         });
         timingTracker.recordTiming('engine_execution');
 
@@ -466,10 +468,10 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 },
                 factMetrics: factMetricsTracker.getMetrics(),
                 options,
-                startTime: formatDateWithTimezone(new Date(telemetryData.startTime)),
-                finishTime: formatDateWithTimezone(new Date(finishTime)),
-                startTimeStamp: telemetryData.startTime,
-                finishTimeStamp: finishTime,
+                startTime: telemetryData.startTime,
+                finishTime: finishTime,
+                startTimeString: formatDateWithTimezone(new Date(telemetryData.startTime)),
+                finishTimeString: formatDateWithTimezone(new Date(finishTime)),
                 durationSeconds: (finishTime - telemetryData.startTime) / 1000,
                 xfiVersion: passedVersion || version, // Use passed version from CLI, fallback to core version
                 archetype,
@@ -479,7 +481,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 errorCount,
                 fatalityCount,
                 exemptCount,
-                repoPath,
+                repoPath: path.basename(repoPath),
                 repoUrl
             }
         };
@@ -629,7 +631,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     }
 }
 
-export async function analyzeFiles(engine: Engine, files: FileData[], logger?: import('@x-fidelity/types').ILogger): Promise<any[]> {
+export async function analyzeFiles(engine: Engine, files: FileData[], repoPath?: string, logger?: import('@x-fidelity/types').ILogger): Promise<any[]> {
     const results = [];
     const loggerInstance = logger || (() => {
         try {
@@ -651,11 +653,17 @@ export async function analyzeFiles(engine: Engine, files: FileData[], logger?: i
     // Run rules for each file
     for (const file of files) {
         try {
-            loggerInstance.debug(`Running rules for file: ${file.filePath}`);
+            const displayPath = repoPath && file.filePath !== REPO_GLOBAL_CHECK 
+                ? path.relative(repoPath, file.filePath) 
+                : file.filePath;
+            loggerInstance.debug(`Running rules for file: ${displayPath}`);
             const result = await engine.run(file);
             results.push(result);
         } catch (error) {
-            loggerInstance.error(`Error running rules for file ${file.filePath}:`, error);
+            const displayPath = repoPath && file.filePath !== REPO_GLOBAL_CHECK 
+                ? path.relative(repoPath, file.filePath) 
+                : file.filePath;
+            loggerInstance.error(`Error running rules for file ${displayPath}:`, error);
         }
     }
 

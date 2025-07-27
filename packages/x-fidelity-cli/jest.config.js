@@ -12,7 +12,7 @@ module.exports = {
     '!src/**/index.ts'
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html', 'json'],
+  coverageReporters: ['text', 'lcov', 'html', 'json', 'json-summary'],
   coverageThreshold: {
     global: {
       statements: 40,
@@ -43,5 +43,11 @@ module.exports = {
   // Jest 30 performance improvements
   testEnvironmentOptions: {
     globalsCleanup: 'soft'
-  }
+  },
+  reporters: [
+    'default',
+    ['<rootDir>/../../scripts/simple-json-reporter.js', {
+      outputPath: './jest-results.json'
+    }]
+  ]
 };

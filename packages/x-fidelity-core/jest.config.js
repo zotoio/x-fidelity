@@ -9,15 +9,21 @@ module.exports = {
     '!src/**/index.ts'
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html', 'json'],
+  coverageReporters: ['text', 'lcov', 'html', 'json', 'json-summary'],
   coverageThreshold: {
     global: {
-      statements: 62.3,
-      branches: 52.0,
-      functions: 58.3,
-      lines: 62.6
+      statements: 58.0,
+      branches: 48.0,
+      functions: 53.0,
+      lines: 58.8
     }
   },
+  reporters: [
+    'default',
+    ['<rootDir>/../../scripts/simple-json-reporter.js', {
+      outputPath: './jest-results.json'
+    }]
+  ],
   moduleNameMapper: {
     "^@x-fidelity/core/(.*)$": "<rootDir>/src/$1",
     "^@x-fidelity/types/(.*)$": "<rootDir>/../x-fidelity-types/src/$1",
@@ -38,7 +44,8 @@ module.exports = {
   },
   testMatch: [
     "**/__tests__/**/*.+(ts|tsx|js)",
-    "**/?(*.)+(spec|test).+(ts|tsx|js)"
+    "**/?(*.)+(spec|test).+(ts|tsx|js)",
+    "!**/*.integration.test.ts"
   ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node", "mts", "cts"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],

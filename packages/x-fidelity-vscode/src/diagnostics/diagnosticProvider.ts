@@ -549,6 +549,8 @@ export class DiagnosticProvider implements vscode.Disposable {
       'exemptCount',
       'startTime',
       'finishTime',
+      'startTimeString',
+      'finishTimeString',
       'durationSeconds',
       'issueDetails'
     ];
@@ -888,7 +890,7 @@ export class DiagnosticProvider implements vscode.Disposable {
         return vscode.Uri.file(virtualPath);
       }
 
-      // Since XFI_RESULT contains absolute paths, use them directly
+      // Handle absolute paths (legacy support or special cases)
       if (path.isAbsolute(filePath)) {
         // Check if file exists before creating URI
         try {

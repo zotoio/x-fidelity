@@ -6,8 +6,8 @@ import {
   executeCommandSafely,
   assertCommandExists,
   getAnalysisResults,
-  runInitialAnalysis,
-  runFreshAnalysisForTest,
+  ensureGlobalAnalysisCompleted,
+  runGlobalFreshAnalysis,
   clearAnalysisCache
 } from '../helpers/testHelpers';
 
@@ -21,13 +21,13 @@ suite('Analysis Completion & UI Feature Tests', () => {
   });
 
   setup(async function () {
-    this.timeout(180000); // 3 minutes for fresh analysis before each test
-    console.log('🔍 Running fresh analysis before test...');
+    this.timeout(30000); // Much faster with cached results
+    console.log('🔍 Ensuring analysis results are available...');
     try {
-      initialAnalysisResults = await runFreshAnalysisForTest(undefined, 150000); // 2.5 minute timeout
-      console.log(`📊 Fresh analysis completed with ${initialAnalysisResults?.summary?.totalIssues || 0} issues`);
+      initialAnalysisResults = await ensureGlobalAnalysisCompleted();
+      console.log(`📊 Analysis results available: ${initialAnalysisResults?.summary?.totalIssues || 0} issues`);
     } catch (error) {
-      console.error('⚠️ Fresh analysis failed:', error);
+      console.error('⚠️ Failed to get analysis results:', error);
       initialAnalysisResults = null;
     }
   });
@@ -210,7 +210,7 @@ suite('Analysis Completion & UI Feature Tests', () => {
 
     // Clear cache and run fresh analysis
     clearAnalysisCache();
-    const freshResults = await runInitialAnalysis(undefined, true);
+    const freshResults = await runGlobalFreshAnalysis();
 
     console.log(
       `📊 Fresh analysis completed with ${freshResults?.summary?.totalIssues || 0} issues`

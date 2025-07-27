@@ -36,9 +36,11 @@ export class FileCacheManager {
     private readonly CACHE_FILE = 'file-cache.json';
     private cacheDir: string;
     private ttlMs: number;
+    private repoPath?: string;
 
-    private constructor(cacheDir: string) {
+    private constructor(cacheDir: string, repoPath?: string) {
         this.cacheDir = cacheDir;
+        this.repoPath = repoPath;
         this.ttlMs = (options.fileCacheTTL || 60) * 60 * 1000; // Convert minutes to ms
         this.loadCacheFromDisk();
     }
@@ -46,12 +48,19 @@ export class FileCacheManager {
     /**
      * Get singleton instance
      */
-    static getInstance(cacheDir?: string): FileCacheManager {
+    static getInstance(cacheDir?: string, repoPath?: string): FileCacheManager {
         if (!this.instance) {
             const targetDir = cacheDir || path.join(options.dir || process.cwd(), '.xfiResults');
-            this.instance = new FileCacheManager(targetDir);
+            this.instance = new FileCacheManager(targetDir, repoPath);
         }
         return this.instance;
+    }
+
+    /**
+     * Get display path (relative if repoPath available, otherwise absolute)
+     */
+    private getDisplayPath(filePath: string): string {
+        return this.repoPath ? path.relative(this.repoPath, filePath) : filePath;
     }
 
     /**
@@ -68,26 +77,26 @@ export class FileCacheManager {
             
             // No cache entry means file is "changed" (new)
             if (!cached) {
-                logger.debug(`File not cached: ${filePath}`);
+                logger.debug(`File not cached: ${this.getDisplayPath(filePath)}`);
                 return true;
             }
 
             // Check TTL first
             const now = Date.now();
             if (now - cached.lastAccessed > this.ttlMs) {
-                logger.debug(`Cache entry expired for: ${filePath}`);
+                logger.debug(`Cache entry expired for: ${this.getDisplayPath(filePath)}`);
                 this.cache.delete(absolutePath);
                 return true;
             }
 
             // Fast path: mtime comparison
             if (currentMtime !== cached.mtime) {
-                logger.debug(`File mtime changed: ${filePath} (${cached.mtime} -> ${currentMtime})`);
+                logger.debug(`File mtime changed: ${this.getDisplayPath(filePath)} (${cached.mtime} -> ${currentMtime})`);
                 
                 // Hybrid approach: verify with content hash if mtime differs
                 const currentHash = await this.computeFileHash(absolutePath);
                 if (currentHash !== cached.hash) {
-                    logger.debug(`File content changed: ${filePath}`);
+                    logger.debug(`File content changed: ${this.getDisplayPath(filePath)}`);
                     return true;
                 }
                 
@@ -102,7 +111,7 @@ export class FileCacheManager {
             return false;
 
         } catch (error) {
-            logger.warn(`Error checking file change: ${filePath}`, error);
+            logger.warn(`Error checking file change: ${this.getDisplayPath(filePath)}`, error);
             return true; // Assume changed if we can't check
         }
     }
@@ -127,10 +136,10 @@ export class FileCacheManager {
             };
 
             this.cache.set(absolutePath, entry);
-            logger.debug(`Updated cache for: ${filePath}`);
+            logger.debug(`Updated cache for: ${this.getDisplayPath(filePath)}`);
 
         } catch (error) {
-            logger.warn(`Error updating file cache: ${filePath}`, error);
+            logger.warn(`Error updating file cache: ${this.getDisplayPath(filePath)}`, error);
         }
     }
 
@@ -317,7 +326,7 @@ export class FileCacheManager {
             const content = await fs.promises.readFile(filePath, 'utf8');
             return crypto.createHash('md5').update(content).digest('hex');
         } catch (error) {
-            logger.warn(`Failed to compute hash for ${filePath}`, error);
+            logger.warn(`Failed to compute hash for ${this.getDisplayPath(filePath)}`, error);
             return '';
         }
     }

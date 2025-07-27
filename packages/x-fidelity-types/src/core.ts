@@ -203,6 +203,7 @@ export interface RunEngineOnFilesParams {
   minimumDependencyVersions: any;
   standardStructure: any;
   logger: ILogger;
+  repoPath: string;
 }
 
 export interface Exemption {
@@ -361,10 +362,10 @@ export interface ResultMetadata {
             [factName: string]: FactMetrics;
         };
         options: any;
-        startTime: string;
-        finishTime: string;
-        startTimeStamp: number;
-        finishTimeStamp: number;
+        startTime: number;
+        finishTime: number;
+        startTimeString: string;
+        finishTimeString: string;
         durationSeconds: number;
         xfiVersion: string;
         archetype: string;

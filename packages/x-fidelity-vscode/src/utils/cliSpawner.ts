@@ -812,6 +812,8 @@ export class CLISpawner {
       options: {},
       startTime: Date.now(),
       finishTime: Date.now(),
+      startTimeString: new Date().toISOString(),
+      finishTimeString: new Date().toISOString(),
       durationSeconds: 0,
       xfiVersion: cliVersion,
       archetype: 'unknown',

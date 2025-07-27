@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as assert from 'assert';
 import { suite, test } from 'mocha';
-import { runFreshAnalysisForTest, waitFor, executeCommandSafely } from '../helpers/testHelpers';
+import { ensureGlobalAnalysisCompleted, waitFor, executeCommandSafely } from '../helpers/testHelpers';
 
 suite('Comprehensive Highlighting Integration Tests', () => {
   
@@ -10,8 +10,8 @@ suite('Comprehensive Highlighting Integration Tests', () => {
 
     console.log('🔍 Starting comprehensive highlighting validation...');
 
-    // Run fresh analysis
-    await runFreshAnalysisForTest();
+    // Ensure analysis results are available
+    await ensureGlobalAnalysisCompleted();
 
     // Wait for diagnostics to populate
     await waitFor(() => {

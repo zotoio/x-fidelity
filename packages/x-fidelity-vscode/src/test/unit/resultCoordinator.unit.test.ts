@@ -76,10 +76,10 @@ describe('ResultCoordinator Unit Tests', () => {
           errorCount: 1,
           fatalityCount: 0,
           exemptCount: 0,
-          startTime: '2024-01-01T00:00:00+10:00',
-          finishTime: '2024-01-01T00:01:00+10:00',
-          startTimeStamp: 1704067200000,
-          finishTimeStamp: 1704067260000,
+          startTime: 1704067200000,
+          finishTime: 1704067260000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:01:00+10:00',
           durationSeconds: 60,
           issueDetails: [
             {
@@ -208,10 +208,10 @@ describe('ResultCoordinator Unit Tests', () => {
           errorCount: 0,
           fatalityCount: 0,
           exemptCount: 0,
-          startTime: '2024-01-01T00:00:00+10:00',
-          finishTime: '2024-01-01T00:00:30+10:00',
-          startTimeStamp: 1704067200000,
-          finishTimeStamp: 1704067230000,
+          startTime: 1704067200000,
+          finishTime: 1704067230000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:00:30+10:00',
           durationSeconds: 30,
           issueDetails: []
         }
@@ -267,10 +267,10 @@ describe('ResultCoordinator Unit Tests', () => {
           errorCount: 1,
           fatalityCount: 0,
           exemptCount: 0,
-          startTime: '2024-01-01T00:00:00+10:00',
-          finishTime: '2024-01-01T00:01:00+10:00',
-          startTimeStamp: 1704067200000,
-          finishTimeStamp: 1704067260000,
+          startTime: 1704067200000,
+          finishTime: 1704067260000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:01:00+10:00',
           durationSeconds: 60,
           issueDetails: [
             {
@@ -388,10 +388,10 @@ describe('ResultCoordinator Unit Tests', () => {
           errorCount: 0,
           fatalityCount: 0,
           exemptCount: 0,
-          startTime: '2024-01-01T00:00:00+10:00',
-          finishTime: '2024-01-01T00:00:45+10:00',
-          startTimeStamp: 1704067200000,
-          finishTimeStamp: 1704067245000,
+          startTime: 1704067200000,
+          finishTime: 1704067245000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:00:45+10:00',
           durationSeconds: 45,
           issueDetails: []
         }
@@ -447,10 +447,10 @@ describe('ResultCoordinator Unit Tests', () => {
           errorCount: 0,
           fatalityCount: 0,
           exemptCount: 0,
-          startTime: '2024-01-01T00:00:00+10:00',
-          finishTime: '2024-01-01T00:00:30+10:00',
-          startTimeStamp: 1704067200000,
-          finishTimeStamp: 1704067230000,
+          startTime: 1704067200000,
+          finishTime: 1704067230000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:00:30+10:00',
           durationSeconds: 30,
           issueDetails: []
         }
@@ -500,10 +500,10 @@ describe('ResultCoordinator Unit Tests', () => {
           errorCount: 2,
           fatalityCount: 1,
           exemptCount: 1,
-          startTime: '2024-01-01T00:00:00+10:00',
-          finishTime: '2024-01-01T00:01:00+10:00',
-          startTimeStamp: 1704067200000,
-          finishTimeStamp: 1704067260000,
+          startTime: 1704067200000,
+          finishTime: 1704067260000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:01:00+10:00',
           durationSeconds: 60,
           issueDetails: [
             {

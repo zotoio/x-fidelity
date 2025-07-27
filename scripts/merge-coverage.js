@@ -43,9 +43,8 @@ async function mergeCoverage() {
   }
 
   // Merge coverage-final.json files if they exist
+  let mergedCoverage = {};
   if (coverageFiles.length > 0) {
-    const mergedCoverage = {};
-    
     for (const file of coverageFiles) {
       const coverage = JSON.parse(fs.readFileSync(file, 'utf8'));
       Object.assign(mergedCoverage, coverage);
@@ -69,6 +68,69 @@ async function mergeCoverage() {
   } catch (error) {
     console.error('❌ Failed to generate coverage reports:', error.message);
     process.exit(1);
+  }
+
+  // Generate enhanced coverage summary for consolidated reporting
+  if (Object.keys(mergedCoverage).length > 0) {
+    console.log('📊 Generating enhanced coverage summary...');
+    
+    // Calculate totals
+    let totalStatements = 0, coveredStatements = 0;
+    let totalBranches = 0, coveredBranches = 0;
+    let totalFunctions = 0, coveredFunctions = 0;
+    let totalLines = 0, coveredLines = 0;
+    
+    for (const file of Object.values(mergedCoverage)) {
+      if (file.s) {
+        totalStatements += Object.keys(file.s).length;
+        coveredStatements += Object.values(file.s).filter(v => v > 0).length;
+      }
+      
+      if (file.b) {
+        totalBranches += Object.keys(file.b).length;
+        coveredBranches += Object.values(file.b).filter(branches => 
+          Array.isArray(branches) && branches.some(n => n > 0)
+        ).length;
+      }
+      
+      if (file.f) {
+        totalFunctions += Object.keys(file.f).length;
+        coveredFunctions += Object.values(file.f).filter(v => v > 0).length;
+      }
+      
+      if (file.l) {
+        totalLines += Object.keys(file.l).length;
+        coveredLines += Object.values(file.l).filter(v => v > 0).length;
+      }
+    }
+    
+    const summary = {
+      total: {
+        statements: { 
+          total: totalStatements,
+          covered: coveredStatements,
+          pct: totalStatements ? (coveredStatements / totalStatements * 100) : 0 
+        },
+        branches: { 
+          total: totalBranches,
+          covered: coveredBranches,
+          pct: totalBranches ? (coveredBranches / totalBranches * 100) : 0 
+        },
+        functions: { 
+          total: totalFunctions,
+          covered: coveredFunctions,
+          pct: totalFunctions ? (coveredFunctions / totalFunctions * 100) : 0 
+        },
+        lines: { 
+          total: totalLines,
+          covered: coveredLines,
+          pct: totalLines ? (coveredLines / totalLines * 100) : 0 
+        }
+      }
+    };
+    
+    fs.writeFileSync('coverage/coverage-summary.json', JSON.stringify(summary, null, 2));
+    console.log('✅ Enhanced coverage summary generated');
   }
 }
 
