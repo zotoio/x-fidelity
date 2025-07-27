@@ -268,6 +268,12 @@ class ExtensionVerifier {
   async verifyVSIXPackage() {
     this.log('\n📦 Verifying VSIX package...', COLORS.BOLD);
 
+    // Skip VSIX verification in CI since packaging happens after verification
+    if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
+      this.info('Skipping VSIX verification in CI (packaging happens later)');
+      return;
+    }
+
     const vsixFiles = fs
       .readdirSync(path.join(__dirname, '..'))
       .filter(file => file.endsWith('.vsix'));
