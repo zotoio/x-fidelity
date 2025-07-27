@@ -13,7 +13,7 @@ node_modules/
 
 # Test outputs
 coverage/
-.nyc_output/
+
 
 # VSCode specific
 .vscode-test/

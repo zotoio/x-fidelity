@@ -10,14 +10,8 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html', 'json', 'json-summary'],
-  coverageThreshold: {
-    global: {
-      statements: 58.0,
-      branches: 48.0,
-      functions: 52.0,
-      lines: 58.0
-    }
-  },
+  // Coverage thresholds are managed centrally in ../../coverage-thresholds.config.js
+  // This ensures consistency across all packages in the monorepo
   reporters: [
     'default',
     ['<rootDir>/../../scripts/simple-json-reporter.js', {

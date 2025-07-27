@@ -22,7 +22,7 @@ eslint.config.*
 
 # Coverage and testing
 coverage/
-.nyc_output/
+
 test-results/
 junit.xml
 

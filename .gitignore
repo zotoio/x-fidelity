@@ -20,7 +20,6 @@ yarn-error.log*
 
 # Testing
 coverage/
-.nyc_output/
 
 # Environment
 .env
@@ -64,8 +63,7 @@ lib-cov
 coverage
 *.lcov
 
-# nyc test coverage
-.nyc_output
+# test coverage
 
 # Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
 .grunt

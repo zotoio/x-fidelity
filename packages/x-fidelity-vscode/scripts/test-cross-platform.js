@@ -15,10 +15,13 @@ const fs = require('fs');
 
 const platform = os.platform();
 const isLinux = platform === 'linux';
-const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true' || process.env.GITLAB_CI === 'true';
 
-// Get the test label from command line arguments
-const testLabel = process.argv[2] || 'integration';
+// Parse command line arguments
+const cliArgs = process.argv.slice(2);
+const testLabel = cliArgs[0] || 'integration';
+const isDebug = cliArgs.includes('--debug');
+const isCIForced = cliArgs.includes('--ci');
+const isCI = isCIForced || process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true' || process.env.GITLAB_CI === 'true';
 
 console.log(`🧪 Running VSCode tests on ${platform}`);
 console.log(`📋 Test label: ${testLabel}`);
@@ -45,6 +48,11 @@ const env = {
   VSCODE_TEST_DISABLE_TELEMETRY: 'true',
   NODE_ENV: 'test'
 };
+
+// Add debug verbose output if requested
+if (isDebug) {
+  env.VSCODE_TEST_VERBOSE = 'true';
+}
 
 // Add parallel execution for faster tests
 if (process.env.VSCODE_TEST_PARALLEL !== 'false') {

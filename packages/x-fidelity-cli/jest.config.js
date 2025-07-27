@@ -13,14 +13,8 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html', 'json', 'json-summary'],
-  coverageThreshold: {
-    global: {
-      statements: 40,
-      branches: 40,
-      functions: 40,
-      lines: 40
-    }
-  },
+  // Coverage thresholds are managed centrally in ../../coverage-thresholds.config.js
+  // This ensures consistency across all packages in the monorepo
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: {

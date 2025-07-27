@@ -18,12 +18,12 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**", ".nyc_output/**"],
+      "outputs": ["coverage/**"],
       "inputs": ["src/**", "test/**", "*.test.ts", "*.spec.ts"]
     },
     "test:unit": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**", ".nyc_output/**"],
+      "outputs": ["coverage/**"],
       "inputs": ["src/**", "test/**", "*.test.ts", "*.spec.ts"]
     },
     "test:integration": {
@@ -40,7 +40,7 @@
     },
     "test:coverage": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**", ".nyc_output/**"],
+      "outputs": ["coverage/**"],
       "inputs": ["src/**", "test/**", "*.test.ts", "*.spec.ts"]
     },
     "lint": {
@@ -58,7 +58,7 @@
     },
     "clean": {
       "cache": false,
-      "outputs": ["dist/**", ".next/**", "out/**", "build/**", "coverage/**", ".nyc_output/**", ".vscode-test/**", "*.tsbuildinfo"]
+      "outputs": ["dist/**", ".next/**", "out/**", "build/**", "coverage/**", ".vscode-test/**", "*.tsbuildinfo"]
     },
     "package": {
       "dependsOn": ["build:production"],

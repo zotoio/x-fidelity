@@ -12,14 +12,8 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html', 'json', 'json-summary'],
-  coverageThreshold: {
-    global: {
-      statements: 52.9,
-      branches: 47.7,
-      functions: 55.9,
-      lines: 52.5
-    }
-  },
+  // Coverage thresholds are managed centrally in ../../coverage-thresholds.config.js
+  // This ensures consistency across all packages in the monorepo
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
     '^@x-fidelity/types/(.*)$': '<rootDir>/../x-fidelity-types/src/$1',

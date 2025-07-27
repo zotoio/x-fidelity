@@ -1,3 +1,5 @@
+const { createCoverageThresholds } = require('./coverage-thresholds.config');
+
 /** @type {import('jest').Config} */
 module.exports = {
   projects: [
@@ -19,45 +21,7 @@ module.exports = {
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html", "json", "text-summary"],
-  coverageThreshold: {
-    global: {
-      statements: 80,
-      branches: 75, 
-      functions: 80,
-      lines: 80
-    },
-    // Package-specific thresholds
-    "packages/x-fidelity-core/": {
-      statements: 75,
-      branches: 70,
-      functions: 75,
-      lines: 75
-    },
-    "packages/x-fidelity-cli/": {
-      statements: 85,
-      branches: 80,
-      functions: 85,
-      lines: 85
-    },
-    "packages/x-fidelity-plugins/": {
-      statements: 85,
-      branches: 80,
-      functions: 85,
-      lines: 85
-    },
-    "packages/x-fidelity-server/": {
-      statements: 85,
-      branches: 80,
-      functions: 85,
-      lines: 85
-    },
-    "packages/x-fidelity-types/": {
-      statements: 85,
-      branches: 80,
-      functions: 85,
-      lines: 85
-    }
-  },
+  coverageThreshold: createCoverageThresholds(),
   testMatch: ["**/*.test.ts", "**/*.spec.ts"],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   transform: {
