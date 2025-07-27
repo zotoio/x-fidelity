@@ -67,7 +67,7 @@
     "vscode:package": "yarn workspace x-fidelity-vscode package",
     "website:dev": "yarn workspace website dev",
     "website:build": "yarn workspace website build",
-    "commit": "yarn test && git-cz",
+    "commit": "yarn test && yarn test:coverage && git-cz",
     "build-run": "yarn build:clean && yarn workspace x-fidelity run build-run",
     "cli:build": "yarn workspace x-fidelity build"
   },

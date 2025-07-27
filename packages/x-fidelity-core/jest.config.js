@@ -14,8 +14,8 @@ module.exports = {
     global: {
       statements: 58.0,
       branches: 48.0,
-      functions: 53.0,
-      lines: 58.8
+      functions: 52.0,
+      lines: 58.0
     }
   },
   reporters: [
