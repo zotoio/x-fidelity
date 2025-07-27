@@ -489,12 +489,28 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         // ✅ NEW: Enhanced report generation with per-type retention and caching
         try {
             // Update file cache with analysis results for processed files
+            // CRITICAL FIX: Only store file-specific data to prevent massive cache files (50MB+)
             const processedFiles = fileData.filter(f => f.fileName !== REPO_GLOBAL_CHECK);
             for (const file of processedFiles) {
-                await fileCache.updateFileCache(file.filePath, {
-                    analysisMetadata: resultMetadata,
-                    processedAt: finishTime
-                });
+                // Extract only file-specific data instead of storing entire resultMetadata
+                const fileSpecificData = {
+                    fileName: file.fileName,
+                    filePath: file.filePath,
+                    // Only include issues that belong to this specific file
+                    issues: resultMetadata.XFI_RESULT.issueDetails
+                        .filter(issue => issue.filePath === file.filePath)
+                        .map(issue => ({
+                            filePath: issue.filePath,
+                            errorCount: issue.errors?.length || 0,
+                            // Store minimal error info to avoid size explosion
+                            errorTypes: issue.errors?.map(e => e.ruleFailure).slice(0, 10) || []
+                        })),
+                    processedAt: finishTime,
+                    // Store minimal metadata instead of full resultMetadata
+                    cacheVersion: '2.0.0' // Version bump to indicate new cache format
+                };
+                
+                await fileCache.updateFileCache(file.filePath, fileSpecificData);
             }
             
             // Save multiple report formats with enhanced management using readable dates

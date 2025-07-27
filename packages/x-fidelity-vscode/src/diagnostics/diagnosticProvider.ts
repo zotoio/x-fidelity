@@ -827,6 +827,33 @@ export class DiagnosticProvider implements vscode.Disposable {
     (diagnostic as any).ruleId = issue.ruleId;
     (diagnostic as any).originalLevel = (issue as any).originalLevel;
 
+    // CRITICAL FIX: Add toJSON method to prevent Windows serialization crashes
+    // This ensures the diagnostic can be safely serialized without throwing "Method not found: toJSON" errors
+    (diagnostic as any).toJSON = function () {
+      return {
+        range: {
+          start: {
+            line: this.range.start.line,
+            character: this.range.start.character
+          },
+          end: {
+            line: this.range.end.line,
+            character: this.range.end.character
+          }
+        },
+        message: this.message,
+        severity: this.severity,
+        source: this.source,
+        code: this.code,
+        tags: this.tags,
+        filePath: this.filePath,
+        category: this.category,
+        fixable: this.fixable,
+        ruleId: this.ruleId,
+        originalLevel: this.originalLevel
+      };
+    };
+
     return diagnostic;
   }
 

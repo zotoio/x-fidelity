@@ -204,10 +204,33 @@ export class FileCacheManager {
                 entries: Object.fromEntries(this.cache)
             };
 
+            // CRITICAL FIX: Check cache size before writing to prevent 50MB+ files
+            const cacheContent = JSON.stringify(metadata, null, 2);
+            const cacheSize = Buffer.byteLength(cacheContent, 'utf8');
+            const cacheSizeMB = cacheSize / (1024 * 1024);
+            
+            if (cacheSizeMB > 45) { // Safety margin below 50MB VSCode limit
+                logger.warn(`⚠️ Cache size (${cacheSizeMB.toFixed(1)}MB) approaching 50MB limit - performing aggressive cleanup`);
+                
+                // Keep only the most recently accessed entries
+                const sortedEntries = Array.from(this.cache.entries())
+                    .sort(([,a], [,b]) => b.lastAccessed - a.lastAccessed)
+                    .slice(0, Math.floor(this.cache.size / 2)); // Keep half
+                
+                this.cache.clear();
+                for (const [key, value] of sortedEntries) {
+                    this.cache.set(key, value);
+                }
+                
+                // Rebuild metadata with reduced entries
+                metadata.entries = Object.fromEntries(this.cache);
+                logger.info(`🗑️ Reduced cache from ${sortedEntries.length * 2} to ${this.cache.size} entries to prevent size issues`);
+            }
+
             const cacheFile = path.join(this.cacheDir, this.CACHE_FILE);
             await fs.promises.writeFile(cacheFile, JSON.stringify(metadata, null, 2));
             
-            logger.debug(`Saved file cache with ${this.cache.size} entries to ${cacheFile}`);
+            logger.debug(`Saved file cache with ${this.cache.size} entries to ${cacheFile} (${cacheSizeMB.toFixed(1)}MB)`);
 
         } catch (error) {
             logger.warn('Failed to save file cache to disk', error);
