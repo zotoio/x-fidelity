@@ -459,10 +459,34 @@ export class CLISpawner {
         try {
           // Use global spawn if available (for testing), otherwise use imported spawn
           const spawnFn = (global as any).spawn || spawn;
+
+          // Calculate timeout based on environment
+          const isCI =
+            process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+          const isWindows = process.platform === 'win32';
+          let timeoutMs = options.timeout || 30000; // Reduced from 120000 to 30000
+
+          // Adjust timeout for CI environments
+          if (isCI) {
+            timeoutMs = Math.min(timeoutMs, 25000); // 25 seconds max for CI
+            if (isWindows) {
+              timeoutMs = Math.min(timeoutMs, 20000); // 20 seconds max for Windows CI
+            }
+          }
+
+          this.logger.debug(`CLI timeout configuration`, {
+            correlationId,
+            timeoutMs,
+            isCI,
+            isWindows,
+            original: options.timeout,
+            command: 'timeout-config'
+          });
+
           child = spawnFn(nodePath, args, {
             cwd: options.workspacePath,
             stdio: ['pipe', 'pipe', 'pipe'],
-            timeout: options.timeout || 120000,
+            timeout: timeoutMs,
             env: {
               ...process.env,
               // 🎯 PASS CORRELATION ID TO CLI VIA ENVIRONMENT

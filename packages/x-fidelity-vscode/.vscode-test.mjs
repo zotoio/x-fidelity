@@ -22,7 +22,7 @@ export default defineConfig([
     extensionDevelopmentPath: '.',
     mocha: {
       ui: 'bdd',
-      timeout: 60000, // Reduced from 120000
+      timeout: 30000, // Reduced from 60000 to comply with memory constraint
       color: true,
       reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'min'
     }
