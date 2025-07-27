@@ -15,6 +15,7 @@ const fs = require('fs');
 
 const platform = os.platform();
 const isLinux = platform === 'linux';
+const isWindows = platform === 'win32';
 
 // Parse command line arguments
 const cliArgs = process.argv.slice(2);
@@ -62,6 +63,11 @@ if (process.env.VSCODE_TEST_PARALLEL !== 'false') {
 // Determine the command to run
 let command;
 let args;
+let spawnOptions = {
+  stdio: 'inherit',
+  env,
+  cwd: __dirname + '/..'
+};
 
 if (isLinux && isCI) {
   console.log(`🐧 Running on Linux CI with headless display`);
@@ -94,6 +100,18 @@ if (isLinux && isCI) {
     '--label',
     testLabel
   ];
+} else if (isWindows) {
+  console.log(`🪟 Running on Windows`);
+  command = 'npx.cmd';
+  args = [
+    'vscode-test',
+    '--config',
+    '.vscode-test.mjs',
+    '--label',
+    testLabel
+  ];
+  // On Windows, we need shell: true for proper command resolution
+  spawnOptions.shell = true;
 } else {
   console.log(`🚀 Running on ${platform}`);
   command = 'npx';
@@ -109,11 +127,7 @@ if (isLinux && isCI) {
 console.log(`🚀 Executing: ${command} ${args.join(' ')}`);
 
 // Run the test command
-const child = spawn(command, args, {
-  stdio: 'inherit',
-  env,
-  cwd: __dirname + '/..'
-});
+const child = spawn(command, args, spawnOptions);
 
 child.on('close', (code) => {
   if (code === 0) {
