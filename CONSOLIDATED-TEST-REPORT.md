@@ -1,19 +1,19 @@
 # Consolidated Test Report
 
-> **Generated:** 2025-07-27 21:30 GMT+1000  
-> **Duration:** 61.37s  
-> **Status:** FAILED ❌
+> **Generated:** 2025-07-27 21:48 GMT+1000  
+> **Duration:** 3.20s  
+> **Status:** PASSED ✅
 
 ## 📊 Executive Summary
 
 | Metric | Value |
 |--------|-------|
-| **Overall Status** | FAILED ❌ |
+| **Overall Status** | PASSED ✅ |
 | **Total Tests** | 194 |
-| **Test Success Rate** | 97.4% |
+| **Test Success Rate** | 100.0% |
 | **Packages Tested** | 6 |
 | **Cache Hit Rate** | 100.0% |
-| **Total Execution Time** | 61.37s |
+| **Total Execution Time** | 3.20s |
 
 ## 🔧 Linting & Code Formatting
 
@@ -27,19 +27,28 @@
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| ✅ **Passed** | 189 | 97.4% |
-| ❌ **Failed** | 5 | 2.6% |
+| ✅ **Passed** | 194 | 100.0% |
+| ❌ **Failed** | 0 | 0.0% |
 | ⏭️ **Skipped** | 0 | 0.0% |
 | 💾 **Cached Packages** | 0 | - |
 | 📊 **Total Tests** | 194 | 100% |
+
+## 📊 Code Coverage
+
+| Coverage Type | Percentage |
+|---------------|------------|
+| 📝 **Statements** | 37.3% |
+| 🌿 **Branches** | 40.1% |
+| 🔧 **Functions** | 33.4% |
+| 📏 **Lines** | 37.2% |
 
 ## 💾 Turbo Cache Performance
 
 | Metric | Value |
 |--------|-------|
-| 🎯 **Cache Hits** | 23 tasks |
+| 🎯 **Cache Hits** | 25 tasks |
 | 🔄 **Cache Misses** | 0 tasks |
-| 📊 **Total Tasks** | 23 tasks |
+| 📊 **Total Tasks** | 25 tasks |
 | 📈 **Cache Hit Rate** | 100.0% |
 
 ## 📦 Package Details
@@ -51,7 +60,7 @@
 | `x-fidelity-types` | 🏃 Executed | 0 | 0 | 0 | 0 | 91.9% |
 | `x-fidelity-plugins` | 🏃 Executed | 11 | 0 | 0 | 11 | 53.4% |
 | `x-fidelity-server` | 🏃 Executed | 0 | 0 | 0 | 0 | 57.2% |
-| `x-fidelity-vscode` | 🏃 Executed | 74 | 5 | 0 | 79 | 14.9% |
+| `x-fidelity-vscode` | 🏃 Executed | 79 | 0 | 0 | 79 | 14.8% |
 
 ## 📋 Additional Information
 
@@ -61,7 +70,7 @@
 - **Packages cached:** 0
 
 ### Performance Metrics
-- **Average time per package:** 10.23s
+- **Average time per package:** 0.53s
 - **Cache efficiency:** 100.0% (higher is better)
 
 ### Status Indicators
