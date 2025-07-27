@@ -100,8 +100,11 @@ export class SerializationService {
       ...options
     };
 
+    // Use WeakSet for proper circular reference detection
+    const visited = new WeakSet();
+
     try {
-      const serialized = this.serializeInternal(obj, opts, 0);
+      const serialized = this.serializeInternal(obj, opts, 0, visited);
       const serializedString = JSON.stringify(serialized);
 
       const result: SerializationResult<SerializableValue> = {
@@ -144,7 +147,8 @@ export class SerializationService {
   private serializeInternal(
     obj: any,
     options: Required<SerializationOptions>,
-    depth: number
+    depth: number,
+    visited: WeakSet<object>
   ): any {
     // Prevent infinite recursion
     if (depth > options.maxDepth) {
@@ -171,70 +175,78 @@ export class SerializationService {
         : `[Function: ${obj.name || 'anonymous'}]`;
     }
 
-    // Handle arrays
-    if (Array.isArray(obj)) {
-      return obj.map(item => this.serializeInternal(item, options, depth + 1));
+    // For objects, check circular references first
+    if (typeof obj === 'object' && obj !== null) {
+      // Check for circular reference using WeakSet
+      if (visited.has(obj)) {
+        return '[Circular Reference]';
+      }
+
+      // Add to visited set
+      visited.add(obj);
     }
 
-    // Handle VSCode objects with registered serializers
-    const typeName = obj?.constructor?.name;
-    if (typeName && this.serializers.has(typeName)) {
-      return this.serializers.get(typeName)!(obj);
-    }
+    try {
+      // Handle arrays
+      if (Array.isArray(obj)) {
+        return obj.map(item =>
+          this.serializeInternal(item, options, depth + 1, visited)
+        );
+      }
 
-    // Handle Map and Set
-    if (obj instanceof Map) {
-      return Object.fromEntries(
-        Array.from(obj.entries()).map(([key, value]) => [
-          this.serializeInternal(key, options, depth + 1),
-          this.serializeInternal(value, options, depth + 1)
-        ])
-      );
-    }
+      // Handle VSCode objects with registered serializers
+      const typeName = obj?.constructor?.name;
+      if (typeName && this.serializers.has(typeName)) {
+        return this.serializers.get(typeName)!(obj);
+      }
 
-    if (obj instanceof Set) {
-      return Array.from(obj).map(item =>
-        this.serializeInternal(item, options, depth + 1)
-      );
-    }
+      // Handle Map and Set with circular reference protection
+      if (obj instanceof Map) {
+        return Object.fromEntries(
+          Array.from(obj.entries()).map(([key, value]) => [
+            this.serializeInternal(key, options, depth + 1, visited),
+            this.serializeInternal(value, options, depth + 1, visited)
+          ])
+        );
+      }
 
-    // Handle Buffer
-    if (Buffer.isBuffer(obj)) {
-      return `[Buffer: ${obj.length} bytes]`;
-    }
+      if (obj instanceof Set) {
+        return Array.from(obj).map(item =>
+          this.serializeInternal(item, options, depth + 1, visited)
+        );
+      }
 
-    // Handle Date
-    if (obj instanceof Date) {
-      return obj.toISOString();
-    }
+      // Handle Buffer
+      if (Buffer.isBuffer(obj)) {
+        return `[Buffer: ${obj.length} bytes]`;
+      }
 
-    // Handle Error
-    if (obj instanceof Error) {
-      return {
-        name: obj.name,
-        message: obj.message,
-        stack: obj.stack
-      };
-    }
+      // Handle Date
+      if (obj instanceof Date) {
+        return obj.toISOString();
+      }
 
-    // Handle regular objects
-    if (typeof obj === 'object') {
-      // Check for circular references using a WeakSet
-      if (!obj._serializationVisited) {
-        obj._serializationVisited = true;
+      // Handle Error
+      if (obj instanceof Error) {
+        return {
+          name: obj.name,
+          message: obj.message,
+          stack: obj.stack
+        };
+      }
 
+      // Handle regular objects
+      if (typeof obj === 'object') {
         const result: any = {};
 
+        // Only process enumerable own properties
         for (const [key, value] of Object.entries(obj)) {
-          if (key === '_serializationVisited') {
-            continue;
-          }
-
           try {
             const serializedValue = this.serializeInternal(
               value,
               options,
-              depth + 1
+              depth + 1,
+              visited
             );
             if (serializedValue !== undefined) {
               result[key] = serializedValue;
@@ -245,17 +257,17 @@ export class SerializationService {
           }
         }
 
-        // Clean up the visited marker
-        delete obj._serializationVisited;
-
         return result;
-      } else {
-        return '[Circular Reference]';
+      }
+
+      // Fallback: convert to string
+      return String(obj);
+    } finally {
+      // Remove from visited set when we're done processing this object
+      if (typeof obj === 'object' && obj !== null) {
+        visited.delete(obj);
       }
     }
-
-    // Fallback: convert to string
-    return String(obj);
   }
 
   // Wrap any async operation that might return non-serializable data
@@ -329,8 +341,9 @@ export class SerializationService {
       stats.canSerialize = result.success;
       stats.estimatedSize = result.metadata?.byteSize || 0;
 
-      // Analyze depth and problematic paths
-      this.analyzeObject(obj, stats, '', 0);
+      // Analyze depth and problematic paths with circular reference protection
+      const visited = new WeakSet();
+      this.analyzeObject(obj, stats, '', 0, visited);
     } catch (error) {
       stats.problematicPaths.push(
         `root: ${error instanceof Error ? error.message : String(error)}`
@@ -344,7 +357,8 @@ export class SerializationService {
     obj: any,
     stats: any,
     path: string,
-    depth: number
+    depth: number,
+    visited: WeakSet<object>
   ): void {
     stats.depth = Math.max(stats.depth, depth);
 
@@ -358,30 +372,51 @@ export class SerializationService {
       return;
     }
 
-    // Check if object is problematic
-    try {
-      JSON.stringify(obj);
-    } catch (error) {
-      stats.problematicPaths.push(
-        `${path}: ${error instanceof Error ? error.message : String(error)}`
-      );
+    // Check for circular references
+    if (visited.has(obj)) {
+      stats.problematicPaths.push(`${path}: Circular reference detected`);
       return;
     }
 
-    // Recursively analyze object properties
-    if (Array.isArray(obj)) {
-      obj.forEach((item, index) => {
-        this.analyzeObject(item, stats, `${path}[${index}]`, depth + 1);
-      });
-    } else {
-      for (const [key, value] of Object.entries(obj)) {
-        this.analyzeObject(
-          value,
-          stats,
-          path ? `${path}.${key}` : key,
-          depth + 1
+    // Add to visited set
+    visited.add(obj);
+
+    try {
+      // Check if object is problematic
+      try {
+        JSON.stringify(obj);
+      } catch (error) {
+        stats.problematicPaths.push(
+          `${path}: ${error instanceof Error ? error.message : String(error)}`
         );
+        return;
       }
+
+      // Recursively analyze object properties
+      if (Array.isArray(obj)) {
+        obj.forEach((item, index) => {
+          this.analyzeObject(
+            item,
+            stats,
+            `${path}[${index}]`,
+            depth + 1,
+            visited
+          );
+        });
+      } else {
+        for (const [key, value] of Object.entries(obj)) {
+          this.analyzeObject(
+            value,
+            stats,
+            path ? `${path}.${key}` : key,
+            depth + 1,
+            visited
+          );
+        }
+      }
+    } finally {
+      // Remove from visited set when done
+      visited.delete(obj);
     }
   }
 
