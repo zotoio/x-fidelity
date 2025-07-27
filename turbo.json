@@ -58,7 +58,7 @@
     },
     "clean": {
       "cache": false,
-      "outputs": []
+      "outputs": ["dist/**", ".next/**", "out/**", "build/**", "coverage/**", ".nyc_output/**", ".vscode-test/**", "*.tsbuildinfo"]
     },
     "package": {
       "dependsOn": ["build:production"],

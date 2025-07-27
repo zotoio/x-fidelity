@@ -103,7 +103,7 @@ function findTriggeringRule(engine: any, eventType: string, logger?: ILogger): a
 /**
  * Builds the proper RuleFailure structure according to v3.24.0 contract
  */
-async function buildRuleFailure(event: any, rule: any, file: any, almanac: any, logger?: ILogger): Promise<RuleFailure> {
+async function buildRuleFailure(event: any, rule: any, file: any, almanac: any, repoPath?: string, logger?: ILogger): Promise<RuleFailure> {
     const resolvedDetails = await resolveEventDetails(event.params?.details, almanac, logger);
     
     // Get the rule name - use the rule's name if available, otherwise fall back to event type
@@ -140,7 +140,7 @@ async function buildRuleFailure(event: any, rule: any, file: any, almanac: any, 
             recommendations: rule?.recommendations || undefined,
             // Include data from event.params directly in details using v3.24.0 [key: string]: any pattern
             ...event.params?.data,
-            filePath: file.filePath,
+            filePath: repoPath ? path.relative(repoPath, file.filePath) : file.filePath,
             fileName: file.fileName,
             resultFact: event.params?.resultFact || event.params?.data?.resultFact,
             details: resolvedDetails
@@ -152,7 +152,7 @@ async function buildRuleFailure(event: any, rule: any, file: any, almanac: any, 
  * Builds RuleFailure from engine result (temp version approach)
  * This gives us direct access to rule names and proper rule details
  */
-async function buildRuleFailureFromResult(result: any, rule: any, file: any, almanac: any): Promise<RuleFailure> {
+async function buildRuleFailureFromResult(result: any, rule: any, file: any, almanac: any, repoPath?: string): Promise<RuleFailure> {
     // Use temp version approach - simple fact resolution only for direct fact references
     let resolvedDetails = result.event?.params?.details;
     
@@ -209,7 +209,7 @@ async function buildRuleFailureFromResult(result: any, rule: any, file: any, alm
             conditionType: conditionType,
             ruleDescription: rule?.description || 'No description available',
             recommendations: result.event?.params?.recommendations || rule?.recommendations || undefined,
-            filePath: file.filePath,
+            filePath: repoPath ? path.relative(repoPath, file.filePath) : file.filePath,
             fileName: file.fileName,
             // Spread event params directly like temp version - this should include complexityResult
             ...result.event?.params,
@@ -325,7 +325,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                             const rule = (engine as any).rules.find((r: any) => r.name === result.name);
                             
                             // Build the proper RuleFailure structure with correct rule name
-                            const ruleFailure = await buildRuleFailureFromResult(result, rule, file, fileResults.almanac);
+                            const ruleFailure = await buildRuleFailureFromResult(result, rule, file, fileResults.almanac, repoPath);
                             processedResults.push(ruleFailure);
                             
                             const eventEnd = Date.now();
@@ -481,7 +481,7 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                             const rule = (engine as any).rules.find((r: any) => r.name === result.name);
                             
                             // Build the proper RuleFailure structure with correct rule name
-                            const ruleFailure = await buildRuleFailureFromResult(result, rule, globalFile, fileResults.almanac);
+                            const ruleFailure = await buildRuleFailureFromResult(result, rule, globalFile, fileResults.almanac, repoPath);
                             processedResults.push(ruleFailure);
                             
                             const eventEnd = Date.now();

@@ -25,7 +25,7 @@
   "scripts": {
     "build": "turbo build",
     "build:production": "turbo build:production",
-    "build:clean": "turbo clean && turbo build",
+    "build:clean": "turbo clean && turbo build --force --no-cache",
     "build:local": "turbo build --force --no-cache",
     "dev": "turbo dev",
     "test": "yarn ci:quality && yarn test:unit",
@@ -68,7 +68,7 @@
     "website:dev": "yarn workspace website dev",
     "website:build": "yarn workspace website build",
     "commit": "yarn test && git-cz",
-    "build-run": "yarn build && yarn workspace x-fidelity run build-run",
+    "build-run": "yarn build:clean && yarn workspace x-fidelity run build-run",
     "cli:build": "yarn workspace x-fidelity build"
   },
   "dependencies": {
