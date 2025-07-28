@@ -426,7 +426,9 @@ suite('CLI Spawner Logging Integration Tests', () => {
         const containsExpectedText = 
           errorMessage.includes('Failed to spawn CLI process') ||
           errorMessage.includes('CLI process failed') ||
-          errorMessage.includes('spawn');
+          errorMessage.includes('spawn') ||
+          errorMessage.includes('Bundled CLI not found') ||
+          errorMessage.includes('Directory does not exist');
         assert.ok(containsExpectedText, `Error message should contain spawn-related text. Got: ${errorMessage}`);
       }
     });

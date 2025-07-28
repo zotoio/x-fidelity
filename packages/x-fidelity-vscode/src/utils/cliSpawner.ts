@@ -93,8 +93,18 @@ export class CLISpawner {
       path.resolve(__dirname, './cli/index.js'), // From dist directory (production)
       path.resolve(__dirname, './dist/cli/index.js'), // From root directory (development)
       path.resolve(__dirname, '../../cli/index.js'), // From src directory in tests
+      // WINDOWS FIX: Add paths for test environments where __dirname is in test/utils
+      path.resolve(__dirname, '../../../cli/index.js'), // From test/utils to dist/cli
+      path.resolve(__dirname, '../../../../cli/index.js'), // From test subdirectories
+      // WINDOWS FIX: Try going up to find the built CLI in the correct location
+      path.resolve(__dirname, '../../../out/cli/index.js'), // From test to out/cli
+      path.resolve(__dirname, '../../out/cli/index.js'), // From utils to out/cli
       path.resolve(process.cwd(), 'cli/index.js'), // From current working directory
       path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js'), // From monorepo root
+      path.resolve(
+        process.cwd(),
+        'packages/x-fidelity-vscode/out/cli/index.js'
+      ), // From monorepo root to out/cli
       // CRITICAL: Add the actual monorepo CLI location for tests
       path.resolve(__dirname, '../../../x-fidelity-cli/dist/index.js'), // From VSCode src to CLI dist
       path.resolve(__dirname, '../../x-fidelity-cli/dist/index.js'), // From VSCode dist to CLI dist
@@ -980,8 +990,15 @@ export function getEmbeddedCLIPath(): string {
     path.resolve(__dirname, './cli/index.js'), // From dist directory (production)
     path.resolve(__dirname, './dist/cli/index.js'), // From root directory (development)
     path.resolve(__dirname, '../../cli/index.js'), // From src directory in tests
+    // WINDOWS FIX: Add paths for test environments where __dirname is in test/utils
+    path.resolve(__dirname, '../../../cli/index.js'), // From test/utils to dist/cli
+    path.resolve(__dirname, '../../../../cli/index.js'), // From test subdirectories
+    // WINDOWS FIX: Try going up to find the built CLI in the correct location
+    path.resolve(__dirname, '../../../out/cli/index.js'), // From test to out/cli
+    path.resolve(__dirname, '../../out/cli/index.js'), // From utils to out/cli
     path.resolve(process.cwd(), 'cli/index.js'), // From current working directory
     path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js'), // From monorepo root
+    path.resolve(process.cwd(), 'packages/x-fidelity-vscode/out/cli/index.js'), // From monorepo root to out/cli
     // CRITICAL: Add the actual monorepo CLI location for tests
     path.resolve(__dirname, '../../../x-fidelity-cli/dist/index.js'), // From VSCode src to CLI dist
     path.resolve(__dirname, '../../x-fidelity-cli/dist/index.js'), // From VSCode dist to CLI dist
