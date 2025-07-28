@@ -12,15 +12,9 @@ module.exports = {
     '!src/**/index.ts'
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
-  coverageThreshold: {
-    global: {
-      statements: 85,
-      branches: 80,
-      functions: 85,
-      lines: 85
-    }
-  },
+  coverageReporters: ['text', 'lcov', 'html', 'json', 'json-summary'],
+  // Coverage thresholds are managed centrally in ../../coverage-thresholds.config.js
+  // This ensures consistency across all packages in the monorepo
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: {
@@ -43,5 +37,11 @@ module.exports = {
   // Jest 30 performance improvements
   testEnvironmentOptions: {
     globalsCleanup: 'soft'
-  }
+  },
+  reporters: [
+    'default',
+    ['<rootDir>/../../scripts/simple-json-reporter.js', {
+      outputPath: './jest-results.json'
+    }]
+  ]
 };

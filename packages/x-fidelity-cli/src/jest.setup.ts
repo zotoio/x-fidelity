@@ -72,4 +72,12 @@ global.console = {
 // Clean up after each test
 afterEach(() => {
   jest.clearAllMocks();
+  // Clear any remaining timers
+  jest.clearAllTimers();
+});
+
+// Clean up after all tests
+afterAll(() => {
+  // Clear any remaining timers
+  jest.clearAllTimers();
 });

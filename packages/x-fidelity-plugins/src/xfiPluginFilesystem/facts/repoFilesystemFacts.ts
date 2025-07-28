@@ -35,7 +35,11 @@ function getLanguageFromPath(filePath: string): 'javascript' | 'typescript' | nu
 }
 
 // ✅ Enhanced helper function to generate AST for a file
-async function generateAstForFile(filePath: string, content: string): Promise<AstResult | undefined> {
+async function generateAstForFile(filePath: string, content: string, repoPath?: string): Promise<AstResult | undefined> {
+    // Helper function to convert absolute paths to relative for logging
+    const getDisplayPath = (fp: string): string => {
+        return repoPath ? path.relative(repoPath, fp) : fp;
+    };
     const language = getLanguageFromPath(filePath);
     if (!language) {
         return undefined;
@@ -55,7 +59,7 @@ async function generateAstForFile(filePath: string, content: string): Promise<As
         const generationTime = Date.now() - startTime;
         
         if (astResult.tree) {
-            logger.debug(`[AST Preprocessing] Successfully generated AST for ${filePath} in ${generationTime}ms`);
+            logger.debug(`[AST Preprocessing] Successfully generated AST for ${getDisplayPath(filePath)} in ${generationTime}ms`);
             return {
                 tree: astResult.tree,
                 rootNode: astResult.tree.rootNode,
@@ -65,7 +69,7 @@ async function generateAstForFile(filePath: string, content: string): Promise<As
                 generationTime
             };
         } else {
-            logger.debug(`[AST Preprocessing] Failed to generate AST for ${filePath}: ${astResult.reason}`);
+            logger.debug(`[AST Preprocessing] Failed to generate AST for ${getDisplayPath(filePath)}: ${astResult.reason}`);
             return {
                 tree: null,
                 reason: astResult.reason || 'Unknown AST generation failure',
@@ -77,7 +81,7 @@ async function generateAstForFile(filePath: string, content: string): Promise<As
     } catch (error) {
         const generationTime = Date.now() - startTime;
         const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.warn(`[AST Preprocessing] Exception generating AST for ${filePath}: ${errorMessage}`);
+        logger.warn(`[AST Preprocessing] Exception generating AST for ${getDisplayPath(filePath)}: ${errorMessage}`);
         return {
             tree: null,
             reason: `AST generation exception: ${errorMessage}`,
@@ -89,7 +93,12 @@ async function generateAstForFile(filePath: string, content: string): Promise<As
 }
 
 // ✅ Enhanced parseFile function with eager AST preprocessing for better performance
-async function parseFile(filePath: string): Promise<FileData> {
+async function parseFile(filePath: string, repoPath?: string): Promise<FileData> {
+    // Helper function to convert absolute paths to relative for logging
+    const getDisplayPath = (fp: string): string => {
+        return repoPath ? path.relative(repoPath, fp) : fp;
+    };
+    
     try {
         const content = fs.readFileSync(filePath, 'utf8');
         const fileName = path.basename(filePath);
@@ -107,7 +116,7 @@ async function parseFile(filePath: string): Promise<FileData> {
             const astStartTime = Date.now();
             logger.debug(`[AST Preprocessing] Generating AST for ${fileName} during fileData collection`);
             
-            const astResult = await generateAstForFile(filePath, content);
+            const astResult = await generateAstForFile(filePath, content, repoPath);
             const astGenerationTime = Date.now() - astStartTime;
             
             if (astResult) {
@@ -129,12 +138,16 @@ async function parseFile(filePath: string): Promise<FileData> {
 
         return Promise.resolve(fileData);
     } catch (error) {
-        logger.warn(`Error reading file ${filePath}: ${error}`);
+                    logger.warn(`Error reading file ${getDisplayPath(filePath)}: ${error}`);
         throw error;
     }
 }
 
 async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeConfig): Promise<FileData[]> {
+    // Helper function to convert absolute paths to relative for logging
+    const getDisplayPath = (filePath: string): string => {
+        return path.relative(repoPath, filePath);
+    };
     const startTime = Date.now();
     const filesData: FileData[] = [];
     const visitedPaths = new Set();
@@ -148,26 +161,26 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
         try {
             realFilePath = fs.realpathSync(filePath);
         } catch (err) {
-            logger.warn(`Error resolving real path for ${filePath}, using original path. Error: ${err}`);
+            logger.warn(`Error resolving real path for ${getDisplayPath(filePath)}, using original path. Error: ${err}`);
             realFilePath = filePath;
         }
         if (!realFilePath.startsWith(baseDir)) {
-            logger.warn(`Path traversal attempt detected: ${realFilePath}`);
+            logger.warn(`Path traversal attempt detected: ${getDisplayPath(realFilePath)}`);
             continue;
         }
         if (visitedPaths.has(realFilePath)) {
-            logger.debug(`Already processed symlink target: ${realFilePath}`);
+            logger.debug(`Already processed symlink target: ${getDisplayPath(realFilePath)}`);
             continue;
         }
         visitedPaths.add(realFilePath);
         
-        logger.debug({ filePath }, 'Checking file');
+        logger.debug({ filePath: getDisplayPath(filePath) }, 'Checking file');
         const statFn = fs.promises.stat || fs.promises.lstat;
         const stats = await statFn(filePath);
         
         if (stats.isDirectory()) {
             const isBlacklistedDir = isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns });
-            logger.debug({ filePath, isBlacklisted: isBlacklistedDir }, 'Checking file against blacklist patterns');
+            logger.debug({ filePath: getDisplayPath(filePath), isBlacklisted: isBlacklistedDir }, 'Checking file against blacklist patterns');
             if (!isBlacklistedDir) {
                 const dirFilesData = await collectRepoFileData(filePath, archetypeConfig);
                 filesData.push(...dirFilesData);
@@ -175,10 +188,10 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
         } else {
             const isBlacklistedFile = isBlacklisted({ filePath, repoPath, blacklistPatterns: archetypeConfig.config.blacklistPatterns });
             const isWhitelistedFile = isWhitelisted({ filePath, repoPath, whitelistPatterns: archetypeConfig.config.whitelistPatterns });
-            logger.debug({ filePath, isBlacklisted: isBlacklistedFile, isWhitelisted: isWhitelistedFile }, 'Checking file against blacklist patterns');
+            logger.debug({ filePath: getDisplayPath(filePath), isBlacklisted: isBlacklistedFile, isWhitelisted: isWhitelistedFile }, 'Checking file against blacklist patterns');
             // Whitelist takes precedence over blacklist - if explicitly whitelisted, include the file
             if (!isBlacklistedFile && isWhitelistedFile) {
-                const fileData = await parseFile(filePath);
+                const fileData = await parseFile(filePath, repoPath);
                 fileData.relativePath = path.relative(repoPath, filePath);
                 filesData.push(fileData);
             }    
@@ -192,12 +205,12 @@ async function collectRepoFileData(repoPath: string, archetypeConfig: ArchetypeC
 }
 
 function isBlacklisted({ filePath, repoPath, blacklistPatterns }: IsBlacklistedParams): boolean {
-    logger.debug({ filePath }, 'Checking file against blacklist patterns');
+    logger.debug({ filePath: path.relative(repoPath, filePath) }, 'Checking file against blacklist patterns');
     const normalizedPath = path.resolve(filePath);
     const normalizedRepoPath = path.resolve(repoPath);
     
     if (!normalizedPath.startsWith(normalizedRepoPath)) {
-        logger.warn(`Potential path traversal attempt detected: ${filePath}`);
+        logger.warn(`Potential path traversal attempt detected: ${path.relative(repoPath, filePath)}`);
         return true;
     }
     
@@ -211,12 +224,12 @@ function isBlacklisted({ filePath, repoPath, blacklistPatterns }: IsBlacklistedP
 }
 
 function isWhitelisted({ filePath, repoPath, whitelistPatterns }: isWhitelistedParams): boolean {
-    logger.debug({ filePath }, 'Checking file against whitelist patterns');
+    logger.debug({ filePath: path.relative(repoPath, filePath) }, 'Checking file against whitelist patterns');
     const normalizedPath = path.resolve(filePath);
     const normalizedRepoPath = path.resolve(repoPath);
     
     if (!normalizedPath.startsWith(normalizedRepoPath)) {
-        logger.warn(`Potential path traversal attempt detected: ${filePath}`);
+        logger.warn(`Potential path traversal attempt detected: ${path.relative(repoPath, filePath)}`);
         return false;
     }
     
@@ -242,7 +255,7 @@ async function repoFileAnalysis(params: any, almanac: any) {
     const contextLength = params.contextLength || 50;
     const multilineMatches = params.multilineMatches || false;
 
-    logger.debug({ checkPatterns, filePath, captureGroups }, 'Running repo file analysis with position tracking');
+            logger.debug({ checkPatterns, filePath: params.repoPath ? path.relative(params.repoPath, filePath) : filePath, captureGroups }, 'Running repo file analysis with position tracking');
 
     // ✅ REMOVED: No longer need REPO_GLOBAL_CHECK since this is now an iterative fact
     if (checkPatterns.length === 0 || !fileContent) {

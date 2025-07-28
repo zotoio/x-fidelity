@@ -120,6 +120,8 @@ describe('Analyzer', () => {
             expect(typeof results.XFI_RESULT.durationSeconds).toBe('number');
             expect(typeof results.XFI_RESULT.finishTime).toBe('number');
             expect(typeof results.XFI_RESULT.startTime).toBe('number');
+            expect(typeof results.XFI_RESULT.finishTimeString).toBe('string');
+            expect(typeof results.XFI_RESULT.startTimeString).toBe('string');
             expect(typeof results.XFI_RESULT.memoryUsage).toBe('object');
             expect(typeof results.XFI_RESULT.repoUrl).toBe('string');
             expect(typeof results.XFI_RESULT.xfiVersion).toBe('string');

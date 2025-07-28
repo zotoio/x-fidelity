@@ -2,11 +2,12 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { ConfigManager } from '../configuration/configManager';
-import { REPO_GLOBAL_CHECK } from '@x-fidelity/core';
+
 import {
   safeSerializeRange,
   safeSerializeForVSCode
 } from '../utils/serialization';
+import { FileSourceTranslator } from '../utils/fileSourceTranslator';
 
 export interface ReportViewerOptions {
   reportData: ResultMetadata;
@@ -866,34 +867,12 @@ export class ReportViewer implements vscode.Disposable {
         return;
       }
 
-      let fileUri: vscode.Uri;
+      // Use FileSourceTranslator to resolve file URI (translates REPO_GLOBAL_CHECK to README.md)
+      const fileUri = await FileSourceTranslator.resolveFileUri(filePath);
 
-      // Handle special case for global repository checks
-      if (filePath === REPO_GLOBAL_CHECK) {
-        fileUri = vscode.Uri.file(
-          path.join(workspaceFolder.uri.fsPath, '.xfiResults', 'XFI_RESULT.md')
-        );
-
-        try {
-          const document = await vscode.workspace.openTextDocument(fileUri);
-          await vscode.window.showTextDocument(document);
-          return;
-        } catch (_error) {
-          vscode.window.showWarningMessage(
-            `Global check report not found. Details: ${filePath}`
-          );
-          return;
-        }
-      }
-
-      // Handle absolute paths
-      if (path.isAbsolute(filePath)) {
-        fileUri = vscode.Uri.file(filePath);
-      } else {
-        // Handle relative paths
-        fileUri = vscode.Uri.file(
-          path.join(workspaceFolder.uri.fsPath, filePath)
-        );
+      if (!fileUri) {
+        vscode.window.showWarningMessage(`Unable to open file: ${filePath}`);
+        return;
       }
 
       const document = await vscode.workspace.openTextDocument(fileUri);
@@ -911,7 +890,26 @@ export class ReportViewer implements vscode.Disposable {
           Math.max(0, range.end.column - 1) // Convert to 0-based
         );
 
+        (startPos as any).toJSON = function () {
+          return { line: this.line, character: this.character };
+        };
+        (endPos as any).toJSON = function () {
+          return { line: this.line, character: this.character };
+        };
+
         const selection = new vscode.Selection(startPos, endPos);
+        (selection as any).toJSON = function () {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character },
+            anchor: {
+              line: this.anchor.line,
+              character: this.anchor.character
+            },
+            active: { line: this.active.line, character: this.active.character }
+          };
+        };
+
         editor.selection = selection;
         editor.revealRange(
           selection,
@@ -923,17 +921,69 @@ export class ReportViewer implements vscode.Disposable {
           Math.max(0, lineNumber - 1), // Convert to 0-based
           Math.max(0, columnNumber - 1) // Convert to 0-based
         );
-        editor.selection = new vscode.Selection(position, position);
+
+        (position as any).toJSON = function () {
+          return { line: this.line, character: this.character };
+        };
+
+        const selection = new vscode.Selection(position, position);
+        (selection as any).toJSON = function () {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character },
+            anchor: {
+              line: this.anchor.line,
+              character: this.anchor.character
+            },
+            active: { line: this.active.line, character: this.active.character }
+          };
+        };
+
+        const range = new vscode.Range(position, position);
+        (range as any).toJSON = function () {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character }
+          };
+        };
+
+        editor.selection = selection;
         editor.revealRange(
-          new vscode.Range(position, position),
+          range,
           vscode.TextEditorRevealType.InCenterIfOutsideViewport
         );
       } else if (lineNumber > 0) {
         // Fallback to line-only navigation
         const position = new vscode.Position(Math.max(0, lineNumber - 1), 0);
-        editor.selection = new vscode.Selection(position, position);
+
+        (position as any).toJSON = function () {
+          return { line: this.line, character: this.character };
+        };
+
+        const selection = new vscode.Selection(position, position);
+        (selection as any).toJSON = function () {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character },
+            anchor: {
+              line: this.anchor.line,
+              character: this.anchor.character
+            },
+            active: { line: this.active.line, character: this.active.character }
+          };
+        };
+
+        const range = new vscode.Range(position, position);
+        (range as any).toJSON = function () {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character }
+          };
+        };
+
+        editor.selection = selection;
         editor.revealRange(
-          new vscode.Range(position, position),
+          range,
           vscode.TextEditorRevealType.InCenterIfOutsideViewport
         );
       }

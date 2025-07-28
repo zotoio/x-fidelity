@@ -93,8 +93,26 @@ export class CLISpawner {
       path.resolve(__dirname, './cli/index.js'), // From dist directory (production)
       path.resolve(__dirname, './dist/cli/index.js'), // From root directory (development)
       path.resolve(__dirname, '../../cli/index.js'), // From src directory in tests
+      // TEST ENVIRONMENT FIXES: Add paths for when __dirname is in compiled test output (out/)
+      path.resolve(__dirname, '../../dist/cli/index.js'), // From out/test/helpers to dist/cli
+      path.resolve(__dirname, '../../../dist/cli/index.js'), // From out/test/integration to dist/cli
+      path.resolve(__dirname, '../../../../dist/cli/index.js'), // From deeper test subdirectories
+      // WINDOWS FIX: Add paths for test environments where __dirname is in test/utils
+      path.resolve(__dirname, '../../../cli/index.js'), // From test/utils to dist/cli
+      path.resolve(__dirname, '../../../../cli/index.js'), // From test subdirectories
+      // LEGACY: Try out/cli paths (incorrect but kept for compatibility)
+      path.resolve(__dirname, '../../../out/cli/index.js'), // From test to out/cli
+      path.resolve(__dirname, '../../out/cli/index.js'), // From utils to out/cli
       path.resolve(process.cwd(), 'cli/index.js'), // From current working directory
       path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js'), // From monorepo root
+      path.resolve(
+        process.cwd(),
+        'packages/x-fidelity-vscode/dist/cli/index.js'
+      ), // From monorepo root to dist/cli (CORRECTED)
+      path.resolve(
+        process.cwd(),
+        'packages/x-fidelity-vscode/out/cli/index.js'
+      ), // From monorepo root to out/cli (legacy)
       // CRITICAL: Add the actual monorepo CLI location for tests
       path.resolve(__dirname, '../../../x-fidelity-cli/dist/index.js'), // From VSCode src to CLI dist
       path.resolve(__dirname, '../../x-fidelity-cli/dist/index.js'), // From VSCode dist to CLI dist
@@ -459,10 +477,35 @@ export class CLISpawner {
         try {
           // Use global spawn if available (for testing), otherwise use imported spawn
           const spawnFn = (global as any).spawn || spawn;
+
+          // Calculate timeout based on environment with aggressive Windows CI limits
+          const isCI =
+            process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+          const isWindows = process.platform === 'win32';
+          let timeoutMs = options.timeout || 60000;
+
+          // Aggressive timeout limits for Windows CI to prevent hanging
+          if (isCI) {
+            if (isWindows) {
+              timeoutMs = Math.min(timeoutMs, 30000); // Windows CI: max 30s
+            } else {
+              timeoutMs = Math.min(timeoutMs, 60000); // Other CI: max 60s
+            }
+          }
+
+          this.logger.debug(`CLI timeout configuration`, {
+            correlationId,
+            timeoutMs,
+            isCI,
+            isWindows,
+            original: options.timeout,
+            command: 'timeout-config'
+          });
+
           child = spawnFn(nodePath, args, {
             cwd: options.workspacePath,
             stdio: ['pipe', 'pipe', 'pipe'],
-            timeout: options.timeout || 120000,
+            timeout: timeoutMs,
             env: {
               ...process.env,
               // 🎯 PASS CORRELATION ID TO CLI VIA ENVIRONMENT
@@ -543,6 +586,26 @@ export class CLISpawner {
   }
 
   /**
+   * Windows-specific output size limits to prevent RangeError: Invalid string length
+   */
+  private static readonly MAX_OUTPUT_SIZE = 50 * 1024 * 1024; // 50MB limit for Windows
+  private static readonly MAX_STDERR_SIZE = 10 * 1024 * 1024; // 10MB limit for stderr
+
+  private truncateOutput(
+    output: string,
+    maxSize: number,
+    label: string
+  ): string {
+    if (output.length <= maxSize) {
+      return output;
+    }
+
+    const truncated = output.substring(0, maxSize);
+    const message = `\n\n[TRUNCATED: Output exceeded ${maxSize} characters for ${label}. This may indicate excessive logging or errors.]`;
+    return truncated + message;
+  }
+
+  /**
    * Kill CLI process gracefully with fallback to force kill
    */
   private killProcess(child: ChildProcess): void {
@@ -594,9 +657,20 @@ export class CLISpawner {
     if (child.stderr) {
       child.stderr.on('data', (data: Buffer) => {
         const output = data.toString();
-        stderr += output;
-        const lines = output.split('\n');
 
+        // Prevent RangeError: Invalid string length on Windows
+        const newStderr = stderr + output;
+        if (newStderr.length > CLISpawner.MAX_STDERR_SIZE) {
+          stderr = this.truncateOutput(
+            newStderr,
+            CLISpawner.MAX_STDERR_SIZE,
+            'stderr'
+          );
+        } else {
+          stderr += output;
+        }
+
+        const lines = output.split('\n');
         for (const line of lines) {
           if (line.trim()) {
             this.logger.streamLine(line, 'stderr');
@@ -633,7 +707,19 @@ export class CLISpawner {
     // Handle stderr with streaming
     child.stderr?.on('data', data => {
       const output = data.toString();
-      stderr += output;
+
+      // Prevent RangeError: Invalid string length on Windows
+      const newStderr = stderr + output;
+      if (newStderr.length > CLISpawner.MAX_STDERR_SIZE) {
+        stderr = this.truncateOutput(
+          newStderr,
+          CLISpawner.MAX_STDERR_SIZE,
+          'stderr'
+        );
+      } else {
+        stderr += output;
+      }
+
       const lines = output.split('\n');
 
       for (const line of lines) {
@@ -649,6 +735,23 @@ export class CLISpawner {
 
       // 🎯 STOP STREAMING AFTER ANALYSIS COMPLETION
       this.logger.stopStreaming();
+
+      // Windows-specific cleanup to prevent memory accumulation
+      if (process.platform === 'win32' && process.env.CI === 'true') {
+        // Force garbage collection if available
+        if (global.gc) {
+          global.gc();
+        }
+
+        // Truncate large stderr to prevent memory issues
+        if (stderr.length > CLISpawner.MAX_STDERR_SIZE / 2) {
+          stderr = this.truncateOutput(
+            stderr,
+            CLISpawner.MAX_STDERR_SIZE / 2,
+            'cleanup'
+          );
+        }
+      }
 
       this.logger.debug(`CLI process exited with code ${code}`, {
         correlationId,
@@ -812,6 +915,8 @@ export class CLISpawner {
       options: {},
       startTime: Date.now(),
       finishTime: Date.now(),
+      startTimeString: new Date().toISOString(),
+      finishTimeString: new Date().toISOString(),
       durationSeconds: 0,
       xfiVersion: cliVersion,
       archetype: 'unknown',
@@ -954,8 +1059,15 @@ export function getEmbeddedCLIPath(): string {
     path.resolve(__dirname, './cli/index.js'), // From dist directory (production)
     path.resolve(__dirname, './dist/cli/index.js'), // From root directory (development)
     path.resolve(__dirname, '../../cli/index.js'), // From src directory in tests
+    // WINDOWS FIX: Add paths for test environments where __dirname is in test/utils
+    path.resolve(__dirname, '../../../cli/index.js'), // From test/utils to dist/cli
+    path.resolve(__dirname, '../../../../cli/index.js'), // From test subdirectories
+    // WINDOWS FIX: Try going up to find the built CLI in the correct location
+    path.resolve(__dirname, '../../../out/cli/index.js'), // From test to out/cli
+    path.resolve(__dirname, '../../out/cli/index.js'), // From utils to out/cli
     path.resolve(process.cwd(), 'cli/index.js'), // From current working directory
     path.resolve(process.cwd(), 'packages/x-fidelity-vscode/cli/index.js'), // From monorepo root
+    path.resolve(process.cwd(), 'packages/x-fidelity-vscode/out/cli/index.js'), // From monorepo root to out/cli
     // CRITICAL: Add the actual monorepo CLI location for tests
     path.resolve(__dirname, '../../../x-fidelity-cli/dist/index.js'), // From VSCode src to CLI dist
     path.resolve(__dirname, '../../x-fidelity-cli/dist/index.js'), // From VSCode dist to CLI dist

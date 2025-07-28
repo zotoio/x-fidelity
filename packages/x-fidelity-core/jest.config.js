@@ -9,15 +9,15 @@ module.exports = {
     '!src/**/index.ts'
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
-  coverageThreshold: {
-    global: {
-      statements: 75,
-      branches: 70,
-      functions: 75,
-      lines: 75
-    }
-  },
+  coverageReporters: ['text', 'lcov', 'html', 'json', 'json-summary'],
+  // Coverage thresholds are managed centrally in ../../coverage-thresholds.config.js
+  // This ensures consistency across all packages in the monorepo
+  reporters: [
+    'default',
+    ['<rootDir>/../../scripts/simple-json-reporter.js', {
+      outputPath: './jest-results.json'
+    }]
+  ],
   moduleNameMapper: {
     "^@x-fidelity/core/(.*)$": "<rootDir>/src/$1",
     "^@x-fidelity/types/(.*)$": "<rootDir>/../x-fidelity-types/src/$1",
@@ -38,7 +38,8 @@ module.exports = {
   },
   testMatch: [
     "**/__tests__/**/*.+(ts|tsx|js)",
-    "**/?(*.)+(spec|test).+(ts|tsx|js)"
+    "**/?(*.)+(spec|test).+(ts|tsx|js)",
+    "!**/*.integration.test.ts"
   ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node", "mts", "cts"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],

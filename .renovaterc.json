@@ -121,7 +121,14 @@
     "**/node_modules/**",
     "**/temp/**",
     "**/dist/**",
-    "**/build/**"
+    "**/build/**",
+    "**/out/**",
+    "**/coverage/**",
+    "**/test-results/**",
+    "**/test-results.xml",
+    "**/test-results.json",
+    "**/test-results.xml.gz",
+    "**/test-results.json.gz"
   ],
   "ignoreDeps": [],
   "postUpdateOptions": ["yarnDedupeHighest"],

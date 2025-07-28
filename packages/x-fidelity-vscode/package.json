@@ -2,7 +2,7 @@
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity",
   "description": "VSCode extension for X-Fidelity code quality analysis real-time diagnostics, and comprehensive UI integration",
-  "version": "4.2.5",
+  "version": "0.0.0-semantically-released",
   "publisher": "zotoio",
   "private": true,
   "license": "MIT",
@@ -207,11 +207,17 @@
             },
             "supportedLanguages": {
               "type": "array",
-              "items": {"type": "string"},
+              "items": {
+                "type": "string"
+              },
               "description": "Supported programming languages"
             }
           },
-          "required": ["id", "displayName", "command"]
+          "required": [
+            "id",
+            "displayName",
+            "command"
+          ]
         }
       },
       {
@@ -238,11 +244,17 @@
             },
             "supportedRuleTypes": {
               "type": "array",
-              "items": {"type": "string"},
+              "items": {
+                "type": "string"
+              },
               "description": "Types of rules this fixer can handle"
             }
           },
-          "required": ["id", "displayName", "command"]
+          "required": [
+            "id",
+            "displayName",
+            "command"
+          ]
         }
       }
     ],
@@ -553,13 +565,13 @@
               "description": "Extension ID that provides issue explanation (e.g., 'github.copilot', 'built-in')"
             },
             "fixIssue": {
-              "type": "string", 
+              "type": "string",
               "default": "built-in",
               "description": "Extension ID that provides issue fixing (e.g., 'ms-vscode.eslint-fix', 'built-in')"
             },
             "fixIssueGroup": {
               "type": "string",
-              "default": "built-in", 
+              "default": "built-in",
               "description": "Extension ID that provides batch issue fixing (e.g., 'ms-vscode.eslint-fix', 'built-in')"
             }
           },
@@ -683,14 +695,22 @@
     "@x-fidelity/plugins": "file:../x-fidelity-plugins",
     "@x-fidelity/types": "file:../x-fidelity-types",
     "fs-extra": "^11.3.0",
+    "tree-sitter": "^0.22.4",
     "tree-sitter-javascript": "^0.23.1",
     "tree-sitter-typescript": "^0.23.2",
-    "web-tree-sitter": "^0.25.0",
     "vscode-languageclient": "^9.0.1",
+    "web-tree-sitter": "^0.25.0",
     "yaml": "^2.6.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.6.2",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.3",
+    "@semantic-release/npm": "^12.0.2",
+    "@semantic-release/release-notes-generator": "^14.0.3",
     "@types/glob": "^8.1.0",
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
@@ -709,39 +729,43 @@
     "jest": "^30.0.0",
     "mocha": "^11.7.0",
     "npm-run-all": "^4.1.5",
+    "ovsx": "^0.10.5",
     "prettier": "^3.6.1",
     "rimraf": "^6.0.1",
+    "semantic-release": "^24.2.7",
     "ts-jest": "^29.2.6",
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "vscode:prepublish": "yarn build",
-    "build": "yarn clean && yarn build:dependencies && yarn lint:fix && yarn check-types && yarn build:cli && yarn embed:cli && node --no-warnings=ExperimentalWarning esbuild.config.js",
-    "build:cli": "cd ../../ && yarn workspace x-fidelity build",
-    "build:dependencies": "cd ../../ && yarn workspace @x-fidelity/types build && yarn workspace @x-fidelity/core build && yarn workspace @x-fidelity/plugins build && yarn workspace @x-fidelity/democonfig build && echo 'Dependencies built successfully'",
+    "vscode:prepublish": "yarn build:production",
+    "build": "yarn clean && yarn build:dependencies && yarn lint:fix && yarn check-types && yarn build:cli && yarn embed:cli && node esbuild.config.js",
+    "build:production": "yarn clean && yarn build:dependencies && yarn lint:fix && yarn check-types && yarn build:cli && yarn embed:cli && node esbuild.config.js --production",
+    "build:dependencies": "cd ../../ && turbo build --filter=@x-fidelity/types --filter=@x-fidelity/core --filter=@x-fidelity/plugins --filter=@x-fidelity/democonfig",
+    "build:cli": "cd ../../ && turbo build --filter=x-fidelity",
     "verify:dependencies": "node -e \"const fs = require('fs'); const deps = ['../x-fidelity-types/dist/index.js', '../x-fidelity-core/dist/index.js', '../x-fidelity-plugins/dist/index.js']; deps.forEach(dep => { if (!fs.existsSync(dep)) { console.error('Missing dependency:', dep); process.exit(1); } }); console.log('All dependencies verified');\"",
     "embed:cli": "node scripts/embed-cli.js",
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
     "watch": "node --no-warnings=ExperimentalWarning esbuild.config.js --watch",
-    "package": "yarn build && vsce package --yarn",
+    "package": "yarn sync-version && vsce package --yarn",
     "sync-version": "node scripts/sync-version.js",
     "rebuild-native": "yarn rebuild --runtime=electron --target=35.5.1 --cache=.npm --disturl=https://electronjs.org/headers",
     "rebuild-native:check": "node -e \"try { require('tree-sitter'); console.log('✅ Native modules OK'); } catch(e) { console.log('❌ Native rebuild needed:', e.message); process.exit(1); }\"",
     "pretest": "yarn build:dependencies && yarn verify:dependencies && yarn check-types && yarn build:test && yarn rebuild-native:check || yarn rebuild-native && yarn lint:fix && yarn clean:test-artifacts && node -e \"require('fs').mkdirSync('./vscode-test-user-data', {recursive: true})\" && yarn build:cli",
-    "test": "yarn format && yarn test:all",
-    "test:coverage": "yarn build:dependencies && jest --coverage",
-    "test:unit": "yarn build:dependencies && yarn verify:dependencies && jest",
+    "test": "yarn check-types && yarn lint && yarn test:unit",
+    "test:coverage": "yarn check-types && yarn lint && jest --coverage",
+    "test:unit": "yarn check-types && yarn lint && jest",
     "test:integration": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration",
-    "test:e2e": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js e2e",
-    "test:ci": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js comprehensive",
-    "test:simple": "vscode-test --config .vscode-test.mjs --label all",
-    "test:debug": "yarn build:test && code --extensionDevelopmentPath=. --extensionTestsPath=./out/test/test/suite",
+    "test:core": "yarn build && yarn build:test && node scripts/test-cross-platform.js core",
+    "test:fast": "yarn test:unit && yarn test:core",
+    "test:full": "yarn test:unit && yarn test:integration",
+    "test:ci": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration --ci",
+    "test:headless": "yarn build && yarn build:test && node scripts/test-cross-platform.js integration --ci",
+    "test:debug": "yarn build && yarn build:test && node scripts/test-cross-platform.js integration --debug",
     "lint": "eslint src --ext ts && prettier --check src/**/*.ts",
     "lint:fix": "eslint src --ext ts --fix && yarn format",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
     "prebuild:production": "yarn format",
-    "build:production": "yarn check-types && node --no-warnings=ExperimentalWarning esbuild.config.js --production",
     "check-types": "tsc --noEmit",
     "build:test": "tsc -p tsconfig.test.json",
     "clean": "rimraf out dist dist-test config .vscode-test .vscode-test-profile && node -e \"try { require('fs').readdirSync('.').filter(f => f.endsWith('.tsbuildinfo')).forEach(f => require('fs').unlinkSync(f)); } catch(e) { /* ignore */ }\"",
@@ -762,6 +786,8 @@
     "validate-vsix": "node scripts/validate-vsix-dependencies.js",
     "test-tree-sitter": "node scripts/test-tree-sitter-bundling.js",
     "validate-packaging": "yarn build && yarn package && yarn validate-vsix",
-    "test-bundling": "yarn build && yarn test-tree-sitter"
+    "test-bundling": "yarn build && yarn test-tree-sitter",
+    "publish:universal": "node scripts/publish-universal.js",
+    "release": "semantic-release"
   }
 }

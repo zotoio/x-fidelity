@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
 import type { AnalysisResult } from '../analysis/types';
+import type { ProcessedAnalysisResult, FailedIssue } from '../types/issues';
 import { ConfigManager } from '../configuration/configManager';
 import { createComponentLogger } from '../utils/globalLogger';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
 import { isTestEnvironment } from '../utils/testDetection';
+import { validateRange } from '../utils/rangeValidation';
+import { FileSourceTranslator } from '../utils/fileSourceTranslator';
 
 // Extended interface for diagnostics with X-Fidelity metadata (currently unused)
 // interface ExtendedDiagnostic extends vscode.Diagnostic {
@@ -202,6 +203,87 @@ export class DiagnosticProvider implements vscode.Disposable {
   }
 
   /**
+   * NEW: Direct update method for ResultCoordinator pattern
+   * Updates diagnostics directly from pre-processed results to ensure consistent counts
+   */
+  public async updateFromProcessedResult(
+    processed: ProcessedAnalysisResult
+  ): Promise<void> {
+    const startTime = performance.now();
+
+    const diagnosticFileCount =
+      processed.diagnostics instanceof Map
+        ? processed.diagnostics.size
+        : Object.keys(processed.diagnostics).length;
+
+    this.logger.info('Updating diagnostics from processed result', {
+      totalIssues: processed.totalIssues,
+      successfulIssues: processed.successfulIssues,
+      failedIssues: processed.failedIssues,
+      diagnosticFiles: diagnosticFileCount
+    });
+
+    try {
+      // Clear existing diagnostics
+      this.diagnosticCollection.clear();
+
+      // Convert diagnostic map to VSCode format and set directly
+      const diagnosticEntries =
+        processed.diagnostics instanceof Map
+          ? Array.from(processed.diagnostics.entries())
+          : Object.entries(processed.diagnostics);
+
+      for (const [uriString, diagnostics] of diagnosticEntries) {
+        try {
+          const uri = vscode.Uri.parse(uriString);
+          // Ensure diagnostics are properly typed
+          const validDiagnostics = Array.isArray(diagnostics)
+            ? (diagnostics as vscode.Diagnostic[])
+            : [];
+          this.diagnosticCollection.set(uri, validDiagnostics);
+        } catch (error) {
+          this.logger.warn('Failed to parse URI for diagnostics', {
+            uriString,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+
+      // Update internal state
+      this.issueCount = processed.totalIssues;
+      this.lastUpdateTime = performance.now() - startTime;
+
+      // Store failed issues for potential retrieval
+      (this as any).failedIssues = processed.failedIssues;
+
+      this.logger.info('Diagnostics updated from processed result', {
+        issueCount: this.issueCount,
+        fileCount: diagnosticFileCount,
+        failedIssues: processed.failedIssuesCount,
+        updateTime: `${this.lastUpdateTime.toFixed(2)}ms`
+      });
+
+      // Ensure diagnostics settle
+      await this.waitForDiagnosticsToSettle();
+
+      // NO EVENT EMISSION - direct update pattern eliminates events
+    } catch (error) {
+      this.logger.error(
+        'Failed to update diagnostics from processed result',
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get failed issues that couldn't be converted to diagnostics
+   */
+  public getFailedIssues(): FailedIssue[] {
+    return (this as any).failedIssues || [];
+  }
+
+  /**
    * Extract issues from analysis result using proper ResultMetadata validation
    */
   private extractIssuesFromResult(result: AnalysisResult): DiagnosticIssue[] {
@@ -330,12 +412,34 @@ export class DiagnosticProvider implements vscode.Disposable {
             message = `${message} (affects entire ${fileName})`;
           }
 
+          // Convert 1-based to 0-based coordinates with proper validation
+          const rawStartLine = Math.max(0, location.startLine - 1);
+          const rawStartColumn = Math.max(0, location.startColumn - 1);
+          const rawEndLine = Math.max(0, location.endLine - 1);
+          const rawEndColumn = Math.max(0, location.endColumn - 1);
+
+          // Safe range validation that preserves zero-width ranges at valid positions
+          // and prevents invalid ranges that exceed line boundaries
+          const validatedRange = validateRange(
+            rawStartLine,
+            rawStartColumn,
+            rawEndLine,
+            rawEndColumn,
+            undefined, // No document access in this context for performance
+            { preserveZeroWidth: true, fallbackExpansion: 1 }
+          );
+
+          const startLine = validatedRange.startLine;
+          const startColumn = validatedRange.startColumn;
+          const endLine = validatedRange.endLine;
+          const endColumn = validatedRange.endColumn;
+
           const diagnosticIssue: DiagnosticIssue = {
             file: filePath,
-            line: Math.max(0, location.startLine - 1), // Convert 1-based to 0-based
-            column: Math.max(0, location.startColumn - 1), // Convert 1-based to 0-based
-            endLine: Math.max(0, location.endLine - 1), // Convert 1-based to 0-based
-            endColumn: Math.max(0, location.endColumn - 1), // Convert 1-based to 0-based
+            line: startLine,
+            column: startColumn,
+            endLine: endLine,
+            endColumn: endColumn,
             message: message,
             severity: this.mapSeverity(ruleFailure.level),
             ruleId: ruleFailure.ruleFailure || 'unknown-rule',
@@ -455,6 +559,8 @@ export class DiagnosticProvider implements vscode.Disposable {
       'exemptCount',
       'startTime',
       'finishTime',
+      'startTimeString',
+      'finishTimeString',
       'durationSeconds',
       'issueDetails'
     ];
@@ -677,27 +783,33 @@ export class DiagnosticProvider implements vscode.Disposable {
    */
   private createVSCodeDiagnostic(issue: DiagnosticIssue): vscode.Diagnostic {
     // Ensure all coordinates are valid (non-negative)
-    const startLine = Math.max(0, issue.line);
-    const startColumn = Math.max(0, issue.column);
+    const rawStartLine = Math.max(0, issue.line);
+    const rawStartColumn = Math.max(0, issue.column);
 
     // Calculate end position with proper fallbacks
-    let endLine =
-      issue.endLine !== undefined ? Math.max(0, issue.endLine) : startLine;
-    let endColumn =
+    const rawEndLine =
+      issue.endLine !== undefined ? Math.max(0, issue.endLine) : rawStartLine;
+    const rawEndColumn =
       issue.endColumn !== undefined
         ? Math.max(0, issue.endColumn)
-        : startColumn + 1;
+        : rawStartColumn + 1;
 
-    // Validate range consistency
-    if (endLine < startLine) {
-      endLine = startLine;
-    }
+    // Safe range validation that prevents invalid ranges exceeding line boundaries
+    const validatedRange = validateRange(
+      rawStartLine,
+      rawStartColumn,
+      rawEndLine,
+      rawEndColumn,
+      undefined, // No document access in this context for performance
+      { preserveZeroWidth: true, fallbackExpansion: 1 }
+    );
 
-    if (endLine === startLine && endColumn <= startColumn) {
-      endColumn = startColumn + 1; // Ensure range spans at least one character
-    }
-
-    const range = new vscode.Range(startLine, startColumn, endLine, endColumn);
+    const range = new vscode.Range(
+      validatedRange.startLine,
+      validatedRange.startColumn,
+      validatedRange.endLine,
+      validatedRange.endColumn
+    );
 
     const diagnostic = new vscode.Diagnostic(
       range,
@@ -731,11 +843,53 @@ export class DiagnosticProvider implements vscode.Disposable {
     (diagnostic as any).ruleId = issue.ruleId;
     (diagnostic as any).originalLevel = (issue as any).originalLevel;
 
+    // ENHANCEMENT: Preserve location extraction metadata for debugging and analysis
+    (diagnostic as any).locationSource =
+      (issue as any).locationSource || 'unknown';
+    (diagnostic as any).locationConfidence =
+      (issue as any).locationConfidence || 'unknown';
+    (diagnostic as any).isFileLevelRule =
+      (issue as any).isFileLevelRule || false;
+    (diagnostic as any).hasDetails = (issue as any).hasDetails || false;
+    (diagnostic as any).detailsKeys = (issue as any).detailsKeys || [];
+
+    // CRITICAL FIX: Add toJSON method to prevent Windows serialization crashes
+    // This ensures the diagnostic can be safely serialized without throwing "Method not found: toJSON" errors
+    (diagnostic as any).toJSON = function () {
+      return {
+        range: {
+          start: {
+            line: this.range.start.line,
+            character: this.range.start.character
+          },
+          end: {
+            line: this.range.end.line,
+            character: this.range.end.character
+          }
+        },
+        message: this.message,
+        severity: this.severity,
+        source: this.source,
+        code: this.code,
+        tags: this.tags,
+        filePath: this.filePath,
+        category: this.category,
+        fixable: this.fixable,
+        ruleId: this.ruleId,
+        originalLevel: this.originalLevel,
+        locationSource: this.locationSource,
+        locationConfidence: this.locationConfidence,
+        isFileLevelRule: this.isFileLevelRule,
+        hasDetails: this.hasDetails,
+        detailsKeys: this.detailsKeys
+      };
+    };
+
     return diagnostic;
   }
 
   /**
-   * Enhanced file URI resolution with better error handling
+   * Enhanced file URI resolution with consistent REPO_GLOBAL_CHECK translation to README.md
    */
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
     try {
@@ -745,112 +899,18 @@ export class DiagnosticProvider implements vscode.Disposable {
         return null;
       }
 
-      // Handle special global check files (like REPO_GLOBAL_CHECK)
-      if (
-        filePath === 'REPO_GLOBAL_CHECK' ||
-        filePath.endsWith('REPO_GLOBAL_CHECK')
-      ) {
-        // For global checks, find a suitable file to open (README, package.json, etc.)
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (!workspaceFolder) {
-          this.logger.warn('No workspace folder available for global check');
-          return null;
-        }
+      // Use the centralized file source translator for consistent handling
+      const resolvedUri = await FileSourceTranslator.resolveFileUri(filePath);
 
-        const workspaceRoot = workspaceFolder.uri.fsPath;
-
-        // Try to find a suitable file to open for global checks
-        const candidateFiles = [
-          'package.json',
-          'README.md',
-          'tsconfig.json',
-          'src/index.js',
-          'src/index.ts',
-          'index.js',
-          'index.ts'
-        ];
-
-        for (const candidate of candidateFiles) {
-          const candidatePath = path.resolve(workspaceRoot, candidate);
-          try {
-            if (fs.existsSync(candidatePath)) {
-              this.logger.debug(
-                `Using ${candidate} for REPO_GLOBAL_CHECK navigation`
-              );
-              return vscode.Uri.file(candidatePath);
-            }
-          } catch (_error) {
-            // Continue to next candidate
-          }
-        }
-
-        // Fallback: return workspace folder URI (opens folder)
+      if (resolvedUri && FileSourceTranslator.isGlobalCheck(filePath)) {
         this.logger.debug(
-          'No suitable file found, using workspace folder for REPO_GLOBAL_CHECK'
+          `Translated REPO_GLOBAL_CHECK to ${resolvedUri.fsPath} for navigation`
         );
-        return workspaceFolder.uri;
       }
 
-      // Since XFI_RESULT contains absolute paths, use them directly
-      if (path.isAbsolute(filePath)) {
-        // Check if file exists before creating URI
-        try {
-          if (fs.existsSync(filePath)) {
-            return vscode.Uri.file(filePath);
-          } else {
-            this.logger.warn('Absolute file path does not exist', { filePath });
-            // CRITICAL FIX: Return URI anyway for navigation, but log warning
-            return vscode.Uri.file(filePath);
-          }
-        } catch (fsError) {
-          this.logger.warn('Cannot check file existence', {
-            filePath,
-            error: fsError
-          });
-          return vscode.Uri.file(filePath); // Return URI anyway for testing
-        }
-      }
-
-      // Handle relative paths by resolving against workspace root (fallback)
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      if (!workspaceFolder) {
-        this.logger.warn(
-          'No workspace folder available for relative path resolution',
-          {
-            filePath
-          }
-        );
-        return null;
-      }
-
-      const workspaceRoot = workspaceFolder.uri.fsPath;
-      const absolutePath = path.resolve(workspaceRoot, filePath);
-      this.logger.debug('Resolving relative path', {
-        original: filePath,
-        workspaceRoot,
-        resolved: absolutePath
-      });
-
-      // Check if resolved file exists
-      try {
-        if (fs.existsSync(absolutePath)) {
-          return vscode.Uri.file(absolutePath);
-        } else {
-          this.logger.warn('Resolved file path does not exist', {
-            absolutePath
-          });
-          // CRITICAL FIX: Return URI anyway for navigation
-          return vscode.Uri.file(absolutePath);
-        }
-      } catch (fsError) {
-        this.logger.warn('Cannot check resolved file existence', {
-          absolutePath,
-          error: fsError
-        });
-        return vscode.Uri.file(absolutePath); // Return URI anyway for testing
-      }
+      return resolvedUri;
     } catch (error) {
-      this.logger.warn('Failed to resolve file URI', { filePath, error });
+      this.logger.error('Failed to resolve file URI', { filePath, error });
       return null;
     }
   }

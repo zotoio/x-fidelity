@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { ILogger, LogLevel } from '@x-fidelity/types';
-import { EnhancedLogger } from '@x-fidelity/core';
 import type { AnalysisTriggerSource } from '../analysis/analysisEngineInterface';
 
 // Use LogLevel from @x-fidelity/types - no need to redefine
@@ -23,7 +22,7 @@ export interface LogEntry {
   data?: any;
 }
 
-export class VSCodeLogger {
+export class VSCodeLogger implements ILogger {
   private outputChannel: vscode.OutputChannel;
   private currentLogLevel: LogLevel = 'info';
   private readonly componentName: string;
@@ -185,8 +184,31 @@ export class VSCodeLogger {
     return formatted;
   }
 
+  /**
+   * Creates a localized timestamp with GMT offset for user-facing logs
+   */
+  private createLocalizedTimestamp(): string {
+    const now = new Date();
+
+    // Get timezone offset in minutes and convert to GMT offset format
+    const offsetMinutes = now.getTimezoneOffset();
+    const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+    const offsetMins = Math.abs(offsetMinutes) % 60;
+    const offsetSign = offsetMinutes <= 0 ? '+' : '-';
+    const offsetString = `GMT${offsetSign}${offsetHours.toString().padStart(2, '0')}${offsetMins.toString().padStart(2, '0')}`;
+
+    // Format as local date and time with GMT offset
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes} ${offsetString}`;
+  }
+
   private log(entry: LogEntry): void {
-    const timestamp = new Date().toISOString();
+    const timestamp = this.createLocalizedTimestamp();
 
     // Consistent timestamp format for all log levels
     const formattedMessage = `[${timestamp}] ${entry.level.toUpperCase()}: ${entry.message}`;
@@ -289,7 +311,7 @@ export class VSCodeLogger {
         const jsonData = JSON.parse(line.trim());
         this.logWithMetadata(level, `CLI ${source.toUpperCase()}`, jsonData);
         return;
-      } catch (_e) {
+      } catch {
         // Not JSON, log as regular text
       }
     }
@@ -404,9 +426,13 @@ export class VSCodeLogger {
     this.setLogLevel(level);
   }
 
-  public getLevel(): string {
-    const levels = ['error', 'warn', 'info', 'debug', 'trace'];
-    return levels[this.currentLogLevel];
+  public getLevel(): LogLevel {
+    const numericLevel =
+      LOG_LEVEL_NUMERIC[this.currentLogLevel as keyof typeof LOG_LEVEL_NUMERIC];
+    if (numericLevel === undefined) {
+      throw new Error(`Invalid log level: ${this.currentLogLevel}`);
+    }
+    return this.currentLogLevel as LogLevel;
   }
 
   public isLevelEnabled(level: string): boolean {

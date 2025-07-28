@@ -3,7 +3,7 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
-  testMatch: ['**/*.test.ts', '**/*.spec.ts'],
+  testMatch: ['**/*.test.ts', '**/*.spec.ts', '!**/*.integration.test.ts'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.test.ts',
@@ -11,7 +11,9 @@ module.exports = {
     '!src/**/index.ts'
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageReporters: ['text', 'lcov', 'html', 'json', 'json-summary'],
+  // Coverage thresholds are managed centrally in ../../coverage-thresholds.config.js
+  // This ensures consistency across all packages in the monorepo
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
     '^@x-fidelity/types/(.*)$': '<rootDir>/src/$1',
@@ -21,5 +23,11 @@ module.exports = {
   // Jest 30 performance improvements
   testEnvironmentOptions: {
     globalsCleanup: 'soft'
-  }
+  },
+  reporters: [
+    'default',
+    ['<rootDir>/../../scripts/simple-json-reporter.js', {
+      outputPath: './jest-results.json'
+    }]
+  ]
 }; 

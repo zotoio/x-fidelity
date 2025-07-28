@@ -3,6 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   testMatch: ['**/test/unit/**/*.test.ts', '**/src/**/*.unit.test.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '/src/test/integration/'],
   transform: {
     '^.+\\.ts$': [
       'ts-jest',
@@ -18,7 +19,9 @@ module.exports = {
     '!src/**/*.test.ts'
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageReporters: ['text', 'lcov', 'html', 'json', 'json-summary'],
+  // Coverage thresholds are managed centrally in ../../coverage-thresholds.config.js
+  // This ensures consistency across all packages in the monorepo
   setupFilesAfterEnv: ['<rootDir>/src/test/setup/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -29,5 +32,11 @@ module.exports = {
     '^@x-fidelity/democonfig$':
       '<rootDir>/../x-fidelity-democonfig/dist/index.js'
   },
-  testTimeout: 10000
+  testTimeout: 10000,
+  reporters: [
+    'default',
+    ['<rootDir>/../../scripts/simple-json-reporter.js', {
+      outputPath: './jest-results.json'
+    }]
+  ]
 };

@@ -35,6 +35,27 @@ import { createTimingTracker } from '../../utils/timingUtils';
 import { logger } from '../../utils/logger';
 import { ExecutionContext } from '../../utils/executionContext';
 
+/**
+ * Format date with local timezone offset (e.g., "2024-01-01T00:00:00+10:00")
+ */
+function formatDateWithTimezone(date: Date): string {
+    const offset = -date.getTimezoneOffset();
+    const offsetHours = Math.floor(Math.abs(offset) / 60);
+    const offsetMinutes = Math.abs(offset) % 60;
+    const offsetSign = offset >= 0 ? '+' : '-';
+    const offsetString = `${offsetSign}${offsetHours.toString().padStart(2, '0')}:${offsetMinutes.toString().padStart(2, '0')}`;
+    
+    // Get the date components in local time
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetString}`;
+}
+
 export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<ResultMetadata> {
     // PHASE 1: Initialize logger provider FIRST before any other operations
     // This ensures universal logging availability for all plugins and components
@@ -171,7 +192,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         logger.info(`ANALYZER TIMING: File data collection found ${rawFileData.length} files`);
 
         // ✅ NEW: Initialize file cache manager
-        const fileCache = FileCacheManager.getInstance(resultsDir);
+        const fileCache = FileCacheManager.getInstance(resultsDir, repoPath);
         
         // ✅ NEW: Handle targeted file analysis (zap files)
         let fileData: FileData[] = rawFileData;
@@ -195,7 +216,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             const foundFiles = fileData.map(f => path.resolve(f.filePath));
             const missingFiles = zapFilesAbsolute.filter(f => !foundFiles.includes(f));
             if (missingFiles.length > 0) {
-                logger.warn(`⚠️ Zap files not found: ${missingFiles.join(', ')}`);
+                const missingFilesRelative = missingFiles.map(f => path.relative(repoPath, f));
+                logger.warn(`⚠️ Zap files not found: ${missingFilesRelative.join(', ')}`);
             }
         }
 
@@ -405,7 +427,8 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
             installedDependencyVersions: Object.fromEntries(installedDependencyVersions.map((v: any) => [v.name, v.version])),
             minimumDependencyVersions: dependencyVersionRequirements,
             standardStructure,
-            logger
+            logger,
+            repoPath
         });
         timingTracker.recordTiming('engine_execution');
 
@@ -446,7 +469,9 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 factMetrics: factMetricsTracker.getMetrics(),
                 options,
                 startTime: telemetryData.startTime,
-                finishTime,
+                finishTime: finishTime,
+                startTimeString: formatDateWithTimezone(new Date(telemetryData.startTime)),
+                finishTimeString: formatDateWithTimezone(new Date(finishTime)),
                 durationSeconds: (finishTime - telemetryData.startTime) / 1000,
                 xfiVersion: passedVersion || version, // Use passed version from CLI, fallback to core version
                 archetype,
@@ -456,7 +481,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
                 errorCount,
                 fatalityCount,
                 exemptCount,
-                repoPath,
+                repoPath: path.basename(repoPath),
                 repoUrl
             }
         };
@@ -464,12 +489,28 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
         // ✅ NEW: Enhanced report generation with per-type retention and caching
         try {
             // Update file cache with analysis results for processed files
+            // CRITICAL FIX: Only store file-specific data to prevent massive cache files (50MB+)
             const processedFiles = fileData.filter(f => f.fileName !== REPO_GLOBAL_CHECK);
             for (const file of processedFiles) {
-                await fileCache.updateFileCache(file.filePath, {
-                    analysisMetadata: resultMetadata,
-                    processedAt: finishTime
-                });
+                // Extract only file-specific data instead of storing entire resultMetadata
+                const fileSpecificData = {
+                    fileName: file.fileName,
+                    filePath: file.filePath,
+                    // Only include issues that belong to this specific file
+                    issues: resultMetadata.XFI_RESULT.issueDetails
+                        .filter(issue => issue.filePath === file.filePath)
+                        .map(issue => ({
+                            filePath: issue.filePath,
+                            errorCount: issue.errors?.length || 0,
+                            // Store minimal error info to avoid size explosion
+                            errorTypes: issue.errors?.map(e => e.ruleFailure).slice(0, 10) || []
+                        })),
+                    processedAt: finishTime,
+                    // Store minimal metadata instead of full resultMetadata
+                    cacheVersion: '2.0.0' // Version bump to indicate new cache format
+                };
+                
+                await fileCache.updateFileCache(file.filePath, fileSpecificData);
             }
             
             // Save multiple report formats with enhanced management using readable dates
@@ -606,7 +647,7 @@ export async function analyzeCodebase(params: AnalyzeCodebaseParams): Promise<Re
     }
 }
 
-export async function analyzeFiles(engine: Engine, files: FileData[], logger?: import('@x-fidelity/types').ILogger): Promise<any[]> {
+export async function analyzeFiles(engine: Engine, files: FileData[], repoPath?: string, logger?: import('@x-fidelity/types').ILogger): Promise<any[]> {
     const results = [];
     const loggerInstance = logger || (() => {
         try {
@@ -628,11 +669,17 @@ export async function analyzeFiles(engine: Engine, files: FileData[], logger?: i
     // Run rules for each file
     for (const file of files) {
         try {
-            loggerInstance.debug(`Running rules for file: ${file.filePath}`);
+            const displayPath = repoPath && file.filePath !== REPO_GLOBAL_CHECK 
+                ? path.relative(repoPath, file.filePath) 
+                : file.filePath;
+            loggerInstance.debug(`Running rules for file: ${displayPath}`);
             const result = await engine.run(file);
             results.push(result);
         } catch (error) {
-            loggerInstance.error(`Error running rules for file ${file.filePath}:`, error);
+            const displayPath = repoPath && file.filePath !== REPO_GLOBAL_CHECK 
+                ? path.relative(repoPath, file.filePath) 
+                : file.filePath;
+            loggerInstance.error(`Error running rules for file ${displayPath}:`, error);
         }
     }
 

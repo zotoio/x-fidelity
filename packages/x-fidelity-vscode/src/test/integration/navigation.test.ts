@@ -5,7 +5,7 @@ import {
   ensureExtensionActivated,
   executeCommandSafely,
   getAnalysisResults,
-  runFreshAnalysisForTest,
+  ensureGlobalAnalysisCompleted,
   getTestWorkspace
 } from '../helpers/testHelpers';
 
@@ -21,13 +21,13 @@ suite('Navigation & Line/Column Accuracy Tests', () => {
   });
 
   setup(async function () {
-    this.timeout(180000); // 3 minutes for fresh analysis before each test
-    console.log('🔍 Running fresh analysis for navigation tests...');
+    this.timeout(30000); // Much faster with cached results
+    console.log('🔍 Ensuring analysis results for navigation tests...');
     try {
-      initialAnalysisResults = await runFreshAnalysisForTest(undefined, 150000); // 2.5 minute timeout
-      console.log(`📊 Fresh analysis completed with ${initialAnalysisResults?.summary?.totalIssues || 0} issues`);
+      initialAnalysisResults = await ensureGlobalAnalysisCompleted();
+      console.log(`📊 Analysis results available: ${initialAnalysisResults?.summary?.totalIssues || 0} issues`);
     } catch (error) {
-      console.error('⚠️ Fresh analysis failed:', error);
+      console.error('⚠️ Failed to get analysis results:', error);
       initialAnalysisResults = null;
     }
   });
@@ -43,7 +43,7 @@ suite('Navigation & Line/Column Accuracy Tests', () => {
     const diagnostics = vscode.languages.getDiagnostics();
     let validatedDiagnostics = 0;
 
-    for (const [_uri, diags] of diagnostics) {
+    for (const [, diags] of diagnostics) {
       const xfidelityDiags = diags.filter(d => d.source === 'X-Fidelity');
 
       for (const diagnostic of xfidelityDiags) {

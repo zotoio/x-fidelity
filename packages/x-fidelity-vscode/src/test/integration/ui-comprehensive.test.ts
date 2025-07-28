@@ -9,7 +9,9 @@ import {
 
   getAnalysisResults,
   validateWorkspaceStructure,
-  runInitialAnalysis
+  ensureGlobalAnalysisCompleted,
+  runGlobalFreshAnalysis,
+  waitForTreeViewUpdate
 } from '../helpers/testHelpers';
 import { ScreenshotHelper } from '../helpers/screenshotHelper';
 
@@ -22,29 +24,9 @@ function logDiag(...args: any[]) {
   }
 }
 
-function logError(...args: any[]) {
-  if (global.testConsole) {
-    global.testConsole.error(...args);
-  } else {
-    console.error(...args);
-  }
-}
 
-async function logAndCaptureOnError(testName: string, error: any) {
-  logError(`❌ Test failed: ${testName}`, error);
-  if (process.env.SCREENSHOTS === 'true') {
-    await ScreenshotHelper.captureScreen(testName + '-failure', {
-      description: 'failure'
-    });
-  }
-}
 
-// Wrapper function for robust testing with shared analysis results
-function robustTest(_testName: string, testFn: any) {
-  return async function (this: Mocha.Context) {
-    await testFn.call(this);
-  };
-}
+
 
 /**
  * Comprehensive UI Integration Tests
@@ -102,16 +84,16 @@ suite('Comprehensive UI Integration Tests', () => {
     // Wait for extension to fully initialize
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    // Run initial analysis once and cache results for reuse
-    logDiag('🔍 Running initial analysis for UI test suite...');
+    // Ensure global analysis is completed and cached for reuse
+    logDiag('🔍 Ensuring analysis for UI test suite...');
     try {
-      initialAnalysisResults = await runInitialAnalysis(undefined, true);
+      initialAnalysisResults = await ensureGlobalAnalysisCompleted();
       logDiag(
-        `📊 Initial analysis completed with ${initialAnalysisResults?.summary?.totalIssues || 0} issues`
+        `📊 Analysis results available: ${initialAnalysisResults?.summary?.totalIssues || 0} issues`
       );
     } catch (error) {
       logDiag(
-        '⚠️ Initial analysis failed (may be expected for test environment):',
+        '⚠️ Failed to get analysis results (may be expected for test environment):',
         error
       );
       initialAnalysisResults = null;
@@ -220,7 +202,7 @@ suite('Comprehensive UI Integration Tests', () => {
       const diagnosticEntries = Array.from(allDiagnostics);
 
       const xfidelityFiles = diagnosticEntries.filter(
-        ([uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => {
+        ([_uri, diagnostics]: [vscode.Uri, vscode.Diagnostic[]]) => {
           return diagnostics.some(
             (d: vscode.Diagnostic) => d.source === 'X-Fidelity'
           );
@@ -268,8 +250,8 @@ suite('Comprehensive UI Integration Tests', () => {
 
       logDiag('🔍 Testing UI Updates...');
 
-      // Refresh tree views
-      await executeCommandSafely('xfidelity.refreshIssuesTree');
+      // Wait for tree view to be properly updated (fixes race condition)
+      await waitForTreeViewUpdate(10000);
 
       logDiag('✅ UI updates test passed');
     });
@@ -286,7 +268,7 @@ suite('Comprehensive UI Integration Tests', () => {
       logDiag('🔍 Testing Fresh Analysis...');
 
       // Run fresh analysis
-      const freshResults = await runInitialAnalysis(undefined, true); // Force fresh
+      const freshResults = await runGlobalFreshAnalysis(); // Force fresh
 
       // Verify fresh results are available
       assert.ok(

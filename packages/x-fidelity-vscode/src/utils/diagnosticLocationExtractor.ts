@@ -13,6 +13,8 @@
  * 8. Legacy formats for backward compatibility
  */
 
+import { validateRange } from './rangeValidation';
+
 export interface LocationInfo {
   startLine: number;
   startColumn: number;
@@ -141,7 +143,9 @@ export class DiagnosticLocationExtractor {
       'functionCount-iterative',
       'codeRhythm-iterative',
       'outdatedFramework-global',
-      'invalidSystemIdConfigured-iterative'
+      'invalidSystemIdConfigured-iterative',
+      'factDoesNotAddResultToAlmanac-iterative',
+      'sensitiveLogging-iterative'
     ];
 
     const ruleFailure = error?.ruleFailure;
@@ -744,30 +748,37 @@ export class DiagnosticLocationExtractor {
    * Enhanced validation with better error handling
    */
   public static validateLocation(location: LocationInfo): LocationInfo {
-    const startLine = Math.max(1, parseInt(String(location.startLine)) || 1);
-    const startColumn = Math.max(
+    const rawStartLine = Math.max(1, parseInt(String(location.startLine)) || 1);
+    const rawStartColumn = Math.max(
       1,
       parseInt(String(location.startColumn)) || 1
     );
-    const endLine = Math.max(
-      startLine,
-      parseInt(String(location.endLine)) || startLine
+    const rawEndLine = Math.max(
+      rawStartLine,
+      parseInt(String(location.endLine)) || rawStartLine
     );
-    let endColumn = Math.max(
-      startColumn,
-      parseInt(String(location.endColumn)) || startColumn
+    const rawEndColumn = Math.max(
+      rawStartColumn,
+      parseInt(String(location.endColumn)) || rawStartColumn
     );
 
-    // Ensure end column is at least start column + 1 for proper highlighting
-    if (endColumn === startColumn) {
-      endColumn = startColumn + 1;
-    }
+    // Safe range validation for 1-based coordinates
+    // Convert to 0-based for validation, then convert back
+    // Note: Don't preserve zero-width ranges in validation context as they can be problematic
+    const validatedRange = validateRange(
+      rawStartLine - 1,
+      rawStartColumn - 1,
+      rawEndLine - 1,
+      rawEndColumn - 1,
+      undefined, // No document access in this context
+      { preserveZeroWidth: false, fallbackExpansion: 1 }
+    );
 
     return {
-      startLine,
-      startColumn,
-      endLine,
-      endColumn,
+      startLine: validatedRange.startLine + 1, // Convert back to 1-based
+      startColumn: validatedRange.startColumn + 1,
+      endLine: validatedRange.endLine + 1,
+      endColumn: validatedRange.endColumn + 1,
       source: location.source
     };
   }

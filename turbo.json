@@ -1,0 +1,88 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "inputs": ["src/**", "package.json", "tsconfig*.json", "esbuild.config.js"]
+    },
+    "build:production": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "inputs": ["src/**", "package.json", "tsconfig*.json", "esbuild.config.js"],
+      "env": ["NODE_ENV"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "inputs": ["src/**", "test/**", "*.test.ts", "*.spec.ts"]
+    },
+    "test:unit": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "inputs": ["src/**", "test/**", "*.test.ts", "*.spec.ts"]
+    },
+    "test:integration": {
+      "dependsOn": ["build"],
+      "outputs": ["coverage/**", ".vscode-test/**"],
+      "inputs": ["src/**", "test/**", "dist/**"],
+      "cache": false
+    },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "outputs": [".vscode-test/**"],
+      "inputs": ["src/**", "test/**", "dist/**"],
+      "cache": false
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "inputs": ["src/**", "test/**", "*.test.ts", "*.spec.ts"]
+    },
+    "lint": {
+      "outputs": [],
+      "inputs": ["src/**", "*.js", "*.ts", "*.tsx", ".eslintrc*", "eslint.config.*"]
+    },
+    "lint:fix": {
+      "outputs": [],
+      "inputs": ["src/**", "*.js", "*.ts", "*.tsx", ".eslintrc*", "eslint.config.*"]
+    },
+    "check-types": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "inputs": ["src/**", "tsconfig*.json"]
+    },
+    "clean": {
+      "cache": false,
+      "outputs": ["dist/**", ".next/**", "out/**", "build/**", "coverage/**", ".vscode-test/**", "*.tsbuildinfo"]
+    },
+    "package": {
+      "dependsOn": ["build:production"],
+      "outputs": ["*.vsix", "*.tgz"],
+      "inputs": ["dist/**", "package.json", "README.md", "CHANGELOG.md", "icons/**"]
+    },
+    "verify": {
+      "dependsOn": ["build"],
+      "outputs": [],
+      "inputs": ["dist/**", "src/**"]
+    },
+    "verify:ci": {
+      "dependsOn": ["build:production"],
+      "outputs": [],
+      "inputs": ["dist/**", "src/**"]
+    },
+    "security-audit": {
+      "outputs": [],
+      "inputs": ["package.json", "yarn.lock"]
+    }
+  },
+  "globalDependencies": [
+    ".xfi-config.json",
+    "turbo.json",
+    "yarn.lock"
+  ]
+} 

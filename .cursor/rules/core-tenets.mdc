@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## 0. after large changes, before I give you another prompt, ask me to confirm whether I want you commit changes.  If i agree, create a conventional commit message based on the changes, and perform the commit.
 
-## 1. ask for clarification if you are unsure about a given change or its implications, but only for complex changes.
+## 1. ask for clarification if you are unsure about a given change or its implications, but not for simple changes.
 
 ## 2. never modify the files below the 'temp' dir, they are for reference only, and should only be part of context if specifically instructed.
 
@@ -21,10 +21,10 @@ alwaysApply: true
 
 ## 7. before adding new files or functions, ensure that they are not duplications of existing equivalents.  instead the existing functions should be updated.
 
-## 8. do not leave scripts and files created during executing tools to analyse and fix issues scattered around the codebase.  place them in the local temp dir.
+## 8. do not leave temporary scripts and files created during execution of tools to analyse and fix issues scattered around the codebase.  move them to the local temp dir.
 
 ## 9. vscode testing
-this is the test workspaceFolder packages/x-fidelity-fixtures/node-fullstack
+when changes are made that impact the vscode extension, ensure that the integration tests executed to check the change during the chat session are targeted rather than executing all of the integration test suites.
 
-## 10. during builds, if you see typescript errors, fix them.
+## 10. during builds, if you see any linting errors, fix them.
 

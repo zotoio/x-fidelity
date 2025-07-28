@@ -142,11 +142,11 @@ export class ConfigManager {
         'autoAnalyzeOnFileChange',
         false
       ),
-      generateReports: workspaceConfig.get('generateReports', false), // DISABLED for performance
+      generateReports: workspaceConfig.get('generateReports', false),
 
       // Resource Limits - REDUCED FOR PERFORMANCE
       maxFileSize: workspaceConfig.get('maxFileSize', 128000),
-      analysisTimeout: workspaceConfig.get('analysisTimeout', 120000), // Increased to 2 minutes
+      analysisTimeout: workspaceConfig.get('analysisTimeout', 60000),
       excludePatterns: workspaceConfig.get('excludePatterns', [
         'node_modules/**',
         '.git/**',

@@ -250,16 +250,9 @@ describe('functionComplexityFact', () => {
         expect(complexity.metrics.location.endLine).toBe(1);
     });
 
-    it('should add result to almanac when resultFact and thresholds provided', async () => {
+    it('should add result to almanac when resultFact provided', async () => {
         const params = {
-            resultFact: 'complexityResult',
-            thresholds: {
-                cyclomaticComplexity: 2,
-                cognitiveComplexity: 2,
-                nestingDepth: 2,
-                parameterCount: 2,
-                returnCount: 2
-            }
+            resultFact: 'complexityResult'
         };
 
         const fileData = {
@@ -296,12 +289,18 @@ describe('functionComplexityFact', () => {
         expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith(
             'complexityResult',
             expect.objectContaining({
-                complexities: expect.any(Array),
-                thresholds: params.thresholds,
-                totalFunctions: 1,
-                exceedingFunctions: 0
+                complexities: expect.any(Array)
             })
         );
+        
+        // Verify the structure contains the function with metrics
+        const call = mockAlmanac.addRuntimeFact.mock.calls[0];
+        const result = call[1];
+        expect(result.complexities).toHaveLength(1);
+        expect(result.complexities[0]).toHaveProperty('name', 'test');
+        expect(result.complexities[0]).toHaveProperty('metrics');
+        expect(result.complexities[0].metrics).toHaveProperty('cyclomaticComplexity');
+        expect(result.complexities[0].metrics).toHaveProperty('cognitiveComplexity');
     });
 
     it('should handle duplicate nodes correctly', async () => {

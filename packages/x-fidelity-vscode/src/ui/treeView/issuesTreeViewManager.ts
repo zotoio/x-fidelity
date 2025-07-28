@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import {
   IssuesTreeProvider,
   type GroupingMode,
   type IssueTreeItem
 } from './issuesTreeProvider';
-import type { ProcessedIssue } from '../../types/issues';
+import type { ProcessedIssue, ProcessedAnalysisResult, FailedIssue } from '../../types/issues';
 import { DiagnosticProvider } from '../../diagnostics/diagnosticProvider';
 import { ConfigManager } from '../../configuration/configManager';
 import { createComponentLogger } from '../../utils/globalLogger';
 import { getWorkspaceFolder } from '../../utils/workspaceUtils';
 import { REPO_GLOBAL_CHECK } from '@x-fidelity/core';
+import { FileSourceTranslator } from '../../utils/fileSourceTranslator';
 
 const logger = createComponentLogger('IssuesTreeView');
 
@@ -303,6 +303,66 @@ export class IssuesTreeViewManager implements vscode.Disposable {
     }
   }
 
+  /**
+   * NEW: Direct update method for ResultCoordinator pattern
+   * Updates tree view directly from pre-processed results including unhandled issues
+   */
+  public updateFromProcessedResult(processed: ProcessedAnalysisResult): void {
+    try {
+      logger.info('Updating tree view from processed result', {
+        totalIssues: processed.totalIssues,
+        successfulIssues: processed.successfulIssues,
+        failedIssues: processed.failedIssues,
+        breakdown: processed.issueBreakdown
+      });
+
+      // Combine successful and failed (unhandled) issues
+      this.currentIssues = [
+        ...processed.processedIssues,
+        ...this.convertFailedToUnhandled(processed.failedIssues)
+      ];
+
+      // Update tree data provider
+      this.treeDataProvider.setIssues(this.currentIssues);
+      this.updateTreeViewTitle();
+
+      logger.info(
+        `Tree view updated with ${this.currentIssues.length} total issues ` +
+                    `(${processed.successfulIssues} successful, ${processed.failedIssues.length} unhandled)`
+      );
+
+      // NO EVENT EMISSION - direct update pattern eliminates events
+
+    } catch (error) {
+      logger.error('Failed to update tree view from processed result', error);
+      vscode.window.showErrorMessage(
+        'Failed to update X-Fidelity issues tree view from processed result'
+      );
+    }
+  }
+
+  /**
+   * Convert failed diagnostic conversions to unhandled issues for tree display
+   */
+  private convertFailedToUnhandled(failedIssues: FailedIssue[]): ProcessedIssue[] {
+    return failedIssues.map((failed, index) => ({
+      id: `unhandled-${index}-${failed.ruleId}`,
+      file: failed.filePath,
+      rule: failed.ruleId,
+      severity: 'unhandled',
+      message: `${failed.message} (${failed.failureReason})`,
+      line: 1, // Default to line 1 for unhandled issues
+      column: 1,
+      category: 'unhandled',
+      fixable: false,
+      exempted: false,
+      isUnhandled: true,
+      failureReason: failed.failureReason,
+      originalData: failed.originalData,
+      dateFound: Date.now()
+    }));
+  }
+
   private processDiagnostics(
     diagnostics: [vscode.Uri, vscode.Diagnostic[]][]
   ): ProcessedIssue[] {
@@ -469,52 +529,32 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         return;
       }
 
-      // Resolve file path
-      let filePath: string;
-      if (path.isAbsolute(issue.file)) {
-        filePath = issue.file;
-      } else {
-        filePath = vscode.Uri.file(
-          path.join(workspaceFolder.uri.fsPath, issue.file)
-        ).fsPath;
+      // Use FileSourceTranslator to resolve file URI (translates REPO_GLOBAL_CHECK to README.md)
+      const originalFile = FileSourceTranslator.isGlobalCheck(issue.file) ? REPO_GLOBAL_CHECK : issue.file;
+      const uri = await FileSourceTranslator.resolveFileUri(originalFile);
+      
+      if (!uri) {
+        logger.warn('Unable to resolve file URI', { file: issue.file });
+        vscode.window.showWarningMessage(`Unable to open file: ${issue.file}`);
+        return;
       }
-
-      const uri = vscode.Uri.file(filePath);
 
       // Open the document
       const document = await vscode.workspace.openTextDocument(uri);
       const editor = await vscode.window.showTextDocument(document);
 
       // Navigate to the issue location
-      if (issue.file === REPO_GLOBAL_CHECK) {
-        // If the file is REPO_GLOBAL_CHECK, open the markdown report
-        const markdownUri = vscode.Uri.file(
-          path.join(workspaceFolder.uri.fsPath, '.xfiResults', 'XFI_RESULT.md')
-        );
-
-        try {
-          const markdownDocument =
-            await vscode.workspace.openTextDocument(markdownUri);
-          await vscode.window.showTextDocument(markdownDocument);
-          logger.debug('Navigated to global check report', {
-            file: issue.file
-          });
-        } catch (error) {
-          logger.warn(
-            'Failed to open global check report, trying to show error details',
-            { error }
-          );
-          vscode.window.showWarningMessage(
-            `Global check report not found. Issue: ${issue.message}`
-          );
-        }
-      } else if (issue.line) {
+      if (issue.line) {
         // Issue line/column are 1-based from XFI core, convert to 0-based for VSCode
         const line = Math.max(0, issue.line - 1);
         const column = Math.max(0, (issue.column || 1) - 1);
 
         let startPos = new vscode.Position(line, column);
         let endPos = startPos;
+
+        (startPos as any).toJSON = function() {
+          return { line: this.line, character: this.character };
+        };
 
         // If we have enhanced range data, use it for more precise selection
         if (issue.range) {
@@ -525,11 +565,37 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
           startPos = new vscode.Position(startLine, startCol);
           endPos = new vscode.Position(endLine, endCol);
+          
+          // Add toJSON methods to prevent serialization crashes
+          (startPos as any).toJSON = function() {
+            return { line: this.line, character: this.character };
+          };
+          (endPos as any).toJSON = function() {
+            return { line: this.line, character: this.character };
+          };
+        } else {
+          endPos = startPos; // Ensure endPos has toJSON if it's the same as startPos
         }
 
         const range = new vscode.Range(startPos, endPos);
+        (range as any).toJSON = function() {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character }
+          };
+        };
 
-        editor.selection = new vscode.Selection(startPos, endPos);
+        const selection = new vscode.Selection(startPos, endPos);
+        (selection as any).toJSON = function() {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character },
+            anchor: { line: this.anchor.line, character: this.anchor.character },
+            active: { line: this.active.line, character: this.active.character }
+          };
+        };
+        
+        editor.selection = selection;
         editor.revealRange(
           range,
           vscode.TextEditorRevealType.InCenterIfOutsideViewport

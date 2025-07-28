@@ -79,27 +79,12 @@ export const functionComplexityFact: FactDefn = {
             // Return in the format expected by the astComplexity operator
             const result = { complexities: functions.map(func => ({ name: func.name, metrics: func })) };
             
-            // Add only functions that exceed thresholds to the result fact
-            if (params?.resultFact && params?.thresholds) {
-                const thresholds = params.thresholds;
-                const exceedingFunctions = functions.filter(func => {
-                    return func.cyclomaticComplexity >= thresholds.cyclomaticComplexity ||
-                           func.cognitiveComplexity >= thresholds.cognitiveComplexity ||
-                           func.nestingDepth >= thresholds.nestingDepth ||
-                           func.parameterCount >= thresholds.parameterCount ||
-                           func.returnCount >= thresholds.returnCount;
-                });
-                
-                const filteredResult = { 
-                    complexities: exceedingFunctions.map(func => ({ name: func.name, metrics: func })),
-                    thresholds: thresholds,
-                    totalFunctions: functions.length,
-                    exceedingFunctions: exceedingFunctions.length
-                };
-                
-                logger.debug(`Adding ${exceedingFunctions.length} exceeding functions to almanac:`, params.resultFact);
-                almanac.addRuntimeFact(params.resultFact, filteredResult);
+            // Add result to almanac if resultFact is requested (without filtering)
+            if (params?.resultFact) {
+                logger.debug(`Adding ${functions.length} functions to almanac:`, params.resultFact);
+                almanac.addRuntimeFact(params.resultFact, result);
             }
+            
             return result;
         } catch (error) {
             logger.error(`Error in functionComplexityFact: ${error}`);

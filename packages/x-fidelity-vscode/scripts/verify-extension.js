@@ -100,7 +100,7 @@ class ExtensionVerifier {
 
       // Check view contributions
       const views = packageJson.contributes?.views || {};
-      if (views.explorer && views.explorer.length > 0) {
+      if (views.xfidelity && views.xfidelity.length > 0) {
         this.success('Tree view contribution found');
       } else {
         this.fail('Tree view contribution missing');
@@ -267,6 +267,12 @@ class ExtensionVerifier {
 
   async verifyVSIXPackage() {
     this.log('\n📦 Verifying VSIX package...', COLORS.BOLD);
+
+    // Skip VSIX verification in CI since packaging happens after verification
+    if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
+      this.info('Skipping VSIX verification in CI (packaging happens later)');
+      return;
+    }
 
     const vsixFiles = fs
       .readdirSync(path.join(__dirname, '..'))

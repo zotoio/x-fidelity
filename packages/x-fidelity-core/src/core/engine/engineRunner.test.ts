@@ -87,7 +87,8 @@ describe('engineRunner - Enhanced Test Suite', () => {
         standardStructure: false,
         repoUrl: 'https://github.com/test/repo',
         exemptions: [],
-        logger: logger
+        logger: logger,
+        repoPath: '/test/repo'
     });
 
     describe('Basic Engine Execution', () => {

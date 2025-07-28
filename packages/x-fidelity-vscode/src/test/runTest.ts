@@ -31,20 +31,48 @@ async function main() {
       console.log('Test workspace (fixtures):', testWorkspace);
     }
 
-    // Download VS Code, unzip it and run the integration test
-    await runTests({
-      extensionDevelopmentPath,
-      extensionTestsPath,
-      launchArgs: [
-        testWorkspace,
-        '--disable-extensions',
-        '--disable-workspace-trust',
+    // Windows-optimized VSCode launch configuration
+    const isWindows = process.platform === 'win32';
+    const isCI =
+      process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
+    // Base launch arguments
+    let launchArgs = [
+      testWorkspace,
+      '--disable-extensions',
+      '--disable-workspace-trust'
+    ];
+
+    // Add platform-specific arguments to prevent unresponsive extension host
+    if (isCI) {
+      launchArgs.push(
         '--no-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
         '--disable-gpu-sandbox',
         '--disable-web-security'
-      ],
+      );
+
+      // Windows-specific optimizations for CI
+      if (isWindows) {
+        launchArgs.push(
+          '--max-memory=2048', // Limit memory usage
+          '--disable-background-timer-throttling', // Prevent timer throttling that can cause hangs
+          '--disable-renderer-backgrounding', // Keep renderer active
+          '--disable-backgrounding-occluded-windows' // Prevent background window optimization
+        );
+      }
+    }
+
+    if (isVerbose) {
+      console.log('VSCode launch arguments:', launchArgs);
+    }
+
+    // Download VS Code, unzip it and run the integration test
+    await runTests({
+      extensionDevelopmentPath,
+      extensionTestsPath,
+      launchArgs,
       version: 'stable'
     });
 

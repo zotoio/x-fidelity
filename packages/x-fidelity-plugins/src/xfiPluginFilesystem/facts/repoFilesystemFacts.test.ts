@@ -400,7 +400,7 @@ describe('File operations', () => {
             const filePath = '/etc/passwd';
             const repoPath = '/test/repo';
             expect(isBlacklisted({ filePath, repoPath, blacklistPatterns: mockArchetypeConfig.config.blacklistPatterns })).toBe(true);
-            expect(logger.warn).toHaveBeenCalledWith('Potential path traversal attempt detected: /etc/passwd');
+            expect(logger.warn).toHaveBeenCalledWith('Potential path traversal attempt detected: ../../etc/passwd');
         });
 
         it('should log debug information', () => {
@@ -408,7 +408,7 @@ describe('File operations', () => {
             const repoPath = '/test/repo';
             isBlacklisted({ filePath, repoPath, blacklistPatterns: mockArchetypeConfig.config.blacklistPatterns });
             expect(logger.debug).toHaveBeenCalledWith(expect.objectContaining({
-                filePath
+                filePath: 'node_modules/index.js'  // Now expecting relative path
             }), 'Checking file against blacklist patterns');
         });
     });
@@ -430,7 +430,7 @@ describe('File operations', () => {
             const filePath = '/etc/passwd';
             const repoPath = '/test/repo';
             expect(isWhitelisted({ filePath, repoPath, whitelistPatterns: mockArchetypeConfig.config.whitelistPatterns })).toBe(false);
-            expect(logger.warn).toHaveBeenCalledWith('Potential path traversal attempt detected: /etc/passwd');
+            expect(logger.warn).toHaveBeenCalledWith('Potential path traversal attempt detected: ../../etc/passwd');
         });
 
         it('should log debug information', () => {
@@ -438,7 +438,7 @@ describe('File operations', () => {
             const repoPath = '/test/repo';
             isWhitelisted({ filePath, repoPath, whitelistPatterns: mockArchetypeConfig.config.whitelistPatterns });
             expect(logger.debug).toHaveBeenCalledWith(expect.objectContaining({
-                filePath
+                filePath: 'src/index.js'  // Now expecting relative path
             }), 'Checking file against whitelist patterns');
         });
     });

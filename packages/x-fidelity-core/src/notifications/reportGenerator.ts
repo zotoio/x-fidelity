@@ -50,11 +50,39 @@ export class ReportGenerator {
     private githubHostname: string;
     private reportDate: string;
 
+    /**
+     * Creates a localized timestamp with GMT offset for user-facing reports
+     */
+    private createLocalizedTimestamp(): string {
+        const now = new Date();
+        
+        // Get timezone offset in minutes and convert to GMT offset format
+        const offsetMinutes = now.getTimezoneOffset();
+        const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+        const offsetMins = Math.abs(offsetMinutes) % 60;
+        const offsetSign = offsetMinutes <= 0 ? '+' : '-';
+        const offsetString = `GMT${offsetSign}${offsetHours.toString().padStart(2, '0')}${offsetMins.toString().padStart(2, '0')}`;
+        
+        // Format as local date and time with GMT offset
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        
+        return `${year}-${month}-${day} ${hours}:${minutes} ${offsetString}`;
+    }
+
     constructor(data: ResultMetadata) {
         this.data = data;
         this.repoName = this.data.XFI_RESULT.repoUrl?.split(':')[1]?.split('.git')[0] || '';
         this.githubHostname = this.data.XFI_RESULT.repoUrl?.split(':')[1]?.split('/')[0] || '';
-        this.reportDate = new Date().toISOString().split('T')[0];
+        // Use local date format for report date (YYYY-MM-DD)
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        this.reportDate = `${year}-${month}-${day}`;
     }
 
     public generateReport(): string {
@@ -76,8 +104,7 @@ export class ReportGenerator {
     }
 
     private generateHeader(): string {
-        const timestamp = new Date().toISOString().split('T')[0] + '-' + 
-                         new Date().toTimeString().split(' ')[0].replace(/:/g, '-').substring(0, 5);
+        const timestamp = this.createLocalizedTimestamp();
         
         return `# X-Fidelity Analysis Report
 Generated for: ${this.repoName} on ${timestamp}`;
@@ -439,10 +466,10 @@ ${issueList}`;
     }
 
     private createGithubLink(filePath: string, line?: number): string {
-        const relativePath = filePath.replace(this.data.XFI_RESULT.repoPath, '').replace(/^\//, '');
+        // filePath is already relative to repo root
         const lineFragment = line ? `#L${line}` : '';
         if (this.repoName) {
-            return `[${path.basename(filePath)}](https://github.com/${this.repoName}/blob/main/${relativePath}${lineFragment})`;
+            return `[${path.basename(filePath)}](https://github.com/${this.repoName}/blob/main/${filePath}${lineFragment})`;
         }
         return path.basename(filePath);
     }

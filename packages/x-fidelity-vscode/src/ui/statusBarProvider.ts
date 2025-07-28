@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { CLIAnalysisManager } from '../analysis/cliAnalysisManager';
 import { createComponentLogger } from '../utils/globalLogger';
 import type { AnalysisResult } from '../analysis/types';
+import type { ProcessedAnalysisResult } from '../types/issues';
 import type { IAnalysisEngine } from '../analysis/analysisEngineInterface';
 
 type SimpleAnalysisState = 'idle' | 'analyzing' | 'complete' | 'error';
@@ -121,6 +122,81 @@ export class StatusBarProvider implements vscode.Disposable {
       );
     } catch (error) {
       this.logger.error('Failed to update status bar display:', error);
+    }
+  }
+
+  /**
+   * NEW: Direct update method for ResultCoordinator pattern
+   * Updates status bar directly from pre-processed results to ensure consistent counts
+   */
+  public updateFromProcessedResult(processed: ProcessedAnalysisResult): void {
+    try {
+      this.logger.debug('Updating status bar from processed result', {
+        totalIssues: processed.totalIssues,
+        successfulIssues: processed.successfulIssues,
+        failedIssues: processed.failedIssues
+      });
+
+      // Update state to complete
+      this.currentState = 'complete';
+
+      // Create a compatible lastResult for existing display logic
+      this.lastResult = {
+        metadata: processed.metadata,
+        diagnostics: new Map(), // Not used by status bar
+        timestamp: processed.timestamp,
+        duration: processed.duration,
+        summary: {
+          totalIssues: processed.totalIssues,
+          filesAnalyzed: Object.keys(
+            processed.metadata?.XFI_RESULT?.fileCount || {}
+          ).length,
+          analysisTimeMs: processed.duration,
+          issuesByLevel: {
+            error: processed.issueBreakdown.error,
+            warning: processed.issueBreakdown.warning,
+            info: processed.issueBreakdown.info,
+            hint: processed.issueBreakdown.hint,
+            fatality: 0, // Not used in breakdown
+            exempt: processed.issueBreakdown.exempt
+          }
+        }
+      };
+
+      // Determine analysis mode for display
+      const isCliMode = this.analysisEngine instanceof CLIAnalysisManager;
+      const modeIndicator = isCliMode ? '' : '';
+
+      // Create status display with consistent counts
+      const totalIssues = processed.totalIssues;
+      const unhandledIssues = processed.failedIssuesCount;
+
+      const icon = totalIssues > 0 ? '$(warning)' : '$(check)';
+      const color =
+        totalIssues > 0
+          ? new vscode.ThemeColor('statusBarItem.warningBackground')
+          : undefined;
+
+      const unhandledSuffix =
+        unhandledIssues > 0 ? ` • ${unhandledIssues} unhandled` : '';
+      const statusText = `${icon} X-Fidelity${modeIndicator} (${totalIssues}${unhandledSuffix})`;
+      const statusTooltip = `X-Fidelity${modeIndicator} - Found ${totalIssues} issues${unhandledIssues > 0 ? ` (${unhandledIssues} could not be processed)` : ''}`;
+
+      this.statusBarItem.text = statusText;
+      this.statusBarItem.tooltip = statusTooltip;
+      this.statusBarItem.backgroundColor = color;
+      this.statusBarItem.command = 'xfidelity.runAnalysis';
+
+      this.logger.debug(
+        `Status bar updated from processed result: "${statusText}"`
+      );
+
+      // NO EVENT EMISSION - direct update pattern eliminates events
+    } catch (error) {
+      this.logger.error(
+        'Failed to update status bar from processed result:',
+        error
+      );
     }
   }
 

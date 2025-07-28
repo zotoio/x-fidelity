@@ -64,7 +64,7 @@ export function run(): Promise<void> {
   const mocha = new Mocha({
     ui: 'bdd',
     color: true,
-    timeout: 60000,
+    timeout: 30000, // Reduced from 60000 to comply with memory constraint
     // Use built-in spec reporter for individual test progress
     reporter: 'spec',
     reporterOptions: {

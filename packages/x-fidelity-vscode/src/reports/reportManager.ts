@@ -10,6 +10,7 @@ import {
   type ExportOptions,
   type ShareOptions
 } from './exportManager';
+import { FileSourceTranslator } from '../utils/fileSourceTranslator';
 
 export class ReportManager {
   private reportViewer: ReportViewer;
@@ -208,7 +209,7 @@ export class ReportManager {
       .map(
         detail => `
         <div class="file-section">
-            <div class="file-name">${detail.filePath === 'REPO_GLOBAL_CHECK' ? 'Global Issues' : detail.filePath}</div>
+            <div class="file-name">${FileSourceTranslator.translateFileSourceForDisplay(detail.filePath)}</div>
                          ${detail.errors
                            .map(
                              error => `

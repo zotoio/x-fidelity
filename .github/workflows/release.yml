@@ -2,34 +2,117 @@ name: Release
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
+
+env:
+  NODE_VERSION: '22.16.0'
 
 jobs:
-  release:
+  changes:
     runs-on: ubuntu-latest
-
+    outputs:
+      vscode: ${{ steps.filter.outputs.vscode }}
+      cli: ${{ steps.filter.outputs.cli }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            vscode:
+              - 'packages/x-fidelity-vscode/**'
+              - 'packages/x-fidelity-core/**'
+              - 'packages/x-fidelity-types/**'
+              - 'packages/x-fidelity-plugins/**'
+            cli:
+              - 'packages/x-fidelity-cli/**'
+              - 'packages/x-fidelity-core/**'
+              - 'packages/x-fidelity-types/**'
+              - 'packages/x-fidelity-plugins/**'
+              - 'packages/x-fidelity-server/**'
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'yarn'
+  release-cli:
+    needs: changes
+    if: needs.changes.outputs.cli == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
 
-    - name: Run Build
-      run: yarn build
+      # - name: Setup Turborepo Remote Cache
+      #   uses: dtinth/setup-github-actions-caching-for-turbo@v1
 
-    - name: Run tests
-      run: yarn ci
-      
-    - name: Run semantic-release of cli
-      run: yarn workspace x-fidelity semantic-release
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: yarn build:production
+
+      - name: Test with coverage
+        run: yarn test:coverage
+
+      - name: Release CLI
+        run: yarn workspace x-fidelity semantic-release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  release-vscode-extension:
+    needs: changes
+    if: needs.changes.outputs.vscode == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      # - name: Setup Turborepo Remote Cache
+      #   uses: dtinth/setup-github-actions-caching-for-turbo@v1
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup Xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      - name: Build
+        run: yarn build:production
+
+      - name: Test with coverage
+        run: yarn test:coverage
+
+      - name: Run integration tests
+        run: xvfb-run -a yarn workspace x-fidelity-vscode test:ci
+
+      - name: Release VSCode Extension
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-extension-universal
+          path: packages/x-fidelity-vscode/*.vsix
+          retention-days: 90
