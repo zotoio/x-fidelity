@@ -15,13 +15,24 @@ suite('Analysis Completion & UI Feature Tests', () => {
   let initialAnalysisResults: any;
 
   suiteSetup(async function () {
-    this.timeout(180000); // Increased to 3 minutes for full setup
+    // Aggressive timeout configuration for Windows CI to prevent hanging
+    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+    const isWindows = process.platform === 'win32';
+    const setupTimeout = isCI && isWindows ? 30000 : isCI ? 60000 : 120000; // Windows CI: 30s, CI: 1min, local: 2min
+    
+    this.timeout(setupTimeout);
     await ensureExtensionActivated();
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Minimal wait time for Windows CI
+    const waitTime = isCI && isWindows ? 500 : isCI ? 1000 : 3000;
+    await new Promise(resolve => setTimeout(resolve, waitTime));
   });
 
   setup(async function () {
-    this.timeout(30000); // Much faster with cached results
+    // Aggressive timeout for setup to prevent Windows CI hanging
+    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+    const isWindows = process.platform === 'win32';
+    const setupTimeout = isCI && isWindows ? 10000 : isCI ? 20000 : 30000; // Windows CI: 10s, CI: 20s, local: 30s
+    this.timeout(setupTimeout);
     console.log('🔍 Ensuring analysis results are available...');
     try {
       initialAnalysisResults = await ensureGlobalAnalysisCompleted();
@@ -33,7 +44,12 @@ suite('Analysis Completion & UI Feature Tests', () => {
   });
 
   test('should complete full analysis workflow and update UI', async function () {
-    this.timeout(180000); // WINDOWS FIX: Increase timeout for Windows compatibility
+    // Aggressive timeout to prevent Windows CI hanging
+    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+    const isWindows = process.platform === 'win32';
+    const testTimeout = isCI && isWindows ? 30000 : isCI ? 45000 : 90000; // Windows CI: 30s, CI: 45s, local: 90s
+    
+    this.timeout(testTimeout);
 
     // 1. Verify extension is active
     const extension = vscode.extensions.getExtension(

@@ -1,7 +1,7 @@
 # Consolidated Test Report
 
-> **Generated:** 2025-07-28 20:05 GMT+1000  
-> **Duration:** 3.35s  
+> **Generated:** 2025-07-28 20:51 GMT+1000  
+> **Duration:** 3.04s  
 > **Status:** PASSED ✅
 
 ## 📊 Executive Summary
@@ -13,7 +13,7 @@
 | **Test Success Rate** | 100.0% |
 | **Packages Tested** | 6 |
 | **Cache Hit Rate** | 100.0% |
-| **Total Execution Time** | 3.35s |
+| **Total Execution Time** | 3.04s |
 
 ## 🔧 Linting & Code Formatting
 
@@ -37,10 +37,10 @@
 
 | Coverage Type | Percentage |
 |---------------|------------|
-| 📝 **Statements** | 37.2% |
-| 🌿 **Branches** | 39.8% |
+| 📝 **Statements** | 37.3% |
+| 🌿 **Branches** | 39.9% |
 | 🔧 **Functions** | 33.1% |
-| 📏 **Lines** | 37.1% |
+| 📏 **Lines** | 37.2% |
 
 ## 💾 Turbo Cache Performance
 
@@ -60,7 +60,7 @@
 | `x-fidelity-types` | 🏃 Executed | 51 | 0 | 0 | 51 | 91.9% |
 | `x-fidelity-plugins` | 🏃 Executed | 285 | 0 | 0 | 285 | 53.4% |
 | `x-fidelity-server` | 🏃 Executed | 60 | 0 | 0 | 60 | 57.2% |
-| `x-fidelity-vscode` | 🏃 Executed | 79 | 0 | 0 | 79 | 15.0% |
+| `x-fidelity-vscode` | 🏃 Executed | 79 | 0 | 0 | 79 | 15.2% |
 
 ## 📋 Additional Information
 
@@ -70,7 +70,7 @@
 - **Packages cached:** 0
 
 ### Performance Metrics
-- **Average time per package:** 0.56s
+- **Average time per package:** 0.51s
 - **Cache efficiency:** 100.0% (higher is better)
 
 ### Status Indicators

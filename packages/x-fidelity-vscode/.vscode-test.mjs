@@ -13,6 +13,15 @@ const USER_DATA_DIR = path.join(process.cwd(), '.vscode-test-user-data');
   }
 });
 
+// Environment-aware timeout configuration
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+const isWindows = process.platform === 'win32';
+const isWindowsCI = isCI && isWindows;
+
+// More aggressive timeouts for Windows CI to prevent RangeError and timeouts
+const integrationTimeout = isWindowsCI ? 20000 : isCI ? 30000 : 60000;  // Windows CI: 20s to prevent hanging
+const coreTimeout = isWindowsCI ? 15000 : 20000;  // Windows CI: 15s for faster execution
+
 export default defineConfig([
   {
     label: 'integration',
@@ -22,9 +31,11 @@ export default defineConfig([
     extensionDevelopmentPath: '.',
     mocha: {
       ui: 'bdd',
-      timeout: 30000, // Reduced from 60000 to comply with memory constraint
+      timeout: integrationTimeout,
       color: true,
-      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'min'
+      reporter: process.env.VSCODE_TEST_VERBOSE === 'true' ? 'spec' : 'min',
+      bail: isWindowsCI, // Exit on first failure for Windows CI to prevent cascading timeouts
+      retries: isWindowsCI ? 0 : 1 // Disable retries on Windows CI to prevent extended hang times
     }
   },
   {
@@ -35,9 +46,11 @@ export default defineConfig([
     extensionDevelopmentPath: '.',
     mocha: {
       ui: 'bdd',
-      timeout: 30000, // Faster for core tests
+      timeout: coreTimeout,
       color: true,
-      reporter: 'min'
+      reporter: 'min',
+      bail: isWindowsCI,
+      retries: isWindowsCI ? 0 : 1
     }
   }
 ]);

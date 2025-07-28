@@ -45,7 +45,7 @@
         "blacklistPatterns": [
             ".*\\/\\..*",
             ".*\\.(log|lock|txt)$",
-            ".*\\/(dist|coverage|build|node_modules|tmp|temp|out|x-fidelity-vscode\\/cli)(\\/.*|$)"
+            ".*\\/(dist|coverage|build|node_modules|tmp|temp|out|xfiResults|x-fidelity-vscode\\/cli)(\\/.*|$)"
         ],
         "whitelistPatterns": [
             ".*\\.(ts|tsx|js|jsx|json)$",

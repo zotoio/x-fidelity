@@ -478,17 +478,18 @@ export class CLISpawner {
           // Use global spawn if available (for testing), otherwise use imported spawn
           const spawnFn = (global as any).spawn || spawn;
 
-          // Calculate timeout based on environment
+          // Calculate timeout based on environment with aggressive Windows CI limits
           const isCI =
             process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
           const isWindows = process.platform === 'win32';
           let timeoutMs = options.timeout || 60000;
 
-          // Adjust timeout for CI environments
+          // Aggressive timeout limits for Windows CI to prevent hanging
           if (isCI) {
-            timeoutMs = Math.min(timeoutMs, 60000);
             if (isWindows) {
-              timeoutMs = Math.min(timeoutMs, 120000);
+              timeoutMs = Math.min(timeoutMs, 30000); // Windows CI: max 30s
+            } else {
+              timeoutMs = Math.min(timeoutMs, 60000); // Other CI: max 60s
             }
           }
 
@@ -585,6 +586,26 @@ export class CLISpawner {
   }
 
   /**
+   * Windows-specific output size limits to prevent RangeError: Invalid string length
+   */
+  private static readonly MAX_OUTPUT_SIZE = 50 * 1024 * 1024; // 50MB limit for Windows
+  private static readonly MAX_STDERR_SIZE = 10 * 1024 * 1024; // 10MB limit for stderr
+
+  private truncateOutput(
+    output: string,
+    maxSize: number,
+    label: string
+  ): string {
+    if (output.length <= maxSize) {
+      return output;
+    }
+
+    const truncated = output.substring(0, maxSize);
+    const message = `\n\n[TRUNCATED: Output exceeded ${maxSize} characters for ${label}. This may indicate excessive logging or errors.]`;
+    return truncated + message;
+  }
+
+  /**
    * Kill CLI process gracefully with fallback to force kill
    */
   private killProcess(child: ChildProcess): void {
@@ -636,9 +657,20 @@ export class CLISpawner {
     if (child.stderr) {
       child.stderr.on('data', (data: Buffer) => {
         const output = data.toString();
-        stderr += output;
-        const lines = output.split('\n');
 
+        // Prevent RangeError: Invalid string length on Windows
+        const newStderr = stderr + output;
+        if (newStderr.length > CLISpawner.MAX_STDERR_SIZE) {
+          stderr = this.truncateOutput(
+            newStderr,
+            CLISpawner.MAX_STDERR_SIZE,
+            'stderr'
+          );
+        } else {
+          stderr += output;
+        }
+
+        const lines = output.split('\n');
         for (const line of lines) {
           if (line.trim()) {
             this.logger.streamLine(line, 'stderr');
@@ -675,7 +707,19 @@ export class CLISpawner {
     // Handle stderr with streaming
     child.stderr?.on('data', data => {
       const output = data.toString();
-      stderr += output;
+
+      // Prevent RangeError: Invalid string length on Windows
+      const newStderr = stderr + output;
+      if (newStderr.length > CLISpawner.MAX_STDERR_SIZE) {
+        stderr = this.truncateOutput(
+          newStderr,
+          CLISpawner.MAX_STDERR_SIZE,
+          'stderr'
+        );
+      } else {
+        stderr += output;
+      }
+
       const lines = output.split('\n');
 
       for (const line of lines) {
@@ -691,6 +735,23 @@ export class CLISpawner {
 
       // 🎯 STOP STREAMING AFTER ANALYSIS COMPLETION
       this.logger.stopStreaming();
+
+      // Windows-specific cleanup to prevent memory accumulation
+      if (process.platform === 'win32' && process.env.CI === 'true') {
+        // Force garbage collection if available
+        if (global.gc) {
+          global.gc();
+        }
+
+        // Truncate large stderr to prevent memory issues
+        if (stderr.length > CLISpawner.MAX_STDERR_SIZE / 2) {
+          stderr = this.truncateOutput(
+            stderr,
+            CLISpawner.MAX_STDERR_SIZE / 2,
+            'cleanup'
+          );
+        }
+      }
 
       this.logger.debug(`CLI process exited with code ${code}`, {
         correlationId,

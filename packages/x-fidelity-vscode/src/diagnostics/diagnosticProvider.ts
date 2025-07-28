@@ -1,6 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
 import type { AnalysisResult } from '../analysis/types';
 import type { ProcessedAnalysisResult, FailedIssue } from '../types/issues';
 import { ConfigManager } from '../configuration/configManager';
@@ -9,6 +7,7 @@ import type { ResultMetadata } from '@x-fidelity/types';
 import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
 import { isTestEnvironment } from '../utils/testDetection';
 import { validateRange } from '../utils/rangeValidation';
+import { FileSourceTranslator } from '../utils/fileSourceTranslator';
 
 // Extended interface for diagnostics with X-Fidelity metadata (currently unused)
 // interface ExtendedDiagnostic extends vscode.Diagnostic {
@@ -890,7 +889,7 @@ export class DiagnosticProvider implements vscode.Disposable {
   }
 
   /**
-   * Enhanced file URI resolution with better error handling
+   * Enhanced file URI resolution with consistent REPO_GLOBAL_CHECK translation to README.md
    */
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
     try {
@@ -900,115 +899,18 @@ export class DiagnosticProvider implements vscode.Disposable {
         return null;
       }
 
-      // Handle special global check files (like REPO_GLOBAL_CHECK)
-      if (
-        filePath === 'REPO_GLOBAL_CHECK' ||
-        filePath.endsWith('REPO_GLOBAL_CHECK')
-      ) {
-        // For global checks, create a virtual URI that contains the special marker
-        // This ensures the comprehensive highlighting test filter works correctly
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (!workspaceFolder) {
-          this.logger.warn('No workspace folder available for global check');
-          return null;
-        }
+      // Use the centralized file source translator for consistent handling
+      const resolvedUri = await FileSourceTranslator.resolveFileUri(filePath);
 
-        const workspaceRoot = workspaceFolder.uri.fsPath;
-
-        // Try to find a suitable file to open for global checks
-        const candidateFiles = [
-          'package.json',
-          'README.md',
-          'tsconfig.json',
-          'src/index.js',
-          'src/index.ts',
-          'index.js',
-          'index.ts'
-        ];
-
-        for (const candidate of candidateFiles) {
-          const candidatePath = path.resolve(workspaceRoot, candidate);
-          try {
-            if (fs.existsSync(candidatePath)) {
-              this.logger.debug(
-                `Using ${candidate} for REPO_GLOBAL_CHECK navigation`
-              );
-              return vscode.Uri.file(candidatePath);
-            }
-          } catch {
-            // Continue to next candidate
-          }
-        }
-
-        // Fallback: create a virtual URI that preserves the REPO_GLOBAL_CHECK marker
-        // This allows the test filter to work correctly while still being a valid file path
+      if (resolvedUri && FileSourceTranslator.isGlobalCheck(filePath)) {
         this.logger.debug(
-          'No suitable file found, creating virtual REPO_GLOBAL_CHECK URI'
+          `Translated REPO_GLOBAL_CHECK to ${resolvedUri.fsPath} for navigation`
         );
-        const virtualPath = path.join(workspaceRoot, 'REPO_GLOBAL_CHECK');
-        return vscode.Uri.file(virtualPath);
       }
 
-      // Handle absolute paths (legacy support or special cases)
-      if (path.isAbsolute(filePath)) {
-        // Check if file exists before creating URI
-        try {
-          if (fs.existsSync(filePath)) {
-            return vscode.Uri.file(filePath);
-          } else {
-            this.logger.warn('Absolute file path does not exist', { filePath });
-            // CRITICAL FIX: Return URI anyway for navigation, but log warning
-            return vscode.Uri.file(filePath);
-          }
-        } catch (fsError) {
-          this.logger.warn('Cannot check file existence', {
-            filePath,
-            error: fsError
-          });
-          return vscode.Uri.file(filePath); // Return URI anyway for testing
-        }
-      }
-
-      // Handle relative paths by resolving against workspace root (fallback)
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      if (!workspaceFolder) {
-        this.logger.warn(
-          'No workspace folder available for relative path resolution',
-          {
-            filePath
-          }
-        );
-        return null;
-      }
-
-      const workspaceRoot = workspaceFolder.uri.fsPath;
-      const absolutePath = path.resolve(workspaceRoot, filePath);
-      this.logger.debug('Resolving relative path', {
-        original: filePath,
-        workspaceRoot,
-        resolved: absolutePath
-      });
-
-      // Check if resolved file exists
-      try {
-        if (fs.existsSync(absolutePath)) {
-          return vscode.Uri.file(absolutePath);
-        } else {
-          this.logger.warn('Resolved file path does not exist', {
-            absolutePath
-          });
-          // CRITICAL FIX: Return URI anyway for navigation
-          return vscode.Uri.file(absolutePath);
-        }
-      } catch (fsError) {
-        this.logger.warn('Cannot check resolved file existence', {
-          absolutePath,
-          error: fsError
-        });
-        return vscode.Uri.file(absolutePath); // Return URI anyway for testing
-      }
+      return resolvedUri;
     } catch (error) {
-      this.logger.warn('Failed to resolve file URI', { filePath, error });
+      this.logger.error('Failed to resolve file URI', { filePath, error });
       return null;
     }
   }

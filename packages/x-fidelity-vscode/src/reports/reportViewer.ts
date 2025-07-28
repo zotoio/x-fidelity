@@ -2,11 +2,12 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { ConfigManager } from '../configuration/configManager';
-import { REPO_GLOBAL_CHECK } from '@x-fidelity/core';
+
 import {
   safeSerializeRange,
   safeSerializeForVSCode
 } from '../utils/serialization';
+import { FileSourceTranslator } from '../utils/fileSourceTranslator';
 
 export interface ReportViewerOptions {
   reportData: ResultMetadata;
@@ -866,34 +867,12 @@ export class ReportViewer implements vscode.Disposable {
         return;
       }
 
-      let fileUri: vscode.Uri;
+      // Use FileSourceTranslator to resolve file URI (translates REPO_GLOBAL_CHECK to README.md)
+      const fileUri = await FileSourceTranslator.resolveFileUri(filePath);
 
-      // Handle special case for global repository checks
-      if (filePath === REPO_GLOBAL_CHECK) {
-        fileUri = vscode.Uri.file(
-          path.join(workspaceFolder.uri.fsPath, '.xfiResults', 'XFI_RESULT.md')
-        );
-
-        try {
-          const document = await vscode.workspace.openTextDocument(fileUri);
-          await vscode.window.showTextDocument(document);
-          return;
-        } catch {
-          vscode.window.showWarningMessage(
-            `Global check report not found. Details: ${filePath}`
-          );
-          return;
-        }
-      }
-
-      // Handle absolute paths
-      if (path.isAbsolute(filePath)) {
-        fileUri = vscode.Uri.file(filePath);
-      } else {
-        // Handle relative paths
-        fileUri = vscode.Uri.file(
-          path.join(workspaceFolder.uri.fsPath, filePath)
-        );
+      if (!fileUri) {
+        vscode.window.showWarningMessage(`Unable to open file: ${filePath}`);
+        return;
       }
 
       const document = await vscode.workspace.openTextDocument(fileUri);

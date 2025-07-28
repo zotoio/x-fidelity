@@ -16,7 +16,7 @@ jobs:
   verify-extension:
     name: Verify Extension (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 45 || 30 }}
     strategy:
       fail-fast: false
       matrix:
@@ -57,6 +57,12 @@ jobs:
         run: yarn workspace x-fidelity-vscode test:integration
         env:
           DISPLAY: ${{ runner.os == 'Linux' && ':99.0' || '' }}
+          # Windows-specific optimizations to prevent extension host unresponsiveness
+          NODE_OPTIONS: ${{ runner.os == 'Windows' && '--max-old-space-size=4096' || '' }}
+          # Reduce memory pressure on Windows CI
+          VSCODE_TEST_MEMORY_LIMIT: ${{ runner.os == 'Windows' && '2048' || '' }}
+          # Enable verbose logging for Windows to help debug unresponsive issues
+          VSCODE_TEST_VERBOSE: ${{ runner.os == 'Windows' && 'true' || 'false' }}
 
       - name: Package extension
         run: yarn workspace x-fidelity-vscode package

@@ -69,8 +69,12 @@ class GlobalTestAnalysisManager {
         throw new Error(`Global analysis failed: ${result.error}`);
       }
 
-      // Wait for completion
-      const completed = await waitForAnalysisCompletion(180000, workspacePath);
+      // Wait for completion with aggressive Windows CI timeout to prevent hanging
+      const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+      const isWindows = process.platform === 'win32';
+      const completionTimeout = isCI && isWindows ? 30000 : isCI ? 60000 : 180000; // Windows CI: 30s, CI: 60s, local: 180s
+      
+      const completed = await waitForAnalysisCompletion(completionTimeout, workspacePath);
       if (!completed) {
         throw new Error('Global analysis did not complete within timeout');
       }
@@ -154,8 +158,13 @@ export async function ensureExtensionActivated(): Promise<
     await extension.activate();
   }
 
-  // Wait a bit for activation to complete
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  // Optimized wait time based on environment to prevent hanging
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+  const isWindows = process.platform === 'win32';
+  
+  // Shorter wait for Windows CI to prevent extension host unresponsiveness
+  const waitTime = isCI && isWindows ? 1000 : isCI ? 1500 : 2000;
+  await new Promise(resolve => setTimeout(resolve, waitTime));
 
   return extension;
 }
@@ -256,8 +265,12 @@ export async function runExtensionAnalysis(): Promise<CLIResult> {
     throw new Error(`Extension analysis failed: ${result.error}`);
   }
 
-  // Wait for completion
-  const completed = await waitForAnalysisCompletion(90000, workspacePath);
+  // Wait for completion with aggressive Windows CI timeout
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+  const isWindows = process.platform === 'win32';
+  const completionTimeout = isCI && isWindows ? 20000 : isCI ? 45000 : 90000; // Windows CI: 20s, CI: 45s, local: 90s
+  
+  const completed = await waitForAnalysisCompletion(completionTimeout, workspacePath);
   if (!completed) {
     throw new Error('Extension analysis did not complete within timeout');
   }

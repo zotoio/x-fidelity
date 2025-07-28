@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import type { AnalysisResult } from '../analysis/types';
 import type {
   ProcessedAnalysisResult,
@@ -10,6 +9,7 @@ import type { ResultMetadata } from '@x-fidelity/types';
 import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
 import { createComponentLogger } from '../utils/globalLogger';
 import { validateRange } from '../utils/rangeValidation';
+import { FileSourceTranslator } from '../utils/fileSourceTranslator';
 
 // Internal interface for processing issues from analysis results
 interface DiagnosticIssue {
@@ -375,10 +375,13 @@ export class ResultCoordinator implements vscode.Disposable {
         }
         diagnostics.get(uriString)!.push(diagnostic);
 
-        // Create processed issue for tree view
+        // Create processed issue for tree view with translated file source
+        const displayFile = FileSourceTranslator.translateFileSourceForDisplay(
+          issue.file
+        );
         const processedIssue: ProcessedIssue = {
           id: `${issue.file}-${issue.ruleId}-${issue.line}`,
-          file: vscode.workspace.asRelativePath(fileUri),
+          file: displayFile,
           rule: issue.ruleId,
           severity: this.mapSeverityToString(diagnostic.severity),
           message: issue.message,
@@ -572,37 +575,8 @@ export class ResultCoordinator implements vscode.Disposable {
         return null;
       }
 
-      // Handle special global check files
-      if (
-        filePath === 'REPO_GLOBAL_CHECK' ||
-        filePath.endsWith('REPO_GLOBAL_CHECK')
-      ) {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (!workspaceFolder) {
-          return null;
-        }
-        // Create a virtual URI that preserves the REPO_GLOBAL_CHECK marker
-        // This allows the test filter to work correctly
-        const virtualPath = path.join(
-          workspaceFolder.uri.fsPath,
-          'REPO_GLOBAL_CHECK'
-        );
-        return vscode.Uri.file(virtualPath);
-      }
-
-      // Handle absolute paths
-      if (path.isAbsolute(filePath)) {
-        return vscode.Uri.file(filePath);
-      }
-
-      // Handle relative paths
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      if (!workspaceFolder) {
-        return null;
-      }
-
-      const absolutePath = path.resolve(workspaceFolder.uri.fsPath, filePath);
-      return vscode.Uri.file(absolutePath);
+      // Use the centralized file source translator for consistent handling
+      return await FileSourceTranslator.resolveFileUri(filePath);
     } catch (error) {
       this.logger.debug('Failed to resolve file URI', { filePath, error });
       return null;
