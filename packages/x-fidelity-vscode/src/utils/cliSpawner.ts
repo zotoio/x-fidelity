@@ -464,13 +464,13 @@ export class CLISpawner {
           const isCI =
             process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
           const isWindows = process.platform === 'win32';
-          let timeoutMs = options.timeout || 30000; // Reduced from 120000 to 30000
+          let timeoutMs = options.timeout || 60000; 
 
           // Adjust timeout for CI environments
           if (isCI) {
-            timeoutMs = Math.min(timeoutMs, 25000); // 25 seconds max for CI
+            timeoutMs = Math.min(timeoutMs, 60000); 
             if (isWindows) {
-              timeoutMs = Math.min(timeoutMs, 20000); // 20 seconds max for Windows CI
+              timeoutMs = Math.min(timeoutMs, 120000); 
             }
           }
 

@@ -911,7 +911,26 @@ export class ReportViewer implements vscode.Disposable {
           Math.max(0, range.end.column - 1) // Convert to 0-based
         );
 
+        (startPos as any).toJSON = function () {
+          return { line: this.line, character: this.character };
+        };
+        (endPos as any).toJSON = function () {
+          return { line: this.line, character: this.character };
+        };
+
         const selection = new vscode.Selection(startPos, endPos);
+        (selection as any).toJSON = function () {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character },
+            anchor: {
+              line: this.anchor.line,
+              character: this.anchor.character
+            },
+            active: { line: this.active.line, character: this.active.character }
+          };
+        };
+
         editor.selection = selection;
         editor.revealRange(
           selection,
@@ -923,17 +942,69 @@ export class ReportViewer implements vscode.Disposable {
           Math.max(0, lineNumber - 1), // Convert to 0-based
           Math.max(0, columnNumber - 1) // Convert to 0-based
         );
-        editor.selection = new vscode.Selection(position, position);
+
+        (position as any).toJSON = function () {
+          return { line: this.line, character: this.character };
+        };
+
+        const selection = new vscode.Selection(position, position);
+        (selection as any).toJSON = function () {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character },
+            anchor: {
+              line: this.anchor.line,
+              character: this.anchor.character
+            },
+            active: { line: this.active.line, character: this.active.character }
+          };
+        };
+
+        const range = new vscode.Range(position, position);
+        (range as any).toJSON = function () {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character }
+          };
+        };
+
+        editor.selection = selection;
         editor.revealRange(
-          new vscode.Range(position, position),
+          range,
           vscode.TextEditorRevealType.InCenterIfOutsideViewport
         );
       } else if (lineNumber > 0) {
         // Fallback to line-only navigation
         const position = new vscode.Position(Math.max(0, lineNumber - 1), 0);
-        editor.selection = new vscode.Selection(position, position);
+
+        (position as any).toJSON = function () {
+          return { line: this.line, character: this.character };
+        };
+
+        const selection = new vscode.Selection(position, position);
+        (selection as any).toJSON = function () {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character },
+            anchor: {
+              line: this.anchor.line,
+              character: this.anchor.character
+            },
+            active: { line: this.active.line, character: this.active.character }
+          };
+        };
+
+        const range = new vscode.Range(position, position);
+        (range as any).toJSON = function () {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character }
+          };
+        };
+
+        editor.selection = selection;
         editor.revealRange(
-          new vscode.Range(position, position),
+          range,
           vscode.TextEditorRevealType.InCenterIfOutsideViewport
         );
       }

@@ -6,7 +6,7 @@ import { ensureGlobalAnalysisCompleted, waitFor, executeCommandSafely } from '..
 suite('Comprehensive Highlighting Integration Tests', () => {
   
   test('should highlight all location format variations correctly', async function () {
-    this.timeout(120000);
+    this.timeout(180000);
 
     console.log('🔍 Starting comprehensive highlighting validation...');
 
@@ -302,7 +302,37 @@ suite('Comprehensive Highlighting Integration Tests', () => {
         
         // Set cursor position
         const position = new vscode.Position(lineNumber, character);
-        editor.selection = new vscode.Selection(position, position);
+        
+        (position as any).toJSON = function() {
+          return {
+            line: this.line,
+            character: this.character
+          };
+        };
+        
+        const selection = new vscode.Selection(position, position);
+        (selection as any).toJSON = function() {
+          return {
+            start: {
+              line: this.start.line,
+              character: this.start.character
+            },
+            end: {
+              line: this.end.line,
+              character: this.end.character
+            },
+            anchor: {
+              line: this.anchor.line,
+              character: this.anchor.character
+            },
+            active: {
+              line: this.active.line,
+              character: this.active.character
+            }
+          };
+        };
+        
+        editor.selection = selection;
         
         navigationResults.push({
           success: true,

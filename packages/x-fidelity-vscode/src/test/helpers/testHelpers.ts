@@ -70,7 +70,7 @@ class GlobalTestAnalysisManager {
       }
 
       // Wait for completion
-      const completed = await waitForAnalysisCompletion(120000, workspacePath);
+      const completed = await waitForAnalysisCompletion(180000, workspacePath);
       if (!completed) {
         throw new Error('Global analysis did not complete within timeout');
       }

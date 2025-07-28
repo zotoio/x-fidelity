@@ -576,6 +576,10 @@ export class IssuesTreeViewManager implements vscode.Disposable {
         let startPos = new vscode.Position(line, column);
         let endPos = startPos;
 
+        (startPos as any).toJSON = function() {
+          return { line: this.line, character: this.character };
+        };
+
         // If we have enhanced range data, use it for more precise selection
         if (issue.range) {
           const startLine = Math.max(0, issue.range.start.line - 1); // Convert 1-based to 0-based
@@ -585,11 +589,37 @@ export class IssuesTreeViewManager implements vscode.Disposable {
 
           startPos = new vscode.Position(startLine, startCol);
           endPos = new vscode.Position(endLine, endCol);
+          
+          // Add toJSON methods to prevent serialization crashes
+          (startPos as any).toJSON = function() {
+            return { line: this.line, character: this.character };
+          };
+          (endPos as any).toJSON = function() {
+            return { line: this.line, character: this.character };
+          };
+        } else {
+          endPos = startPos; // Ensure endPos has toJSON if it's the same as startPos
         }
 
         const range = new vscode.Range(startPos, endPos);
+        (range as any).toJSON = function() {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character }
+          };
+        };
 
-        editor.selection = new vscode.Selection(startPos, endPos);
+        const selection = new vscode.Selection(startPos, endPos);
+        (selection as any).toJSON = function() {
+          return {
+            start: { line: this.start.line, character: this.start.character },
+            end: { line: this.end.line, character: this.end.character },
+            anchor: { line: this.anchor.line, character: this.anchor.character },
+            active: { line: this.active.line, character: this.active.character }
+          };
+        };
+        
+        editor.selection = selection;
         editor.revealRange(
           range,
           vscode.TextEditorRevealType.InCenterIfOutsideViewport
