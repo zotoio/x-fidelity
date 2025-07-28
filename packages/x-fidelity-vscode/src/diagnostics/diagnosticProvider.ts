@@ -8,6 +8,7 @@ import { createComponentLogger } from '../utils/globalLogger';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
 import { isTestEnvironment } from '../utils/testDetection';
+import { validateRange } from '../utils/rangeValidation';
 
 // Extended interface for diagnostics with X-Fidelity metadata (currently unused)
 // interface ExtendedDiagnostic extends vscode.Diagnostic {
@@ -413,16 +414,26 @@ export class DiagnosticProvider implements vscode.Disposable {
           }
 
           // Convert 1-based to 0-based coordinates with proper validation
-          const startLine = Math.max(0, location.startLine - 1);
-          const startColumn = Math.max(0, location.startColumn - 1);
-          let endLine = Math.max(0, location.endLine - 1);
-          let endColumn = Math.max(0, location.endColumn - 1);
+          const rawStartLine = Math.max(0, location.startLine - 1);
+          const rawStartColumn = Math.max(0, location.startColumn - 1);
+          const rawEndLine = Math.max(0, location.endLine - 1);
+          const rawEndColumn = Math.max(0, location.endColumn - 1);
 
-          // Fix: Ensure valid range constraints after coordinate conversion
-          // This prevents the comprehensive highlighting test validation error
-          if (endLine === startLine && endColumn <= startColumn) {
-            endColumn = startColumn + 1;
-          }
+          // Safe range validation that preserves zero-width ranges at valid positions
+          // and prevents invalid ranges that exceed line boundaries
+          const validatedRange = validateRange(
+            rawStartLine,
+            rawStartColumn,
+            rawEndLine,
+            rawEndColumn,
+            undefined, // No document access in this context for performance
+            { preserveZeroWidth: true, fallbackExpansion: 1 }
+          );
+
+          const startLine = validatedRange.startLine;
+          const startColumn = validatedRange.startColumn;
+          const endLine = validatedRange.endLine;
+          const endColumn = validatedRange.endColumn;
 
           const diagnosticIssue: DiagnosticIssue = {
             file: filePath,
@@ -773,27 +784,33 @@ export class DiagnosticProvider implements vscode.Disposable {
    */
   private createVSCodeDiagnostic(issue: DiagnosticIssue): vscode.Diagnostic {
     // Ensure all coordinates are valid (non-negative)
-    const startLine = Math.max(0, issue.line);
-    const startColumn = Math.max(0, issue.column);
+    const rawStartLine = Math.max(0, issue.line);
+    const rawStartColumn = Math.max(0, issue.column);
 
     // Calculate end position with proper fallbacks
-    let endLine =
-      issue.endLine !== undefined ? Math.max(0, issue.endLine) : startLine;
-    let endColumn =
+    const rawEndLine =
+      issue.endLine !== undefined ? Math.max(0, issue.endLine) : rawStartLine;
+    const rawEndColumn =
       issue.endColumn !== undefined
         ? Math.max(0, issue.endColumn)
-        : startColumn + 1;
+        : rawStartColumn + 1;
 
-    // Validate range consistency
-    if (endLine < startLine) {
-      endLine = startLine;
-    }
+    // Safe range validation that prevents invalid ranges exceeding line boundaries
+    const validatedRange = validateRange(
+      rawStartLine,
+      rawStartColumn,
+      rawEndLine,
+      rawEndColumn,
+      undefined, // No document access in this context for performance
+      { preserveZeroWidth: true, fallbackExpansion: 1 }
+    );
 
-    if (endLine === startLine && endColumn <= startColumn) {
-      endColumn = startColumn + 1; // Ensure range spans at least one character
-    }
-
-    const range = new vscode.Range(startLine, startColumn, endLine, endColumn);
+    const range = new vscode.Range(
+      validatedRange.startLine,
+      validatedRange.startColumn,
+      validatedRange.endLine,
+      validatedRange.endColumn
+    );
 
     const diagnostic = new vscode.Diagnostic(
       range,
@@ -827,6 +844,16 @@ export class DiagnosticProvider implements vscode.Disposable {
     (diagnostic as any).ruleId = issue.ruleId;
     (diagnostic as any).originalLevel = (issue as any).originalLevel;
 
+    // ENHANCEMENT: Preserve location extraction metadata for debugging and analysis
+    (diagnostic as any).locationSource =
+      (issue as any).locationSource || 'unknown';
+    (diagnostic as any).locationConfidence =
+      (issue as any).locationConfidence || 'unknown';
+    (diagnostic as any).isFileLevelRule =
+      (issue as any).isFileLevelRule || false;
+    (diagnostic as any).hasDetails = (issue as any).hasDetails || false;
+    (diagnostic as any).detailsKeys = (issue as any).detailsKeys || [];
+
     // CRITICAL FIX: Add toJSON method to prevent Windows serialization crashes
     // This ensures the diagnostic can be safely serialized without throwing "Method not found: toJSON" errors
     (diagnostic as any).toJSON = function () {
@@ -850,7 +877,12 @@ export class DiagnosticProvider implements vscode.Disposable {
         category: this.category,
         fixable: this.fixable,
         ruleId: this.ruleId,
-        originalLevel: this.originalLevel
+        originalLevel: this.originalLevel,
+        locationSource: this.locationSource,
+        locationConfidence: this.locationConfidence,
+        isFileLevelRule: this.isFileLevelRule,
+        hasDetails: this.hasDetails,
+        detailsKeys: this.detailsKeys
       };
     };
 

@@ -9,6 +9,7 @@ import type {
 import type { ResultMetadata } from '@x-fidelity/types';
 import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
 import { createComponentLogger } from '../utils/globalLogger';
+import { validateRange } from '../utils/rangeValidation';
 
 // Internal interface for processing issues from analysis results
 interface DiagnosticIssue {
@@ -609,28 +610,31 @@ export class ResultCoordinator implements vscode.Disposable {
   }
 
   private createVSCodeDiagnostic(issue: DiagnosticIssue): vscode.Diagnostic {
-    const startLine = Math.max(0, issue.line);
-    const startColumn = Math.max(0, issue.column);
-    let endLine =
-      issue.endLine !== undefined ? Math.max(0, issue.endLine) : startLine;
-    let endColumn =
+    const rawStartLine = Math.max(0, issue.line);
+    const rawStartColumn = Math.max(0, issue.column);
+    const rawEndLine =
+      issue.endLine !== undefined ? Math.max(0, issue.endLine) : rawStartLine;
+    const rawEndColumn =
       issue.endColumn !== undefined
         ? Math.max(0, issue.endColumn)
-        : startColumn + 1;
+        : rawStartColumn + 1;
 
-    if (endLine < startLine) {
-      endLine = startLine;
-    }
-    if (endLine === startLine && endColumn <= startColumn) {
-      endColumn = startColumn + 1;
-    }
+    // Safe range validation that prevents invalid ranges exceeding line boundaries
+    const validatedRange = validateRange(
+      rawStartLine,
+      rawStartColumn,
+      rawEndLine,
+      rawEndColumn,
+      undefined, // No document access in this context for performance
+      { preserveZeroWidth: true, fallbackExpansion: 1 }
+    );
 
-    // Additional validation to prevent zero-width ranges that would fail integration tests
-    if (endLine === startLine && endColumn === startColumn) {
-      endColumn = startColumn + 1;
-    }
-
-    const range = new vscode.Range(startLine, startColumn, endLine, endColumn);
+    const range = new vscode.Range(
+      validatedRange.startLine,
+      validatedRange.startColumn,
+      validatedRange.endLine,
+      validatedRange.endColumn
+    );
     const diagnostic = new vscode.Diagnostic(
       range,
       issue.message,

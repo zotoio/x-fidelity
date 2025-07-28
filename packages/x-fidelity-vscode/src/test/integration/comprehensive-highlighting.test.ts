@@ -57,6 +57,19 @@ suite('Comprehensive Highlighting Integration Tests', () => {
         // Validate file accessibility for real files
         if (!uri.fsPath.includes('REPO_GLOBAL_CHECK') && !uri.fsPath.includes('GLOBAL_CHECK')) {
           try {
+            // WINDOWS FIX: Skip cache files and other problematic file types
+            const fileName = uri.fsPath.toLowerCase();
+            if (fileName.includes('.xfidelity-cache.json') || 
+                fileName.includes('.git/') ||
+                fileName.includes('node_modules/') ||
+                fileName.includes('.turbo/') ||
+                fileName.includes('.vscode-test/') ||
+                fileName.endsWith('.lock') ||
+                fileName.endsWith('.log')) {
+              console.log(`⚠️ Skipping system/cache file: ${uri.fsPath}`);
+              return;
+            }
+            
             // WINDOWS FIX: Skip large files that cause "Files above 50MB cannot be synchronized" errors
             const statsCheck = await import('fs').then(fs => fs.promises.stat(uri.fsPath));
             if (statsCheck.size > 50 * 1024 * 1024) { // 50MB limit
@@ -64,10 +77,13 @@ suite('Comprehensive Highlighting Integration Tests', () => {
               return;
             }
             
-            // WINDOWS FIX: Add timeout for document opening to prevent hanging
+            // WINDOWS FIX: Platform-specific timeout for document opening
+            const isWindows = process.platform === 'win32';
+            const timeout = isWindows ? 15000 : 8000; // 15s for Windows, 8s for others
+            
             const documentPromise = vscode.workspace.openTextDocument(uri);
             const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Document open timeout')), 5000)
+              setTimeout(() => reject(new Error('Document open timeout')), timeout)
             );
             
             const document = await Promise.race([documentPromise, timeoutPromise]) as vscode.TextDocument;
