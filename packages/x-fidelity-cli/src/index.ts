@@ -116,13 +116,7 @@ async function gracefulShutdown(logger: ILogger, exitCode: number = 0, error?: E
         }
 
         // Small delay to ensure all async operations complete
-        // Use a shorter timeout and ensure it's properly cleaned up
-        const timeoutPromise = new Promise(resolve => {
-            const timeoutId = setTimeout(resolve, 1000);
-            // Ensure timeout is cleaned up if process exits
-            process.on('exit', () => clearTimeout(timeoutId));
-        });
-        await timeoutPromise;
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Flush stdout and stderr
         process.stdout.write('', () => {

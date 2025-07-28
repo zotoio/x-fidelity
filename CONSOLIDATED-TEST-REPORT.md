@@ -1,7 +1,7 @@
 # Consolidated Test Report
 
-> **Generated:** 2025-07-28 12:27 GMT+1000  
-> **Duration:** 2.76s  
+> **Generated:** 2025-07-28 12:36 GMT+1000  
+> **Duration:** 10.58s  
 > **Status:** PASSED ✅
 
 ## 📊 Executive Summary
@@ -13,7 +13,7 @@
 | **Test Success Rate** | 100.0% |
 | **Packages Tested** | 6 |
 | **Cache Hit Rate** | 100.0% |
-| **Total Execution Time** | 2.76s |
+| **Total Execution Time** | 10.58s |
 
 ## 🔧 Linting & Code Formatting
 
@@ -46,9 +46,9 @@
 
 | Metric | Value |
 |--------|-------|
-| 🎯 **Cache Hits** | 25 tasks |
+| 🎯 **Cache Hits** | 23 tasks |
 | 🔄 **Cache Misses** | 0 tasks |
-| 📊 **Total Tasks** | 25 tasks |
+| 📊 **Total Tasks** | 23 tasks |
 | 📈 **Cache Hit Rate** | 100.0% |
 
 ## 📦 Package Details
@@ -70,7 +70,7 @@
 - **Packages cached:** 0
 
 ### Performance Metrics
-- **Average time per package:** 0.46s
+- **Average time per package:** 1.76s
 - **Cache efficiency:** 100.0% (higher is better)
 
 ### Status Indicators
