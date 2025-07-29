@@ -1019,11 +1019,23 @@ This ensures all workflows complete successfully before allowing PR merges.
 
 ## 🔄 Automated Version Synchronization
 
-The repository includes automatic version synchronization between CLI and VSCode extension:
+The repository includes automatic **bidirectional** version synchronization between CLI and VSCode extension:
 
-- **PR Analysis**: Detects when VSCode changes need CLI version sync
-- **Auto-Commit**: Adds `bump: sync version` commits automatically  
-- **Sequential Execution**: Runs after CI completion to avoid conflicts
-- **Clean History**: Maintains `0.0.0-semantically-released` in git
+### **PR-Level Synchronization**
+- **VSCode changes** without CLI release commits → Adds `bump: sync version` to CLI
+- **Automatic PR comments** explain sync actions taken
+- **Sequential execution** after CI completion to avoid conflicts
+
+### **Release-Level Synchronization** 
+- **CLI release** without VSCode changes → Adds `bump: sync version with CLI release` to VSCode
+- **VSCode release** without CLI changes → CLI already handled via PR sync
+- **Clean git history** maintains `0.0.0-semantically-released` placeholders
+
+### **Result**
+Both packages **always** maintain synchronized version numbers across all scenarios:
+- ✅ CLI-only changes → Both packages get same version
+- ✅ VSCode-only changes → Both packages get same version  
+- ✅ Mixed changes → Both packages get same version
+- ✅ No changes → No releases (stays synchronized)
 
 
