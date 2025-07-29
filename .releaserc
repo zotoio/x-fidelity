@@ -10,6 +10,7 @@
           {"type": "fix", "release": "patch"},
           {"type": "perf", "release": "patch"},
           {"type": "revert", "release": "patch"},
+          {"type": "bump", "release": "patch"},
           {"type": "docs", "release": false},
           {"type": "style", "release": false},
           {"type": "chore", "release": false},
@@ -46,7 +47,27 @@
         "changelogTitle": "# Changelog\n\nAll notable changes to the X-Fidelity CLI will be documented in this file."
       }
     ],
-    "@semantic-release/npm",
+    [
+      "@semantic-release/exec",
+      {
+        "verifyReleaseCmd": "echo '🔍 Verifying CLI package.json version: '$(node -p \"require('./package.json').version\")",
+        "prepareCmd": "echo '📝 Current package.json version before npm plugin: '$(node -p \"require('./package.json').version\")",
+        "publishCmd": "echo '📦 Publishing CLI with version: '$(node -p \"require('./package.json').version\")"
+      }
+    ],
+    [
+      "@semantic-release/npm",
+      {
+        "npmPublish": true,
+        "tarballDir": "dist"
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "successCmd": "echo '✅ CLI published successfully with version: '$(node -p \"require('./package.json').version\") && echo '🔒 Note: This version will NOT be committed to git'"
+      }
+    ],
     [
       "@semantic-release/github",
       {

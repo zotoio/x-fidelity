@@ -15,9 +15,9 @@
                 },
                 "operator": "codeRhythmComplexity",
                 "value": {
-                    "consistency": 0.6,
-                    "complexity": 0.7,
-                    "readability": 0.7
+                    "consistency": 0.3,
+                    "complexity": 0.2,
+                    "readability": 0.4
                 }
             }
         ]
