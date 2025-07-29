@@ -4,15 +4,15 @@ This directory contains various scripts for development, testing, and maintenanc
 
 ## 🧪 Consolidated Test Runner
 
-**`test-consolidated.js`** - Comprehensive test runner with caching support and automatic reporting.
+**`test-consolidated.js`** - Comprehensive test runner with fresh execution and automatic reporting.
 
 ### Features
 
-- **✅ Complete test counting**: Includes tests from cached packages in total count
-- **💾 Persistent results cache**: Stores test results for packages that aren't re-executed
+- **✅ Fresh execution**: Always uses `--force --no-cache` for turbo commands
+- **📊 Accurate test counting**: All tests executed fresh, no cache artifacts
 - **📊 Comprehensive reporting**: Generates markdown report with detailed breakdowns
 - **🤖 Auto-commit**: Automatically commits report when `--commit` flag used or in CI
-- **🏃 Cache-aware**: Shows clear distinction between executed and cached packages
+- **🏃 Real-time results**: Shows actual current test state, not cached data
 
 ### Usage
 
@@ -24,13 +24,14 @@ node scripts/test-consolidated.js --commit
 node scripts/test-consolidated.js
 ```
 
-### Cache Behavior
+### Execution Behavior
 
-The script maintains a `.test-results-cache.json` file (gitignored) that stores test results from previously executed packages. When packages are cached by Turbo:
+The script always runs with `--force --no-cache` flags to ensure:
 
-1. **Fresh execution**: Test results saved to cache
-2. **Cached execution**: Previous results loaded from cache
-3. **Total count**: Always includes all tests regardless of cache state
+1. **Fresh execution**: All tests run from scratch
+2. **No cache interference**: Bypasses any turbo cache
+3. **Accurate counts**: Test totals reflect actual current state
+4. **Reliable results**: No stale or cached test data
 
 ### Auto-Commit
 
@@ -43,12 +44,11 @@ When `--commit` flag is provided or running in CI (`process.env.CI`), the script
    ✅ Passed: 194 tests
    ❌ Failed: 0 tests  
    ⏭️  Skipped: 0 tests
-   💾 Cached: 2 packages (70 tests from cache)
    📊 Total: 194 tests across 6 packages
 
 📦 PACKAGE BREAKDOWN:
-   x-fidelity-core      💾 Cached    Tests: 59P/0F/0S (59 total)
-   x-fidelity-plugins   💾 Cached    Tests: 11P/0F/0S (11 total)
+   x-fidelity-core      🏃 Executed  Tests: 59P/0F/0S (59 total)
+   x-fidelity-plugins   🏃 Executed  Tests: 11P/0F/0S (11 total)
    x-fidelity-vscode    🏃 Executed  Tests: 79P/0F/0S (79 total)
 ```
 
