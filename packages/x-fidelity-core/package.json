@@ -85,7 +85,6 @@
     "yaml": "^2.7.0"
   },
   "files": [
-    "dist/**/*",
-    "README.md"
+    "dist/**/*"
   ]
 }

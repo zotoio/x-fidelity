@@ -3,3 +3,6 @@
 # X-Fidelity analysis results
 .xfiResults/
 *.tgz
+
+# Generated during release
+README.md
