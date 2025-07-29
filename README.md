@@ -990,4 +990,40 @@ Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` f
 
 This project is licensed under the MIT License.. See the `LICENSE` file for details.
 
+## 🎯 Quick Start
+
+```bash
+# Install globally
+npm install -g x-fidelity
+
+# Run analysis
+xfi analyze
+```
+
+## 📋 Branch Protection Setup
+
+For optimal workflow coordination, configure these **required status checks** in your repository settings:
+
+```
+✅ build-and-test (from CI workflow)
+✅ test-extension (from VSCode Extension CI workflow)  
+✅ check-version-sync (from PR Version Sync workflow)
+```
+
+**Settings → Branches → Add rule for `master`:**
+- ✅ Require status checks to pass before merging
+- ✅ Require branches to be up to date before merging
+- ✅ Include administrators
+
+This ensures all workflows complete successfully before allowing PR merges.
+
+## 🔄 Automated Version Synchronization
+
+The repository includes automatic version synchronization between CLI and VSCode extension:
+
+- **PR Analysis**: Detects when VSCode changes need CLI version sync
+- **Auto-Commit**: Adds `bump: sync version` commits automatically  
+- **Sequential Execution**: Runs after CI completion to avoid conflicts
+- **Clean History**: Maintains `0.0.0-semantically-released` in git
+
 
