@@ -56,7 +56,7 @@
     "@x-fidelity/core": "file:../x-fidelity-core",
     "@x-fidelity/plugins": "file:../x-fidelity-plugins",
     "body-parser": "^1.20.3",
-    "chokidar": "^3.6.0",
+    "chokidar": "^4.0.3",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
