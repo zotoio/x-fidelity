@@ -19,6 +19,90 @@ class ConsolidatedTestRunner {
       cacheInfo: { hit: 0, miss: 0, total: 0 }
     };
     this.startTime = Date.now();
+    this.persistentResultsFile = path.join(process.cwd(), '.test-results-cache.json');
+  }
+
+  /**
+   * Load previously cached test results
+   */
+  loadCachedTestResults() {
+    if (fs.existsSync(this.persistentResultsFile)) {
+      try {
+        const cached = JSON.parse(fs.readFileSync(this.persistentResultsFile, 'utf8'));
+        this.log('Loaded cached test results from previous runs', 'cache');
+        return cached;
+      } catch (error) {
+        this.log(`Failed to load cached results: ${error.message}`, 'warning');
+      }
+    }
+    return {};
+  }
+
+  /**
+   * Save test results for future cached runs
+   */
+  saveCachedTestResults() {
+    const resultsToCache = {};
+    
+    for (const [pkg, results] of Object.entries(this.results.packages)) {
+      if (results.executed && results.tests.total > 0) {
+        resultsToCache[pkg] = {
+          tests: results.tests,
+          coverage: results.coverage,
+          timestamp: new Date().toISOString()
+        };
+      }
+    }
+    
+    try {
+      fs.writeFileSync(this.persistentResultsFile, JSON.stringify(resultsToCache, null, 2), 'utf8');
+      this.log('Saved test results for future cached runs', 'success');
+    } catch (error) {
+      this.log(`Failed to save cached results: ${error.message}`, 'error');
+    }
+  }
+
+  /**
+   * Automatically commit the test report if there are changes
+   */
+  autoCommitReport() {
+    try {
+      // Check if git is available and we're in a git repo
+      execSync('git rev-parse --git-dir', { stdio: 'ignore' });
+      
+      // Check if CONSOLIDATED-TEST-REPORT.md has changes
+      try {
+        execSync('git diff --exit-code CONSOLIDATED-TEST-REPORT.md', { stdio: 'ignore' });
+        this.log('No changes to test report - skipping commit', 'info');
+        return;
+      } catch (error) {
+        // File has changes, proceed with commit
+      }
+      
+      // Stage and commit only the report (not the cache file)
+      execSync('git add CONSOLIDATED-TEST-REPORT.md', { stdio: 'pipe' });
+      
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const totalTests = this.results.tests.total;
+      const passRate = this.results.tests.total > 0 
+        ? ((this.results.tests.passed / this.results.tests.total) * 100).toFixed(1)
+        : 100;
+      
+      const commitMessage = `test: update consolidated test report
+
+- Total tests: ${totalTests}
+- Pass rate: ${passRate}%
+- Packages: ${Object.keys(this.results.packages).length}
+- Generated: ${timestamp}
+
+[skip ci]`;
+      
+      execSync(`git commit -m "${commitMessage}"`, { stdio: 'pipe' });
+      this.log('✅ Test report committed to git automatically', 'success');
+      
+    } catch (error) {
+      this.log(`Failed to auto-commit test report: ${error.message}`, 'warning');
+    }
   }
 
   log(message, type = 'info') {
@@ -161,6 +245,9 @@ class ConsolidatedTestRunner {
   async collectJestResults() {
     this.log('Collecting Jest results from all packages...', 'info');
     
+    // Load previously cached test results
+    const cachedResults = this.loadCachedTestResults();
+    
     // Find all Jest output files and coverage files
     const testResultFiles = glob.sync('packages/*/jest-results.json');
     const coverageFiles = glob.sync('packages/*/coverage/coverage-summary.json');
@@ -188,6 +275,7 @@ class ConsolidatedTestRunner {
       // Try to find Jest results
       const jestResultPath = `${packagePath}/jest-results.json`;
       const coveragePath = `${packagePath}/coverage/coverage-summary.json`;
+
       
       if (fs.existsSync(jestResultPath)) {
         try {
@@ -199,22 +287,31 @@ class ConsolidatedTestRunner {
             total: (jestResults.numPassedTests || 0) + (jestResults.numFailedTests || 0) + (jestResults.numPendingTests || 0)
           };
           this.results.packages[pkg].executed = true;
+          this.log(`✅ Found fresh test results for ${pkg}: ${this.results.packages[pkg].tests.total} tests`, 'info');
         } catch (error) {
           this.log(`Failed to parse Jest results for ${pkg}: ${error.message}`, 'warning');
         }
       } else {
-        // Try to parse from console output if available - fallback method
+        // Check if package has tests and use cached results if available
         try {
           const packageJson = JSON.parse(fs.readFileSync(`${packagePath}/package.json`, 'utf8'));
           if (packageJson.scripts && packageJson.scripts.test) {
-            // Package has tests but no results file - assume cached
-            this.results.packages[pkg].executed = false;
+            // Package has tests but no fresh results file - use cached results
+            if (cachedResults[pkg] && cachedResults[pkg].tests) {
+              this.results.packages[pkg].tests = cachedResults[pkg].tests;
+              this.results.packages[pkg].coverage = cachedResults[pkg].coverage;
+              this.results.packages[pkg].executed = false; // Mark as cached
+              this.log(`💾 Using cached test results for ${pkg}: ${this.results.packages[pkg].tests.total} tests`, 'cache');
+            } else {
+              this.log(`⚠️  No cached results found for ${pkg} - assuming no tests`, 'warning');
+            }
           }
         } catch (error) {
           // Ignore packages without package.json
         }
       }
 
+      // Load fresh coverage if available, otherwise use cached
       if (fs.existsSync(coveragePath)) {
         try {
           const coverage = JSON.parse(fs.readFileSync(coveragePath, 'utf8'));
@@ -236,9 +333,11 @@ class ConsolidatedTestRunner {
         this.results.tests.cached++;
       }
     }
-    
+
     // Calculate total tests
     this.results.tests.total = this.results.tests.passed + this.results.tests.failed + this.results.tests.skipped;
+    
+    this.log(`📊 Test aggregation complete: ${this.results.tests.total} total tests (${this.results.tests.passed} passed, ${this.results.tests.cached} from cached packages)`, 'success');
   }
 
   async mergeCoverage() {
@@ -269,26 +368,26 @@ class ConsolidatedTestRunner {
   generateMarkdownReport() {
     this.log('Generating markdown report...', 'info');
     
-    const now = new Date();
-    // Get timezone offset in minutes and convert to GMT offset format
-    const offsetMinutes = now.getTimezoneOffset();
-    const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
-    const offsetMins = Math.abs(offsetMinutes) % 60;
-    const offsetSign = offsetMinutes <= 0 ? '+' : '-'; // Note: getTimezoneOffset returns positive for behind UTC
-    const offsetString = `GMT${offsetSign}${offsetHours.toString().padStart(2, '0')}${offsetMins.toString().padStart(2, '0')}`;
+    const timestamp = new Date().toLocaleString('en-AU', { 
+      timeZone: 'Australia/Sydney',
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    });
     
-    // Format as local date and time with GMT offset
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    const timestamp = `${year}-${month}-${day} ${hours}:${minutes} ${offsetString}`;
-    
+    const overallStatus = this.results.tests.failed === 0 && this.results.linting.failed === 0 ? 'PASSED ✅' : 'FAILED ❌';
     const cacheRate = this.results.cacheInfo.hit + this.results.cacheInfo.miss > 0 
       ? ((this.results.cacheInfo.hit / (this.results.cacheInfo.hit + this.results.cacheInfo.miss)) * 100).toFixed(1)
       : 0;
-    const overallStatus = this.results.tests.failed === 0 && this.results.linting.failed === 0 ? 'PASSED ✅' : 'FAILED ❌';
+
+    // Calculate tests from cached packages
+    const cachedPackageTests = Object.values(this.results.packages)
+      .filter(p => !p.executed)
+      .reduce((sum, p) => sum + p.tests.total, 0);
+
     
     let markdown = `# Consolidated Test Report
 
@@ -322,7 +421,7 @@ class ConsolidatedTestRunner {
 | ✅ **Passed** | ${this.results.tests.passed} | ${this.results.tests.total > 0 ? ((this.results.tests.passed / this.results.tests.total) * 100).toFixed(1) : 0}% |
 | ❌ **Failed** | ${this.results.tests.failed} | ${this.results.tests.total > 0 ? ((this.results.tests.failed / this.results.tests.total) * 100).toFixed(1) : 0}% |
 | ⏭️ **Skipped** | ${this.results.tests.skipped} | ${this.results.tests.total > 0 ? ((this.results.tests.skipped / this.results.tests.total) * 100).toFixed(1) : 0}% |
-| 💾 **Cached Packages** | ${this.results.tests.cached} | - |
+| 💾 **Cached Packages** | ${this.results.tests.cached} (${cachedPackageTests} tests) | - |
 | 📊 **Total Tests** | ${this.results.tests.total} | 100% |
 
 `;
@@ -367,6 +466,7 @@ class ConsolidatedTestRunner {
       markdown += `| \`${pkg}\` | ${status} | ${results.tests.passed} | ${results.tests.failed} | ${results.tests.skipped} | ${results.tests.total} | ${coverage} |\n`;
     }
 
+
     // Additional Details
     markdown += `
 ## 📋 Additional Information
@@ -375,6 +475,7 @@ class ConsolidatedTestRunner {
 - **Total packages with tests:** ${Object.keys(this.results.packages).length}
 - **Packages executed (not cached):** ${Object.values(this.results.packages).filter(p => p.executed).length}
 - **Packages cached:** ${Object.values(this.results.packages).filter(p => !p.executed).length}
+- **Tests from cached packages:** ${cachedPackageTests}
 
 ### Performance Metrics
 - **Average time per package:** ${Object.keys(this.results.packages).length > 0 ? (this.results.totalTime / Object.keys(this.results.packages).length).toFixed(2) : 0}s
@@ -420,7 +521,7 @@ class ConsolidatedTestRunner {
     console.log(`   ✅ Passed: ${this.results.tests.passed} tests`);
     console.log(`   ❌ Failed: ${this.results.tests.failed} tests`);
     console.log(`   ⏭️  Skipped: ${this.results.tests.skipped} tests`);
-    console.log(`   💾 Cached: ${this.results.tests.cached} packages (assumed passing)`);
+    console.log(`   💾 Cached: ${this.results.tests.cached} packages (${this.results.tests.total - this.results.tests.passed - this.results.tests.failed - this.results.tests.skipped} tests from cache)`);
     console.log(`   📊 Total: ${this.results.tests.total} tests across ${Object.keys(this.results.packages).length} packages`);
     
     // Cache Summary  
@@ -460,8 +561,16 @@ class ConsolidatedTestRunner {
     console.log(`⏱️  Total Time: ${this.results.totalTime.toFixed(2)}s`);
     console.log('='.repeat(80));
     
+    // Save test results for future cached runs
+    this.saveCachedTestResults();
+    
     // Generate markdown report
     this.generateMarkdownReport();
+    
+    // Auto-commit the report if running in CI or if --commit flag is passed
+    if (process.env.CI || process.argv.includes('--commit')) {
+      this.autoCommitReport();
+    }
     
     // Exit with appropriate code
     const exitCode = this.results.tests.failed > 0 || this.results.linting.failed > 0 ? 1 : 0;
