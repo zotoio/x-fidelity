@@ -13,6 +13,7 @@ jobs:
     outputs:
       vscode: ${{ steps.filter.outputs.vscode }}
       cli: ${{ steps.filter.outputs.cli }}
+      has_changes: ${{ steps.filter.outputs.vscode == 'true' || steps.filter.outputs.cli == 'true' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,8 +36,11 @@ jobs:
 
   release-cli:
     needs: changes
-    if: needs.changes.outputs.cli == 'true'
+    # Always run CLI release to ensure npm package exists for VSCode extension sync
     runs-on: ubuntu-latest
+    outputs:
+      cli-published: ${{ steps.cli-release.outputs.published }}
+      cli-version: ${{ steps.cli-release.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,9 +52,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'yarn'
-
-      # - name: Setup Turborepo Remote Cache
-      #   uses: dtinth/setup-github-actions-caching-for-turbo@v1
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -61,15 +62,107 @@ jobs:
       - name: Test with coverage
         run: yarn test:coverage
 
+      - name: Check if CLI needs forced release
+        id: check-force-release
+        run: |
+          cd packages/x-fidelity-cli
+          # Get current version
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current CLI version: $CURRENT_VERSION"
+          
+          # Check if we have actual changes that would trigger a release
+          HAS_CLI_CHANGES="${{ needs.changes.outputs.cli }}"
+          HAS_VSCODE_CHANGES="${{ needs.changes.outputs.vscode }}"
+          
+          echo "CLI changes: $HAS_CLI_CHANGES"
+          echo "VSCode changes: $HAS_VSCODE_CHANGES"
+          
+          # If VSCode has changes but CLI doesn't, we need to force a CLI release
+          if [[ "$HAS_VSCODE_CHANGES" == "true" && "$HAS_CLI_CHANGES" != "true" ]]; then
+            echo "force_release=true" >> $GITHUB_OUTPUT
+            echo "🚀 Forcing CLI release to keep in sync with VSCode extension"
+          else
+            echo "force_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Force CLI patch version if needed
+        if: steps.check-force-release.outputs.force_release == 'true'
+        run: |
+          cd packages/x-fidelity-cli
+          echo "🔧 Creating forced patch release for version sync"
+          
+          # Create a minimal commit to trigger semantic-release
+          echo "sync version with extension" > .force-release-commit
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .force-release-commit
+          git commit -m "sync version with extension"
+          
+          # Clean up the temporary file
+          rm .force-release-commit
+          git add .force-release-commit
+          git commit -m "chore: cleanup force release marker"
+
       - name: Release CLI
-        run: yarn workspace x-fidelity semantic-release
+        id: cli-release
+        run: |
+          cd packages/x-fidelity-cli
+          
+          # Run semantic-release and capture output
+          yarn semantic-release > release-output.txt 2>&1 || true
+          
+          # Check if a release was published
+          if grep -q "Published release" release-output.txt || grep -q "Publishing version" release-output.txt; then
+            echo "published=true" >> $GITHUB_OUTPUT
+            
+            # Extract the published version
+            PUBLISHED_VERSION=$(node -p "require('./package.json').version")
+            echo "version=$PUBLISHED_VERSION" >> $GITHUB_OUTPUT
+            echo "✅ CLI published successfully: $PUBLISHED_VERSION"
+          else
+            echo "published=false" >> $GITHUB_OUTPUT
+            echo "❌ CLI release failed or no release needed"
+            cat release-output.txt
+            
+            # If we forced a release, this is a critical failure
+            if [[ "${{ steps.check-force-release.outputs.force_release }}" == "true" ]]; then
+              echo "💥 CRITICAL: Forced CLI release failed - VSCode extension cannot proceed"
+              exit 1
+            fi
+          fi
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Verify CLI package availability
+        if: steps.cli-release.outputs.published == 'true'
+        run: |
+          CLI_VERSION="${{ steps.cli-release.outputs.version }}"
+          echo "🔍 Verifying CLI package x-fidelity@$CLI_VERSION is available on npm..."
+          
+          # Wait a moment for npm registry propagation
+          sleep 10
+          
+          # Try to fetch the package info
+          for i in {1..12}; do
+            if npm view x-fidelity@$CLI_VERSION version; then
+              echo "✅ CLI package x-fidelity@$CLI_VERSION confirmed available on npm"
+              break
+            else
+              echo "⏳ Waiting for npm registry propagation... (attempt $i/12)"
+              sleep 10
+            fi
+            
+            if [ $i -eq 12 ]; then
+              echo "❌ Failed to verify CLI package availability after 2 minutes"
+              exit 1
+            fi
+          done
+
   release-vscode-extension:
-    needs: changes
-    if: needs.changes.outputs.vscode == 'true'
+    needs: [changes, release-cli]
+    # Only run if we have VSCode changes OR if CLI was successfully published
+    if: needs.changes.outputs.vscode == 'true' || needs.release-cli.outputs.cli-published == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -82,9 +175,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'yarn'
-
-      # - name: Setup Turborepo Remote Cache
-      #   uses: dtinth/setup-github-actions-caching-for-turbo@v1
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -101,10 +191,45 @@ jobs:
       - name: Run integration tests
         run: xvfb-run -a yarn workspace x-fidelity-vscode test:ci
 
+      - name: Sync with published CLI version
+        if: needs.release-cli.outputs.cli-published == 'true'
+        run: |
+          CLI_VERSION="${{ needs.release-cli.outputs.cli-version }}"
+          echo "🔄 Syncing VSCode extension with published CLI version: $CLI_VERSION"
+          
+          cd packages/x-fidelity-vscode
+          
+          # CRITICAL: This sync happens in working directory only, NOT committed to git
+          echo "📝 Updating package.json version locally (not committed)"
+          node scripts/sync-published-version.js --cli-version="$CLI_VERSION"
+          
+          # Verify the sync worked
+          VSCODE_VERSION=$(node -p "require('./package.json').version")
+          if [ "$VSCODE_VERSION" != "$CLI_VERSION" ]; then
+            echo "❌ CRITICAL: Version sync failed"
+            echo "   Expected: $CLI_VERSION"
+            echo "   Got: $VSCODE_VERSION"
+            exit 1
+          fi
+          
+          echo "✅ Version sync verified: $CLI_VERSION"
+          echo "🔒 Note: package.json changes are local only - not committed to git"
+
       - name: Release VSCode Extension
         run: |
           cd packages/x-fidelity-vscode
-          yarn release
+          
+          # Verify versions are still synchronized before publishing
+          VSCODE_VERSION=$(node -p "require('./package.json').version")
+          echo "🔍 Pre-publish version check: $VSCODE_VERSION"
+          
+          if [ "$VSCODE_VERSION" = "0.0.0-semantically-released" ]; then
+            echo "❌ CRITICAL: Version still shows placeholder - sync failed"
+            exit 1
+          fi
+          
+          # Proceed with publishing - validation will enforce sync
+          yarn publish:universal
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
@@ -113,6 +238,6 @@ jobs:
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vscode-extension-universal
+          name: x-fidelity-vscode
           path: packages/x-fidelity-vscode/*.vsix
           retention-days: 90
