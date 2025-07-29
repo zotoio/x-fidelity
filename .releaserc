@@ -51,7 +51,7 @@
       "@semantic-release/exec",
       {
         "verifyReleaseCmd": "echo '🔍 Verifying CLI package.json version: '$(node -p \"require('./package.json').version\")",
-        "prepareCmd": "echo '📝 Current package.json version before npm plugin: '$(node -p \"require('./package.json').version\")",
+        "prepareCmd": "echo '📝 Current package.json version before npm plugin: '$(node -p \"require('./package.json').version\") && echo '📄 Copying root README.md to CLI package...' && cp ../../README.md ./README.md",
         "publishCmd": "echo '📦 Publishing CLI with version: '$(node -p \"require('./package.json').version\")"
       }
     ],
