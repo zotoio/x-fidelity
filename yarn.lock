@@ -2824,7 +2824,7 @@
     "@babel/types" "^7.23.0"
     "@types/body-parser" "^1.19.5"
     "@types/vscode" "^1.101.0"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-core-0.0.0-semantically-released-027b4948-7fb2-40fe-8065-ae3a196954bb-1753611642981/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-core-0.0.0-semantically-released-48eeedfe-b6bc-4284-81bf-760467dd77cf-1753781717303/node_modules/@x-fidelity/x-fidelity-types"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.10.0"
     body-parser "^1.20.3"
@@ -2857,8 +2857,8 @@
   dependencies:
     "@babel/parser" "^7.23.0"
     "@babel/types" "^7.23.0"
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-91e6220c-28fc-4533-b0f0-b420e9400bc1-1753611642983/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-91e6220c-28fc-4533-b0f0-b420e9400bc1-1753611642983/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-58da7b49-cec1-4511-b98a-6068257ba822-1753781717305/node_modules/@x-fidelity/x-fidelity-core"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-58da7b49-cec1-4511-b98a-6068257ba822-1753781717305/node_modules/@x-fidelity/x-fidelity-types"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.8.1"
     dotenv "^16.4.7"
@@ -2875,9 +2875,9 @@
 "@x-fidelity/server@file:packages/x-fidelity-server":
   version "0.0.0-semantically-released"
   dependencies:
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-dd52308c-68e6-4c9b-b4a8-a12c22c11fa7-1753611642984/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/plugins" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-dd52308c-68e6-4c9b-b4a8-a12c22c11fa7-1753611642984/node_modules/@x-fidelity/x-fidelity-plugins"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-dd52308c-68e6-4c9b-b4a8-a12c22c11fa7-1753611642984/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-e2f78029-cc84-4188-826f-4527ecc9e7a7-1753781717306/node_modules/@x-fidelity/x-fidelity-core"
+    "@x-fidelity/plugins" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-e2f78029-cc84-4188-826f-4527ecc9e7a7-1753781717306/node_modules/@x-fidelity/x-fidelity-plugins"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-e2f78029-cc84-4188-826f-4527ecc9e7a7-1753781717306/node_modules/@x-fidelity/x-fidelity-types"
     body-parser "^1.20.3"
     chokidar "^3.6.0"
     express "^4.21.2"
@@ -7058,7 +7058,7 @@ js-yaml@3.14.1, js-yaml@^3.13.1, js-yaml@^3.14.1:
 
 js-yaml@^4.1.0:
   version "4.1.0"
-  resolved "https://registry.npmjs.org/js-yaml/-/js-yaml-4.1.0.tgz"
+  resolved "https://registry.yarnpkg.com/js-yaml/-/js-yaml-4.1.0.tgz#c1fb65f8f5017901cdd2c951864ba18458a10602"
   integrity sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==
   dependencies:
     argparse "^2.0.1"

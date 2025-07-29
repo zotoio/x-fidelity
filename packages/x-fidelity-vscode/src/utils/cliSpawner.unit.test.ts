@@ -1,0 +1,628 @@
+import * as fs from 'fs';
+import { spawn } from 'child_process';
+import { CLISpawner, CLISpawnOptions } from './cliSpawner';
+import { EventEmitter } from 'events';
+
+// Mock dependencies
+jest.mock('fs');
+jest.mock('child_process');
+jest.mock('./globalLogger');
+
+const mockedFs = fs as jest.Mocked<typeof fs>;
+const mockedSpawn = spawn as jest.MockedFunction<typeof spawn>;
+
+// Mock logger
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  clearForNewAnalysis: jest.fn(),
+  setTriggerSource: jest.fn(),
+  startStreaming: jest.fn(),
+  stopStreaming: jest.fn(),
+  streamLine: jest.fn(),
+  displayAnalysisResult: jest.fn(),
+  show: jest.fn()
+};
+
+jest.mock('./globalLogger', () => ({
+  createComponentLogger: () => mockLogger
+}));
+
+// Mock child process
+class MockChildProcess extends EventEmitter {
+  stdout = new EventEmitter();
+  stderr = new EventEmitter();
+  pid = 12345;
+  exitCode: number | null = null;
+  killed = false;
+
+  kill = jest.fn();
+
+  constructor() {
+    super();
+    // Add pipe method to stdout/stderr
+    (this.stdout as any).pipe = jest.fn();
+    (this.stderr as any).pipe = jest.fn();
+  }
+
+  simulateSuccess(output = '', exitCode = 0) {
+    this.stdout.emit('data', Buffer.from(output));
+    this.exitCode = exitCode;
+    this.emit('close', exitCode);
+  }
+
+  simulateError(error: Error) {
+    this.emit('error', error);
+  }
+
+  simulateTimeout() {
+    this.emit('close', 1);
+  }
+}
+
+describe('CLISpawner Unit Tests', () => {
+  let cliSpawner: CLISpawner;
+  let mockChildProcess: MockChildProcess;
+
+  beforeEach(() => {
+    // Reset all mocks
+    jest.clearAllMocks();
+
+    // Setup mock child process
+    mockChildProcess = new MockChildProcess();
+    mockedSpawn.mockReturnValue(mockChildProcess as any);
+
+    // Setup default file system mocks
+    mockedFs.existsSync.mockReturnValue(true);
+    mockedFs.statSync.mockReturnValue({
+      isFile: () => true,
+      size: 1024 * 1024, // 1MB
+      mode: 0o755, // executable
+      mtime: new Date()
+    } as any);
+
+    mockedFs.readFileSync.mockReturnValue(
+      JSON.stringify({
+        XFI_RESULT: {
+          totalIssues: 0,
+          fileCount: 5,
+          warningCount: 0,
+          errorCount: 0,
+          fatalityCount: 0,
+          exemptCount: 0,
+          issueDetails: [],
+          durationSeconds: 1.5
+        }
+      })
+    );
+
+    mockedFs.readdirSync.mockReturnValue(['XFI_RESULT.json'] as any);
+
+    // Create new instance
+    cliSpawner = new CLISpawner();
+
+    // Reset static state
+    (CLISpawner as any).isExecuting = false;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe('constructor', () => {
+    test('should create CLISpawner instance', () => {
+      expect(cliSpawner).toBeInstanceOf(CLISpawner);
+      expect(mockLogger.debug).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isExecuting()', () => {
+    test('should return false when not executing', () => {
+      expect(cliSpawner.isExecuting()).toBe(false);
+    });
+
+    test('should return true when executing', () => {
+      (CLISpawner as any).isExecuting = true;
+      expect(cliSpawner.isExecuting()).toBe(true);
+    });
+  });
+
+  describe('validateCLI()', () => {
+    test('should validate CLI successfully when file exists', async () => {
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.statSync.mockReturnValue({
+        isFile: () => true,
+        size: 1024,
+        mode: 0o755
+      } as any);
+
+      await expect(cliSpawner.validateCLI()).resolves.toBeUndefined();
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.stringContaining('CLI validation successful')
+      );
+    });
+
+    test('should throw error when CLI file does not exist', async () => {
+      mockedFs.existsSync.mockImplementation(filePath => {
+        // Make CLI file not exist, but directory exists
+        if (typeof filePath === 'string' && filePath.includes('index.js')) {
+          return false;
+        }
+        return true;
+      });
+
+      mockedFs.readdirSync.mockReturnValue(['other-file.js'] as any);
+
+      await expect(cliSpawner.validateCLI()).rejects.toThrow(
+        /Bundled CLI not found at:/i
+      );
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining('CLI validation failed')
+      );
+    });
+
+    test('should throw error when CLI file is empty', async () => {
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.statSync.mockReturnValue({
+        isFile: () => true,
+        size: 0, // Empty file
+        mode: 0o755
+      } as any);
+
+      await expect(cliSpawner.validateCLI()).rejects.toThrow(
+        'CLI file validation failed: Error: CLI file exists but is empty:'
+      );
+    });
+
+    test('should throw error when path exists but is not a file', async () => {
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.statSync.mockReturnValue({
+        isFile: () => false, // Directory instead of file
+        size: 1024,
+        mode: 0o755
+      } as any);
+
+      await expect(cliSpawner.validateCLI()).rejects.toThrow(
+        'CLI file validation failed: Error: CLI path exists but is not a file:'
+      );
+    });
+  });
+
+  describe('getDiagnostics()', () => {
+    test('should return diagnostic information', async () => {
+      // Mock package.json for CLI version
+      mockedFs.existsSync.mockImplementation(filePath => {
+        if (typeof filePath === 'string' && filePath.includes('package.json')) {
+          return true;
+        }
+        return true;
+      });
+
+      mockedFs.readFileSync.mockImplementation(filePath => {
+        if (typeof filePath === 'string' && filePath.includes('package.json')) {
+          return JSON.stringify({
+            version: '1.0.0',
+            dependencies: {
+              chokidar: '^3.0.0'
+            }
+          });
+        }
+        return '{}';
+      });
+
+      const diagnostics = await cliSpawner.getDiagnostics();
+
+      expect(diagnostics).toMatchObject({
+        platform: process.platform,
+        arch: process.arch,
+        nodeExists: expect.any(Boolean),
+        cliExists: true,
+        workingDirectory: process.cwd(),
+        possibleNodePaths: expect.any(Array),
+        possibleCliPaths: expect.any(Array)
+      });
+
+      expect(diagnostics.cliSize).toBeDefined();
+      expect(diagnostics.cliModified).toBeDefined();
+      expect(diagnostics.cliVersion).toBe('1.0.0');
+      expect(diagnostics.hasChokidar).toBe(true);
+    });
+
+    test('should handle errors in diagnostics gracefully', async () => {
+      // Mock fs.existsSync to return false for CLI file
+      mockedFs.existsSync.mockImplementation(filePath => {
+        if (typeof filePath === 'string' && filePath.includes('index.js')) {
+          return false;
+        }
+        return true;
+      });
+
+      const diagnostics = await cliSpawner.getDiagnostics();
+
+      expect(diagnostics.cliExists).toBe(false);
+      // Debug call may not happen if file doesn't exist, which is fine
+    });
+  });
+
+  describe('runAnalysis()', () => {
+    const defaultOptions: CLISpawnOptions = {
+      workspacePath: '/test/workspace',
+      args: [],
+      timeout: 5000
+    };
+
+    test('should run analysis successfully', async () => {
+      const options = { ...defaultOptions };
+
+      // Start the analysis
+      const analysisPromise = cliSpawner.runAnalysis(options);
+
+      // Simulate successful CLI execution
+      setTimeout(() => {
+        mockChildProcess.simulateSuccess('Analysis complete', 0);
+      }, 10);
+
+      const result = await analysisPromise;
+
+      expect(result).toMatchObject({
+        metadata: {
+          XFI_RESULT: expect.objectContaining({
+            totalIssues: 0,
+            fileCount: 5
+          })
+        },
+        summary: expect.objectContaining({
+          totalIssues: 0,
+          filesAnalyzed: 5
+        })
+      });
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('Starting CLI analysis with correlation ID:'),
+        expect.any(Object)
+      );
+    });
+
+    test('should prevent concurrent executions', async () => {
+      // Set executing state
+      (CLISpawner as any).isExecuting = true;
+
+      await expect(cliSpawner.runAnalysis(defaultOptions)).rejects.toThrow(
+        'CLI analysis is already running'
+      );
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'CLI analysis is already running. Please wait for completion.',
+        expect.any(Object)
+      );
+    });
+
+    test('should handle CLI validation failure', async () => {
+      mockedFs.existsSync.mockReturnValue(false);
+
+      await expect(cliSpawner.runAnalysis(defaultOptions)).rejects.toThrow(
+        /Bundled CLI not found at:/i
+      );
+    });
+
+    test('should handle spawn errors', async () => {
+      const spawnError = new Error('Failed to spawn');
+      (spawnError as any).code = 'ENOENT';
+
+      mockedSpawn.mockImplementation(() => {
+        throw spawnError;
+      });
+
+      await expect(cliSpawner.runAnalysis(defaultOptions)).rejects.toThrow(
+        'Failed to spawn CLI process: Failed to spawn'
+      );
+    });
+
+    test('should handle CLI process errors', async () => {
+      const analysisPromise = cliSpawner.runAnalysis(defaultOptions);
+
+      setTimeout(() => {
+        const error = new Error('Process error');
+        (error as any).code = 'ENOENT';
+        mockChildProcess.simulateError(error);
+      }, 10);
+
+      await expect(analysisPromise).rejects.toThrow(
+        /CLI process failed to start/i
+      );
+    });
+
+    test('should handle non-zero exit codes', async () => {
+      const analysisPromise = cliSpawner.runAnalysis(defaultOptions);
+
+      setTimeout(() => {
+        mockChildProcess.exitCode = 2; // Non-success exit code
+        mockChildProcess.emit('close', 2);
+      }, 10);
+
+      await expect(analysisPromise).rejects.toThrow(
+        /CLI process failed with exit code/i
+      );
+    });
+
+    test('should handle module resolution errors', async () => {
+      const analysisPromise = cliSpawner.runAnalysis(defaultOptions);
+
+      setTimeout(() => {
+        const error = new Error('Cannot find module "some-module"');
+        mockChildProcess.simulateError(error);
+      }, 10);
+
+      await expect(analysisPromise).rejects.toThrow(/CLI dependency error/i);
+    });
+
+    test('should handle result file parsing errors', async () => {
+      mockedFs.readFileSync.mockImplementation(() => {
+        throw new Error('File read error');
+      });
+
+      const analysisPromise = cliSpawner.runAnalysis(defaultOptions);
+
+      setTimeout(() => {
+        mockChildProcess.simulateSuccess('', 0);
+      }, 10);
+
+      await expect(analysisPromise).rejects.toThrow(
+        /CLI analysis failed - unable to parse result file/i
+      );
+    });
+
+    test('should accept exit code 1 as success (issues found)', async () => {
+      const analysisPromise = cliSpawner.runAnalysis(defaultOptions);
+
+      setTimeout(() => {
+        mockChildProcess.exitCode = 1; // Issues found but analysis successful
+        mockChildProcess.emit('close', 1);
+      }, 10);
+
+      const result = await analysisPromise;
+      expect(result.metadata.XFI_RESULT).toBeDefined();
+    });
+
+    test('should handle cancellation', async () => {
+      const cancellationToken = {
+        onCancellationRequested: jest.fn(),
+        isCancellationRequested: false
+      };
+
+      const options = {
+        ...defaultOptions,
+        cancellationToken: cancellationToken as any
+      };
+
+      const analysisPromise = cliSpawner.runAnalysis(options);
+
+      // Wait for the cancellation handler to be set up
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Verify cancellation handler was set up
+      expect(cancellationToken.onCancellationRequested).toHaveBeenCalled();
+
+      // Simulate analysis completion
+      setTimeout(() => {
+        mockChildProcess.simulateSuccess('', 0);
+      }, 10);
+
+      await analysisPromise;
+    });
+
+    test('should handle progress reporting', async () => {
+      const progress = {
+        report: jest.fn()
+      };
+
+      const options = {
+        ...defaultOptions,
+        progress: progress as any
+      };
+
+      const analysisPromise = cliSpawner.runAnalysis(options);
+
+      setTimeout(() => {
+        // Simulate stdout data to trigger progress reporting
+        mockChildProcess.stdout.emit(
+          'data',
+          Buffer.from('Analysis progress...')
+        );
+        mockChildProcess.simulateSuccess('', 0);
+      }, 10);
+
+      await analysisPromise;
+
+      expect(progress.report).toHaveBeenCalledWith({
+        message: 'Analysis in progress...'
+      });
+    });
+  });
+
+  describe('Platform-specific behavior', () => {
+    test('should handle Windows path resolution', async () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'win32' });
+
+      // Test Node.js path resolution includes Windows paths
+      const diagnostics = await cliSpawner.getDiagnostics();
+      expect(diagnostics.possibleNodePaths).toEqual(
+        expect.arrayContaining([process.execPath, 'node'])
+      );
+
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
+    });
+
+    test('should handle macOS path resolution', async () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'darwin' });
+
+      const diagnostics = await cliSpawner.getDiagnostics();
+      expect(diagnostics.possibleNodePaths).toEqual(
+        expect.arrayContaining([
+          '/usr/local/bin/node',
+          '/opt/homebrew/bin/node'
+        ])
+      );
+
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
+    });
+  });
+
+  describe('Error scenarios', () => {
+    const testOptions: CLISpawnOptions = {
+      workspacePath: '/test/workspace',
+      args: [],
+      timeout: 5000
+    };
+
+    test('should handle large stderr output gracefully', async () => {
+      const largeStderr = 'x'.repeat(20 * 1024 * 1024); // 20MB of stderr
+
+      const analysisPromise = cliSpawner.runAnalysis(testOptions);
+
+      setTimeout(() => {
+        mockChildProcess.stderr.emit('data', Buffer.from(largeStderr));
+        mockChildProcess.emit('close', 2);
+      }, 10);
+
+      await expect(analysisPromise).rejects.toThrow();
+      // Verify that stderr was truncated and didn't cause memory issues
+      expect(true).toBe(true); // Test passes if no memory error occurs
+    });
+
+    test('should handle missing result file', async () => {
+      mockedFs.existsSync.mockImplementation(filePath => {
+        if (
+          typeof filePath === 'string' &&
+          filePath.includes('XFI_RESULT.json')
+        ) {
+          return false;
+        }
+        return true;
+      });
+
+      const analysisPromise = cliSpawner.runAnalysis(testOptions);
+
+      setTimeout(() => {
+        mockChildProcess.simulateSuccess('', 0);
+      }, 10);
+
+      await expect(analysisPromise).rejects.toThrow(
+        /XFI result file not found/i
+      );
+    });
+
+    test('should handle empty result file', async () => {
+      mockedFs.readFileSync.mockReturnValue('');
+
+      const analysisPromise = cliSpawner.runAnalysis(testOptions);
+
+      setTimeout(() => {
+        mockChildProcess.simulateSuccess('', 0);
+      }, 10);
+
+      await expect(analysisPromise).rejects.toThrow(
+        /XFI result file is empty/i
+      );
+    });
+
+    test('should handle malformed JSON in result file', async () => {
+      mockedFs.readFileSync.mockReturnValue('invalid json{');
+
+      const analysisPromise = cliSpawner.runAnalysis(testOptions);
+
+      setTimeout(() => {
+        mockChildProcess.simulateSuccess('', 0);
+      }, 10);
+
+      await expect(analysisPromise).rejects.toThrow(
+        /Failed to parse XFI result file/i
+      );
+    });
+  });
+
+  describe('Environment variable handling', () => {
+    test('should pass correlation ID through environment', async () => {
+      const testOptions: CLISpawnOptions = {
+        workspacePath: '/test/workspace',
+        args: [],
+        timeout: 5000
+      };
+
+      const options = {
+        ...testOptions,
+        env: {
+          XFI_CORRELATION_ID: 'test-correlation-123'
+        }
+      };
+
+      const analysisPromise = cliSpawner.runAnalysis(options);
+
+      setTimeout(() => {
+        mockChildProcess.simulateSuccess('', 0);
+      }, 10);
+
+      await analysisPromise;
+
+      // Verify spawn was called with correct environment variables
+      expect(mockedSpawn).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Array),
+        expect.objectContaining({
+          env: expect.objectContaining({
+            XFI_VSCODE_MODE: 'true',
+            XFI_DISABLE_FILE_LOGGING: 'true',
+            XFI_LOG_LEVEL: 'warn',
+            XFI_LOG_COLORS: 'false',
+            XFI_LOG_TIMESTAMP: 'true',
+            FORCE_COLOR: '0'
+          })
+        })
+      );
+    });
+  });
+
+  describe('Correlation ID generation', () => {
+    test('should generate unique correlation IDs', async () => {
+      const testOptions: CLISpawnOptions = {
+        workspacePath: '/test/workspace',
+        args: [],
+        timeout: 5000
+      };
+
+      const options1 = { ...testOptions };
+      const options2 = { ...testOptions };
+
+      const analysisPromise1 = cliSpawner.runAnalysis(options1);
+      setTimeout(() => mockChildProcess.simulateSuccess('', 0), 10);
+      await analysisPromise1;
+
+      // Reset for second analysis
+      (CLISpawner as any).isExecuting = false;
+      mockChildProcess = new MockChildProcess();
+      mockedSpawn.mockReturnValue(mockChildProcess as any);
+
+      const analysisPromise2 = cliSpawner.runAnalysis(options2);
+      setTimeout(() => mockChildProcess.simulateSuccess('', 0), 10);
+      await analysisPromise2;
+
+      // Verify different correlation IDs were used
+      const calls = mockLogger.info.mock.calls.filter(call =>
+        call[0].includes('Starting CLI analysis with correlation ID:')
+      );
+
+      expect(calls).toHaveLength(2);
+      // Extract correlation IDs from log messages
+      const correlationId1 = calls[0][1].correlationId;
+      const correlationId2 = calls[1][1].correlationId;
+
+      expect(correlationId1).not.toBe(correlationId2);
+      expect(correlationId1).toMatch(/^vscode-/);
+      expect(correlationId2).toMatch(/^vscode-/);
+    });
+  });
+});

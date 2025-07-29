@@ -1,0 +1,130 @@
+# Codecov Configuration for X-Fidelity Monorepo
+# https://docs.codecov.com/docs/codecov-yaml
+
+codecov:
+  # Require CI to pass before coverage results are available
+  require_ci_to_pass: true
+  
+  # Wait for CI builds to complete
+  max_report_age: off
+  
+  # Disable codecov bot comments (can be enabled if desired)
+  disable_default_path_fixes: false
+
+coverage:
+  # Overall coverage precision
+  precision: 2
+  
+  # Round coverage numbers
+  round: down
+  
+  # Coverage range for color coding (red to green)
+  range: "50...90"
+  
+  # Status checks configuration
+  status:
+    # Project-level status
+    project:
+      default:
+        # Set overall project coverage target
+        target: 35%
+        threshold: 1%
+        base: auto
+        # Only check coverage when files change
+        only_pulls: false
+      
+      # Package-specific status checks
+      core:
+        target: 60%
+        threshold: 1%
+        paths:
+          - "packages/x-fidelity-core/"
+        
+      cli:
+        target: 45%
+        threshold: 1%
+        paths:
+          - "packages/x-fidelity-cli/"
+        
+      plugins:
+        target: 55%
+        threshold: 1%
+        paths:
+          - "packages/x-fidelity-plugins/"
+        
+      server:
+        target: 60%
+        threshold: 1%
+        paths:
+          - "packages/x-fidelity-server/"
+        
+      types:
+        target: 92%
+        threshold: 1%
+        paths:
+          - "packages/x-fidelity-types/"
+        
+      vscode:
+        target: 15%
+        threshold: 5%  # Higher threshold for VSCode due to recent improvements
+        paths:
+          - "packages/x-fidelity-vscode/"
+    
+    # Patch-level status (coverage of changed lines)
+    patch:
+      default:
+        target: 70%
+        threshold: 10%
+        base: auto
+        only_pulls: true
+
+# Comment configuration
+comment:
+  layout: "header, diff, flags, files, footer"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+# Ignore paths that shouldn't affect coverage
+ignore:
+  - "**/*.d.ts"
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/coverage/**"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/temp/**"
+  - "packages/x-fidelity-fixtures/**"
+  - "packages/x-fidelity-democonfig/**"
+  - "website/**"
+  - "scripts/**"
+  - "**/*.config.js"
+  - "**/*.config.ts"
+  - "**/jest.setup.*"
+  - "packages/x-fidelity-vscode/src/extension.ts"  # Main extension entry point
+  - "packages/x-fidelity-vscode/src/test/**"      # Test files
+
+# Flags for different test types
+flags:
+  unittests:
+    paths:
+      - "packages/"
+    # Carryforward flags from previous builds
+    carryforward: true
+    
+  integration:
+    paths:
+      - "packages/"
+    carryforward: false
+
+# GitHub integration
+github_checks:
+  annotations: true
+
+# Slack/notification settings (can be configured later)
+slack:
+  enabled: false

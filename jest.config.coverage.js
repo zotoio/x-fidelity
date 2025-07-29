@@ -7,7 +7,8 @@ module.exports = {
     '<rootDir>/packages/x-fidelity-core', 
     '<rootDir>/packages/x-fidelity-plugins',
     '<rootDir>/packages/x-fidelity-server',
-    '<rootDir>/packages/x-fidelity-types'
+    '<rootDir>/packages/x-fidelity-types',
+    '<rootDir>/packages/x-fidelity-vscode'
   ],
   collectCoverage: true,
   collectCoverageFrom: [
@@ -17,7 +18,9 @@ module.exports = {
     "!packages/**/src/**/index.ts",
     "!packages/x-fidelity-fixtures/**",
     "!packages/x-fidelity-democonfig/**",
-    "!packages/x-fidelity-vscode/**"
+    "!packages/x-fidelity-vscode/src/test/**",
+    "!packages/x-fidelity-vscode/src/extension.ts",
+    "packages/x-fidelity-vscode/src/utils/cliSpawner.ts"
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html", "json", "text-summary"],
