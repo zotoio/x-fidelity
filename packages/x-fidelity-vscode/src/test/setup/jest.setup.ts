@@ -26,18 +26,15 @@ global.testUtils = {
   // Add global test utilities here
 };
 
-// Mock timers for tests that need them
-jest.useFakeTimers();
+// Use real timers by default for unit tests
+jest.useRealTimers();
 
 beforeEach(() => {
   // Reset all mocks before each test
   jest.clearAllMocks();
-  jest.clearAllTimers();
 });
 
 afterEach(() => {
   // Clean up after each test
-  jest.runOnlyPendingTimers();
-  jest.useRealTimers();
-  jest.useFakeTimers();
+  jest.restoreAllMocks();
 });

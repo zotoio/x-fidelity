@@ -32,6 +32,7 @@ export interface CLIResult {
 export class CLISpawner {
   private readonly logger = createComponentLogger('CLISpawner');
   private static isExecuting = false; // Simple mutex to prevent concurrent executions
+  private hasLoggedVersion = false; // Track if we've logged CLI version info
 
   constructor() {}
 
@@ -363,6 +364,41 @@ export class CLISpawner {
   }
 
   /**
+   * Log CLI version information to VSCode console
+   */
+  private async logCLIVersion(): Promise<void> {
+    try {
+      const cliVersion = this.getCLIVersion();
+      const cliPath = this.getEmbeddedCLIPath();
+
+      this.logger.info('🚀 X-Fidelity CLI Information', {
+        version: cliVersion,
+        path: cliPath,
+        embedded: true,
+        timestamp: new Date().toISOString()
+      });
+
+      // Additional CLI file information
+      try {
+        if (fs.existsSync(cliPath)) {
+          const stats = fs.statSync(cliPath);
+          this.logger.info('📦 Embedded CLI Details', {
+            size: `${(stats.size / 1024 / 1024).toFixed(2)} MB`,
+            modified: stats.mtime.toISOString(),
+            exists: true
+          });
+        } else {
+          this.logger.warn('⚠️ Embedded CLI file not found', { path: cliPath });
+        }
+      } catch (statError) {
+        this.logger.debug('Could not read CLI file stats:', statError);
+      }
+    } catch (error) {
+      this.logger.error('Failed to log CLI version information:', error);
+    }
+  }
+
+  /**
    * Execute CLI analysis and return parsed results
    * 🎯 ENHANCED WITH CORRELATION ID GENERATION, STREAMING, AND RESULT DISPLAY
    */
@@ -405,6 +441,12 @@ export class CLISpawner {
       // Validate both Node.js and CLI before attempting to spawn
       await this.validateNodeJS(nodePath);
       await this.validateCLI();
+
+      // Log CLI version on first analysis
+      if (!this.hasLoggedVersion) {
+        await this.logCLIVersion();
+        this.hasLoggedVersion = true;
+      }
 
       // Build arguments for VSCode mode execution
       // CLI mode = manual user execution from command line

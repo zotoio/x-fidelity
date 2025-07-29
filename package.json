@@ -55,6 +55,10 @@
     "coverage:report": "yarn coverage:merge",
     "coverage:check": "node scripts/check-coverage-thresholds.js",
     "coverage:upload": "codecov -f coverage/lcov.info",
+    "codecov:local": "node scripts/codecov-local.js",
+    "codecov:validate": "yarn coverage:merge && yarn codecov:local",
+    "codecov:check": "yarn test:coverage && yarn codecov:validate",
+    "codecov:config": "node scripts/codecov-local.js --config-only",
     "publish:cli": "turbo build:production --filter=x-fidelity && cd packages/x-fidelity-cli && yarn release",
     "publish:vscode": "turbo package --filter=x-fidelity-vscode && cd packages/x-fidelity-vscode && yarn release",
     "ci": "turbo test:unit && turbo test:integration && yarn workspace x-fidelity global:test:local",
@@ -86,6 +90,7 @@
     "cz-conventional-changelog": "^3.3.0",
     "glob": "^11.0.0",
     "istanbul-merge": "^2.0.0",
+    "js-yaml": "^4.1.0",
     "turbo": "^2.4.0",
     "typescript": "^5.8.2"
   },

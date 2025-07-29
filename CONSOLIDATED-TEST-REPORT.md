@@ -1,7 +1,7 @@
 # Consolidated Test Report
 
-> **Generated:** 2025-07-29 09:28 GMT+1000  
-> **Duration:** 26.88s  
+> **Generated:** 2025-07-29 19:40 GMT+1000  
+> **Duration:** 6.98s  
 > **Status:** PASSED ✅
 
 ## 📊 Executive Summary
@@ -9,11 +9,11 @@
 | Metric | Value |
 |--------|-------|
 | **Overall Status** | PASSED ✅ |
-| **Total Tests** | 1046 |
+| **Total Tests** | 1074 |
 | **Test Success Rate** | 100.0% |
 | **Packages Tested** | 6 |
 | **Cache Hit Rate** | 100.0% |
-| **Total Execution Time** | 26.88s |
+| **Total Execution Time** | 6.98s |
 
 ## 🔧 Linting & Code Formatting
 
@@ -27,28 +27,28 @@
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| ✅ **Passed** | 1046 | 100.0% |
+| ✅ **Passed** | 1074 | 100.0% |
 | ❌ **Failed** | 0 | 0.0% |
 | ⏭️ **Skipped** | 0 | 0.0% |
 | 💾 **Cached Packages** | 0 | - |
-| 📊 **Total Tests** | 1046 | 100% |
+| 📊 **Total Tests** | 1074 | 100% |
 
 ## 📊 Code Coverage
 
 | Coverage Type | Percentage |
 |---------------|------------|
-| 📝 **Statements** | 37.3% |
-| 🌿 **Branches** | 39.9% |
-| 🔧 **Functions** | 33.1% |
-| 📏 **Lines** | 37.2% |
+| 📝 **Statements** | 39.4% |
+| 🌿 **Branches** | 42.2% |
+| 🔧 **Functions** | 34.1% |
+| 📏 **Lines** | 39.3% |
 
 ## 💾 Turbo Cache Performance
 
 | Metric | Value |
 |--------|-------|
-| 🎯 **Cache Hits** | 23 tasks |
+| 🎯 **Cache Hits** | 15 tasks |
 | 🔄 **Cache Misses** | 0 tasks |
-| 📊 **Total Tasks** | 23 tasks |
+| 📊 **Total Tasks** | 15 tasks |
 | 📈 **Cache Hit Rate** | 100.0% |
 
 ## 📦 Package Details
@@ -60,7 +60,7 @@
 | `x-fidelity-types` | 🏃 Executed | 51 | 0 | 0 | 51 | 91.9% |
 | `x-fidelity-plugins` | 🏃 Executed | 285 | 0 | 0 | 285 | 53.4% |
 | `x-fidelity-server` | 🏃 Executed | 60 | 0 | 0 | 60 | 57.2% |
-| `x-fidelity-vscode` | 🏃 Executed | 79 | 0 | 0 | 79 | 15.2% |
+| `x-fidelity-vscode` | 🏃 Executed | 107 | 0 | 0 | 107 | 19.6% |
 
 ## 📋 Additional Information
 
@@ -70,7 +70,7 @@
 - **Packages cached:** 0
 
 ### Performance Metrics
-- **Average time per package:** 4.48s
+- **Average time per package:** 1.16s
 - **Cache efficiency:** 100.0% (higher is better)
 
 ### Status Indicators

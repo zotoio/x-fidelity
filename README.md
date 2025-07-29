@@ -990,4 +990,52 @@ Contributions to x-fidelity are welcome! Please refer to the `CONTRIBUTING.md` f
 
 This project is licensed under the MIT License.. See the `LICENSE` file for details.
 
+## 🎯 Quick Start
+
+```bash
+# Install globally
+npm install -g x-fidelity
+
+# Run analysis
+xfi analyze
+```
+
+## 📋 Branch Protection Setup
+
+For optimal workflow coordination, configure these **required status checks** in your repository settings:
+
+```
+✅ build-and-test (from CI workflow)
+✅ test-extension (from VSCode Extension CI workflow)  
+✅ check-version-sync (from PR Version Sync workflow)
+```
+
+**Settings → Branches → Add rule for `master`:**
+- ✅ Require status checks to pass before merging
+- ✅ Require branches to be up to date before merging
+- ✅ Include administrators
+
+This ensures all workflows complete successfully before allowing PR merges.
+
+## 🔄 Automated Version Synchronization
+
+The repository includes automatic **bidirectional** version synchronization between CLI and VSCode extension:
+
+### **PR-Level Synchronization**
+- **VSCode changes** without CLI release commits → Adds `bump: sync version` to CLI
+- **Automatic PR comments** explain sync actions taken
+- **Sequential execution** after CI completion to avoid conflicts
+
+### **Release-Level Synchronization** 
+- **CLI release** without VSCode changes → Adds `bump: sync version with CLI release` to VSCode
+- **VSCode release** without CLI changes → CLI already handled via PR sync
+- **Clean git history** maintains `0.0.0-semantically-released` placeholders
+
+### **Result**
+Both packages **always** maintain synchronized version numbers across all scenarios:
+- ✅ CLI-only changes → Both packages get same version
+- ✅ VSCode-only changes → Both packages get same version  
+- ✅ Mixed changes → Both packages get same version
+- ✅ No changes → No releases (stays synchronized)
+
 

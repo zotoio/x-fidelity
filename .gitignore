@@ -227,3 +227,5 @@ temp/
 .turbo/
 jest-results.json
 *.tgz
+temp/
+.test-results-cache.json

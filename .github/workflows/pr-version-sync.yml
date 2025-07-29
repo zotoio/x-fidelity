@@ -1,0 +1,225 @@
+name: PR Version Sync
+
+on:
+  workflow_run:
+    workflows: ["CI", "VSCode Extension CI"]
+    types: [completed]
+    branches: [master]
+  # Also allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to sync'
+        required: true
+
+env:
+  NODE_VERSION: '22.16.0'
+
+jobs:
+  check-version-sync:
+    runs-on: ubuntu-latest
+    # Only run if the triggering workflow succeeded and it's from a PR
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
+    steps:
+      - name: Get PR information
+        id: get-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            
+            // Get the PR number from the workflow run
+            let prNumber;
+            
+            if (context.eventName === 'workflow_dispatch') {
+              prNumber = context.payload.inputs.pr_number;
+            } else {
+              // Get PR from workflow run
+              const workflowRun = context.payload.workflow_run;
+              const pullRequests = await github.rest.pulls.list({
+                owner,
+                repo,
+                head: `${owner}:${workflowRun.head_branch}`,
+                state: 'open'
+              });
+              
+              if (pullRequests.data.length === 0) {
+                console.log('No open PR found for this workflow run');
+                return;
+              }
+              
+              prNumber = pullRequests.data[0].number;
+            }
+            
+            console.log(`Found PR number: ${prNumber}`);
+            
+            // Get PR details
+            const pr = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber
+            });
+            
+            return {
+              number: prNumber,
+              head_ref: pr.data.head.ref,
+              head_sha: pr.data.head.sha,
+              draft: pr.data.draft
+            };
+
+      - name: Skip if draft PR
+        if: steps.get-pr.outputs.result && fromJSON(steps.get-pr.outputs.result).draft
+        run: |
+          echo "Skipping version sync for draft PR"
+          exit 0
+
+      - name: Checkout PR
+        if: steps.get-pr.outputs.result && !fromJSON(steps.get-pr.outputs.result).draft
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: ${{ fromJSON(steps.get-pr.outputs.result).head_ref }}
+
+      - name: Setup Node.js
+        if: steps.get-pr.outputs.result && !fromJSON(steps.get-pr.outputs.result).draft
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        if: steps.get-pr.outputs.result && !fromJSON(steps.get-pr.outputs.result).draft
+        run: yarn install --frozen-lockfile
+
+      - name: Analyze commit requirements
+        if: steps.get-pr.outputs.result && !fromJSON(steps.get-pr.outputs.result).draft
+        id: analyze
+        run: |
+          echo "🔍 Analyzing commits in PR for release requirements..."
+          
+          # Get the base branch commit
+          BASE_SHA=$(git merge-base origin/master HEAD)
+          echo "Base SHA: $BASE_SHA"
+          
+          # Get all commits in this PR
+          COMMITS=$(git rev-list --reverse $BASE_SHA..HEAD)
+          echo "PR Commits:"
+          git log --oneline $BASE_SHA..HEAD
+          
+          # Check if there are changes that would trigger VSCode release
+          VSCODE_CHANGES="false"
+          if git diff --name-only $BASE_SHA..HEAD | grep -E '^packages/x-fidelity-vscode/|^packages/x-fidelity-core/|^packages/x-fidelity-types/|^packages/x-fidelity-plugins/' > /dev/null; then
+            VSCODE_CHANGES="true"
+            echo "✅ Found VSCode-related changes"
+          else
+            echo "❌ No VSCode-related changes found"
+          fi
+          
+          # Check if there are commits that would trigger CLI release
+          CLI_RELEASE_COMMITS="false"
+          
+          # Check each commit for conventional commit patterns that trigger releases
+          for commit in $COMMITS; do
+            COMMIT_MSG=$(git log --format=%s -n 1 $commit)
+            echo "Checking commit: $COMMIT_MSG"
+            
+            # Check if commit affects CLI paths AND has release-triggering type
+            if git diff --name-only ${commit}^..${commit} | grep -E '^packages/x-fidelity-cli/|^packages/x-fidelity-core/|^packages/x-fidelity-types/|^packages/x-fidelity-plugins/|^packages/x-fidelity-server/' > /dev/null; then
+              # Check if commit message indicates a release-worthy change
+              if echo "$COMMIT_MSG" | grep -E '^(feat|fix|perf|revert|bump)(\(.*\))?:' > /dev/null; then
+                CLI_RELEASE_COMMITS="true"
+                echo "✅ Found CLI release-triggering commit: $COMMIT_MSG"
+                break
+              elif echo "$COMMIT_MSG" | grep -i 'BREAKING CHANGE' > /dev/null; then
+                CLI_RELEASE_COMMITS="true"
+                echo "✅ Found CLI breaking change commit: $COMMIT_MSG"
+                break
+              fi
+            fi
+          done
+          
+          echo "VSCODE_CHANGES=$VSCODE_CHANGES" >> $GITHUB_OUTPUT
+          echo "CLI_RELEASE_COMMITS=$CLI_RELEASE_COMMITS" >> $GITHUB_OUTPUT
+          
+          echo "📊 Analysis Results:"
+          echo "  VSCode changes: $VSCODE_CHANGES"
+          echo "  CLI release commits: $CLI_RELEASE_COMMITS"
+
+      - name: Add CLI sync commit if needed
+        if: >
+          steps.get-pr.outputs.result && !fromJSON(steps.get-pr.outputs.result).draft &&
+          steps.analyze.outputs.VSCODE_CHANGES == 'true' && 
+          steps.analyze.outputs.CLI_RELEASE_COMMITS == 'false'
+        run: |
+          echo "🚀 Adding CLI sync commit for VSCode release compatibility..."
+          
+          cd packages/x-fidelity-cli
+          
+          # Configure git for the action
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Check if we already added a sync commit in this PR
+          if git log --oneline origin/master..HEAD | grep -q "bump: sync version"; then
+            echo "ℹ️  Sync commit already exists in this PR, skipping"
+            exit 0
+          fi
+          
+          # Create a minimal change to ensure semantic-release will process it
+          echo "# Version sync marker - $(date)" > .version-sync-marker
+          git add .version-sync-marker
+          
+          # Create conventional commit that will trigger a patch release
+          git commit -m "bump: sync version
+          
+          Automatic version sync to maintain compatibility with VSCode extension release.
+          This ensures both CLI and VSCode extension maintain synchronized version numbers."
+          
+          # Push the commit to the PR branch
+          git push origin HEAD
+          
+          echo "✅ Added CLI sync commit to PR"
+
+      - name: Comment on PR
+        if: >
+          steps.get-pr.outputs.result && !fromJSON(steps.get-pr.outputs.result).draft &&
+          steps.analyze.outputs.VSCODE_CHANGES == 'true' && 
+          steps.analyze.outputs.CLI_RELEASE_COMMITS == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = JSON.parse('${{ steps.get-pr.outputs.result }}').number;
+            const { owner, repo } = context.repo;
+            
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: prNumber,
+              body: `🔄 **Automatic Version Sync**
+              
+              This PR contains changes that will trigger a VSCode extension release, but no CLI release-triggering commits were found.
+              
+              ✅ **Action Taken:** Added a \`bump: sync version\` commit to the CLI package to ensure version synchronization.
+              
+              📋 **Details:**
+              - VSCode changes detected: ✅
+              - CLI release commits: ❌
+              - Auto-sync commit: ✅ Added
+              
+              This ensures both CLI and VSCode extension will have synchronized version numbers when released.`
+            });
+
+      - name: Skip sync (no action needed)
+        if: >
+          steps.get-pr.outputs.result && !fromJSON(steps.get-pr.outputs.result).draft &&
+          (steps.analyze.outputs.VSCODE_CHANGES == 'false' || steps.analyze.outputs.CLI_RELEASE_COMMITS == 'true')
+        run: |
+          if [ "${{ steps.analyze.outputs.VSCODE_CHANGES }}" = "false" ]; then
+            echo "ℹ️  No VSCode changes detected - no sync needed"
+          elif [ "${{ steps.analyze.outputs.CLI_RELEASE_COMMITS }}" = "true" ]; then
+            echo "ℹ️  CLI already has release-triggering commits - no sync needed"
+          fi
+          echo "✅ No automatic sync commit required"
