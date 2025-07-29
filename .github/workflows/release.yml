@@ -103,6 +103,89 @@ jobs:
           git add .force-release-commit
           git commit -m "chore: cleanup force release marker"
 
+      - name: Check if VSCode extension needs forced release
+        id: check-vscode-sync
+        run: |
+          echo "🔍 Checking if VSCode extension needs forced release for CLI sync..."
+          
+          # Check if there are VSCode changes that would trigger a release
+          VSCODE_CHANGES="${{ needs.changes.outputs.vscode }}"
+          echo "VSCode changes detected: $VSCODE_CHANGES"
+          
+          # Check for conventional commits that would trigger VSCode release
+          VSCODE_RELEASE_COMMITS="false"
+          
+          # Get commits since last release
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            COMMIT_RANGE="$LAST_TAG..HEAD"
+          else
+            COMMIT_RANGE="HEAD"
+          fi
+          
+          echo "Checking commit range: $COMMIT_RANGE"
+          
+          # Check each commit for VSCode-affecting conventional commits
+          while read -r commit_msg; do
+            if [ -z "$commit_msg" ]; then continue; fi
+            echo "Checking commit: $commit_msg"
+            
+            # Check if commit message indicates a release-worthy change for VSCode
+            if echo "$commit_msg" | grep -E '^(feat|fix|perf|revert|bump)(\(.*vscode.*\))?:' > /dev/null; then
+              echo "Found VSCode release-triggering commit: $commit_msg"
+              VSCODE_RELEASE_COMMITS="true"
+              break
+            elif echo "$commit_msg" | grep -i 'BREAKING CHANGE' > /dev/null; then
+              echo "Found breaking change commit: $commit_msg"
+              VSCODE_RELEASE_COMMITS="true"
+              break
+            fi
+          done < <(git log --format=%s $COMMIT_RANGE)
+          
+          echo "VSCODE_RELEASE_COMMITS=$VSCODE_RELEASE_COMMITS" >> $GITHUB_OUTPUT
+          
+          # Determine if we need to force VSCode release
+          # Force if CLI will get a release but VSCode won't
+          CLI_CHANGES="${{ needs.changes.outputs.cli }}"
+          CLI_FORCED="${{ steps.check-force-release.outputs.force_release }}"
+          
+          if [[ ("$CLI_CHANGES" == "true" || "$CLI_FORCED" == "true") && "$VSCODE_CHANGES" != "true" && "$VSCODE_RELEASE_COMMITS" != "true" ]]; then
+            echo "CLI will get a release but VSCode won't - forcing VSCode sync"
+            echo "FORCE_VSCODE_RELEASE=true" >> $GITHUB_OUTPUT
+          else
+            echo "VSCode will naturally get a release or no CLI release needed"
+            echo "FORCE_VSCODE_RELEASE=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Force VSCode release for CLI sync
+        if: steps.check-vscode-sync.outputs.FORCE_VSCODE_RELEASE == 'true'
+        run: |
+          echo "🚀 CLI will be released but no VSCode release triggers found"
+          echo "🔄 Creating VSCode sync commit to maintain version synchronization"
+          
+          cd packages/x-fidelity-vscode
+          
+          # Configure git for the action
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create a minimal change to trigger semantic-release
+          echo "# Version sync marker for CLI release - $(date)" > .cli-sync-marker
+          git add .cli-sync-marker
+          
+          # Create conventional commit that will trigger a patch release
+          git commit -m "bump: sync version with CLI release
+          
+          Automatic version sync to maintain compatibility with CLI release.
+          This ensures both CLI and VSCode extension maintain synchronized version numbers."
+          
+          # Clean up the temporary file
+          rm .cli-sync-marker
+          git add .cli-sync-marker
+          git commit -m "chore: cleanup CLI sync marker"
+          
+          echo "✅ Added VSCode sync commits for CLI synchronization"
+
       - name: Release CLI
         id: cli-release
         run: |
