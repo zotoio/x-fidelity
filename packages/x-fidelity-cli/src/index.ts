@@ -194,11 +194,12 @@ ${message}
 ==========================================================================`;
 
 // Main function with proper ordering
-export async function main(): Promise<void> {
+export async function main(skipCLIInit = false): Promise<void> {
     let logger: ILogger;
     // Step 1: Initialize CLI if not already done
-    if (require.main === module) {
+    if (require.main === module && !skipCLIInit) {
         initCLI();
+        return; // Exit early - CLI will handle execution via action handlers
     }
 
     // Step 2: Initialize logging FIRST

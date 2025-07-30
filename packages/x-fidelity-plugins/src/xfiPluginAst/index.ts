@@ -1,11 +1,9 @@
 import { XFiPlugin, PluginError, PluginContext } from '@x-fidelity/types';
 import { getOptions } from '@x-fidelity/core';
 import { astFact } from './facts/astFact';
-import { codeRhythmFact } from './facts/codeRhythmFact';
 import { functionComplexityFact } from './facts/functionComplexityFact';
 import { functionCountFact } from './facts/functionCountFact';
 import { astComplexity } from './operators/astComplexity';
-import { codeRhythmComplexity } from './operators/codeRhythmComplexity';
 import { functionCountOperator } from './operators/functionCount';
 import { treeSitterManager } from '../sharedPluginUtils/astUtils/treeSitterManager';
 
@@ -15,11 +13,10 @@ export const xfiPluginAst: XFiPlugin = {
     description: 'AST analysis plugin for x-fidelity',
     facts: [
         astFact,
-        codeRhythmFact,
         functionComplexityFact,
         functionCountFact
     ],
-    operators: [astComplexity, codeRhythmComplexity, functionCountOperator],
+    operators: [astComplexity, functionCountOperator],
     initialize: async (context: PluginContext): Promise<void> => {
         // Check if TreeSitter worker should be enabled before attempting initialization
         const coreOptions = getOptions();

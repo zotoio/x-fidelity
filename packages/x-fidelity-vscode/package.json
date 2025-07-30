@@ -313,6 +313,18 @@
           "default": "",
           "description": "Path to local X-Fidelity configuration (relative to workspace root, optional)."
         },
+        "xfidelity.githubConfigLocation": {
+          "type": "string",
+          "default": "",
+          "description": "GitHub tree URL for X-Fidelity configuration (e.g., https://github.com/org/repo/tree/main/config)."
+        },
+        "xfidelity.githubConfigUpdateFrequency": {
+          "type": "number",
+          "default": 60,
+          "minimum": 5,
+          "maximum": 1440,
+          "description": "How often to update GitHub configuration in minutes (5-1440, default: 60)."
+        },
         "xfidelity.openaiEnabled": {
           "type": "boolean",
           "default": false,

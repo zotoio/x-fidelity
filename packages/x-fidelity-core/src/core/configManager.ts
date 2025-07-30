@@ -18,6 +18,7 @@ import fs from 'fs';
 import * as path from 'path';
 import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 import { loadRules } from '../utils/ruleUtils';
+import { CentralConfigManager } from '../config/centralConfigManager';
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
 
@@ -216,13 +217,14 @@ export class ConfigManager {
         const { archetype, logPrefix } = params;
         const configServer = options.configServer;
         const localConfigPath = options.localConfigPath;
+        const githubConfigLocation = options.githubConfigLocation;
 
         // Use the standard logger since execution ID is already in prefix
         const initLogger = logger;
         
         initLogger.info(`Initializing config manager for archetype: ${archetype}`);
         initLogger.debug(`Initialize params: ${JSON.stringify(params)}`);
-        initLogger.info(`Config server: ${configServer}, Local config path: ${localConfigPath}`);
+        initLogger.info(`Config server: ${configServer}, Local config path: ${localConfigPath}, GitHub config: ${githubConfigLocation}`);
 
         const config: ExecutionConfig = { 
             archetype: {} as ArchetypeConfig, 
@@ -232,15 +234,96 @@ export class ConfigManager {
         };
 
         try {
-            if (configServer) {
+            // Use enhanced config resolution with CentralConfigManager
+            const centralConfigManager = CentralConfigManager.getInstance();
+            
+            // Initialize central config directory if needed
+            await centralConfigManager.initializeCentralConfig();
+            
+            // Update security allowed paths BEFORE config resolution to allow access to central configs
+            // First determine workspace root for security paths
+            let workspaceRoot = process.cwd();
+            if (options.dir) {
+                workspaceRoot = path.resolve(options.dir);
+            }
+            
+            // Look for workspace root by searching for package.json with workspaces
+            let currentDir = workspaceRoot;
+            while (currentDir !== path.dirname(currentDir)) {
+                try {
+                    const packageJsonPath = path.join(currentDir, 'package.json');
+                    const packagesDir = path.join(currentDir, 'packages');
+                    
+                    if (fs.existsSync(packageJsonPath) && fs.existsSync(packagesDir)) {
+                        workspaceRoot = currentDir;
+                        break;
+                    }
+                } catch {
+                    // Continue searching
+                }
+                currentDir = path.dirname(currentDir);
+            }
+            
+            // Include config sets paths in security allowed paths
+            const { ConfigSetManager } = await import('../config/configSetManager');
+            const configSetsAllowedPaths = ConfigSetManager.updateSecurityAllowedPaths([
+                process.cwd(),
+                workspaceRoot,
+                path.resolve(workspaceRoot, 'packages'),
+                path.resolve(workspaceRoot, 'dist'),
+                '/tmp',
+                path.resolve(__dirname, '..', '..'),
+                // Allow access to democonfig package and its source directory
+                path.resolve(workspaceRoot, 'packages', 'x-fidelity-democonfig'),
+                path.resolve(workspaceRoot, 'packages', 'x-fidelity-democonfig', 'src'),
+                // Allow access to built packages for distribution
+                path.resolve(workspaceRoot, 'packages', 'x-fidelity-cli', 'dist'),
+                path.resolve(workspaceRoot, 'packages', 'x-fidelity-vscode', 'dist'),
+                path.resolve(workspaceRoot, 'packages', 'x-fidelity-core', 'dist'),
+                // Allow access to test fixtures for consistency testing
+                path.resolve(workspaceRoot, 'packages', 'x-fidelity-fixtures'),
+                // Allow access to temp directories used by tests
+                path.resolve(workspaceRoot, '.temp'),
+                // Allow test-specific mock paths (for unit tests)
+                ...(process.env.NODE_ENV === 'test' ? ['/path/to/local/config'] : [])
+            ]);
+            
+            const allowedBasePaths = CentralConfigManager.updateSecurityAllowedPaths(configSetsAllowedPaths);
+            
+            // Update path validator with new allowed paths for security validation
+            try {
+                const { updateAllowedPaths } = await import('../security/index');
+                if (updateAllowedPaths && typeof updateAllowedPaths === 'function') {
+                    updateAllowedPaths(allowedBasePaths);
+                    logger.debug('Updated security allowed paths', { pathCount: allowedBasePaths.length });
+                }
+            } catch (error) {
+                logger.debug('Could not update security allowed paths', { error });
+            }
+            
+            const configResolution = await centralConfigManager.resolveConfigPath({
+                archetype,
+                configServer,
+                localConfigPath,
+                githubConfigLocation,
+                workspaceRoot: options.dir
+            });
+
+            initLogger.info(`Config resolved from: ${configResolution.source}`, { 
+                path: configResolution.path ? configResolution.path.replace(require('os').homedir(), '~') : 'N/A'
+            });
+
+            if (configResolution.source === 'configServer') {
+                // Handle remote config server
                 logger.info(`Using remote config server: ${configServer}`);
-                config.archetype = await this.fetchRemoteConfig(configServer, archetype, logPrefix);
-            } else if (localConfigPath) {
-                logger.info(`Using local config path: ${localConfigPath}`);
-                config.archetype = await ConfigManager.loadLocalConfig({ archetype, localConfigPath });
+                config.archetype = await this.fetchRemoteConfig(configServer!, archetype, logPrefix);
             } else {
-                logger.warn(`No config server or local config path provided, using builtin configuration`);
-                config.archetype = await ConfigManager.loadBuiltinConfig(archetype);
+                // Handle local/GitHub/central configs
+                logger.info(`Using resolved config path: ${configResolution.path}`);
+                config.archetype = await ConfigManager.loadLocalConfig({ 
+                    archetype, 
+                    localConfigPath: configResolution.path 
+                });
             }
 
             if (!config.archetype || Object.keys(config.archetype).length === 0) {
@@ -306,7 +389,7 @@ export class ConfigManager {
                         archetype,
                         ruleNames,
                         configServer: options.configServer,
-                        localConfigPath: options.localConfigPath,
+                        localConfigPath: configResolution.path,
                         logPrefix
                     });
                 } else {
@@ -327,7 +410,7 @@ export class ConfigManager {
             // Load exemptions
             config.exemptions = await loadExemptions({ 
                 configServer: configServer || undefined, 
-                localConfigPath: localConfigPath || undefined, 
+                localConfigPath: configResolution.path || undefined, 
                 logPrefix, 
                 archetype: archetype || 'node-fullstack'
             });
@@ -416,7 +499,9 @@ export class ConfigManager {
                 currentDir = path.dirname(currentDir);
             }
             
-            const allowedBasePaths = [
+            // Include config sets paths in security allowed paths
+            const { ConfigSetManager } = await import('../config/configSetManager');
+            const configSetsAllowedPaths = ConfigSetManager.updateSecurityAllowedPaths([
                 process.cwd(),
                 workspaceRoot,
                 path.resolve(workspaceRoot, 'packages'),
@@ -436,7 +521,9 @@ export class ConfigManager {
                 path.resolve(workspaceRoot, '.temp'),
                 // Allow test-specific mock paths (for unit tests)
                 ...(process.env.NODE_ENV === 'test' ? ['/path/to/local/config'] : [])
-            ];
+            ]);
+            
+            const allowedBasePaths = CentralConfigManager.updateSecurityAllowedPaths(configSetsAllowedPaths);
             
             const isPathAllowed = allowedBasePaths.some(basePath => {
                 const resolvedBasePath = path.resolve(basePath);
@@ -476,7 +563,7 @@ export class ConfigManager {
                 parsedContent = JSON.parse(configContent);
             } catch (parseError) {
                 // If JSON parsing fails, throw the expected error message
-                throw new Error(`No valid configuration found for archetype: ${archetype}`);
+                throw new Error(`No valid builtin configuration found for archetype: ${archetype}`);
             }
             
             const localConfig = {

@@ -246,13 +246,13 @@ describe('ConfigManager', () => {
         it('should handle malformed local config JSON', async () => {
             options.configServer = '';
             (fs.promises.readFile as jest.Mock).mockResolvedValue('invalid json');
-            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('No valid configuration found for archetype: test-archetype');
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('No valid builtin configuration found for archetype: test-archetype');
         });
 
         it('should handle empty local config file', async () => {
             options.configServer = '';
             (fs.promises.readFile as jest.Mock).mockResolvedValue('');
-            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('No valid configuration found for archetype: test-archetype');
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('No valid builtin configuration found for archetype: test-archetype');
         });
 
         it('should handle missing required config fields', async () => {

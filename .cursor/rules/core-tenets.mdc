@@ -13,7 +13,7 @@ alwaysApply: true
 
 ## 3. use yarn instead of npm for commmands
 
-## 4. after any significant changes are made, ensure that unit tests across all packages work using `yarn test` from the workspace root as part concluding a prompt response before handing over to me for the next prompt.
+## 4. after any significant changes are made, ensure that unit tests across all packages work using `yarn test` from the workspace root as part concluding a prompt response before handing over to me for the next prompt. each new change should increase overall unit test coverage in meaningful ways - if the feature worked on already has high direct coverage, add tests for an adjacent or related  feature to ensure continuous improvement in coverage over time.
 
 ## 5. If the unit tests fail, ensure that they are fixed without changing the tests or if the implementation has changed in a way that requires test updates, ensure that test updates are meaningful and worthwhile, and that any test changes related to existing code that has been updated is checked, as it may indicate that the implementation update is broken, and not the test.
 
@@ -24,7 +24,7 @@ alwaysApply: true
 ## 8. do not leave temporary scripts and files created during execution of tools to analyse and fix issues scattered around the codebase.  move them to the local temp dir.
 
 ## 9. vscode testing
-when changes are made that impact the vscode extension, ensure that the integration tests executed to check the change during the chat session are targeted rather than executing all of the integration test suites.
+when changes are made that impact the vscode extension, ensure that any integration tests that execute to check the change are targeted rather than executing all of the integration test suites.
 
 ## 10. during builds, if you see any linting errors, fix them.
 

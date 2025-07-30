@@ -1,5 +1,8 @@
 // Core exports
 export * from './core/configManager';
+export * from './config/gitHubConfigManager';
+export * from './config/configSetManager';
+export * from './config/centralConfigManager';
 export * from './core/engine/analyzer';
 export * from './core/engine/engineSetup';
 export * from './core/engine/engineRunner';

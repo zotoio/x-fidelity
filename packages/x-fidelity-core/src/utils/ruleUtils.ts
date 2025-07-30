@@ -29,12 +29,12 @@ async function loadRules(params: LoadRulesParams): Promise<RuleConfig[]> {
                     ruleProperties.push(rule);
                 }
             } else {
-                logger.error(`${logPrefix || ''}invalid rule configuration for ${ruleName}`);
+                logger.error(`Invalid rule configuration for ${ruleName}`);
             }
         }
     }
     
-    logger.info(`${logPrefix || ''}loaded ${ruleProperties.length} rules`);
+    logger.info(`Loaded ${ruleProperties.length} rules`);
     
     return ruleProperties;
 }

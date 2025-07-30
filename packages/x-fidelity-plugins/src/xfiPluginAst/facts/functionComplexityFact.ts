@@ -76,12 +76,45 @@ export const functionComplexityFact: FactDefn = {
                 visit(tree);
             }
             
-            // Return in the format expected by the astComplexity operator
-            const result = { complexities: functions.map(func => ({ name: func.name, metrics: func })) };
+            // Map functions to expected format
+            const allComplexities = functions.map(func => ({ name: func.name, metrics: func }));
             
-            // Add result to almanac if resultFact is requested (without filtering)
+            // Filter results to only include offending functions if thresholds are provided
+            let complexitiesToReturn = allComplexities;
+            
+            if (params?.thresholds) {
+                const thresholds = params.thresholds;
+                logger.debug(`Filtering functions against thresholds:`, thresholds);
+                
+                complexitiesToReturn = allComplexities.filter((func: any) => {
+                    const metrics = func.metrics;
+                    if (!metrics) return false;
+
+                    const exceedsThresholds = {
+                        cyclomaticComplexity: thresholds.cyclomaticComplexity && metrics.cyclomaticComplexity >= thresholds.cyclomaticComplexity,
+                        cognitiveComplexity: thresholds.cognitiveComplexity && metrics.cognitiveComplexity >= thresholds.cognitiveComplexity,
+                        nestingDepth: thresholds.nestingDepth && metrics.nestingDepth >= thresholds.nestingDepth,
+                        parameterCount: thresholds.parameterCount && metrics.parameterCount >= thresholds.parameterCount,
+                        returnCount: thresholds.returnCount && metrics.returnCount >= thresholds.returnCount
+                    };
+
+                    const isOverThreshold = Object.values(exceedsThresholds).some(Boolean);
+                    
+                    if (isOverThreshold) {
+                        logger.debug(`Function ${func.name} exceeds thresholds:`, { metrics, exceedsThresholds });
+                    }
+                    
+                    return isOverThreshold;
+                });
+                
+                logger.debug(`Filtered from ${allComplexities.length} to ${complexitiesToReturn.length} functions`);
+            }
+            
+            const result = { complexities: complexitiesToReturn };
+            
+            // Add result to almanac if resultFact is requested (with filtering applied)
             if (params?.resultFact) {
-                logger.debug(`Adding ${functions.length} functions to almanac:`, params.resultFact);
+                logger.debug(`Adding ${complexitiesToReturn.length} functions to almanac:`, params.resultFact);
                 almanac.addRuntimeFact(params.resultFact, result);
             }
             

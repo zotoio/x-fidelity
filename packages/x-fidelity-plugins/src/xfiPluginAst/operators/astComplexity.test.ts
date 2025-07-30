@@ -13,7 +13,7 @@ describe('astComplexity', () => {
 
     it('should have correct metadata', () => {
         expect(astComplexity.name).toBe('astComplexity');
-        expect(astComplexity.description).toBe('Checks if AST complexity metrics exceed specified thresholds');
+        expect(astComplexity.description).toBe('Checks if AST complexity metrics exceed specified thresholds, or if using boolean mode, checks if any complex functions exist');
         expect(typeof astComplexity.fn).toBe('function');
     });
 
@@ -77,7 +77,7 @@ describe('astComplexity', () => {
         expect(result).toBe(true);
         expect(mockLogger.debug).toHaveBeenCalledWith(
             expect.objectContaining({ thresholds }),
-            'Checking AST complexity against thresholds'
+            'Checking AST complexity against thresholds (legacy mode)'
         );
         expect(mockLogger.debug).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -364,5 +364,68 @@ describe('astComplexity', () => {
 
         expect(result).toBe(false);
         expect(mockLogger.debug).toHaveBeenCalledWith('No complexity data available');
+    });
+
+    describe('Boolean mode', () => {
+        it('should return true when value is true and functions exist (pre-filtered by fact)', () => {
+            const factValue = {
+                complexities: [
+                    {
+                        name: 'complexFunction',
+                        metrics: {
+                            cyclomaticComplexity: 25,
+                            cognitiveComplexity: 35
+                        }
+                    }
+                ]
+            };
+
+            const result = astComplexity.fn(factValue, true);
+
+            expect(result).toBe(true);
+            expect(mockLogger.debug).toHaveBeenCalledWith('Found 1 complex functions (pre-filtered by fact)');
+        });
+
+        it('should return false when value is true but no functions exist', () => {
+            const factValue = { complexities: [] };
+
+            const result = astComplexity.fn(factValue, true);
+
+            expect(result).toBe(false);
+            expect(mockLogger.debug).toHaveBeenCalledWith('No complexity data available');
+        });
+
+        it('should return false when value is false', () => {
+            const factValue = {
+                complexities: [
+                    {
+                        name: 'anyFunction',
+                        metrics: {
+                            cyclomaticComplexity: 100,
+                            cognitiveComplexity: 100
+                        }
+                    }
+                ]
+            };
+
+            const result = astComplexity.fn(factValue, false);
+
+            expect(result).toBe(false);
+        });
+
+        it('should handle multiple complex functions in boolean mode', () => {
+            const factValue = {
+                complexities: [
+                    { name: 'func1', metrics: { cyclomaticComplexity: 25 } },
+                    { name: 'func2', metrics: { cyclomaticComplexity: 30 } },
+                    { name: 'func3', metrics: { cyclomaticComplexity: 15 } }
+                ]
+            };
+
+            const result = astComplexity.fn(factValue, true);
+
+            expect(result).toBe(true);
+            expect(mockLogger.debug).toHaveBeenCalledWith('Found 3 complex functions (pre-filtered by fact)');
+        });
     });
 }); 

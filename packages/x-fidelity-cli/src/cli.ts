@@ -5,10 +5,11 @@ import fs from "fs";
 import json from 'prettyjson';
 import { CLIOptions, ExecutionMode, EXECUTION_MODES } from '@x-fidelity/types';
 
+
 export let options: CLIOptions = {
     dir: '.',
     archetype: 'node-fullstack',
-    mode: 'cli',
+    mode: 'cli' as ExecutionMode,
     extraPlugins: []
 };
 
@@ -49,6 +50,7 @@ export function initCLI(): void {
         .option('-a, --archetype <archetype>', 'The archetype to use for analysis', 'node-fullstack')
         .option('-c, --configServer <url>', 'The config server URL for fetching remote archetype configuration')
         .option('-l, --localConfigPath <path>', 'Path to local archetype config and rules')
+        .option('-g, --githubConfigLocation <url>', 'GitHub tree URL for config location (e.g., https://github.com/org/repo/tree/main/config)')
         .option('-o, --openaiEnabled', 'Enable OpenAI analysis')
         .option('-t, --telemetryCollector <url>', 'The URL telemetry data will be sent to for usage analysis')
         .option('-m, --mode <mode>', 'Run mode: \'cli\', \'vscode\', \'server\', or \'hook\' (\'client\' deprecated, use \'cli\')', 'cli')
@@ -62,7 +64,18 @@ export function initCLI(): void {
         .option('--output-file <path>', 'Write structured output to file (works with --output-format json)')
         .option('--enable-tree-sitter-wasm', 'Use WASM TreeSitter instead of native bindings (for compatibility)')
         .option('--enable-tree-sitter-worker', 'Enable TreeSitter worker mode (disabled by default, CLI uses direct parsing)')
-        .option('--enable-file-logging', 'Enable logging to x-fidelity.log file (disabled by default)');
+        .option('--enable-file-logging', 'Enable logging to x-fidelity.log file (disabled by default)')
+        .option('-w, --writeConfigSet [alias]', 'Save current options as a config set with the given alias (default: "default")')
+        .option('-r, --readConfigSet [alias]', 'Load options from a saved config set (default: "default")');
+
+
+
+    // Add main action handler for when no subcommand is provided
+    program.action(async (directory, opts) => {
+        // Import main analysis function to avoid circular dependency
+        const { runMainAnalysis } = await import('./mainAnalysis');
+        await runMainAnalysis(directory, opts);
+    });
 
     // Check if no arguments provided (only node and script path)
     if (process.argv.length === 2) {
@@ -72,123 +85,4 @@ export function initCLI(): void {
     }
 
     program.parse(process.argv);
-
-    const opts = program.opts();
-    const args = program.args;
-
-    // Parse zap files if provided
-    let zapFiles: string[] | undefined = undefined;
-    if (opts.zap) {
-        try {
-            zapFiles = JSON.parse(opts.zap);
-            if (!Array.isArray(zapFiles)) {
-                logger.error('--zap option must be a JSON array of file paths');
-                process.exit(1);
-            }
-        } catch (error) {
-            logger.error(`Invalid JSON in --zap option: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            process.exit(1);
-        }
-    }
-
-    // Determine directory: --dir option takes precedence over positional argument
-    const directory = opts.dir || args[0] || '.';
-
-    // Validate and handle mode option with backward compatibility
-    const validateAndConvertMode = (inputMode: string): ExecutionMode => {
-        const validModes = Object.values(EXECUTION_MODES);
-        
-        // Handle backward compatibility for 'client' mode
-        if (inputMode === 'client') {
-            logger.warn('⚠️  DEPRECATION WARNING: Mode \'client\' is deprecated. Please use \'cli\' instead. Support for \'client\' will be removed in a future version.');
-            return EXECUTION_MODES.CLI;
-        }
-        
-        // Check if it's a valid new mode
-        if (validModes.includes(inputMode as ExecutionMode)) {
-            return inputMode as ExecutionMode;
-        }
-        
-        // Invalid mode
-        logger.error(`Invalid mode '${inputMode}'. Valid modes are: ${validModes.join(', ')} (or 'client' for backward compatibility)`);
-        process.exit(1);
-    };
-
-    const validatedMode = validateAndConvertMode(opts.mode || 'cli');
-    
-    // Log TreeSitter configuration for debugging
-    const enableTreeSitterWasm = opts.enableTreeSitterWasm || false;
-    const enableTreeSitterWorker = opts.enableTreeSitterWorker || false;
-    
-    if (enableTreeSitterWasm && enableTreeSitterWorker) {
-        logger.info('🔧 Tree-sitter: WASM worker mode requested');
-    } else if (enableTreeSitterWasm) {
-        logger.info('🔧 Tree-sitter: WASM direct mode requested');
-    } else if (enableTreeSitterWorker) {
-        logger.info('🔧 Tree-sitter: Native worker mode requested');
-    } else {
-        logger.info('🔧 Tree-sitter: Native direct mode (default)');
-    }
-
-    options = {
-        dir: directory,
-        archetype: opts.archetype || 'node-fullstack',
-        configServer: opts.configServer,
-        localConfigPath: opts.localConfigPath || DEMO_CONFIG_PATH,
-        openaiEnabled: opts.openaiEnabled || false,
-        telemetryCollector: opts.telemetryCollector,
-        mode: validatedMode,
-        port: opts.port ? parseInt(opts.port) : undefined,
-        jsonTTL: opts.jsonTTL,
-        extraPlugins: opts.extraPlugins || [],
-        examine: opts.examine,
-        zapFiles,
-        fileCacheTTL: opts.fileCacheTTL ? parseInt(opts.fileCacheTTL) : 60,
-        outputFormat: opts.outputFormat,
-        outputFile: opts.outputFile,
-        enableTreeSitterWorker: enableTreeSitterWorker,
-        enableTreeSitterWasm: enableTreeSitterWasm,
-        enableFileLogging: opts.enableFileLogging || false
-    };
-
-    // Update core options so they're available to other packages
-    setOptions({
-        dir: directory,
-        archetype: opts.archetype || 'node-fullstack',
-        configServer: opts.configServer,
-        localConfigPath: opts.localConfigPath || DEMO_CONFIG_PATH,
-        openaiEnabled: opts.openaiEnabled || false,
-        telemetryCollector: opts.telemetryCollector,
-        mode: validatedMode,
-        port: opts.port ? parseInt(opts.port) : undefined,
-        jsonTTL: opts.jsonTTL,
-        extraPlugins: opts.extraPlugins || [],
-        enableTreeSitterWorker: enableTreeSitterWorker,
-        enableTreeSitterWasm: enableTreeSitterWasm,
-        zapFiles,
-        fileCacheTTL: opts.fileCacheTTL ? parseInt(opts.fileCacheTTL) : 60
-    });
-
-    logger.debug({ options }, 'CLI options parsed');
-
-    // Validate input
-    const dirPath = options.dir || '.';
-    if (!fs.existsSync(dirPath)) {
-        logger.error(`Directory ${dirPath} does not exist`);
-        process.exit(1);
-    }
-
-    // If examine flag is set, display archetype config and exit
-    if (options.examine) {
-        const archetypeName = options.archetype || 'node-fullstack';
-        const archetypeConfigPath = path.resolve(options.localConfigPath || DEMO_CONFIG_PATH, `${archetypeName}.json`);
-        if (!fs.existsSync(archetypeConfigPath)) {
-            logger.error(`Archetype ${archetypeName} not found in ${options.localConfigPath || DEMO_CONFIG_PATH}`);
-            process.exit(1);
-        }
-        logger.info(`Archetype config for ${archetypeName}:`);
-        const config = JSON.parse(fs.readFileSync(archetypeConfigPath, 'utf8'));
-        logger.info(json.render(config));
-        process.exit(0);
-    }
 } 

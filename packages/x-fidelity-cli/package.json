@@ -36,7 +36,7 @@
     "package": "yarn pack",
     "release": "semantic-release",
     "start": "OPENAI_API_KEY= jest --watch",
-    "build-run": "yarn build && node . --dir ../x-fidelity-fixtures/node-fullstack",
+    "build-run": "node . --dir ../x-fidelity-fixtures/node-fullstack",
     "start-server": "ts-node src/index.ts --mode server",
     "validate-demo-config": "yarn build && node . --dir ../x-fidelity-fixtures/node-fullstack -x node-fullstack -o true",
     "global:setup": "cd ../../global-install-testing && ./scripts/setup-test-env.sh",
@@ -153,7 +153,6 @@
             "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES", "BREAKING"]
           },
           "writerOpts": {
-            "commitsSort": ["subject", "scope"],
             "groupBy": "type",
             "commitGroupsSort": "title",
             "commitsSort": ["scope", "subject"],
@@ -176,13 +175,12 @@
           "publishCmd": "echo '📦 Publishing CLI with version: '$(node -p \"require('./package.json').version\")"
         }
       ],
-      [
-        "@semantic-release/npm",
-        {
-          "npmPublish": true,
-          "tarballDir": "dist"
-        }
-      ],
+              [
+          "@semantic-release/npm",
+          {
+            "npmPublish": true
+          }
+        ],
       [
         "@semantic-release/exec",
         {
