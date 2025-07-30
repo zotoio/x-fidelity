@@ -127,10 +127,17 @@ export class CentralConfigManager {
     const configsDir = path.join(centralDir, CentralConfigManager.CONFIGS_SUBDIR);
 
     // Check archetype-specific config first
-    const archetypeConfigPath = path.join(configsDir, archetype);
-    const archetypeResult = await this.checkAndUpdateCentralConfig(archetypeConfigPath, archetype);
-    if (archetypeResult) {
-      return { path: archetypeResult, source: 'central-archetype' };
+    // Normalize and validate the archetypeConfigPath to prevent path traversal
+    const archetypeConfigPathRaw = path.join(configsDir, archetype);
+    const archetypeConfigPath = path.resolve(archetypeConfigPathRaw);
+    if (!archetypeConfigPath.startsWith(path.resolve(configsDir) + path.sep)) {
+      logger.warn('Archetype config path is outside of allowed configs directory', { archetype, archetypeConfigPath });
+      // Do not proceed with invalid path
+    } else {
+      const archetypeResult = await this.checkAndUpdateCentralConfig(archetypeConfigPath, archetype);
+      if (archetypeResult) {
+        return { path: archetypeResult, source: 'central-archetype' };
+      }
     }
 
     // Check default config
