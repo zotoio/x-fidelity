@@ -423,22 +423,99 @@ export class CentralConfigManager {
   }
 
   private getDemoConfigPath(): string {
-    // Use the same logic as CLI for demo config path resolution
-    // Try bundled config in same directory as bundle (for global installations)
+    // CRITICAL: Priority order for demo config resolution
+    // 1. VSCode extension embedded demo config (when running from VSCode)
+    // 2. Bundled demo config (for CLI installations)
+    // 3. Monorepo structure (for development)
+    
+    logger.debug('Resolving demo config path', { 
+      __dirname, 
+      'current working directory': process.cwd(),
+      'XFI_VSCODE_MODE': process.env.XFI_VSCODE_MODE,
+      'XFI_VSCODE_EXTENSION_PATH': process.env.XFI_VSCODE_EXTENSION_PATH
+    });
+
+    // 1. VSCode extension embedded demo config (highest priority)
+    // When running from VSCode, use the extension's embedded demo config
+    if (process.env.XFI_VSCODE_MODE === 'true' && process.env.XFI_VSCODE_EXTENSION_PATH) {
+      const vscodeEmbeddedPaths = [
+        // VSCode extension dist/demoConfig
+        path.join(process.env.XFI_VSCODE_EXTENSION_PATH, 'dist', 'demoConfig'),
+        // VSCode extension CLI embedded demoConfig
+        path.join(process.env.XFI_VSCODE_EXTENSION_PATH, 'dist', 'cli', 'demoConfig'),
+        // Legacy path structure
+        path.join(process.env.XFI_VSCODE_EXTENSION_PATH, 'cli', 'demoConfig')
+      ];
+      
+      for (const embeddedPath of vscodeEmbeddedPaths) {
+        if (fs.existsSync(embeddedPath)) {
+          logger.debug('Using VSCode embedded demo config', { 
+            path: embeddedPath 
+          });
+          return embeddedPath;
+        }
+      }
+      
+      logger.warn('VSCode mode detected but embedded demo config not found', {
+        extensionPath: process.env.XFI_VSCODE_EXTENSION_PATH,
+        checkedPaths: vscodeEmbeddedPaths
+      });
+    }
+
+    // 2. Try bundled config in same directory as bundle (for CLI installations)
     const bundledPathSameDir = path.resolve(__dirname, '..', '..', 'demoConfig');
     if (fs.existsSync(bundledPathSameDir)) {
+      logger.debug('Using bundled demo config (same dir)', { 
+        path: bundledPathSameDir 
+      });
       return bundledPathSameDir;
     }
     
     // Try bundled config one level up (for some build configurations)
     const bundledPathParent = path.resolve(__dirname, '..', '..', '..', 'demoConfig');
     if (fs.existsSync(bundledPathParent)) {
+      logger.debug('Using bundled demo config (parent dir)', { 
+        path: bundledPathParent 
+      });
       return bundledPathParent;
     }
     
-    // Fall back to monorepo structure (for development)
-    // From x-fidelity-core/dist/config, we need to go to packages/x-fidelity-democonfig/src
-    return path.resolve(__dirname, '..', '..', '..', 'packages', 'x-fidelity-democonfig', 'src');
+    // 3. Fall back to monorepo structure (for development)
+    // Find workspace root by looking for the packages directory
+    let workspaceRoot = process.cwd();
+    let currentDir = process.cwd();
+    
+    // First, try to find workspace root from current working directory
+    while (currentDir !== path.dirname(currentDir)) {
+      const packagesDir = path.join(currentDir, 'packages');
+      if (fs.existsSync(packagesDir)) {
+        workspaceRoot = currentDir;
+        break;
+      }
+      currentDir = path.dirname(currentDir);
+    }
+    
+    // If we couldn't find it from cwd, try from __dirname
+    if (!fs.existsSync(path.join(workspaceRoot, 'packages'))) {
+      currentDir = __dirname;
+      while (currentDir !== path.dirname(currentDir)) {
+        // Look for workspace root that contains packages/ directory
+        const testRoot = path.resolve(currentDir, '..', '..', '..');
+        if (fs.existsSync(path.join(testRoot, 'packages'))) {
+          workspaceRoot = testRoot;
+          break;
+        }
+        currentDir = path.dirname(currentDir);
+      }
+    }
+    
+    const demoConfigPath = path.join(workspaceRoot, 'packages', 'x-fidelity-democonfig', 'src');
+    logger.debug('Using workspace demo config (development mode)', { 
+      workspaceRoot, 
+      demoConfigPath 
+    });
+    
+    return demoConfigPath;
   }
 
   /**
