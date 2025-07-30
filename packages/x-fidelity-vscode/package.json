@@ -750,8 +750,8 @@
   },
   "scripts": {
     "vscode:prepublish": "yarn build:production",
-    "build": "yarn clean && yarn build:dependencies && yarn lint:fix && yarn check-types && yarn build:cli && yarn embed:cli && node esbuild.config.js",
-    "build:production": "yarn clean && yarn build:dependencies && yarn lint:fix && yarn check-types && yarn build:cli && yarn embed:cli && node esbuild.config.js --production",
+    "build": "yarn clean && yarn build:dependencies && yarn lint:fix && yarn build:cli && yarn embed:cli && yarn check-types && node esbuild.config.js",
+    "build:production": "yarn clean && yarn build:dependencies && yarn lint:fix && yarn build:cli && yarn embed:cli && yarn check-types && node esbuild.config.js --production",
     "build:dependencies": "cd ../../ && turbo build --filter=@x-fidelity/types --filter=@x-fidelity/core --filter=@x-fidelity/plugins --filter=@x-fidelity/democonfig",
     "build:cli": "cd ../../ && turbo build --filter=x-fidelity && echo '📦 CLI built for embedding'",
     "build:cli:check": "node -e \"const path = require('path'); const cliPkg = require(path.resolve(__dirname, '../x-fidelity-cli/package.json')); console.log('🔍 CLI package version for embedding:', cliPkg.version);\"",
