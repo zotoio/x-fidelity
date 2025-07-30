@@ -36,6 +36,8 @@
     "test:coverage": "turbo test:coverage && yarn coverage:merge && yarn coverage:check",
     "test:coverage:local": "turbo test:coverage --force --no-cache && yarn coverage:merge && yarn coverage:check",
     "test:ci-local": "yarn build && yarn lint && yarn check-types && yarn test:coverage",
+    "ci:simulate": "yarn clean && yarn build --force --no-cache && yarn lint && yarn check-types && yarn test:coverage",
+    "ci:build-only": "yarn clean && yarn build --force --no-cache",
     "test:integration:all": "yarn test:integration && yarn workspace x-fidelity test:integration",
     "test:local": "turbo test --force --no-cache",
     "test:coverage:report": "turbo test:coverage && yarn coverage:merge && yarn coverage:report",
