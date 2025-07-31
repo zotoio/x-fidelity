@@ -1,0 +1,14 @@
+# Changelog
+
+All notable changes to the X-Fidelity CLI will be documented in this file.
+
+## [5.1.2](https://github.com/zotoio/x-fidelity/compare/v5.1.1...v5.1.2) (2025-07-31)
+
+### Bug Fixes
+
+* **release:** move semantic-release config to CLI package.json ([9b6a30c](https://github.com/zotoio/x-fidelity/commit/9b6a30cbf4ca6f45b75747280f2cd8992b124a49))
+* **vscode:** add missing gitHubConfigCacheManager.ts file to repository ([367531e](https://github.com/zotoio/x-fidelity/commit/367531e4d832fd7872f52aa23eb9b7359c84508d))
+* **vscode:** ensure TypeScript dependencies are built before type checking ([f4863df](https://github.com/zotoio/x-fidelity/commit/f4863dfd88c2b4fd74945e7d1ad18f744b442f2c))
+* **vscode:** resolve CI TypeScript compilation race condition ([3225be8](https://github.com/zotoio/x-fidelity/commit/3225be8741d05c70c7cac22f4a36a8e7cd0bfc94))
+* **vscode:** resolve macOS yarn PATH issue when launched from Finder/Dock ([a9d7d4b](https://github.com/zotoio/x-fidelity/commit/a9d7d4b3619a199724c2651b24721ca10245cbbf))
+* **vscode:** resolve TypeScript module resolution issue in CI ([36c0567](https://github.com/zotoio/x-fidelity/commit/36c05676a7f4b5ca31b56f74205c240fbfcc8637))
