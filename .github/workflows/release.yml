@@ -298,6 +298,57 @@ jobs:
           echo "✅ Version sync verified: $CLI_VERSION"
           echo "🔒 Note: package.json changes are local only - not committed to git"
 
+      - name: Re-embed latest CLI after version sync
+        if: needs.release-cli.outputs.cli-published == 'true'
+        run: |
+          CLI_VERSION="${{ needs.release-cli.outputs.cli-version }}"
+          echo "🔄 Re-embedding latest CLI version $CLI_VERSION into VSCode extension..."
+          
+          cd packages/x-fidelity-vscode
+          
+          # Install the latest CLI version from npm registry
+          echo "📦 Installing x-fidelity@$CLI_VERSION from npm..."
+          npm install x-fidelity@$CLI_VERSION --no-save
+          
+          # Verify the CLI package is available locally
+          if ! command -v npx x-fidelity &> /dev/null; then
+            echo "❌ CRITICAL: CLI package not properly installed"
+            exit 1
+          fi
+          
+          # Re-run CLI build to ensure we have the latest version
+          echo "🔨 Building latest CLI package..."
+          cd ../x-fidelity-cli
+          yarn build:production
+          cd ../x-fidelity-vscode
+          
+          # Re-embed the fresh CLI
+          echo "📦 Re-embedding CLI..."
+          yarn embed:cli
+          
+          # Verify the embedded CLI version matches expected version
+          EMBEDDED_CLI_VERSION=$(node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const cliPkg = path.join(__dirname, 'dist/cli/package.json');
+            if (fs.existsSync(cliPkg)) {
+              console.log(require(cliPkg).version);
+            } else {
+              console.log('CLI package.json not found');
+              process.exit(1);
+            }
+          ")
+          
+          if [ "$EMBEDDED_CLI_VERSION" != "$CLI_VERSION" ]; then
+            echo "❌ CRITICAL: Embedded CLI version mismatch"
+            echo "   Expected: $CLI_VERSION"
+            echo "   Embedded: $EMBEDDED_CLI_VERSION"
+            exit 1
+          fi
+          
+          echo "✅ CLI re-embedding completed successfully"
+          echo "✅ Embedded CLI version verified: $CLI_VERSION"
+
       - name: Release VSCode Extension
         run: |
           cd packages/x-fidelity-vscode
