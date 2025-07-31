@@ -1,14 +1,15 @@
 // Minimal options interface for core package use
 // CLI-specific options should be handled in the CLI package
 
-import { ExecutionMode } from '@x-fidelity/types';
+import { ExecutionMode, LegacyMode } from '@x-fidelity/types';
 
 export interface CoreOptions {
     localConfigPath?: string;
+    githubConfigLocation?: string;
     jsonTTL?: string;
     archetype?: string;
     configServer?: string;
-    mode?: ExecutionMode;
+    mode?: ExecutionMode | LegacyMode;
     dir?: string;
     extraPlugins?: string[];
     port?: number;
@@ -27,15 +28,22 @@ export interface CoreOptions {
     wasmPath?: string;
     wasmLanguagesPath?: string;
     wasmTimeout?: number;
+    // Config set options
+    writeConfigSet?: string;
+    readConfigSet?: string;
+    outputFormat?: string;
+    outputFile?: string;
+    enableFileLogging?: boolean;
 }
 
 // Default options for core functionality
 export let options: CoreOptions = {
     localConfigPath: undefined,
+    githubConfigLocation: undefined,
     jsonTTL: '60',
     archetype: 'node-fullstack',
     configServer: undefined,
-    mode: 'cli',
+    mode: 'cli' as ExecutionMode,
     dir: undefined,
     extraPlugins: [],
     port: undefined,
@@ -52,7 +60,13 @@ export let options: CoreOptions = {
     enableTreeSitterWasm: true,  // Default to WASM TreeSitter (better compatibility)
     wasmPath: undefined,
     wasmLanguagesPath: undefined,
-    wasmTimeout: 60000  // 60 seconds
+    wasmTimeout: 60000,  // 60 seconds
+    // Config set defaults
+    writeConfigSet: undefined,
+    readConfigSet: undefined,
+    outputFormat: undefined,
+    outputFile: undefined,
+    enableFileLogging: false
 };
 
 // Function to update options (used by CLI and other packages)

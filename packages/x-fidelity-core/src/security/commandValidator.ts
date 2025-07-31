@@ -3,6 +3,8 @@
  * Provides secure command execution to prevent injection attacks
  */
 
+import path from 'path';
+import { spawn } from 'child_process';
 import { securityLogger, SECURITY_CONSTANTS, CommandInjectionError } from './index';
 
 /**
@@ -47,8 +49,8 @@ export class SafeGitCommand {
   private isArgSafe(arg: string): boolean {
     // Strict validation to prevent any form of injection
     if (typeof arg !== 'string') {
-      securityLogger.auditAccess(arg, 'COMMAND_ARG_VALIDATION', 'denied', {
-        reason: 'Non-string argument'
+      securityLogger.auditAccess(String(arg), 'COMMAND_ARG_VALIDATION', 'denied', {
+        reason: 'Argument is not a string'
       });
       return false;
     }
@@ -90,6 +92,58 @@ export class SafeGitCommand {
     });
     
     return true;
+  }
+
+  /**
+   * Execute the git command with all safety guarantees
+   * @returns Promise with command output
+   */
+  async execute(): Promise<{ stdout: string; stderr: string }> {
+    return new Promise((resolve, reject) => {
+      const child = spawn('git', [this.command, ...this.args], {
+        cwd: this.cwd,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout?.on('data', (data: Buffer) => {
+        stdout += data.toString();
+      });
+
+      child.stderr?.on('data', (data: Buffer) => {
+        stderr += data.toString();
+      });
+
+      // Handle timeout
+      let timeoutId: NodeJS.Timeout | undefined;
+      if (this.timeout) {
+        timeoutId = setTimeout(() => {
+          child.kill('SIGTERM');
+          reject(new Error(`Git command timed out after ${this.timeout}ms`));
+        }, this.timeout);
+      }
+
+      child.on('close', (code: number | null) => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+
+        if (code === 0) {
+          resolve({ stdout, stderr });
+        } else {
+          reject(new Error(`Git command failed with exit code ${code}: ${stderr}`));
+        }
+      });
+
+      child.on('error', (error: Error) => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        reject(error);
+      });
+    });
   }
 
   /**

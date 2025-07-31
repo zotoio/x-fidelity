@@ -15,7 +15,6 @@
         "lowMigrationToNewComponentLib-global",
         "functionComplexity-iterative",
         "functionCount-iterative",
-        "codeRhythm-iterative",
         "reactHooksDependency-iterative",
         "reactHooksMigration-global",
         "customFactExample-iterative"

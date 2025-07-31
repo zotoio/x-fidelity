@@ -4,15 +4,28 @@ import { ComplexityThresholds } from '../types';
 
 export const astComplexity: OperatorDefn = {
     name: 'astComplexity',
-    description: 'Checks if AST complexity metrics exceed specified thresholds',
-    fn: (factValue: any, thresholds: ComplexityThresholds) => {
+    description: 'Checks if AST complexity metrics exceed specified thresholds, or if using boolean mode, checks if any complex functions exist',
+    fn: (factValue: any, value: ComplexityThresholds | boolean) => {
         try {
-            logger.debug({ thresholds }, 'Checking AST complexity against thresholds');
-
             if (!factValue?.complexities?.length) {
                 logger.debug('No complexity data available');
                 return false;
             }
+
+            // If value is boolean true, just check if any functions exist (fact already filtered them)
+            if (value === true) {
+                logger.debug(`Found ${factValue.complexities.length} complex functions (pre-filtered by fact)`);
+                return true;
+            }
+
+            // If value is boolean false, return false
+            if (value === false) {
+                return false;
+            }
+
+            // Legacy mode: value is ComplexityThresholds object
+            const thresholds = value as ComplexityThresholds;
+            logger.debug({ thresholds }, 'Checking AST complexity against thresholds (legacy mode)');
 
             // Check if any function exceeds any threshold
             const exceedsThreshold = factValue.complexities.some((func: any) => {

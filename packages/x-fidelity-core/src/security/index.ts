@@ -87,17 +87,30 @@ export const SECURITY_CONSTANTS = {
   MAX_URL_LENGTH: 2048,
   
   // Command Security
-  ALLOWED_GIT_COMMANDS: ['clone', 'fetch', 'checkout'] as const,
+  ALLOWED_GIT_COMMANDS: ['clone', 'fetch', 'checkout', 'pull'] as const,
   MAX_COMMAND_ARG_LENGTH: 500,
-  
-  // Path Security
-  ALLOWED_PATH_PREFIXES: ['/tmp/', process.cwd()],
   
   // Input Security
   MAX_INPUT_LENGTH: 10000,
   DANGEROUS_CHARS_REGEX: /[;|&`$(){}[\]<>'"\\*?]/,
   CONTROL_CHARS_REGEX: /[\x00-\x1f\x7f]/,
 } as const;
+
+/**
+ * Mutable security configuration
+ */
+export const MUTABLE_SECURITY_CONFIG = {
+  // Path Security - this can be updated at runtime
+  ALLOWED_PATH_PREFIXES: ['/tmp/', process.cwd()],
+};
+
+/**
+ * Update the allowed path prefixes for security validation
+ * @param newPaths Array of allowed path prefixes
+ */
+export function updateAllowedPaths(newPaths: string[]): void {
+  MUTABLE_SECURITY_CONFIG.ALLOWED_PATH_PREFIXES = [...newPaths];
+}
 
 /**
  * Security error types for consistent error handling

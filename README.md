@@ -455,6 +455,7 @@ Options:
   -a, --archetype <archetype>                    The archetype to use for analysis (default: "node-fullstack")
   -c, --configServer <url>                       The config server URL for fetching remote archetype configuration
   -l, --localConfigPath <path>                   Path to local archetype config and rules
+  -g, --githubConfigLocation <url>               GitHub tree URL for config location (e.g., https://github.com/org/repo/tree/main/config)
   -o, --openaiEnabled                            Enable OpenAI analysis
   -t, --telemetryCollector <url>                 The URL telemetry data will be sent to for usage analysis
   -m, --mode <mode>                              Run mode: 'cli', 'vscode', 'server', or 'hook' ('client' deprecated, use 'cli') (default: "cli")
@@ -488,6 +489,15 @@ xfidelity --mode server --port 9999
 # Use local config and rules
 xfidelity -l /path/to/local/config
 
+# Use GitHub configuration with tree URL
+xfidelity -g "https://github.com/myorg/xfi-config/tree/main/config"
+
+# Use GitHub configuration with specific branch and nested path
+xfidelity -g "https://github.com/zotoio/x-fidelity/tree/master/packages/x-fidelity-democonfig/src"
+
+# Use GitHub configuration with SSH URL
+xfidelity -g "git@github.com:myorg/private-config/tree/main/config"
+
 # Set custom cache TTL for server mode with local rules
 xfidelity --mode server -l /path/to/local/config --jsonTTL 30
 ```
@@ -499,6 +509,7 @@ x-fidelity supports the following environment variables:
 - `OPENAI_API_KEY`: Your OpenAI API key for AI-powered analysis.
 - `OPENAI_MODEL`: The OpenAI model to use (default is 'gpt-4o').
 - `XFI_LISTEN_PORT`: The port for the config server to listen on (default is 8888).
+- `XFI_CONFIG_PATH`: Path to local configuration directory (overrides central home directory configs).
 - `CERT_PATH`: The path to SSL certificates for HTTPS config server.
 - `NODE_TLS_REJECT_UNAUTHORIZED`: Set to '0' to allow self-signed certificates (use with caution).
 - `XFI_SHARED_SECRET`: Shared secret for securing telemetry and certain server routes.
@@ -513,6 +524,64 @@ export XFI_LISTEN_PORT=9999
 export XFI_SHARED_SECRET=your_shared_secret_here
 export XFI_LOG_COLOR=false
 xfidelity -o true
+```
+
+### Central Configuration Management
+
+X-Fidelity supports central configuration management through GitHub repositories and local home directory configs. This allows you to set up configurations once and use them automatically across all projects.
+
+#### Configuration Resolution Priority
+
+X-Fidelity resolves configuration in the following order:
+
+1. **Explicit flags** - `-c`, `-l`, `-g` command line options
+2. **Environment variable** - `XFI_CONFIG_PATH` environment variable  
+3. **Central home directory** - `~/.config/.xfidelity/configs/` (archetype-specific or default)
+4. **Demo config** - Built-in fallback configuration
+
+#### Setting Up Central GitHub Configuration
+
+You can set up a central GitHub configuration that will be used automatically:
+
+```sh
+# Set up central config for all archetypes
+xfidelity config setup -g "https://github.com/myorg/xfi-configs/tree/main/config"
+
+# Set up archetype-specific config
+xfidelity config setup -g "https://github.com/myorg/node-configs/tree/main" -a node-fullstack
+
+# List available central configs
+xfidelity config list
+
+# Update a central config from GitHub
+xfidelity config update my-config
+
+# Remove a central config
+xfidelity config remove my-config
+
+# Show central config information
+xfidelity config info
+```
+
+Once set up, any analysis will automatically use the central config:
+
+```sh
+# This will automatically use your central config if available
+xfidelity .
+```
+
+#### Environment Variable Override
+
+The `XFI_CONFIG_PATH` environment variable takes precedence over central home directory configs, making it perfect for deployment-specific configurations:
+
+```sh
+# Set deployment-specific config
+export XFI_CONFIG_PATH="/opt/company-configs/x-fidelity"
+xfidelity .  # Uses the environment config
+
+# Clear to use home directory config
+unset XFI_CONFIG_PATH
+xfidelity .  # Now uses ~/.config/.xfidelity/configs/ if available
 ```
 
 ### Local Configuration

@@ -4,7 +4,7 @@
  */
 
 import path from 'path';
-import { securityLogger, SECURITY_CONSTANTS, PathTraversalError } from './index';
+import { securityLogger, SECURITY_CONSTANTS, MUTABLE_SECURITY_CONFIG, PathTraversalError } from './index';
 
 /**
  * Validates that a directory path is safe for operations
@@ -16,7 +16,7 @@ export function validateDirectoryPath(dirPath: string): boolean {
     const resolvedPath = path.resolve(dirPath);
     
     // Must be within allowed prefixes
-    const isAllowed = SECURITY_CONSTANTS.ALLOWED_PATH_PREFIXES.some(prefix => 
+    const isAllowed = MUTABLE_SECURITY_CONFIG.ALLOWED_PATH_PREFIXES.some(prefix => 
       resolvedPath.startsWith(path.resolve(prefix))
     );
     

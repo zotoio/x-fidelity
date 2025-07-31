@@ -550,12 +550,30 @@ ${issueList}`;
         try {
             const message = error.details?.message || error.message || '';
             const patternMatch = message.match(/pattern[:\s]+([^\s,]+)/i) || message.match(/match[:\s]+([^\s,]+)/i);
-            const lineMatch = message.match(/line[:\s]+(\d+)/i);
+            
+            // ✅ FIX: Access structured line number data first
+            let lineNumber = 1; // Default fallback
+            
+            // Check for structured line data in error.details.details array (from facts)
+            if (error.details?.details && Array.isArray(error.details.details)) {
+                const firstMatch = error.details.details[0];
+                if (firstMatch && typeof firstMatch.lineNumber === 'number') {
+                    lineNumber = firstMatch.lineNumber;
+                } else if (firstMatch && firstMatch.range?.start?.line) {
+                    lineNumber = firstMatch.range.start.line;
+                }
+            }
+            
+            // Fallback to message parsing only if no structured data found
+            if (lineNumber === 1) {
+                const lineMatch = message.match(/line[:\s]+(\d+)/i);
+                lineNumber = lineMatch ? parseInt(lineMatch[1]) : 1;
+            }
 
             return {
                 file: filePath,
                 pattern: patternMatch ? patternMatch[1] : 'sensitive-data',
-                line: lineMatch ? parseInt(lineMatch[1]) : 1
+                line: lineNumber
             };
         } catch (e) {
             return null;

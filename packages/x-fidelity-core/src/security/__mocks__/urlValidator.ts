@@ -1,0 +1,1 @@
+export const validateUrl = jest.fn().mockReturnValue(true);

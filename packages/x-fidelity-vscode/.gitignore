@@ -12,7 +12,6 @@ node_modules/
 *.log
 .npm-debug.log*
 .env
-config/
 docs-archive/ 
 temp/
 **/xfi-*.json

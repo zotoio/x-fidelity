@@ -16,6 +16,10 @@ import { EXECUTION_MODES } from '@x-fidelity/types';
 import { showCLIDiagnosticsDialog } from '../utils/cliDiagnostics';
 import { CommandDelegationRegistry } from './commandDelegationRegistry';
 import { ResultCoordinator } from './resultCoordinator';
+import {
+  getGitHubConfigCacheManager,
+  disposeGitHubConfigCacheManager
+} from '../config/gitHubConfigCacheManager';
 
 export class ExtensionManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
@@ -94,6 +98,10 @@ export class ExtensionManager implements vscode.Disposable {
       // NEW: Initialize ResultCoordinator after all components are created
       this.resultCoordinator = new ResultCoordinator();
       this.logger.debug('✅ ResultCoordinator initialized');
+
+      // Initialize GitHub configuration cache manager for cache invalidation
+      getGitHubConfigCacheManager();
+      this.logger.debug('✅ GitHubConfigCacheManager initialized');
 
       // PHASE 3: Plugin initialization is handled by the spawned CLI
       // No need to initialize plugins in the extension itself
@@ -1455,6 +1463,7 @@ Check Output Console (X-Fidelity) for full details.`;
     this.issuesTreeViewManager.dispose();
     this.controlCenterTreeViewManager.dispose();
     this.resultCoordinator.dispose();
+    disposeGitHubConfigCacheManager();
     this.logger.info('✅ Extension Manager disposed');
   }
 }

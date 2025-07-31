@@ -156,6 +156,143 @@ export class CLISpawner {
   }
 
   /**
+   * Find package manager executable paths (yarn, npm) especially important on macOS
+   * when VSCode is launched from Finder/Dock and doesn't inherit shell environment
+   */
+  private getPackageManagerPaths(): string[] {
+    const packageManagerPaths: string[] = [];
+
+    // Common package manager installation paths on macOS
+    const possiblePaths = [
+      // System PATH first
+      ...(process.env.PATH?.split(process.platform === 'win32' ? ';' : ':') ||
+        []),
+
+      // Homebrew installations
+      '/usr/local/bin',
+      '/opt/homebrew/bin', // Apple Silicon Homebrew
+
+      // Node Version Managers
+      '/Users/' +
+        (process.env.USER || process.env.USERNAME) +
+        '/.nvm/current/bin',
+      '/Users/' + (process.env.USER || process.env.USERNAME) + '/.volta/bin',
+      '/Users/' +
+        (process.env.USER || process.env.USERNAME) +
+        '/.fnm/current/bin',
+
+      // Global npm installations
+      '/usr/local/share/npm/bin',
+      '/opt/homebrew/share/npm/bin',
+
+      // Yarn global installations
+      '/Users/' + (process.env.USER || process.env.USERNAME) + '/.yarn/bin',
+
+      // System locations
+      '/usr/bin',
+      '/bin'
+    ];
+
+    // Deduplicate and validate paths
+    const seenPaths = new Set<string>();
+    for (const pathEntry of possiblePaths) {
+      if (pathEntry && !seenPaths.has(pathEntry)) {
+        seenPaths.add(pathEntry);
+        try {
+          // Check if directory exists
+          if (fs.existsSync(pathEntry)) {
+            packageManagerPaths.push(pathEntry);
+          }
+        } catch (error) {
+          // Continue with other paths
+          this.logger.debug(
+            `Package manager path check failed for ${pathEntry}:`,
+            error
+          );
+        }
+      }
+    }
+
+    this.logger.debug(`Package manager PATH resolution:`, {
+      'original PATH': process.env.PATH,
+      'enhanced paths count': packageManagerPaths.length,
+      platform: process.platform,
+      user: process.env.USER || process.env.USERNAME
+    });
+
+    return packageManagerPaths;
+  }
+
+  /**
+   * Create enhanced environment with package manager paths
+   * This fixes the issue where VSCode launched from Mac launcher doesn't inherit shell environment
+   */
+  private createEnhancedEnvironment(
+    options: CLISpawnOptions,
+    correlationId: string
+  ): Record<string, string> {
+    const enhancedPaths = this.getPackageManagerPaths();
+    const pathSeparator = process.platform === 'win32' ? ';' : ':';
+
+    // CRITICAL FIX: Augment original PATH instead of replacing it
+    // This preserves the original system PATH while adding package manager paths
+    const originalPath = process.env.PATH || '';
+    const seenPaths = new Set<string>();
+    const finalPaths: string[] = [];
+
+    // Add enhanced paths first (higher priority) and track them
+    enhancedPaths.forEach(p => {
+      if (!seenPaths.has(p)) {
+        seenPaths.add(p);
+        finalPaths.push(p);
+      }
+    });
+
+    // Add original PATH entries (preserving order and avoiding duplicates)
+    if (originalPath) {
+      originalPath.split(pathSeparator).forEach(p => {
+        const trimmedPath = p.trim();
+        if (trimmedPath && !seenPaths.has(trimmedPath)) {
+          seenPaths.add(trimmedPath);
+          finalPaths.push(trimmedPath);
+        }
+      });
+    }
+
+    const finalPath = finalPaths.join(pathSeparator);
+
+    this.logger.debug(`Creating enhanced environment for CLI spawn`, {
+      correlationId,
+      'original PATH length': originalPath.length,
+      'final PATH length': finalPath.length,
+      'enhanced paths count': enhancedPaths.length,
+      'preserved original': !!originalPath,
+      platform: process.platform
+    });
+
+    return {
+      ...process.env,
+      // Enhanced PATH with package manager locations PREPENDED to original PATH
+      PATH: finalPath,
+
+      // 🎯 PASS CORRELATION ID TO CLI VIA ENVIRONMENT
+      XFI_CORRELATION_ID: correlationId,
+      XFI_VSCODE_MODE: 'true', // Force console logging in CLI
+      XFI_DISABLE_FILE_LOGGING: 'true', // Disable file logging
+      XFI_LOG_LEVEL: 'warn', // Use consistent log level
+      XFI_LOG_COLORS: 'false', // Disable colors for CLI output
+      XFI_LOG_TIMESTAMP: 'true', // Ensure timestamps are included
+
+      // 🎯 PASS VSCODE EXTENSION PATH FOR PROPER WASM FILE ACCESS
+      XFI_VSCODE_EXTENSION_PATH: path.dirname(__dirname), // Extension root directory
+      FORCE_COLOR: '0', // Disable ANSI color support
+
+      // Allow override from options
+      ...options.env
+    };
+  }
+
+  /**
    * Validate that Node.js executable is accessible
    */
   private async validateNodeJS(nodePath: string): Promise<void> {
@@ -460,6 +597,21 @@ export class CLISpawner {
         true // 🎯 DEFAULT TO WASM FOR VSCODE - better compatibility in extension environment
       );
 
+      // Get GitHub configuration settings
+      const githubConfigLocation = config.get<string>(
+        'githubConfigLocation',
+        ''
+      );
+      // GitHub config update frequency setting - currently unused but kept for future implementation
+      // const githubConfigUpdateFrequency = config.get<number>(
+      //   'githubConfigUpdateFrequency',
+      //   60
+      // );
+
+      // Get traditional configuration settings
+      const configServer = config.get<string>('configServer', '');
+      const localConfigPath = config.get<string>('localConfigPath', '');
+
       // Log TreeSitter mode selection with reasoning and correlation
       if (!!enableTreeSitterWasm) {
         this.logger.info(
@@ -489,6 +641,12 @@ export class CLISpawner {
         // 🎯 FORCE NATIVE MODE - WASM REQUIRES SPECIAL SETUP
         // Only add WASM flag if user has explicitly enabled it AND has proper setup
         ...(enableTreeSitterWasm ? ['--enable-tree-sitter-wasm'] : []),
+        // Configuration options - prioritized in order: GitHub, config server, local path
+        ...(githubConfigLocation
+          ? ['--githubConfigLocation', githubConfigLocation]
+          : []),
+        ...(configServer ? ['--configServer', configServer] : []),
+        ...(localConfigPath ? ['--localConfigPath', localConfigPath] : []),
         ...(options.args || [])
       ];
 
@@ -509,6 +667,16 @@ export class CLISpawner {
         mode: 'vscode',
         treeSitterMode: !!enableTreeSitterWasm ? 'wasm' : 'native',
         enableTreeSitterWasm: !!enableTreeSitterWasm,
+        configSource: githubConfigLocation
+          ? 'github'
+          : configServer
+            ? 'server'
+            : localConfigPath
+              ? 'local'
+              : 'demo',
+        githubConfigLocation: githubConfigLocation || undefined,
+        configServer: configServer || undefined,
+        localConfigPath: localConfigPath || undefined,
         args,
         command: 'cli-execution-context'
       });
@@ -548,20 +716,7 @@ export class CLISpawner {
             cwd: options.workspacePath,
             stdio: ['pipe', 'pipe', 'pipe'],
             timeout: timeoutMs,
-            env: {
-              ...process.env,
-              // 🎯 PASS CORRELATION ID TO CLI VIA ENVIRONMENT
-              XFI_CORRELATION_ID: correlationId,
-              XFI_VSCODE_MODE: 'true', // Force console logging in CLI
-              XFI_DISABLE_FILE_LOGGING: 'true', // Disable file logging
-              XFI_LOG_LEVEL: 'warn', // Use consistent log level
-              XFI_LOG_COLORS: 'false', // Disable colors for CLI output
-              XFI_LOG_TIMESTAMP: 'true', // Ensure timestamps are included
-              // 🎯 PASS VSCODE EXTENSION PATH FOR PROPER WASM FILE ACCESS
-              XFI_VSCODE_EXTENSION_PATH: path.dirname(__dirname), // Extension root directory
-              FORCE_COLOR: '0', // Disable ANSI color support
-              ...options.env
-            }
+            env: this.createEnhancedEnvironment(options, correlationId)
           });
         } catch (spawnError) {
           // Handle synchronous spawn failures

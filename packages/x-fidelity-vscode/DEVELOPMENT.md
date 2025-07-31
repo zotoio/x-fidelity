@@ -520,6 +520,17 @@ yarn install-vsix
 - Verify workspace folder is open
 - Check configuration settings
 
+**Package manager (yarn/npm) not found (macOS)**
+
+This issue occurs when VSCode is launched from Finder/Dock instead of from a terminal:
+
+- **Symptom**: Error messages about "yarn global dir" or "yarn list" commands failing
+- **Cause**: VSCode launched from Mac launcher doesn't inherit shell environment PATH
+- **Solution**: Extension automatically detects and adds common package manager paths
+- **Manual workaround**: Launch VSCode from terminal: `code .`
+- **Affected paths**: Homebrew (`/usr/local/bin`, `/opt/homebrew/bin`), nvm, volta, fnm
+- **Debug**: Check Output panel > X-Fidelity Debug for PATH resolution logs
+
 **Tests failing**
 
 - Ensure clean build: `npx nx reset && npx nx run-many --target=build --all`

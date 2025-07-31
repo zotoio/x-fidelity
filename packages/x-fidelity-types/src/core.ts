@@ -562,6 +562,7 @@ export interface CLIOptions {
     archetype: string;
     configServer?: string;
     localConfigPath?: string;
+    githubConfigLocation?: string;
     openaiEnabled?: boolean;
     telemetryCollector?: string;
     mode: ExecutionMode | LegacyMode; // Support both new and legacy modes
