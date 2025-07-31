@@ -2,6 +2,27 @@
   "$schema": "https://turbo.build/schema.json",
   "extends": ["//"],
   "tasks": {
+    "build": {
+      "dependsOn": [
+        "@x-fidelity/types#build",
+        "@x-fidelity/core#build", 
+        "@x-fidelity/plugins#build",
+        "@x-fidelity/democonfig#build"
+      ],
+      "outputs": ["dist/**"],
+      "inputs": ["src/**", "package.json", "tsconfig*.json", "esbuild.config.js"]
+    },
+    "build:production": {
+      "dependsOn": [
+        "@x-fidelity/types#build",
+        "@x-fidelity/core#build", 
+        "@x-fidelity/plugins#build",
+        "@x-fidelity/democonfig#build"
+      ],
+      "outputs": ["dist/**"],
+      "inputs": ["src/**", "package.json", "tsconfig*.json", "esbuild.config.js"],
+      "env": ["NODE_ENV"]
+    },
     "check-types": {
       "dependsOn": [
         "@x-fidelity/types#build",
