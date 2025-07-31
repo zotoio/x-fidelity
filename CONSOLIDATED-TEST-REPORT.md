@@ -1,7 +1,7 @@
 # Consolidated Test Report
 
-> **Generated:** 2025-07-31 08:27 GMT+1000  
-> **Duration:** 32.53s  
+> **Generated:** 2025-07-31 13:13 GMT+1000  
+> **Duration:** 60.47s  
 > **Status:** PASSED ✅
 
 ## 📊 Executive Summary
@@ -13,7 +13,7 @@
 | **Test Success Rate** | 100.0% |
 | **Packages Tested** | 6 |
 | **Cache Hit Rate** | 100.0% |
-| **Total Execution Time** | 32.53s |
+| **Total Execution Time** | 60.47s |
 
 ## 🔧 Linting & Code Formatting
 
@@ -37,9 +37,9 @@
 
 | Metric | Value |
 |--------|-------|
-| 🎯 **Cache Hits** | 24 tasks |
+| 🎯 **Cache Hits** | 26 tasks |
 | 🔄 **Cache Misses** | 0 tasks |
-| 📊 **Total Tasks** | 24 tasks |
+| 📊 **Total Tasks** | 26 tasks |
 | 📈 **Cache Hit Rate** | 100.0% |
 
 ## 📦 Package Details
@@ -47,7 +47,7 @@
 | Package | Status | Passed | Failed | Skipped | Total | Coverage |
 |---------|--------|--------|--------|---------|-------|----------|
 | `x-fidelity-cli` | 🏃 Executed | 62 | 0 | 0 | 62 | 63.2% |
-| `x-fidelity-core` | 🏃 Executed | 526 | 0 | 0 | 526 | 53.8% |
+| `x-fidelity-core` | 🏃 Executed | 526 | 0 | 0 | 526 | 53.9% |
 | `x-fidelity-types` | 🏃 Executed | 0 | 0 | 0 | 0 | 91.9% |
 | `x-fidelity-plugins` | 🏃 Executed | 287 | 0 | 0 | 287 | 53.1% |
 | `x-fidelity-server` | 🏃 Executed | 60 | 0 | 0 | 60 | 57.2% |
@@ -61,7 +61,7 @@
 - **Packages cached:** 0
 
 ### Performance Metrics
-- **Average time per package:** 5.42s
+- **Average time per package:** 10.08s
 - **Cache efficiency:** 100.0% (higher is better)
 
 ### Status Indicators
