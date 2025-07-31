@@ -43,10 +43,10 @@
     "@types/body-parser": "^1.19.5",
     "@types/nodemailer": "^6.4.17",
 
-    "eslint": "^9.21.0",
-    "jest": "^30.0.2",
+    "eslint": "^9.32.0",
+    "jest": "^30.0.5",
     "rimraf": "^6.0.1",
-    "supertest": "^7.0.0",
+    "supertest": "^7.1.4",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
