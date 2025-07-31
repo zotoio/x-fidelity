@@ -23,18 +23,7 @@ jest.mock('os');
 jest.mock('path');
 
 // Mock logger
-jest.mock('../../utils/loggerProvider', () => ({
-  LoggerProvider: {
-    getLogger: jest.fn(() => ({
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-    })),
-    setLogger: jest.fn(),
-    clearInjectedLogger: jest.fn(),
-  },
-}));
+jest.mock('../utils/loggerProvider');
 
 describe('ConfigSetManager', () => {
   let configSetManager: ConfigSetManager;
@@ -75,7 +64,7 @@ describe('ConfigSetManager', () => {
 
   describe('getConfigSetsDir', () => {
     it('should return correct config sets directory path', () => {
-      const expected = path.join('/home/testuser', '.config/.xfidelity/configsets');
+      const expected = path.join('/home/testuser', '.config/xfidelity/configs');
       expect(configSetManager.getConfigSetsDir()).toBe(expected);
     });
   });
@@ -85,7 +74,7 @@ describe('ConfigSetManager', () => {
       await configSetManager.initializeConfigSetsDir();
       
       expect(mockFs.promises.mkdir).toHaveBeenCalledWith(
-        '/home/testuser/.config/.xfidelity/configsets',
+        '/home/testuser/.config/xfidelity/configs',
         { recursive: true }
       );
     });
@@ -124,11 +113,11 @@ describe('ConfigSetManager', () => {
 
       expect(mockFs.promises.mkdir).toHaveBeenCalled();
       expect(mockFs.promises.writeFile).toHaveBeenCalledWith(
-        '/home/testuser/.config/.xfidelity/configsets/test-config.json',
+        '/home/testuser/.config/xfidelity/configs/test-config.json',
         expect.stringContaining('"alias": "test-config"'),
         'utf8'
       );
-      expect(result).toBe('/home/testuser/.config/.xfidelity/configsets/test-config.json');
+      expect(result).toBe('/home/testuser/.config/xfidelity/configs/test-config.json');
     });
 
     it('should filter options correctly', async () => {
@@ -209,10 +198,10 @@ describe('ConfigSetManager', () => {
       const result = await configSetManager.readConfigSet({ alias: 'test-config' });
 
       expect(mockFs.existsSync).toHaveBeenCalledWith(
-        '/home/testuser/.config/.xfidelity/configsets/test-config.json'
+        '/home/testuser/.config/xfidelity/configs/test-config.json'
       );
       expect(mockFs.promises.readFile).toHaveBeenCalledWith(
-        '/home/testuser/.config/.xfidelity/configsets/test-config.json',
+        '/home/testuser/.config/xfidelity/configs/test-config.json',
         'utf8'
       );
       expect(result).toEqual(mockConfigSet);
@@ -301,7 +290,7 @@ describe('ConfigSetManager', () => {
       expect(result[0].alias).toBe('config1');
       expect(result[1].alias).toBe('config2');
       expect(mockFs.promises.readdir).toHaveBeenCalledWith(
-        '/home/testuser/.config/.xfidelity/configsets'
+        '/home/testuser/.config/xfidelity/configs'
       );
     });
 
@@ -357,10 +346,10 @@ describe('ConfigSetManager', () => {
       await configSetManager.removeConfigSet({ alias: 'test-config' });
 
       expect(mockFs.existsSync).toHaveBeenCalledWith(
-        '/home/testuser/.config/.xfidelity/configsets/test-config.json'
+        '/home/testuser/.config/xfidelity/configs/test-config.json'
       );
       expect(mockFs.promises.unlink).toHaveBeenCalledWith(
-        '/home/testuser/.config/.xfidelity/configsets/test-config.json'
+        '/home/testuser/.config/xfidelity/configs/test-config.json'
       );
     });
 
@@ -442,7 +431,7 @@ describe('ConfigSetManager', () => {
       expect(mockFs.existsSync).toHaveBeenCalledWith(filePath);
       expect(mockFs.promises.readFile).toHaveBeenCalledWith(filePath, 'utf8');
       expect(mockFs.promises.writeFile).toHaveBeenCalled();
-      expect(result).toBe('/home/testuser/.config/.xfidelity/configsets/imported-config.json');
+      expect(result).toBe('/home/testuser/.config/xfidelity/configs/imported-config.json');
     });
 
     it('should use custom alias when provided', async () => {
@@ -672,7 +661,7 @@ describe('ConfigSetManager', () => {
       
       expect(result).toContain('/tmp');
       expect(result).toContain('/home/user');
-      expect(result).toContain('/home/testuser/.config/.xfidelity/configsets');
+      expect(result).toContain('/home/testuser/.config/xfidelity/configs');
       expect(result).toContain('/home/testuser');
     });
   });

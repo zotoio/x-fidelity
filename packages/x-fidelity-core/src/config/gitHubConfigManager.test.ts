@@ -14,30 +14,18 @@ jest.mock('fs', () => ({
     readdir: jest.fn()
   }
 }));
-jest.mock('../../utils/logger');
-jest.mock('../../security/urlValidator');
-jest.mock('../../security/commandValidator');
+// Mock modules
+jest.mock('../utils/logger');
+jest.mock('../security/urlValidator');
+jest.mock('../security/commandValidator');
 
 const mockFs = require('fs') as jest.Mocked<typeof fs>;
 const mockFsPromises = mockFs.promises as jest.Mocked<typeof fs.promises>;
 
-// Mock SafeGitCommand
-let mockExecute: jest.Mock;
-
-jest.mock('../../security/commandValidator', () => ({
-  SafeGitCommand: jest.fn().mockImplementation(() => ({
-    execute: jest.fn()
-  }))
-}));
-
-// Mock validateUrl
-jest.mock('../../security/urlValidator', () => ({
-  validateUrl: jest.fn().mockReturnValue(true)
-}));
-
 describe('GitHubConfigManager', () => {
   let manager: GitHubConfigManager;
   let tempDir: string;
+  let mockExecute: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -51,16 +39,15 @@ describe('GitHubConfigManager', () => {
     mockFsPromises.readFile.mockResolvedValue('{}');
     mockFsPromises.rm.mockResolvedValue(undefined);
 
-    // Setup SafeGitCommand mock - create a fresh mock for each test
+    // Setup SafeGitCommand mock - Jest will use the manual mock automatically
     mockExecute = jest.fn().mockResolvedValue({ stdout: '', stderr: '' });
-    const { SafeGitCommand } = require('../../security/commandValidator');
-    SafeGitCommand.mockClear();
+    const { SafeGitCommand } = require('../security/commandValidator');
     SafeGitCommand.mockImplementation(() => ({
       execute: mockExecute
     }));
-
-    // Mock validateUrl to return true by default
-    const { validateUrl } = require('../../security/urlValidator');
+    
+    // Reset validateUrl mock to return true by default
+    const { validateUrl } = require('../security/urlValidator');
     validateUrl.mockReturnValue(true);
   });
 
@@ -207,7 +194,7 @@ describe('GitHubConfigManager', () => {
       });
 
       it('should throw error for unsafe HTTPS URL', () => {
-        const { validateUrl } = require('../../security/urlValidator');
+        const { validateUrl } = require('../security/urlValidator');
         validateUrl.mockReturnValue(false);
         
         const url = 'https://github.com/owner/repo/tree/main/config';
