@@ -2,6 +2,16 @@
 
 All notable changes to the X-Fidelity CLI will be documented in this file.
 
+## [5.2.0](https://github.com/zotoio/x-fidelity/compare/v5.1.3...v5.2.0) (2025-08-01)
+
+### ⚠ BREAKING CHANGES
+
+* **ci:** Release workflow now uses direct file system operations instead of npm registry downloads for CLI embedding, significantly improving reliability and speed
+
+### Features
+
+* **ci:** improve CLI embedding with direct artifact copy and enhanced diagnostics ([f406895](https://github.com/zotoio/x-fidelity/commit/f40689589c600d0a0aa8e92bcb295d639b28dabf))
+
 ## [5.1.3](https://github.com/zotoio/x-fidelity/compare/v5.1.2...v5.1.3) (2025-08-01)
 
 ### Bug Fixes
