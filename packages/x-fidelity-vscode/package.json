@@ -684,7 +684,7 @@
     "yaml": "^2.6.0"
   },
   "devDependencies": {
-    "@electron/rebuild": "^3.6.2",
+    "@electron/rebuild": "^4.0.1",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/exec": "^7.1.0",
