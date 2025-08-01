@@ -47,10 +47,27 @@ async function resolveEventDetails(details: any, almanac: any, logger?: ILogger)
             }
             try {
                 const factValue = await almanac.factValue(details.fact);
+                
+                // Enhanced logging for dependency failures to ensure they're captured
+                if (factValue && Array.isArray(factValue) && factValue.length > 0 && details.fact === 'repoDependencyAnalysis') {
+                    if (logger) {
+                        logger.info(`Successfully resolved dependency failures: ${factValue.length} issues found`, {
+                            factName: details.fact,
+                            dependencyFailureCount: factValue.length,
+                            platform: process.platform,
+                            dependencyFailures: factValue
+                        });
+                    }
+                }
+                
                 return factValue;
             } catch (error) {
                 if (logger) {
-                    logger.debug(`Fact '${details.fact}' not available in almanac: ${error}`);
+                    logger.error(`Fact '${details.fact}' resolution failed - details may be lost`, {
+                        factName: details.fact,
+                        error: error instanceof Error ? error.message : String(error),
+                        platform: process.platform
+                    });
                 }
                 return details; // Return original details if fact not found
             }
@@ -161,7 +178,50 @@ async function buildRuleFailureFromResult(result: any, rule: any, file: any, alm
         try {
             const factValue = await almanac.factValue(resolvedDetails.fact);
             resolvedDetails = factValue;
+            
+            // Enhanced logging for dependency failures to ensure they're captured
+            if (resolvedDetails && Array.isArray(resolvedDetails) && resolvedDetails.length > 0) {
+                const logger = LoggerProvider.getLoggerForMode(LoggerProvider.getCurrentExecutionMode());
+                logger.debug(`Fact resolution successful for ${result.event?.params?.details?.fact}: captured ${resolvedDetails.length} dependency failures`, {
+                    factName: result.event?.params?.details?.fact,
+                    dependencyFailureCount: resolvedDetails.length,
+                    platform: process.platform,
+                    dependencyFailures: resolvedDetails
+                });
+            }
         } catch (error) {
+            // Enhanced logging for fact resolution failures, especially on Mac
+            const logger = LoggerProvider.getLoggerForMode(LoggerProvider.getCurrentExecutionMode());
+            logger.error(`Fact resolution failed for '${resolvedDetails.fact}' - dependency details may be lost in results`, {
+                factName: resolvedDetails.fact,
+                error: error instanceof Error ? error.message : String(error),
+                platform: process.platform,
+                rule: result?.name,
+                fileName: file?.fileName
+            });
+            
+            // CRITICAL FIX FOR MAC: Try fallback fact resolution for dependency analysis
+            if (resolvedDetails.fact === 'repoDependencyAnalysis') {
+                try {
+                    // Try to get the fact value directly from almanac with alternative method
+                    const fallbackFactValue = await almanac.factValue('repoDependencyAnalysis');
+                    if (fallbackFactValue && Array.isArray(fallbackFactValue) && fallbackFactValue.length > 0) {
+                        logger.info(`✅ Fallback fact resolution successful: captured ${fallbackFactValue.length} dependency failures`, {
+                            factName: 'repoDependenccyAnalysis',
+                            dependencyFailureCount: fallbackFactValue.length,
+                            platform: process.platform,
+                            dependencyFailures: fallbackFactValue
+                        });
+                        resolvedDetails = fallbackFactValue;
+                    }
+                } catch (fallbackError) {
+                    logger.warn(`Fallback fact resolution also failed for repoDependencyAnalysis`, {
+                        fallbackError: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+                        platform: process.platform
+                    });
+                }
+            }
+            
             // Keep original details if fact resolution fails
         }
     }
