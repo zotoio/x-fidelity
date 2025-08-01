@@ -2,6 +2,12 @@
 
 All notable changes to the X-Fidelity CLI will be documented in this file.
 
+## [5.2.1](https://github.com/zotoio/x-fidelity/compare/v5.2.0...v5.2.1) (2025-08-01)
+
+### Bug Fixes
+
+* **ci:** resolve semantic-release version verification in VSCode extension workflow ([1be83a1](https://github.com/zotoio/x-fidelity/commit/1be83a102b9194797e88fdd4d5733ce5f9a6232c))
+
 ## [5.2.0](https://github.com/zotoio/x-fidelity/compare/v5.1.3...v5.2.0) (2025-08-01)
 
 ### ⚠ BREAKING CHANGES
