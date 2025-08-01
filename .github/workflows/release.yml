@@ -272,7 +272,31 @@ jobs:
       - name: Run integration tests
         run: xvfb-run -a yarn workspace x-fidelity-vscode test:ci
 
-      - name: Sync and embed published CLI version
+      - name: Handle VSCode-only release (no CLI changes)
+        if: needs.release-cli.outputs.cli-published != 'true' && needs.changes.outputs.vscode == 'true'
+        run: |
+          echo "🔄 Processing VSCode-only release (no CLI changes detected)"
+          echo "📍 Using existing CLI artifacts without version sync"
+          
+          cd packages/x-fidelity-vscode
+          
+          # For VSCode-only releases, we use semantic-release to determine the version
+          echo "ℹ️  VSCode extension will be versioned independently using semantic-release"
+          echo "ℹ️  No CLI version sync needed - using existing embedded CLI"
+          
+          # Ensure embedded CLI exists from previous builds
+          if [ ! -f "dist/cli/index.js" ]; then
+            echo "🔧 No existing embedded CLI found, using current CLI build..."
+            # Build and embed current CLI
+            cd ../../packages/x-fidelity-cli
+            yarn build
+            cd ../x-fidelity-vscode
+            yarn embed:cli
+          fi
+          
+          echo "✅ VSCode-only release preparation completed"
+
+      - name: Sync and embed published CLI version  
         if: needs.release-cli.outputs.cli-published == 'true'
         run: |
           CLI_VERSION="${{ needs.release-cli.outputs.cli-version }}"
@@ -406,23 +430,33 @@ jobs:
           echo "   VSCode package.json version: $VSCODE_VERSION"
           echo "   Expected CLI version: $CLI_VERSION"
           
-          if [ "$VSCODE_VERSION" = "0.0.0-semantically-released" ]; then
-            echo "❌ CRITICAL ERROR: VSCode version still shows placeholder"
-            echo "   This indicates the version sync step failed or was skipped"
-            echo "   Possible causes:"
-            echo "   1. CLI was not published (needs.release-cli.outputs.cli-published != 'true')"
-            echo "   2. Version sync script failed silently"
-            echo "   3. Package.json was not properly updated"
-            echo ""
-            echo "   Debug information:"
-            echo "   - CLI published: ${{ needs.release-cli.outputs.cli-published }}"
-            echo "   - CLI version: $CLI_VERSION"
-            echo "   - Current working directory: $(pwd)"
-            echo "   - Package.json exists: $([ -f package.json ] && echo 'yes' || echo 'no')"
-            exit 1
+          # Check if this is a VSCode-only release or a CLI-synced release
+          if [ "${{ needs.release-cli.outputs.cli-published }}" = "true" ]; then
+            # CLI was published, so VSCode version should be synced
+            if [ "$VSCODE_VERSION" = "0.0.0-semantically-released" ]; then
+              echo "❌ CRITICAL ERROR: VSCode version still shows placeholder after CLI sync"
+              echo "   This indicates the version sync step failed"
+              echo "   Debug information:"
+              echo "   - CLI published: ${{ needs.release-cli.outputs.cli-published }}"
+              echo "   - CLI version: $CLI_VERSION"
+              echo "   - Current working directory: $(pwd)"
+              echo "   - Package.json exists: $([ -f package.json ] && echo 'yes' || echo 'no')"
+              exit 1
+            fi
+          else
+            # VSCode-only release, placeholder version is expected and semantic-release will handle it
+            if [ "$VSCODE_VERSION" = "0.0.0-semantically-released" ]; then
+              echo "ℹ️  VSCode-only release detected with placeholder version"
+              echo "   This is expected - semantic-release will determine the actual version"
+              echo "   Debug information:"
+              echo "   - CLI published: ${{ needs.release-cli.outputs.cli-published }}"
+              echo "   - VSCode changes: ${{ needs.changes.outputs.vscode }}"
+              echo "   - Current version: $VSCODE_VERSION (will be updated by semantic-release)"
+            fi
           fi
           
-          if [ -n "$CLI_VERSION" ] && [ "$VSCODE_VERSION" != "$CLI_VERSION" ]; then
+          # Only check version matching if CLI was actually published
+          if [ "${{ needs.release-cli.outputs.cli-published }}" = "true" ] && [ -n "$CLI_VERSION" ] && [ "$VSCODE_VERSION" != "$CLI_VERSION" ]; then
             echo "❌ CRITICAL ERROR: Version mismatch between VSCode extension and published CLI"
             echo "   VSCode extension version: $VSCODE_VERSION"
             echo "   Published CLI version: $CLI_VERSION"
