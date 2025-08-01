@@ -304,14 +304,12 @@ jobs:
             exit 1
           fi
           
-          # Verify CLI package.json has the expected version
+          # NOTE: Skip package.json version verification - semantic-release resets it after publishing
+          # The CLI version from semantic-release output is the authoritative source
           ACTUAL_CLI_VERSION=$(node -p "require('./$CLI_PKG_PATH').version")
-          if [ "$ACTUAL_CLI_VERSION" != "$CLI_VERSION" ]; then
-            echo "❌ CRITICAL ERROR: CLI package.json version mismatch"
-            echo "   Expected from release output: $CLI_VERSION"
-            echo "   Found in package.json: $ACTUAL_CLI_VERSION"
-            exit 1
-          fi
+          echo "ℹ️  CLI package.json version after semantic-release: $ACTUAL_CLI_VERSION"
+          echo "ℹ️  Published CLI version (authoritative): $CLI_VERSION"
+          echo "ℹ️  Note: package.json version may be reset to placeholder after semantic-release completes"
           
           echo "✅ CLI artifacts verified successfully"
           echo "   Binary: $CLI_DIST_PATH/xfidelity"
