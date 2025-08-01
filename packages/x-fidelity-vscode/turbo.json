@@ -7,7 +7,8 @@
         "@x-fidelity/types#build",
         "@x-fidelity/core#build", 
         "@x-fidelity/plugins#build",
-        "@x-fidelity/democonfig#build"
+        "@x-fidelity/democonfig#build",
+        "x-fidelity#build"
       ],
       "outputs": ["dist/**"],
       "inputs": ["src/**", "package.json", "tsconfig*.json", "esbuild.config.js"]
@@ -17,7 +18,8 @@
         "@x-fidelity/types#build",
         "@x-fidelity/core#build", 
         "@x-fidelity/plugins#build",
-        "@x-fidelity/democonfig#build"
+        "@x-fidelity/democonfig#build",
+        "x-fidelity#build"
       ],
       "outputs": ["dist/**"],
       "inputs": ["src/**", "package.json", "tsconfig*.json", "esbuild.config.js"],

@@ -10,8 +10,9 @@ import { createComponentLogger } from '../utils/globalLogger';
  */
 export class GitHubConfigCacheManager implements vscode.Disposable {
   private static readonly CACHE_DIR = '.xfiResults/github-configs';
-  private static readonly SETTINGS_CACHE_FILE = '.xfiResults/github-settings-cache.json';
-  
+  private static readonly SETTINGS_CACHE_FILE =
+    '.xfiResults/github-settings-cache.json';
+
   private readonly logger = createComponentLogger('GitHubConfigCacheManager');
   private disposables: vscode.Disposable[] = [];
   private lastKnownSettings: GitHubConfigSettings | null = null;
@@ -25,8 +26,10 @@ export class GitHubConfigCacheManager implements vscode.Disposable {
     // Watch for configuration changes
     this.disposables.push(
       vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('xfidelity.githubConfigLocation') || 
-            e.affectsConfiguration('xfidelity.githubConfigUpdateFrequency')) {
+        if (
+          e.affectsConfiguration('xfidelity.githubConfigLocation') ||
+          e.affectsConfiguration('xfidelity.githubConfigUpdateFrequency')
+        ) {
           this.handleGitHubConfigChange();
         }
       })
@@ -43,14 +46,16 @@ export class GitHubConfigCacheManager implements vscode.Disposable {
     });
 
     // Check if the GitHub config location changed (requires cache invalidation)
-    if (previousSettings && 
-        previousSettings.githubConfigLocation !== currentSettings.githubConfigLocation) {
-      
+    if (
+      previousSettings &&
+      previousSettings.githubConfigLocation !==
+        currentSettings.githubConfigLocation
+    ) {
       this.logger.info('GitHub config location changed, invalidating cache', {
         oldLocation: previousSettings.githubConfigLocation,
         newLocation: currentSettings.githubConfigLocation
       });
-      
+
       await this.invalidateCache();
     }
 
@@ -63,7 +68,10 @@ export class GitHubConfigCacheManager implements vscode.Disposable {
     const config = vscode.workspace.getConfiguration('xfidelity');
     return {
       githubConfigLocation: config.get<string>('githubConfigLocation', ''),
-      githubConfigUpdateFrequency: config.get<number>('githubConfigUpdateFrequency', 60)
+      githubConfigUpdateFrequency: config.get<number>(
+        'githubConfigUpdateFrequency',
+        60
+      )
     };
   }
 
@@ -71,16 +79,23 @@ export class GitHubConfigCacheManager implements vscode.Disposable {
     try {
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders || workspaceFolders.length === 0) {
-        this.logger.debug('No workspace folders found, skipping cache invalidation');
+        this.logger.debug(
+          'No workspace folders found, skipping cache invalidation'
+        );
         return;
       }
 
       // Invalidate cache for each workspace
       for (const folder of workspaceFolders) {
-        const cacheDir = path.join(folder.uri.fsPath, GitHubConfigCacheManager.CACHE_DIR);
-        
+        const cacheDir = path.join(
+          folder.uri.fsPath,
+          GitHubConfigCacheManager.CACHE_DIR
+        );
+
         if (fs.existsSync(cacheDir)) {
-          this.logger.debug('Removing GitHub config cache directory', { cacheDir });
+          this.logger.debug('Removing GitHub config cache directory', {
+            cacheDir
+          });
           await fs.promises.rm(cacheDir, { recursive: true, force: true });
         }
       }
@@ -89,12 +104,11 @@ export class GitHubConfigCacheManager implements vscode.Disposable {
       await this.invalidateCentralCache();
 
       this.logger.info('GitHub configuration cache successfully invalidated');
-      
+
       // Show user notification about cache invalidation
       vscode.window.showInformationMessage(
         'GitHub configuration changed. Cache cleared for fresh config retrieval.'
       );
-
     } catch (error) {
       this.logger.error('Failed to invalidate GitHub config cache', { error });
       vscode.window.showWarningMessage(
@@ -107,18 +121,21 @@ export class GitHubConfigCacheManager implements vscode.Disposable {
     try {
       const os = require('os');
       const homeDir = os.homedir();
-      
+
       let configHome: string;
       if (process.platform === 'win32') {
         configHome = process.env.APPDATA || path.join(homeDir, '.config');
       } else {
-        configHome = process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
+        configHome =
+          process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
       }
-      
+
       const centralCacheDir = path.join(configHome, '.xfidelity', 'cache');
-      
+
       if (fs.existsSync(centralCacheDir)) {
-        this.logger.debug('Removing central GitHub config cache', { centralCacheDir });
+        this.logger.debug('Removing central GitHub config cache', {
+          centralCacheDir
+        });
         await fs.promises.rm(centralCacheDir, { recursive: true, force: true });
       }
     } catch (error) {
@@ -134,24 +151,29 @@ export class GitHubConfigCacheManager implements vscode.Disposable {
       }
 
       const settingsFile = path.join(
-        workspaceFolders[0].uri.fsPath, 
+        workspaceFolders[0].uri.fsPath,
         GitHubConfigCacheManager.SETTINGS_CACHE_FILE
       );
 
       if (fs.existsSync(settingsFile)) {
         const settingsData = await fs.promises.readFile(settingsFile, 'utf8');
         this.lastKnownSettings = JSON.parse(settingsData);
-        this.logger.debug('Loaded last known GitHub config settings', { 
-          settings: this.lastKnownSettings 
+        this.logger.debug('Loaded last known GitHub config settings', {
+          settings: this.lastKnownSettings
         });
       }
     } catch (error) {
-      this.logger.debug('Failed to load last known settings (this is normal on first run)', { error });
+      this.logger.debug(
+        'Failed to load last known settings (this is normal on first run)',
+        { error }
+      );
       this.lastKnownSettings = null;
     }
   }
 
-  private async saveCurrentSettings(settings: GitHubConfigSettings): Promise<void> {
+  private async saveCurrentSettings(
+    settings: GitHubConfigSettings
+  ): Promise<void> {
     try {
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -159,7 +181,7 @@ export class GitHubConfigCacheManager implements vscode.Disposable {
       }
 
       const settingsFile = path.join(
-        workspaceFolders[0].uri.fsPath, 
+        workspaceFolders[0].uri.fsPath,
         GitHubConfigCacheManager.SETTINGS_CACHE_FILE
       );
 
@@ -168,7 +190,10 @@ export class GitHubConfigCacheManager implements vscode.Disposable {
         await fs.promises.mkdir(settingsDir, { recursive: true });
       }
 
-      await fs.promises.writeFile(settingsFile, JSON.stringify(settings, null, 2));
+      await fs.promises.writeFile(
+        settingsFile,
+        JSON.stringify(settings, null, 2)
+      );
       this.logger.debug('Saved current GitHub config settings', { settings });
     } catch (error) {
       this.logger.warn('Failed to save current settings', { error });

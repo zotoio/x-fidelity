@@ -26,6 +26,8 @@ suite('Configuration Management Tests', () => {
       'autoAnalyzeOnFileChange',
       'configServer',
       'localConfigPath',
+      'githubConfigLocation',
+      'githubConfigUpdateFrequency',
       'openaiEnabled',
       'telemetryCollector',
       'telemetryEnabled',
@@ -153,6 +155,49 @@ suite('Configuration Management Tests', () => {
 
     if (global.isVerboseMode) {
       global.testConsole.log('✅ Configuration values validated');
+    }
+  });
+
+  test('should validate GitHub configuration settings', async function () {
+    this.timeout(5000);
+
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    const config = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
+
+    // Test githubConfigLocation
+    const githubConfigLocation = config.get('githubConfigLocation');
+    assert.ok(
+      typeof githubConfigLocation === 'string',
+      'githubConfigLocation should be a string'
+    );
+
+    // Test githubConfigUpdateFrequency
+    const githubConfigUpdateFrequency = config.get('githubConfigUpdateFrequency') as number;
+    assert.ok(
+      typeof githubConfigUpdateFrequency === 'number',
+      'githubConfigUpdateFrequency should be a number'
+    );
+    assert.ok(
+      githubConfigUpdateFrequency >= 5 && githubConfigUpdateFrequency <= 1440,
+      'githubConfigUpdateFrequency should be between 5 and 1440 minutes'
+    );
+    assert.strictEqual(
+      githubConfigUpdateFrequency,
+      60,
+      'githubConfigUpdateFrequency should default to 60 minutes'
+    );
+
+    // Test default values
+    assert.strictEqual(
+      githubConfigLocation,
+      '',
+      'githubConfigLocation should default to empty string'
+    );
+
+    if (global.isVerboseMode) {
+      global.testConsole.log('✅ GitHub configuration settings validated');
+      global.testConsole.log(`   - githubConfigLocation: "${githubConfigLocation}"`);
+      global.testConsole.log(`   - githubConfigUpdateFrequency: ${githubConfigUpdateFrequency}min`);
     }
   });
 });

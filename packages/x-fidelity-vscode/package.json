@@ -316,7 +316,13 @@
         "xfidelity.githubConfigLocation": {
           "type": "string",
           "default": "",
-          "description": "GitHub tree URL for X-Fidelity configuration (e.g., https://github.com/org/repo/tree/main/config)."
+          "description": "GitHub tree URL for X-Fidelity configuration. Supports HTTPS (https://github.com/org/repo/tree/main/config) and SSH (git@github.com:org/repo/tree/main/config) formats.",
+          "examples": [
+            "https://github.com/org/repo/tree/main/config",
+            "git@github.com:org/repo/tree/main/config",
+            "https://github.com/zotoio/x-fidelity/tree/master/packages/x-fidelity-democonfig/src",
+            "git@enterprise.company.com:team/configs/tree/develop/x-fidelity"
+          ]
         },
         "xfidelity.githubConfigUpdateFrequency": {
           "type": "number",
