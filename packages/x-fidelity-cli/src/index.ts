@@ -235,7 +235,7 @@ export async function main(skipCLIInit = false): Promise<void> {
             return;
         }
         
-        // Display banner
+        // Display banner.
         if (process.env.NODE_ENV !== 'test') {
             displayBanner();
             console.log('Startup options', { options });
