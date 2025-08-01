@@ -311,17 +311,24 @@
           "description": "🚀 Run analysis automatically when the extension starts",
           "order": 11
         },
+        "xfidelity.runInterval": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "⏱️ Auto-analysis interval in seconds (0 = disabled)",
+          "order": 12
+        },
         "xfidelity.autoAnalyzeOnSave": {
           "type": "boolean",
           "default": false,
           "description": "💾 Run analysis automatically when files are saved (may impact performance)",
-          "order": 12
+          "order": 13
         },
         "xfidelity.autoAnalyzeOnFileChange": {
           "type": "boolean",
           "default": false,
           "description": "🔄 Run analysis automatically when files change (may impact performance)",
-          "order": 13
+          "order": 14
         },
         "xfidelity.showInlineDecorations": {
           "type": "boolean",
