@@ -93,7 +93,7 @@ export const SECURITY_CONSTANTS = {
   // Input Security
   MAX_INPUT_LENGTH: 10000,
   DANGEROUS_CHARS_REGEX: /[;|&`$(){}[\]<>'"\\*?]/,
-  CONTROL_CHARS_REGEX: /[\x00-\x1f\x7f]/,
+  CONTROL_CHARS_REGEX: /[\x00-\x1f\x7f]/g,
 } as const;
 
 /**

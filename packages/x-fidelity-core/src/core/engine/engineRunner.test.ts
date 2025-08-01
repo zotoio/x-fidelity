@@ -876,4 +876,140 @@ describe('engineRunner - Enhanced Test Suite', () => {
             expect(mockAlmanac.factValue).toHaveBeenCalledWith('analysisResults');
         });
     });
+
+    describe('Mac Platform Fact Resolution', () => {
+        beforeEach(() => {
+            // Mock platform as darwin
+            Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+        });
+
+        afterEach(() => {
+            jest.restoreAllMocks();
+        });
+
+        it('should successfully resolve dependency facts on Mac', async () => {
+            const mockLogger = {
+                debug: jest.fn(),
+                info: jest.fn(),
+                error: jest.fn(),
+                warn: jest.fn(),
+                trace: jest.fn()
+            };
+
+            const dependencyFailures = [
+                { dependency: 'react', currentVersion: '16.0.0', requiredVersion: '18.0.0' },
+                { dependency: 'vue', currentVersion: '2.0.0', requiredVersion: '3.0.0' }
+            ];
+
+            const mockAlmanac = {
+                factValue: jest.fn().mockResolvedValueOnce(dependencyFailures)
+            };
+
+            const mockEngine = {
+                run: jest.fn().mockResolvedValue({
+                    results: [{
+                        name: 'outdatedFramework-global',
+                        result: true,
+                        event: {
+                            type: 'fatality',
+                            params: {
+                                message: 'Dependencies outdated',
+                                details: { fact: 'repoDependencyAnalysis' }
+                            }
+                        }
+                    }],
+                    almanac: mockAlmanac
+                }),
+                rules: [{
+                    name: 'outdatedFramework-global',
+                    conditions: { all: [{ fact: 'repoDependencyAnalysis', operator: 'outdatedFramework', value: true }] },
+                    description: 'Test dependency rule'
+                }]
+            };
+
+            const mockRule = {
+                name: 'outdatedFramework-global',
+                conditions: { all: [{ fact: 'repoDependencyAnalysis', operator: 'outdatedFramework', value: true }] },
+                description: 'Test dependency rule'
+            };
+
+            const mockResult = {
+                name: 'outdatedFramework-global',
+                event: {
+                    type: 'fatality',
+                    params: {
+                        message: 'Dependencies outdated',
+                        details: { fact: 'repoDependencyAnalysis' }
+                    }
+                }
+            };
+
+            const mockFile = { fileName: 'REPO_GLOBAL_CHECK', filePath: '/test/global' };
+
+            const result = await runEngineOnFiles({
+                engine: mockEngine,
+                fileData: [mockFile],
+                installedDependencyVersions: {},
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                logger: mockLogger,
+                repoPath: '/test'
+            });
+
+            expect(mockAlmanac.factValue).toHaveBeenCalledWith('repoDependencyAnalysis');
+        });
+
+        it('should handle fact resolution failure with fallback on Mac', async () => {
+            const mockLogger = {
+                debug: jest.fn(),
+                info: jest.fn(),
+                error: jest.fn(),
+                warn: jest.fn(),
+                trace: jest.fn()
+            };
+
+            const dependencyFailures = [
+                { dependency: 'react', currentVersion: '16.0.0', requiredVersion: '18.0.0' }
+            ];
+
+            const mockAlmanac = {
+                factValue: jest.fn()
+                    .mockRejectedValueOnce(new Error('Primary resolution failed'))
+                    .mockResolvedValueOnce(dependencyFailures) // Fallback succeeds
+            };
+
+            const mockEngine = {
+                run: jest.fn().mockResolvedValue({
+                    events: [],
+                    almanac: mockAlmanac,
+                    results: [{
+                        result: true,
+                        name: 'outdatedFramework-global',
+                        event: {
+                            type: 'fatality',
+                            params: {
+                                message: 'Dependencies outdated',
+                                details: { fact: 'repoDependencyAnalysis' }
+                            }
+                        }
+                    }]
+                })
+            };
+
+            const mockFile = { fileName: 'REPO_GLOBAL_CHECK', filePath: '/test/global' };
+
+            const result = await runEngineOnFiles({
+                engine: mockEngine,
+                fileData: [mockFile],
+                installedDependencyVersions: {},
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                logger: mockLogger,
+                repoPath: '/test'
+            });
+
+            // Verify the engine was called
+            expect(mockEngine.run).toHaveBeenCalled();
+        });
+    });
 });

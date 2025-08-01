@@ -261,20 +261,36 @@
     "configuration": {
       "title": "X-Fidelity",
       "properties": {
-        "xfidelity.runInterval": {
+        "xfidelity.configServer": {
+          "type": "string",
+          "default": "",
+          "description": "🌐 Remote config server URL (takes precedence over other config sources)",
+          "order": 1
+        },
+        "xfidelity.githubConfigLocation": {
+          "type": "string",
+          "default": "",
+          "description": "📂 GitHub repository URL for configuration files (e.g., 'https://github.com/org/repo/tree/main/config')",
+          "examples": [
+            "https://github.com/org/repo/tree/main/config",
+            "git@github.com:org/repo/tree/main/config",
+            "https://github.com/zotoio/x-fidelity/tree/master/packages/x-fidelity-democonfig/src"
+          ],
+          "order": 2
+        },
+        "xfidelity.githubConfigUpdateFrequency": {
           "type": "number",
-          "default": 300,
-          "description": "Auto-analysis interval in seconds (0 = disabled)."
+          "default": 60,
+          "minimum": 5,
+          "maximum": 1440,
+          "description": "⏱️ How often to update GitHub configuration (minutes, 5-1440 range)",
+          "order": 3
         },
-        "xfidelity.autoAnalyzeOnSave": {
-          "type": "boolean",
-          "default": false,
-          "description": "Automatically run analysis when files are saved."
-        },
-        "xfidelity.autoAnalyzeOnFileChange": {
-          "type": "boolean",
-          "default": false,
-          "description": "Automatically run analysis when files change."
+        "xfidelity.localConfigPath": {
+          "type": "string",
+          "default": "",
+          "description": "📁 Path to local configuration directory (relative to workspace root)",
+          "order": 4
         },
         "xfidelity.archetype": {
           "type": "string",
@@ -286,112 +302,39 @@
             "python-service",
             "dotnet-service"
           ],
-          "description": "The X-Fidelity archetype to use for analysis."
+          "description": "🏗️ Project archetype - determines which rules and analysis patterns to use",
+          "order": 10
         },
-        "xfidelity.cliTimeout": {
-          "type": "number",
-          "default": 60000,
-          "minimum": 5000,
-          "maximum": 300000,
-          "description": "CLI execution timeout in milliseconds (60 seconds default, 5s-300s range)"
-        },
-        "xfidelity.cliExtraArgs": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": [],
-          "description": "Additional CLI arguments to pass to X-Fidelity binary. Example: ['--openaiEnabled', '--telemetryEnabled']"
-        },
-        "xfidelity.configServer": {
-          "type": "string",
-          "default": "",
-          "description": "URL of the X-Fidelity config server (optional)."
-        },
-        "xfidelity.localConfigPath": {
-          "type": "string",
-          "default": "",
-          "description": "Path to local X-Fidelity configuration (relative to workspace root, optional)."
-        },
-        "xfidelity.githubConfigLocation": {
-          "type": "string",
-          "default": "",
-          "description": "GitHub tree URL for X-Fidelity configuration. Supports HTTPS (https://github.com/org/repo/tree/main/config) and SSH (git@github.com:org/repo/tree/main/config) formats.",
-          "examples": [
-            "https://github.com/org/repo/tree/main/config",
-            "git@github.com:org/repo/tree/main/config",
-            "https://github.com/zotoio/x-fidelity/tree/master/packages/x-fidelity-democonfig/src",
-            "git@enterprise.company.com:team/configs/tree/develop/x-fidelity"
-          ]
-        },
-        "xfidelity.githubConfigUpdateFrequency": {
-          "type": "number",
-          "default": 60,
-          "minimum": 5,
-          "maximum": 1440,
-          "description": "How often to update GitHub configuration in minutes (5-1440, default: 60)."
-        },
-        "xfidelity.openaiEnabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable OpenAI analysis for advanced code insights (requires API key)."
-        },
-        "xfidelity.telemetryCollector": {
-          "type": "string",
-          "default": "",
-          "description": "URL where telemetry data will be sent (optional)."
-        },
-        "xfidelity.telemetryEnabled": {
+        "xfidelity.analyzeOnStartup": {
           "type": "boolean",
           "default": true,
-          "description": "Enable telemetry collection for usage analytics."
+          "description": "🚀 Run analysis automatically when the extension starts",
+          "order": 11
         },
-        "xfidelity.enableTreeSitterWasm": {
-          "type": "boolean",
-          "default": true,
-          "description": "Use WASM TreeSitter instead of native bindings (recommended for VSCode). Provides better compatibility and reliability in extension environments."
-        },
-        "xfidelity.generateReports": {
-          "type": "boolean",
-          "default": false,
-          "description": "Generate analysis reports."
-        },
-        "xfidelity.reportOutputDir": {
-          "type": "string",
-          "default": "",
-          "description": "Directory for report output."
-        },
-        "xfidelity.reportFormats": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "json",
-              "md",
-              "html",
-              "csv"
-            ]
-          },
-          "default": [
-            "json",
-            "md"
-          ],
-          "description": "Report formats to generate."
-        },
-        "xfidelity.showReportAfterAnalysis": {
-          "type": "boolean",
-          "default": false,
-          "description": "Automatically open reports after generation."
-        },
-        "xfidelity.reportRetentionDays": {
+        "xfidelity.runInterval": {
           "type": "number",
-          "default": 30,
-          "description": "Number of days to keep old reports."
+          "default": 0,
+          "minimum": 0,
+          "description": "⏱️ Auto-analysis interval in seconds (0 = disabled)",
+          "order": 12
+        },
+        "xfidelity.autoAnalyzeOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "💾 Run analysis automatically when files are saved (may impact performance)",
+          "order": 13
+        },
+        "xfidelity.autoAnalyzeOnFileChange": {
+          "type": "boolean",
+          "default": false,
+          "description": "🔄 Run analysis automatically when files change (may impact performance)",
+          "order": 14
         },
         "xfidelity.showInlineDecorations": {
           "type": "boolean",
           "default": true,
-          "description": "Show inline decorations (squiggly lines) for issues."
+          "description": "🔍 Show squiggly underlines for code issues in the editor",
+          "order": 20
         },
         "xfidelity.highlightSeverity": {
           "type": "array",
@@ -408,12 +351,14 @@
             "error",
             "warning"
           ],
-          "description": "Which issue severities to highlight."
+          "description": "⚠️ Which issue severities to highlight in the editor",
+          "order": 21
         },
         "xfidelity.statusBarVisibility": {
           "type": "boolean",
           "default": true,
-          "description": "Show X-Fidelity status in the status bar."
+          "description": "📊 Show X-Fidelity status information in the status bar",
+          "order": 22
         },
         "xfidelity.problemsPanelGrouping": {
           "type": "string",
@@ -424,22 +369,14 @@
             "category"
           ],
           "default": "file",
-          "description": "How to group issues in the Problems panel."
+          "description": "📋 How to organize issues in the Problems panel",
+          "order": 23
         },
         "xfidelity.showRuleDocumentation": {
           "type": "boolean",
           "default": true,
-          "description": "Show rule documentation in hover tooltips."
-        },
-        "xfidelity.maxFileSize": {
-          "type": "number",
-          "default": 524288,
-          "description": "Maximum file size to analyze in bytes."
-        },
-        "xfidelity.analysisTimeout": {
-          "type": "number",
-          "default": 60000,
-          "description": "Analysis timeout in milliseconds."
+          "description": "📚 Show rule documentation in hover tooltips and quick fixes",
+          "order": 24
         },
         "xfidelity.excludePatterns": {
           "type": "array",
@@ -453,7 +390,8 @@
             "build/**",
             ".xfiResults/**"
           ],
-          "description": "File patterns to exclude from analysis."
+          "description": "🚫 File patterns to exclude from analysis (glob patterns)",
+          "order": 30
         },
         "xfidelity.includePatterns": {
           "type": "array",
@@ -467,17 +405,119 @@
             "**/*.jsx",
             "**/*.json"
           ],
-          "description": "File patterns to include in analysis (empty = all files)."
+          "description": "✅ File patterns to include in analysis (empty = all files except excluded)",
+          "order": 31
+        },
+        "xfidelity.maxFileSize": {
+          "type": "number",
+          "default": 524288,
+          "description": "📏 Maximum file size to analyze (bytes, default: 512KB)",
+          "order": 32
         },
         "xfidelity.maxConcurrentAnalysis": {
           "type": "number",
           "default": 1,
-          "description": "Maximum number of concurrent analysis operations (1 for performance)."
+          "description": "🔄 Maximum number of concurrent analysis operations (recommended: 1 for performance)",
+          "order": 33
+        },
+        "xfidelity.generateReports": {
+          "type": "boolean",
+          "default": false,
+          "description": "📄 Generate detailed analysis reports after each run",
+          "order": 40
+        },
+        "xfidelity.reportFormats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "json",
+              "md",
+              "html",
+              "csv"
+            ]
+          },
+          "default": [
+            "json",
+            "md"
+          ],
+          "description": "📋 Report formats to generate (JSON, Markdown, HTML, CSV)",
+          "order": 41
+        },
+        "xfidelity.reportOutputDir": {
+          "type": "string",
+          "default": "",
+          "description": "📂 Directory for saving reports (default: workspace root/.xfiResults)",
+          "order": 42
+        },
+        "xfidelity.showReportAfterAnalysis": {
+          "type": "boolean",
+          "default": false,
+          "description": "👁️ Automatically open reports after generation",
+          "order": 43
+        },
+        "xfidelity.reportRetentionDays": {
+          "type": "number",
+          "default": 30,
+          "description": "🗂️ Number of days to keep old reports (0 = keep forever)",
+          "order": 44
+        },
+        "xfidelity.openaiEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "🤖 Enable OpenAI-powered analysis for advanced code insights (requires API key)",
+          "order": 50
+        },
+        "xfidelity.telemetryEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "📊 Send anonymous usage data to help improve X-Fidelity",
+          "order": 51
+        },
+        "xfidelity.telemetryCollector": {
+          "type": "string",
+          "default": "",
+          "description": "🌐 Custom telemetry endpoint URL (leave empty for default)",
+          "order": 52
+        },
+        "xfidelity.enableTreeSitterWasm": {
+          "type": "boolean",
+          "default": true,
+          "description": "⚡ Use WebAssembly parser (recommended for better VSCode compatibility)",
+          "order": 60
+        },
+        "xfidelity.cacheResults": {
+          "type": "boolean",
+          "default": true,
+          "description": "💨 Cache analysis results for faster subsequent runs",
+          "order": 61
+        },
+        "xfidelity.cacheTTL": {
+          "type": "number",
+          "default": 30,
+          "description": "⏰ Cache expiration time in minutes",
+          "order": 62
+        },
+        "xfidelity.analysisTimeout": {
+          "type": "number",
+          "default": 60000,
+          "description": "⏱️ Analysis timeout in milliseconds (default: 60 seconds)",
+          "order": 63
         },
         "xfidelity.debugMode": {
           "type": "boolean",
           "default": false,
-          "description": "Enable debug logging for troubleshooting."
+          "description": "🐛 Enable detailed debug logging for troubleshooting",
+          "order": 70
+        },
+        "xfidelity.cliExtraArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "🛠️ Additional command-line arguments to pass to the analysis engine",
+          "order": 71
         },
         "xfidelity.customPlugins": {
           "type": "array",
@@ -485,112 +525,33 @@
             "type": "string"
           },
           "default": [],
-          "description": "Paths to custom X-Fidelity plugins."
+          "description": "🔌 Paths to custom X-Fidelity plugins",
+          "order": 72
         },
         "xfidelity.ruleOverrides": {
           "type": "object",
           "default": {},
-          "description": "Rule-specific configuration overrides."
-        },
-        "xfidelity.cacheResults": {
-          "type": "boolean",
-          "default": true,
-          "description": "Cache analysis results for better performance."
-        },
-        "xfidelity.cacheTTL": {
-          "type": "number",
-          "default": 30,
-          "description": "Cache time-to-live in minutes (30 min for performance)."
-        },
-        "xfidelity.performance.enableDetailedLogging": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable detailed performance logging (disabled for performance)"
-        },
-        "xfidelity.performance.astCacheSize": {
-          "type": "number",
-          "default": 150,
-          "description": "Maximum number of AST trees to cache (reduced for performance)"
-        },
-        "xfidelity.performance.decorationLimit": {
-          "type": "number",
-          "default": 50,
-          "description": "Maximum number of inline decorations per file (reduced for performance)"
-        },
-        "xfidelity.performance.hideOptimizationNotice": {
-          "type": "boolean",
-          "default": true,
-          "description": "Hide the performance optimization notice on activation"
-        },
-        "xfidelity.periodicAnalysis.enabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable periodic background analysis (disabled for performance)."
-        },
-        "xfidelity.periodicAnalysis.intervalMinutes": {
-          "type": "number",
-          "default": 30,
-          "description": "Interval between periodic analyses in minutes."
-        },
-        "xfidelity.periodicAnalysis.onlyActiveFiles": {
-          "type": "boolean",
-          "default": true,
-          "description": "Only analyze currently open/active files during periodic analysis."
-        },
-        "xfidelity.periodicAnalysis.minIdleTimeSeconds": {
-          "type": "number",
-          "default": 300,
-          "description": "Minimum idle time before running periodic analysis (5 minutes)."
-        },
-        "xfidelity.periodicAnalysis.maxFilesPerRun": {
-          "type": "number",
-          "default": 50,
-          "description": "Maximum files to analyze per periodic run (reduced for performance)."
-        },
-        "xfidelity.periodicAnalysis.excludePatterns": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": [
-            "**/node_modules/**",
-            "**/.git/**",
-            "**/dist/**",
-            "**/build/**",
-            "**/.xfiResults/**",
-            "**/.idea/**",
-            "**/.vscode-test/**",
-            "**/.vscode-test-profile/**",
-            "**/.vscode-test-user-data/**",
-            "**/.DS_Store**",
-            "**/.vscode/**",
-            "*.log"
-          ],
-          "description": "Patterns to exclude from periodic analysis."
-        },
-        "xfidelity.analyzeOnStartup": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically run analysis when the extension starts. Disable to require manual or event-based analysis trigger."
+          "description": "⚙️ Custom rule configuration overrides (advanced)",
+          "order": 73
         },
         "xfidelity.commandProviders": {
           "type": "object",
-          "description": "Configure which extensions provide implementations for X-Fidelity commands",
+          "description": "🔗 Configure which extensions provide command implementations",
           "properties": {
             "explainIssue": {
               "type": "string",
               "default": "built-in",
-              "description": "Extension ID that provides issue explanation (e.g., 'github.copilot', 'built-in')"
+              "description": "Extension for explaining issues (e.g., 'github.copilot')"
             },
             "fixIssue": {
               "type": "string",
               "default": "built-in",
-              "description": "Extension ID that provides issue fixing (e.g., 'ms-vscode.eslint-fix', 'built-in')"
+              "description": "Extension for fixing single issues"
             },
             "fixIssueGroup": {
               "type": "string",
               "default": "built-in",
-              "description": "Extension ID that provides batch issue fixing (e.g., 'ms-vscode.eslint-fix', 'built-in')"
+              "description": "Extension for batch fixing issues"
             }
           },
           "default": {
@@ -598,12 +559,14 @@
             "fixIssue": "built-in",
             "fixIssueGroup": "built-in"
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "order": 74
         },
         "xfidelity.enableCommandDelegation": {
           "type": "boolean",
           "default": true,
-          "description": "Enable delegation of commands to other VSCode extensions"
+          "description": "🔀 Allow commands to be handled by other VSCode extensions",
+          "order": 75
         }
       }
     },
