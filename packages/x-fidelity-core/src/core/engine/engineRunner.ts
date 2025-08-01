@@ -207,7 +207,7 @@ async function buildRuleFailureFromResult(result: any, rule: any, file: any, alm
                     const fallbackFactValue = await almanac.factValue('repoDependencyAnalysis');
                     if (fallbackFactValue && Array.isArray(fallbackFactValue) && fallbackFactValue.length > 0) {
                         logger.info(`✅ Fallback fact resolution successful: captured ${fallbackFactValue.length} dependency failures`, {
-                            factName: 'repoDependenccyAnalysis',
+                            factName: 'repoDependencyAnalysis',
                             dependencyFailureCount: fallbackFactValue.length,
                             platform: process.platform,
                             dependencyFailures: fallbackFactValue
