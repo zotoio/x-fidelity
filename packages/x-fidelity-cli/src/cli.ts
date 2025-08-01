@@ -5,6 +5,8 @@ import fs from "fs";
 import json from 'prettyjson';
 import { CLIOptions, ExecutionMode, EXECUTION_MODES } from '@x-fidelity/types';
 
+// CLI entry point - handles command parsing and execution coordination
+
 
 export let options: CLIOptions = {
     dir: '.',
