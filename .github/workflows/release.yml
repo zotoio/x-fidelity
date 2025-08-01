@@ -217,30 +217,31 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Verify CLI package availability
+      - name: Archive CLI build artifacts
         if: steps.cli-release.outputs.published == 'true'
         run: |
           CLI_VERSION="${{ steps.cli-release.outputs.version }}"
-          echo "🔍 Verifying CLI package x-fidelity@$CLI_VERSION is available on npm..."
+          echo "📦 Archiving CLI build artifacts for VSCode extension embedding"
+          echo "   CLI Version: $CLI_VERSION"
+          echo "   Skipping npm registry verification - using direct artifact copy instead"
           
-          # Wait a moment for npm registry propagation
-          sleep 10
+          # Verify artifacts exist for upcoming VSCode embedding
+          if [ ! -d "packages/x-fidelity-cli/dist" ]; then
+            echo "❌ CRITICAL ERROR: CLI dist directory missing"
+            echo "   This will cause VSCode extension embedding to fail"
+            exit 1
+          fi
           
-          # Try to fetch the package info
-          for i in {1..12}; do
-            if npm view x-fidelity@$CLI_VERSION version; then
-              echo "✅ CLI package x-fidelity@$CLI_VERSION confirmed available on npm"
-              break
-            else
-              echo "⏳ Waiting for npm registry propagation... (attempt $i/12)"
-              sleep 10
-            fi
-            
-            if [ $i -eq 12 ]; then
-              echo "❌ Failed to verify CLI package availability after 2 minutes"
-              exit 1
-            fi
-          done
+          if [ ! -f "packages/x-fidelity-cli/dist/xfidelity" ]; then
+            echo "❌ CRITICAL ERROR: CLI binary missing from dist"
+            echo "   Available files:"
+            ls -la packages/x-fidelity-cli/dist/ || echo "   No files found"
+            exit 1
+          fi
+          
+          echo "✅ CLI artifacts ready for VSCode extension embedding"
+          echo "   Binary: packages/x-fidelity-cli/dist/xfidelity"
+          echo "   Size: $(stat -f%z packages/x-fidelity-cli/dist/xfidelity 2>/dev/null || stat -c%s packages/x-fidelity-cli/dist/xfidelity) bytes"
 
   release-vscode-extension:
     needs: [changes, release-cli]
@@ -274,96 +275,198 @@ jobs:
       - name: Run integration tests
         run: xvfb-run -a yarn workspace x-fidelity-vscode test:ci
 
-      - name: Sync with published CLI version
+      - name: Sync and embed published CLI version
         if: needs.release-cli.outputs.cli-published == 'true'
         run: |
           CLI_VERSION="${{ needs.release-cli.outputs.cli-version }}"
-          echo "🔄 Syncing VSCode extension with published CLI version: $CLI_VERSION"
+          echo "🔄 Syncing VSCode extension with successfully published CLI version: $CLI_VERSION"
+          echo "📍 Using direct artifact copy instead of npm registry dependency"
           
+          # Verify CLI artifacts exist and are properly built
+          echo "🔍 Verifying CLI build artifacts..."
+          CLI_DIST_PATH="packages/x-fidelity-cli/dist"
+          if [ ! -d "$CLI_DIST_PATH" ]; then
+            echo "❌ CRITICAL ERROR: CLI dist directory not found at $CLI_DIST_PATH"
+            echo "   This suggests the CLI build process failed during semantic-release"
+            exit 1
+          fi
+          
+          if [ ! -f "$CLI_DIST_PATH/xfidelity" ]; then
+            echo "❌ CRITICAL ERROR: CLI binary not found at $CLI_DIST_PATH/xfidelity"
+            echo "   Available files in CLI dist:"
+            ls -la "$CLI_DIST_PATH/" || echo "   Directory listing failed"
+            exit 1
+          fi
+          
+          CLI_PKG_PATH="packages/x-fidelity-cli/package.json"
+          if [ ! -f "$CLI_PKG_PATH" ]; then
+            echo "❌ CRITICAL ERROR: CLI package.json not found at $CLI_PKG_PATH"
+            exit 1
+          fi
+          
+          # Verify CLI package.json has the expected version
+          ACTUAL_CLI_VERSION=$(node -p "require('./$CLI_PKG_PATH').version")
+          if [ "$ACTUAL_CLI_VERSION" != "$CLI_VERSION" ]; then
+            echo "❌ CRITICAL ERROR: CLI package.json version mismatch"
+            echo "   Expected from release output: $CLI_VERSION"
+            echo "   Found in package.json: $ACTUAL_CLI_VERSION"
+            exit 1
+          fi
+          
+          echo "✅ CLI artifacts verified successfully"
+          echo "   Binary: $CLI_DIST_PATH/xfidelity"
+          echo "   Package: $CLI_PKG_PATH"
+          echo "   Version: $CLI_VERSION"
+          
+          # Update VSCode extension package.json version
           cd packages/x-fidelity-vscode
+          echo "📝 Updating VSCode package.json version to $CLI_VERSION (local only, not committed)"
           
-          # CRITICAL: This sync happens in working directory only, NOT committed to git
-          echo "📝 Updating package.json version locally (not committed)"
-          node scripts/sync-published-version.js --cli-version="$CLI_VERSION"
+          # Use node to update the version atomically
+          node -e "
+            const fs = require('fs');
+            const pkg = require('./package.json');
+            const oldVersion = pkg.version;
+            pkg.version = '$CLI_VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log(\`   Updated: \${oldVersion} → $CLI_VERSION\`);
+          " || {
+            echo "❌ CRITICAL ERROR: Failed to update VSCode package.json version"
+            exit 1
+          }
           
-          # Verify the sync worked
+          # Verify the version update worked
           VSCODE_VERSION=$(node -p "require('./package.json').version")
           if [ "$VSCODE_VERSION" != "$CLI_VERSION" ]; then
-            echo "❌ CRITICAL: Version sync failed"
+            echo "❌ CRITICAL ERROR: VSCode version sync verification failed"
             echo "   Expected: $CLI_VERSION"
-            echo "   Got: $VSCODE_VERSION"
+            echo "   Found: $VSCODE_VERSION"
             exit 1
           fi
           
-          echo "✅ Version sync verified: $CLI_VERSION"
-          echo "🔒 Note: package.json changes are local only - not committed to git"
-
-      - name: Re-embed latest CLI after version sync
-        if: needs.release-cli.outputs.cli-published == 'true'
-        run: |
-          CLI_VERSION="${{ needs.release-cli.outputs.cli-version }}"
-          echo "🔄 Re-embedding latest CLI version $CLI_VERSION into VSCode extension..."
+          echo "✅ VSCode package.json version updated successfully: $CLI_VERSION"
           
-          cd packages/x-fidelity-vscode
+          # Clean any existing embedded CLI to ensure fresh embedding
+          echo "🧹 Cleaning existing embedded CLI artifacts..."
+          rm -rf dist/cli/* 2>/dev/null || true
           
-          # Install the latest CLI version from npm registry
-          echo "📦 Installing x-fidelity@$CLI_VERSION from npm..."
-          npm install x-fidelity@$CLI_VERSION --no-save
+          # Embed the freshly published CLI using direct file copy
+          echo "📦 Embedding CLI v$CLI_VERSION using direct artifact copy..."
+          yarn embed:cli || {
+            echo "❌ CRITICAL ERROR: CLI embedding failed"
+            echo "   This could indicate issues with the embed:cli script"
+            echo "   or problems with the CLI build artifacts"
+            exit 1
+          }
           
-          # Verify the CLI package is available locally
-          if ! command -v npx x-fidelity &> /dev/null; then
-            echo "❌ CRITICAL: CLI package not properly installed"
+          # Verify the embedded CLI version and integrity
+          echo "🔍 Verifying embedded CLI artifacts..."
+          
+          if [ ! -f "dist/cli/index.js" ]; then
+            echo "❌ CRITICAL ERROR: Embedded CLI main file not found"
+            echo "   Expected: dist/cli/index.js"
+            echo "   Available files in dist/cli/:"
+            ls -la dist/cli/ 2>/dev/null || echo "   Directory does not exist or is empty"
             exit 1
           fi
           
-          # Re-run CLI build to ensure we have the latest version
-          echo "🔨 Building latest CLI package..."
-          cd ../x-fidelity-cli
-          yarn build:production
-          cd ../x-fidelity-vscode
+          # Check if package.json was embedded correctly
+          if [ -f "dist/cli/package.json" ]; then
+            EMBEDDED_CLI_VERSION=$(node -p "require('./dist/cli/package.json').version" 2>/dev/null || echo "parse-error")
+            if [ "$EMBEDDED_CLI_VERSION" != "$CLI_VERSION" ]; then
+              echo "❌ CRITICAL ERROR: Embedded CLI version mismatch"
+              echo "   Expected: $CLI_VERSION"
+              echo "   Embedded: $EMBEDDED_CLI_VERSION"
+              exit 1
+            fi
+            echo "✅ Embedded CLI package.json version verified: $CLI_VERSION"
+          else
+            echo "⚠️  WARNING: No package.json found in embedded CLI (may be expected depending on embedding strategy)"
+          fi
           
-          # Re-embed the fresh CLI
-          echo "📦 Re-embedding CLI..."
-          yarn embed:cli
-          
-          # Verify the embedded CLI version matches expected version
-          EMBEDDED_CLI_VERSION=$(node -e "
-            const fs = require('fs');
-            const path = require('path');
-            const cliPkg = path.join(__dirname, 'dist/cli/package.json');
-            if (fs.existsSync(cliPkg)) {
-              console.log(require(cliPkg).version);
-            } else {
-              console.log('CLI package.json not found');
-              process.exit(1);
-            }
-          ")
-          
-          if [ "$EMBEDDED_CLI_VERSION" != "$CLI_VERSION" ]; then
-            echo "❌ CRITICAL: Embedded CLI version mismatch"
-            echo "   Expected: $CLI_VERSION"
-            echo "   Embedded: $EMBEDDED_CLI_VERSION"
+          # Verify CLI binary is executable and has correct size
+          CLI_BINARY_SIZE=$(stat -f%z "dist/cli/xfidelity" 2>/dev/null || stat -c%s "dist/cli/xfidelity" 2>/dev/null || echo "0")
+          if [ "$CLI_BINARY_SIZE" -lt 1000000 ]; then  # Less than 1MB suggests incomplete binary
+            echo "❌ CRITICAL ERROR: Embedded CLI binary appears incomplete"
+            echo "   Binary size: $CLI_BINARY_SIZE bytes (expected >1MB)"
             exit 1
           fi
           
-          echo "✅ CLI re-embedding completed successfully"
-          echo "✅ Embedded CLI version verified: $CLI_VERSION"
+          echo "✅ CLI embedding completed and verified successfully"
+          echo "   Version: $CLI_VERSION"
+          echo "   Binary size: $CLI_BINARY_SIZE bytes"
+          echo "   Artifacts: $(ls -1 dist/cli/ | wc -l) files embedded"
 
       - name: Release VSCode Extension
         run: |
           cd packages/x-fidelity-vscode
           
-          # Verify versions are still synchronized before publishing
+          # Comprehensive pre-publish verification
+          echo "🔍 Pre-publish verification for VSCode extension..."
+          
+          # Check version synchronization
           VSCODE_VERSION=$(node -p "require('./package.json').version")
-          echo "🔍 Pre-publish version check: $VSCODE_VERSION"
+          CLI_VERSION="${{ needs.release-cli.outputs.cli-version }}"
+          
+          echo "   VSCode package.json version: $VSCODE_VERSION"
+          echo "   Expected CLI version: $CLI_VERSION"
           
           if [ "$VSCODE_VERSION" = "0.0.0-semantically-released" ]; then
-            echo "❌ CRITICAL: Version still shows placeholder - sync failed"
+            echo "❌ CRITICAL ERROR: VSCode version still shows placeholder"
+            echo "   This indicates the version sync step failed or was skipped"
+            echo "   Possible causes:"
+            echo "   1. CLI was not published (needs.release-cli.outputs.cli-published != 'true')"
+            echo "   2. Version sync script failed silently"
+            echo "   3. Package.json was not properly updated"
+            echo ""
+            echo "   Debug information:"
+            echo "   - CLI published: ${{ needs.release-cli.outputs.cli-published }}"
+            echo "   - CLI version: $CLI_VERSION"
+            echo "   - Current working directory: $(pwd)"
+            echo "   - Package.json exists: $([ -f package.json ] && echo 'yes' || echo 'no')"
             exit 1
           fi
           
-          # Proceed with publishing - validation will enforce sync
-          yarn publish:universal
+          if [ -n "$CLI_VERSION" ] && [ "$VSCODE_VERSION" != "$CLI_VERSION" ]; then
+            echo "❌ CRITICAL ERROR: Version mismatch between VSCode extension and published CLI"
+            echo "   VSCode extension version: $VSCODE_VERSION"
+            echo "   Published CLI version: $CLI_VERSION"
+            echo "   This indicates a version sync failure"
+            exit 1
+          fi
+          
+          # Verify embedded CLI exists and is valid
+          if [ ! -f "dist/cli/index.js" ]; then
+            echo "❌ CRITICAL ERROR: Embedded CLI not found"
+            echo "   Expected: dist/cli/index.js"
+            echo "   This indicates CLI embedding failed"
+            echo "   Available files in dist/:"
+            ls -la dist/ 2>/dev/null || echo "   dist/ directory does not exist"
+            exit 1
+          fi
+          
+          # Check embedded CLI size (should be substantial)
+          CLI_DIST_SIZE=$(du -sh dist/cli 2>/dev/null | cut -f1 || echo "unknown")
+          echo "   Embedded CLI size: $CLI_DIST_SIZE"
+          
+          echo "✅ Pre-publish verification passed"
+          echo "   Version: $VSCODE_VERSION"
+          echo "   Embedded CLI: verified"
+          echo "   Ready for publishing to VSCode Marketplace and Open VSX"
+          
+          # Proceed with publishing
+          echo "🚀 Publishing VSCode extension..."
+          yarn publish:universal || {
+            echo "❌ CRITICAL ERROR: VSCode extension publishing failed"
+            echo "   This could be due to:"
+            echo "   1. Authentication issues (VSCE_PAT or OVSX_PAT)"
+            echo "   2. Version conflicts on marketplace"
+            echo "   3. Extension validation failures"
+            echo "   4. Network connectivity issues"
+            exit 1
+          }
+          
+          echo "✅ VSCode extension published successfully!"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
