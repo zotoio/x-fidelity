@@ -94,7 +94,7 @@
     "istanbul-merge": "^2.0.0",
     "js-yaml": "^4.1.0",
     "turbo": "^2.4.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.9.2"
   },
   "config": {
     "commitizen": {
