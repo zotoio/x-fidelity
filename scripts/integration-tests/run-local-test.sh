@@ -76,9 +76,10 @@ setup() {
         exit 1
     fi
     
-    # Ensure Docker Compose is available
-    if ! command -v docker-compose &> /dev/null; then
+    # Ensure Docker Compose is available (try both new and old commands)
+    if ! docker compose version &> /dev/null && ! command -v docker-compose &> /dev/null; then
         echo -e "${RED}❌ Docker Compose is required but not installed${NC}"
+        echo -e "${YELLOW}💡 Install Docker Compose: https://docs.docker.com/compose/install/${NC}"
         exit 1
     fi
     
@@ -96,9 +97,9 @@ build_container() {
     
     if [[ "$rebuild" == "true" ]]; then
         echo "🔄 Force rebuilding container..."
-        docker-compose build --no-cache release-integration-test
+        docker compose build --no-cache release-integration-test
     else
-        docker-compose build release-integration-test
+        docker compose build release-integration-test
     fi
     
     echo -e "${GREEN}✅ Container build complete${NC}"
@@ -121,7 +122,7 @@ run_tests() {
     chmod +x run-release-integration-test.sh
     chmod +x validate-workflow.sh
     
-    # Set docker-compose options
+    # Set docker compose options
     local compose_args=""
     if [[ "$verbose" == "true" ]]; then
         compose_args="--verbose"
@@ -130,10 +131,10 @@ run_tests() {
     # Run the integration test
     if [[ "$keep_running" == "true" ]]; then
         echo "🔄 Running container in interactive mode..."
-        docker-compose run --rm release-integration-test bash
+        docker compose run --rm release-integration-test bash
     else
         echo "🚀 Executing integration test suite..."
-        docker-compose run --rm release-integration-test
+        docker compose run --rm release-integration-test
     fi
     
     # Check if tests passed
@@ -161,7 +162,7 @@ validate_workflow() {
     chmod +x validate-workflow.sh
     
     # Run workflow validation
-    docker-compose run --rm workflow-validator
+    docker compose run --rm workflow-validator
     
     echo -e "${GREEN}✅ Workflow validation complete${NC}"
     
@@ -212,10 +213,10 @@ clean() {
     cd "$SCRIPT_DIR"
     
     # Stop and remove containers
-    docker-compose down --remove-orphans || true
+    docker compose down --remove-orphans || true
     
     # Remove test images
-    docker-compose down --rmi local || true
+    docker compose down --rmi local || true
     
     # Clean results directory
     rm -rf "$RESULTS_DIR"

@@ -26,9 +26,18 @@ initialize_test() {
     mkdir -p "$RESULTS_DIR"
     cd "$TEST_WORKSPACE"
     
+    # Set up proper permissions for yarn and npm caches
+    export YARN_CACHE_FOLDER=/tmp/yarn-cache
+    export NPM_CONFIG_CACHE=/tmp/npm-cache
+    mkdir -p "$YARN_CACHE_FOLDER" "$NPM_CONFIG_CACHE"
+    
     # Create a clean git repository for testing
     rm -rf .git 2>/dev/null || true
     git init
+    
+    # Configure git to trust the workspace directory
+    git config --global --add safe.directory "$TEST_WORKSPACE"
+    
     git add .
     git commit -m "initial: test repository setup"
     
@@ -93,9 +102,12 @@ test_cli_build_release() {
     
     cd "$CLI_PACKAGE"
     
-    # Clean and build
-    yarn clean || true
-    yarn build:production
+    # Clean and build with proper cache handling
+    YARN_CACHE_FOLDER=/tmp/yarn-cache yarn clean 2>/dev/null || true
+    YARN_CACHE_FOLDER=/tmp/yarn-cache yarn build:production 2>/dev/null || {
+        echo -e "${RED}❌ CLI build failed${NC}"
+        return 1
+    }
     
     # Verify CLI binary was created
     if [[ ! -f "dist/xfidelity" ]]; then
@@ -115,7 +127,7 @@ test_cli_build_release() {
     
     # Simulate semantic-release (without actually publishing)
     echo "🔄 Simulating CLI semantic-release process..."
-    yarn build:production  # This simulates the prepareCmd from .releaserc.json
+    YARN_CACHE_FOLDER=/tmp/yarn-cache yarn build:production 2>/dev/null  # This simulates the prepareCmd from .releaserc.json
     
     echo -e "${GREEN}✅ CLI build and release simulation successful${NC}"
     echo "$cli_version" > "$RESULTS_DIR/cli-version.txt"
@@ -129,12 +141,15 @@ test_vscode_build_release() {
     
     cd "$VSCODE_PACKAGE"
     
-    # Clean and build
-    yarn clean || true
+    # Clean and build with proper cache handling
+    YARN_CACHE_FOLDER=/tmp/yarn-cache yarn clean 2>/dev/null || true
     
     # Embed CLI (simulating the sync process)
     if [[ -f "$CLI_PACKAGE/dist/xfidelity" ]]; then
-        yarn embed:cli
+        YARN_CACHE_FOLDER=/tmp/yarn-cache yarn embed:cli 2>/dev/null || {
+            echo -e "${RED}❌ CLI embedding failed${NC}"
+            return 1
+        }
         echo "✅ CLI embedded in VSCode extension"
     else
         echo -e "${RED}❌ CLI binary not available for embedding${NC}"
@@ -142,10 +157,16 @@ test_vscode_build_release() {
     fi
     
     # Build VSCode extension
-    yarn build:production
+    YARN_CACHE_FOLDER=/tmp/yarn-cache yarn build:production 2>/dev/null || {
+        echo -e "${RED}❌ VSCode build failed${NC}"
+        return 1
+    }
     
     # Verify VSIX package can be created
-    yarn package
+    YARN_CACHE_FOLDER=/tmp/yarn-cache yarn package 2>/dev/null || {
+        echo -e "${RED}❌ VSCode packaging failed${NC}"
+        return 1
+    }
     
     # Verify VSIX was created
     if ! ls *.vsix > /dev/null 2>&1; then
@@ -190,16 +211,23 @@ run_comprehensive_tests() {
     
     cd "$TEST_WORKSPACE"
     
-    # Run linting across all packages
+    # Install dependencies first to ensure clean state
+    echo "📦 Installing dependencies..."
+    yarn install --frozen-lockfile || {
+        echo -e "${RED}❌ Dependency installation failed${NC}"
+        return 1
+    }
+    
+    # Run linting across all packages with proper cache handling
     echo "🔍 Running linting..."
-    yarn lint || {
+    YARN_CACHE_FOLDER=/tmp/yarn-cache yarn lint 2>/dev/null || {
         echo -e "${RED}❌ Linting failed${NC}"
         return 1
     }
     
-    # Run unit tests across all packages
+    # Run unit tests across all packages with proper cache handling
     echo "🧪 Running unit tests..."
-    yarn test || {
+    YARN_CACHE_FOLDER=/tmp/yarn-cache yarn test 2>/dev/null || {
         echo -e "${RED}❌ Unit tests failed${NC}"
         return 1
     }

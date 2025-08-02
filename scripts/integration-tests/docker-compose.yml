@@ -9,8 +9,8 @@ services:
     volumes:
       # Mount results directory to persist test results
       - ./results:/tmp/integration-test-results
-      # Mount source for development iteration
-      - ../../packages:/workspace/packages:ro
+      # Mount source for development iteration (writable for git operations and builds)
+      - ../../packages:/workspace/packages
       - ../../yarn.lock:/workspace/yarn.lock:ro
       - ../../package.json:/workspace/package.json:ro
       - ../../.github:/workspace/.github:ro
