@@ -22,6 +22,7 @@ scripts/integration-tests/
 ├── run-local-test.sh                  # Main test runner (executable)
 ├── run-release-integration-test.sh    # Core integration test logic
 ├── validate-workflow.sh               # Workflow configuration validator
+├── test-without-docker.sh             # Docker-free validation test (executable)
 └── results/                           # Test results directory (created during tests)
     ├── integration-test.log            # Detailed test execution log
     ├── integration-test-report.md      # Comprehensive test report
@@ -32,13 +33,22 @@ scripts/integration-tests/
 
 ### Prerequisites
 
+**For Full Containerized Tests:**
 - Docker (latest version)
 - Docker Compose (latest version)
 - Bash shell
 
-### Run All Tests
+**For Basic Validation (Docker-free):**
+- Bash shell
+- Node.js and Yarn (for build testing)
+
+### Run Tests
 
 ```bash
+# === DOCKER-FREE TESTING (Recommended for quick validation) ===
+./scripts/integration-tests/test-without-docker.sh
+
+# === FULL CONTAINERIZED TESTING ===
 # Run complete integration test suite
 ./scripts/integration-tests/run-local-test.sh
 
