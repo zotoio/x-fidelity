@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  release-integration-test:
+    build:
+      context: ../..
+      dockerfile: scripts/integration-tests/Dockerfile
+    container_name: xfidelity-release-integration-test
+    volumes:
+      # Mount results directory to persist test results
+      - ./results:/tmp/integration-test-results
+      # Mount source for development iteration
+      - ../../packages:/workspace/packages:ro
+      - ../../yarn.lock:/workspace/yarn.lock:ro
+      - ../../package.json:/workspace/package.json:ro
+      - ../../.github:/workspace/.github:ro
+      - ./run-release-integration-test.sh:/workspace/scripts/integration-tests/run-release-integration-test.sh:ro
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - GITHUB_ACTIONS=true
+      - NPM_TOKEN=dummy_token_for_testing
+      - GH_TOKEN=dummy_token_for_testing
+    working_dir: /workspace
+    command: ["bash", "./scripts/integration-tests/run-release-integration-test.sh"]
+    
+  # Additional service for workflow validation
+  workflow-validator:
+    build:
+      context: ../..
+      dockerfile: scripts/integration-tests/Dockerfile
+    container_name: xfidelity-workflow-validator  
+    volumes:
+      - ./results:/tmp/integration-test-results
+      - ../../.github:/workspace/.github:ro
+      - ./validate-workflow.sh:/workspace/scripts/integration-tests/validate-workflow.sh:ro
+    environment:
+      - NODE_ENV=test
+    working_dir: /workspace
+    command: ["bash", "./scripts/integration-tests/validate-workflow.sh"]
+    profiles: ["validation"]

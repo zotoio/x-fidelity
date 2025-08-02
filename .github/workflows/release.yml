@@ -34,9 +34,67 @@ jobs:
               - 'packages/x-fidelity-plugins/**'
               - 'packages/x-fidelity-server/**'
 
-  release-cli:
+  test-all-packages:
     needs: changes
-    # Always run CLI release to ensure npm package exists for VSCode extension sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Lint all packages
+        run: yarn lint
+
+      - name: Test all packages with coverage
+        run: yarn test:coverage
+
+      - name: Build CLI package
+        run: |
+          cd packages/x-fidelity-cli
+          yarn build:production
+          # Verify CLI binary was created
+          if [[ ! -f "dist/xfidelity" ]]; then
+            echo "❌ CRITICAL: CLI binary not created during build"
+            exit 1
+          fi
+          echo "✅ CLI build successful - binary created"
+
+      - name: Build VSCode extension
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn build:production
+          # Verify VSCode extension can be packaged
+          yarn package
+          if ! ls *.vsix > /dev/null 2>&1; then
+            echo "❌ CRITICAL: VSCode VSIX package not created"
+            exit 1
+          fi
+          echo "✅ VSCode build successful - VSIX created"
+
+      - name: Validate integration
+        run: |
+          echo "🔄 Validating CLI-VSCode integration..."
+          cd packages/x-fidelity-vscode
+          yarn embed:cli
+          if [[ ! -f "dist/cli/index.js" ]]; then
+            echo "❌ CRITICAL: CLI embedding failed"
+            exit 1
+          fi
+          echo "✅ CLI-VSCode integration validated"
+
+  release-cli:
+    needs: [changes, test-all-packages]
+    # Always run CLI release for synchronized versioning
     runs-on: ubuntu-latest
     outputs:
       cli-published: ${{ steps.cli-release.outputs.published }}
@@ -56,132 +114,61 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Test with coverage
-        run: yarn test:coverage
-
-      - name: Check if CLI needs forced release
-        id: check-force-release
+      - name: Prepare synchronized release
+        id: prepare-sync-release
         run: |
-          cd packages/x-fidelity-cli
-          # Get current version
-          CURRENT_VERSION=$(node -p "require('./package.json').version")
-          echo "Current CLI version: $CURRENT_VERSION"
+          echo "🔄 Preparing synchronized release for both CLI and VSCode extension"
           
-          # Check if we have actual changes that would trigger a release
+          # Get current changes
           HAS_CLI_CHANGES="${{ needs.changes.outputs.cli }}"
           HAS_VSCODE_CHANGES="${{ needs.changes.outputs.vscode }}"
           
-          echo "CLI changes: $HAS_CLI_CHANGES"
-          echo "VSCode changes: $HAS_VSCODE_CHANGES"
+          echo "CLI changes detected: $HAS_CLI_CHANGES"
+          echo "VSCode changes detected: $HAS_VSCODE_CHANGES"
           
-          # If VSCode has changes but CLI doesn't, we need to force a CLI release
-          if [[ "$HAS_VSCODE_CHANGES" == "true" && "$HAS_CLI_CHANGES" != "true" ]]; then
-            echo "force_release=true" >> $GITHUB_OUTPUT
-            echo "🚀 Forcing CLI release to keep in sync with VSCode extension"
-          else
-            echo "force_release=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Force CLI patch version if needed
-        if: steps.check-force-release.outputs.force_release == 'true'
-        run: |
-          cd packages/x-fidelity-cli
-          echo "🔧 Creating forced patch release for version sync"
-          
-          # Create a minimal commit to trigger semantic-release
-          echo "sync version with extension" > .force-release-commit
+          # Configure git for synchronized commits
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .force-release-commit
-          git commit -m "sync version with extension"
           
-          # Clean up the temporary file
-          rm .force-release-commit
-          git add .force-release-commit
-          git commit -m "chore: cleanup force release marker"
-
-      - name: Check if VSCode extension needs forced release
-        id: check-vscode-sync
-        run: |
-          echo "🔍 Checking if VSCode extension needs forced release for CLI sync..."
+          # Always ensure both packages can be released with synchronized versions
           
-          # Check if there are VSCode changes that would trigger a release
-          VSCODE_CHANGES="${{ needs.changes.outputs.vscode }}"
-          echo "VSCode changes detected: $VSCODE_CHANGES"
-          
-          # Check for conventional commits that would trigger VSCode release
-          VSCODE_RELEASE_COMMITS="false"
-          
-          # Get commits since last release
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -n "$LAST_TAG" ]; then
-            COMMIT_RANGE="$LAST_TAG..HEAD"
-          else
-            COMMIT_RANGE="HEAD"
-          fi
-          
-          echo "Checking commit range: $COMMIT_RANGE"
-          
-          # Check each commit for VSCode-affecting conventional commits
-          while read -r commit_msg; do
-            if [ -z "$commit_msg" ]; then continue; fi
-            echo "Checking commit: $commit_msg"
+          # If CLI doesn't have changes, create a sync commit
+          if [[ "$HAS_CLI_CHANGES" != "true" ]]; then
+            echo "🔄 Creating CLI sync commit for synchronized release"
+            cd packages/x-fidelity-cli
+            echo "# CLI sync for synchronized release - $(date)" > .sync-release-marker
+            git add .sync-release-marker
+            git commit -m "bump: synchronized release
             
-            # Check if commit message indicates a release-worthy change for VSCode
-            if echo "$commit_msg" | grep -E '^(feat|fix|perf|revert|bump)(\(.*vscode.*\))?:' > /dev/null; then
-              echo "Found VSCode release-triggering commit: $commit_msg"
-              VSCODE_RELEASE_COMMITS="true"
-              break
-            elif echo "$commit_msg" | grep -i 'BREAKING CHANGE' > /dev/null; then
-              echo "Found breaking change commit: $commit_msg"
-              VSCODE_RELEASE_COMMITS="true"
-              break
-            fi
-          done < <(git log --format=%s $COMMIT_RANGE)
-          
-          echo "VSCODE_RELEASE_COMMITS=$VSCODE_RELEASE_COMMITS" >> $GITHUB_OUTPUT
-          
-          # Determine if we need to force VSCode release
-          # Force if CLI will get a release but VSCode won't
-          CLI_CHANGES="${{ needs.changes.outputs.cli }}"
-          CLI_FORCED="${{ steps.check-force-release.outputs.force_release }}"
-          
-          if [[ ("$CLI_CHANGES" == "true" || "$CLI_FORCED" == "true") && "$VSCODE_CHANGES" != "true" && "$VSCODE_RELEASE_COMMITS" != "true" ]]; then
-            echo "CLI will get a release but VSCode won't - forcing VSCode sync"
-            echo "FORCE_VSCODE_RELEASE=true" >> $GITHUB_OUTPUT
-          else
-            echo "VSCode will naturally get a release or no CLI release needed"
-            echo "FORCE_VSCODE_RELEASE=false" >> $GITHUB_OUTPUT
+            Maintains version synchronization between CLI and VSCode extension.
+            Both packages are released together for consistent user experience."
+            rm .sync-release-marker
+            git add .sync-release-marker
+            git commit -m "chore: cleanup sync release marker"
+            cd ../..
+            echo "✅ CLI sync commit created"
           fi
+          
+          # If VSCode doesn't have changes, create a sync commit
+          if [[ "$HAS_VSCODE_CHANGES" != "true" ]]; then
+            echo "🔄 Creating VSCode sync commit for synchronized release"
+            cd packages/x-fidelity-vscode
+            echo "# VSCode sync for synchronized release - $(date)" > .sync-release-marker
+            git add .sync-release-marker
+            git commit -m "bump: synchronized release
+            
+            Maintains version synchronization between CLI and VSCode extension.
+            Both packages are released together for consistent user experience."
+            rm .sync-release-marker
+            git add .sync-release-marker
+            git commit -m "chore: cleanup sync release marker"
+            cd ../..
+            echo "✅ VSCode sync commit created"
+          fi
+          
+          echo "✅ Synchronized release preparation completed"
 
-      - name: Force VSCode release for CLI sync
-        if: steps.check-vscode-sync.outputs.FORCE_VSCODE_RELEASE == 'true'
-        run: |
-          echo "🚀 CLI will be released but no VSCode release triggers found"
-          echo "🔄 Creating VSCode sync commit to maintain version synchronization"
-          
-          cd packages/x-fidelity-vscode
-          
-          # Configure git for the action
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Create a minimal change to trigger semantic-release
-          echo "# Version sync marker for CLI release - $(date)" > .cli-sync-marker
-          git add .cli-sync-marker
-          
-          # Create conventional commit that will trigger a patch release
-          git commit -m "bump: sync version with CLI release
-          
-          Automatic version sync to maintain compatibility with CLI release.
-          This ensures both CLI and VSCode extension maintain synchronized version numbers."
-          
-          # Clean up the temporary file
-          rm .cli-sync-marker
-          git add .cli-sync-marker
-          git commit -m "chore: cleanup CLI sync marker"
-          
-          echo "✅ Added VSCode sync commits for CLI synchronization"
+
 
       - name: Release CLI
         id: cli-release
@@ -241,9 +228,8 @@ jobs:
           echo "   Size: $(stat -f%z packages/x-fidelity-cli/dist/xfidelity 2>/dev/null || stat -c%s packages/x-fidelity-cli/dist/xfidelity) bytes"
 
   release-vscode-extension:
-    needs: [changes, release-cli]
-    # Only run if we have VSCode changes OR if CLI was successfully published
-    if: needs.changes.outputs.vscode == 'true' || needs.release-cli.outputs.cli-published == 'true'
+    needs: [changes, test-all-packages, release-cli]
+    # Always run VSCode release for synchronized versioning
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
