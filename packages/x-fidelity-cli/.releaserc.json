@@ -1,0 +1,94 @@
+{
+  "branches": [
+    "master",
+    {
+      "name": "beta", 
+      "prerelease": true
+    }
+  ],
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits",
+        "releaseRules": [
+          {"type": "feat", "release": "minor"},
+          {"type": "fix", "release": "patch"},
+          {"type": "perf", "release": "patch"},
+          {"type": "revert", "release": "patch"},
+          {"type": "bump", "release": "patch"},
+          {"type": "docs", "release": false},
+          {"type": "style", "release": false},
+          {"type": "chore", "release": false},
+          {"type": "refactor", "release": false},
+          {"type": "test", "release": false},
+          {"type": "build", "release": false},
+          {"type": "ci", "release": false}
+        ],
+        "parserOpts": {
+          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES", "BREAKING"]
+        }
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits",
+        "parserOpts": {
+          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES", "BREAKING"]
+        },
+        "writerOpts": {
+          "groupBy": "type",
+          "commitGroupsSort": "title",
+          "commitsSort": ["scope", "subject"],
+          "noteGroupsSort": "title"
+        }
+      }
+    ],
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md",
+        "changelogTitle": "# Changelog\n\nAll notable changes to the X-Fidelity CLI will be documented in this file."
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "verifyReleaseCmd": "echo '🔍 Verifying CLI release readiness...' && yarn check-types && yarn lint",
+        "prepareCmd": "echo '🔄 Preparing CLI release...' && yarn build:production",
+        "publishCmd": "echo '🚀 Publishing CLI to npm...' && npm publish --access=public"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "dist/xfidelity",
+            "name": "xfidelity-${nextRelease.gitTag}",
+            "label": "X-Fidelity CLI Binary (${nextRelease.gitTag})"
+          },
+          {
+            "path": "*.tgz",
+            "label": "X-Fidelity CLI Package (${nextRelease.gitTag})"
+          }
+        ],
+        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in CLI version ${nextRelease.version} :tada:",
+        "failTitle": "❌ CLI Release failed",
+        "failComment": "Unfortunately the CLI release failed. Please check the logs for more details.",
+        "labels": ["released", "cli"],
+        "assignees": ["@semantic-release"]
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "CHANGELOG.md"
+        ],
+        "message": "chore(cli): release ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ]
+  ]
+}
