@@ -1,0 +1,75 @@
+name: Unified Release
+
+on:
+  push:
+    branches: [master]
+
+env:
+  NODE_VERSION: '22.16.0'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup Xvfb (for VSCode extension tests)
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      - name: Run tests with coverage
+        run: yarn test:coverage
+
+      - name: Run VSCode extension integration tests
+        run: xvfb-run -a yarn workspace x-fidelity-vscode test:ci
+
+      - name: Install semantic-release dependencies at root
+        run: |
+          yarn add --dev \
+            @semantic-release/changelog \
+            @semantic-release/commit-analyzer \
+            @semantic-release/exec \
+            @semantic-release/git \
+            @semantic-release/github \
+            @semantic-release/release-notes-generator \
+            semantic-release \
+            conventional-changelog-conventionalcommits
+
+      - name: Make release scripts executable
+        run: |
+          chmod +x scripts/prepare-unified-release.js
+          chmod +x scripts/publish-unified-release.js
+
+      - name: Run semantic-release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx semantic-release
+
+      - name: Upload CLI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: x-fidelity-cli-dist
+          path: packages/x-fidelity-cli/dist/**
+          retention-days: 90
+
+      - name: Upload VSCode extension artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: x-fidelity-vscode-vsix
+          path: packages/x-fidelity-vscode/*.vsix
+          retention-days: 90

@@ -774,6 +774,6 @@
     "validate-packaging": "yarn build && yarn package && yarn validate-vsix",
     "test-bundling": "yarn build && yarn test-tree-sitter",
     "publish:universal": "node scripts/publish-universal.js",
-    "release": "semantic-release"
+    "release": "echo '⚠️  Individual package releases are disabled. Use root-level semantic-release for unified releases.'"
   }
 }
