@@ -23,6 +23,7 @@ scripts/integration-tests/
 ├── run-release-integration-test.sh    # Core integration test logic
 ├── validate-workflow.sh               # Workflow configuration validator
 ├── test-without-docker.sh             # Docker-free validation test (executable)
+├── test-container-setup.sh            # Docker container setup validation (executable)
 └── results/                           # Test results directory (created during tests)
     ├── integration-test.log            # Detailed test execution log
     ├── integration-test-report.md      # Comprehensive test report
@@ -47,6 +48,9 @@ scripts/integration-tests/
 ```bash
 # === DOCKER-FREE TESTING (Recommended for quick validation) ===
 ./scripts/integration-tests/test-without-docker.sh
+
+# === DOCKER CONTAINER SETUP TESTING ===
+./scripts/integration-tests/test-container-setup.sh
 
 # === FULL CONTAINERIZED TESTING ===
 # Run complete integration test suite
