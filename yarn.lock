@@ -2824,7 +2824,7 @@
     "@babel/types" "^7.23.0"
     "@types/body-parser" "^1.19.5"
     "@types/vscode" "^1.101.0"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-core-0.0.0-semantically-released-41c58716-2f00-4bf4-be05-0e15842ef918-1754180725540/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/types" "file:packages/x-fidelity-types"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.10.0"
     body-parser "^1.20.3"
@@ -2857,8 +2857,8 @@
   dependencies:
     "@babel/parser" "^7.23.0"
     "@babel/types" "^7.23.0"
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-f2b51721-ee03-4512-a29c-6aed6ab4acbe-1754180725544/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-f2b51721-ee03-4512-a29c-6aed6ab4acbe-1754180725544/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:packages/x-fidelity-core"
+    "@x-fidelity/types" "file:packages/x-fidelity-types"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.8.1"
     dotenv "^16.4.7"
@@ -2875,11 +2875,11 @@
 "@x-fidelity/server@file:packages/x-fidelity-server":
   version "0.0.0-semantically-released"
   dependencies:
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-d1ba5bfa-4daf-448f-a817-b7a6d9e2b503-1754180725545/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/plugins" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-d1ba5bfa-4daf-448f-a817-b7a6d9e2b503-1754180725545/node_modules/@x-fidelity/x-fidelity-plugins"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-d1ba5bfa-4daf-448f-a817-b7a6d9e2b503-1754180725545/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:packages/x-fidelity-core"
+    "@x-fidelity/plugins" "file:packages/x-fidelity-plugins"
+    "@x-fidelity/types" "file:packages/x-fidelity-types"
     body-parser "^1.20.3"
-    chokidar "^3.6.0"
+    chokidar "^4.0.3"
     express "^4.21.2"
     express-rate-limit "^7.5.0"
     helmet "^8.0.0"
@@ -3673,7 +3673,7 @@ chokidar-cli@^3.0.0:
     lodash.throttle "^4.1.1"
     yargs "^13.3.0"
 
-chokidar@^3.5.2, chokidar@^3.5.3, chokidar@^3.6.0:
+chokidar@^3.5.2, chokidar@^3.5.3:
   version "3.6.0"
   resolved "https://registry.npmjs.org/chokidar/-/chokidar-3.6.0.tgz"
   integrity sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==
@@ -3688,7 +3688,7 @@ chokidar@^3.5.2, chokidar@^3.5.3, chokidar@^3.6.0:
   optionalDependencies:
     fsevents "~2.3.2"
 
-chokidar@^4.0.1:
+chokidar@^4.0.1, chokidar@^4.0.3:
   version "4.0.3"
   resolved "https://registry.npmjs.org/chokidar/-/chokidar-4.0.3.tgz"
   integrity sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==
