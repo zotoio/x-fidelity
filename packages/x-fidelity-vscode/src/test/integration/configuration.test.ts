@@ -14,10 +14,30 @@ suite('Configuration Management Tests', () => {
   });
 
   test('should have all required configuration properties', async function () {
-    this.timeout(10000);
+    this.timeout(15000);
+
+    // Wait for VSCode configuration to be fully loaded
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    const config = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
+    let config = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
+
+    // Retry mechanism for configuration loading
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      config = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
+      const runIntervalValue = config.get('runInterval');
+      
+      if (runIntervalValue !== undefined) {
+        break; // Configuration is loaded
+      }
+      
+      retryCount++;
+      console.log(`Configuration not ready, retrying ${retryCount}/${maxRetries}...`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
 
     const requiredProperties = [
       'archetype',

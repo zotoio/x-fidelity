@@ -19,8 +19,8 @@ const isWindows = process.platform === 'win32';
 const isWindowsCI = isCI && isWindows;
 
 // More aggressive timeouts for Windows CI to prevent RangeError and timeouts
-const integrationTimeout = isWindowsCI ? 20000 : isCI ? 30000 : 60000;  // Windows CI: 20s to prevent hanging
-const coreTimeout = isWindowsCI ? 15000 : 20000;  // Windows CI: 15s for faster execution
+const integrationTimeout = isWindowsCI ? 15000 : isCI ? 20000 : 30000;  // Reduced timeouts for faster testing
+const coreTimeout = isWindowsCI ? 10000 : 15000;  // Windows CI: 10s for faster execution
 
 export default defineConfig([
   {
