@@ -13,9 +13,19 @@ const outdatedFramework: OperatorDefn = {
                 return false;
             }
 
-            const result = factValue.length > 0;
-            logger.debug(`outdatedFramework: result is ${result}`);
-            return result;
+            // Check if there are any actual dependency failures
+            const hasOutdatedDependencies = factValue.some(item => {
+                // Ensure the item is a proper DependencyFailure object
+                if (!item || typeof item !== 'object' || !item.dependency || !item.currentVersion || !item.requiredVersion) {
+                    return false;
+                }
+                
+                // Check if current version is different from required version (indicating outdated)
+                return item.currentVersion !== item.requiredVersion;
+            });
+
+            logger.debug(`outdatedFramework: result is ${hasOutdatedDependencies}`);
+            return hasOutdatedDependencies;
         } catch (e) {
             logger.error(`outdatedFramework error: ${e}`);
             return false;

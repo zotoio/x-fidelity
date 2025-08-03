@@ -1,9 +1,10 @@
 import { runEngineOnFiles, registerRuleForTracking } from './engineRunner';
 import { REPO_GLOBAL_CHECK } from '../configManager';
-import { Engine } from 'json-rules-engine';
+import { Engine, Rule, Almanac } from 'json-rules-engine';
 import { logger } from '../../utils/logger';
 import { executeErrorAction } from './errorActionExecutor';
-import { ScanResult, RuleFailure, ErrorLevel } from '@x-fidelity/types';
+import { ScanResult, RuleFailure, ErrorLevel, FileData, Exemption, RuleConfig } from '@x-fidelity/types';
+import { Logger } from 'pino';
 
 jest.mock('json-rules-engine');
 jest.mock('./errorActionExecutor');
@@ -22,12 +23,18 @@ jest.mock('../../utils/logger', () => ({
     }
 }));
 
+// Define a type for the mocked engine
+type MockEngine = jest.Mocked<Engine> & {
+    removeAllListeners: jest.Mock<() => void>;
+    rules: Rule[];
+};
+
 describe('engineRunner - Enhanced Test Suite', () => {
-    let mockEngine: Engine & { removeAllListeners: jest.Mock };
+    let mockEngine: MockEngine;
 
     beforeEach(() => {
         mockEngine = {
-            run: jest.fn().mockImplementation(() => Promise.resolve({ results: [] })),
+            run: jest.fn().mockResolvedValue({ results: [] }),
             addRule: jest.fn(),
             removeRule: jest.fn(),
             updateRule: jest.fn(),
@@ -39,22 +46,25 @@ describe('engineRunner - Enhanced Test Suite', () => {
             removeListener: jest.fn(),
             removeAllListeners: jest.fn(),
             rules: [
-                { 
+                {
                     name: 'Test Rule', 
                     event: { type: 'warning', params: { message: 'Test warning' } },
-                    conditions: { all: [{ fact: 'test', operator: 'equal', value: true }] }
+                    conditions: { all: [{ fact: 'test', operator: 'equal', value: true }] },
+                    description: 'Test rule description'
                 },
-                { 
+                {
                     name: 'evenFileRule', 
                     event: { type: 'warning', params: { message: 'Even file issue' } },
-                    conditions: { all: [{ fact: 'fileIndex', operator: 'equal', value: 0 }] }
+                    conditions: { all: [{ fact: 'fileIndex', operator: 'equal', value: 0 }] },
+                    description: 'Even file rule description'
                 },
-                { 
+                {
                     name: 'validRule', 
                     event: { type: 'error', params: { message: 'Valid rule' } },
-                    conditions: { all: [{ fact: 'isValid', operator: 'equal', value: false }] }
+                    conditions: { all: [{ fact: 'isValid', operator: 'equal', value: false }] },
+                    description: 'Valid rule description'
                 },
-                { 
+                {
                     name: 'complexRule', 
                     event: { type: 'warning', params: { message: 'Complex rule violation' } },
                     conditions: { 
@@ -62,10 +72,11 @@ describe('engineRunner - Enhanced Test Suite', () => {
                             { fact: 'codeComplexity', operator: 'greaterThan', value: 10 },
                             { fact: 'fileSize', operator: 'lessThan', value: 1000 }
                         ]
-                    }
+                    },
+                    description: 'A complex rule for testing'
                 }
             ]
-        } as unknown as Engine & { removeAllListeners: jest.Mock };
+        } as MockEngine;
 
         jest.clearAllMocks();
     });
@@ -74,9 +85,9 @@ describe('engineRunner - Enhanced Test Suite', () => {
         mockEngine.removeAllListeners();
     });
 
-    const mockFileData = [
-        { fileName: 'test.ts', filePath: 'src/test.ts', fileContent: 'logger.log("test");', content: 'logger.log("test");' },
-        { fileName: REPO_GLOBAL_CHECK, filePath: REPO_GLOBAL_CHECK, fileContent: REPO_GLOBAL_CHECK, content: REPO_GLOBAL_CHECK },
+    const mockFileData: FileData[] = [
+        { fileName: 'test.ts', filePath: 'src/test.ts', fileContent: 'logger.log("test");' },
+        { fileName: REPO_GLOBAL_CHECK, filePath: REPO_GLOBAL_CHECK, fileContent: REPO_GLOBAL_CHECK },
     ];
 
     const getMockParams = () => ({
@@ -86,14 +97,14 @@ describe('engineRunner - Enhanced Test Suite', () => {
         minimumDependencyVersions: {},
         standardStructure: false,
         repoUrl: 'https://github.com/test/repo',
-        exemptions: [],
-        logger: logger,
+        exemptions: [] as Exemption[],
+        logger: logger as Logger,
         repoPath: '/test/repo'
     });
 
     describe('Basic Engine Execution', () => {
         it('should run engine on all files', async () => {
-            (mockEngine.run as jest.Mock).mockResolvedValue({ results: [] });
+            mockEngine.run.mockResolvedValue({ results: [] });
 
             await runEngineOnFiles(getMockParams());
 
@@ -103,7 +114,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle engine failures', async () => {
-            (mockEngine.run as jest.Mock).mockRejectedValue(new Error('Engine failure'));
+            mockEngine.run.mockRejectedValue(new Error('Engine failure'));
 
             await runEngineOnFiles(getMockParams());
 
@@ -113,7 +124,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
         it('should handle engine execution errors for individual files', async () => {
             let callCount = 0;
-            (mockEngine.run as jest.Mock).mockImplementation(() => {
+            mockEngine.run.mockImplementation(() => {
                 callCount++;
                 if (callCount === 1) {
                     throw new Error('First file failed');
@@ -131,11 +142,11 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should return failures when rules are violated', async () => {
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { result: true, name: 'Test Rule', event: { type: 'warning', params: { message: 'Test warning' } } },
                 ],
-                almanac: { factMap: new Map() }
+                almanac: { factMap: new Map() } as Almanac
             });
 
             const result = await runEngineOnFiles(getMockParams());
@@ -147,11 +158,10 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle large numbers of files efficiently', async () => {
-            const largeFileData = Array.from({ length: 100 }, (_, i) => ({
+            const largeFileData: FileData[] = Array.from({ length: 100 }, (_, i) => ({
                 fileName: `file${i}.ts`,
                 filePath: `src/file${i}.ts`,
-                fileContent: `export const value${i} = ${i};`,
-                content: `export const value${i} = ${i};`
+                fileContent: `export const value${i} = ${i};`
             }));
 
             const largeParams = {
@@ -159,7 +169,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
                 fileData: largeFileData
             };
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({ results: [] });
+            mockEngine.run.mockResolvedValue({ results: [] });
 
             const startTime = Date.now();
             const result = await runEngineOnFiles(largeParams);
@@ -172,17 +182,17 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
         it('should handle mixed success and failure results', async () => {
             let callCount = 0;
-            (mockEngine.run as jest.Mock).mockImplementation(() => {
+            mockEngine.run.mockImplementation(() => {
                 callCount++;
                 if (callCount % 2 === 0) {
                     return Promise.resolve({
                         results: [
                             { result: true, name: 'evenFileRule', event: { type: 'warning', params: { message: 'Even file issue' } } }
                         ],
-                        almanac: { factMap: new Map() }
+                        almanac: { factMap: new Map() } as Almanac
                     });
                 }
-                return Promise.resolve({ results: [], almanac: { factMap: new Map() } });
+                return Promise.resolve({ results: [], almanac: { factMap: new Map() } as Almanac });
             });
 
             const result = await runEngineOnFiles(getMockParams());
@@ -205,9 +215,9 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle malformed rule results', async () => {
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
-                    { result: true }, // Missing name and event
+                    { result: true } as any, // Missing name and event
                     { result: true, name: 'validRule', event: { type: 'error', params: { message: 'Valid rule' } } }
                 ]
             });
@@ -222,13 +232,13 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
     describe('Rule Registration and Tracking', () => {
         it('should register rules for tracking with event types', () => {
-            const mockRule = {
+            const mockRule: RuleConfig = {
                 name: 'testRule',
                 event: { type: 'warning' },
                 conditions: { all: [] }
             };
 
-            registerRuleForTracking(mockRule, logger);
+            registerRuleForTracking(mockRule, logger as Logger);
 
             expect(logger.debug).toHaveBeenCalledWith(
                 `Registered rule 'testRule' for event type 'warning'`
@@ -236,9 +246,9 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle rules without proper event structure', () => {
-            const invalidRule = { name: 'invalidRule' };
+            const invalidRule = { name: 'invalidRule' } as RuleConfig;
             
-            registerRuleForTracking(invalidRule, logger);
+            registerRuleForTracking(invalidRule, logger as Logger);
 
             // Should not log anything for invalid rules
             expect(logger.debug).not.toHaveBeenCalledWith(
@@ -247,11 +257,11 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should register multiple rules for the same event type', () => {
-            const rule1 = { name: 'rule1', event: { type: 'error' }, conditions: {} };
-            const rule2 = { name: 'rule2', event: { type: 'error' }, conditions: {} };
+            const rule1: RuleConfig = { name: 'rule1', event: { type: 'error' }, conditions: {} as any };
+            const rule2: RuleConfig = { name: 'rule2', event: { type: 'error' }, conditions: {} as any };
 
-            registerRuleForTracking(rule1, logger);
-            registerRuleForTracking(rule2, logger);
+            registerRuleForTracking(rule1, logger as Logger);
+            registerRuleForTracking(rule2, logger as Logger);
 
             expect(logger.debug).toHaveBeenCalledWith(
                 `Registered rule 'rule1' for event type 'error'`
@@ -264,7 +274,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
     describe('Rule Failure Building', () => {
         it('should build comprehensive rule failures with condition details', async () => {
-            const complexRule = {
+            const complexRule: RuleConfig = {
                 name: 'complexRule',
                 description: 'A complex rule for testing',
                 conditions: {
@@ -278,7 +288,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
             registerRuleForTracking(complexRule);
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -311,7 +321,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
                         expect.objectContaining({ fact: 'fileSize' })
                     ]),
                     conditionType: 'all',
-                    ruleDescription: 'No description available', // Actual implementation default
+                    ruleDescription: 'A complex rule for testing', // Description from the rule
                     data: expect.objectContaining({
                         complexityScore: 15 // Data is nested under 'data' property
                     })
@@ -320,7 +330,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle rules with "any" conditions', async () => {
-            const anyRule = {
+            const anyRule: RuleConfig = {
                 name: 'anyRule',
                 conditions: {
                     any: [
@@ -333,7 +343,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
             registerRuleForTracking(anyRule);
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -356,14 +366,15 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle rules without conditions gracefully', async () => {
-            const simpleRule = {
+            const simpleRule: RuleConfig = {
                 name: 'simpleRule',
-                event: { type: 'info', params: { message: 'Simple message' } }
+                event: { type: 'info', params: { message: 'Simple message' } },
+                conditions: { all: [] } // Added to satisfy RuleConfig
             };
 
             registerRuleForTracking(simpleRule);
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -388,11 +399,11 @@ describe('engineRunner - Enhanced Test Suite', () => {
         it('should resolve fact references in event details', async () => {
             const mockAlmanac = {
                 factValue: jest.fn().mockResolvedValue({ analysisResult: 'detailed analysis' })
-            };
+            } as unknown as jest.Mocked<Almanac>;
 
-            (mockEngine.run as jest.Mock).mockImplementation(async (facts) => {
+            mockEngine.run.mockImplementation(async (facts) => {
                 // Simulate almanac being available
-                const rule = {
+                const rule: RuleConfig = {
                     name: 'factReferencingRule',
                     event: { 
                         type: 'warning', 
@@ -400,7 +411,8 @@ describe('engineRunner - Enhanced Test Suite', () => {
                             message: 'Analysis found issues',
                             details: { fact: 'customAnalysis' }
                         } 
-                    }
+                    },
+                    conditions: { all: [] }
                 };
 
                 registerRuleForTracking(rule);
@@ -419,10 +431,10 @@ describe('engineRunner - Enhanced Test Suite', () => {
         it('should handle fact resolution failures gracefully', async () => {
             const mockAlmanac = {
                 factValue: jest.fn().mockRejectedValue(new Error('Fact not found'))
-            };
+            } as unknown as jest.Mocked<Almanac>;
 
-            (mockEngine.run as jest.Mock).mockImplementation(async (facts) => {
-                const rule = {
+            mockEngine.run.mockImplementation(async (facts) => {
+                const rule: RuleConfig = {
                     name: 'missingFactRule',
                     event: { 
                         type: 'error', 
@@ -430,7 +442,8 @@ describe('engineRunner - Enhanced Test Suite', () => {
                             message: 'Missing fact reference',
                             details: { fact: 'nonExistentFact' }
                         } 
-                    }
+                    },
+                    conditions: { all: [] }
                 };
 
                 registerRuleForTracking(rule);
@@ -448,7 +461,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle string details without modification', async () => {
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -472,9 +485,9 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
     describe('Error Handling and Edge Cases', () => {
         it('should handle malformed rule results', async () => {
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
-                    { result: true }, // Missing name and event
+                    { result: true } as any, // Missing name and event
                     { result: true, name: 'validRule', event: { type: 'error', params: { message: 'Valid rule' } } }
                 ]
             });
@@ -489,11 +502,10 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
     describe('Performance and Memory', () => {
         it('should handle concurrent rule execution without memory leaks', async () => {
-            const concurrentFiles = Array.from({ length: 50 }, (_, i) => ({
+            const concurrentFiles: FileData[] = Array.from({ length: 50 }, (_, i) => ({
                 fileName: `concurrent${i}.ts`,
                 filePath: `src/concurrent${i}.ts`,
                 fileContent: 'x'.repeat(1000), // Larger content
-                content: 'x'.repeat(1000)
             }));
 
             const concurrentParams = {
@@ -502,7 +514,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
             };
 
             // Simulate some processing time
-            (mockEngine.run as jest.Mock).mockImplementation(() => 
+            mockEngine.run.mockImplementation(() => 
                 new Promise(resolve => setTimeout(() => resolve({ results: [] }), 10))
             );
 
@@ -518,7 +530,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
         it('should track timing for rule execution', async () => {
             const timingTracker = jest.fn();
             
-            (mockEngine.run as jest.Mock).mockImplementation(async () => {
+            mockEngine.run.mockImplementation(async () => {
                 timingTracker('rule_execution_start');
                 await new Promise(resolve => setTimeout(resolve, 50));
                 timingTracker('rule_execution_end');
@@ -534,9 +546,9 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
     describe('Error Action Execution', () => {
         it('should execute error actions when configured', async () => {
-            (executeErrorAction as jest.Mock).mockResolvedValue(undefined);
+            (executeErrorAction as jest.MockedFunction<typeof executeErrorAction>).mockResolvedValue(undefined);
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -559,9 +571,9 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle error action execution failures', async () => {
-            (executeErrorAction as jest.Mock).mockRejectedValue(new Error('Action failed'));
+            (executeErrorAction as jest.MockedFunction<typeof executeErrorAction>).mockRejectedValue(new Error('Action failed'));
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -585,9 +597,9 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle multiple error actions in sequence', async () => {
-            (executeErrorAction as jest.Mock).mockResolvedValue(undefined);
+            (executeErrorAction as jest.MockedFunction<typeof executeErrorAction>).mockResolvedValue(undefined);
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -621,9 +633,9 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle error actions with custom parameters', async () => {
-            (executeErrorAction as jest.Mock).mockResolvedValue(undefined);
+            (executeErrorAction as jest.MockedFunction<typeof executeErrorAction>).mockResolvedValue(undefined);
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -651,14 +663,14 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle error actions with async parameters', async () => {
-            (executeErrorAction as jest.Mock).mockResolvedValue(undefined);
+            (executeErrorAction as jest.MockedFunction<typeof executeErrorAction>).mockResolvedValue(undefined);
 
             const asyncParams = {
                 priority: Promise.resolve('high'),
                 assignee: Promise.resolve('team-lead')
             };
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -684,11 +696,11 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
     describe('Rule Validation', () => {
         it('should validate rule structure before execution', async () => {
-            const invalidRule = {
+            const invalidRule: RuleConfig = {
                 name: 'invalidRule',
                 conditions: {
                     all: [
-                        { fact: 'missingOperator', value: 10 } // Missing operator
+                        { fact: 'missingOperator', value: 10 } as any // Missing operator
                     ]
                 },
                 event: { type: 'error' }
@@ -696,7 +708,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
             registerRuleForTracking(invalidRule);
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -719,12 +731,12 @@ describe('engineRunner - Enhanced Test Suite', () => {
             const invalidEventRule = {
                 name: 'invalidEventRule',
                 conditions: { all: [] },
-                event: { } // Missing type
-            };
+                event: { } as any // Missing type
+            } as RuleConfig;
 
             registerRuleForTracking(invalidEventRule);
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -743,13 +755,13 @@ describe('engineRunner - Enhanced Test Suite', () => {
         it('should validate rule conditions structure', async () => {
             const invalidConditionsRule = {
                 name: 'invalidConditionsRule',
-                conditions: { }, // Empty conditions
+                conditions: { } as any, // Empty conditions
                 event: { type: 'error' }
-            };
+            } as RuleConfig;
 
             registerRuleForTracking(invalidConditionsRule);
 
-            (mockEngine.run as jest.Mock).mockResolvedValue({
+            mockEngine.run.mockResolvedValue({
                 results: [
                     { 
                         result: true, 
@@ -768,7 +780,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
     describe('Performance Optimization', () => {
         it('should handle rule caching for repeated executions', async () => {
-            const rule = {
+            const rule: RuleConfig = {
                 name: 'cachedRule',
                 conditions: { all: [] },
                 event: { type: 'info' }
@@ -778,11 +790,11 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
             // First execution
             await runEngineOnFiles(getMockParams());
-            const firstRunCalls = (mockEngine.run as jest.Mock).mock.calls.length;
+            const firstRunCalls = mockEngine.run.mock.calls.length;
 
             // Second execution with same rule
             await runEngineOnFiles(getMockParams());
-            const secondRunCalls = (mockEngine.run as jest.Mock).mock.calls.length;
+            const secondRunCalls = mockEngine.run.mock.calls.length;
 
             // Should use cached rule, resulting in fewer engine calls
             expect(secondRunCalls).toBeLessThanOrEqual(firstRunCalls * 2); // Allow equal for consistent behavior
@@ -797,8 +809,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
                 fileData: Array.from({ length: 50 }, (_, i) => ({
                     fileName: `large${i}.ts`,
                     filePath: `src/large${i}.ts`,
-                    fileContent: 'x'.repeat(10000),
-                    content: 'x'.repeat(10000)
+                    fileContent: 'x'.repeat(10000)
                 }))
             });
 
@@ -817,7 +828,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
     describe('Integration Tests', () => {
         it('should handle complete analysis workflow', async () => {
-            const complexWorkflowRule = {
+            const complexWorkflowRule: RuleConfig = {
                 name: 'workflowRule',
                 description: 'Complex workflow rule',
                 conditions: {
@@ -842,9 +853,9 @@ describe('engineRunner - Enhanced Test Suite', () => {
                 factValue: jest.fn().mockResolvedValue({ 
                     detailedAnalysis: 'Complete analysis data' 
                 })
-            };
+            } as unknown as jest.Mocked<Almanac>;
 
-            (mockEngine.run as jest.Mock).mockImplementation(async () => ({
+            mockEngine.run.mockImplementation(async () => ({
                 results: [
                     { 
                         result: true, 
@@ -855,7 +866,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
                 almanac: mockAlmanac
             }));
 
-            (executeErrorAction as jest.Mock).mockResolvedValue(undefined);
+            (executeErrorAction as jest.MockedFunction<typeof executeErrorAction>).mockResolvedValue(undefined);
 
             const result = await runEngineOnFiles(getMockParams());
 
@@ -894,7 +905,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
                 error: jest.fn(),
                 warn: jest.fn(),
                 trace: jest.fn()
-            };
+            } as unknown as Logger;
 
             const dependencyFailures = [
                 { dependency: 'react', currentVersion: '16.0.0', requiredVersion: '18.0.0' },
@@ -903,9 +914,10 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
             const mockAlmanac = {
                 factValue: jest.fn().mockResolvedValueOnce(dependencyFailures)
-            };
+            } as unknown as jest.Mocked<Almanac>;
 
-            const mockEngine = {
+            const localMockEngine = {
+                ...mockEngine,
                 run: jest.fn().mockResolvedValue({
                     results: [{
                         name: 'outdatedFramework-global',
@@ -920,54 +932,31 @@ describe('engineRunner - Enhanced Test Suite', () => {
                     }],
                     almanac: mockAlmanac
                 }),
-                rules: [{
+                rules: [new Rule({
                     name: 'outdatedFramework-global',
                     conditions: { all: [{ fact: 'repoDependencyAnalysis', operator: 'outdatedFramework', value: true }] },
-                    description: 'Test dependency rule'
-                }]
-            };
+                    event: { type: 'fatality', params: {} }
+                })]
+            } as MockEngine;
 
-            const mockRule = {
-                name: 'outdatedFramework-global',
-                conditions: { all: [{ fact: 'repoDependencyAnalysis', operator: 'outdatedFramework', value: true }] },
-                description: 'Test dependency rule'
-            };
+            const mockFile: FileData = { fileName: 'REPO_GLOBAL_CHECK', filePath: '/test/global', fileContent: '' };
 
-            const mockResult = {
-                name: 'outdatedFramework-global',
-                event: {
-                    type: 'fatality',
-                    params: {
-                        message: 'Dependencies outdated',
-                        details: { fact: 'repoDependencyAnalysis' }
-                    }
-                }
-            };
-
-            const mockFile = { fileName: 'REPO_GLOBAL_CHECK', filePath: '/test/global' };
-
-            const result = await runEngineOnFiles({
-                engine: mockEngine,
+            await runEngineOnFiles({
+                engine: localMockEngine,
                 fileData: [mockFile],
                 installedDependencyVersions: {},
                 minimumDependencyVersions: {},
                 standardStructure: {},
-                logger: logger,
-                repoPath: '/test'
+                logger: logger as Logger,
+                repoPath: '/test',
+                exemptions: [],
+                repoUrl: ''
             });
 
             expect(mockAlmanac.factValue).toHaveBeenCalledWith('repoDependencyAnalysis');
         });
 
         it('should handle fact resolution failure with fallback on Mac', async () => {
-            const mockLogger = {
-                debug: jest.fn(),
-                info: jest.fn(),
-                error: jest.fn(),
-                warn: jest.fn(),
-                trace: jest.fn()
-            };
-
             const dependencyFailures = [
                 { dependency: 'react', currentVersion: '16.0.0', requiredVersion: '18.0.0' }
             ];
@@ -976,9 +965,10 @@ describe('engineRunner - Enhanced Test Suite', () => {
                 factValue: jest.fn()
                     .mockRejectedValueOnce(new Error('Primary resolution failed'))
                     .mockResolvedValueOnce(dependencyFailures) // Fallback succeeds
-            };
+            } as unknown as jest.Mocked<Almanac>;
 
-            const mockEngine = {
+            const localMockEngine = {
+                ...mockEngine,
                 run: jest.fn().mockResolvedValue({
                     events: [],
                     almanac: mockAlmanac,
@@ -994,29 +984,34 @@ describe('engineRunner - Enhanced Test Suite', () => {
                         }
                     }]
                 })
-            };
+            } as MockEngine;
 
-            const mockFile = { fileName: 'REPO_GLOBAL_CHECK', filePath: '/test/global' };
+            const mockFile: FileData = { fileName: 'REPO_GLOBAL_CHECK', filePath: '/test/global', fileContent: '' };
 
-            const result = await runEngineOnFiles({
-                engine: mockEngine,
+            await runEngineOnFiles({
+                engine: localMockEngine,
                 fileData: [mockFile],
                 installedDependencyVersions: {},
                 minimumDependencyVersions: {},
                 standardStructure: {},
-                logger: logger,
-                repoPath: '/test'
+                logger: logger as Logger,
+                repoPath: '/test',
+                exemptions: [],
+                repoUrl: ''
             });
 
             // Verify the engine was called
-            expect(mockEngine.run).toHaveBeenCalled();
+            expect(localMockEngine.run).toHaveBeenCalled();
         });
 
         it('should handle files with cached results', async () => {
-            const mockFile: any = { 
+            const mockFile: FileData & { cachedAnalysisResult?: ScanResult } = { 
                 fileName: 'cached.js', 
                 filePath: '/test/cached.js',
+                fileContent: '',
                 cachedAnalysisResult: {
+                    filePath: '/test/cached.js',
+                    fileName: 'cached.js',
                     errors: [
                         {
                             ruleFailure: 'cached-rule',
@@ -1028,13 +1023,8 @@ describe('engineRunner - Enhanced Test Suite', () => {
             };
 
             const result = await runEngineOnFiles({
-                engine: mockEngine,
+                ...getMockParams(),
                 fileData: [mockFile],
-                installedDependencyVersions: {},
-                minimumDependencyVersions: {},
-                standardStructure: {},
-                logger: logger,
-                repoPath: '/test'
             });
 
             // Should still run engine since caching logic is in analyzer, not engineRunner
@@ -1044,19 +1034,14 @@ describe('engineRunner - Enhanced Test Suite', () => {
         it('should handle engine failures gracefully', async () => {
             mockEngine.run.mockRejectedValue(new Error('Engine execution failed'));
 
-            const mockFiles = [
-                { fileName: 'test1.js', filePath: '/test/test1.js' },
-                { fileName: 'test2.js', filePath: '/test/test2.js' }
+            const mockFiles: FileData[] = [
+                { fileName: 'test1.js', filePath: '/test/test1.js', fileContent: '' },
+                { fileName: 'test2.js', filePath: '/test/test2.js', fileContent: '' }
             ];
 
             const result = await runEngineOnFiles({
-                engine: mockEngine,
+                ...getMockParams(),
                 fileData: mockFiles,
-                installedDependencyVersions: {},
-                minimumDependencyVersions: {},
-                standardStructure: {},
-                logger: logger,
-                repoPath: '/test'
             });
 
             // Should still return some result structure
@@ -1083,19 +1068,14 @@ describe('engineRunner - Enhanced Test Suite', () => {
                         event: { type: 'warning', params: { message: 'Warning message' } } 
                     }
                 ],
-                almanac: { factValue: jest.fn() }
+                almanac: { factValue: jest.fn() } as any
             });
 
-            const mockFile = { fileName: 'test.js', filePath: '/test/test.js' };
+            const mockFile: FileData = { fileName: 'test.js', filePath: '/test/test.js', fileContent: '' };
 
             const result = await runEngineOnFiles({
-                engine: mockEngine,
+                ...getMockParams(),
                 fileData: [mockFile],
-                installedDependencyVersions: {},
-                minimumDependencyVersions: {},
-                standardStructure: {},
-                logger: logger,
-                repoPath: '/test'
             });
 
             expect(result).toHaveLength(1);
@@ -1107,22 +1087,18 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle large file datasets efficiently', async () => {
-            const largeFileSet = Array.from({ length: 100 }, (_, i) => ({
+            const largeFileSet: FileData[] = Array.from({ length: 100 }, (_, i) => ({
                 fileName: `file${i}.js`,
-                filePath: `/test/file${i}.js`
+                filePath: `/test/file${i}.js`,
+                fileContent: ''
             }));
 
-            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } });
+            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } as any });
 
             const startTime = Date.now();
-            const result = await runEngineOnFiles({
-                engine: mockEngine,
+            await runEngineOnFiles({
+                ...getMockParams(),
                 fileData: largeFileSet,
-                installedDependencyVersions: {},
-                minimumDependencyVersions: {},
-                standardStructure: {},
-                logger: logger,
-                repoPath: '/test'
             });
             const duration = Date.now() - startTime;
 
@@ -1145,17 +1121,15 @@ describe('engineRunner - Enhanced Test Suite', () => {
                 }
             };
 
-            const mockFile = { fileName: 'package.json', filePath: '/test/package.json' };
+            const mockFile: FileData = { fileName: 'package.json', filePath: '/test/package.json', fileContent: '' };
 
-            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } });
+            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } as any });
 
-            const result = await runEngineOnFiles({
-                engine: mockEngine,
+            await runEngineOnFiles({
+                ...getMockParams(),
                 fileData: [mockFile],
                 ...complexDependencies,
                 standardStructure: { src: true, tests: true },
-                logger: logger,
-                repoPath: '/test'
             });
 
             expect(mockEngine.run).toHaveBeenCalledWith({
@@ -1168,7 +1142,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
     describe('registerRuleForTracking', () => {
         it('should register rule with tracking information', () => {
-            const mockRule = {
+            const mockRule: RuleConfig = {
                 name: 'test-rule',
                 conditions: { all: [] },
                 event: { type: 'warning', params: { message: 'Test message' } }
@@ -1179,7 +1153,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
                 info: jest.fn(),
                 warn: jest.fn(),
                 error: jest.fn()
-            };
+            } as unknown as Logger;
 
             registerRuleForTracking(mockRule, mockLogger);
 
@@ -1190,7 +1164,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
             const mockRule = {
                 conditions: { all: [] },
                 event: { type: 'error', params: { message: 'Unnamed rule' } }
-            };
+            } as RuleConfig;
 
             expect(() => {
                 registerRuleForTracking(mockRule);
@@ -1199,16 +1173,16 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
         it('should handle null or undefined rules', () => {
             expect(() => {
-                registerRuleForTracking(null as any);
+                registerRuleForTracking(null as unknown as RuleConfig);
             }).not.toThrow();
 
             expect(() => {
-                registerRuleForTracking(undefined as any);
+                registerRuleForTracking(undefined as unknown as RuleConfig);
             }).not.toThrow();
         });
 
         it('should handle rules without logger', () => {
-            const mockRule = {
+            const mockRule: RuleConfig = {
                 name: 'test-rule',
                 conditions: { all: [] },
                 event: { type: 'warning', params: { message: 'Test message' } }
@@ -1236,19 +1210,14 @@ describe('engineRunner - Enhanced Test Suite', () => {
                         } 
                     }
                 ],
-                almanac: { factValue: jest.fn() }
+                almanac: { factValue: jest.fn() } as any
             });
 
-            const mockFile = { fileName: 'test.js', filePath: '/test/test.js' };
+            const mockFile: FileData = { fileName: 'test.js', filePath: '/test/test.js', fileContent: '' };
 
             const result = await runEngineOnFiles({
-                engine: mockEngine,
+                ...getMockParams(),
                 fileData: [mockFile],
-                installedDependencyVersions: {},
-                minimumDependencyVersions: {},
-                standardStructure: {},
-                logger: logger,
-                repoPath: '/test'
             });
 
             // The function should build a proper result - test that it returns something
@@ -1258,7 +1227,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
         });
 
         it('should handle error action execution failures gracefully', async () => {
-            (executeErrorAction as jest.Mock).mockImplementation(() => {
+            (executeErrorAction as jest.MockedFunction<typeof executeErrorAction>).mockImplementation(() => {
                 throw new Error('Error action failed');
             });
 
@@ -1276,19 +1245,14 @@ describe('engineRunner - Enhanced Test Suite', () => {
                         } 
                     }
                 ],
-                almanac: { factValue: jest.fn() }
+                almanac: { factValue: jest.fn() } as any
             });
 
-            const mockFile = { fileName: 'test.js', filePath: '/test/test.js' };
+            const mockFile: FileData = { fileName: 'test.js', filePath: '/test/test.js', fileContent: '' };
 
             const result = await runEngineOnFiles({
-                engine: mockEngine,
+                ...getMockParams(),
                 fileData: [mockFile],
-                installedDependencyVersions: {},
-                minimumDependencyVersions: {},
-                standardStructure: {},
-                logger: logger,
-                repoPath: '/test'
             });
 
             // Should still return the result even if error action fails
@@ -1299,18 +1263,13 @@ describe('engineRunner - Enhanced Test Suite', () => {
 
     describe('Memory and Performance', () => {
         it('should clean up engine listeners properly', async () => {
-            const mockFile = { fileName: 'test.js', filePath: '/test/test.js' };
+            const mockFile: FileData = { fileName: 'test.js', filePath: '/test/test.js', fileContent: '' };
 
-            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } });
+            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } as any });
 
             await runEngineOnFiles({
-                engine: mockEngine,
+                ...getMockParams(),
                 fileData: [mockFile],
-                installedDependencyVersions: {},
-                minimumDependencyVersions: {},
-                standardStructure: {},
-                logger: logger,
-                repoPath: '/test'
             });
 
             // The engine.run should have been called - this tests that the function completed
@@ -1320,22 +1279,17 @@ describe('engineRunner - Enhanced Test Suite', () => {
         it('should handle memory-intensive file processing', async () => {
             // Create a large mock file content
             const largeContent = 'x'.repeat(1000000); // 1MB of content
-            const mockFile = { 
+            const mockFile: FileData = { 
                 fileName: 'large.js', 
                 filePath: '/test/large.js',
                 fileContent: largeContent
             };
 
-            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } });
+            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } as any });
 
             const result = await runEngineOnFiles({
-                engine: mockEngine,
+                ...getMockParams(),
                 fileData: [mockFile],
-                installedDependencyVersions: {},
-                minimumDependencyVersions: {},
-                standardStructure: {},
-                logger: logger,
-                repoPath: '/test'
             });
 
             // Should complete without errors - we get empty results but no failures
