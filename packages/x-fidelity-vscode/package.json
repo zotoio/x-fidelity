@@ -684,7 +684,7 @@
     "yaml": "^2.6.0"
   },
   "devDependencies": {
-    "@electron/rebuild": "^3.6.2",
+    "@electron/rebuild": "^4.0.1",
     "@types/glob": "^8.1.0",
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
