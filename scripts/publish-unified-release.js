@@ -25,6 +25,23 @@ function log(color, message) {
 function runCommand(command, cwd, description, continueOnError = false) {
   try {
     log('blue', `🚀 ${description}...`);
+    
+    const repoRoot = path.resolve(__dirname, '..');
+    const resolvedCwd = path.resolve(cwd || '.');
+    if (!resolvedCwd.startsWith(repoRoot)) {
+      throw new Error(`Unsafe working directory: ${resolvedCwd}`);
+    }
+    // Only allow a whitelist of commands for extra safety
+    const allowedCommands = [
+      'npm publish --access public',
+      'vsce publish',
+      'ovsx publish',
+      // Add more allowed commands as needed
+    ];
+    if (!allowedCommands.some(allowed => command.startsWith(allowed.split(' ')[0]))) {
+      throw new Error(`Command not allowed: ${command}`);
+    }
+
     const result = execSync(command, { cwd, stdio: 'pipe', encoding: 'utf8' });
     log('green', `✅ ${description} completed`);
     return { success: true, output: result };
