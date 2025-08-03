@@ -163,16 +163,13 @@ export class CLISpawner {
     const packageManagerPaths: string[] = [];
 
     // Common package manager installation paths on macOS
+    // CRITICAL FIX: Enhanced paths come FIRST to fix macOS GUI launch PATH issue
     const possiblePaths = [
-      // System PATH first
-      ...(process.env.PATH?.split(process.platform === 'win32' ? ';' : ':') ||
-        []),
-
-      // Homebrew installations
+      // Homebrew installations (PRIORITY - fixes macOS GUI launch)
       '/usr/local/bin',
       '/opt/homebrew/bin', // Apple Silicon Homebrew
 
-      // Node Version Managers
+      // Node Version Managers (PRIORITY)
       '/Users/' +
         (process.env.USER || process.env.USERNAME) +
         '/.nvm/current/bin',
@@ -181,14 +178,16 @@ export class CLISpawner {
         (process.env.USER || process.env.USERNAME) +
         '/.fnm/current/bin',
 
-      // Global npm installations
+      // Global package manager installations (PRIORITY)
       '/usr/local/share/npm/bin',
       '/opt/homebrew/share/npm/bin',
-
-      // Yarn global installations
       '/Users/' + (process.env.USER || process.env.USERNAME) + '/.yarn/bin',
 
-      // System locations
+      // THEN include system PATH (lower priority to avoid GUI launch limitations)
+      ...(process.env.PATH?.split(process.platform === 'win32' ? ';' : ':') ||
+        []),
+
+      // System locations (fallback)
       '/usr/bin',
       '/bin'
     ];

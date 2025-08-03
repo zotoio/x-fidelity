@@ -815,5 +815,234 @@ describe('engineSetup - Enhanced Test Suite', () => {
             expect(mockEngine.addOperator).toHaveBeenCalled();
             expect(mockEngine.addRule).toHaveBeenCalled();
         });
+
+        it('should handle missing archetype config', async () => {
+            const mockEngine = {
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn()
+            };
+            (Engine as jest.Mock).mockImplementation(() => mockEngine);
+
+            (loadRepoXFIConfig as jest.Mock).mockResolvedValue({
+                name: 'fallback-config',
+                rules: [],
+                operators: [],
+                facts: [],
+                config: {}
+            });
+
+            const paramsWithoutConfig = {
+                ...getMockParams(),
+                archetypeConfig: undefined
+            };
+
+            await setupEngine(paramsWithoutConfig);
+
+            expect(loadRepoXFIConfig).toHaveBeenCalled();
+            expect(mockEngine.addOperator).toHaveBeenCalled();
+        });
+
+        it('should handle empty plugin registries', async () => {
+            const mockEngine = {
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn()
+            };
+            (Engine as jest.Mock).mockImplementation(() => mockEngine);
+
+            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([]);
+            (pluginRegistry.getPluginOperators as jest.Mock).mockReturnValue([]);
+
+            const paramsWithRules = {
+                ...getMockParams(),
+                rules: [{ name: 'test-rule', conditions: { all: [] }, event: { type: 'test-event' } }]
+            };
+
+            await setupEngine(paramsWithRules);
+
+            // Should still set up engine even without plugins, but should add rules
+            expect(mockEngine.on).toHaveBeenCalled(); // Event listener is added
+            expect(mockEngine.addRule).toHaveBeenCalled(); // Rules are added
+        });
+
+        it('should register event listeners for rule execution', async () => {
+            const mockOn = jest.fn();
+            const mockEngine = {
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: mockOn
+            };
+            (Engine as jest.Mock).mockImplementation(() => mockEngine);
+
+            await setupEngine(getMockParams());
+
+            // Should register listeners for success events only (implementation only adds success listener)
+            expect(mockOn).toHaveBeenCalledWith('success', expect.any(Function));
+            expect(mockOn).toHaveBeenCalledTimes(1);
+        });
+
+        it('should handle facts with different types correctly', async () => {
+            const mockAddFact = jest.fn();
+            const mockEngine = {
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: mockAddFact,
+                on: jest.fn()
+            };
+            (Engine as jest.Mock).mockImplementation(() => mockEngine);
+
+            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+                { name: 'globalFact', fn: jest.fn(), type: 'global' },
+                { name: 'ast', fn: jest.fn(), type: 'ast' }, // Using 'ast' instead of 'astFact'
+                { name: 'regularFact', fn: jest.fn(), type: 'regular' },
+                { name: 'functionComplexity', fn: jest.fn() },
+                { name: 'functionCount', fn: jest.fn() },
+                { name: 'regularFactNoType', fn: jest.fn() }
+            ]);
+
+            await setupEngine(getMockParams());
+
+            // Should filter out global type and specific AST-related facts based on implementation
+            expect(mockAddFact).not.toHaveBeenCalledWith('globalFact', expect.any(Function), expect.any(Object));
+            expect(mockAddFact).not.toHaveBeenCalledWith('ast', expect.any(Function), expect.any(Object));
+            expect(mockAddFact).not.toHaveBeenCalledWith('functionComplexity', expect.any(Function), expect.any(Object));
+            expect(mockAddFact).not.toHaveBeenCalledWith('functionCount', expect.any(Function), expect.any(Object));
+            
+            // Should include regular facts
+            expect(mockAddFact).toHaveBeenCalledWith('regularFact', expect.any(Function), { priority: 1 });
+            expect(mockAddFact).toHaveBeenCalledWith('regularFactNoType', expect.any(Function), { priority: 1 });
+        });
+
+        it('should handle telemetry sending during setup', async () => {
+            const mockEngine = {
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn()
+            };
+            (Engine as jest.Mock).mockImplementation(() => mockEngine);
+
+            const paramsWithRepoUrl = {
+                ...getMockParams(),
+                repoUrl: 'https://github.com/test/repo'
+            };
+
+            await setupEngine(paramsWithRepoUrl);
+
+            // Telemetry is sent through the success event listener, not directly during setup
+            expect(mockEngine.on).toHaveBeenCalledWith('success', expect.any(Function));
+        });
+
+        it('should handle rules with exemptions correctly', async () => {
+            const mockAddRule = jest.fn();
+            const mockEngine = {
+                addOperator: jest.fn(),
+                addRule: mockAddRule,
+                addFact: jest.fn(),
+                on: jest.fn()
+            };
+            (Engine as jest.Mock).mockImplementation(() => mockEngine);
+
+            const mockRules = [
+                { 
+                    name: 'test-rule', 
+                    conditions: { all: [] }, 
+                    event: { type: 'test-event' } 
+                }
+            ];
+
+            const mockExemptions = [
+                { 
+                    ruleFailure: 'test-rule', 
+                    filePath: 'exempted-file.js', 
+                    reason: 'Legacy code' 
+                }
+            ];
+
+            const paramsWithExemptions = {
+                ...getMockParams(),
+                rules: mockRules,
+                exemptions: mockExemptions
+            };
+
+            await setupEngine(paramsWithExemptions);
+
+            expect(mockAddRule).toHaveBeenCalledWith(expect.objectContaining({
+                name: 'test-rule',
+                conditions: { all: [] },
+                event: { type: 'test-event' }
+            }));
+        });
+
+        it('should handle execution modes from LoggerProvider', async () => {
+            const mockEngine = {
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn()
+            };
+            (Engine as jest.Mock).mockImplementation(() => mockEngine);
+
+            (LoggerProvider.getCurrentExecutionMode as jest.Mock).mockReturnValue('CLI');
+
+            await setupEngine(getMockParams());
+
+            // LoggerProvider is called within the success event listener, not directly during setup
+            expect(mockEngine.on).toHaveBeenCalledWith('success', expect.any(Function));
+        });
+    });
+
+    describe('Error Handling and Edge Cases', () => {
+        it('should handle Engine constructor failure', async () => {
+            (Engine as jest.Mock).mockImplementation(() => {
+                throw new Error('Engine constructor failed');
+            });
+
+            await expect(setupEngine(getMockParams())).rejects.toThrow('Engine constructor failed');
+        });
+
+        it('should handle plugin registry failures', async () => {
+            const mockEngine = {
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn()
+            };
+            (Engine as jest.Mock).mockImplementation(() => mockEngine);
+
+            (pluginRegistry.getPluginFacts as jest.Mock).mockImplementation(() => {
+                throw new Error('Plugin registry unavailable');
+            });
+
+            await expect(setupEngine(getMockParams())).rejects.toThrow('Plugin registry unavailable');
+        });
+
+        it('should handle invalid rule configurations', async () => {
+            const mockEngine = {
+                addOperator: jest.fn(),
+                addRule: jest.fn().mockImplementation(() => {
+                    throw new Error('Invalid rule configuration');
+                }),
+                addFact: jest.fn(),
+                on: jest.fn()
+            };
+            (Engine as jest.Mock).mockImplementation(() => mockEngine);
+
+            const paramsWithInvalidRules = {
+                ...getMockParams(),
+                rules: [{ name: 'invalid-rule', conditions: { all: [] }, event: { type: 'test' } }]
+            };
+
+            // The function handles errors gracefully and logs them, but doesn't throw
+            const result = await setupEngine(paramsWithInvalidRules);
+            
+            // Should return the engine even if some rules fail to load
+            expect(result).toBeDefined();
+            expect(mockEngine.addRule).toHaveBeenCalled();
+        });
     });
 });

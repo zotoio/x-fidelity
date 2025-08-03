@@ -35,18 +35,6 @@ jobs:
       - name: Run VSCode extension integration tests
         run: xvfb-run -a yarn workspace x-fidelity-vscode test:ci
 
-      - name: Install semantic-release dependencies at root
-        run: |
-          yarn add --dev \
-            @semantic-release/changelog \
-            @semantic-release/commit-analyzer \
-            @semantic-release/exec \
-            @semantic-release/git \
-            @semantic-release/github \
-            @semantic-release/release-notes-generator \
-            semantic-release \
-            conventional-changelog-conventionalcommits
-
       - name: Make release scripts executable
         run: |
           chmod +x scripts/prepare-unified-release.js

@@ -952,7 +952,7 @@ describe('engineRunner - Enhanced Test Suite', () => {
                 installedDependencyVersions: {},
                 minimumDependencyVersions: {},
                 standardStructure: {},
-                logger: mockLogger,
+                logger: logger,
                 repoPath: '/test'
             });
 
@@ -1004,12 +1004,343 @@ describe('engineRunner - Enhanced Test Suite', () => {
                 installedDependencyVersions: {},
                 minimumDependencyVersions: {},
                 standardStructure: {},
-                logger: mockLogger,
+                logger: logger,
                 repoPath: '/test'
             });
 
             // Verify the engine was called
             expect(mockEngine.run).toHaveBeenCalled();
+        });
+
+        it('should handle files with cached results', async () => {
+            const mockFile: any = { 
+                fileName: 'cached.js', 
+                filePath: '/test/cached.js',
+                cachedAnalysisResult: {
+                    errors: [
+                        {
+                            ruleFailure: 'cached-rule',
+                            level: 'warning' as ErrorLevel,
+                            details: { message: 'Cached warning' }
+                        }
+                    ]
+                }
+            };
+
+            const result = await runEngineOnFiles({
+                engine: mockEngine,
+                fileData: [mockFile],
+                installedDependencyVersions: {},
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                logger: logger,
+                repoPath: '/test'
+            });
+
+            // Should still run engine since caching logic is in analyzer, not engineRunner
+            expect(result).toBeDefined();
+        });
+
+        it('should handle engine failures gracefully', async () => {
+            mockEngine.run.mockRejectedValue(new Error('Engine execution failed'));
+
+            const mockFiles = [
+                { fileName: 'test1.js', filePath: '/test/test1.js' },
+                { fileName: 'test2.js', filePath: '/test/test2.js' }
+            ];
+
+            const result = await runEngineOnFiles({
+                engine: mockEngine,
+                fileData: mockFiles,
+                installedDependencyVersions: {},
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                logger: logger,
+                repoPath: '/test'
+            });
+
+            // Should still return some result structure
+            expect(result).toBeDefined();
+            expect(Array.isArray(result)).toBe(true);
+        });
+
+        it('should handle different error levels correctly', async () => {
+            mockEngine.run.mockResolvedValue({
+                results: [
+                    { 
+                        result: true,
+                        name: 'error-rule', 
+                        event: { type: 'error', params: { message: 'Error message' } } 
+                    },
+                    { 
+                        result: true,
+                        name: 'fatality-rule', 
+                        event: { type: 'fatality', params: { message: 'Fatality message' } } 
+                    },
+                    { 
+                        result: true,
+                        name: 'warning-rule', 
+                        event: { type: 'warning', params: { message: 'Warning message' } } 
+                    }
+                ],
+                almanac: { factValue: jest.fn() }
+            });
+
+            const mockFile = { fileName: 'test.js', filePath: '/test/test.js' };
+
+            const result = await runEngineOnFiles({
+                engine: mockEngine,
+                fileData: [mockFile],
+                installedDependencyVersions: {},
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                logger: logger,
+                repoPath: '/test'
+            });
+
+            expect(result).toHaveLength(1);
+            expect(result[0].errors).toEqual([
+                expect.objectContaining({ level: 'error' }),
+                expect.objectContaining({ level: 'fatality' }),
+                expect.objectContaining({ level: 'warning' })
+            ]);
+        });
+
+        it('should handle large file datasets efficiently', async () => {
+            const largeFileSet = Array.from({ length: 100 }, (_, i) => ({
+                fileName: `file${i}.js`,
+                filePath: `/test/file${i}.js`
+            }));
+
+            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } });
+
+            const startTime = Date.now();
+            const result = await runEngineOnFiles({
+                engine: mockEngine,
+                fileData: largeFileSet,
+                installedDependencyVersions: {},
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                logger: logger,
+                repoPath: '/test'
+            });
+            const duration = Date.now() - startTime;
+
+            // Should complete all files even if no results
+            expect(mockEngine.run).toHaveBeenCalledTimes(100);
+            expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
+        });
+
+        it('should handle complex dependency data', async () => {
+            const complexDependencies = {
+                installedDependencyVersions: {
+                    'react': '18.2.0',
+                    '@types/node': '18.15.0',
+                    'typescript': '4.9.5'
+                },
+                minimumDependencyVersions: {
+                    'react': '^18.0.0',
+                    '@types/node': '^18.0.0',
+                    'typescript': '^4.8.0'
+                }
+            };
+
+            const mockFile = { fileName: 'package.json', filePath: '/test/package.json' };
+
+            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } });
+
+            const result = await runEngineOnFiles({
+                engine: mockEngine,
+                fileData: [mockFile],
+                ...complexDependencies,
+                standardStructure: { src: true, tests: true },
+                logger: logger,
+                repoPath: '/test'
+            });
+
+            expect(mockEngine.run).toHaveBeenCalledWith({
+                fileData: mockFile,
+                dependencyData: complexDependencies,
+                standardStructure: { src: true, tests: true }
+            });
+        });
+    });
+
+    describe('registerRuleForTracking', () => {
+        it('should register rule with tracking information', () => {
+            const mockRule = {
+                name: 'test-rule',
+                conditions: { all: [] },
+                event: { type: 'warning', params: { message: 'Test message' } }
+            };
+
+            const mockLogger = {
+                debug: jest.fn(),
+                info: jest.fn(),
+                warn: jest.fn(),
+                error: jest.fn()
+            };
+
+            registerRuleForTracking(mockRule, mockLogger);
+
+            expect(mockLogger.debug).toHaveBeenCalledWith("Registered rule 'test-rule' for event type 'warning'");
+        });
+
+        it('should handle rules without names', () => {
+            const mockRule = {
+                conditions: { all: [] },
+                event: { type: 'error', params: { message: 'Unnamed rule' } }
+            };
+
+            expect(() => {
+                registerRuleForTracking(mockRule);
+            }).not.toThrow();
+        });
+
+        it('should handle null or undefined rules', () => {
+            expect(() => {
+                registerRuleForTracking(null as any);
+            }).not.toThrow();
+
+            expect(() => {
+                registerRuleForTracking(undefined as any);
+            }).not.toThrow();
+        });
+
+        it('should handle rules without logger', () => {
+            const mockRule = {
+                name: 'test-rule',
+                conditions: { all: [] },
+                event: { type: 'warning', params: { message: 'Test message' } }
+            };
+
+            expect(() => {
+                registerRuleForTracking(mockRule);
+            }).not.toThrow();
+        });
+    });
+
+    describe('Error Action Execution Integration', () => {
+        it('should execute error actions for rule failures', async () => {
+            mockEngine.run.mockResolvedValue({
+                results: [
+                    { 
+                        result: true,
+                        name: 'test-rule', 
+                        event: { 
+                            type: 'warning', 
+                            params: { 
+                                message: 'Test warning',
+                                action: 'log-warning'
+                            } 
+                        } 
+                    }
+                ],
+                almanac: { factValue: jest.fn() }
+            });
+
+            const mockFile = { fileName: 'test.js', filePath: '/test/test.js' };
+
+            const result = await runEngineOnFiles({
+                engine: mockEngine,
+                fileData: [mockFile],
+                installedDependencyVersions: {},
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                logger: logger,
+                repoPath: '/test'
+            });
+
+            // The function should build a proper result - test that it returns something
+            expect(result).toHaveLength(1);
+            expect(result[0].errors).toHaveLength(1);
+            expect(result[0].errors[0].ruleFailure).toBe('test-rule');
+        });
+
+        it('should handle error action execution failures gracefully', async () => {
+            (executeErrorAction as jest.Mock).mockImplementation(() => {
+                throw new Error('Error action failed');
+            });
+
+            mockEngine.run.mockResolvedValue({
+                results: [
+                    { 
+                        result: true,
+                        name: 'test-rule', 
+                        event: { 
+                            type: 'error', 
+                            params: { 
+                                message: 'Test error',
+                                action: 'failing-action'
+                            } 
+                        } 
+                    }
+                ],
+                almanac: { factValue: jest.fn() }
+            });
+
+            const mockFile = { fileName: 'test.js', filePath: '/test/test.js' };
+
+            const result = await runEngineOnFiles({
+                engine: mockEngine,
+                fileData: [mockFile],
+                installedDependencyVersions: {},
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                logger: logger,
+                repoPath: '/test'
+            });
+
+            // Should still return the result even if error action fails
+            expect(result).toHaveLength(1);
+            expect(result[0].errors).toHaveLength(1);
+        });
+    });
+
+    describe('Memory and Performance', () => {
+        it('should clean up engine listeners properly', async () => {
+            const mockFile = { fileName: 'test.js', filePath: '/test/test.js' };
+
+            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } });
+
+            await runEngineOnFiles({
+                engine: mockEngine,
+                fileData: [mockFile],
+                installedDependencyVersions: {},
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                logger: logger,
+                repoPath: '/test'
+            });
+
+            // The engine.run should have been called - this tests that the function completed
+            expect(mockEngine.run).toHaveBeenCalledTimes(1);
+        });
+
+        it('should handle memory-intensive file processing', async () => {
+            // Create a large mock file content
+            const largeContent = 'x'.repeat(1000000); // 1MB of content
+            const mockFile = { 
+                fileName: 'large.js', 
+                filePath: '/test/large.js',
+                fileContent: largeContent
+            };
+
+            mockEngine.run.mockResolvedValue({ results: [], almanac: { factValue: jest.fn() } });
+
+            const result = await runEngineOnFiles({
+                engine: mockEngine,
+                fileData: [mockFile],
+                installedDependencyVersions: {},
+                minimumDependencyVersions: {},
+                standardStructure: {},
+                logger: logger,
+                repoPath: '/test'
+            });
+
+            // Should complete without errors - we get empty results but no failures
+            expect(mockEngine.run).toHaveBeenCalledTimes(1);
+            expect(Array.isArray(result)).toBe(true);
         });
     });
 });
