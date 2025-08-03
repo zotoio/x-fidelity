@@ -66,12 +66,25 @@ function main() {
     return;
   }
 
-  // Determine which version to use (prioritize CLI as source of truth)
-  const targetVersion = cliVersion;
+  // In unified release mode, both packages should always have the same version
+  // This script is now mainly for verification and local development
+  
+  if (vscodeVersion === cliVersion) {
+    log('green', '✅ Versions are already synchronized!');
+    log('blue', '📋 Note: Unified release handles version synchronization automatically');
+    return;
+  }
+
+  log('yellow', '⚠️  Version mismatch detected - this should not happen in unified release mode');
+  log('yellow', '🔧 This may indicate a development environment or testing scenario');
+  log('blue', '📋 In production, semantic-release handles version synchronization automatically');
+  
+  // For development purposes, we can still sync manually
+  const targetVersion = cliVersion !== '0.0.0-semantically-released' ? cliVersion : vscodeVersion;
   log('yellow', `🎯 Target version: ${targetVersion}`);
 
-  // Update VSCode extension version
-  if (vscodeVersion !== targetVersion) {
+  // Update VSCode extension version if needed
+  if (vscodeVersion !== targetVersion && targetVersion !== '0.0.0-semantically-released') {
     vscodePackage.version = targetVersion;
     writePackageJson(vscodePackagePath, vscodePackage);
     log(
@@ -80,8 +93,8 @@ function main() {
     );
   }
 
-  log('green', '🎉 Version synchronization complete!');
-  log('blue', `📋 All packages now use version: ${targetVersion}`);
+  log('green', '🎉 Local version synchronization complete!');
+  log('blue', `📋 Local packages now use version: ${targetVersion}`);
 }
 
 if (require.main === module) {

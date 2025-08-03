@@ -49,21 +49,16 @@
       "@semantic-release/changelog",
       {
         "changelogFile": "CHANGELOG.md",
-        "changelogTitle": "# Changelog\n\nAll notable changes to the X-Fidelity VSCode Extension will be documented in this file."
-      }
-    ],
-    [
-      "@semantic-release/npm",
-      {
-        "npmPublish": false
+        "changelogTitle": "# Changelog\n\nAll notable changes to X-Fidelity will be documented in this file."
       }
     ],
     [
       "@semantic-release/exec",
       {
-        "verifyReleaseCmd": "yarn verify:ci",
-        "prepareCmd": "echo '🔄 Preparing VSCode extension release...' && yarn build:production",
-        "publishCmd": "echo '🚀 Publishing VSCode extension...' && yarn publish:universal"
+        "verifyReleaseCmd": "echo '🔍 Verifying unified release for version ${nextRelease.version}'",
+        "prepareCmd": "echo '📝 Preparing unified release ${nextRelease.version}' && node scripts/prepare-unified-release.js ${nextRelease.version}",
+        "publishCmd": "echo '🚀 Publishing unified release ${nextRelease.version}' && node scripts/publish-unified-release.js ${nextRelease.version}",
+        "successCmd": "echo '✅ Unified release ${nextRelease.version} published successfully'"
       }
     ],
     [
@@ -71,14 +66,18 @@
       {
         "assets": [
           {
-            "path": "*.vsix",
-            "label": "X-Fidelity VSCode Extension (${nextRelease.gitTag})"
+            "path": "packages/x-fidelity-cli/dist/**",
+            "label": "CLI Distribution Files (${nextRelease.gitTag})"
+          },
+          {
+            "path": "packages/x-fidelity-vscode/*.vsix",
+            "label": "VSCode Extension (${nextRelease.gitTag})"
           }
         ],
-        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in VSCode extension version ${nextRelease.version} :tada:",
-        "failTitle": "❌ VSCode Extension Release failed",
-        "failComment": "Unfortunately the VSCode extension release failed. Please check the logs for more details.",
-        "labels": ["released", "vscode-extension"],
+        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in version ${nextRelease.version} :tada:\n\n📦 **Released packages:**\n- [x-fidelity@${nextRelease.version}](https://www.npmjs.com/package/x-fidelity/v/${nextRelease.version}) (CLI)\n- [x-fidelity-vscode@${nextRelease.version}](https://marketplace.visualstudio.com/items?itemName=zotoio.x-fidelity-vscode) (VSCode Extension)",
+        "failTitle": "❌ Unified Release failed",
+        "failComment": "Unfortunately the unified release failed. Please check the logs for more details.",
+        "labels": ["released"],
         "assignees": ["@semantic-release"]
       }
     ],
@@ -86,10 +85,12 @@
       "@semantic-release/git",
       {
         "assets": [
-          "CHANGELOG.md"
+          "CHANGELOG.md",
+          "packages/x-fidelity-cli/package.json",
+          "packages/x-fidelity-vscode/package.json"
         ],
-        "message": "chore(vscode): release ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ]
   ]
-} 
+}
