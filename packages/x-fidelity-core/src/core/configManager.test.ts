@@ -5,14 +5,24 @@ import { axiosClient } from '../utils/axiosClient';
 import * as jsonSchemas from '../utils/jsonSchemas';
 import fs from 'fs';
 import { options } from './options';
-import { logger, setLogPrefix } from '../utils/logger';
-import { sendTelemetry } from '../utils/telemetry';
+import { logger } from '../utils/logger';
 import { execSync } from 'child_process';
 import { pluginRegistry } from './pluginRegistry';
 import { loadRules } from '../utils/ruleUtils';
 import { ArchetypeConfig, RuleConfig, IsExemptParams, Exemption } from '@x-fidelity/types';
+import { AxiosResponse } from 'axios';
 
 jest.setTimeout(30000); // 30 seconds
+
+// Helper function to create proper axios response mocks
+const createAxiosResponse = <T>(data: T): AxiosResponse<T> => ({
+    data,
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    config: {} as any,
+    request: {}
+});
 
 describe('repoDir', () => {
     it('should return options.dir', () => {
@@ -23,7 +33,7 @@ describe('repoDir', () => {
 describe('normalizeGitHubUrl', () => {
     beforeEach(() => {
         // Configure the mock to return the actual function behavior
-        (exemptionUtils.normalizeGitHubUrl as jest.Mock).mockImplementation((url: string) => {
+        (exemptionUtils.normalizeGitHubUrl as jest.MockedFunction<typeof exemptionUtils.normalizeGitHubUrl>).mockImplementation((url: string) => {
             if (!url) return '';
             if (url.startsWith('git@')) {
                 return url.endsWith('.git') ? url : `${url}.git`;
@@ -172,7 +182,7 @@ describe('ConfigManager', () => {
         
         // Set default mock behavior only for successful cases
         // Don't set validateArchetype default - let individual tests control it
-        (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+        (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(mockConfig));
         
         // Reset options to default values
         options.configServer = 'http://test-server.com';
@@ -182,7 +192,7 @@ describe('ConfigManager', () => {
     describe('getConfig', () => {
         it('should return the same instance for the same archetype', async () => {
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(mockConfig));
             const instance1 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             const instance2 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             expect(instance1).toBe(instance2);
@@ -190,8 +200,8 @@ describe('ConfigManager', () => {
 
         it('should return different instances for different archetypes', async () => {
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.Mock).mockResolvedValueOnce({ data: { ...mockConfig, name: 'node-fullstack' } });
-            (axiosClient.get as jest.Mock).mockResolvedValueOnce({ data: { ...mockConfig, name: 'java-microservice' } });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValueOnce({ data: { ...mockConfig, name: 'node-fullstack' } });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValueOnce({ data: { ...mockConfig, name: 'java-microservice' } });
             const instance1 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             const instance2 = await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(instance1).not.toBe(instance2);
@@ -199,41 +209,41 @@ describe('ConfigManager', () => {
 
         it('should initialize with default archetype when not specified', async () => {
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(mockConfig));
             const config = await ConfigManager.getConfig({});
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
         });
 
         it('should initialize with specified archetype', async () => {
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: { ...mockConfig, name: 'java-microservice' } });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse({ ...mockConfig, name: 'java-microservice' }));
             const config = await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(config.archetype.name).toBe('java-microservice');
         });
 
         it('should handle error during initialization', async () => {
-            (axiosClient.get as jest.Mock).mockRejectedValue(new Error('Initialization error'));
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockRejectedValue(new Error('Initialization error'));
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Initialization error');
             expect(logger.error).toHaveBeenCalled();
         });
 
         it('should handle malformed config data', async () => {
             const malformedConfig = { invalid: 'config' };
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: malformedConfig });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(malformedConfig));
             validateArchetype.mockReturnValueOnce(false);
             
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid remote archetype configuration');
         });
 
         it('should handle empty config data', async () => {
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: {} });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse({}));
             validateArchetype.mockReturnValueOnce(false);
             
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid remote archetype configuration');
         });
 
         it('should handle null config data', async () => {
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: null });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(null));
             validateArchetype.mockReturnValueOnce(false);
             
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid remote archetype configuration');
@@ -244,7 +254,7 @@ describe('ConfigManager', () => {
     describe('initialize', () => {
         it('should fetch remote config when configServer is provided', async () => {
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(mockConfig));
             const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
             expect(axiosClient.get).toHaveBeenCalledWith('http://test-server.com/archetypes/test-archetype', expect.any(Object));
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
@@ -252,7 +262,7 @@ describe('ConfigManager', () => {
         });
 
         it('should throw an error when unable to fetch from configServer', async () => {
-            (axiosClient.get as jest.Mock).mockRejectedValue(new Error('Network error'));
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockRejectedValue(new Error('Network error'));
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Network error');
             expect(logger.error).toHaveBeenCalled();
         });
@@ -260,7 +270,7 @@ describe('ConfigManager', () => {
         it('should load local config when localConfigPath is provided', async () => {
             validateArchetype.mockReturnValue(true);
             options.configServer = '';
-            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
+            (fs.promises.readFile as jest.MockedFunction<typeof fs.promises.readFile>).mockResolvedValue(JSON.stringify(mockConfig));
             const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
             expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/test-archetype.json', 'utf8');
             expect(config.archetype).toEqual(expect.objectContaining(mockConfig));
@@ -269,14 +279,14 @@ describe('ConfigManager', () => {
         it('should throw an error when local config is invalid', async () => {
             options.configServer = '';
             validateArchetype.mockReturnValueOnce(false);
-            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
+            (fs.promises.readFile as jest.MockedFunction<typeof fs.promises.readFile>).mockResolvedValue(JSON.stringify(mockConfig));
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid local archetype configuration');
             expect(logger.error).toHaveBeenCalled();
         });
 
         it('should throw an error when local config file cannot be read', async () => {
             options.configServer = '';
-            (fs.promises.readFile as jest.Mock).mockRejectedValue(new Error('File read error'));
+            (fs.promises.readFile as jest.MockedFunction<typeof fs.promises.readFile>).mockRejectedValue(new Error('File read error'));
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('File read error');
             expect(logger.error).toHaveBeenCalled();
         });
@@ -294,13 +304,13 @@ describe('ConfigManager', () => {
 
         it('should handle malformed local config JSON', async () => {
             options.configServer = '';
-            (fs.promises.readFile as jest.Mock).mockResolvedValue('invalid json');
+            (fs.promises.readFile as jest.MockedFunction<typeof fs.promises.readFile>).mockResolvedValue('invalid json');
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('No valid builtin configuration found for archetype: test-archetype');
         });
 
         it('should handle empty local config file', async () => {
             options.configServer = '';
-            (fs.promises.readFile as jest.Mock).mockResolvedValue('');
+            (fs.promises.readFile as jest.MockedFunction<typeof fs.promises.readFile>).mockResolvedValue('');
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('No valid builtin configuration found for archetype: test-archetype');
         });
 
@@ -308,7 +318,7 @@ describe('ConfigManager', () => {
             options.configServer = '';
             validateArchetype.mockReturnValueOnce(false);
             const invalidConfig = { name: 'test-archetype' }; // Missing required fields
-            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(invalidConfig));
+            (fs.promises.readFile as jest.MockedFunction<typeof fs.promises.readFile>).mockResolvedValue(JSON.stringify(invalidConfig));
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Invalid local archetype configuration');
         });
 
@@ -375,8 +385,8 @@ describe('ConfigManager', () => {
                 'test-archetype': {
                     archetype: mockConfig,
                     rules: [
-                        { name: 'rule1', conditions: {}, event: { type: 'test', params: {} } },
-                        { name: 'rule2', conditions: {}, event: { type: 'test', params: {} } }
+                        { name: 'rule1', conditions: {}, event: { type: 'test', params: {} } } as RuleConfig,
+                        { name: 'rule2', conditions: {}, event: { type: 'test', params: {} } } as RuleConfig
                     ],
                     cliOptions: {},
                     exemptions: []
@@ -395,8 +405,8 @@ describe('ConfigManager', () => {
                 'test-archetype': {
                     archetype: mockConfig,
                     rules: [
-                        { name: 'rule1', conditions: {}, event: { type: 'test', params: {} } },
-                        { name: 'invalidRule', conditions: {}, event: { type: 'test', params: {} } }
+                        { name: 'rule1', conditions: {}, event: { type: 'test', params: {} } } as RuleConfig,
+                        { name: 'invalidRule', conditions: {}, event: { type: 'test', params: {} } } as RuleConfig
                     ],
                     cliOptions: {},
                     exemptions: []
@@ -404,16 +414,16 @@ describe('ConfigManager', () => {
             };
             
             // Reset validateRule mock to ensure consistent behavior
-            (validateRule as unknown as jest.Mock).mockReset();
+            (validateRule as jest.MockedFunction<typeof validateRule>).mockReset();
             
             // Mock validateRule to return true for the first rule and false for the second
-            (validateRule as unknown as jest.Mock)
+            (validateRule as jest.MockedFunction<typeof validateRule>)
                 .mockReturnValueOnce(true)
                 .mockReturnValueOnce(false);
             
             // We need to modify the rules array in the config directly to simulate filtering
             ConfigManager['configs']['test-archetype'].rules = [
-                { name: 'rule1', conditions: {}, event: { type: 'test', params: {} } }
+                { name: 'rule1', conditions: {}, event: { type: 'test', params: {} } } as RuleConfig
             ];
             
             // Get the config (should filter out invalid rules)
@@ -439,8 +449,8 @@ describe('ConfigManager', () => {
                 }
             };
         
-            // Directly call setLogPrefix to ensure it's called
-            setLogPrefix('test-prefix');
+            // Mock logger prefix functionality if needed
+            // setLogPrefix is not available in the current logger implementation
         
             await ConfigManager.getConfig({ archetype: 'test-archetype', logPrefix: 'test-prefix' });
         
@@ -454,7 +464,7 @@ describe('ConfigManager', () => {
             validateArchetype.mockReturnValue(true);
             options.configServer = '';
             options.localConfigPath = '/path/to/local/config';
-            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
+            (fs.promises.readFile as jest.MockedFunction<typeof fs.promises.readFile>).mockResolvedValue(JSON.stringify(mockConfig));
             await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/local/config/node-fullstack.json', 'utf8');
             await ConfigManager.getConfig({ archetype: 'java-microservice' });
@@ -468,7 +478,7 @@ describe('ConfigManager', () => {
         it('should clear all loaded configs', async () => {
             validateArchetype.mockReturnValue(true);
             options.configServer = '';
-            (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
+            (fs.promises.readFile as jest.MockedFunction<typeof fs.promises.readFile>).mockResolvedValue(JSON.stringify(mockConfig));
             await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(ConfigManager.getLoadedConfigs().length).toBe(2);
@@ -518,11 +528,11 @@ describe('ConfigManager', () => {
 
         it('should handle errors when loading plugins', async () => {
             // Clear any existing plugin registry state
-            (pluginRegistry.registerPlugin as jest.Mock).mockClear();
+            (pluginRegistry.registerPlugin as jest.MockedFunction<typeof pluginRegistry.registerPlugin>).mockClear();
             
             // Mock execSync to avoid actual yarn global dir call
             const originalExecSync = execSync;
-            (execSync as jest.Mock).mockReturnValue('/fake/global/dir\n');
+            (execSync as jest.MockedFunction<typeof execSync>).mockReturnValue('/fake/global/dir\n');
             
             // Mock dynamicImport to fail for @x-fidelity/plugins (builtin check) and then fail for the actual plugin
             const mockImport = jest.fn()
@@ -536,9 +546,9 @@ describe('ConfigManager', () => {
             delete process.env.NODE_ENV;
             process.env.NODE_ENV = 'production';
             
-            (logger.error as jest.Mock).mockClear();
-            (logger.info as jest.Mock).mockClear();
-            (logger.warn as jest.Mock).mockClear();
+            (logger.error as jest.MockedFunction<typeof logger.error>).mockClear();
+            (logger.info as jest.MockedFunction<typeof logger.info>).mockClear();
+            (logger.warn as jest.MockedFunction<typeof logger.warn>).mockClear();
             
             // Implementation throws error instead of just logging
             await expect(ConfigManager.loadPlugins(['mock-plugin'])).rejects.toThrow('Failed to load extension mock-plugin from all locations: Error: Plugin load error');
@@ -554,7 +564,7 @@ describe('ConfigManager', () => {
                     process.env.NODE_ENV = originalNodeEnv;
                 }
             }
-            (execSync as jest.Mock).mockImplementation(originalExecSync);
+            (execSync as jest.MockedFunction<typeof execSync>).mockImplementation(originalExecSync);
         });
 
         it('should handle invalid plugin format', async () => {
@@ -608,8 +618,8 @@ describe('ConfigManager', () => {
             validateArchetype.mockReturnValue(true);
             options.configServer = 'http://test-server.com';
             options.localConfigPath = '';
-            (axiosClient.get as jest.Mock).mockReset();
-            (axiosClient.get as jest.Mock)
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockReset();
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>)
                 .mockRejectedValueOnce(new Error('Network error'))
                 .mockResolvedValueOnce({ data: mockConfig });
             const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
@@ -626,7 +636,7 @@ describe('ConfigManager', () => {
         it('should throw error after max retries', async () => {
             options.configServer = 'http://test-server.com';
             options.localConfigPath = '';
-            (axiosClient.get as jest.Mock).mockRejectedValue(new Error('Network error'));
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockRejectedValue(new Error('Network error'));
             jest.spyOn(ConfigManager, 'loadPlugins').mockResolvedValue();
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Network error');
             expect(axiosClient.get).toHaveBeenCalledTimes(3);
@@ -640,7 +650,7 @@ describe('ConfigManager', () => {
         it('should throw error when remote config is invalid', async () => {
             options.configServer = 'http://test-server.com';
             options.localConfigPath = '';
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(mockConfig));
             validateArchetype.mockReturnValueOnce(false);
             jest.spyOn(ConfigManager, 'loadPlugins').mockResolvedValue();
             
@@ -653,7 +663,7 @@ describe('ConfigManager', () => {
         it('should handle timeout errors', async () => {
             options.configServer = 'http://test-server.com';
             options.localConfigPath = '';
-            (axiosClient.get as jest.Mock).mockRejectedValue(new Error('timeout of 5000ms exceeded'));
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockRejectedValue(new Error('timeout of 5000ms exceeded'));
             try {
                 await ConfigManager.getConfig({ archetype: 'test-archetype' });
                 fail('Should have thrown an error');
@@ -668,7 +678,7 @@ describe('ConfigManager', () => {
         it('should handle rate limiting', async () => {
             options.configServer = 'http://test-server.com';
             options.localConfigPath = '';
-            (axiosClient.get as jest.Mock).mockRejectedValue({ response: { status: 429 } });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockRejectedValue({ response: { status: 429 } });
             try {
                 await ConfigManager.getConfig({ archetype: 'test-archetype' });
                 fail('Should have thrown an error');
@@ -688,7 +698,7 @@ describe('ConfigManager', () => {
             ];
             
             // Configure the mock to return the expected exemptions
-            (exemptionUtils.loadExemptions as jest.Mock).mockResolvedValueOnce(mockLegacyExemptions);
+            (exemptionUtils.loadExemptions as jest.MockedFunction<typeof exemptionUtils.loadExemptions>).mockResolvedValueOnce(mockLegacyExemptions);
 
             const exemptions = await loadExemptions({ 
                 configServer: '', 
@@ -706,7 +716,7 @@ describe('ConfigManager', () => {
 
         it('should return an empty array if no exemption files are found', async () => {
             // Configure the mock to return empty array
-            (exemptionUtils.loadLocalExemptions as jest.Mock).mockResolvedValueOnce([]);
+            (exemptionUtils.loadLocalExemptions as jest.MockedFunction<typeof exemptionUtils.loadLocalExemptions>).mockResolvedValueOnce([]);
             
             const exemptions = await loadLocalExemptions({ 
                 configServer: '', 
@@ -724,7 +734,7 @@ describe('ConfigManager', () => {
 
         it('should handle malformed exemption JSON', async () => {
             // Configure the mock to return empty array when JSON is malformed
-            (exemptionUtils.loadLocalExemptions as jest.Mock).mockResolvedValueOnce([]);
+            (exemptionUtils.loadLocalExemptions as jest.MockedFunction<typeof exemptionUtils.loadLocalExemptions>).mockResolvedValueOnce([]);
             
             const exemptions = await loadLocalExemptions({ 
                 configServer: '', 
@@ -746,7 +756,7 @@ describe('ConfigManager', () => {
             ];
             
             // Configure the mock to return filtered exemptions (only valid ones)
-            (exemptionUtils.loadLocalExemptions as jest.Mock).mockResolvedValueOnce(validExemptions);
+            (exemptionUtils.loadLocalExemptions as jest.MockedFunction<typeof exemptionUtils.loadLocalExemptions>).mockResolvedValueOnce(validExemptions);
             
             const exemptions = await loadLocalExemptions({ 
                 configServer: '', 
@@ -770,7 +780,7 @@ describe('ConfigManager', () => {
 
         beforeEach(() => {
             // Configure isExempt mock with specific behavior for different test cases
-            (exemptionUtils.isExempt as jest.Mock).mockImplementation((params: IsExemptParams) => {
+            (exemptionUtils.isExempt as jest.MockedFunction<typeof exemptionUtils.isExempt>).mockImplementation((params: IsExemptParams) => {
                 if (!params.repoUrl || !params.exemptions) return false;
                 
                 const now = new Date();
@@ -847,7 +857,7 @@ describe('ConfigManager', () => {
         it('should handle missing expiration date', () => {
             const invalidExemptions: Exemption[] = [
                 { repoUrl: 'https://github.com/example/repo', rule: 'test-rule', expirationDate: '2023-12-31', reason: 'Test reason' }
-            ];
+            ] as Exemption[];
             const params: IsExemptParams = {
                 ruleName: 'test-rule',
                 repoUrl: 'https://github.com/example/repo',
@@ -891,9 +901,9 @@ describe('ConfigManager - Additional Coverage', () => {
     describe('clearLoadedConfigs', () => {
         it('should clear all loaded configurations', async () => {
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
-            (loadRules as jest.Mock).mockResolvedValue([]);
-            (loadExemptions as jest.Mock).mockResolvedValue([]);
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(mockConfig));
+            (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue([]);
+            (loadExemptions as jest.MockedFunction<typeof loadExemptions>).mockResolvedValue([]);
             
             // Load two configs
             await ConfigManager.getConfig({ archetype: 'archetype1' });
@@ -910,9 +920,9 @@ describe('ConfigManager - Additional Coverage', () => {
     describe('getLoadedConfigs', () => {
         it('should return list of loaded config keys', async () => {
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
-            (loadRules as jest.Mock).mockResolvedValue([]);
-            (loadExemptions as jest.Mock).mockResolvedValue([]);
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(mockConfig));
+            (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue([]);
+            (loadExemptions as jest.MockedFunction<typeof loadExemptions>).mockResolvedValue([]);
             
             await ConfigManager.getConfig({ archetype: 'test-archetype' });
             await ConfigManager.getConfig({ archetype: 'another-archetype' });
@@ -933,7 +943,7 @@ describe('ConfigManager - Additional Coverage', () => {
         it('should handle network timeout', async () => {
             const timeoutError = new Error('Network timeout');
             timeoutError.name = 'TIMEOUT';
-            (axiosClient.get as jest.Mock).mockRejectedValue(timeoutError);
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockRejectedValue(timeoutError);
             
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Network timeout');
         });
@@ -941,14 +951,14 @@ describe('ConfigManager - Additional Coverage', () => {
         it('should handle connection refused', async () => {
             const connectionError = new Error('Connection refused');
             connectionError.name = 'ECONNREFUSED';
-            (axiosClient.get as jest.Mock).mockRejectedValue(connectionError);
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockRejectedValue(connectionError);
             
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Connection refused');
         });
 
         it('should handle HTTP 404 error', async () => {
             const httpError = new Error('Request failed with status code 404');
-            (axiosClient.get as jest.Mock).mockRejectedValue(httpError);
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockRejectedValue(httpError);
             
             await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Request failed with status code 404');
         });
@@ -956,20 +966,22 @@ describe('ConfigManager - Additional Coverage', () => {
 
     describe('Configuration Validation', () => {
         it('should validate archetype configuration with valid data', async () => {
-            const validConfig = {
+            const validConfig: ArchetypeConfig = {
                 name: 'valid-archetype',
                 rules: ['rule1'],
                 plugins: ['plugin1'],
                 config: {
                     minimumDependencyVersions: { 'react': '^17.0.0' },
-                    standardStructure: { src: true, tests: true }
+                    standardStructure: { src: true, tests: true },
+                    blacklistPatterns: [],
+                    whitelistPatterns: []
                 }
             };
             
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: validConfig });
-            (loadRules as jest.Mock).mockResolvedValue([]);
-            (loadExemptions as jest.Mock).mockResolvedValue([]);
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(validConfig));
+            (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue([]);
+            (loadExemptions as jest.MockedFunction<typeof loadExemptions>).mockResolvedValue([]);
             
             const config = await ConfigManager.getConfig({ archetype: 'valid-archetype' });
             expect(config.archetype).toEqual(expect.objectContaining(validConfig));
@@ -981,7 +993,7 @@ describe('ConfigManager - Additional Coverage', () => {
             };
             
             validateArchetype.mockReturnValue(false);
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: invalidConfig });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(invalidConfig));
             
             await expect(ConfigManager.getConfig({ archetype: 'invalid-archetype' })).rejects.toThrow('Invalid remote archetype configuration');
         });
@@ -997,9 +1009,9 @@ describe('ConfigManager - Additional Coverage', () => {
             const loadPluginsSpy = jest.spyOn(ConfigManager, 'loadPlugins').mockResolvedValue();
             
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: configWithPlugins });
-            (loadRules as jest.Mock).mockResolvedValue([]);
-            (loadExemptions as jest.Mock).mockResolvedValue([]);
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(configWithPlugins));
+            (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue([]);
+            (loadExemptions as jest.MockedFunction<typeof loadExemptions>).mockResolvedValue([]);
             
             await ConfigManager.getConfig({ archetype: 'plugin-archetype' });
             
@@ -1016,9 +1028,9 @@ describe('ConfigManager - Additional Coverage', () => {
             const loadPluginsSpy = jest.spyOn(ConfigManager, 'loadPlugins').mockResolvedValue();
             
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: configWithoutPlugins });
-            (loadRules as jest.Mock).mockResolvedValue([]);
-            (loadExemptions as jest.Mock).mockResolvedValue([]);
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(configWithoutPlugins));
+            (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue([]);
+            (loadExemptions as jest.MockedFunction<typeof loadExemptions>).mockResolvedValue([]);
             
             await ConfigManager.getConfig({ archetype: 'no-plugins-archetype' });
             
@@ -1030,9 +1042,9 @@ describe('ConfigManager - Additional Coverage', () => {
     describe('Cache Behavior', () => {
         it('should cache configurations per archetype', async () => {
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.Mock).mockResolvedValue({ data: mockConfig });
-            (loadRules as jest.Mock).mockResolvedValue([]);
-            (loadExemptions as jest.Mock).mockResolvedValue([]);
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(mockConfig));
+            (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue([]);
+            (loadExemptions as jest.MockedFunction<typeof loadExemptions>).mockResolvedValue([]);
             
             // First call
             await ConfigManager.getConfig({ archetype: 'cached-archetype' });
@@ -1048,8 +1060,8 @@ describe('ConfigManager - Additional Coverage', () => {
             ConfigManager['configs'] = {};
             
             // Clear the mock and reset call count
-            (axiosClient.get as jest.Mock).mockClear();
-            (axiosClient.get as jest.Mock).mockRejectedValue(new Error('Config fetch failed'));
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockClear();
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockRejectedValue(new Error('Config fetch failed'));
             
             // First failed attempt
             await expect(ConfigManager.getConfig({ archetype: 'failed-archetype' })).rejects.toThrow('Config fetch failed');

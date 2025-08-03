@@ -2,8 +2,23 @@ import { initCLI, options, DEMO_CONFIG_PATH } from './cli';
 import { logger, setOptions } from '@x-fidelity/core';
 import fs from 'fs';
 import path from 'path';
+import { Command } from 'commander';
+import { ExecutionMode, LegacyMode } from '@x-fidelity/types';
 
-const mockProgram = {
+// Define the CommanderOptions interface locally
+interface CommanderOptions {
+    dir?: string;
+    archetype?: string;
+    mode?: ExecutionMode | LegacyMode;
+    localConfigPath?: string;
+    githubConfigLocation?: string;
+    openaiEnabled?: boolean;
+    extraPlugins?: string[];
+    port?: number;
+}
+
+// Create a typed mock for the commander program
+const createMockProgram = (): jest.Mocked<Command> => ({
   name: jest.fn().mockReturnThis(),
   description: jest.fn().mockReturnThis(),
   version: jest.fn().mockReturnThis(),
@@ -20,20 +35,18 @@ const mockProgram = {
   error: jest.fn().mockReturnThis(),
   command: jest.fn().mockReturnThis(),
   action: jest.fn().mockReturnThis(),
-  exitOverride: jest.fn().mockImplementation(cb => {
+  exitOverride: jest.fn().mockImplementation((cb: () => void) => {
     cb();
-    return mockProgram;
+    return createMockProgram();
   }),
-  args: [] as string[]
-};
+  args: [] as string[],
+} as unknown as jest.Mocked<Command>);
 
-jest.mock('commander', () => {
-  const Command = jest.fn().mockImplementation(() => mockProgram);
-  
-  return { 
-    Command: Command
-  };
-});
+const mockProgram = createMockProgram();
+
+jest.mock('commander', () => ({
+  Command: jest.fn().mockImplementation(() => mockProgram),
+}));
 
 jest.mock('@x-fidelity/core', () => ({
   logger: {
@@ -67,8 +80,8 @@ jest.mock('fs', () => ({
 }));
 
 jest.mock('path', () => ({
-  resolve: jest.fn().mockImplementation((...args) => args.join('/')),
-  join: jest.fn().mockImplementation((...args) => args.join('/'))
+  resolve: jest.fn().mockImplementation((...args: string[]) => args.join('/')),
+  join: jest.fn().mockImplementation((...args: string[]) => args.join('/'))
 }));
 
 jest.mock('prettyjson', () => ({
@@ -81,7 +94,7 @@ describe('CLI', () => {
   let originalProcessCwd: () => string;
   
   // Helper function to simulate full CLI flow
-  const simulateCLI = async (cliOpts: any = {}, directory: string = '.') => {
+  const simulateCLI = async (cliOpts: Partial<CommanderOptions> = {}, directory: string = '.') => {
     // Handle mode conversion like real CLI - 'client' becomes 'cli'
     let mode = cliOpts.mode || 'cli';
     if (mode === 'client') {
@@ -117,7 +130,7 @@ describe('CLI', () => {
     originalProcessExit = process.exit;
     originalProcessEnv = process.env;
     originalProcessCwd = process.cwd;
-    process.exit = jest.fn() as any;
+    process.exit = jest.fn() as unknown as (code?: number) => never;
     process.cwd = jest.fn().mockReturnValue('/test/cwd');
   });
 
@@ -129,7 +142,7 @@ describe('CLI', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (mockProgram.opts as jest.Mock).mockReturnValue({});
+    mockProgram.opts.mockReturnValue({});
     mockProgram.args = [];
     
     // Reset options to default state
@@ -168,7 +181,7 @@ describe('CLI', () => {
   });
 
   it('should handle server mode', async () => {
-    await simulateCLI({ mode: 'server', port: '8888' });
+    await simulateCLI({ mode: 'server', port: 8888 });
     expect(options.mode).toBe('server');
   });
 
@@ -201,7 +214,7 @@ describe('CLI', () => {
       expect.stringContaining('DEPRECATION WARNING')
     );
     expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('client\' mode is deprecated')
+      expect.stringContaining("'client' mode is deprecated")
     );
   });
 

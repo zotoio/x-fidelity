@@ -5,7 +5,7 @@ import {
     safeClone, 
     createLocalizedTimestamp 
 } from './utils';
-import { ScanResult, ErrorLevel } from '@x-fidelity/types';
+import { ScanResult, ErrorLevel, RuleFailure } from '@x-fidelity/types';
 import { logger } from './logger';
 
 jest.mock('./logger', () => ({
@@ -73,15 +73,15 @@ describe('utils', () => {
         });
 
         it('should count all rule failures when no level filter specified', () => {
-            const scanResults = [
+            const scanResults: ScanResult[] = [
                 createMockScanResult([
-                    { level: 'warning' as ErrorLevel },
-                    { level: 'error' as ErrorLevel },
-                    { level: 'fatality' as ErrorLevel }
+                    { level: 'warning' },
+                    { level: 'error' },
+                    { level: 'fatality' }
                 ]),
                 createMockScanResult([
-                    { level: 'warning' as ErrorLevel },
-                    { level: 'error' as ErrorLevel }
+                    { level: 'warning' },
+                    { level: 'error' }
                 ])
             ];
 
@@ -90,15 +90,15 @@ describe('utils', () => {
         });
 
         it('should count only warnings when level filter is warning', () => {
-            const scanResults = [
+            const scanResults: ScanResult[] = [
                 createMockScanResult([
-                    { level: 'warning' as ErrorLevel },
-                    { level: 'error' as ErrorLevel },
-                    { level: 'warning' as ErrorLevel }
+                    { level: 'warning' },
+                    { level: 'error' },
+                    { level: 'warning' }
                 ]),
                 createMockScanResult([
-                    { level: 'warning' as ErrorLevel },
-                    { level: 'fatality' as ErrorLevel }
+                    { level: 'warning' },
+                    { level: 'fatality' }
                 ])
             ];
 
@@ -107,15 +107,15 @@ describe('utils', () => {
         });
 
         it('should count only errors when level filter is error', () => {
-            const scanResults = [
+            const scanResults: ScanResult[] = [
                 createMockScanResult([
-                    { level: 'warning' as ErrorLevel },
-                    { level: 'error' as ErrorLevel },
-                    { level: 'error' as ErrorLevel }
+                    { level: 'warning' },
+                    { level: 'error' },
+                    { level: 'error' }
                 ]),
                 createMockScanResult([
-                    { level: 'error' as ErrorLevel },
-                    { level: 'fatality' as ErrorLevel }
+                    { level: 'error' },
+                    { level: 'fatality' }
                 ])
             ];
 
@@ -124,15 +124,15 @@ describe('utils', () => {
         });
 
         it('should count only fatalities when level filter is fatality', () => {
-            const scanResults = [
+            const scanResults: ScanResult[] = [
                 createMockScanResult([
-                    { level: 'warning' as ErrorLevel },
-                    { level: 'fatality' as ErrorLevel }
+                    { level: 'warning' },
+                    { level: 'fatality' }
                 ]),
                 createMockScanResult([
-                    { level: 'error' as ErrorLevel },
-                    { level: 'fatality' as ErrorLevel },
-                    { level: 'fatality' as ErrorLevel }
+                    { level: 'error' },
+                    { level: 'fatality' },
+                    { level: 'fatality' }
                 ])
             ];
 
@@ -146,10 +146,10 @@ describe('utils', () => {
         });
 
         it('should return 0 when no errors match the level filter', () => {
-            const scanResults = [
+            const scanResults: ScanResult[] = [
                 createMockScanResult([
-                    { level: 'warning' as ErrorLevel },
-                    { level: 'error' as ErrorLevel }
+                    { level: 'warning' },
+                    { level: 'error' }
                 ])
             ];
 
@@ -158,7 +158,7 @@ describe('utils', () => {
         });
 
         it('should handle scan results with no errors', () => {
-            const scanResults = [
+            const scanResults: ScanResult[] = [
                 createMockScanResult([]),
                 createMockScanResult([])
             ];

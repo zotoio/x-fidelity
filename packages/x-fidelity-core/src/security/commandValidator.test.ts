@@ -1,4 +1,4 @@
-import { validateCommand, SafeGitCommand } from './commandValidator';
+import { validateCommand, SafeGitCommand, ALLOWED_GIT_COMMANDS } from './commandValidator';
 import { CommandInjectionError } from './index';
 
 describe('commandValidator', () => {
@@ -10,8 +10,8 @@ describe('commandValidator', () => {
         });
 
         it('should return false for unsafe commands', () => {
-            expect(validateCommand('rm', ['-rf', '/'])).toBe(false);
-            expect(validateCommand('malicious', [])).toBe(false);
+            expect(validateCommand('rm' as any, ['-rf', '/'])).toBe(false);
+            expect(validateCommand('malicious' as any, [])).toBe(false);
             expect(validateCommand('status', ['$(rm -rf /)'])).toBe(false);
         });
 
@@ -27,17 +27,17 @@ describe('commandValidator', () => {
 
         it('should validate allowed git commands only', () => {
             // These should be rejected as they're not in ALLOWED_GIT_COMMANDS
-            expect(validateCommand('push', [])).toBe(false);
-            expect(validateCommand('status', [])).toBe(false);
-            expect(validateCommand('log', ['--oneline'])).toBe(false);
+            expect(validateCommand('push' as any, [])).toBe(false);
+            expect(validateCommand('status' as any, [])).toBe(false);
+            expect(validateCommand('log' as any, ['--oneline'])).toBe(false);
         });
     });
 
     describe('SafeGitCommand', () => {
         it('should create valid SafeGitCommand for allowed commands', () => {
-            expect(() => new SafeGitCommand('clone', ['https://example.com/repo.git'])).not.toThrow();
-            expect(() => new SafeGitCommand('fetch', ['origin'])).not.toThrow();
-            expect(() => new SafeGitCommand('pull', ['origin', 'main'])).not.toThrow();
+            ALLOWED_GIT_COMMANDS.forEach(command => {
+                expect(() => new SafeGitCommand(command, [])).not.toThrow();
+            });
         });
 
         it('should reject unauthorized commands', () => {

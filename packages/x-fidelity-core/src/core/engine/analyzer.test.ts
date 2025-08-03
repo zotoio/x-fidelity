@@ -7,9 +7,10 @@ import { loadFacts } from '../../facts';
 import { ConfigManager } from '../configManager';
 import { sendTelemetry } from '../../utils/telemetry';
 import { isOpenAIEnabled } from '../../utils/openaiUtils';
-import { createTimingTracker } from '../../utils/timingUtils';
+import { createTimingTracker, TimingTracker } from '../../utils/timingUtils';
 import { factMetricsTracker } from '../../utils/factMetricsTracker';
 import fs from 'fs/promises';
+import { FileData, RuleConfig, Operator, Fact, ArchetypeConfig, Exemption } from '@x-fidelity/types';
 
 jest.setTimeout(60000);
 
@@ -31,18 +32,18 @@ describe('Analyzer', () => {
         jest.clearAllMocks();
         
         // Default plugin registry mocks
-        (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+        (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
             { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
             { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) },
             { name: 'collectOpenaiAnalysisFacts', fn: jest.fn().mockResolvedValue('') }
         ]);
-        (pluginRegistry.getPluginOperators as jest.Mock).mockReturnValue([
+        (pluginRegistry.getPluginOperators as jest.MockedFunction<typeof pluginRegistry.getPluginOperators>).mockReturnValue([
             { name: 'mockPluginOperator', fn: jest.fn() }
         ]);
         
         // Default mocks
-        (isOpenAIEnabled as jest.Mock).mockReturnValue(true);
-        (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
+        (isOpenAIEnabled as jest.MockedFunction<typeof isOpenAIEnabled>).mockReturnValue(true);
+        (ConfigManager.getConfig as jest.MockedFunction<typeof ConfigManager.getConfig>).mockResolvedValue({
             archetype: {
                 name: 'node-fullstack',
                 rules: [],
@@ -50,12 +51,12 @@ describe('Analyzer', () => {
                 facts: [],
                 config: { minimumDependencyVersions: {}, standardStructure: true },
                 plugins: []
-            },
+            } as ArchetypeConfig,
             rules: [],
             exemptions: []
         });
         
-        const mockTimingTracker = {
+        const mockTimingTracker: jest.Mocked<TimingTracker> = {
             recordTiming: jest.fn(),
             recordDetailedTiming: jest.fn(),
             logTimingBreakdown: jest.fn(),
@@ -63,43 +64,43 @@ describe('Analyzer', () => {
             getDuration: jest.fn().mockReturnValue(1000),
             getMemoryUsage: jest.fn().mockReturnValue({ heapUsed: 100000, heapTotal: 200000 })
         };
-        (createTimingTracker as jest.Mock).mockReturnValue(mockTimingTracker);
+        (createTimingTracker as jest.MockedFunction<typeof createTimingTracker>).mockReturnValue(mockTimingTracker);
         
-        (factMetricsTracker.reset as jest.Mock).mockImplementation(() => {});
-        (factMetricsTracker.trackFactExecution as jest.Mock).mockImplementation((name, fn) => fn());
-        (factMetricsTracker.getMetrics as jest.Mock).mockReturnValue({});
+        (factMetricsTracker.reset as jest.MockedFunction<typeof factMetricsTracker.reset>).mockImplementation(() => {});
+        (factMetricsTracker.trackFactExecution as jest.MockedFunction<typeof factMetricsTracker.trackFactExecution>).mockImplementation((name, fn) => fn());
+        (factMetricsTracker.getMetrics as jest.MockedFunction<typeof factMetricsTracker.getMetrics>).mockReturnValue({});
     });
 
     describe('Basic Analysis Pipeline', () => {
         it('should successfully analyze a basic codebase', async () => {
-            const mockFileData = [
+            const mockFileData: FileData[] = [
                 { filePath: 'src/index.ts', fileName: 'index.ts', fileContent: 'console.log("Hello, world!");' },
                 { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
             ];
             const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
-            const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
-            const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
-            const mockFacts = [{ name: 'mockFact', fn: jest.fn() }];
+            const mockRules: RuleConfig[] = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
+            const mockOperators: Operator[] = [{ name: 'mockOperator', fn: jest.fn() }];
+            const mockFacts: Fact[] = [{ name: 'mockFact', fn: jest.fn() }];
 
             // Mock plugin facts through registry
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue(mockDependencyData) },
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) },
                 { name: 'collectOpenaiAnalysisFacts', fn: jest.fn().mockResolvedValue('mock openai system prompt') }
             ]);
             
-            (loadRules as jest.Mock).mockResolvedValue(mockRules);
-            (loadOperators as jest.Mock).mockResolvedValue(mockOperators);
-            (loadFacts as jest.Mock).mockResolvedValue(mockFacts);
+            (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue(mockRules);
+            (loadOperators as jest.MockedFunction<typeof loadOperators>).mockResolvedValue(mockOperators);
+            (loadFacts as jest.MockedFunction<typeof loadFacts>).mockResolvedValue(mockFacts);
 
             const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
-            (Engine as jest.Mock).mockImplementation(() => ({
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
                 addOperator: jest.fn(),
                 addRule: jest.fn(),
                 addFact: jest.fn(),
                 on: jest.fn(),
                 run: engineRunMock
-            }));
+            } as unknown as Engine));
 
             const results = await analyzeCodebase({
                 repoPath: 'mockRepoPath',
@@ -149,34 +150,34 @@ describe('Analyzer', () => {
         });
 
         it('should handle errors during analysis', async () => {
-            const mockFileData = [
-                { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");' },
+            const mockFileData: FileData[] = [
+                { filePath: 'src/index.ts', fileContent: 'console.log("Hello, world!");', fileName: 'index.ts' },
                 { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
             ];
             const mockDependencyData = [{ dep: 'commander', ver: '2.0.0', min: '^2.0.0' }];
-            const mockRules = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
-            const mockOperators = [{ name: 'mockOperator', fn: jest.fn() }];
-            const mockFacts = [{ name: 'mockFact', fn: jest.fn() }];
+            const mockRules: RuleConfig[] = [{ name: 'mockRule', conditions: { all: [] }, event: { type: 'mockEvent' } }];
+            const mockOperators: Operator[] = [{ name: 'mockOperator', fn: jest.fn() }];
+            const mockFacts: Fact[] = [{ name: 'mockFact', fn: jest.fn() }];
 
             // Mock plugin facts through registry
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue(mockDependencyData) },
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) },
                 { name: 'collectOpenaiAnalysisFacts', fn: jest.fn().mockResolvedValue('mock openai system prompt') }
             ]);
             
-            (loadRules as jest.Mock).mockResolvedValue(mockRules);
-            (loadOperators as jest.Mock).mockResolvedValue(mockOperators);
-            (loadFacts as jest.Mock).mockResolvedValue(mockFacts);
+            (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue(mockRules);
+            (loadOperators as jest.MockedFunction<typeof loadOperators>).mockResolvedValue(mockOperators);
+            (loadFacts as jest.MockedFunction<typeof loadFacts>).mockResolvedValue(mockFacts);
 
             const engineRunMock = jest.fn().mockRejectedValue(new Error('mock error'));
-            (Engine as jest.Mock).mockImplementation(() => ({
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
                 addOperator: jest.fn(),
                 addRule: jest.fn(),
                 addFact: jest.fn(),
                 on: jest.fn(),
                 run: engineRunMock
-            }));
+            } as unknown as Engine));
 
             const results = await analyzeCodebase({
                 repoPath: 'mockRepoPath',
@@ -216,7 +217,7 @@ describe('Analyzer', () => {
     describe('Performance & Scale Tests', () => {
         it('should handle large codebase analysis efficiently', async () => {
             // Simulate large codebase with 1000 files
-            const largeFileData = Array.from({ length: 1000 }, (_, i) => ({
+            const largeFileData: FileData[] = Array.from({ length: 1000 }, (_, i) => ({
                 filePath: `src/file${i}.ts`,
                 fileName: `file${i}.ts`,
                 fileContent: `export const value${i} = ${i}; // File ${i}`
@@ -227,19 +228,19 @@ describe('Analyzer', () => {
                 fileContent: 'REPO_GLOBAL_CHECK'
             });
 
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(largeFileData) }
             ]);
 
             const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
-            (Engine as jest.Mock).mockImplementation(() => ({
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
                 addOperator: jest.fn(),
                 addRule: jest.fn(),
                 addFact: jest.fn(),
                 on: jest.fn(),
                 run: engineRunMock
-            }));
+            } as unknown as Engine));
 
             const startTime = Date.now();
             const results = await analyzeCodebase({
@@ -258,22 +259,22 @@ describe('Analyzer', () => {
         });
 
         it('should track memory usage during analysis', async () => {
-            const mockFileData = [
-                { filePath: 'src/memory-test.ts', fileContent: 'x'.repeat(10000) } // Large file content
+            const mockFileData: FileData[] = [
+                { filePath: 'src/memory-test.ts', fileContent: 'x'.repeat(10000), fileName: 'memory-test.ts' } // Large file content
             ];
 
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) }
             ]);
 
             const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
-            (Engine as jest.Mock).mockImplementation(() => ({
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
                 addOperator: jest.fn(),
                 addRule: jest.fn(),
                 addFact: jest.fn(),
                 on: jest.fn(),
                 run: engineRunMock
-            }));
+            } as unknown as Engine));
 
             const results = await analyzeCodebase({
                 repoPath: 'memoryTestRepo',
@@ -286,13 +287,13 @@ describe('Analyzer', () => {
         });
 
         it('should handle concurrent rule execution', async () => {
-            const mockFileData = Array.from({ length: 10 }, (_, i) => ({
+            const mockFileData: FileData[] = Array.from({ length: 10 }, (_, i) => ({
                 filePath: `src/concurrent${i}.ts`,
                 fileName: `concurrent${i}.ts`,
                 fileContent: `// Concurrent test file ${i}`
             }));
 
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) }
             ]);
 
@@ -301,13 +302,13 @@ describe('Analyzer', () => {
                 new Promise(resolve => setTimeout(() => resolve({ results: [] }), 100))
             );
             
-            (Engine as jest.Mock).mockImplementation(() => ({
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
                 addOperator: jest.fn(),
                 addRule: jest.fn(),
                 addFact: jest.fn(),
                 on: jest.fn(),
                 run: engineRunMock
-            }));
+            } as unknown as Engine));
 
             const startTime = Date.now();
             const results = await analyzeCodebase({
@@ -324,7 +325,7 @@ describe('Analyzer', () => {
 
     describe('Configuration & Plugin Management', () => {
         it('should load custom archetype configuration', async () => {
-            const customArchetypeConfig = {
+            const customArchetypeConfig: ArchetypeConfig = {
                 name: 'custom-archetype',
                 rules: ['customRule1', 'customRule2'],
                 operators: ['customOperator1'],
@@ -336,13 +337,13 @@ describe('Analyzer', () => {
                 plugins: ['customPlugin1']
             };
 
-            (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
+            (ConfigManager.getConfig as jest.MockedFunction<typeof ConfigManager.getConfig>).mockResolvedValue({
                 archetype: customArchetypeConfig,
                 rules: [],
                 exemptions: []
             });
 
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
             ]);
 
@@ -353,7 +354,7 @@ describe('Analyzer', () => {
                 on: jest.fn(),
                 run: jest.fn().mockResolvedValue({ results: [] })
             };
-            (Engine as jest.Mock).mockImplementation(() => engineMock);
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => engineMock as unknown as Engine);
 
             await analyzeCodebase({
                 repoPath: 'customArchetypeRepo',
@@ -367,7 +368,7 @@ describe('Analyzer', () => {
         });
 
         it('should handle plugin loading failures gracefully', async () => {
-            (pluginRegistry.getPluginFacts as jest.Mock).mockImplementation(() => {
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockImplementation(() => {
                 throw new Error('Plugin loading failed');
             });
 
@@ -378,7 +379,7 @@ describe('Analyzer', () => {
                 on: jest.fn(),
                 run: jest.fn().mockResolvedValue({ results: [] })
             };
-            (Engine as jest.Mock).mockImplementation(() => engineMock);
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => engineMock as unknown as Engine);
 
             // Should not throw but handle gracefully
             await expect(analyzeCodebase({
@@ -390,13 +391,13 @@ describe('Analyzer', () => {
 
     describe('OpenAI Integration', () => {
         it('should integrate OpenAI analysis when enabled', async () => {
-            (isOpenAIEnabled as jest.Mock).mockReturnValue(true);
+            (isOpenAIEnabled as jest.MockedFunction<typeof isOpenAIEnabled>).mockReturnValue(true);
             
-            const mockFileData = [
+            const mockFileData: FileData[] = [
                 { filePath: 'src/ai-test.ts', fileName: 'ai-test.ts', fileContent: 'const insecureCode = "eval(userInput)";' }
             ];
 
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) },
                 { name: 'openaiAnalysis', fn: jest.fn().mockResolvedValue({ severity: 9, issues: [] }) },
                 { name: 'collectOpenaiAnalysisFacts', fn: jest.fn().mockResolvedValue('OpenAI system prompt') }
@@ -409,7 +410,7 @@ describe('Analyzer', () => {
                 on: jest.fn(),
                 run: jest.fn().mockResolvedValue({ results: [] })
             };
-            (Engine as jest.Mock).mockImplementation(() => engineMock);
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => engineMock as unknown as Engine);
 
             await analyzeCodebase({
                 repoPath: 'openaiTestRepo',
@@ -422,9 +423,9 @@ describe('Analyzer', () => {
         });
 
         it('should skip OpenAI analysis when disabled', async () => {
-            (isOpenAIEnabled as jest.Mock).mockReturnValue(false);
+            (isOpenAIEnabled as jest.MockedFunction<typeof isOpenAIEnabled>).mockReturnValue(false);
             
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
             ]);
 
@@ -435,7 +436,7 @@ describe('Analyzer', () => {
                 on: jest.fn(),
                 run: jest.fn().mockResolvedValue({ results: [] })
             };
-            (Engine as jest.Mock).mockImplementation(() => engineMock);
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => engineMock as unknown as Engine);
 
             await analyzeCodebase({
                 repoPath: 'noOpenaiRepo',
@@ -449,7 +450,7 @@ describe('Analyzer', () => {
 
     describe('Telemetry & Metrics', () => {
         it('should collect and send telemetry data', async () => {
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
             ]);
 
@@ -460,7 +461,7 @@ describe('Analyzer', () => {
                 on: jest.fn(),
                 run: jest.fn().mockResolvedValue({ results: [] })
             };
-            (Engine as jest.Mock).mockImplementation(() => engineMock);
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => engineMock as unknown as Engine);
 
             await analyzeCodebase({
                 repoPath: 'telemetryTestRepo',
@@ -478,7 +479,7 @@ describe('Analyzer', () => {
         });
 
         it('should track fact execution metrics', async () => {
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) },
                 { name: 'repoDependencyAnalysis', fn: jest.fn().mockResolvedValue([]) }
             ]);
@@ -490,7 +491,7 @@ describe('Analyzer', () => {
                 on: jest.fn(),
                 run: jest.fn().mockResolvedValue({ results: [] })
             };
-            (Engine as jest.Mock).mockImplementation(() => engineMock);
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => engineMock as unknown as Engine);
 
             await analyzeCodebase({
                 repoPath: 'metricsTestRepo',
@@ -505,9 +506,9 @@ describe('Analyzer', () => {
 
     describe('Error Handling & Edge Cases', () => {
         it('should handle filesystem access errors', async () => {
-            (fs.readdir as jest.Mock).mockRejectedValue(new Error('Permission denied'));
+            (fs.readdir as jest.MockedFunction<typeof fs.readdir>).mockRejectedValue(new Error('Permission denied'));
             
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockRejectedValue(new Error('Filesystem error')) }
             ]);
 
@@ -518,7 +519,7 @@ describe('Analyzer', () => {
                 on: jest.fn(),
                 run: jest.fn().mockResolvedValue({ results: [] })
             };
-            (Engine as jest.Mock).mockImplementation(() => engineMock);
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => engineMock as unknown as Engine);
 
             // Should handle gracefully and not throw
             await expect(analyzeCodebase({
@@ -528,7 +529,7 @@ describe('Analyzer', () => {
         });
 
         it('should handle invalid repository configuration', async () => {
-            (ConfigManager.getConfig as jest.Mock).mockRejectedValue(new Error('Invalid archetype'));
+            (ConfigManager.getConfig as jest.MockedFunction<typeof ConfigManager.getConfig>).mockRejectedValue(new Error('Invalid archetype'));
             
             // Should handle configuration errors gracefully
             await expect(analyzeCodebase({
@@ -538,7 +539,7 @@ describe('Analyzer', () => {
         });
 
         it('should handle empty repository', async () => {
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) },
                 { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) }
             ]);
@@ -550,7 +551,7 @@ describe('Analyzer', () => {
                 on: jest.fn(),
                 run: jest.fn().mockResolvedValue({ results: [] })
             };
-            (Engine as jest.Mock).mockImplementation(() => engineMock);
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => engineMock as unknown as Engine);
 
             const results = await analyzeCodebase({
                 repoPath: 'emptyRepo',
@@ -562,7 +563,7 @@ describe('Analyzer', () => {
         });
 
         it('should handle malformed rule configurations', async () => {
-            (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
+            (ConfigManager.getConfig as jest.MockedFunction<typeof ConfigManager.getConfig>).mockResolvedValue({
                 archetype: {
                     name: 'node-fullstack',
                     rules: [],
@@ -570,16 +571,16 @@ describe('Analyzer', () => {
                     facts: [],
                     config: {},
                     plugins: []
-                },
+                } as ArchetypeConfig,
                 rules: [
                     { name: 'validRule', conditions: { all: [] }, event: { type: 'test' } },
                     null, // Invalid rule
                     { name: 'incompleteRule' } // Missing required fields
-                ],
+                ] as any,
                 exemptions: []
             });
 
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([]);
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([]);
 
             const engineMock = {
                 addOperator: jest.fn(),
@@ -588,7 +589,7 @@ describe('Analyzer', () => {
                 on: jest.fn(),
                 run: jest.fn().mockResolvedValue({ results: [] })
             };
-            (Engine as jest.Mock).mockImplementation(() => engineMock);
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => engineMock as unknown as Engine);
 
             // Should filter out invalid rules and continue
             await expect(analyzeCodebase({
@@ -600,16 +601,16 @@ describe('Analyzer', () => {
 
     describe('Edge Cases and Error Handling', () => {
         it('should handle missing plugin facts gracefully', async () => {
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([]);
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([]);
             
             const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
-            (Engine as jest.Mock).mockImplementation(() => ({
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
                 addOperator: jest.fn(),
                 addRule: jest.fn(),
                 addFact: jest.fn(),
                 on: jest.fn(),
                 run: engineRunMock
-            }));
+            } as unknown as Engine));
 
             const results = await analyzeCodebase({
                 repoPath: 'mockRepoPath',
@@ -621,7 +622,7 @@ describe('Analyzer', () => {
         });
 
         it('should handle plugin fact failures', async () => {
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) }, // Don't reject, just return empty
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([
                     { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
@@ -629,13 +630,13 @@ describe('Analyzer', () => {
             ]);
 
             const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
-            (Engine as jest.Mock).mockImplementation(() => ({
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
                 addOperator: jest.fn(),
                 addRule: jest.fn(),
                 addFact: jest.fn(),
                 on: jest.fn(),
                 run: engineRunMock
-            }));
+            } as unknown as Engine));
 
             const results = await analyzeCodebase({
                 repoPath: 'mockRepoPath',
@@ -646,9 +647,9 @@ describe('Analyzer', () => {
         });
 
         it('should handle OpenAI disabled state', async () => {
-            (isOpenAIEnabled as jest.Mock).mockReturnValue(false);
+            (isOpenAIEnabled as jest.MockedFunction<typeof isOpenAIEnabled>).mockReturnValue(false);
             
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([
                     { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
@@ -656,13 +657,13 @@ describe('Analyzer', () => {
             ]);
 
             const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
-            (Engine as jest.Mock).mockImplementation(() => ({
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
                 addOperator: jest.fn(),
                 addRule: jest.fn(),
                 addFact: jest.fn(),
                 on: jest.fn(),
                 run: engineRunMock
-            }));
+            } as unknown as Engine));
 
             const results = await analyzeCodebase({
                 repoPath: 'mockRepoPath',
@@ -673,19 +674,19 @@ describe('Analyzer', () => {
         });
 
         it('should handle missing file data', async () => {
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
             ]);
 
             const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
-            (Engine as jest.Mock).mockImplementation(() => ({
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
                 addOperator: jest.fn(),
                 addRule: jest.fn(),
                 addFact: jest.fn(),
                 on: jest.fn(),
                 run: engineRunMock
-            }));
+            } as unknown as Engine));
 
             const results = await analyzeCodebase({
                 repoPath: 'mockRepoPath',
@@ -699,7 +700,7 @@ describe('Analyzer', () => {
 
     describe('Configuration Variations', () => {
         it('should handle custom archetype configuration', async () => {
-            const customArchetypeConfig = {
+            const customArchetypeConfig: ArchetypeConfig = {
                 name: 'custom-archetype',
                 rules: [{ name: 'customRule', conditions: { all: [] }, event: { type: 'customEvent' } }],
                 operators: [{ name: 'customOperator', fn: jest.fn() }],
@@ -711,13 +712,13 @@ describe('Analyzer', () => {
                 plugins: ['custom-plugin']
             };
 
-            (ConfigManager.getConfig as jest.Mock).mockResolvedValue({
+            (ConfigManager.getConfig as jest.MockedFunction<typeof ConfigManager.getConfig>).mockResolvedValue({
                 archetype: customArchetypeConfig,
-                rules: customArchetypeConfig.rules,
+                rules: customArchetypeConfig.rules as RuleConfig[],
                 exemptions: []
             });
 
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([
                     { dep: 'react', ver: '17.0.0', min: '^18.0.0' }
                 ]) },
@@ -727,13 +728,13 @@ describe('Analyzer', () => {
             ]);
 
             const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
-            (Engine as jest.Mock).mockImplementation(() => ({
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
                 addOperator: jest.fn(),
                 addRule: jest.fn(),
                 addFact: jest.fn(),
                 on: jest.fn(),
                 run: engineRunMock
-            }));
+            } as unknown as Engine));
 
             const results = await analyzeCodebase({
                 repoPath: 'mockRepoPath',
@@ -767,25 +768,25 @@ describe('Analyzer', () => {
 
     describe('Options and Parameters', () => {
         it('should handle zapFiles option for targeted analysis', async () => {
-            const mockFileData = [
+            const mockFileData: FileData[] = [
                 { filePath: '/repo/src/target.ts', fileName: 'target.ts', fileContent: 'console.log("target");' },
                 { filePath: '/repo/src/other.ts', fileName: 'other.ts', fileContent: 'console.log("other");' },
                 { fileName: 'REPO_GLOBAL_CHECK', filePath: 'REPO_GLOBAL_CHECK', fileContent: 'REPO_GLOBAL_CHECK' }
             ];
 
-            (pluginRegistry.getPluginFacts as jest.Mock).mockReturnValue([
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
                 { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
                 { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) }
             ]);
 
             const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
-            (Engine as jest.Mock).mockImplementation(() => ({
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
                 addOperator: jest.fn(),
                 addRule: jest.fn(),
                 addFact: jest.fn(),
                 on: jest.fn(),
                 run: engineRunMock
-            }));
+            } as unknown as Engine));
 
             const results = await analyzeCodebase({
                 repoPath: '/repo',
@@ -822,7 +823,7 @@ describe('Analyzer', () => {
             const results = await analyzeCodebase({
                 repoPath: 'mockRepoPath',
                 archetype: 'node-fullstack',
-                logger: mockLogger
+                logger: mockLogger as any
             });
 
             expect(results.XFI_RESULT).toBeDefined();
@@ -841,7 +842,7 @@ describe('Analyzer', () => {
 
     describe('Timing and Performance Tracking', () => {
         it('should record timing information for all phases', async () => {
-            const mockTimingTracker = {
+            const mockTimingTracker: jest.Mocked<TimingTracker> = {
                 recordTiming: jest.fn(),
                 recordDetailedTiming: jest.fn(),
                 logTimingBreakdown: jest.fn(),
@@ -854,7 +855,7 @@ describe('Analyzer', () => {
                 getDuration: jest.fn().mockReturnValue(1000),
                 getMemoryUsage: jest.fn().mockReturnValue({ heapUsed: 100000, heapTotal: 200000 })
             };
-            (createTimingTracker as jest.Mock).mockReturnValue(mockTimingTracker);
+            (createTimingTracker as jest.MockedFunction<typeof createTimingTracker>).mockReturnValue(mockTimingTracker);
 
             const results = await analyzeCodebase({
                 repoPath: 'mockRepoPath',

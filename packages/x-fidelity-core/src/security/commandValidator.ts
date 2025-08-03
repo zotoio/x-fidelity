@@ -7,6 +7,9 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { securityLogger, SECURITY_CONSTANTS, CommandInjectionError } from './index';
 
+// Export for testing purposes
+export const ALLOWED_GIT_COMMANDS = SECURITY_CONSTANTS.ALLOWED_GIT_COMMANDS;
+
 /**
  * @security Immutable command parameter object that prevents injection
  * This class ensures that all command arguments are validated and immutable

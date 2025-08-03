@@ -375,21 +375,24 @@ export async function runEngineOnFiles(params: RunEngineOnFilesParams): Promise<
                 
                 for (const result of engineResults) {
                     if (result.result) {
-                        // Create unique key for deduplication (temp version approach)
-                        const failureKey = `${result.name}:${result.event?.type}:${result.event?.params?.message}`;
+                        // Create unique key for deduplication, handling malformed results
+                        const resultName = result.name || 'malformed-rule';
+                        const eventType = result.event?.type || 'unknown';
+                        const eventMessage = result.event?.params?.message || 'no-message';
+                        const failureKey = `${resultName}:${eventType}:${eventMessage}`;
                         
                         if (!seenFailures.has(failureKey)) {
                             const eventStart = Date.now();
                             
                             // Find the actual rule from engine (temp version approach)
-                            const rule = (engine as any).rules.find((r: any) => r.name === result.name);
+                            const rule = result.name ? (engine as any).rules.find((r: any) => r.name === result.name) : null;
                             
                             // Build the proper RuleFailure structure with correct rule name
                             const ruleFailure = await buildRuleFailureFromResult(result, rule, file, fileResults.almanac, repoPath);
                             processedResults.push(ruleFailure);
                             
                             const eventEnd = Date.now();
-                            logger.trace(`ENGINE DETAILED: Result processing for ${result.name} took ${eventEnd - eventStart}ms`);
+                            logger.trace(`ENGINE DETAILED: Result processing for ${result.name || 'malformed-rule'} took ${eventEnd - eventStart}ms`);
                             
                             seenFailures.add(failureKey);
                         } else {

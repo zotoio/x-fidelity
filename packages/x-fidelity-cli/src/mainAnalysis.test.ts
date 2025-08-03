@@ -1,6 +1,26 @@
 import { runMainAnalysis } from './mainAnalysis';
 import { options } from './cli';
 import { setOptions, ConfigSetManager } from '@x-fidelity/core';
+import { ExecutionMode, LegacyMode } from '@x-fidelity/types';
+
+// Define the CommanderOptions interface locally
+interface CommanderOptions {
+    dir?: string;
+    archetype?: string;
+    mode?: ExecutionMode | LegacyMode;
+    localConfigPath?: string;
+    githubConfigLocation?: string;
+    openaiEnabled?: boolean;
+    extraPlugins?: string[];
+    port?: number;
+    configServer?: string;
+    writeConfigSet?: boolean | string;
+    readConfigSet?: boolean | string;
+    zap?: string;
+    fileCacheTTL?: number;
+    enableFileLogging?: boolean;
+}
+
 
 jest.setTimeout(30000);
 
@@ -44,22 +64,25 @@ jest.mock('./index', () => ({
 // Mock console methods
 const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation();
 const mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
-const mockProcessExit = jest.spyOn(process, 'exit').mockImplementation();
+const mockProcessExit = jest.spyOn(process, 'exit').mockImplementation() as jest.MockedFunction<typeof process.exit>;
 
 describe('mainAnalysis', () => {
-  let mockConfigSetManager: any;
-  let mockMain: any;
+  let mockConfigSetManager: jest.Mocked<ConfigSetManager>;
+  let mockMain: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     mockConfigSetManager = {
       writeConfigSet: jest.fn(),
-      mergeOptionsWithConfigSet: jest.fn()
-    };
+      mergeOptionsWithConfigSet: jest.fn(),
+      readConfigSet: jest.fn(),
+      listConfigSets: jest.fn(),
+      deleteConfigSet: jest.fn(),
+      getConfigSetFilePath: jest.fn(),
+    } as unknown as jest.Mocked<ConfigSetManager>;
 
-    (ConfigSetManager.getInstance as jest.MockedFunction<any>)
-      .mockReturnValue(mockConfigSetManager);
+    (ConfigSetManager.getInstance as jest.Mock).mockReturnValue(mockConfigSetManager);
 
     mockMain = jest.fn();
     jest.doMock('./index', () => ({ main: mockMain }));
@@ -90,7 +113,7 @@ describe('mainAnalysis', () => {
 
   describe('config set write operations', () => {
     it('should write config set with default alias', async () => {
-      const mockOpts = { writeConfigSet: true, archetype: 'test-archetype' };
+      const mockOpts: Partial<CommanderOptions> = { writeConfigSet: true, archetype: 'test-archetype' };
       mockConfigSetManager.writeConfigSet.mockResolvedValue('/path/to/config');
 
       await runMainAnalysis('.', mockOpts);
@@ -106,7 +129,7 @@ describe('mainAnalysis', () => {
     });
 
     it('should write config set with custom alias', async () => {
-      const mockOpts = { writeConfigSet: 'custom-alias', archetype: 'test-archetype' };
+      const mockOpts: Partial<CommanderOptions> = { writeConfigSet: 'custom-alias', archetype: 'test-archetype' };
       mockConfigSetManager.writeConfigSet.mockResolvedValue('/path/to/config');
 
       await runMainAnalysis('.', mockOpts);
@@ -144,7 +167,7 @@ describe('mainAnalysis', () => {
 
   describe('config set read operations', () => {
     it('should read config set with default alias', async () => {
-      const mockOpts = { readConfigSet: true, archetype: 'original' };
+      const mockOpts: Partial<CommanderOptions> = { readConfigSet: true, archetype: 'original' };
       const mergedOpts = { ...mockOpts, archetype: 'merged' };
       mockConfigSetManager.mergeOptionsWithConfigSet.mockResolvedValue(mergedOpts);
 
@@ -223,13 +246,13 @@ describe('mainAnalysis', () => {
 
   describe('options merging and updating', () => {
     it('should update global options with provided values', async () => {
-      const mockOpts = {
+      const mockOpts: Partial<CommanderOptions> = {
         archetype: 'custom-archetype',
         configServer: 'https://config.example.com',
         localConfigPath: '/custom/config',
         openaiEnabled: true,
         mode: 'server',
-        port: '3000',
+        port: 3000,
         enableFileLogging: true
       };
 
@@ -266,9 +289,9 @@ describe('mainAnalysis', () => {
     });
 
     it('should parse numeric options correctly', async () => {
-      const mockOpts = {
-        port: '8080',
-        fileCacheTTL: '120'
+      const mockOpts: Partial<CommanderOptions> = {
+        port: 8080,
+        fileCacheTTL: 120
       };
 
       await runMainAnalysis('.', mockOpts);
@@ -278,7 +301,7 @@ describe('mainAnalysis', () => {
     });
 
     it('should call setOptions with core options', async () => {
-      const mockOpts = {
+      const mockOpts: Partial<CommanderOptions> = {
         archetype: 'test-archetype',
         configServer: 'https://test.com',
         openaiEnabled: true
