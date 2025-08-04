@@ -12,7 +12,7 @@ let extensionContext: vscode.ExtensionContext | undefined;
 let isActivated = false;
 
 /**
- * Optimized extension activation with fast startup and error recovery
+ * Optimized extension activation with fast startup and error recovery.
  */
 export async function activate(context: vscode.ExtensionContext) {
   const startTime = performance.now();

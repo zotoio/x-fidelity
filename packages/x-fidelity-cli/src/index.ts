@@ -193,7 +193,7 @@ const outcomeMessage = (message: string) => `\n
 ${message}
 ==========================================================================`;
 
-// Main function with proper ordering
+// Main function with proper ordering.
 export async function main(skipCLIInit = false): Promise<void> {
     let logger: ILogger;
     // Step 1: Initialize CLI if not already done
