@@ -745,7 +745,7 @@
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
     "prebuild:production": "yarn format",
-    "check-types": "yarn build:dependencies && tsc --noEmit",
+    "check-types": "yarn build:dependencies && tsc --noEmit --incremental",
     "build:test": "tsc -p tsconfig.test.json",
     "clean": "rimraf out dist dist-test config .vscode-test .vscode-test-profile && node -e \"try { require('fs').readdirSync('.').filter(f => f.endsWith('.tsbuildinfo')).forEach(f => require('fs').unlinkSync(f)); } catch(e) { /* ignore */ }\"",
     "clean:test-artifacts": "rm -rf .vscode-test/user-data/Crashpad/pending/*.lock .vscode-test/user-data/logs/* ./.vscode-test-user-data || true",
