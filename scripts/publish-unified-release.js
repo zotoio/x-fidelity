@@ -34,11 +34,11 @@ function runCommand(command, cwd, description, continueOnError = false) {
     // Only allow a whitelist of commands for extra safety
     const allowedCommands = [
       'npm publish --access public',
-      'vsce publish',
-      'ovsx publish',
+      'npx vsce publish',
+      'npx ovsx publish',
       // Add more allowed commands as needed
     ];
-    if (!allowedCommands.some(allowed => command.startsWith(allowed.split(' ')[0]))) {
+    if (!allowedCommands.some(allowed => command.startsWith(allowed) && !command.includes('&&')  )) {
       throw new Error(`Command not allowed: ${command}`);
     }
 
