@@ -9,7 +9,27 @@ env:
   NODE_OPTIONS: '--max-old-space-size=4096'
 
 jobs:
+  wait-for-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for CI workflows to complete
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: 'build-and-test'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          
+      - name: Wait for VSCode extension CI
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          check-name: 'test-extension'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+
   release:
+    needs: wait-for-ci
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
