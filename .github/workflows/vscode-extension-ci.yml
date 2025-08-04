@@ -24,7 +24,7 @@ jobs:
     strategy:
       matrix:
         vscode-version: ['stable']
-        node-version: ['22.x']
+        node-version: ['22.16.0']
     
     steps:
       - name: Checkout code
@@ -109,7 +109,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '22.16.0'
           cache: 'yarn'
           
       - name: Install dependencies

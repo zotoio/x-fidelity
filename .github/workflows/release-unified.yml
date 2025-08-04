@@ -6,7 +6,7 @@ on:
 
 env:
   NODE_VERSION: '22.16.0'
-  NODE_OPTIONS: '--max-old-space-size=4096 --no-compilation-cache'
+  NODE_OPTIONS: '--max-old-space-size=4096'
 
 jobs:
   release:
