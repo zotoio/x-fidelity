@@ -42,7 +42,12 @@ function runCommand(command, cwd, description, continueOnError = false) {
       throw new Error(`Command not allowed: ${command}`);
     }
 
-    const result = execSync(command, { cwd, stdio: 'pipe', encoding: 'utf8' });
+    const result = execSync(command, { 
+      cwd, 
+      stdio: 'pipe', 
+      encoding: 'utf8',
+      env: { ...process.env }
+    });
     log('green', `✅ ${description} completed`);
     return { success: true, output: result };
   } catch (error) {
