@@ -29,12 +29,29 @@ interface VersionDataCache {
 const dependencyCache = new Map<string, DependencyCache>();
 const versionDataCache = new Map<string, VersionDataCache>();
 
+// ✅ Cache for dependency analysis results to avoid redundant computation
+interface DependencyAnalysisCache {
+    analysis: any[];
+    cacheKey: string;
+    timestamp: number;
+}
+
+const analysisCache = new Map<string, DependencyAnalysisCache>();
+
 /**
  * Clears all dependency caches - useful for testing
  */
 export function clearDependencyCache(): void {
     dependencyCache.clear();
     versionDataCache.clear();
+    analysisCache.clear(); // ✅ Clear analysis cache too
+}
+
+/**
+ * Clears dependency analysis cache - useful for testing and cleanup
+ */
+export function clearDependencyAnalysisCache(): void {
+    analysisCache.clear();
 }
 
 /**
@@ -340,37 +357,45 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
     const result: any = { 'result': [] };
 
     try {
-        // ✅ REMOVED: No longer need REPO_GLOBAL_CHECK since this is now a global fact that runs once per repo
-
-        const analysis: any = [];
-        // Get dependency data from the repoDependencyVersions fact instead of non-existent dependencyData
+        // Get dependency data from the repoDependencyVersions fact
         const installedVersions: VersionData[] = await almanac.factValue('repoDependencyVersions') || [];
+        
+        // ✅ Create cache key to avoid redundant computation
+        const cacheKey = `dependency-analysis-${installedVersions.length}-${JSON.stringify(installedVersions.slice(0, 3)).substring(0, 50)}`;
+        
+        // ✅ Check cache first for expensive analysis
+        const cached = analysisCache.get(cacheKey);
+        if (cached && cached.cacheKey === cacheKey) {
+            const cacheAge = Date.now() - cached.timestamp;
+            logger.debug(`Using cached dependency analysis result (age: ${cacheAge}ms, key: ${cacheKey.substring(0, 16)}...)`);
+            
+            // ✅ Always set runtime fact even for cached results
+            if (params.resultFact) {
+                almanac.addRuntimeFact(params.resultFact, cached.analysis);
+            }
+            
+            return cached.analysis;
+        }
 
+        logger.debug(`Cache miss, computing dependency analysis... (${installedVersions.length} dependencies)`);
+        
+        const analysis: any = [];
         logger.debug(`repoDependencyAnalysis: found ${installedVersions.length} installed dependencies`);
 
-        // Use rule-provided versions if they exist, otherwise use the ones from repoDependencyVersions
-        const versionsToCheck = params?.minimumDependencyVersions ?
-            installedVersions.filter((versionData: VersionData) =>
-                params.minimumDependencyVersions[versionData.dep]) :
-            installedVersions;
-
+        const versionsToCheck = installedVersions;
         logger.debug(`repoDependencyAnalysis: checking ${versionsToCheck.length} dependencies against requirements`);
 
         versionsToCheck.forEach((versionData: VersionData) => {
             logger.debug(`outdatedFramework: checking ${versionData.dep}`);
 
             try {
-                // Check if the installed version satisfies the required version, supporting both ranges and specific versions
-                // Get required version from rule params if it exists, otherwise from archetype config
-                const requiredVersion = params?.minimumDependencyVersions?.[versionData.dep] || versionData.min;
-
                 // Check if the installed version satisfies the required version
-                const isValid = semverValid(versionData.ver, requiredVersion);
+                const isValid = semverValid(versionData.ver, versionData.min);
                 if (!isValid && semver.valid(versionData.ver)) {
                     const dependencyFailure = {
                         'dependency': versionData.dep,
                         'currentVersion': versionData.ver,
-                        'requiredVersion': requiredVersion
+                        'requiredVersion': versionData.min
                     };
 
                     logger.error(`dependencyFailure: ${safeStringify(dependencyFailure)}`);
@@ -382,14 +407,24 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
         });
 
         result.result = analysis;
+        
+        // ✅ Cache the result for future use
+        analysisCache.set(cacheKey, {
+            analysis,
+            cacheKey,
+            timestamp: Date.now()
+        });
 
-        almanac.addRuntimeFact(params.resultFact, result);
+        // ✅ Add runtime fact with rule-specific name
+        if (params.resultFact) {
+            almanac.addRuntimeFact(params.resultFact, analysis);
+        }
 
         logger.debug(`repoDependencyAnalysis result: ${safeStringify(result)}`);
         logger.debug(`repoDependencyAnalysis returning analysis array directly: ${safeStringify(analysis)}`);
 
         // Return just the analysis array for the outdatedFramework operator
-        return analysis;
+        return result.result;
     } catch (error) {
         logger.error(`Error in repoDependencyAnalysis: ${error}`);
         // Return empty array on error for consistent interface
@@ -473,8 +508,8 @@ export const dependencyVersionFact: FactDefn = {
 export const repoDependencyAnalysisFact: FactDefn = {
     name: 'repoDependencyAnalysis',
     description: 'Analyzes repository dependencies for outdated versions',
-    type: 'global',  // ✅ Global fact - precomputed once and cached
-    priority: 8,     // ✅ High priority for dependency analysis
+    type: 'global-function',  // ✅ FIXED: Changed from 'global' to 'global-function' to support rule parameters
+    priority: 8,              // ✅ High priority for dependency analysis
     fn: async (params: unknown, almanac?: unknown) => {
         return await repoDependencyAnalysis(params, almanac as any);
     }

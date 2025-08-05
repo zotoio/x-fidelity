@@ -99,6 +99,7 @@ export class ReportGenerator {
         report.push(this.generateDependencyIssues());
         report.push(this.generateSensitiveDataIssues());
         report.push(this.generateOtherGlobalIssues());
+        report.push(this.generateAllIssuesWithAnchors());
 
         return report.join('\n\n');
     }
@@ -455,6 +456,369 @@ ${tableRows}`;
         return `## Other Global Issues
 
 ${issueList}`;
+    }
+
+    /**
+     * Generate a comprehensive issues section with unique anchors for direct linking
+     * This is completely rule-agnostic and works with any custom rules
+     */
+    private generateAllIssuesWithAnchors(): string {
+        const { issueDetails } = this.data.XFI_RESULT;
+        
+        if (issueDetails.length === 0) {
+            return `## All Issues
+
+No issues found in the analysis. Great job! 🎉`;
+        }
+
+        // Group issues by rule name dynamically
+        const issuesByRule = new Map<string, Array<{
+            detail: any;
+            error: any;
+            issueNumber: number;
+        }>>();
+
+        let issueCounter = 1;
+
+        // Group all issues by rule name
+        issueDetails.forEach(detail => {
+            detail.errors.forEach(error => {
+                const ruleName = error.ruleFailure || 'unknown-rule';
+                
+                if (!issuesByRule.has(ruleName)) {
+                    issuesByRule.set(ruleName, []);
+                }
+                
+                issuesByRule.get(ruleName)!.push({
+                    detail,
+                    error,
+                    issueNumber: issueCounter
+                });
+                
+                issueCounter++;
+            });
+        });
+
+        // Generate sections for each rule
+        const ruleSections: string[] = [];
+
+        issuesByRule.forEach((issues, ruleName) => {
+            const ruleSection = this.generateRuleSection(ruleName, issues);
+            if (ruleSection) {
+                ruleSections.push(ruleSection);
+            }
+        });
+
+        if (ruleSections.length === 0) {
+            return `## All Issues
+
+No issues found in the analysis. Great job! 🎉`;
+        }
+
+        return `## All Issues
+
+The following sections contain all issues found in the analysis, grouped by rule. Each issue has a unique anchor that allows direct linking from the VSCode extension.
+
+${ruleSections.join('\n\n')}`;
+    }
+
+    /**
+     * Generate a section for a specific rule with all its issues
+     */
+    private generateRuleSection(ruleName: string, issues: Array<{
+        detail: any;
+        error: any;
+        issueNumber: number;
+    }>): string {
+        if (issues.length === 0) return '';
+
+        // Check if this is a global rule (affects REPO_GLOBAL_CHECK)
+        const isGlobalRule = issues.some(issue => 
+            issue.detail.filePath === 'REPO_GLOBAL_CHECK' || 
+            issue.detail.filePath.includes('global')
+        );
+
+        // Create section header with rule anchor
+        const ruleId = this.generateRuleId(ruleName);
+        const sectionTitle = this.formatRuleName(ruleName);
+        let section = `### <a id="${ruleId}"></a>${sectionTitle} (${issues.length} issue${issues.length > 1 ? 's' : ''})\n\n`;
+
+        // Add rule definition link if we can determine rule source
+        const ruleLink = this.generateRuleDefinitionLink(ruleName);
+        if (ruleLink) {
+            section += `**Rule Definition:** ${ruleLink}\n\n`;
+        }
+
+        if (isGlobalRule) {
+            // For global rules, list issues without file-specific tables
+            section += this.generateGlobalRuleIssues(issues);
+        } else {
+            // For iterative rules, create a table with file links
+            section += this.generateIterativeRuleTable(ruleName, issues);
+        }
+
+        // Add individual issue details with anchors
+        section += '\n\n#### Individual Issues\n\n';
+        issues.forEach(({ detail, error, issueNumber }) => {
+            const issueBlock = this.generateIssueBlock(detail.filePath, error, issueNumber);
+            section += issueBlock + '\n\n';
+        });
+
+        return section;
+    }
+
+    /**
+     * Generate a table for iterative rules with file links
+     */
+    private generateIterativeRuleTable(ruleName: string, issues: Array<{
+        detail: any;
+        error: any;
+        issueNumber: number;
+    }>): string {
+        // Extract common fields from the issues to build appropriate table columns
+        const hasLineNumbers = issues.some(({ error }) => 
+            error.details?.lineNumber || error.details?.details?.[0]?.lineNumber
+        );
+
+        // Build table header based on available data
+        let tableHeader = '| File | Rule | Severity |';
+        let tableSeparator = '|------|------|----------|';
+
+        if (hasLineNumbers) {
+            tableHeader += ' Line |';
+            tableSeparator += '------|';
+        }
+
+        // Check for additional structured data that might be useful
+        const hasMessage = issues.some(({ error }) => 
+            error.details?.message || error.message
+        );
+
+        if (hasMessage) {
+            tableHeader += ' Description |';
+            tableSeparator += '-------------|';
+        }
+
+        tableHeader += '\n' + tableSeparator + '\n';
+
+        // Build table rows
+        const tableRows = issues.map(({ detail, error, issueNumber }) => {
+            const fileName = path.basename(detail.filePath);
+            const githubLink = this.createGithubLink(detail.filePath, 
+                error.details?.lineNumber || error.details?.details?.[0]?.lineNumber);
+            const severity = error.level || 'warning';
+            
+            let row = `| ${githubLink} | ${ruleName} | ${severity.toUpperCase()} |`;
+
+            if (hasLineNumbers) {
+                const lineNumber = error.details?.lineNumber || error.details?.details?.[0]?.lineNumber || '';
+                row += ` ${lineNumber} |`;
+            }
+
+            if (hasMessage) {
+                const message = this.extractCleanMessage(error);
+                const truncatedMessage = message.length > 100 ? message.substring(0, 100) + '...' : message;
+                row += ` ${truncatedMessage.replace(/\\/g, '\\\\').replace(/\|/g, '\\|')} |`;
+            }
+
+            return row;
+        }).join('\n');
+
+        return `The following files contain issues for this rule:\n\n${tableHeader}${tableRows}\n`;
+    }
+
+    /**
+     * Generate a list for global rules
+     */
+    private generateGlobalRuleIssues(issues: Array<{
+        detail: any;
+        error: any;
+        issueNumber: number;
+    }>): string {
+        const issueList = issues.map(({ error }) => {
+            const level = error.level || 'warning';
+            const message = this.extractCleanMessage(error);
+            return `- **${error.ruleFailure}** (${level}): ${message}`;
+        }).join('\n');
+
+        return `This rule applies globally to the repository:\n\n${issueList}\n`;
+    }
+
+    /**
+     * Generate a markdown block for a single issue with anchor
+     */
+    private generateIssueBlock(filePath: string, error: any, issueNumber: number): string {
+        const issueId = this.generateIssueId(filePath, error, issueNumber);
+        const ruleFailure = error.ruleFailure || 'Unknown Rule';
+        const level = error.level || 'warning';
+        const message = this.extractAndFormatMessage(error);
+        
+        // Extract line and column information
+        let lineInfo = '';
+        
+        if (error.details?.lineNumber) {
+            lineInfo = `Line ${error.details.lineNumber}`;
+        } else if (error.details?.details && Array.isArray(error.details.details)) {
+            const firstDetail = error.details.details[0];
+            if (firstDetail?.lineNumber) {
+                lineInfo = `Line ${firstDetail.lineNumber}`;
+            }
+        }
+
+        // Create GitHub link if available
+        const githubLink = this.createGithubLink(filePath, 
+            error.details?.lineNumber || error.details?.details?.[0]?.lineNumber);
+        
+        // Create severity badge
+        const severityBadge = this.getSeverityBadge(level);
+        
+        // Create category info
+        const categoryInfo = error.category && error.category !== 'general' ? 
+            `**Category:** ${error.category}  \n` : '';
+
+        // Create exemption info
+        const exemptionInfo = error.exempted ? 
+            `**Status:** ⚠️ Exempted  \n` : '';
+
+        // Create fixable info
+        const fixableInfo = error.fixable ? 
+            `**Fixable:** 💡 Yes  \n` : '';
+
+        return `#### <a id="${issueId}"></a>Issue #${issueNumber}: ${ruleFailure}
+
+${severityBadge}
+
+**File:** \`${filePath}\` ${lineInfo ? `(${lineInfo})` : ''}  
+${categoryInfo}${exemptionInfo}${fixableInfo}**Rule:** \`${ruleFailure}\`  
+
+**Description:**  
+${message}
+
+${githubLink !== path.basename(filePath) ? `**Source:** ${githubLink}` : ''}
+
+---`;
+    }
+
+    /**
+     * Extract and format message content, preserving markdown for rules like OpenAI
+     */
+    private extractAndFormatMessage(error: any): string {
+        const rawMessage = error.details?.message || error.message || 'No description available';
+        
+        // Check if this looks like it's already markdown (e.g., from OpenAI analysis)
+        if (this.isMarkdownContent(rawMessage)) {
+            return rawMessage; // Return as-is for markdown content
+        }
+        
+        return rawMessage; // Return plain text as-is
+    }
+
+    /**
+     * Extract clean message for table display (strip markdown)
+     */
+    private extractCleanMessage(error: any): string {
+        const rawMessage = error.details?.message || error.message || 'No description available';
+        
+        // Strip markdown formatting for table display
+        return rawMessage
+            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+            .replace(/\*(.*?)\*/g, '$1')     // Remove italic
+            .replace(/`(.*?)`/g, '$1')       // Remove code
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
+            .replace(/#{1,6}\s/g, '')        // Remove headers
+            .replace(/\n/g, ' ')             // Replace newlines with spaces
+            .trim();
+    }
+
+    /**
+     * Check if content appears to be markdown formatted
+     */
+    private isMarkdownContent(content: string): boolean {
+        const markdownIndicators = [
+            /\*\*.*?\*\*/,     // Bold
+            /\*.*?\*/,         // Italic
+            /#{1,6}\s/,        // Headers
+            /```[\s\S]*?```/, // Code blocks
+            /`.*?`/,           // Inline code
+            /\[.*?\]\(.*?\)/,  // Links
+            /^[-*+]\s/m,       // Lists
+            /^\d+\.\s/m        // Numbered lists
+        ];
+        
+        return markdownIndicators.some(pattern => pattern.test(content));
+    }
+
+    /**
+     * Generate a unique issue ID for anchor linking
+     */
+    private generateIssueId(filePath: string, error: any, counter: number): string {
+        const cleanFileName = path.basename(filePath).replace(/[^a-zA-Z0-9]/g, '-');
+        const cleanRule = (error.ruleFailure || 'unknown').replace(/[^a-zA-Z0-9]/g, '-');
+        const line = error.details?.lineNumber || error.details?.details?.[0]?.lineNumber || 1;
+        
+        return `issue-${counter}-${cleanFileName}-${cleanRule}-line-${line}`.toLowerCase();
+    }
+
+    /**
+     * Generate a unique rule ID for anchor linking
+     */
+    private generateRuleId(ruleName: string): string {
+        return `rule-${ruleName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}`;
+    }
+
+    /**
+     * Generate a link to the rule definition JSON file
+     */
+    private generateRuleDefinitionLink(ruleName: string): string | null {
+        // Try to find rule definition based on common patterns
+        if (this.repoName) {
+            // Look for common rule file patterns
+            const possiblePaths = [
+                `rules/${ruleName}.json`,
+                `src/rules/${ruleName}.json`,
+                `.xfi-config/${ruleName}.json`,
+                `config/rules/${ruleName}.json`
+            ];
+
+            // Return link to the most likely location
+            const rulePath = possiblePaths[0]; // Default to rules/ directory
+            return `[${ruleName}.json](https://github.com/${this.repoName}/blob/main/${rulePath})`;
+        }
+        
+        return null;
+    }
+
+    /**
+     * Format rule name for display
+     */
+    private formatRuleName(ruleName: string): string {
+        // Convert kebab-case or camelCase to Title Case
+        return ruleName
+            .replace(/[-_]/g, ' ')
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/\b\w/g, l => l.toUpperCase())
+            .trim();
+    }
+
+    /**
+     * Generate a severity badge for the issue
+     */
+    private getSeverityBadge(level: string): string {
+        switch (level.toLowerCase()) {
+            case 'fatal':
+            case 'fatality':
+                return '🔥 **FATAL**';
+            case 'error':
+                return '❌ **ERROR**';
+            case 'warning':
+                return '⚠️ **WARNING**';
+            case 'info':
+                return 'ℹ️ **INFO**';
+            case 'hint':
+                return '💡 **HINT**';
+            default:
+                return `📋 **${level.toUpperCase()}**`;
+        }
     }
 
     // Helper methods

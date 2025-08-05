@@ -1297,4 +1297,171 @@ describe('engineRunner - Enhanced Test Suite', () => {
             expect(Array.isArray(result)).toBe(true);
         });
     });
+
+    describe('Additional Coverage Tests', () => {
+        it('should fallback to generic rule when not found in engine.rules', async () => {
+            const mockEngineWithoutRule = {
+                ...mockEngine,
+                rules: [] // Empty rules array
+            };
+
+            mockEngineWithoutRule.run.mockResolvedValue({
+                results: [
+                    { 
+                        result: true, 
+                        name: 'unknownRule', 
+                        event: { type: 'warning', params: { message: 'Unknown rule triggered' } } 
+                    }
+                ],
+                almanac: { factValue: jest.fn() } as any
+            });
+
+            const result = await runEngineOnFiles({
+                ...getMockParams(),
+                engine: mockEngineWithoutRule as any,
+                fileData: [mockFileData[0]] // Use only the first file to avoid REPO_GLOBAL_CHECK
+            });
+
+            expect(result).toHaveLength(1);
+            expect(result[0].errors[0].ruleFailure).toBe('unknownRule');
+        });
+
+        it('should handle rules with any conditions', async () => {
+            const anyConditionsRule = {
+                name: 'anyConditionsRule',
+                conditions: {
+                    any: [
+                        { fact: 'hasTests', operator: 'equal', value: false },
+                        { fact: 'coverage', operator: 'lessThan', value: 80 }
+                    ]
+                },
+                event: { type: 'warning', params: { message: 'Any condition failed' } }
+            };
+
+            registerRuleForTracking(anyConditionsRule);
+
+            const mockEngineWithAnyRule = {
+                ...mockEngine,
+                rules: [anyConditionsRule]
+            };
+
+            mockEngineWithAnyRule.run.mockResolvedValue({
+                results: [
+                    { 
+                        result: true, 
+                        name: 'anyConditionsRule', 
+                        event: { type: 'warning', params: { message: 'Any condition failed' } } 
+                    }
+                ],
+                almanac: { factValue: jest.fn() } as any
+            });
+
+            const result = await runEngineOnFiles({
+                ...getMockParams(),
+                engine: mockEngineWithAnyRule as any,
+                fileData: [mockFileData[0]] // Use only the first file
+            });
+
+            expect(result).toHaveLength(1);
+            expect(result[0].errors[0].details?.conditionType).toBe('any'); // Should be 'any' since we're testing any conditions
+        });
+
+        it('should handle duplicate rule failures with debug logging', async () => {
+            mockEngine.run.mockResolvedValue({
+                results: [
+                    { 
+                        result: true, 
+                        name: 'duplicateRule', 
+                        event: { type: 'error', params: { message: 'Duplicate error' } } 
+                    },
+                    { 
+                        result: true, 
+                        name: 'duplicateRule', 
+                        event: { type: 'error', params: { message: 'Duplicate error' } } 
+                    }
+                ],
+                almanac: { factValue: jest.fn() } as any
+            });
+
+            const result = await runEngineOnFiles({
+                ...getMockParams(),
+                fileData: [mockFileData[0]], // Single file to test duplicate handling
+            });
+
+            // Should only have one failure due to duplicate detection
+            expect(result).toHaveLength(1);
+            expect(result[0].errors).toHaveLength(1);
+        });
+
+        it('should log slow files when processing takes >100ms', async () => {
+            const slowFiles: FileData[] = Array.from({ length: 5 }, (_, i) => ({
+                fileName: `slow${i}.ts`,
+                filePath: `/test/slow${i}.ts`,
+                fileContent: 'slow file content'
+            }));
+
+            // Mock engine to simulate slow processing
+            mockEngine.run.mockImplementation(() => 
+                new Promise(resolve => setTimeout(() => resolve({ results: [] }), 120))
+            );
+
+            const result = await runEngineOnFiles({
+                ...getMockParams(),
+                fileData: slowFiles,
+            });
+
+            expect(mockEngine.run).toHaveBeenCalledTimes(5);
+            expect(logger.info).toHaveBeenCalledWith('=== SLOWEST FILES (>100ms) ===');
+        });
+
+        it('should handle missing rule in findTriggeringRule', async () => {
+            const mockEngineEmpty = {
+                ...mockEngine,
+                rules: []
+            };
+
+            mockEngineEmpty.run.mockResolvedValue({
+                results: [
+                    { 
+                        result: true, 
+                        name: 'missingRule', 
+                        event: { type: 'error', params: { message: 'Missing rule' } } 
+                    }
+                ],
+                almanac: { factValue: jest.fn() } as any
+            });
+
+            const result = await runEngineOnFiles({
+                ...getMockParams(),
+                engine: mockEngineEmpty as any,
+                fileData: [mockFileData[0]] // Use only the first file
+            });
+
+            expect(result).toHaveLength(1);
+            expect(result[0].errors[0].ruleFailure).toBe('missingRule');
+        });
+
+        it('should handle trace logging for detailed event processing', async () => {
+            (logger.isLevelEnabled as jest.Mock).mockReturnValue(true);
+
+            mockEngine.run.mockResolvedValue({
+                results: [
+                    { 
+                        result: true, 
+                        name: 'tracedRule', 
+                        event: { type: 'info', params: { message: 'Traced rule' } } 
+                    }
+                ],
+                almanac: { factValue: jest.fn() } as any
+            });
+
+            const result = await runEngineOnFiles({
+                ...getMockParams(),
+                fileData: [mockFileData[0]],
+            });
+
+            expect(result).toHaveLength(1);
+            expect(logger.trace).toHaveBeenCalledWith(expect.stringContaining('Result processing for tracedRule took'));
+        });
+    });
 });

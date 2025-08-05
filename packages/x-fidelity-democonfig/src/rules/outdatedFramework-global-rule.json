@@ -10,6 +10,9 @@
             },
             {
                 "fact": "repoDependencyAnalysis",
+                "params": {
+                    "resultFact": "repoDependencyResults"
+                },
                 "operator": "outdatedFramework",
                 "value": true
             }
@@ -20,7 +23,7 @@
         "params": {
             "message": "Core framework dependencies do not meet minimum version requirements! Please update your dependencies to the required versions.",
             "details": {
-                "fact": "repoDependencyAnalysis"
+                "fact": "repoDependencyResults"
             }
         }
     },
