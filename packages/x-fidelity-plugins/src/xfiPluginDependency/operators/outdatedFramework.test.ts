@@ -80,12 +80,12 @@ describe('outdatedFramework operator - edge cases', () => {
     });
 
     it('should handle array with non-object elements', () => {
-        const result = outdatedFramework.fn([1, 'string', null] as any);
+        const result = outdatedFramework.fn([1, 'string', null] as any[]);
         expect(result).toBe(false);
     });
 
     it('should handle array with objects that are not dependency failures', () => {
-        const result = outdatedFramework.fn([{ name: 'test' }, { value: 42 }] as any);
+        const result = outdatedFramework.fn([{ name: 'test' }, { value: 42 }] as any[]);
         expect(result).toBe(false);
     });
 

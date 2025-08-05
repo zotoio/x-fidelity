@@ -200,26 +200,21 @@ async function buildRuleFailureFromResult(result: any, rule: any, file: any, alm
                 fileName: file?.fileName
             });
             
-            // CRITICAL FIX FOR MAC: Try fallback fact resolution for dependency analysis
-            if (resolvedDetails.fact === 'repoDependencyAnalysis') {
-                try {
-                    // Try to get the fact value directly from almanac with alternative method
-                    const fallbackFactValue = await almanac.factValue('repoDependencyAnalysis');
-                    if (fallbackFactValue && Array.isArray(fallbackFactValue) && fallbackFactValue.length > 0) {
-                        logger.info(`✅ Fallback fact resolution successful: captured ${fallbackFactValue.length} dependency failures`, {
-                            factName: 'repoDependencyAnalysis',
-                            dependencyFailureCount: fallbackFactValue.length,
-                            platform: process.platform,
-                            dependencyFailures: fallbackFactValue
-                        });
-                        resolvedDetails = fallbackFactValue;
-                    }
-                } catch (fallbackError) {
-                    logger.warn(`Fallback fact resolution also failed for repoDependencyAnalysis`, {
-                        fallbackError: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
-                        platform: process.platform
-                    });
+            // ✅ Enhanced debugging for fact resolution failures
+            try {
+                const availableFacts = Object.keys((almanac as any).facts || {});
+                const runtimeFacts = Object.keys((almanac as any).runtimeFacts || {});
+                
+                logger.debug(`Available facts: ${availableFacts.join(', ')}`);
+                logger.debug(`Runtime facts: ${runtimeFacts.join(', ')}`);
+                
+                if (runtimeFacts.includes(resolvedDetails.fact)) {
+                    logger.warn(`Runtime fact '${resolvedDetails.fact}' exists but resolution failed - may be a timing issue`);
+                } else {
+                    logger.warn(`Runtime fact '${resolvedDetails.fact}' not found - may not have been created during rule execution`);
                 }
+            } catch (debugError) {
+                logger.debug(`Could not debug fact resolution: ${debugError}`);
             }
             
             // Keep original details if fact resolution fails

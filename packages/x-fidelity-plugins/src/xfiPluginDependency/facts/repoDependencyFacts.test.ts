@@ -375,10 +375,17 @@ describe('repoDependencyFacts', () => {
     });
 
     describe('repoDependencyAnalysis', () => {
-        const mockAlmanac: Almanac = {
-            factValue: jest.fn(),
-            addRuntimeFact: jest.fn(),
-        } as unknown as Almanac;
+        let mockAlmanac: Almanac;
+
+        beforeEach(() => {
+            // Clear caches before each test
+            repoDependencyFacts.clearDependencyAnalysisCache();
+            
+            mockAlmanac = {
+                factValue: jest.fn(),
+                addRuntimeFact: jest.fn(),
+            } as unknown as Almanac;
+        });
 
         it('should analyze dependencies correctly', async () => {
             (mockAlmanac.factValue as jest.Mock)
@@ -392,7 +399,64 @@ describe('repoDependencyFacts', () => {
             expect(result).toEqual([
                 { dependency: 'package1', currentVersion: '1.0.0', requiredVersion: '^2.0.0' }
             ]);
-            expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', expect.any(Object));
+            expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', expect.any(Array));
+        });
+
+        it('should use cache for subsequent calls with same data', async () => {
+            const testData = [
+                { dep: 'package1', ver: '1.0.0', min: '^2.0.0' },
+                { dep: 'package2', ver: '2.0.0', min: '>1.0.0' }
+            ];
+
+            (mockAlmanac.factValue as jest.Mock)
+                .mockResolvedValue(testData);
+
+            // First call - should compute
+            const result1 = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testResult1' }, mockAlmanac);
+            
+            // Second call with same data - should use cache
+            const result2 = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testResult2' }, mockAlmanac);
+
+            expect(result1).toEqual(result2);
+            expect(result1).toEqual([
+                { dependency: 'package1', currentVersion: '1.0.0', requiredVersion: '^2.0.0' }
+            ]);
+            
+            // Should have called factValue twice (once for each call)
+            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(2);
+            
+            // Should have set runtime facts for both calls
+            expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult1', expect.any(Array));
+            expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult2', expect.any(Array));
+        });
+
+        it('should handle missing resultFact parameter gracefully', async () => {
+            (mockAlmanac.factValue as jest.Mock)
+                .mockResolvedValueOnce([
+                    { dep: 'package1', ver: '1.0.0', min: '^2.0.0' }
+                ]);
+
+            const result = await repoDependencyFacts.repoDependencyAnalysis({}, mockAlmanac);
+
+            expect(result).toEqual([
+                { dependency: 'package1', currentVersion: '1.0.0', requiredVersion: '^2.0.0' }
+            ]);
+            // Should not call addRuntimeFact when no resultFact provided
+            expect(mockAlmanac.addRuntimeFact).not.toHaveBeenCalled();
+        });
+
+        it('should cache empty results', async () => {
+            (mockAlmanac.factValue as jest.Mock)
+                .mockResolvedValue([
+                    { dep: 'package1', ver: '1.5.0', min: '^1.0.0' } // Valid version that satisfies range
+                ]);
+
+            const result1 = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testResult1' }, mockAlmanac);
+            const result2 = await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'testResult2' }, mockAlmanac);
+
+            expect(result1).toEqual([]);
+            expect(result2).toEqual([]);
+            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(2);
         });
         
         it('should handle errors during analysis', async () => {
@@ -531,6 +595,91 @@ describe('repoDependencyFacts', () => {
             
             semverValid('1.0.0', 'invalid-range');
             expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('invalid required version'));
+        });
+    });
+
+    describe('fact definitions', () => {
+        it('should have correct type for dependencyVersionFact', () => {
+            expect(repoDependencyFacts.dependencyVersionFact.name).toBe('repoDependencyVersions');
+            expect(repoDependencyFacts.dependencyVersionFact.type).toBe('global');
+            expect(repoDependencyFacts.dependencyVersionFact.priority).toBe(10);
+            expect(typeof repoDependencyFacts.dependencyVersionFact.fn).toBe('function');
+        });
+
+        it('should have correct type for repoDependencyAnalysisFact', () => {
+            expect(repoDependencyFacts.repoDependencyAnalysisFact.name).toBe('repoDependencyAnalysis');
+            expect(repoDependencyFacts.repoDependencyAnalysisFact.type).toBe('global-function');
+            expect(repoDependencyFacts.repoDependencyAnalysisFact.priority).toBe(8);
+            expect(typeof repoDependencyFacts.repoDependencyAnalysisFact.fn).toBe('function');
+        });
+
+        it('should call repoDependencyAnalysis function when fact function is invoked', async () => {
+            const mockParams = { resultFact: 'testResult' };
+            const mockAlmanac = {
+                factValue: jest.fn().mockResolvedValue([]),
+                addRuntimeFact: jest.fn()
+            };
+
+            const result = await repoDependencyFacts.repoDependencyAnalysisFact.fn(mockParams, mockAlmanac);
+
+            expect(result).toEqual([]);
+            expect(mockAlmanac.factValue).toHaveBeenCalledWith('repoDependencyVersions');
+        });
+    });
+
+    describe('cache management', () => {
+        beforeEach(() => {
+            // Clear all caches before each test
+            repoDependencyFacts.clearDependencyCache();
+        });
+
+        it('should export clearDependencyCache function', () => {
+            expect(typeof repoDependencyFacts.clearDependencyCache).toBe('function');
+        });
+
+        it('should export clearDependencyAnalysisCache function', () => {
+            expect(typeof repoDependencyFacts.clearDependencyAnalysisCache).toBe('function');
+        });
+
+        it('should clear analysis cache when clearDependencyAnalysisCache is called', async () => {
+            const mockAlmanac = {
+                factValue: jest.fn().mockResolvedValue([
+                    { dep: 'package1', ver: '1.0.0', min: '^2.0.0' }
+                ]),
+                addRuntimeFact: jest.fn()
+            };
+
+            // First call - should compute
+            await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'test1' }, mockAlmanac);
+            
+            // Clear cache
+            repoDependencyFacts.clearDependencyAnalysisCache();
+            
+            // Second call - should compute again due to cache clear
+            await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'test2' }, mockAlmanac);
+
+            // Should have called factValue twice since cache was cleared
+            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(2);
+        });
+
+        it('should clear all caches when clearDependencyCache is called', async () => {
+            const mockAlmanac = {
+                factValue: jest.fn().mockResolvedValue([
+                    { dep: 'package1', ver: '1.0.0', min: '^2.0.0' }
+                ]),
+                addRuntimeFact: jest.fn()
+            };
+
+            // First call to populate caches
+            await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'test1' }, mockAlmanac);
+            
+            // Clear all caches
+            repoDependencyFacts.clearDependencyCache();
+            
+            // Second call should recompute
+            await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'test2' }, mockAlmanac);
+
+            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(2);
         });
     });
 });
