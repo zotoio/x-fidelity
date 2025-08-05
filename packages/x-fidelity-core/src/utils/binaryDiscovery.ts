@@ -1,12 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { logger } from './logger';
 
 const execAsync = promisify(exec);
-
+const execFileAsync = promisify(execFile);
 export interface BinaryDiscoveryResult {
   binary: string;
   path: string;
@@ -142,9 +142,9 @@ export async function resolveFnmPath(): Promise<string | null> {
 export async function findBinaryWithWhich(binaryName: string): Promise<string | null> {
   try {
     const isWindows = process.platform === 'win32';
-    const command = isWindows ? `where ${binaryName}` : `which ${binaryName}`;
+    const command = isWindows ? 'where' : 'which';
     
-    const { stdout } = await execAsync(command);
+    const { stdout } = await execFileAsync(command, [binaryName]);
     const binaryPath = stdout.trim().split('\n')[0]; // Take first result
     
     if (binaryPath && fs.existsSync(binaryPath)) {
