@@ -2,6 +2,12 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.2.4](https://github.com/zotoio/x-fidelity/compare/v5.2.3...v5.2.4) (2025-08-05)
+
+### Bug Fixes
+
+* improve dependency analysis performance and report generation ([8ef4775](https://github.com/zotoio/x-fidelity/commit/8ef477563e567aae20bbc35fbbdc6ac527caf939))
+
 ## [5.2.3](https://github.com/zotoio/x-fidelity/compare/v5.2.2...v5.2.3) (2025-08-04)
 
 ### Bug Fixes
