@@ -618,7 +618,7 @@ ${ruleSections.join('\n\n')}`;
             if (hasMessage) {
                 const message = this.extractCleanMessage(error);
                 const truncatedMessage = message.length > 100 ? message.substring(0, 100) + '...' : message;
-                row += ` ${truncatedMessage.replace(/\|/g, '\\|')} |`;
+                row += ` ${truncatedMessage.replace(/\\/g, '\\\\').replace(/\|/g, '\\|')} |`;
             }
 
             return row;
