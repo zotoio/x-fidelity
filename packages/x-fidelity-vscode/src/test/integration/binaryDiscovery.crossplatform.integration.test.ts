@@ -154,8 +154,7 @@ suite('Binary Discovery Cross-Platform Integration Tests', () => {
         `PATH should use ${pathSeparator} separator or be a single path`
       );
       
-      console.log(`✅ Enhanced PATH length: ${enhancedEnv.PATH.length}`);
-      console.log(`✅ Enhanced PATH: ${enhancedEnv.PATH.split(pathSeparator).slice(0, 5).join(pathSeparator)}...`);
+      console.log(`✅ Enhanced PATH: [truncated]`);
     });
 
     test('should preserve original environment variables', async function() {
