@@ -204,8 +204,8 @@ suite('VSCode Setting Override Integration Tests', () => {
         console.log('✅ Invalid override path handled gracefully');
       } catch (error) {
         // Acceptable - should fail gracefully without crashing
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.log(`✅ Invalid override failed gracefully: ${errorMessage}`);
+        // Do not log errorMessage to avoid leaking sensitive data
+        console.log('✅ Invalid override failed gracefully');
         assert.ok(error instanceof Error, 'Should throw proper Error objects');
       }
     });
