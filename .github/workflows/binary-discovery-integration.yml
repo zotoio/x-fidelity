@@ -1,0 +1,379 @@
+name: Binary Discovery Cross-Platform Integration Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [master]
+    paths:
+      - 'packages/x-fidelity-core/src/utils/binaryDiscovery.ts'
+      - 'packages/x-fidelity-core/src/utils/binaryDiscovery.*.test.ts'
+      - 'packages/x-fidelity-vscode/src/utils/cliSpawner.ts'
+      - 'packages/x-fidelity-vscode/src/test/integration/binaryDiscovery.*.test.ts'
+      - 'packages/x-fidelity-vscode/src/test/integration/vscodeSettingOverride.*.test.ts'
+      - 'packages/x-fidelity-vscode/package.json'
+      - '.github/workflows/binary-discovery-integration.yml'
+  push:
+    branches:
+      - master
+  workflow_dispatch: # Allow manual trigger
+    inputs:
+      debug:
+        description: 'Enable debug output'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  FORCE_COLOR: 1
+  CI: true
+  NODE_ENV: test
+
+jobs:
+  # Core binary discovery tests (no VSCode dependency)
+  core-binary-discovery:
+    name: Core Binary Discovery - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    
+    strategy:
+      fail-fast: false # Continue testing other OS even if one fails
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ['18.x', '20.x', '22.x']
+        include:
+          # Test with different Node.js installation methods on macOS
+          - os: macos-latest
+            node-version: '20.x'
+            test-homebrew: true
+          # Test with Windows-specific paths
+          - os: windows-latest
+            node-version: '20.x'
+            test-windows-paths: true
+          # Test with Linux package managers
+          - os: ubuntu-latest
+            node-version: '20.x'
+            test-snap: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+        
+      - name: Build packages
+        run: yarn build
+        
+      - name: Install additional Node.js tools (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          # Install yarn globally if not present
+          if ! command -v yarn &> /dev/null; then
+            npm install -g yarn
+          fi
+          
+          # Install additional package managers for testing
+          npm install -g pnpm || true
+          
+          # Show installed Node.js tools
+          echo "=== Node.js Environment ==="
+          which node || echo "node not found"
+          which npm || echo "npm not found"  
+          which yarn || echo "yarn not found"
+          which npx || echo "npx not found"
+          which pnpm || echo "pnpm not found"
+          echo "PATH: $PATH"
+          
+      - name: Install additional Node.js tools (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          # Install yarn globally if not present
+          if ! command -v yarn &> /dev/null; then
+            npm install -g yarn
+          fi
+          
+          # Show installed Node.js tools
+          echo "=== Node.js Environment ==="
+          which node || echo "node not found"
+          which npm || echo "npm not found"
+          which yarn || echo "yarn not found" 
+          which npx || echo "npx not found"
+          echo "PATH: $PATH"
+          
+          # Test if Homebrew is available
+          if command -v brew &> /dev/null; then
+            echo "Homebrew available: $(which brew)"
+            echo "Homebrew prefix: $(brew --prefix)"
+          fi
+          
+      - name: Install additional Node.js tools (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          # Install yarn globally if not present
+          if (-not (Get-Command yarn -ErrorAction SilentlyContinue)) {
+            npm install -g yarn
+          }
+          
+          # Show installed Node.js tools
+          Write-Host "=== Node.js Environment ==="
+          Get-Command node -ErrorAction SilentlyContinue | Select-Object Source
+          Get-Command npm -ErrorAction SilentlyContinue | Select-Object Source
+          Get-Command yarn -ErrorAction SilentlyContinue | Select-Object Source
+          Get-Command npx -ErrorAction SilentlyContinue | Select-Object Source
+          Write-Host "PATH: $env:PATH"
+          
+      - name: Run core binary discovery integration tests
+        run: |
+          cd packages/x-fidelity-core
+          yarn test binaryDiscovery.integration.test.ts --verbose
+        env:
+          DEBUG: ${{ github.event.inputs.debug == 'true' && '*' || '' }}
+          
+      - name: Test with custom NODE_PATH (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          # Create a custom Node.js installation simulation
+          mkdir -p /tmp/custom-node/bin
+          ln -sf "$(which node)" /tmp/custom-node/bin/node
+          ln -sf "$(which npm)" /tmp/custom-node/bin/npm
+          if command -v yarn &> /dev/null; then
+            ln -sf "$(which yarn)" /tmp/custom-node/bin/yarn
+          fi
+          
+          # Test discovery with custom path
+          cd packages/x-fidelity-core
+          yarn test binaryDiscovery.integration.test.ts --testNamePattern="override" --verbose
+        env:
+          CUSTOM_NODE_PATH: /tmp/custom-node/bin
+          
+      - name: Test with custom NODE_PATH (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          # Create a custom Node.js installation simulation
+          New-Item -ItemType Directory -Force -Path "C:\temp\custom-node\bin"
+          Copy-Item "$(Get-Command node).Source" "C:\temp\custom-node\bin\node.exe"
+          Copy-Item "$(Get-Command npm).Source" "C:\temp\custom-node\bin\npm.cmd"
+          if (Get-Command yarn -ErrorAction SilentlyContinue) {
+            Copy-Item "$(Get-Command yarn).Source" "C:\temp\custom-node\bin\yarn.cmd"
+          }
+          
+          # Test discovery with custom path
+          cd packages/x-fidelity-core
+          yarn test binaryDiscovery.integration.test.ts --testNamePattern="override" --verbose
+        env:
+          CUSTOM_NODE_PATH: C:\temp\custom-node\bin
+
+  # VSCode extension binary discovery tests (with VSCode dependency)
+  vscode-binary-discovery:
+    name: VSCode Binary Discovery - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        vscode-version: ['stable'] # Could add 'insiders' for more thorough testing
+        node-version: ['20.x']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+        
+      - name: Build packages
+        run: yarn build
+        
+      - name: Setup Xvfb for headless testing (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          
+      - name: Install additional tools for VSCode testing
+        shell: bash
+        run: |
+          # Ensure yarn is available globally
+          if ! command -v yarn &> /dev/null; then
+            npm install -g yarn
+          fi
+          
+          echo "=== Environment for VSCode Tests ==="
+          echo "OS: ${{ matrix.os }}"
+          echo "Node: $(node --version)"
+          echo "NPM: $(npm --version)"
+          echo "Yarn: $(yarn --version)"
+          
+      - name: Run VSCode binary discovery integration tests (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd packages/x-fidelity-vscode
+          xvfb-run -a yarn test:integration --testPathPatterns="binaryDiscovery.crossplatform.integration.test.ts" --verbose
+        env:
+          DISPLAY: ':99'
+          DEBUG: ${{ github.event.inputs.debug == 'true' && '*' || '' }}
+          
+      - name: Run VSCode binary discovery integration tests (Windows/macOS)
+        if: matrix.os != 'ubuntu-latest'
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn test:integration --testPathPatterns="binaryDiscovery.crossplatform.integration.test.ts" --verbose
+        env:
+          DEBUG: ${{ github.event.inputs.debug == 'true' && '*' || '' }}
+          
+      - name: Run VSCode setting override integration tests (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd packages/x-fidelity-vscode
+          xvfb-run -a yarn test:integration --testPathPatterns="vscodeSettingOverride.integration.test.ts" --verbose
+        env:
+          DISPLAY: ':99'
+          
+      - name: Run VSCode setting override integration tests (Windows/macOS)
+        if: matrix.os != 'ubuntu-latest'
+        run: |
+          cd packages/x-fidelity-vscode
+          yarn test:integration --testPathPatterns="vscodeSettingOverride.integration.test.ts" --verbose
+
+  # Comprehensive cross-platform scenarios
+  comprehensive-scenarios:
+    name: Comprehensive Scenarios - ${{ matrix.scenario }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scenario: "Ubuntu with nvm simulation"
+            os: ubuntu-latest
+            node-version: '20.x'
+            setup-nvm: true
+          - scenario: "macOS with Homebrew paths"
+            os: macos-latest
+            node-version: '20.x'
+            test-homebrew: true
+          - scenario: "Windows with Program Files"
+            os: windows-latest
+            node-version: '20.x'
+            test-program-files: true
+          - scenario: "Multiple Node versions"
+            os: ubuntu-latest
+            node-version: '18.x'
+            test-multiple-versions: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
+          
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+        
+      - name: Build packages
+        run: yarn build
+        
+      - name: Setup NVM simulation (Ubuntu)
+        if: matrix.setup-nvm == true
+        run: |
+          # Simulate NVM directory structure
+          mkdir -p ~/.nvm/versions/node/v20.0.0/bin
+          mkdir -p ~/.nvm/alias
+          
+          # Create fake nvm structure
+          ln -sf "$(which node)" ~/.nvm/versions/node/v20.0.0/bin/node
+          ln -sf "$(which npm)" ~/.nvm/versions/node/v20.0.0/bin/npm
+          if command -v yarn &> /dev/null; then
+            ln -sf "$(which yarn)" ~/.nvm/versions/node/v20.0.0/bin/yarn
+          fi
+          
+          # Set default version
+          echo "v20.0.0" > ~/.nvm/alias/default
+          
+          echo "=== NVM Simulation Setup ==="
+          ls -la ~/.nvm/versions/node/v20.0.0/bin/
+          cat ~/.nvm/alias/default
+          
+      - name: Test Homebrew paths (macOS)
+        if: matrix.test-homebrew == true
+        run: |
+          echo "=== Homebrew Environment ==="
+          if command -v brew &> /dev/null; then
+            echo "Homebrew prefix: $(brew --prefix)"
+            echo "Homebrew bin: $(brew --prefix)/bin"
+            ls -la "$(brew --prefix)/bin" | grep -E "(node|npm|yarn)" || echo "No Node.js tools in Homebrew bin"
+          else
+            echo "Homebrew not available"
+          fi
+          
+      - name: Test Program Files paths (Windows)
+        if: matrix.test-program-files == true
+        shell: powershell
+        run: |
+          Write-Host "=== Windows Program Files ==="
+          if (Test-Path "C:\Program Files\nodejs") {
+            Write-Host "Node.js in Program Files:"
+            Get-ChildItem "C:\Program Files\nodejs" | Select-Object Name
+          } else {
+            Write-Host "Node.js not in standard Program Files location"
+          }
+          
+          # Show where Node.js is actually installed
+          Write-Host "Actual Node.js location: $((Get-Command node).Source)"
+          Write-Host "Actual NPM location: $((Get-Command npm).Source)"
+          
+      - name: Run comprehensive integration tests
+        run: |
+          cd packages/x-fidelity-core
+          yarn test binaryDiscovery.integration.test.ts --verbose
+        env:
+          TEST_SCENARIO: ${{ matrix.scenario }}
+
+  # Report results
+  report-results:
+    name: Report Integration Test Results
+    needs: [core-binary-discovery, vscode-binary-discovery, comprehensive-scenarios]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Report Core Results
+        run: |
+          echo "Core Binary Discovery Tests: ${{ needs.core-binary-discovery.result }}"
+          echo "VSCode Binary Discovery Tests: ${{ needs.vscode-binary-discovery.result }}"
+          echo "Comprehensive Scenarios: ${{ needs.comprehensive-scenarios.result }}"
+          
+      - name: Check Overall Status
+        run: |
+          if [[ "${{ needs.core-binary-discovery.result }}" == "success" && \
+                "${{ needs.vscode-binary-discovery.result }}" == "success" && \
+                "${{ needs.comprehensive-scenarios.result }}" == "success" ]]; then
+            echo "✅ All binary discovery integration tests passed!"
+            exit 0
+          else
+            echo "❌ Some binary discovery integration tests failed"
+            exit 1
+          fi

@@ -1,4 +1,4 @@
-import { logger, options, safeClone, safeStringify, repoDir } from '@x-fidelity/core';
+import { logger, options, safeClone, safeStringify, repoDir, discoverBinary, createEnhancedEnvironment } from '@x-fidelity/core';
 import { exec, execSync } from 'child_process';
 import { LocalDependencies, MinimumDepVersions, VersionData, ArchetypeConfig } from '@x-fidelity/types';
 import { Almanac } from 'json-rules-engine';
@@ -136,24 +136,31 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
     const emptyDeps: LocalDependencies[] = [];
     const actualRepoPath = repoPath || options.dir || process.cwd();
     try {
+        // Discover the actual binary path for reliable execution
+        const binaryResult = await discoverBinary(packageManager);
+        
+        if (!binaryResult) {
+            logger.warn(`${packageManager} binary not found, skipping dependency collection`);
+            return emptyDeps;
+        }
+
+        const binaryPath = binaryResult.path;
+        const enhancedEnv = await createEnhancedEnvironment();
+        
         let stdout: string;
         let stderr: string = '';
 
         try {
-            // Use execSync as a fallback if execPromise fails
+            // Use discovered binary path with enhanced environment
             if (packageManager === 'npm') {
-                const result = await execPromise('npm ls -a --json', {
-                    cwd: actualRepoPath, maxBuffer: 10485760, env: {
-                        ...process.env
-                    }
+                const result = await execPromise(`"${binaryPath}" ls -a --json`, {
+                    cwd: actualRepoPath, maxBuffer: 10485760, env: enhancedEnv
                 });
                 stdout = result.stdout;
                 stderr = result.stderr;
             } else {
-                const result = await execPromise('yarn list --json', {
-                    cwd: actualRepoPath, maxBuffer: 10485760, env: {
-                        ...process.env
-                    }
+                const result = await execPromise(`"${binaryPath}" list --json`, {
+                    cwd: actualRepoPath, maxBuffer: 10485760, env: enhancedEnv
                 });
                 stdout = result.stdout;
                 stderr = result.stderr;
@@ -162,11 +169,9 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             // If promisified exec fails, fall back to execSync
             logger.warn(`Falling back to execSync for ${packageManager} dependencies`);
             const output = execSync(
-                packageManager === 'npm' ? 'npm ls -a --json' : 'yarn list --json',
+                packageManager === 'npm' ? `"${binaryPath}" ls -a --json` : `"${binaryPath}" list --json`,
                 {
-                    cwd: actualRepoPath, maxBuffer: 10485760, env: {
-                        ...process.env
-                    }
+                    cwd: actualRepoPath, maxBuffer: 10485760, env: enhancedEnv
                 }
             );
             stdout = output.toString();

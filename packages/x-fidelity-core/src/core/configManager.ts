@@ -18,6 +18,7 @@ import fs from 'fs';
 import * as path from 'path';
 import { validateArchetype, validateRule } from '../utils/jsonSchemas';
 import { loadRules } from '../utils/ruleUtils';
+import { getGlobalDirectory } from '../utils/binaryDiscovery';
 import { CentralConfigManager } from '../config/centralConfigManager';
 
 export const REPO_GLOBAL_CHECK = 'REPO_GLOBAL_CHECK';
@@ -152,7 +153,11 @@ export class ConfigManager {
                     // 1. First try loading from global modules
                     logger.info(`Attempting to load extension module from global modules: ${moduleName}`);
                     try {
-                        const globalNodeModules = path.join(execSync('yarn global dir').toString().trim(), 'node_modules');
+                        const yarnGlobalDir = await getGlobalDirectory('yarn');
+                        if (!yarnGlobalDir) {
+                            throw new Error('Yarn global directory not found');
+                        }
+                        const globalNodeModules = path.join(yarnGlobalDir, 'node_modules');
                         extension = await this.dynamicImport(path.join(globalNodeModules, moduleName));
                     } catch (globalError) {
                         logger.info(`Extension not found in global modules, trying local node_modules: ${moduleName}`);

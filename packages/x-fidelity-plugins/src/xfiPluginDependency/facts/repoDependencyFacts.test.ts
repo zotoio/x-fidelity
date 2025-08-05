@@ -7,9 +7,10 @@ import { semverValid, normalizePackageName, collectLocalDependencies, getDepende
 import * as util from 'util';
 import { logger } from '@x-fidelity/core';
 
-// Mock child_process.execSync
+// Mock child_process.execSync and exec
 jest.mock('child_process', () => ({
-    execSync: jest.fn()
+    execSync: jest.fn(),
+    exec: jest.fn()
 }));
 
 // Get a reference to the mock for use in tests
@@ -35,7 +36,18 @@ jest.mock('@x-fidelity/core', () => ({
     },
     safeClone: jest.fn(x => x),
     safeStringify: jest.fn(x => JSON.stringify(x)),
-    repoDir: '/mock/repo'
+    repoDir: '/mock/repo',
+    discoverBinary: jest.fn().mockImplementation((binaryName) => {
+        return Promise.resolve({
+            binary: binaryName,
+            path: `/usr/local/bin/${binaryName}`,
+            source: 'system'
+        });
+    }),
+    createEnhancedEnvironment: jest.fn().mockResolvedValue({
+        ...process.env,
+        PATH: '/usr/local/bin:/usr/bin:/bin'
+    })
 }));
 jest.mock('util', () => {
     const originalUtil = jest.requireActual('util');
@@ -100,7 +112,7 @@ describe('repoDependencyFacts', () => {
                     ]
                 }
             ]);
-            expect(mockExecSync).toHaveBeenCalledWith('yarn list --json', expect.any(Object));
+            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/yarn" list --json', expect.any(Object));
         });
         
         it('should collect dependencies from package-lock.json', async () => {
@@ -134,7 +146,7 @@ describe('repoDependencyFacts', () => {
                     ]
                 }
             ]);
-            expect(mockExecSync).toHaveBeenCalledWith('npm ls -a --json', expect.any(Object));
+            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/npm" ls -a --json', expect.any(Object));
         });
         
         it('should return empty array when no lock files are found', async () => {

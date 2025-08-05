@@ -292,6 +292,18 @@
           "description": "📁 Path to local configuration directory (relative to workspace root)",
           "order": 4
         },
+        "xfidelity.nodeGlobalBinPath": {
+          "type": "string",
+          "default": "",
+          "description": "🔧 Override path to directory containing Node.js binaries (node, npm, yarn, npx, etc.). Leave empty for automatic discovery. Use as failsafe for custom installations.",
+          "examples": [
+            "/usr/local/bin",
+            "/opt/homebrew/bin",
+            "~/.nvm/versions/node/v20.0.0/bin",
+            "C:\\Program Files\\nodejs"
+          ],
+          "order": 5
+        },
         "xfidelity.archetype": {
           "type": "string",
           "default": "node-fullstack",
@@ -734,7 +746,11 @@
     "test:coverage": "yarn check-types && yarn lint && jest --coverage",
     "test:unit": "yarn check-types && yarn lint && jest",
     "test:integration": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration",
+    "test:integration:binary": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration --grep \"Binary Discovery\"",
+    "test:integration:vscode-setting": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration --grep \"VSCode Setting Override\"",
+    "test:integration:crossplatform": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration --grep \"Cross-Platform\"",
     "test:core": "yarn build && yarn build:test && node scripts/test-cross-platform.js core",
+    "test:core:binary": "cd ../x-fidelity-core && yarn test binaryDiscovery.integration.test.ts",
     "test:fast": "yarn test:unit && yarn test:core",
     "test:full": "yarn test:unit && yarn test:integration",
     "test:ci": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration --ci",

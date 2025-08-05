@@ -102,7 +102,12 @@ jest.mock('fs', () => ({
     readdirSync: jest.fn(),
 }));
 jest.mock('child_process', () => ({
-    execSync: jest.fn().mockReturnValue(Buffer.from('/global/node_modules'))
+    execSync: jest.fn().mockReturnValue(Buffer.from('/global/node_modules')),
+    exec: jest.fn()
+}));
+jest.mock('util', () => ({
+    ...jest.requireActual('util'),
+    promisify: jest.fn((fn) => fn)
 }));
 jest.mock('./options', () => ({
     options: {
@@ -1015,7 +1020,9 @@ describe('ConfigManager - Additional Coverage', () => {
             
             await ConfigManager.getConfig({ archetype: 'plugin-archetype' });
             
+            // loadPlugins is called multiple times: first with base plugins, then with archetype plugins
             expect(loadPluginsSpy).toHaveBeenCalledWith(['plugin1', 'plugin2', 'plugin3']);
+            expect(loadPluginsSpy).toHaveBeenCalledTimes(2); // base plugins + archetype plugins
             loadPluginsSpy.mockRestore();
         });
 
@@ -1034,7 +1041,10 @@ describe('ConfigManager - Additional Coverage', () => {
             
             await ConfigManager.getConfig({ archetype: 'no-plugins-archetype' });
             
-            expect(loadPluginsSpy).toHaveBeenCalledWith([]);
+            // loadPlugins should only be called once with base plugins (no archetype plugins to load)
+            expect(loadPluginsSpy).toHaveBeenCalledTimes(1);
+            // Should NOT be called with empty array - archetype plugins loading is skipped entirely
+            expect(loadPluginsSpy).not.toHaveBeenCalledWith([]);
             loadPluginsSpy.mockRestore();
         });
     });
