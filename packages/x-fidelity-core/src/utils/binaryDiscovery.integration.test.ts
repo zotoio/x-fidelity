@@ -302,7 +302,6 @@ describe('Binary Discovery Core Integration Tests', () => {
       expect(pathParts.length).toBeGreaterThan(0);
       
       console.log(`✅ Enhanced PATH created with ${pathParts.length} entries`);
-      console.log(`   Total length: ${enhancedEnv.PATH!.length} characters`);
       console.log(`   First 3 paths: ${pathParts.slice(0, 3).join(pathSeparator)}`);
     }, 15000);
 
