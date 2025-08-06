@@ -144,12 +144,24 @@ export async function findBinaryWithWhich(binaryName: string): Promise<string | 
     const isWindows = process.platform === 'win32';
     const command = isWindows ? 'where' : 'which';
     
-    const { stdout } = await execFileAsync(command, [binaryName]);
-    const binaryPath = stdout.trim().split('\n')[0]; // Take first result
+    // On Windows, try both with and without .exe extension
+    const binaryNames = isWindows && !binaryName.endsWith('.exe') 
+      ? [binaryName, `${binaryName}.exe`]
+      : [binaryName];
     
-    if (binaryPath && fs.existsSync(binaryPath)) {
-      logger.debug(`Found ${binaryName} using ${isWindows ? 'where' : 'which'}: ${binaryPath}`);
-      return binaryPath;
+    for (const name of binaryNames) {
+      try {
+        const { stdout } = await execFileAsync(command, [name]);
+        const binaryPath = stdout.trim().split('\n')[0]; // Take first result
+        
+        if (binaryPath && fs.existsSync(binaryPath)) {
+          logger.debug(`Found ${binaryName} using ${isWindows ? 'where' : 'which'}: ${binaryPath}`);
+          return binaryPath;
+        }
+      } catch {
+        // Try next variant
+        continue;
+      }
     }
     
     return null;
@@ -273,9 +285,13 @@ export async function discoverBinary(binaryName: string): Promise<BinaryDiscover
   
   for (const basePath of packageManagerPaths) {
     const binaryPath = path.join(basePath, binaryName);
-    const binaryPathWithExt = process.platform === 'win32' ? `${binaryPath}.cmd` : binaryPath;
     
-    for (const candidatePath of [binaryPath, binaryPathWithExt]) {
+    // On Windows, check for .exe, .cmd, and .bat extensions
+    const candidatePaths = process.platform === 'win32' 
+      ? [binaryPath, `${binaryPath}.exe`, `${binaryPath}.cmd`, `${binaryPath}.bat`]
+      : [binaryPath];
+    
+    for (const candidatePath of candidatePaths) {
       try {
         if (fs.existsSync(candidatePath)) {
           const stats = fs.statSync(candidatePath);
