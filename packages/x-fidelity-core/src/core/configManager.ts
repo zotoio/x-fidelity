@@ -346,11 +346,15 @@ export class ConfigManager {
                 logger.error(`Failed to load base plugins: ${error}`);
             }
 
-            logger.info(`Loading essential base plugins: ${basePluginNames.join(', ')}`);
-            await this.loadPlugins(basePluginNames).catch(error => {
-                logger.warn(`Some essential base plugins failed to load: ${error}`);
-                // Don't throw here - continue with available plugins
-            });
+            if (basePluginNames.length > 0) {
+                logger.info(`Loading essential base plugins: ${basePluginNames.join(', ')}`);
+                await this.loadPlugins(basePluginNames).catch(error => {
+                    logger.warn(`Some essential base plugins failed to load: ${error}`);
+                    // Don't throw here - continue with available plugins
+                });
+            } else {
+                logger.info('No base plugins available to load');
+            }
             
             // Load CLI-specified plugins with deduplication
             if (options.extraPlugins && options.extraPlugins.length > 0) {
