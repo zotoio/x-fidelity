@@ -67,7 +67,7 @@ suite('VSCode Setting Override Integration Tests', () => {
         console.log('✅ Default binary discovery completed');
       } catch (error) {
         // Acceptable if system doesn't have proper Node.js setup
-        console.log(`⚠️ Default discovery failed (acceptable): ${error}`);
+        console.log(`⚠️ Default discovery failed (acceptable): ${error instanceof Error ? error.message : String(error)}`);
       }
     });
 
