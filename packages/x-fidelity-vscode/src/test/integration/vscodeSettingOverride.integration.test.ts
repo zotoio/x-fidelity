@@ -65,7 +65,7 @@ suite('VSCode Setting Override Integration Tests', () => {
         // Should either succeed or fail gracefully (depending on system setup)
         assert.ok(result !== undefined, 'Should return a result object');
         console.log('✅ Default binary discovery completed');
-      } catch (error) {
+      } catch {
         // Acceptable if system doesn't have proper Node.js setup
         console.log('⚠️ Default discovery failed (acceptable)');
       }

@@ -17,9 +17,9 @@
     "types": ["node", "vscode", "mocha", "jest"],
     "baseUrl": ".",
     "paths": {
-      "@x-fidelity/types": ["../x-fidelity-types/dist/index"],
-      "@x-fidelity/core": ["../x-fidelity-core/dist/index"],
-      "@x-fidelity/plugins": ["../x-fidelity-plugins/dist/index"]
+      "@x-fidelity/types": ["../x-fidelity-types/src/index"],
+      "@x-fidelity/core": ["../x-fidelity-core/src/index"],
+      "@x-fidelity/plugins": ["../x-fidelity-plugins/src/index"]
     }
   },
   "include": [
@@ -29,5 +29,16 @@
     "node_modules",
     ".vscode-test",
     "dist/"
+  ],
+  "references": [
+    {
+      "path": "../x-fidelity-types"
+    },
+    {
+      "path": "../x-fidelity-core"
+    },
+    {
+      "path": "../x-fidelity-plugins"
+    }
   ]
 } 
