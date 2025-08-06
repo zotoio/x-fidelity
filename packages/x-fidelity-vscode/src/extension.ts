@@ -49,7 +49,7 @@ export async function activate(context: vscode.ExtensionContext) {
           error.message.includes('file descriptor'))
       ) {
         logger.warn(
-          'Detected macOS file descriptor issue, retrying with safe mode..',
+          'Detected macOS file descriptor issue, retrying with safe mode....',
           {
             originalError: error.message
           }
