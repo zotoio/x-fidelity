@@ -251,7 +251,7 @@ export async function discoverBinary(binaryName: string): Promise<BinaryDiscover
   const whichResult = await findBinaryWithWhich(binaryName);
   if (whichResult) {
     try {
-      const { stdout } = await execAsync(`"${whichResult}" --version`);
+      const { stdout } = await execFileAsync(whichResult, ['--version']);
       return {
         binary: binaryName,
         path: whichResult,
@@ -289,7 +289,7 @@ export async function discoverBinary(binaryName: string): Promise<BinaryDiscover
             else if (basePath.includes('.yarn')) source = 'global';
             
             try {
-              const { stdout } = await execAsync(`"${candidatePath}" --version`);
+              const { stdout } = await execFileAsync(candidatePath, ['--version']);
               return {
                 binary: binaryName,
                 path: candidatePath,
