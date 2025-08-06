@@ -1167,7 +1167,7 @@ describe('CLISpawner Unit Tests', () => {
       mockedFs.existsSync.mockReturnValue(false);
 
       const cliPath = getEmbeddedCLIPath();
-      expect(cliPath).toContain('../cli/index.js');
+      expect(cliPath).toContain('cli/index.js');
     });
   });
 });

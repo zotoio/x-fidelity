@@ -205,8 +205,8 @@ describe('ConfigManager', () => {
 
         it('should return different instances for different archetypes', async () => {
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValueOnce({ data: { ...mockConfig, name: 'node-fullstack' } });
-            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValueOnce({ data: { ...mockConfig, name: 'java-microservice' } });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValueOnce(createAxiosResponse({ ...mockConfig, name: 'node-fullstack' }));
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValueOnce(createAxiosResponse({ ...mockConfig, name: 'java-microservice' }));
             const instance1 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             const instance2 = await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(instance1).not.toBe(instance2);
@@ -626,7 +626,7 @@ describe('ConfigManager', () => {
             (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockReset();
             (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>)
                 .mockRejectedValueOnce(new Error('Network error'))
-                .mockResolvedValueOnce({ data: mockConfig });
+                .mockResolvedValueOnce(createAxiosResponse(mockConfig));
             const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
             expect(axiosClient.get).toHaveBeenCalledWith(
                 'http://test-server.com/archetypes/test-archetype',
@@ -1137,20 +1137,28 @@ describe('ConfigManager - Additional Coverage', () => {
         test('should handle path outside allowed directories in test environment', async () => {
             // This test covers lines 547-556 (test environment error logging)
             const originalNodeEnv = process.env.NODE_ENV;
-            process.env.NODE_ENV = 'test';
+            const originalConfigServer = options.configServer;
+            const originalLocalConfigPath = options.localConfigPath;
             
-            options.localConfigPath = '/unauthorized/path';
-            
-            const loggerErrorSpy = jest.spyOn(logger, 'error');
-            
-            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Local config path outside allowed directories');
-            
-            // Should log detailed error information in test environment
-            expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Config path outside allowed directories'));
-            expect(loggerErrorSpy).toHaveBeenCalledWith('Allowed base paths:');
-            
-            process.env.NODE_ENV = originalNodeEnv;
-            loggerErrorSpy.mockRestore();
+            try {
+                process.env.NODE_ENV = 'test';
+                options.configServer = ''; // Ensure we use local config path
+                options.localConfigPath = '/unauthorized/path';
+                
+                const loggerErrorSpy = jest.spyOn(logger, 'error');
+                
+                await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Local config path outside allowed directories');
+                
+                // Should log detailed error information in test environment
+                expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Config path outside allowed directories'));
+                expect(loggerErrorSpy).toHaveBeenCalledWith('Allowed base paths:');
+                
+                loggerErrorSpy.mockRestore();
+            } finally {
+                process.env.NODE_ENV = originalNodeEnv;
+                options.configServer = originalConfigServer;
+                options.localConfigPath = originalLocalConfigPath;
+            }
         });
     });
 });
