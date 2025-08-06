@@ -29,5 +29,16 @@
     "node_modules",
     ".vscode-test",
     "dist/"
+  ],
+  "references": [
+    {
+      "path": "../x-fidelity-types"
+    },
+    {
+      "path": "../x-fidelity-core"
+    },
+    {
+      "path": "../x-fidelity-plugins"
+    }
   ]
 } 

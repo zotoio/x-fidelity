@@ -71,6 +71,19 @@ function publishCLI(cliDir, version) {
     return false;
   }
 
+  // Configure npm authentication
+  const os = require('os');
+  const npmrcPath = path.join(os.homedir(), '.npmrc');
+  const npmrcContent = `//registry.npmjs.org/:_authToken=${process.env.NPM_TOKEN}\nregistry=https://registry.npmjs.org/\n`;
+  
+  try {
+    fs.writeFileSync(npmrcPath, npmrcContent);
+    log('blue', '✅ npm authentication configured');
+  } catch (error) {
+    log('red', `❌ Failed to configure npm authentication: ${error.message}`);
+    return false;
+  }
+
   // Publish to npm
   const result = runCommand('npm publish --access public', cliDir, 'Publishing CLI to npm');
   

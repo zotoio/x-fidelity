@@ -102,7 +102,12 @@ jest.mock('fs', () => ({
     readdirSync: jest.fn(),
 }));
 jest.mock('child_process', () => ({
-    execSync: jest.fn().mockReturnValue(Buffer.from('/global/node_modules'))
+    execSync: jest.fn().mockReturnValue(Buffer.from('/global/node_modules')),
+    exec: jest.fn()
+}));
+jest.mock('util', () => ({
+    ...jest.requireActual('util'),
+    promisify: jest.fn((fn) => fn)
 }));
 jest.mock('./options', () => ({
     options: {
@@ -200,8 +205,8 @@ describe('ConfigManager', () => {
 
         it('should return different instances for different archetypes', async () => {
             validateArchetype.mockReturnValue(true);
-            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValueOnce({ data: { ...mockConfig, name: 'node-fullstack' } });
-            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValueOnce({ data: { ...mockConfig, name: 'java-microservice' } });
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValueOnce(createAxiosResponse({ ...mockConfig, name: 'node-fullstack' }));
+            (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValueOnce(createAxiosResponse({ ...mockConfig, name: 'java-microservice' }));
             const instance1 = await ConfigManager.getConfig({ archetype: 'node-fullstack' });
             const instance2 = await ConfigManager.getConfig({ archetype: 'java-microservice' });
             expect(instance1).not.toBe(instance2);
@@ -621,7 +626,7 @@ describe('ConfigManager', () => {
             (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockReset();
             (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>)
                 .mockRejectedValueOnce(new Error('Network error'))
-                .mockResolvedValueOnce({ data: mockConfig });
+                .mockResolvedValueOnce(createAxiosResponse(mockConfig));
             const config = await ConfigManager.getConfig({ archetype: 'test-archetype' });
             expect(axiosClient.get).toHaveBeenCalledWith(
                 'http://test-server.com/archetypes/test-archetype',
@@ -1008,6 +1013,12 @@ describe('ConfigManager - Additional Coverage', () => {
             
             const loadPluginsSpy = jest.spyOn(ConfigManager, 'loadPlugins').mockResolvedValue();
             
+            // Mock dynamicImport to return base plugins for consistent testing
+            const originalDynamicImport = ConfigManager.dynamicImport;
+            ConfigManager.dynamicImport = jest.fn().mockResolvedValue({
+                getBuiltinPluginNames: () => ['base-plugin1', 'base-plugin2']
+            });
+            
             validateArchetype.mockReturnValue(true);
             (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(configWithPlugins));
             (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue([]);
@@ -1015,7 +1026,13 @@ describe('ConfigManager - Additional Coverage', () => {
             
             await ConfigManager.getConfig({ archetype: 'plugin-archetype' });
             
-            expect(loadPluginsSpy).toHaveBeenCalledWith(['plugin1', 'plugin2', 'plugin3']);
+            // loadPlugins is called multiple times: first with base plugins, then with archetype plugins
+            expect(loadPluginsSpy).toHaveBeenCalledWith(['base-plugin1', 'base-plugin2']); // base plugins
+            expect(loadPluginsSpy).toHaveBeenCalledWith(['plugin1', 'plugin2', 'plugin3']); // archetype plugins
+            expect(loadPluginsSpy).toHaveBeenCalledTimes(2); // base plugins + archetype plugins
+            
+            // Restore mocks
+            ConfigManager.dynamicImport = originalDynamicImport;
             loadPluginsSpy.mockRestore();
         });
 
@@ -1027,6 +1044,12 @@ describe('ConfigManager - Additional Coverage', () => {
             
             const loadPluginsSpy = jest.spyOn(ConfigManager, 'loadPlugins').mockResolvedValue();
             
+            // Mock dynamicImport to return base plugins for consistent testing
+            const originalDynamicImport = ConfigManager.dynamicImport;
+            ConfigManager.dynamicImport = jest.fn().mockResolvedValue({
+                getBuiltinPluginNames: () => ['base-plugin1', 'base-plugin2']
+            });
+            
             validateArchetype.mockReturnValue(true);
             (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(configWithoutPlugins));
             (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue([]);
@@ -1034,7 +1057,14 @@ describe('ConfigManager - Additional Coverage', () => {
             
             await ConfigManager.getConfig({ archetype: 'no-plugins-archetype' });
             
-            expect(loadPluginsSpy).toHaveBeenCalledWith([]);
+            // loadPlugins should only be called once with base plugins (no archetype plugins to load)
+            expect(loadPluginsSpy).toHaveBeenCalledWith(['base-plugin1', 'base-plugin2']); // base plugins
+            expect(loadPluginsSpy).toHaveBeenCalledTimes(1); // only base plugins
+            // Should NOT be called with empty array - archetype plugins loading is skipped entirely
+            expect(loadPluginsSpy).not.toHaveBeenCalledWith([]);
+            
+            // Restore mocks
+            ConfigManager.dynamicImport = originalDynamicImport;
             loadPluginsSpy.mockRestore();
         });
     });
@@ -1070,6 +1100,123 @@ describe('ConfigManager - Additional Coverage', () => {
             await expect(ConfigManager.getConfig({ archetype: 'failed-archetype' })).rejects.toThrow('Config fetch failed');
             
             expect(axiosClient.get).toHaveBeenCalledTimes(6); // 3 retries per failed attempt, 2 attempts = 6 calls
+        });
+    });
+
+    describe('Workspace Root Detection', () => {
+        let mockProcess: any;
+
+        beforeEach(() => {
+            mockProcess = {
+                ...process,
+                cwd: jest.fn().mockReturnValue('/test/workspace')
+            };
+            // Mock fs for workspace root detection
+            (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
+                if (path === '/test/workspace/package.json' || path === '/test/workspace/packages') {
+                    return true;
+                }
+                if (path === '/test/package.json' || path === '/test/packages') {
+                    return true;
+                }
+                return false;
+            });
+        });
+
+        test('should detect workspace root with package.json and packages directory', async () => {
+            // This test covers lines 500-503 where workspace root is detected
+            options.localConfigPath = '/test/workspace/config';
+            
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow();
+            
+            // The workspace root detection code should have been executed
+            expect(fs.existsSync).toHaveBeenCalledWith(expect.stringContaining('package.json'));
+            expect(fs.existsSync).toHaveBeenCalledWith(expect.stringContaining('packages'));
+        });
+
+        test('should handle path outside allowed directories in test environment', async () => {
+            // This test covers lines 547-556 (test environment error logging)
+            const originalNodeEnv = process.env.NODE_ENV;
+            const originalConfigServer = options.configServer;
+            const originalLocalConfigPath = options.localConfigPath;
+            
+            try {
+                process.env.NODE_ENV = 'test';
+                options.configServer = ''; // Ensure we use local config path
+                options.localConfigPath = '/unauthorized/path';
+                
+                const loggerErrorSpy = jest.spyOn(logger, 'error');
+                
+                await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Local config path outside allowed directories');
+                
+                // Should log detailed error information in test environment
+                expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Config path outside allowed directories'));
+                expect(loggerErrorSpy).toHaveBeenCalledWith('Allowed base paths:');
+                
+                loggerErrorSpy.mockRestore();
+            } finally {
+                process.env.NODE_ENV = originalNodeEnv;
+                options.configServer = originalConfigServer;
+                options.localConfigPath = originalLocalConfigPath;
+            }
+        });
+
+        test('should handle workspace root detection when directories are not found', async () => {
+            // Mock fs.existsSync to return false for all package.json and packages directories
+            (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
+                return false; // No workspace indicators found
+            });
+            
+            // Mock options to trigger the workspace root detection path
+            const originalConfigServer = options.configServer;
+            const originalLocalConfigPath = options.localConfigPath;
+            
+            try {
+                options.configServer = ''; // Ensure we use local config path
+                options.localConfigPath = '/test/config';
+                
+                await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow();
+                
+                // Should have searched upward trying to find workspace root
+                expect(fs.existsSync).toHaveBeenCalledWith(expect.stringContaining('package.json'));
+            } finally {
+                options.configServer = originalConfigServer;
+                options.localConfigPath = originalLocalConfigPath;
+            }
+        });
+
+        test('should reach root directory during workspace root search', async () => {
+            // Mock path.dirname to simulate reaching root directory
+            const originalDirname = require('path').dirname;
+            const mockDirname = jest.fn();
+            require('path').dirname = mockDirname;
+            
+            // Setup to reach root directory (return same path to break loop)
+            mockDirname.mockImplementation((p: string) => {
+                if (p === '/') return '/'; // Root directory
+                if (p === '/test') return '/'; 
+                return '/test'; // Keep going up
+            });
+            
+            // Mock fs.existsSync to never find workspace indicators
+            (fs.existsSync as jest.Mock).mockReturnValue(false);
+            
+            const originalConfigServer = options.configServer;
+            const originalLocalConfigPath = options.localConfigPath;
+            
+            try {
+                options.configServer = ''; // Ensure we use local config path
+                options.localConfigPath = '/test/config';
+                
+                await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow();
+                
+                // Should have called dirname to traverse up directories
+                expect(mockDirname).toHaveBeenCalled();
+            } finally {
+                options.configServer = originalConfigServer;
+                options.localConfigPath = originalLocalConfigPath;
+                require('path').dirname = originalDirname;
+            }
         });
     });
 });

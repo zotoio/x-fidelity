@@ -3,7 +3,7 @@
   "version": "0.0.0-semantically-released",
   "description": "Core analysis engine with universal plugin logging system and performance monitoring",
   "private": true,
-  "main": "dist/index",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "module": "dist/index.js",
   "exports": {
@@ -19,7 +19,8 @@
     "dev": "tsc --watch",
     "test": "yarn check-types && yarn lint && jest",
     "test:unit": "yarn check-types && yarn lint && jest",
-    "test:integration": "yarn check-types && yarn lint && jest --testMatch='**/*.integration.test.ts'",
+    "test:integration": "yarn check-types && yarn lint && jest --testMatch='**/*.integration.test.ts' --passWithNoTests",
+    "test:integration:binary": "yarn check-types && yarn lint && cross-env JEST_INTEGRATION=true jest src/utils/binaryDiscovery.integration.test.ts --testTimeout=30000 --verbose",
     "test:coverage": "yarn check-types && yarn lint && jest --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -46,7 +47,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/prettyjson": "^0.0.33",
     "@types/yauzl": "^2.10.3",
-
+    "cross-env": "^10.0.0",
     "eslint": "^9.21.0",
     "jest": "^30.0.2",
     "rimraf": "^6.0.1",

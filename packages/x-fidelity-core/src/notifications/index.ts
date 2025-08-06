@@ -2,6 +2,7 @@ import { NotificationManager } from './notificationManager';
 import { EmailProvider } from './providers/emailProvider';
 import { SlackProvider } from './providers/slackProvider';
 import { TeamsProvider } from './providers/teamsProvider';
+export { ReportGenerator } from './reportGenerator';
 import { 
   NotificationConfig, 
   EmailProviderConfig, 

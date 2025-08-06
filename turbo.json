@@ -27,13 +27,13 @@
       "inputs": ["src/**", "test/**", "*.test.ts", "*.spec.ts"]
     },
     "test:integration": {
-      "dependsOn": ["build"],
+      "dependsOn": ["^build", "build"],
       "outputs": ["coverage/**", ".vscode-test/**"],
       "inputs": ["src/**", "test/**", "dist/**"],
       "cache": false
     },
     "test:e2e": {
-      "dependsOn": ["build"],
+      "dependsOn": ["^build", "build"],
       "outputs": [".vscode-test/**"],
       "inputs": ["src/**", "test/**", "dist/**"],
       "cache": false

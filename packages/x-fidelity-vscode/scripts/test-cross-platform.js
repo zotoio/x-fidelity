@@ -8,7 +8,7 @@
  * - Optimizes test execution with shared analysis
  */
 
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
@@ -27,6 +27,21 @@ const isCI = isCIForced || process.env.CI === 'true' || process.env.GITHUB_ACTIO
 console.log(`🧪 Running VSCode tests on ${platform}`);
 console.log(`📋 Test label: ${testLabel}`);
 console.log(`🔧 Environment: ${isCI ? 'CI/CD' : 'Local Development'}`);
+
+// Ensure workspace symlinks are properly set up
+console.log('\n🔗 Ensuring workspace symlinks before tests...');
+try {
+  execSync('node scripts/ensure-workspace-symlinks.js', {
+    stdio: 'inherit',
+    cwd: path.join(__dirname, '..'),
+    env: { ...process.env, SKIP_YARN_INSTALL: isCI ? 'true' : 'false' }
+  });
+  console.log('✅ Workspace symlinks configured\n');
+} catch (error) {
+  console.error('❌ Failed to set up workspace symlinks:', error.message);
+  console.log('💡 Try running: yarn install --force');
+  process.exit(1);
+}
 
 if (isLinux && !isCI) {
   console.log(`💡 Local Linux: Running with display for debugging. Use CI=true to run headless.`);

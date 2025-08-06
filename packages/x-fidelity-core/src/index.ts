@@ -17,6 +17,7 @@ export * from './notifications';
 export * from './utils/enhancedLogger';
 export * from './utils/bundledEnvironmentDetector';
 export * from './utils/yamlHighlighter';
+export * from './utils/binaryDiscovery';
 
 // Re-export types from the types package
 export type {

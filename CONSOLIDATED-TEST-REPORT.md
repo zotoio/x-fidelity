@@ -1,7 +1,7 @@
 # Consolidated Test Report
 
-> **Generated:** 2025-08-05 17:30 GMT+1000  
-> **Duration:** 104.81s  
+> **Generated:** 2025-08-06 23:05 GMT+1000  
+> **Duration:** 66.86s  
 > **Status:** PASSED ✅
 
 ## 📊 Executive Summary
@@ -9,11 +9,11 @@
 | Metric | Value |
 |--------|-------|
 | **Overall Status** | PASSED ✅ |
-| **Total Tests** | 1379 |
+| **Total Tests** | 721 |
 | **Test Success Rate** | 100.0% |
 | **Packages Tested** | 6 |
 | **Cache Hit Rate** | 100.0% |
-| **Total Execution Time** | 104.81s |
+| **Total Execution Time** | 66.86s |
 
 ## 🔧 Linting & Code Formatting
 
@@ -27,28 +27,28 @@
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| ✅ **Passed** | 1379 | 100.0% |
+| ✅ **Passed** | 721 | 100.0% |
 | ❌ **Failed** | 0 | 0.0% |
 | ⏭️ **Skipped** | 0 | 0.0% |
 | 💾 **Cached Packages** | 0 | - |
-| 📊 **Total Tests** | 1379 | 100% |
+| 📊 **Total Tests** | 721 | 100% |
 
 ## 📊 Code Coverage
 
 | Coverage Type | Percentage |
 |---------------|------------|
-| 📝 **Statements** | 44.7% |
-| 🌿 **Branches** | 46.5% |
-| 🔧 **Functions** | 38.6% |
-| 📏 **Lines** | 44.7% |
+| 📝 **Statements** | 46.3% |
+| 🌿 **Branches** | 48.6% |
+| 🔧 **Functions** | 40.4% |
+| 📏 **Lines** | 46.4% |
 
 ## 💾 Turbo Cache Performance
 
 | Metric | Value |
 |--------|-------|
-| 🎯 **Cache Hits** | 22 tasks |
+| 🎯 **Cache Hits** | 27 tasks |
 | 🔄 **Cache Misses** | 0 tasks |
-| 📊 **Total Tasks** | 22 tasks |
+| 📊 **Total Tasks** | 27 tasks |
 | 📈 **Cache Hit Rate** | 100.0% |
 
 ## 📦 Package Details
@@ -56,11 +56,11 @@
 | Package | Status | Passed | Failed | Skipped | Total | Coverage |
 |---------|--------|--------|--------|---------|-------|----------|
 | `x-fidelity-cli` | 🏃 Executed | 62 | 0 | 0 | 62 | 63.2% |
-| `x-fidelity-core` | 🏃 Executed | 745 | 0 | 0 | 745 | 63.4% |
-| `x-fidelity-types` | 🏃 Executed | 0 | 0 | 0 | 0 | 91.9% |
-| `x-fidelity-plugins` | 🏃 Executed | 312 | 0 | 0 | 312 | 54.4% |
+| `x-fidelity-core` | 🏃 Executed | 24 | 0 | 0 | 24 | 67.4% |
+| `x-fidelity-types` | 🏃 Executed | 51 | 0 | 0 | 51 | 91.9% |
+| `x-fidelity-plugins` | 🏃 Executed | 317 | 0 | 0 | 317 | 54.5% |
 | `x-fidelity-server` | 🏃 Executed | 60 | 0 | 0 | 60 | 57.2% |
-| `x-fidelity-vscode` | 🏃 Executed | 200 | 0 | 0 | 200 | 25.3% |
+| `x-fidelity-vscode` | 🏃 Executed | 207 | 0 | 0 | 207 | 25.3% |
 
 ## 📋 Additional Information
 
@@ -70,7 +70,7 @@
 - **Packages cached:** 0
 
 ### Performance Metrics
-- **Average time per package:** 17.47s
+- **Average time per package:** 11.14s
 - **Cache efficiency:** 100.0% (higher is better)
 
 ### Status Indicators

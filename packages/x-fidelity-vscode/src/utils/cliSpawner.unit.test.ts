@@ -2,14 +2,25 @@ import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { CLISpawner, CLISpawnOptions } from './cliSpawner';
 import { EventEmitter } from 'events';
+import {
+  getPackageManagerPaths,
+  createEnhancedEnvironment
+} from '@x-fidelity/core';
 
 // Mock dependencies
 jest.mock('fs');
 jest.mock('child_process');
 jest.mock('./globalLogger');
+jest.mock('@x-fidelity/core');
 
 const mockedFs = fs as jest.Mocked<typeof fs>;
 const mockedSpawn = spawn as jest.MockedFunction<typeof spawn>;
+const mockGetPackageManagerPaths =
+  getPackageManagerPaths as jest.MockedFunction<typeof getPackageManagerPaths>;
+const mockCreateEnhancedEnvironment =
+  createEnhancedEnvironment as jest.MockedFunction<
+    typeof createEnhancedEnvironment
+  >;
 
 // Mock logger
 const mockLogger = {
@@ -28,6 +39,12 @@ const mockLogger = {
 
 jest.mock('./globalLogger', () => ({
   createComponentLogger: () => mockLogger
+}));
+
+// Mock @x-fidelity/core functions
+jest.mock('@x-fidelity/core', () => ({
+  getPackageManagerPaths: jest.fn(),
+  createEnhancedEnvironment: jest.fn()
 }));
 
 // Mock child process
@@ -633,38 +650,57 @@ describe('CLISpawner Unit Tests', () => {
     beforeEach(() => {
       originalPlatform = process.platform;
       originalEnv = { ...process.env };
+
+      // Set up default mock implementations
+      mockGetPackageManagerPaths.mockResolvedValue([
+        '/usr/local/bin',
+        '/opt/homebrew/bin',
+        '/usr/bin',
+        '/bin'
+      ]);
+
+      mockCreateEnhancedEnvironment.mockResolvedValue({
+        ...process.env,
+        PATH: '/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin'
+      });
     });
 
     afterEach(() => {
       Object.defineProperty(process, 'platform', { value: originalPlatform });
       process.env = originalEnv;
+      jest.clearAllMocks();
     });
 
     describe('getPackageManagerPaths()', () => {
-      test('should include system PATH on macOS', () => {
+      test('should include system PATH on macOS', async () => {
         Object.defineProperty(process, 'platform', { value: 'darwin' });
         process.env.PATH = '/usr/bin:/bin:/usr/local/bin';
         process.env.USER = 'testuser';
 
-        mockedFs.existsSync.mockReturnValue(true);
+        // Mock the core function to return expected paths
+        mockGetPackageManagerPaths.mockResolvedValue([
+          '/usr/bin',
+          '/bin',
+          '/usr/local/bin'
+        ]);
 
-        const paths = (cliSpawner as any).getPackageManagerPaths();
+        const paths = await (cliSpawner as any).getPackageManagerPaths();
 
         expect(paths).toContain('/usr/bin');
         expect(paths).toContain('/bin');
         expect(paths).toContain('/usr/local/bin');
         expect(mockLogger.debug).toHaveBeenCalledWith(
-          'Package manager PATH resolution:',
+          'Package manager PATH resolution (enhanced):',
           expect.objectContaining({
-            'original PATH': '/usr/bin:/bin:/usr/local/bin',
-            'enhanced paths count': expect.any(Number),
+            'first 5 paths': expect.any(Array),
+            'paths found': expect.any(Number),
             platform: 'darwin',
             user: 'testuser'
           })
         );
       });
 
-      test('should include Homebrew paths on macOS', () => {
+      test('should include Homebrew paths on macOS', async () => {
         Object.defineProperty(process, 'platform', { value: 'darwin' });
         process.env.PATH = '/usr/bin';
         process.env.USER = 'testuser';
@@ -677,76 +713,81 @@ describe('CLISpawner Unit Tests', () => {
           );
         });
 
-        const paths = (cliSpawner as any).getPackageManagerPaths();
+        const paths = await (cliSpawner as any).getPackageManagerPaths();
 
         expect(paths).toContain('/usr/local/bin');
         expect(paths).toContain('/opt/homebrew/bin');
       });
 
-      test('should include Node Version Manager paths on macOS', () => {
+      test('should include Node Version Manager paths on macOS', async () => {
         Object.defineProperty(process, 'platform', { value: 'darwin' });
         process.env.USER = 'testuser';
         process.env.PATH = '/usr/bin';
 
-        mockedFs.existsSync.mockImplementation((filePath: any) => {
-          return (
-            filePath === '/Users/testuser/.nvm/current/bin' ||
-            filePath === '/Users/testuser/.volta/bin' ||
-            filePath === '/Users/testuser/.fnm/current/bin' ||
-            filePath === '/usr/bin'
-          );
-        });
+        // Mock the core function to return NVM paths
+        mockGetPackageManagerPaths.mockResolvedValue([
+          '/Users/testuser/.nvm/current/bin',
+          '/Users/testuser/.volta/bin',
+          '/Users/testuser/.fnm/current/bin',
+          '/usr/bin'
+        ]);
 
-        const paths = (cliSpawner as any).getPackageManagerPaths();
+        const paths = await (cliSpawner as any).getPackageManagerPaths();
 
         expect(paths).toContain('/Users/testuser/.nvm/current/bin');
         expect(paths).toContain('/Users/testuser/.volta/bin');
         expect(paths).toContain('/Users/testuser/.fnm/current/bin');
       });
 
-      test('should include yarn global installation paths', () => {
+      test('should include yarn global installation paths', async () => {
         Object.defineProperty(process, 'platform', { value: 'darwin' });
         process.env.USER = 'testuser';
         process.env.PATH = '/usr/bin';
 
-        mockedFs.existsSync.mockImplementation((filePath: any) => {
-          return (
-            filePath === '/Users/testuser/.yarn/bin' ||
-            filePath === '/usr/local/share/npm/bin' ||
-            filePath === '/opt/homebrew/share/npm/bin' ||
-            filePath === '/usr/bin'
-          );
-        });
+        // Mock the core function to return yarn paths
+        mockGetPackageManagerPaths.mockResolvedValue([
+          '/Users/testuser/.yarn/bin',
+          '/usr/local/share/npm/bin',
+          '/opt/homebrew/share/npm/bin',
+          '/usr/bin'
+        ]);
 
-        const paths = (cliSpawner as any).getPackageManagerPaths();
+        const paths = await (cliSpawner as any).getPackageManagerPaths();
 
         expect(paths).toContain('/Users/testuser/.yarn/bin');
         expect(paths).toContain('/usr/local/share/npm/bin');
         expect(paths).toContain('/opt/homebrew/share/npm/bin');
       });
 
-      test('should handle Windows path separators', () => {
-        Object.defineProperty(process, 'platform', { value: 'win32' });
-        process.env.PATH = 'C:\\Windows\\System32;C:\\Program Files\\nodejs';
-        process.env.USERNAME = 'testuser';
+      test('should handle Windows path separators', async () => {
+        // Mock the core function to return Windows paths
+        mockGetPackageManagerPaths.mockResolvedValue([
+          'C:\\Program Files\\nodejs',
+          'C:\\Windows\\System32',
+          'C:\\Program Files (x86)\\nodejs'
+        ]);
 
-        mockedFs.existsSync.mockReturnValue(true);
-
-        const paths = (cliSpawner as any).getPackageManagerPaths();
+        const paths = await (cliSpawner as any).getPackageManagerPaths();
 
         expect(paths).toContain('C:\\Windows\\System32');
         expect(paths).toContain('C:\\Program Files\\nodejs');
       });
 
-      test('should handle missing environment variables gracefully', () => {
+      test('should handle missing environment variables gracefully', async () => {
         Object.defineProperty(process, 'platform', { value: 'darwin' });
         delete process.env.PATH;
         delete process.env.USER;
         delete process.env.USERNAME;
 
-        mockedFs.existsSync.mockReturnValue(true);
+        // Mock the core function to return system paths when env vars are missing
+        mockGetPackageManagerPaths.mockResolvedValue([
+          '/usr/local/bin',
+          '/opt/homebrew/bin',
+          '/usr/bin',
+          '/bin'
+        ]);
 
-        const paths = (cliSpawner as any).getPackageManagerPaths();
+        const paths = await (cliSpawner as any).getPackageManagerPaths();
 
         // Should still include system paths
         expect(paths).toContain('/usr/local/bin');
@@ -755,14 +796,14 @@ describe('CLISpawner Unit Tests', () => {
         expect(paths).toContain('/bin');
       });
 
-      test('should deduplicate paths', () => {
+      test('should deduplicate paths', async () => {
         Object.defineProperty(process, 'platform', { value: 'darwin' });
         process.env.PATH = '/usr/bin:/usr/local/bin:/usr/bin'; // Duplicate /usr/bin
         process.env.USER = 'testuser';
 
         mockedFs.existsSync.mockReturnValue(true);
 
-        const paths = (cliSpawner as any).getPackageManagerPaths();
+        const paths = await (cliSpawner as any).getPackageManagerPaths();
 
         const usrBinCount = paths.filter(
           (p: string) => p === '/usr/bin'
@@ -770,37 +811,36 @@ describe('CLISpawner Unit Tests', () => {
         expect(usrBinCount).toBe(1);
       });
 
-      test('should only include existing paths', () => {
-        Object.defineProperty(process, 'platform', { value: 'darwin' });
-        process.env.PATH = '/usr/bin';
-        process.env.USER = 'testuser';
+      test('should only include existing paths', async () => {
+        // Mock the core function to return only existing paths
+        mockGetPackageManagerPaths.mockResolvedValue([
+          '/usr/bin' // Only this path exists
+        ]);
 
-        mockedFs.existsSync.mockImplementation((filePath: any) => {
-          // Only /usr/bin exists
-          return filePath === '/usr/bin';
-        });
-
-        const paths = (cliSpawner as any).getPackageManagerPaths();
+        const paths = await (cliSpawner as any).getPackageManagerPaths();
 
         expect(paths).toContain('/usr/bin');
         expect(paths).not.toContain('/usr/local/bin');
         expect(paths).not.toContain('/opt/homebrew/bin');
       });
 
-      test('should handle fs.existsSync errors gracefully', () => {
+      test('should handle fs.existsSync errors gracefully', async () => {
         Object.defineProperty(process, 'platform', { value: 'darwin' });
         process.env.PATH = '/usr/bin';
 
-        mockedFs.existsSync.mockImplementation(() => {
-          throw new Error('Permission denied');
-        });
+        // Mock the core function to return empty array on error
+        mockGetPackageManagerPaths.mockResolvedValue([]);
 
-        const paths = (cliSpawner as any).getPackageManagerPaths();
+        const paths = await (cliSpawner as any).getPackageManagerPaths();
 
         expect(paths).toEqual([]);
         expect(mockLogger.debug).toHaveBeenCalledWith(
-          expect.stringContaining('Package manager path check failed'),
-          expect.any(Error)
+          'Package manager PATH resolution (enhanced):',
+          expect.objectContaining({
+            'first 5 paths': expect.any(Array),
+            'paths found': 0,
+            platform: 'darwin'
+          })
         );
       });
     });
@@ -813,17 +853,17 @@ describe('CLISpawner Unit Tests', () => {
         }
       };
 
-      test('should create enhanced environment with PATH on macOS', () => {
-        Object.defineProperty(process, 'platform', { value: 'darwin' });
-        process.env.PATH = '/usr/bin:/bin';
-        process.env.USER = 'testuser';
+      test('should create enhanced environment with PATH on macOS', async () => {
         process.env.EXISTING_VAR = 'existing_value';
 
-        mockedFs.existsSync.mockImplementation((filePath: any) => {
-          return filePath === '/usr/bin' || filePath === '/usr/local/bin';
+        // Mock the core function to return enhanced environment
+        mockCreateEnhancedEnvironment.mockResolvedValue({
+          ...process.env,
+          PATH: '/usr/local/bin:/usr/bin:/bin',
+          EXISTING_VAR: 'existing_value'
         });
 
-        const env = (cliSpawner as any).createEnhancedEnvironment(
+        const env = await (cliSpawner as any).createEnhancedEnvironment(
           mockOptions,
           'test-correlation-123'
         );
@@ -850,13 +890,14 @@ describe('CLISpawner Unit Tests', () => {
         expect(env.CUSTOM_VAR).toBe('custom_value');
       });
 
-      test('should use Windows path separators on Windows', () => {
-        Object.defineProperty(process, 'platform', { value: 'win32' });
-        process.env.PATH = 'C:\\Windows\\System32';
+      test('should use Windows path separators on Windows', async () => {
+        // Mock the core function to return Windows-style PATH
+        mockCreateEnhancedEnvironment.mockResolvedValue({
+          ...process.env,
+          PATH: 'C:\\Program Files\\nodejs;C:\\Windows\\System32'
+        });
 
-        mockedFs.existsSync.mockReturnValue(true);
-
-        const env = (cliSpawner as any).createEnhancedEnvironment(
+        const env = await (cliSpawner as any).createEnhancedEnvironment(
           mockOptions,
           'test-correlation-456'
         );
@@ -864,7 +905,7 @@ describe('CLISpawner Unit Tests', () => {
         expect(env.PATH.includes(';')).toBe(true); // Windows separator
       });
 
-      test('should allow options.env to override environment variables', () => {
+      test('should allow options.env to override environment variables', async () => {
         Object.defineProperty(process, 'platform', { value: 'darwin' });
         process.env.XFI_LOG_LEVEL = 'info';
 
@@ -878,7 +919,7 @@ describe('CLISpawner Unit Tests', () => {
 
         mockedFs.existsSync.mockReturnValue(true);
 
-        const env = (cliSpawner as any).createEnhancedEnvironment(
+        const env = await (cliSpawner as any).createEnhancedEnvironment(
           optionsWithOverride,
           'test-correlation-789'
         );
@@ -887,13 +928,13 @@ describe('CLISpawner Unit Tests', () => {
         expect(env.CUSTOM_OVERRIDE).toBe('overridden');
       });
 
-      test('should log debug information about environment creation', () => {
+      test('should log debug information about environment creation', async () => {
         Object.defineProperty(process, 'platform', { value: 'darwin' });
         process.env.PATH = '/usr/bin';
 
         mockedFs.existsSync.mockReturnValue(true);
 
-        (cliSpawner as any).createEnhancedEnvironment(
+        await (cliSpawner as any).createEnhancedEnvironment(
           mockOptions,
           'test-correlation-debug'
         );
@@ -902,22 +943,19 @@ describe('CLISpawner Unit Tests', () => {
           'Creating enhanced environment for CLI spawn',
           expect.objectContaining({
             correlationId: 'test-correlation-debug',
-            'original PATH length': expect.any(Number),
-            'final PATH length': expect.any(Number),
-            'enhanced paths count': expect.any(Number),
-            'preserved original': expect.any(Boolean),
+            'enhanced PATH length': expect.any(Number),
             platform: 'darwin'
           })
         );
       });
 
-      test('should handle empty PATH gracefully', () => {
+      test('should handle empty PATH gracefully', async () => {
         Object.defineProperty(process, 'platform', { value: 'darwin' });
         delete process.env.PATH;
 
         mockedFs.existsSync.mockReturnValue(true);
 
-        const env = (cliSpawner as any).createEnhancedEnvironment(
+        const env = await (cliSpawner as any).createEnhancedEnvironment(
           mockOptions,
           'test-correlation-empty'
         );
@@ -926,22 +964,14 @@ describe('CLISpawner Unit Tests', () => {
         expect(env.PATH.length).toBeGreaterThan(0);
       });
 
-      test('should augment original PATH instead of replacing it', () => {
-        Object.defineProperty(process, 'platform', { value: 'darwin' });
-        process.env.PATH = '/original/path1:/original/path2';
-        process.env.USER = 'testuser';
-
-        // Mock to include only standard enhanced paths (not the original paths)
-        mockedFs.existsSync.mockImplementation((filePath: any) => {
-          return (
-            filePath === '/usr/local/bin' ||
-            filePath === '/opt/homebrew/bin' ||
-            filePath === '/usr/bin' ||
-            filePath === '/bin'
-          );
+      test('should augment original PATH instead of replacing it', async () => {
+        // Mock the core function to return PATH that includes both enhanced and original paths
+        mockCreateEnhancedEnvironment.mockResolvedValue({
+          ...process.env,
+          PATH: '/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/original/path1:/original/path2'
         });
 
-        const env = (cliSpawner as any).createEnhancedEnvironment(
+        const env = await (cliSpawner as any).createEnhancedEnvironment(
           mockOptions,
           'test-correlation-augment'
         );
@@ -962,16 +992,14 @@ describe('CLISpawner Unit Tests', () => {
         expect(originalPath1Index).toBeGreaterThan(usrLocalBinIndex); // Should come after enhanced paths
       });
 
-      test('should deduplicate paths when augmenting PATH', () => {
-        Object.defineProperty(process, 'platform', { value: 'darwin' });
-        process.env.PATH = '/usr/local/bin:/other/path:/usr/local/bin'; // Duplicate
-        process.env.USER = 'testuser';
-
-        mockedFs.existsSync.mockImplementation((filePath: any) => {
-          return filePath === '/usr/local/bin' || filePath === '/other/path';
+      test('should deduplicate paths when augmenting PATH', async () => {
+        // Mock the core function to return deduplicated PATH
+        mockCreateEnhancedEnvironment.mockResolvedValue({
+          ...process.env,
+          PATH: '/usr/local/bin:/other/path' // Deduplicated - no duplicate /usr/local/bin
         });
 
-        const env = (cliSpawner as any).createEnhancedEnvironment(
+        const env = await (cliSpawner as any).createEnhancedEnvironment(
           mockOptions,
           'test-correlation-dedup'
         );
@@ -1028,6 +1056,124 @@ describe('CLISpawner Unit Tests', () => {
           })
         })
       );
+    });
+  });
+
+  describe('XFI Result Parsing', () => {
+    beforeEach(() => {
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.readFileSync.mockReturnValue('{}');
+    });
+
+    test('should parse XFI_RESULT from rawResult.result.XFI_RESULT', async () => {
+      const mockResult = {
+        result: {
+          XFI_RESULT: {
+            issueDetails: [{ file: 'test.ts', issue: 'test issue' }],
+            totalIssues: 1,
+            fileCount: 1,
+            durationSeconds: 5
+          }
+        }
+      };
+
+      mockedFs.readFileSync.mockReturnValue(JSON.stringify(mockResult));
+
+      const result = await (cliSpawner as any).parseXFIResultFromFile(
+        '/test/workspace'
+      );
+
+      expect(result.metadata.XFI_RESULT.issueDetails).toHaveLength(1);
+      expect(result.summary.totalIssues).toBe(1);
+    });
+
+    test('should parse XFI_RESULT when rawResult has issueDetails directly', async () => {
+      const mockResult = {
+        issueDetails: [{ file: 'test.ts', issue: 'test issue' }],
+        totalIssues: 1,
+        fileCount: 1,
+        durationSeconds: 5
+      };
+
+      mockedFs.readFileSync.mockReturnValue(JSON.stringify(mockResult));
+
+      const result = await (cliSpawner as any).parseXFIResultFromFile(
+        '/test/workspace'
+      );
+
+      expect(result.metadata.XFI_RESULT.issueDetails).toHaveLength(1);
+      expect(result.summary.totalIssues).toBe(1);
+    });
+
+    test('should fallback to rawResult when XFI_RESULT not found in expected locations', async () => {
+      const mockResult = {
+        someOtherData: 'value',
+        fileCount: 2
+      };
+
+      mockedFs.readFileSync.mockReturnValue(JSON.stringify(mockResult));
+
+      const result = await (cliSpawner as any).parseXFIResultFromFile(
+        '/test/workspace'
+      );
+
+      expect(result.metadata.XFI_RESULT.someOtherData).toBe('value');
+      expect(result.metadata.XFI_RESULT.fileCount).toBe(2);
+    });
+
+    test('should add empty issueDetails array when missing', async () => {
+      const mockResult = {
+        XFI_RESULT: {
+          totalIssues: 0,
+          fileCount: 1,
+          durationSeconds: 2
+          // issueDetails is missing
+        }
+      };
+
+      mockedFs.readFileSync.mockReturnValue(JSON.stringify(mockResult));
+
+      const result = await (cliSpawner as any).parseXFIResultFromFile(
+        '/test/workspace'
+      );
+
+      expect(result.metadata.XFI_RESULT.issueDetails).toEqual([]);
+    });
+  });
+
+  describe('Utility Functions', () => {
+    test('createCLISpawner should return a new CLISpawner instance', () => {
+      const { createCLISpawner } = require('./cliSpawner');
+      const spawner = createCLISpawner();
+      expect(spawner).toBeInstanceOf(CLISpawner);
+    });
+
+    test('getEmbeddedCLIPath should find CLI from possible paths', () => {
+      const { getEmbeddedCLIPath } = require('./cliSpawner');
+
+      // Mock file system to simulate CLI found at first path
+      mockedFs.existsSync.mockImplementation((filePath: any) => {
+        // Normalize path for cross-platform comparison
+        const normalizedPath = String(filePath).replace(/\\/g, '/');
+        return normalizedPath.includes('cli/index.js');
+      });
+
+      const cliPath = getEmbeddedCLIPath();
+      // Normalize the returned path for cross-platform comparison
+      const normalizedCliPath = cliPath.replace(/\\/g, '/');
+      expect(normalizedCliPath).toContain('cli/index.js');
+    });
+
+    test('getEmbeddedCLIPath should return default path when CLI not found', () => {
+      const { getEmbeddedCLIPath } = require('./cliSpawner');
+
+      // Mock file system to simulate CLI not found anywhere
+      mockedFs.existsSync.mockReturnValue(false);
+
+      const cliPath = getEmbeddedCLIPath();
+      // Normalize the returned path for cross-platform comparison
+      const normalizedCliPath = cliPath.replace(/\\/g, '/');
+      expect(normalizedCliPath).toContain('cli/index.js');
     });
   });
 });

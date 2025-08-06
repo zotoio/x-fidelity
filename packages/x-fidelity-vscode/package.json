@@ -2,7 +2,7 @@
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity",
   "description": "VSCode extension for X-Fidelity code quality analysis with real-time diagnostics, comprehensive UI integration, and improved CLI embedding",
-  "version": "5.2.4",
+  "version": "0.0.0-semantically-released",
   "publisher": "zotoio",
   "private": true,
   "license": "MIT",
@@ -291,6 +291,18 @@
           "default": "",
           "description": "📁 Path to local configuration directory (relative to workspace root)",
           "order": 4
+        },
+        "xfidelity.nodeGlobalBinPath": {
+          "type": "string",
+          "default": "",
+          "description": "🔧 Override path to directory containing Node.js binaries (node, npm, yarn, npx, etc.). Leave empty for automatic discovery. Use as failsafe for custom installations.",
+          "examples": [
+            "/usr/local/bin",
+            "/opt/homebrew/bin",
+            "~/.nvm/versions/node/v20.0.0/bin",
+            "C:\\Program Files\\nodejs"
+          ],
+          "order": 5
         },
         "xfidelity.archetype": {
           "type": "string",
@@ -717,7 +729,8 @@
     "build:dependencies": "cd ../../ && turbo build --filter=@x-fidelity/types --filter=@x-fidelity/core --filter=@x-fidelity/plugins --filter=@x-fidelity/democonfig",
     "build:cli": "cd ../../ && turbo build --filter=x-fidelity && echo '📦 CLI built for embedding'",
     "build:cli:check": "node -e \"const path = require('path'); const cliPkg = require(path.resolve(__dirname, '../x-fidelity-cli/package.json')); console.log('🔍 CLI package version for embedding:', cliPkg.version);\"",
-    "verify:dependencies": "node -e \"const fs = require('fs'); const deps = ['../x-fidelity-types/dist/index.js', '../x-fidelity-core/dist/index.js', '../x-fidelity-plugins/dist/index.js']; deps.forEach(dep => { if (!fs.existsSync(dep)) { console.error('Missing dependency:', dep); process.exit(1); } }); console.log('All dependencies verified');\"",
+    "verify:dependencies": "node -e \"const fs = require('fs'); const deps = ['../x-fidelity-types/dist/index.js', '../x-fidelity-core/dist/index.js', '../x-fidelity-plugins/dist/index.js']; const srcDeps = ['../x-fidelity-types/src/index.ts', '../x-fidelity-core/src/index.ts', '../x-fidelity-plugins/src/index.ts']; [...deps, ...srcDeps].forEach(dep => { if (!fs.existsSync(dep)) { console.error('Missing dependency:', dep); process.exit(1); } }); console.log('All dependencies verified');\"",
+    "ensure-symlinks": "node scripts/ensure-workspace-symlinks.js",
     "embed:cli": "node scripts/embed-cli.js",
     "dev": "node --no-warnings=ExperimentalWarning esbuild.config.js --dev",
     "watch": "node --no-warnings=ExperimentalWarning esbuild.config.js --watch",
@@ -734,7 +747,11 @@
     "test:coverage": "yarn check-types && yarn lint && jest --coverage",
     "test:unit": "yarn check-types && yarn lint && jest",
     "test:integration": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration",
+    "test:integration:binary": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration --grep \"Binary Discovery\"",
+    "test:integration:vscode-setting": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration --grep \"VSCode Setting Override\"",
+    "test:integration:crossplatform": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration --grep \"Cross-Platform\"",
     "test:core": "yarn build && yarn build:test && node scripts/test-cross-platform.js core",
+    "test:core:binary": "cd ../x-fidelity-core && yarn test binaryDiscovery.integration.test.ts",
     "test:fast": "yarn test:unit && yarn test:core",
     "test:full": "yarn test:unit && yarn test:integration",
     "test:ci": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration --ci",
@@ -746,7 +763,7 @@
     "format:check": "prettier --check src/**/*.ts",
     "prebuild:production": "yarn format",
     "check-types": "yarn build:dependencies && tsc --noEmit --incremental",
-    "build:test": "tsc -p tsconfig.test.json",
+    "build:test": "yarn build:dependencies && tsc -p tsconfig.test.json && node scripts/fix-test-imports.js && yarn ensure-symlinks",
     "clean": "rimraf out dist dist-test config .vscode-test .vscode-test-profile && node -e \"try { require('fs').readdirSync('.').filter(f => f.endsWith('.tsbuildinfo')).forEach(f => require('fs').unlinkSync(f)); } catch(e) { /* ignore */ }\"",
     "clean:test-artifacts": "rm -rf .vscode-test/user-data/Crashpad/pending/*.lock .vscode-test/user-data/logs/* ./.vscode-test-user-data || true",
     "publish": "yarn package && vsce publish",

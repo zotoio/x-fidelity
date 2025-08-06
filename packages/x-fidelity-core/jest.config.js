@@ -36,13 +36,17 @@ module.exports = {
       }
     }]
   },
-  testMatch: [
+  testMatch: process.env.JEST_INTEGRATION ? [
+    "**/*.integration.test.ts"
+  ] : [
     "**/__tests__/**/*.+(ts|tsx|js)",
     "**/?(*.)+(spec|test).+(ts|tsx|js)",
     "!**/*.integration.test.ts"
   ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node", "mts", "cts"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  // Ignore compiled mock files to prevent duplicates
+  modulePathIgnorePatterns: ["<rootDir>/dist/.*/__mocks__/"],
   // Improve test cleanup and prevent hanging
   testTimeout: 15000,
   detectOpenHandles: true,

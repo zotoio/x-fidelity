@@ -2,6 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import type { ResultMetadata } from '@x-fidelity/types';
+import { ReportGenerator } from '@x-fidelity/core';
 import { ConfigManager } from '../configuration/configManager';
 import { ReportViewer } from './reportViewer';
 import { ReportHistoryManager } from './reportHistoryManager';
@@ -139,10 +140,6 @@ export class ReportManager {
 
   private generateMarkdownContent(result: ResultMetadata): string {
     // Use the enhanced ReportGenerator from core for consistent formatting
-    const {
-      ReportGenerator
-    } = require('@x-fidelity/core/src/notifications/reportGenerator');
-
     const reportGenerator = new ReportGenerator(result);
     return reportGenerator.generateReport();
   }

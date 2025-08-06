@@ -14,27 +14,58 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug output'
+        required: false
+        default: false
+        type: boolean
+      test_scenario:
+        description: 'Test scenario to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'core-only'
+          - 'vscode-only'
+          - 'binary-discovery-only'
+
+env:
+  FORCE_COLOR: 1
+  CI: true
+  NODE_ENV: test
 
 jobs:
   test-extension:
-    runs-on: ubuntu-latest
+    name: VSCode Extension - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         vscode-version: ['stable']
         node-version: ['22.16.0']
+        include:
+          # Platform-specific test configurations
+          - os: macos-latest
+            test-homebrew: true
+          - os: windows-latest
+            test-program-files: true
+          - os: ubuntu-latest
+            test-comprehensive: true
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'yarn'
           registry-url: 'https://registry.npmjs.org'
           
       - name: Install dependencies
@@ -43,39 +74,160 @@ jobs:
       - name: Build all packages
         run: yarn build
         
-      - name: Setup Xvfb for headless testing
+      - name: Setup headless environment (Linux)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
           
-      - name: Lint extension
-        run: yarn workspace x-fidelity-vscode lint
+      - name: Setup additional tools (Platform-specific)
+        shell: bash
+        run: |
+          echo "=== Environment Setup for ${{ matrix.os }} ==="
           
-      - name: Type check extension
-        run: yarn workspace x-fidelity-vscode check-types
+          # Install yarn globally if not present
+          if ! command -v yarn &> /dev/null; then
+            npm install -g yarn
+          fi
+          
+          # Platform-specific tool installations
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            npm install -g pnpm || true
+          fi
+          
+          # Show environment for debugging
+          echo "Node: $(node --version)"
+          echo "NPM: $(npm --version)" 
+          echo "Yarn: $(yarn --version)"
+          which node npm yarn || true
+          echo "PATH: $PATH"
+          
+      - name: Setup Homebrew environment (macOS)
+        if: matrix.test-homebrew == true
+        run: |
+          echo "=== Homebrew Environment ==="
+          if command -v brew &> /dev/null; then
+            echo "Homebrew prefix: $(brew --prefix)"
+            echo "Homebrew bin: $(brew --prefix)/bin"
+            ls -la "$(brew --prefix)/bin" | grep -E "(node|npm|yarn)" || echo "No Node.js tools in Homebrew bin"
+          else
+            echo "Homebrew not available"
+          fi
+          
+      - name: Setup Windows environment
+        if: matrix.test-program-files == true
+        shell: powershell
+        run: |
+          Write-Host "=== Windows Program Files ==="
+          if (Test-Path "C:\Program Files\nodejs") {
+            Write-Host "Node.js in Program Files:"
+            Get-ChildItem "C:\Program Files\nodejs" | Select-Object Name
+          } else {
+            Write-Host "Node.js not in standard Program Files location"
+          }
+          
+          # Show where Node.js is actually installed
+          Write-Host "Actual Node.js location: $((Get-Command node).Source)"
+          Write-Host "Actual NPM location: $((Get-Command npm).Source)"
+          
+      - name: Lint and type check extension
+        run: |
+          yarn workspace x-fidelity-vscode lint
+          yarn workspace x-fidelity-vscode check-types
           
       - name: Build VSCode extension
         run: yarn workspace x-fidelity-vscode build
           
       - name: Run unit tests
+        shell: bash
         run: |
-          # Verify workspace dependencies are built
-          yarn workspace @x-fidelity/types build
-          yarn workspace @x-fidelity/core build  
-          yarn workspace @x-fidelity/plugins build
-          yarn workspace @x-fidelity/democonfig build
-          # Run unit tests
-          xvfb-run -a yarn workspace x-fidelity-vscode test:unit
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            xvfb-run -a yarn workspace x-fidelity-vscode test:unit
+          else
+            yarn workspace x-fidelity-vscode test:unit
+          fi
+        env:
+          DEBUG: ${{ github.event.inputs.debug == 'true' && '*' || '' }}
           
-      - name: Run integration tests
+      - name: Run core binary discovery tests
+        if: github.event.inputs.test_scenario != 'vscode-only'
         run: |
-          # Verify workspace dependencies are built
-          yarn workspace @x-fidelity/types build
-          yarn workspace @x-fidelity/core build  
-          yarn workspace @x-fidelity/plugins build
-          yarn workspace @x-fidelity/democonfig build
-          # Run integration tests
-          xvfb-run -a yarn workspace x-fidelity-vscode test:integration
+          cd packages/x-fidelity-core
+          yarn test:integration:binary
+        env:
+          DEBUG: ${{ github.event.inputs.debug == 'true' && '*' || '' }}
+          TEST_SCENARIO: ${{ matrix.test-homebrew && 'homebrew' || matrix.test-program-files && 'program-files' || 'standard' }}
+          
+      - name: Test with custom NODE_PATH (Unix)
+        if: matrix.os != 'windows-latest' && github.event.inputs.test_scenario != 'vscode-only'
+        run: |
+          # Create a custom Node.js installation simulation
+          mkdir -p /tmp/custom-node/bin
+          ln -sf "$(which node)" /tmp/custom-node/bin/node
+          ln -sf "$(which npm)" /tmp/custom-node/bin/npm
+          if command -v yarn &> /dev/null; then
+            ln -sf "$(which yarn)" /tmp/custom-node/bin/yarn
+          fi
+          
+          # Test discovery with custom path
+          cd packages/x-fidelity-core
+          JEST_INTEGRATION=true yarn jest src/utils/binaryDiscovery.integration.test.ts --testNamePattern="override" --verbose --testTimeout=30000
+        env:
+          CUSTOM_NODE_PATH: /tmp/custom-node/bin
+          
+      - name: Test with custom NODE_PATH (Windows)
+        if: matrix.os == 'windows-latest' && github.event.inputs.test_scenario != 'vscode-only'
+        shell: powershell
+        run: |
+          # Create a custom Node.js installation simulation
+          New-Item -ItemType Directory -Force -Path "C:\temp\custom-node\bin"
+          $nodeCmd = Get-Command node
+          $npmCmd = Get-Command npm
+          Copy-Item $nodeCmd.Path "C:\temp\custom-node\bin\node.exe"
+          Copy-Item $npmCmd.Path "C:\temp\custom-node\bin\npm.cmd"
+          $yarnCmd = Get-Command yarn -ErrorAction SilentlyContinue
+          if ($yarnCmd) {
+            Copy-Item $yarnCmd.Path "C:\temp\custom-node\bin\yarn.cmd"
+          }
+          
+          # Test discovery with custom path
+          cd packages/x-fidelity-core
+          $env:JEST_INTEGRATION = "true"
+          yarn jest src/utils/binaryDiscovery.integration.test.ts --testNamePattern="override" --verbose --testTimeout=30000
+        env:
+          CUSTOM_NODE_PATH: C:\temp\custom-node\bin
+          
+      - name: Run VSCode binary discovery integration tests
+        if: github.event.inputs.test_scenario != 'core-only'
+        shell: bash
+        run: |
+          cd packages/x-fidelity-vscode
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            xvfb-run -a yarn test:integration:binary --verbose
+          else
+            yarn test:integration:binary --verbose
+          fi
+        env:
+          DEBUG: ${{ github.event.inputs.debug == 'true' && '*' || '' }}
+          
+      - name: Run VSCode setting override tests
+        if: github.event.inputs.test_scenario != 'core-only'
+        shell: bash
+        run: |
+          cd packages/x-fidelity-vscode
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            xvfb-run -a yarn test:integration:vscode-setting --verbose
+          else
+            yarn test:integration:vscode-setting --verbose
+          fi
+          
+      - name: Run comprehensive VSCode integration tests
+        if: matrix.test-comprehensive == true && github.event.inputs.test_scenario != 'binary-discovery-only'
+        run: |
+          cd packages/x-fidelity-vscode
+          xvfb-run -a yarn test:integration --verbose
+        env:
+          DEBUG: ${{ github.event.inputs.debug == 'true' && '*' || '' }}
           
       - name: Package extension
         run: yarn workspace x-fidelity-vscode package
@@ -83,7 +235,7 @@ jobs:
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vscode-extension-${{ matrix.vscode-version }}-node-${{ matrix.node-version }}
+          name: vscode-extension-${{ matrix.os }}-node-${{ matrix.node-version }}
           path: packages/x-fidelity-vscode/*.vsix
           retention-days: 7
           
@@ -91,10 +243,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.vscode-version }}-node-${{ matrix.node-version }}
+          name: test-results-${{ matrix.os }}-node-${{ matrix.node-version }}
           path: |
             packages/x-fidelity-vscode/.vscode-test/
             packages/x-fidelity-vscode/test-results/
+            packages/x-fidelity-core/coverage/
+          if-no-files-found: warn
           retention-days: 7
           
   publish-check:
@@ -110,7 +264,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.16.0'
-          cache: 'yarn'
           
       - name: Install dependencies
         run: yarn install --frozen-lockfile
