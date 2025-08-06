@@ -17,7 +17,8 @@ const testDir = path.join(__dirname, '..', 'out', 'test');
 const baseMappings = {
   "@x-fidelity/core": "x-fidelity-core/dist/index.js",
   "@x-fidelity/types": "x-fidelity-types/dist/index.js", 
-  "@x-fidelity/plugins": "x-fidelity-plugins/dist/index.js"
+  "@x-fidelity/plugins": "x-fidelity-plugins/dist/index.js",
+  "@x-fidelity/democonfig": "x-fidelity-democonfig/dist/index.js"
 };
 
 // Generate mappings for different directory depths
@@ -44,12 +45,21 @@ function fixImportsInFile(filePath) {
     // Transform require statements for each workspace package
     for (const [pkg, relativePath] of Object.entries(baseMappings)) {
       const correctPath = '../'.repeat(levelsUp) + relativePath;
+      
+      // Handle both require() and jest.mock() statements
       const requirePattern = new RegExp(`require\\("${pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"\\)`, 'g');
+      const jestMockPattern = new RegExp(`jest\\.mock\\(\\s*['"]${pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`, 'g');
       
       if (requirePattern.test(content)) {
         content = content.replace(requirePattern, `require("${correctPath}")`);
         changed = true;
-        console.log(`  ✅ Fixed import in ${path.relative(testDir, filePath)}: ${pkg} -> ${correctPath}`);
+        console.log(`  ✅ Fixed require() in ${path.relative(testDir, filePath)}: ${pkg} -> ${correctPath}`);
+      }
+      
+      if (jestMockPattern.test(content)) {
+        content = content.replace(jestMockPattern, `jest.mock('${correctPath}'`);
+        changed = true;
+        console.log(`  ✅ Fixed jest.mock() in ${path.relative(testDir, filePath)}: ${pkg} -> ${correctPath}`);
       }
     }
 

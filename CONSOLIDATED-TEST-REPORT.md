@@ -1,7 +1,7 @@
 # Consolidated Test Report
 
-> **Generated:** 2025-08-06 18:27 GMT+1000  
-> **Duration:** 2.50s  
+> **Generated:** 2025-08-06 20:25 GMT+1000  
+> **Duration:** 2.90s  
 > **Status:** PASSED ✅
 
 ## 📊 Executive Summary
@@ -9,11 +9,11 @@
 | Metric | Value |
 |--------|-------|
 | **Overall Status** | PASSED ✅ |
-| **Total Tests** | 1552 |
+| **Total Tests** | 1557 |
 | **Test Success Rate** | 100.0% |
 | **Packages Tested** | 6 |
 | **Cache Hit Rate** | 100.0% |
-| **Total Execution Time** | 2.50s |
+| **Total Execution Time** | 2.90s |
 
 ## 🔧 Linting & Code Formatting
 
@@ -27,20 +27,20 @@
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| ✅ **Passed** | 1552 | 100.0% |
+| ✅ **Passed** | 1557 | 100.0% |
 | ❌ **Failed** | 0 | 0.0% |
 | ⏭️ **Skipped** | 0 | 0.0% |
 | 💾 **Cached Packages** | 0 | - |
-| 📊 **Total Tests** | 1552 | 100% |
+| 📊 **Total Tests** | 1557 | 100% |
 
 ## 📊 Code Coverage
 
 | Coverage Type | Percentage |
 |---------------|------------|
 | 📝 **Statements** | 46.4% |
-| 🌿 **Branches** | 48.7% |
+| 🌿 **Branches** | 48.6% |
 | 🔧 **Functions** | 40.4% |
-| 📏 **Lines** | 46.4% |
+| 📏 **Lines** | 46.5% |
 
 ## 💾 Turbo Cache Performance
 
@@ -56,9 +56,9 @@
 | Package | Status | Passed | Failed | Skipped | Total | Coverage |
 |---------|--------|--------|--------|---------|-------|----------|
 | `x-fidelity-cli` | 🏃 Executed | 62 | 0 | 0 | 62 | 63.2% |
-| `x-fidelity-core` | 🏃 Executed | 858 | 0 | 0 | 858 | 67.5% |
+| `x-fidelity-core` | 🏃 Executed | 860 | 0 | 0 | 860 | 67.6% |
 | `x-fidelity-types` | 🏃 Executed | 51 | 0 | 0 | 51 | 91.9% |
-| `x-fidelity-plugins` | 🏃 Executed | 314 | 0 | 0 | 314 | 54.5% |
+| `x-fidelity-plugins` | 🏃 Executed | 317 | 0 | 0 | 317 | 54.5% |
 | `x-fidelity-server` | 🏃 Executed | 60 | 0 | 0 | 60 | 57.2% |
 | `x-fidelity-vscode` | 🏃 Executed | 207 | 0 | 0 | 207 | 25.3% |
 
@@ -70,7 +70,7 @@
 - **Packages cached:** 0
 
 ### Performance Metrics
-- **Average time per package:** 0.42s
+- **Average time per package:** 0.48s
 - **Cache efficiency:** 100.0% (higher is better)
 
 ### Status Indicators

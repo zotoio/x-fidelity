@@ -1160,5 +1160,63 @@ describe('ConfigManager - Additional Coverage', () => {
                 options.localConfigPath = originalLocalConfigPath;
             }
         });
+
+        test('should handle workspace root detection when directories are not found', async () => {
+            // Mock fs.existsSync to return false for all package.json and packages directories
+            (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
+                return false; // No workspace indicators found
+            });
+            
+            // Mock options to trigger the workspace root detection path
+            const originalConfigServer = options.configServer;
+            const originalLocalConfigPath = options.localConfigPath;
+            
+            try {
+                options.configServer = ''; // Ensure we use local config path
+                options.localConfigPath = '/test/config';
+                
+                await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow();
+                
+                // Should have searched upward trying to find workspace root
+                expect(fs.existsSync).toHaveBeenCalledWith(expect.stringContaining('package.json'));
+            } finally {
+                options.configServer = originalConfigServer;
+                options.localConfigPath = originalLocalConfigPath;
+            }
+        });
+
+        test('should reach root directory during workspace root search', async () => {
+            // Mock path.dirname to simulate reaching root directory
+            const originalDirname = require('path').dirname;
+            const mockDirname = jest.fn();
+            require('path').dirname = mockDirname;
+            
+            // Setup to reach root directory (return same path to break loop)
+            mockDirname.mockImplementation((p: string) => {
+                if (p === '/') return '/'; // Root directory
+                if (p === '/test') return '/'; 
+                return '/test'; // Keep going up
+            });
+            
+            // Mock fs.existsSync to never find workspace indicators
+            (fs.existsSync as jest.Mock).mockReturnValue(false);
+            
+            const originalConfigServer = options.configServer;
+            const originalLocalConfigPath = options.localConfigPath;
+            
+            try {
+                options.configServer = ''; // Ensure we use local config path
+                options.localConfigPath = '/test/config';
+                
+                await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow();
+                
+                // Should have called dirname to traverse up directories
+                expect(mockDirname).toHaveBeenCalled();
+            } finally {
+                options.configServer = originalConfigServer;
+                options.localConfigPath = originalLocalConfigPath;
+                require('path').dirname = originalDirname;
+            }
+        });
     });
 });
