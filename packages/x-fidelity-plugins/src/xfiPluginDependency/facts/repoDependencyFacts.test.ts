@@ -694,4 +694,51 @@ describe('repoDependencyFacts', () => {
             expect(mockAlmanac.factValue).toHaveBeenCalledTimes(2);
         });
     });
+
+    describe('FactDefn Exports', () => {
+        test('dependencyVersionFact should execute with correct parameters', async () => {
+            const mockParams = {
+                repoPath: '/test/repo',
+                archetypeConfig: {
+                    config: {
+                        minimumDependencyVersions: {
+                            'react': '^18.0.0'
+                        }
+                    }
+                }
+            };
+
+            // Mock collectLocalDependencies to return test data
+            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies').mockResolvedValue([
+                { name: 'react', version: '18.2.0' }
+            ]);
+
+            const result = await repoDependencyFacts.dependencyVersionFact.fn(mockParams);
+
+            expect(result).toEqual([{
+                dep: 'react',
+                ver: '18.2.0',
+                min: '^18.0.0'
+            }]);
+        });
+
+        test('repoDependencyAnalysisFact should execute with correct parameters', async () => {
+            const mockParams = { resultFact: 'testResult' };
+            const mockAlmanac = {
+                factValue: jest.fn().mockResolvedValue([
+                    { dep: 'react', ver: '17.0.0', min: '^18.0.0' }
+                ]),
+                addRuntimeFact: jest.fn()
+            };
+
+            const result = await repoDependencyFacts.repoDependencyAnalysisFact.fn(mockParams, mockAlmanac);
+
+            expect(result).toEqual([{
+                dependency: 'react',
+                currentVersion: '17.0.0',
+                requiredVersion: '^18.0.0'
+            }]);
+            expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult', expect.any(Array));
+        });
+    });
 });

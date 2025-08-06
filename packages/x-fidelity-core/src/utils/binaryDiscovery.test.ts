@@ -289,6 +289,22 @@ describe('binaryDiscovery', () => {
       
       expect(result).toBeNull();
     });
+
+    test('should handle non-Error objects in catch block', async () => {
+      const nvmDefaultPath = '/Users/testuser/.nvm/alias/default';
+      
+      mockedFs.existsSync.mockImplementation((filePath: any) => {
+        return filePath === nvmDefaultPath;
+      });
+      
+      mockedFs.readFileSync.mockImplementation(() => {
+        throw 'String error'; // Non-Error object
+      });
+
+      const result = await resolveNvmDefaultPath();
+      
+      expect(result).toBeNull();
+    });
   });
 
   describe('resolveVoltaPath', () => {
@@ -531,6 +547,50 @@ describe('binaryDiscovery', () => {
       // Should only have one instance of each path
       expect(result.filter(p => p === '/usr/local/bin')).toHaveLength(1);
       expect(result.filter(p => p === '/opt/homebrew/bin')).toHaveLength(1);
+    });
+
+    test('should handle tilde expansion in override path', async () => {
+      const overridePath = '~/custom/bin/path';
+      const expandedPath = '/Users/testuser/custom/bin/path';
+      
+      mockedFs.existsSync.mockImplementation((filePath: any) => {
+        return filePath === expandedPath || 
+               filePath === '/usr/local/bin';
+      });
+
+      const result = await getPackageManagerPaths(overridePath);
+      
+      expect(result).toContain(expandedPath);
+    });
+
+    test('should warn when override path does not exist', async () => {
+      const overridePath = '/nonexistent/path';
+      
+      mockedFs.existsSync.mockImplementation((filePath: any) => {
+        return filePath === '/usr/local/bin' || filePath === '/opt/homebrew/bin';
+      });
+
+      const result = await getPackageManagerPaths(overridePath);
+      
+      expect(result).not.toContain(overridePath);
+      expect(result).toContain('/usr/local/bin');
+    });
+
+    test('should handle fs.existsSync errors gracefully', async () => {
+      mockedFs.existsSync.mockImplementation((filePath: any) => {
+        if (filePath === '/error/path') {
+          throw new Error('Permission denied');
+        }
+        return filePath === '/usr/local/bin';
+      });
+
+      process.env.PATH = '/error/path:/usr/local/bin';
+
+      const result = await getPackageManagerPaths();
+      
+      // Should filter out paths that throw errors
+      expect(result).not.toContain('/error/path');
+      expect(result).toContain('/usr/local/bin');
     });
   });
 
@@ -831,6 +891,31 @@ describe('binaryDiscovery', () => {
         // Accept either the mock path or the real path
         expect(result?.path === testCase.mockPath || result?.path === testCase.realPath).toBe(true);
       }
+    });
+
+    test('should handle error checking binary with detailed logging', async () => {
+      const binaryPath = '/usr/local/bin/npm';
+      
+      // Make which/where command fail so we use Strategy 2 (package manager paths)
+      mockExecAsync.mockImplementation(() => Promise.reject(new Error('Command not found')));
+      
+      mockedFs.existsSync.mockImplementation((filePath: any) => {
+        return filePath === '/usr/local/bin' || filePath === binaryPath;
+      });
+      
+      mockedFs.statSync.mockImplementation((filePath: any) => {
+        if (filePath === binaryPath) {
+          throw new Error('Stat error'); // This should trigger the error handling on lines 310-311
+        }
+        return {
+          isFile: () => true,
+          mode: 0o755
+        } as any;
+      });
+
+      const result = await discoverBinary('npm');
+      
+      expect(result).toBeNull();
     });
   });
 

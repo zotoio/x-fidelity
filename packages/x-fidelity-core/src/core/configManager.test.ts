@@ -1102,4 +1102,55 @@ describe('ConfigManager - Additional Coverage', () => {
             expect(axiosClient.get).toHaveBeenCalledTimes(6); // 3 retries per failed attempt, 2 attempts = 6 calls
         });
     });
+
+    describe('Workspace Root Detection', () => {
+        let mockProcess: any;
+
+        beforeEach(() => {
+            mockProcess = {
+                ...process,
+                cwd: jest.fn().mockReturnValue('/test/workspace')
+            };
+            // Mock fs for workspace root detection
+            (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
+                if (path === '/test/workspace/package.json' || path === '/test/workspace/packages') {
+                    return true;
+                }
+                if (path === '/test/package.json' || path === '/test/packages') {
+                    return true;
+                }
+                return false;
+            });
+        });
+
+        test('should detect workspace root with package.json and packages directory', async () => {
+            // This test covers lines 500-503 where workspace root is detected
+            options.localConfigPath = '/test/workspace/config';
+            
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow();
+            
+            // The workspace root detection code should have been executed
+            expect(fs.existsSync).toHaveBeenCalledWith(expect.stringContaining('package.json'));
+            expect(fs.existsSync).toHaveBeenCalledWith(expect.stringContaining('packages'));
+        });
+
+        test('should handle path outside allowed directories in test environment', async () => {
+            // This test covers lines 547-556 (test environment error logging)
+            const originalNodeEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = 'test';
+            
+            options.localConfigPath = '/unauthorized/path';
+            
+            const loggerErrorSpy = jest.spyOn(logger, 'error');
+            
+            await expect(ConfigManager.getConfig({ archetype: 'test-archetype' })).rejects.toThrow('Local config path outside allowed directories');
+            
+            // Should log detailed error information in test environment
+            expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Config path outside allowed directories'));
+            expect(loggerErrorSpy).toHaveBeenCalledWith('Allowed base paths:');
+            
+            process.env.NODE_ENV = originalNodeEnv;
+            loggerErrorSpy.mockRestore();
+        });
+    });
 });

@@ -1058,4 +1058,116 @@ describe('CLISpawner Unit Tests', () => {
       );
     });
   });
+
+  describe('XFI Result Parsing', () => {
+    beforeEach(() => {
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.readFileSync.mockReturnValue('{}');
+    });
+
+    test('should parse XFI_RESULT from rawResult.result.XFI_RESULT', async () => {
+      const mockResult = {
+        result: {
+          XFI_RESULT: {
+            issueDetails: [{ file: 'test.ts', issue: 'test issue' }],
+            totalIssues: 1,
+            fileCount: 1,
+            durationSeconds: 5
+          }
+        }
+      };
+
+      mockedFs.readFileSync.mockReturnValue(JSON.stringify(mockResult));
+
+      const result = await (cliSpawner as any).parseXFIResultFromFile(
+        '/test/workspace'
+      );
+
+      expect(result.metadata.XFI_RESULT.issueDetails).toHaveLength(1);
+      expect(result.summary.totalIssues).toBe(1);
+    });
+
+    test('should parse XFI_RESULT when rawResult has issueDetails directly', async () => {
+      const mockResult = {
+        issueDetails: [{ file: 'test.ts', issue: 'test issue' }],
+        totalIssues: 1,
+        fileCount: 1,
+        durationSeconds: 5
+      };
+
+      mockedFs.readFileSync.mockReturnValue(JSON.stringify(mockResult));
+
+      const result = await (cliSpawner as any).parseXFIResultFromFile(
+        '/test/workspace'
+      );
+
+      expect(result.metadata.XFI_RESULT.issueDetails).toHaveLength(1);
+      expect(result.summary.totalIssues).toBe(1);
+    });
+
+    test('should fallback to rawResult when XFI_RESULT not found in expected locations', async () => {
+      const mockResult = {
+        someOtherData: 'value',
+        fileCount: 2
+      };
+
+      mockedFs.readFileSync.mockReturnValue(JSON.stringify(mockResult));
+
+      const result = await (cliSpawner as any).parseXFIResultFromFile(
+        '/test/workspace'
+      );
+
+      expect(result.metadata.XFI_RESULT.someOtherData).toBe('value');
+      expect(result.metadata.XFI_RESULT.fileCount).toBe(2);
+    });
+
+    test('should add empty issueDetails array when missing', async () => {
+      const mockResult = {
+        XFI_RESULT: {
+          totalIssues: 0,
+          fileCount: 1,
+          durationSeconds: 2
+          // issueDetails is missing
+        }
+      };
+
+      mockedFs.readFileSync.mockReturnValue(JSON.stringify(mockResult));
+
+      const result = await (cliSpawner as any).parseXFIResultFromFile(
+        '/test/workspace'
+      );
+
+      expect(result.metadata.XFI_RESULT.issueDetails).toEqual([]);
+    });
+  });
+
+  describe('Utility Functions', () => {
+    test('createCLISpawner should return a new CLISpawner instance', () => {
+      const { createCLISpawner } = require('./cliSpawner');
+      const spawner = createCLISpawner();
+      expect(spawner).toBeInstanceOf(CLISpawner);
+    });
+
+    test('getEmbeddedCLIPath should find CLI from possible paths', () => {
+      const { getEmbeddedCLIPath } = require('./cliSpawner');
+
+      // Mock file system to simulate CLI found at first path
+      mockedFs.existsSync.mockImplementation((path: any) => {
+        return String(path).includes('cli/index.js');
+      });
+
+      const cliPath = getEmbeddedCLIPath();
+      expect(cliPath).toContain('cli/index.js');
+    });
+
+    test('getEmbeddedCLIPath should return default path when CLI not found', () => {
+      const { getEmbeddedCLIPath } = require('./cliSpawner');
+
+      // Mock file system to simulate CLI not found anywhere
+      mockedFs.existsSync.mockReturnValue(false);
+
+      const cliPath = getEmbeddedCLIPath();
+      expect(cliPath).toContain('../cli/index.js');
+    });
+  });
 });
