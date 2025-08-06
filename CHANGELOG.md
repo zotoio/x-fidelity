@@ -2,6 +2,19 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.2.5](https://github.com/zotoio/x-fidelity/compare/v5.2.4...v5.2.5) (2025-08-06)
+
+### Bug Fixes
+
+* add shell: bash to workflow steps using bash syntax for Windows compatibility ([ef6afc5](https://github.com/zotoio/x-fidelity/commit/ef6afc5b9793bd3a0e91fefd814132f394905742))
+* **cli spawner:** binary locator ([b6b5ac3](https://github.com/zotoio/x-fidelity/commit/b6b5ac37e5e3625136443e8da186d84119cd12ec))
+* improve Windows binary discovery for CI compatibility ([5dd71c1](https://github.com/zotoio/x-fidelity/commit/5dd71c1816a67cfb6e3a358050476b4e51f342ca))
+* make cliSpawner tests Windows-compatible ([274aaff](https://github.com/zotoio/x-fidelity/commit/274aaff530bc9422fe388c5f906d4d927eaca678))
+* prevent Windows CI timeouts in VSCode integration tests ([3557c89](https://github.com/zotoio/x-fidelity/commit/3557c89a7e875a8191e8f8985ca701fe5969246b))
+* resolve all CI failures across platforms ([8e43d1d](https://github.com/zotoio/x-fidelity/commit/8e43d1d7f7d6770f1372adcf72bc4c0576ec76fb))
+* skip problematic VSCode integration tests on Windows CI ([c909c1d](https://github.com/zotoio/x-fidelity/commit/c909c1d1366c94acc54d041ddb2774a90cfa44dd))
+* use cross-env for Windows-compatible environment variables in core tests ([bcca47d](https://github.com/zotoio/x-fidelity/commit/bcca47d9b0b8ba6a8f3f31825825850b0172ae42))
+
 ## [5.2.4](https://github.com/zotoio/x-fidelity/compare/v5.2.3...v5.2.4) (2025-08-05)
 
 ### Bug Fixes
