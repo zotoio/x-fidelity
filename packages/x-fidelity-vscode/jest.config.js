@@ -30,7 +30,9 @@ module.exports = {
     '^@x-fidelity/types$': '<rootDir>/../x-fidelity-types/dist/index.js',
     '^@x-fidelity/plugins$': '<rootDir>/../x-fidelity-plugins/dist/index.js',
     '^@x-fidelity/democonfig$':
-      '<rootDir>/../x-fidelity-democonfig/dist/index.js'
+      '<rootDir>/../x-fidelity-democonfig/dist/index.js',
+    '^glob$': '<rootDir>/src/test/mocks/glob.mock.ts',
+    '^path-scurry$': '<rootDir>/src/test/mocks/path-scurry.mock.ts'
   },
   testTimeout: 10000,
   reporters: [
