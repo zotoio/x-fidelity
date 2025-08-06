@@ -140,6 +140,7 @@ jobs:
         run: yarn workspace x-fidelity-vscode build
           
       - name: Run unit tests
+        shell: bash
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             xvfb-run -a yarn workspace x-fidelity-vscode test:unit
@@ -196,6 +197,7 @@ jobs:
           
       - name: Run VSCode binary discovery integration tests
         if: github.event.inputs.test_scenario != 'core-only'
+        shell: bash
         run: |
           cd packages/x-fidelity-vscode
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
@@ -208,6 +210,7 @@ jobs:
           
       - name: Run VSCode setting override tests
         if: github.event.inputs.test_scenario != 'core-only'
+        shell: bash
         run: |
           cd packages/x-fidelity-vscode
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
