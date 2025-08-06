@@ -66,7 +66,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'yarn'
           registry-url: 'https://registry.npmjs.org'
           
       - name: Install dependencies
@@ -182,10 +181,13 @@ jobs:
         run: |
           # Create a custom Node.js installation simulation
           New-Item -ItemType Directory -Force -Path "C:\temp\custom-node\bin"
-          Copy-Item "$(Get-Command node).Source" "C:\temp\custom-node\bin\node.exe"
-          Copy-Item "$(Get-Command npm).Source" "C:\temp\custom-node\bin\npm.cmd"
-          if (Get-Command yarn -ErrorAction SilentlyContinue) {
-            Copy-Item "$(Get-Command yarn).Source" "C:\temp\custom-node\bin\yarn.cmd"
+          $nodeCmd = Get-Command node
+          $npmCmd = Get-Command npm
+          Copy-Item $nodeCmd.Path "C:\temp\custom-node\bin\node.exe"
+          Copy-Item $npmCmd.Path "C:\temp\custom-node\bin\npm.cmd"
+          $yarnCmd = Get-Command yarn -ErrorAction SilentlyContinue
+          if ($yarnCmd) {
+            Copy-Item $yarnCmd.Path "C:\temp\custom-node\bin\yarn.cmd"
           }
           
           # Test discovery with custom path
@@ -246,6 +248,7 @@ jobs:
             packages/x-fidelity-vscode/.vscode-test/
             packages/x-fidelity-vscode/test-results/
             packages/x-fidelity-core/coverage/
+          if-no-files-found: warn
           retention-days: 7
           
   publish-check:
@@ -261,7 +264,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.16.0'
-          cache: 'yarn'
           
       - name: Install dependencies
         run: yarn install --frozen-lockfile
