@@ -9,6 +9,14 @@ const mockExecAsync = jest.fn();
 // Mock dependencies with explicit implementations
 jest.mock('fs');
 jest.mock('os');
+jest.mock('./logger', () => ({
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}));
 jest.mock('child_process', () => ({
   exec: jest.fn()
 }));
@@ -59,16 +67,17 @@ describe('binaryDiscovery', () => {
     });
 
     // Set up default mock behavior for exec async
-    mockExecAsync.mockImplementation((command: string) => {
-      if (command === 'which npm') {
+    mockExecAsync.mockImplementation((...args: any[]) => {
+      const [command, secondArg] = args;
+      if (command === 'which' && secondArg && secondArg[0] === 'npm') {
         return Promise.resolve({ stdout: '/usr/local/bin/npm\n', stderr: '' });
-      } else if (command === 'which yarn') {
+      } else if (command === 'which' && secondArg && secondArg[0] === 'yarn') {
         return Promise.resolve({ stdout: '/usr/local/bin/yarn\n', stderr: '' });
-      } else if (command === 'where npm') {
+      } else if (command === 'where' && secondArg && secondArg[0] === 'npm') {
         return Promise.resolve({ stdout: 'C:\\Program Files\\nodejs\\npm.cmd\n', stderr: '' });
-      } else if (command.includes('--version')) {
+      } else if (typeof command === 'string' && command.includes('--version')) {
         return Promise.resolve({ stdout: '8.19.2\n', stderr: '' });
-      } else if (command.includes('global dir')) {
+      } else if (typeof command === 'string' && command.includes('global dir')) {
         return Promise.resolve({ stdout: '/Users/testuser/.config/yarn/global\n', stderr: '' });
       } else {
         return Promise.reject(new Error('Command not found'));
@@ -145,19 +154,17 @@ describe('binaryDiscovery', () => {
 
   describe('resolveNvmDefaultPath', () => {
     test('should resolve nvm default version path correctly', async () => {
-      const homeDir = '/Users/testuser';
+      // Use the actual home directory that os.homedir() returns during the test
+      const homeDir = os.homedir(); // This will be whatever Jest environment provides
       const nvmDefaultPath = `${homeDir}/.nvm/alias/default`;
       const nvmBinPath = `${homeDir}/.nvm/versions/node/v18.17.0/bin`;
-      
-      // Ensure homedir mock is set
-      mockedOs.homedir.mockReturnValue(homeDir);
       
       mockedFs.existsSync.mockImplementation((filePath: any) => {
         const pathStr = String(filePath);
         return pathStr === nvmDefaultPath || pathStr === nvmBinPath;
       });
       
-      mockedFs.readFileSync.mockImplementation((filePath: any, encoding: any) => {
+      (mockedFs.readFileSync as any).mockImplementation((filePath: any, encoding: any) => {
         const pathStr = String(filePath);
         if (pathStr === nvmDefaultPath && encoding === 'utf8') {
           return 'v18.17.0\n'; // Simulate default alias content with newline
@@ -314,6 +321,13 @@ describe('binaryDiscovery', () => {
   describe('findBinaryWithWhich', () => {
 
     test('should find npm using which on Unix', async () => {
+      mockExecAsync.mockImplementation((...args: any[]) => {
+        const [command, secondArg] = args;
+        if (command === 'which' && secondArg && secondArg[0] === 'npm') {
+          return Promise.resolve({ stdout: '/usr/local/bin/npm\n' });
+        }
+        return Promise.reject(new Error('Command not found'));
+      });
       mockedFs.existsSync.mockImplementation((filePath: any) => {
         return filePath === '/usr/local/bin/npm';
       });
@@ -325,6 +339,13 @@ describe('binaryDiscovery', () => {
 
     test('should find npm using where on Windows', async () => {
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      mockExecAsync.mockImplementation((...args: any[]) => {
+        const [command, secondArg] = args;
+        if (command === 'where' && secondArg && secondArg[0] === 'npm') {
+          return Promise.resolve({ stdout: 'C:\\Program Files\\nodejs\\npm.cmd\n' });
+        }
+        return Promise.reject(new Error('Command not found'));
+      });
       
       mockedFs.existsSync.mockImplementation((filePath: any) => {
         return filePath === 'C:\\Program Files\\nodejs\\npm.cmd';
@@ -367,7 +388,7 @@ describe('binaryDiscovery', () => {
                pathStr === '/opt/homebrew/bin';
       });
       
-      mockedFs.readFileSync.mockImplementation((filePath: any, encoding: any) => {
+      (mockedFs.readFileSync as any).mockImplementation((filePath: any, encoding: any) => {
         const pathStr = String(filePath);
         if (pathStr === nvmDefaultPath && encoding === 'utf8') {
           return 'v18.17.0\n'; // Include newline for trim()
@@ -453,6 +474,22 @@ describe('binaryDiscovery', () => {
   describe('discoverBinary', () => {
 
     test('should discover binary using which command', async () => {
+      mockExecAsync.mockImplementation((...args: any[]) => {
+        const [command, secondArg] = args;
+        // Handle execFileAsync calls (command and args separately)
+        if (command === 'which' && secondArg && secondArg[0] === 'npm') {
+          return Promise.resolve({ stdout: '/usr/local/bin/npm\n' });
+        }
+        if (command === 'where' && secondArg && secondArg[0] === 'npm') {
+          return Promise.resolve({ stdout: '/usr/local/bin/npm\n' });
+        }
+        // Handle execAsync calls (command as string)
+        if (typeof command === 'string' && command.includes('"/usr/local/bin/npm" --version')) {
+          return Promise.resolve({ stdout: '8.19.2\n' });
+        }
+        return Promise.reject(new Error('Command not found'));
+      });
+      
       mockedFs.existsSync.mockImplementation((filePath: any) => {
         return filePath === '/usr/local/bin/npm';
       });
@@ -471,11 +508,18 @@ describe('binaryDiscovery', () => {
       const testBinaries = ['node', 'npx', 'pnpm'];
       
       for (const binary of testBinaries) {
-        mockExecAsync.mockImplementation((command: string) => {
-          if (command === `which ${binary}`) {
-            return Promise.resolve({ stdout: `/usr/local/bin/${binary}\n`, stderr: '' });
-          } else if (command.includes('--version')) {
-            return Promise.resolve({ stdout: '1.0.0\n', stderr: '' });
+        mockExecAsync.mockImplementation((...args: any[]) => {
+          const [command, secondArg] = args;
+          // Handle execFileAsync calls (command and args separately)
+          if (command === 'which' && secondArg && secondArg[0] === binary) {
+            return Promise.resolve({ stdout: `/usr/local/bin/${binary}\n` });
+          }
+          if (command === 'where' && secondArg && secondArg[0] === binary) {
+            return Promise.resolve({ stdout: `/usr/local/bin/${binary}\n` });
+          }
+          // Handle execAsync calls (command as string)
+          if (typeof command === 'string' && command.includes(`"/usr/local/bin/${binary}" --version`)) {
+            return Promise.resolve({ stdout: '1.0.0\n' });
           }
           return Promise.reject(new Error('Command not found'));
         });
@@ -512,7 +556,7 @@ describe('binaryDiscovery', () => {
                pathStr === npmPath;
       });
       
-      mockedFs.readFileSync.mockImplementation((filePath: any, encoding: any) => {
+      (mockedFs.readFileSync as any).mockImplementation((filePath: any, encoding: any) => {
         const pathStr = String(filePath);
         if (pathStr === nvmDefaultPath && encoding === 'utf8') {
           return 'v18.17.0\n'; // Include newline for trim()
@@ -521,8 +565,9 @@ describe('binaryDiscovery', () => {
       });
 
       // Override the mock for this test to ensure which fails
-      mockExecAsync.mockImplementation((command: string) => {
-        if (command.includes('--version')) {
+      mockExecAsync.mockImplementation((...args: any[]) => {
+        const [command] = args;
+        if (typeof command === 'string' && command.includes('--version')) {
           return Promise.resolve({ stdout: '8.19.2\n', stderr: '' });
         } else {
           return Promise.reject(new Error('Command not found'));
@@ -544,6 +589,19 @@ describe('binaryDiscovery', () => {
       
       const npmPath = 'C:\\Program Files\\nodejs\\npm.cmd';
       
+      mockExecAsync.mockImplementation((...args: any[]) => {
+        const [command, secondArg] = args;
+        // Handle execFileAsync calls (command and args separately)
+        if (command === 'where' && secondArg && secondArg[0] === 'npm') {
+          return Promise.resolve({ stdout: `${npmPath}\n` });
+        }
+        // Handle execAsync calls (command as string)
+        if (typeof command === 'string' && command.includes(`"${npmPath}" --version`)) {
+          return Promise.resolve({ stdout: '8.19.2\n' });
+        }
+        return Promise.reject(new Error('Command not found'));
+      });
+      
       mockedFs.existsSync.mockImplementation((filePath: any) => {
         return filePath === 'C:\\Program Files\\nodejs' || 
                filePath === npmPath;
@@ -564,14 +622,20 @@ describe('binaryDiscovery', () => {
 
     test('should handle version check failures gracefully', async () => {
       // Override the mock for this test
-      mockExecAsync.mockImplementation((command: string) => {
-        if (command === 'which npm') {
-          return Promise.resolve({ stdout: '/usr/local/bin/npm\n', stderr: '' });
-        } else if (command.includes('--version')) {
-          return Promise.reject(new Error('Version check failed'));
-        } else {
-          return Promise.reject(new Error('Command not found'));
+      mockExecAsync.mockImplementation((...args: any[]) => {
+        const [command, secondArg] = args;
+        // Handle execFileAsync calls (command and args separately)
+        if (command === 'which' && secondArg && secondArg[0] === 'npm') {
+          return Promise.resolve({ stdout: '/usr/local/bin/npm\n' });
         }
+        if (command === 'where' && secondArg && secondArg[0] === 'npm') {
+          return Promise.resolve({ stdout: '/usr/local/bin/npm\n' });
+        }
+        // Handle execAsync calls (command as string) - fail version check
+        if (typeof command === 'string' && command.includes('--version')) {
+          return Promise.reject(new Error('Version check failed'));
+        }
+        return Promise.reject(new Error('Command not found'));
       });
       
       mockedFs.existsSync.mockImplementation((filePath: any) => {
@@ -594,7 +658,7 @@ describe('binaryDiscovery', () => {
       mockedOs.homedir.mockReturnValue(homeDir);
       
       // Make which/where command fail so we use Strategy 2 (package manager paths)
-      mockExecAsync.mockRejectedValue(new Error('Command not found'));
+      mockExecAsync.mockImplementation(() => Promise.reject(new Error('Command not found')));
       
       // Test each source type individually
       const testCases = [
@@ -619,7 +683,7 @@ describe('binaryDiscovery', () => {
                    pathStr === basePath || 
                    pathStr === testCase.path;
           });
-          mockedFs.readFileSync.mockImplementation((filePath: any, encoding: any) => {
+          (mockedFs.readFileSync as any).mockImplementation((filePath: any, encoding: any) => {
             const pathStr = String(filePath);
             if (pathStr === nvmDefaultPath && encoding === 'utf8') {
               return 'v18.17.0\n';
@@ -649,6 +713,30 @@ describe('binaryDiscovery', () => {
 
   describe('discoverPackageManagers', () => {
     test('should discover both npm and yarn', async () => {
+      mockExecAsync.mockImplementation((...args: any[]) => {
+        const [command, secondArg] = args;
+        // Handle execFileAsync calls (command and args separately)
+        if (command === 'which' && secondArg && secondArg[0] === 'npm') {
+          return Promise.resolve({ stdout: '/usr/local/bin/npm\n' });
+        }
+        if (command === 'which' && secondArg && secondArg[0] === 'yarn') {
+          return Promise.resolve({ stdout: '/usr/local/bin/yarn\n' });
+        }
+        if (command === 'where' && secondArg && secondArg[0] === 'npm') {
+          return Promise.resolve({ stdout: '/usr/local/bin/npm\n' });
+        }
+        if (command === 'where' && secondArg && secondArg[0] === 'yarn') {
+          return Promise.resolve({ stdout: '/usr/local/bin/yarn\n' });
+        }
+        // Handle execAsync calls (command as string)
+        if (typeof command === 'string' && command.includes('"/usr/local/bin/npm" --version')) {
+          return Promise.resolve({ stdout: '8.19.2\n' });
+        }
+        if (typeof command === 'string' && command.includes('"/usr/local/bin/yarn" --version')) {
+          return Promise.resolve({ stdout: '1.22.19\n' });
+        }
+        return Promise.reject(new Error('Command not found'));
+      });
       
       mockedFs.existsSync.mockImplementation((filePath: any) => {
         return filePath === '/usr/local/bin/npm' || filePath === '/usr/local/bin/yarn';
@@ -718,14 +806,20 @@ describe('binaryDiscovery', () => {
   describe('getGlobalDirectory', () => {
     test('should get npm global directory successfully', async () => {
       // Override the mock for this test
-      mockExecAsync.mockImplementation((command: string) => {
-        if (command === 'which npm') {
-          return Promise.resolve({ stdout: '/usr/local/bin/npm\n', stderr: '' });
-        } else if (command.includes('prefix -g')) {
-          return Promise.resolve({ stdout: '/usr/local\n', stderr: '' });
-        } else {
-          return Promise.reject(new Error('Command not found'));
+      mockExecAsync.mockImplementation((...args: any[]) => {
+        const [command, secondArg] = args;
+        // Handle execFileAsync calls (command and args separately)
+        if (command === 'which' && secondArg && secondArg[0] === 'npm') {
+          return Promise.resolve({ stdout: '/usr/local/bin/npm\n' });
         }
+        if (command === 'where' && secondArg && secondArg[0] === 'npm') {
+          return Promise.resolve({ stdout: '/usr/local/bin/npm\n' });
+        }
+        // Handle execAsync calls (command as string)
+        if (typeof command === 'string' && command.includes('prefix -g')) {
+          return Promise.resolve({ stdout: '/usr/local\n' });
+        }
+        return Promise.reject(new Error('Command not found'));
       });
       
       mockedFs.existsSync.mockImplementation((filePath: any) => {
@@ -739,6 +833,21 @@ describe('binaryDiscovery', () => {
     });
 
     test('should get yarn global directory successfully', async () => {
+      mockExecAsync.mockImplementation((...args: any[]) => {
+        const [command, secondArg] = args;
+        // Handle execFileAsync calls (command and args separately)
+        if (command === 'which' && secondArg && secondArg[0] === 'yarn') {
+          return Promise.resolve({ stdout: '/usr/local/bin/yarn\n' });
+        }
+        if (command === 'where' && secondArg && secondArg[0] === 'yarn') {
+          return Promise.resolve({ stdout: '/usr/local/bin/yarn\n' });
+        }
+        // Handle execAsync calls (command as string)
+        if (typeof command === 'string' && command.includes('global dir')) {
+          return Promise.resolve({ stdout: '/Users/testuser/.config/yarn/global\n' });
+        }
+        return Promise.reject(new Error('Command not found'));
+      });
       
       mockedFs.existsSync.mockImplementation((filePath: any) => {
         return filePath === '/usr/local/bin/yarn' || 
@@ -760,10 +869,11 @@ describe('binaryDiscovery', () => {
 
     test('should return null when global directory does not exist', async () => {
       // Override the mock for this test
-      mockExecAsync.mockImplementation((command: string) => {
-        if (command === 'which yarn') {
+      mockExecAsync.mockImplementation((...args: any[]) => {
+        const [command, secondArg] = args;
+        if (command === 'which' && secondArg && secondArg[0] === 'yarn') {
           return Promise.resolve({ stdout: '/usr/local/bin/yarn\n', stderr: '' });
-        } else if (command.includes('global dir')) {
+        } else if (typeof command === 'string' && command.includes('global dir')) {
           return Promise.resolve({ stdout: '/nonexistent/path\n', stderr: '' });
         } else {
           return Promise.reject(new Error('Command not found'));
@@ -781,10 +891,11 @@ describe('binaryDiscovery', () => {
 
     test('should handle yarn global dir command errors', async () => {
       // Override the mock for this test
-      mockExecAsync.mockImplementation((command: string) => {
-        if (command === 'which yarn') {
+      mockExecAsync.mockImplementation((...args: any[]) => {
+        const [command, secondArg] = args;
+        if (command === 'which' && secondArg && secondArg[0] === 'yarn') {
           return Promise.resolve({ stdout: '/usr/local/bin/yarn\n', stderr: '' });
-        } else if (command.includes('global dir')) {
+        } else if (typeof command === 'string' && command.includes('global dir')) {
           return Promise.reject(new Error('yarn global dir failed'));
         } else {
           return Promise.reject(new Error('Command not found'));
