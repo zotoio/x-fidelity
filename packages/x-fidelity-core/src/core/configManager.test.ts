@@ -1013,6 +1013,12 @@ describe('ConfigManager - Additional Coverage', () => {
             
             const loadPluginsSpy = jest.spyOn(ConfigManager, 'loadPlugins').mockResolvedValue();
             
+            // Mock dynamicImport to return base plugins for consistent testing
+            const originalDynamicImport = ConfigManager.dynamicImport;
+            ConfigManager.dynamicImport = jest.fn().mockResolvedValue({
+                getBuiltinPluginNames: () => ['base-plugin1', 'base-plugin2']
+            });
+            
             validateArchetype.mockReturnValue(true);
             (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(configWithPlugins));
             (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue([]);
@@ -1021,8 +1027,12 @@ describe('ConfigManager - Additional Coverage', () => {
             await ConfigManager.getConfig({ archetype: 'plugin-archetype' });
             
             // loadPlugins is called multiple times: first with base plugins, then with archetype plugins
-            expect(loadPluginsSpy).toHaveBeenCalledWith(['plugin1', 'plugin2', 'plugin3']);
+            expect(loadPluginsSpy).toHaveBeenCalledWith(['base-plugin1', 'base-plugin2']); // base plugins
+            expect(loadPluginsSpy).toHaveBeenCalledWith(['plugin1', 'plugin2', 'plugin3']); // archetype plugins
             expect(loadPluginsSpy).toHaveBeenCalledTimes(2); // base plugins + archetype plugins
+            
+            // Restore mocks
+            ConfigManager.dynamicImport = originalDynamicImport;
             loadPluginsSpy.mockRestore();
         });
 
@@ -1034,6 +1044,12 @@ describe('ConfigManager - Additional Coverage', () => {
             
             const loadPluginsSpy = jest.spyOn(ConfigManager, 'loadPlugins').mockResolvedValue();
             
+            // Mock dynamicImport to return base plugins for consistent testing
+            const originalDynamicImport = ConfigManager.dynamicImport;
+            ConfigManager.dynamicImport = jest.fn().mockResolvedValue({
+                getBuiltinPluginNames: () => ['base-plugin1', 'base-plugin2']
+            });
+            
             validateArchetype.mockReturnValue(true);
             (axiosClient.get as jest.MockedFunction<typeof axiosClient.get>).mockResolvedValue(createAxiosResponse(configWithoutPlugins));
             (loadRules as jest.MockedFunction<typeof loadRules>).mockResolvedValue([]);
@@ -1042,9 +1058,13 @@ describe('ConfigManager - Additional Coverage', () => {
             await ConfigManager.getConfig({ archetype: 'no-plugins-archetype' });
             
             // loadPlugins should only be called once with base plugins (no archetype plugins to load)
-            expect(loadPluginsSpy).toHaveBeenCalledTimes(1);
+            expect(loadPluginsSpy).toHaveBeenCalledWith(['base-plugin1', 'base-plugin2']); // base plugins
+            expect(loadPluginsSpy).toHaveBeenCalledTimes(1); // only base plugins
             // Should NOT be called with empty array - archetype plugins loading is skipped entirely
             expect(loadPluginsSpy).not.toHaveBeenCalledWith([]);
+            
+            // Restore mocks
+            ConfigManager.dynamicImport = originalDynamicImport;
             loadPluginsSpy.mockRestore();
         });
     });
