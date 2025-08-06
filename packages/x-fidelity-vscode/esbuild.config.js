@@ -31,11 +31,11 @@ async function main() {
     alias: {
       '@x-fidelity/core': path.resolve(
         __dirname,
-        '../x-fidelity-core/dist/index.js'
+        '../x-fidelity-core/src/index.ts'
       ),
       '@x-fidelity/types': path.resolve(
         __dirname,
-        '../x-fidelity-types/dist/index.js'
+        '../x-fidelity-types/src/index.ts'
       )
     },
     target: 'node18',
@@ -80,19 +80,19 @@ async function main() {
       // Add bundle size analyzer
       bundleAnalyzerPlugin
     ],
-    // Enhanced alias resolution - use built packages for better dependency resolution
+    // Enhanced alias resolution - use source packages for better test compatibility
     alias: {
       '@x-fidelity/core': path.resolve(
         __dirname,
-        '../x-fidelity-core/dist/index.js'
+        '../x-fidelity-core/src/index.ts'
       ),
       '@x-fidelity/types': path.resolve(
         __dirname,
-        '../x-fidelity-types/dist/index.js'
+        '../x-fidelity-types/src/index.ts'
       ),
       '@x-fidelity/plugins': path.resolve(
         __dirname,
-        '../x-fidelity-plugins/dist/index.js'
+        '../x-fidelity-plugins/src/index.ts'
       )
     },
     // Include node_modules dependencies that X-Fidelity needs

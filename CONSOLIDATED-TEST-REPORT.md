@@ -1,7 +1,7 @@
 # Consolidated Test Report
 
-> **Generated:** 2025-08-06 13:02 GMT+1000  
-> **Duration:** 108.54s  
+> **Generated:** 2025-08-06 15:14 GMT+1000  
+> **Duration:** 10.43s  
 > **Status:** PASSED ✅
 
 ## 📊 Executive Summary
@@ -9,11 +9,11 @@
 | Metric | Value |
 |--------|-------|
 | **Overall Status** | PASSED ✅ |
-| **Total Tests** | 1536 |
-| **Test Success Rate** | 100.0% |
+| **Total Tests** | 709 |
+| **Test Success Rate** | 97.0% |
 | **Packages Tested** | 6 |
 | **Cache Hit Rate** | 100.0% |
-| **Total Execution Time** | 108.54s |
+| **Total Execution Time** | 10.43s |
 
 ## 🔧 Linting & Code Formatting
 
@@ -27,11 +27,11 @@
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| ✅ **Passed** | 1536 | 100.0% |
+| ✅ **Passed** | 688 | 97.0% |
 | ❌ **Failed** | 0 | 0.0% |
-| ⏭️ **Skipped** | 0 | 0.0% |
+| ⏭️ **Skipped** | 21 | 3.0% |
 | 💾 **Cached Packages** | 0 | - |
-| 📊 **Total Tests** | 1536 | 100% |
+| 📊 **Total Tests** | 709 | 100% |
 
 ## 📊 Code Coverage
 
@@ -46,9 +46,9 @@
 
 | Metric | Value |
 |--------|-------|
-| 🎯 **Cache Hits** | 27 tasks |
+| 🎯 **Cache Hits** | 28 tasks |
 | 🔄 **Cache Misses** | 0 tasks |
-| 📊 **Total Tasks** | 27 tasks |
+| 📊 **Total Tasks** | 28 tasks |
 | 📈 **Cache Hit Rate** | 100.0% |
 
 ## 📦 Package Details
@@ -56,7 +56,7 @@
 | Package | Status | Passed | Failed | Skipped | Total | Coverage |
 |---------|--------|--------|--------|---------|-------|----------|
 | `x-fidelity-cli` | 🏃 Executed | 62 | 0 | 0 | 62 | 63.2% |
-| `x-fidelity-core` | 🏃 Executed | 851 | 0 | 0 | 851 | 67.2% |
+| `x-fidelity-core` | 🏃 Executed | 3 | 0 | 21 | 24 | 67.2% |
 | `x-fidelity-types` | 🏃 Executed | 51 | 0 | 0 | 51 | 91.9% |
 | `x-fidelity-plugins` | 🏃 Executed | 312 | 0 | 0 | 312 | 54.5% |
 | `x-fidelity-server` | 🏃 Executed | 60 | 0 | 0 | 60 | 57.2% |
@@ -70,7 +70,7 @@
 - **Packages cached:** 0
 
 ### Performance Metrics
-- **Average time per package:** 18.09s
+- **Average time per package:** 1.74s
 - **Cache efficiency:** 100.0% (higher is better)
 
 ### Status Indicators

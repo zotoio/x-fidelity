@@ -171,7 +171,7 @@ jobs:
           
           # Test discovery with custom path
           cd packages/x-fidelity-core
-          JEST_INTEGRATION=true jest src/utils/binaryDiscovery.integration.test.ts --testNamePattern="override" --verbose --testTimeout=30000
+          JEST_INTEGRATION=true yarn jest src/utils/binaryDiscovery.integration.test.ts --testNamePattern="override" --verbose --testTimeout=30000
         env:
           CUSTOM_NODE_PATH: /tmp/custom-node/bin
           
