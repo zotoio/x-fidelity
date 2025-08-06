@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { VSCodeLogger } from './vscodeLogger';
+import { LoggerProvider } from '@x-fidelity/core';
 
 /**
  * Global logger instance that ensures all X-Fidelity extension logs
@@ -52,7 +53,6 @@ class GlobalLoggerManager {
 
     // 🎯 PROPAGATE TO CORE LOGGER PROVIDER FIRST
     try {
-      const { LoggerProvider } = require('@x-fidelity/core');
       LoggerProvider.propagateLogLevel(logLevel);
       this.mainLogger.info(
         `🔄 Propagated log level to all plugins: ${logLevel.toUpperCase()}`
