@@ -531,6 +531,11 @@
   dependencies:
     tslib "^2.4.0"
 
+"@epic-web/invariant@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@epic-web/invariant/-/invariant-1.0.0.tgz#1073e5dee6dd540410784990eb73e4acd25c9813"
+  integrity sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA==
+
 "@esbuild/aix-ppc64@0.25.8":
   version "0.25.8"
   resolved "https://registry.yarnpkg.com/@esbuild/aix-ppc64/-/aix-ppc64-0.25.8.tgz#a1414903bb38027382f85f03dda6065056757727"
@@ -2824,7 +2829,7 @@
     "@babel/types" "^7.23.0"
     "@types/body-parser" "^1.19.5"
     "@types/vscode" "^1.101.0"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-core-0.0.0-semantically-released-41c58716-2f00-4bf4-be05-0e15842ef918-1754180725540/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-core-0.0.0-semantically-released-bf65eb08-3b96-41e0-8714-7f68e64a1396-1754482899990/node_modules/@x-fidelity/x-fidelity-types"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.10.0"
     body-parser "^1.20.3"
@@ -2857,8 +2862,8 @@
   dependencies:
     "@babel/parser" "^7.23.0"
     "@babel/types" "^7.23.0"
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-f2b51721-ee03-4512-a29c-6aed6ab4acbe-1754180725544/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-f2b51721-ee03-4512-a29c-6aed6ab4acbe-1754180725544/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-a1d7081e-6d0e-49c2-8355-edd5a277f2cb-1754482899994/node_modules/@x-fidelity/x-fidelity-core"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-a1d7081e-6d0e-49c2-8355-edd5a277f2cb-1754482899994/node_modules/@x-fidelity/x-fidelity-types"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.8.1"
     dotenv "^16.4.7"
@@ -2875,9 +2880,9 @@
 "@x-fidelity/server@file:packages/x-fidelity-server":
   version "0.0.0-semantically-released"
   dependencies:
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-d1ba5bfa-4daf-448f-a817-b7a6d9e2b503-1754180725545/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/plugins" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-d1ba5bfa-4daf-448f-a817-b7a6d9e2b503-1754180725545/node_modules/@x-fidelity/x-fidelity-plugins"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-d1ba5bfa-4daf-448f-a817-b7a6d9e2b503-1754180725545/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-30afc2e9-05e1-4ff1-8754-85cdef9e4b23-1754482899996/node_modules/@x-fidelity/x-fidelity-core"
+    "@x-fidelity/plugins" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-30afc2e9-05e1-4ff1-8754-85cdef9e4b23-1754482899996/node_modules/@x-fidelity/x-fidelity-plugins"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-30afc2e9-05e1-4ff1-8754-85cdef9e4b23-1754482899996/node_modules/@x-fidelity/x-fidelity-types"
     body-parser "^1.20.3"
     chokidar "^3.6.0"
     express "^4.21.2"
@@ -4146,6 +4151,14 @@ create-require@^1.1.0:
   version "1.1.1"
   resolved "https://registry.npmjs.org/create-require/-/create-require-1.1.1.tgz"
   integrity sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==
+
+cross-env@^10.0.0:
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/cross-env/-/cross-env-10.0.0.tgz#ba25823cfa1ed6af293dcded8796fa16cd162456"
+  integrity sha512-aU8qlEK/nHYtVuN4p7UQgAwVljzMg8hB4YK5ThRqD2l/ziSnryncPNn7bMLt5cFYsKVKBh8HqLqyCoTupEUu7Q==
+  dependencies:
+    "@epic-web/invariant" "^1.0.0"
+    cross-spawn "^7.0.6"
 
 cross-spawn@^6.0.5:
   version "6.0.6"
