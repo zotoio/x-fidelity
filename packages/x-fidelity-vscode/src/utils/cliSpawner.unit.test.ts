@@ -1152,12 +1152,16 @@ describe('CLISpawner Unit Tests', () => {
       const { getEmbeddedCLIPath } = require('./cliSpawner');
 
       // Mock file system to simulate CLI found at first path
-      mockedFs.existsSync.mockImplementation((path: any) => {
-        return String(path).includes('cli/index.js');
+      mockedFs.existsSync.mockImplementation((filePath: any) => {
+        // Normalize path for cross-platform comparison
+        const normalizedPath = String(filePath).replace(/\\/g, '/');
+        return normalizedPath.includes('cli/index.js');
       });
 
       const cliPath = getEmbeddedCLIPath();
-      expect(cliPath).toContain('cli/index.js');
+      // Normalize the returned path for cross-platform comparison
+      const normalizedCliPath = cliPath.replace(/\\/g, '/');
+      expect(normalizedCliPath).toContain('cli/index.js');
     });
 
     test('getEmbeddedCLIPath should return default path when CLI not found', () => {
@@ -1167,7 +1171,9 @@ describe('CLISpawner Unit Tests', () => {
       mockedFs.existsSync.mockReturnValue(false);
 
       const cliPath = getEmbeddedCLIPath();
-      expect(cliPath).toContain('cli/index.js');
+      // Normalize the returned path for cross-platform comparison
+      const normalizedCliPath = cliPath.replace(/\\/g, '/');
+      expect(normalizedCliPath).toContain('cli/index.js');
     });
   });
 });
