@@ -9,7 +9,7 @@ The core analysis engine and utilities that power all X-Fidelity functionality.
 ## Key Components
 
 ### Analysis Engine
-- **Analyzer** (`core/engine/analyzer.ts`): Main entry point for codebase analysis
+- **analyzeCodebase** (`core/engine/analyzer.ts`): Main entry function for codebase analysis
 - **Engine Setup/Runner** (`core/engine/`): Sets up and executes the rules engine
 - **Facts/Operators**: Extensible system for data collection and rule evaluation
 
@@ -25,7 +25,7 @@ The core analysis engine and utilities that power all X-Fidelity functionality.
 - **Extensible Architecture**: Plugin-based facts and operators
 
 ### Utilities and Infrastructure
-- **Logging System** (`utils/logger.ts`): Structured logging with multiple transports
+- **Logging System**: Mode-aware `LoggerProvider` with Pino-based CLI logger
 - **Performance Monitoring** (`utils/performanceMonitor.ts`): Built-in performance tracking
 - **Telemetry** (`utils/telemetry.ts`): Usage analytics and performance metrics
 - **OpenAI Integration** (`utils/openai.ts`): AI-powered code analysis capabilities
@@ -84,13 +84,10 @@ Built on [json-rules-engine](https://github.com/CacheControl/json-rules-engine),
 
 ### Direct Usage (Advanced)
 ```typescript
-import { Analyzer, ConfigManager } from '@x-fidelity/core';
+import { analyzeCodebase } from '@x-fidelity/core';
 
-const configManager = new ConfigManager();
-const analyzer = new Analyzer(configManager);
-
-const results = await analyzer.analyze({
-  directory: './src',
+const results = await analyzeCodebase({
+  repoPath: './src',
   archetype: 'node-fullstack',
   configServer: 'https://config.example.com'
 });
@@ -118,7 +115,7 @@ const myPlugin: XFiPlugin = {
 
 ### Environment Variables
 - `XFI_LOG_LEVEL`: Set logging level (trace, debug, info, warn, error, fatal)
-- `XFI_LOG_COLOR`: Enable/disable colored logging output
+- `XFI_LOG_COLORS`: Set to 'false' to disable colored CLI output
 - `OPENAI_API_KEY`: OpenAI API key for AI-powered analysis
 - `OPENAI_MODEL`: OpenAI model to use (default: 'gpt-4o')
 

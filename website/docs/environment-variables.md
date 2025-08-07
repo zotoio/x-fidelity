@@ -13,8 +13,8 @@ x-fidelity supports various environment variables to configure its behavior. Thi
 # Your OpenAI API key for AI-powered analysis
 OPENAI_API_KEY=your_api_key_here
 
-# The OpenAI model to use (default: 'gpt-4')
-OPENAI_MODEL=gpt-4
+# The OpenAI model to use (default: 'gpt-4o')
+OPENAI_MODEL=gpt-4o
 ```
 
 ### Server Configuration
@@ -43,13 +43,11 @@ GITHUB_WEBHOOK_SECRET=your_github_webhook_secret
 # Set logging level (default: 'info')
 XFI_LOG_LEVEL=debug
 
-# Disable colored output in logs (default: enabled)
-XFI_LOG_COLOR=false
+# Disable colored output in CLI logs (default: enabled)
+XFI_LOG_COLORS=false
 ```
 
-The `XFI_LOG_COLOR` environment variable controls whether log output includes ANSI color codes. This is particularly useful in CI/CD environments, when redirecting logs to files, or when your terminal doesn't support colors.
-
-Setting `XFI_LOG_COLOR=false` will disable all colored output in logs, making them plain text. This can improve readability in environments where color codes might appear as strange characters.
+The `XFI_LOG_COLORS` environment variable controls whether CLI output includes ANSI color codes. This is useful in CI/CD, when redirecting logs to files, or in terminals that don't support colors. The VSCode extension disables colors when spawning the CLI.
 
 ## Usage Examples
 
