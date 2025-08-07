@@ -135,53 +135,26 @@ export class CommandDelegationRegistry {
     }
 
     const config = vscode.workspace.getConfiguration('xfidelity');
-    const providerId = config.get<string>(
+    const commandName = config.get<string>(
       'commandProviders.explainIssue',
       'built-in'
     );
 
-    if (providerId === 'built-in') {
+    if (commandName === 'built-in') {
       await this.defaultExplainIssue(issueContext);
       return;
     }
 
-    const provider = this.explainers.get(providerId);
-    if (!provider) {
-      logger.warn(
-        `Configured explainer extension '${providerId}' not found, falling back to built-in`
-      );
-      await this.defaultExplainIssue(issueContext);
-      return;
-    }
-
-    // Check if target extension is active
-    const targetExtension = vscode.extensions.getExtension(
-      provider.extensionId
-    );
-    if (!targetExtension?.isActive) {
-      logger.info(
-        `Target extension '${provider.extensionId}' is not active, activating...`
-      );
-      try {
-        await targetExtension?.activate();
-      } catch (error) {
-        logger.error(
-          `Failed to activate extension '${provider.extensionId}': ${error}`
-        );
-        await this.defaultExplainIssue(issueContext);
-        return;
-      }
-    }
-
-    // Delegate to the configured extension
+    // Try to execute the configured command directly
     try {
-      await vscode.commands.executeCommand(provider.command, issueContext);
+      logger.debug(`Delegating explainIssue to command: ${commandName}`);
+      await vscode.commands.executeCommand(commandName, issueContext);
       logger.debug(
-        `Successfully delegated explainIssue to ${provider.extensionId}`
+        `Successfully delegated explainIssue to command: ${commandName}`
       );
     } catch (error) {
       logger.error(
-        `Command delegation failed for ${provider.extensionId}: ${error}`
+        `Command delegation failed for command '${commandName}': ${error}. Falling back to built-in.`
       );
       await this.defaultExplainIssue(issueContext);
     }
@@ -197,49 +170,26 @@ export class CommandDelegationRegistry {
     }
 
     const config = vscode.workspace.getConfiguration('xfidelity');
-    const providerId = config.get<string>(
+    const commandName = config.get<string>(
       'commandProviders.fixIssue',
       'built-in'
     );
 
-    if (providerId === 'built-in') {
+    if (commandName === 'built-in') {
       await this.defaultFixIssue(issueContext);
       return;
     }
 
-    const provider = this.fixers.get(providerId);
-    if (!provider) {
-      logger.warn(
-        `Configured fixer extension '${providerId}' not found, falling back to built-in`
-      );
-      await this.defaultFixIssue(issueContext);
-      return;
-    }
-
-    // Similar delegation logic as explainIssue
-    const targetExtension = vscode.extensions.getExtension(
-      provider.extensionId
-    );
-    if (!targetExtension?.isActive) {
-      try {
-        await targetExtension?.activate();
-      } catch (error) {
-        logger.error(
-          `Failed to activate extension '${provider.extensionId}': ${error}`
-        );
-        await this.defaultFixIssue(issueContext);
-        return;
-      }
-    }
-
+    // Try to execute the configured command directly
     try {
-      await vscode.commands.executeCommand(provider.command, issueContext);
+      logger.debug(`Delegating fixIssue to command: ${commandName}`);
+      await vscode.commands.executeCommand(commandName, issueContext);
       logger.debug(
-        `Successfully delegated fixIssue to ${provider.extensionId}`
+        `Successfully delegated fixIssue to command: ${commandName}`
       );
     } catch (error) {
       logger.error(
-        `Command delegation failed for ${provider.extensionId}: ${error}`
+        `Command delegation failed for command '${commandName}': ${error}. Falling back to built-in.`
       );
       await this.defaultFixIssue(issueContext);
     }
@@ -255,49 +205,26 @@ export class CommandDelegationRegistry {
     }
 
     const config = vscode.workspace.getConfiguration('xfidelity');
-    const providerId = config.get<string>(
+    const commandName = config.get<string>(
       'commandProviders.fixIssueGroup',
       'built-in'
     );
 
-    if (providerId === 'built-in') {
+    if (commandName === 'built-in') {
       await this.defaultFixIssueGroup(groupContext);
       return;
     }
 
-    const provider = this.fixers.get(providerId);
-    if (!provider || !provider.supportsBatch) {
-      logger.warn(
-        `Configured batch fixer '${providerId}' not found or doesn't support batch operations, falling back to built-in`
-      );
-      await this.defaultFixIssueGroup(groupContext);
-      return;
-    }
-
-    // Similar delegation logic
-    const targetExtension = vscode.extensions.getExtension(
-      provider.extensionId
-    );
-    if (!targetExtension?.isActive) {
-      try {
-        await targetExtension?.activate();
-      } catch (error) {
-        logger.error(
-          `Failed to activate extension '${provider.extensionId}': ${error}`
-        );
-        await this.defaultFixIssueGroup(groupContext);
-        return;
-      }
-    }
-
+    // Try to execute the configured command directly
     try {
-      await vscode.commands.executeCommand(provider.command, groupContext);
+      logger.debug(`Delegating fixIssueGroup to command: ${commandName}`);
+      await vscode.commands.executeCommand(commandName, groupContext);
       logger.debug(
-        `Successfully delegated fixIssueGroup to ${provider.extensionId}`
+        `Successfully delegated fixIssueGroup to command: ${commandName}`
       );
     } catch (error) {
       logger.error(
-        `Command delegation failed for ${provider.extensionId}: ${error}`
+        `Command delegation failed for command '${commandName}': ${error}. Falling back to built-in.`
       );
       await this.defaultFixIssueGroup(groupContext);
     }

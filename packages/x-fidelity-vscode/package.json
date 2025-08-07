@@ -100,11 +100,7 @@
         "title": "Show Rule Info",
         "icon": "$(info)"
       },
-      {
-        "command": "xfidelity.detectArchetype",
-        "title": "X-Fidelity: Detect Project Archetype",
-        "icon": "$(search)"
-      },
+
       {
         "command": "xfidelity.showDashboard",
         "title": "X-Fidelity: Dashboard",
@@ -264,7 +260,7 @@
         "xfidelity.configServer": {
           "type": "string",
           "default": "",
-          "description": "🌐 Remote config server URL (takes precedence over other config sources)",
+          "description": "🌐 Remote config server URL. Resolution order: 1) configServer (highest priority), 2) githubConfigLocation, 3) localConfigPath, 4) ~/.config/x-fidelity, 5) XFI_CONFIG_PATH env var, 6) built-in defaults",
           "order": 1
         },
         "xfidelity.githubConfigLocation": {
@@ -280,22 +276,22 @@
         },
         "xfidelity.githubConfigUpdateFrequency": {
           "type": "number",
-          "default": 60,
+          "default": 240,
           "minimum": 5,
           "maximum": 1440,
-          "description": "⏱️ How often to update GitHub configuration (minutes, 5-1440 range)",
+          "description": "⏱️ How often to update GitHub configuration in minutes (default: 4 hours). Only applies when githubConfigLocation is set.",
           "order": 3
         },
         "xfidelity.localConfigPath": {
           "type": "string",
           "default": "",
-          "description": "📁 Path to local configuration directory (relative to workspace root)",
+          "description": "📁 Path to local configuration directory (relative to workspace root). Used when configServer and githubConfigLocation are not set.",
           "order": 4
         },
         "xfidelity.nodeGlobalBinPath": {
           "type": "string",
           "default": "",
-          "description": "🔧 Override path to directory containing Node.js binaries (node, npm, yarn, npx, etc.). Leave empty for automatic discovery. Use as failsafe for custom installations.",
+          "description": "🔧 Override path to directory containing Node.js binaries. Generally not required - leave empty for automatic discovery. Use only as failsafe for custom Node.js installations.",
           "examples": [
             "/usr/local/bin",
             "/opt/homebrew/bin",
@@ -327,20 +323,14 @@
           "type": "number",
           "default": 0,
           "minimum": 0,
-          "description": "⏱️ Auto-analysis interval in seconds (0 = disabled)",
+          "description": "⏱️ Automatically run analysis every N seconds (0 = disabled). Recommended for CI/monitoring workflows. Note: May impact performance.",
           "order": 12
         },
         "xfidelity.autoAnalyzeOnSave": {
           "type": "boolean",
           "default": false,
-          "description": "💾 Run analysis automatically when files are saved (may impact performance)",
+          "description": "💾 Run analysis automatically when files are saved. Note: May impact performance on large projects with frequent saves.",
           "order": 13
-        },
-        "xfidelity.autoAnalyzeOnFileChange": {
-          "type": "boolean",
-          "default": false,
-          "description": "🔄 Run analysis automatically when files change (may impact performance)",
-          "order": 14
         },
         "xfidelity.showInlineDecorations": {
           "type": "boolean",
@@ -402,7 +392,7 @@
             "build/**",
             ".xfiResults/**"
           ],
-          "description": "🚫 File patterns to exclude from analysis (glob patterns)",
+          "description": "🚫 File patterns to exclude from analysis (glob patterns). Each archetype configuration contains sensible defaults that are merged with these patterns.",
           "order": 30
         },
         "xfidelity.includePatterns": {
@@ -417,7 +407,7 @@
             "**/*.jsx",
             "**/*.json"
           ],
-          "description": "✅ File patterns to include in analysis (empty = all files except excluded)",
+          "description": "✅ File patterns to include in analysis (glob patterns). Each archetype configuration contains appropriate defaults for the project type. Leave empty to include all files except excluded patterns.",
           "order": 31
         },
         "xfidelity.maxFileSize": {
@@ -426,12 +416,7 @@
           "description": "📏 Maximum file size to analyze (bytes, default: 512KB)",
           "order": 32
         },
-        "xfidelity.maxConcurrentAnalysis": {
-          "type": "number",
-          "default": 1,
-          "description": "🔄 Maximum number of concurrent analysis operations (recommended: 1 for performance)",
-          "order": 33
-        },
+
         "xfidelity.generateReports": {
           "type": "boolean",
           "default": false,
@@ -480,12 +465,7 @@
           "description": "🤖 Enable OpenAI-powered analysis for advanced code insights (requires API key)",
           "order": 50
         },
-        "xfidelity.telemetryEnabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "📊 Send anonymous usage data to help improve X-Fidelity",
-          "order": 51
-        },
+
         "xfidelity.telemetryCollector": {
           "type": "string",
           "default": "",
@@ -528,7 +508,12 @@
             "type": "string"
           },
           "default": [],
-          "description": "🛠️ Additional command-line arguments to pass to the analysis engine",
+          "description": "🛠️ Additional command-line arguments to pass to the analysis engine. Examples: ['--verbose', '--no-color', '--format=json']",
+          "examples": [
+            ["--verbose"],
+            ["--no-color", "--format=json"],
+            ["--debug", "--show-timing"]
+          ],
           "order": 71
         },
         "xfidelity.customPlugins": {
@@ -537,33 +522,65 @@
             "type": "string"
           },
           "default": [],
-          "description": "🔌 Paths to custom X-Fidelity plugins",
+          "description": "🔌 Paths to custom X-Fidelity plugin directories or files. Paths are relative to workspace root.",
+          "examples": [
+            ["./custom-plugins", "./my-plugin.js"],
+            ["../shared-plugins/security-plugin"]
+          ],
           "order": 72
         },
         "xfidelity.ruleOverrides": {
           "type": "object",
           "default": {},
-          "description": "⚙️ Custom rule configuration overrides (advanced)",
+          "description": "⚙️ Custom rule configuration overrides (advanced). Format: {'rule-id': {'enabled': true, 'severity': 'error', 'parameters': {...}}}",
+          "examples": [
+            {
+              "no-unused-vars": {
+                "enabled": false
+              },
+              "max-line-length": {
+                "severity": "warning",
+                "parameters": {
+                  "maxLength": 120
+                }
+              }
+            }
+          ],
           "order": 73
         },
         "xfidelity.commandProviders": {
           "type": "object",
-          "description": "🔗 Configure which extensions provide command implementations",
+          "description": "🔗 Configure which VSCode commands provide X-Fidelity functionality. Format: 'command.name' not 'extension.id'. Requires 'enableCommandDelegation' to be enabled.",
           "properties": {
             "explainIssue": {
               "type": "string",
               "default": "built-in",
-              "description": "Extension for explaining issues (e.g., 'github.copilot')"
+              "description": "Command for explaining issues",
+              "examples": [
+                "github.copilot.interactiveEditor.explain",
+                "codeium.explainCodeBlock", 
+                "built-in"
+              ]
             },
             "fixIssue": {
               "type": "string",
-              "default": "built-in",
-              "description": "Extension for fixing single issues"
+              "default": "built-in", 
+              "description": "Command for fixing single issues",
+              "examples": [
+                "github.copilot.interactiveEditor.generateDocs",
+                "codeium.refactorCodeBlock",
+                "built-in"
+              ]
             },
             "fixIssueGroup": {
               "type": "string",
               "default": "built-in",
-              "description": "Extension for batch fixing issues"
+              "description": "Command for batch fixing multiple issues",
+              "examples": [
+                "github.copilot.interactiveEditor.generateDocs", 
+                "workbench.action.terminal.sendSequence",
+                "built-in"
+              ]
             }
           },
           "default": {

@@ -381,47 +381,93 @@ describe('ExtensionManager Unit Tests', () => {
     });
   });
 
-  describe('Periodic Analysis', () => {
+  describe('Automation Features', () => {
     beforeEach(() => {
       jest.useFakeTimers();
-      extensionManager = new ExtensionManager(mockContext);
     });
 
-      afterEach(() => {
-    jest.useRealTimers();
-    jest.clearAllTimers();
-  });
+    afterEach(() => {
+      jest.useRealTimers();
+      jest.clearAllTimers();
+    });
+
+    describe('Startup Analysis', () => {
+      test('should run startup analysis when analyzeOnStartup is enabled', () => {
+        mockConfigManager.getConfig.mockReturnValue({
+          runInterval: 0,
+          autoAnalyzeOnSave: false,
+          analyzeOnStartup: true,
+          archetype: 'default',
+          cliExtraArgs: []
+        } as any);
+
+        extensionManager = new ExtensionManager(mockContext);
+        
+        // Fast-forward past the 2-second startup delay
+        jest.advanceTimersByTime(3000);
+
+        expect(mockAnalysisEngine.runAnalysis).toHaveBeenCalledWith({
+          forceRefresh: false,
+          triggerSource: 'automatic'
+        });
+      });
+
+      test('should not run startup analysis when analyzeOnStartup is disabled', () => {
+        mockConfigManager.getConfig.mockReturnValue({
+          runInterval: 0,
+          autoAnalyzeOnSave: false,
+          analyzeOnStartup: false,
+          archetype: 'default',
+          cliExtraArgs: []
+        } as any);
+
+        mockAnalysisEngine.runAnalysis.mockClear();
+        extensionManager = new ExtensionManager(mockContext);
+        
+        // Fast-forward past the startup delay
+        jest.advanceTimersByTime(3000);
+
+        expect(mockAnalysisEngine.runAnalysis).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Periodic Analysis', () => {
 
     test('should start periodic analysis when configured', () => {
       // Mock config to enable periodic analysis
       mockConfigManager.getConfig.mockReturnValue({
-        runInterval: 60000, // 1 minute
+        runInterval: 60, // 60 seconds
         autoAnalyzeOnSave: false,
-        autoAnalyzeOnFileChange: false,
+        analyzeOnStartup: false,
         archetype: 'default',
         cliExtraArgs: []
       } as any);
 
-      // Simulate configuration change to trigger periodic analysis setup
-      const configChangeHandler = (mockConfigManager.onConfigurationChanged as any).fire;
-      configChangeHandler();
+      // Create extension manager
+      extensionManager = new ExtensionManager(mockContext);
 
-      // Fast-forward time
-      jest.advanceTimersByTime(60000);
+      // Clear any startup analysis calls
+      mockAnalysisEngine.runAnalysis.mockClear();
+
+      // Simulate configuration change to trigger periodic analysis setup
+      const configChangeCallback = (mockConfigManager.onConfigurationChanged.event as jest.Mock).mock.calls[0][0];
+      configChangeCallback();
+
+      // Fast-forward time to trigger periodic analysis
+      jest.advanceTimersByTime(61000); // Just over 60 seconds
 
       // Should have attempted to run analysis
-      expect(mockAnalysisEngine.runAnalysis).toHaveBeenCalled();
+      expect(mockAnalysisEngine.runAnalysis).toHaveBeenCalledWith({
+        triggerSource: 'periodic'
+      });
     });
 
     test('should not start periodic analysis when disabled', () => {
-      // Clear any previous calls to runAnalysis
-      mockAnalysisEngine.runAnalysis.mockClear();
-      
       // Mock config to disable periodic analysis  
       mockConfigManager.getConfig.mockReturnValue({
         runInterval: 0, // Disabled
         autoAnalyzeOnSave: false,
-        autoAnalyzeOnFileChange: false,
+        analyzeOnStartup: false,
         archetype: 'default',
         cliExtraArgs: []
       } as any);
@@ -429,17 +475,71 @@ describe('ExtensionManager Unit Tests', () => {
       // Create a new extension manager with disabled config
       const newExtensionManager = new ExtensionManager(mockContext);
 
+      // Clear any setup calls
+      mockAnalysisEngine.runAnalysis.mockClear();
+
+      // Simulate configuration change
+      const configChangeCallback = (mockConfigManager.onConfigurationChanged.event as jest.Mock).mock.calls[0][0];
+      configChangeCallback();
+
       // Fast-forward time to ensure no periodic analysis starts
       jest.advanceTimersByTime(120000); // 2 minutes
 
-      // With runInterval=0, the only analysis calls should be from startup
-      // Allow for some startup analysis but ensure no periodic timer-based calls
-      const totalCalls = mockAnalysisEngine.runAnalysis.mock.calls.length;
-      
-      // The key test: no timer should be created for periodic analysis
-      expect(totalCalls).toBeLessThan(5); // Reasonable upper bound for startup calls
+      // With runInterval=0, no periodic analysis should occur
+      expect(mockAnalysisEngine.runAnalysis).not.toHaveBeenCalled();
       
       newExtensionManager.dispose();
+    });
+    });
+
+    describe('File Save Analysis', () => {
+      test('should run analysis on file save when autoAnalyzeOnSave is enabled', async () => {
+        mockConfigManager.getConfig.mockReturnValue({
+          runInterval: 0,
+          autoAnalyzeOnSave: true,
+          analyzeOnStartup: false,
+          archetype: 'default',
+          cliExtraArgs: []
+        } as any);
+
+        extensionManager = new ExtensionManager(mockContext);
+        
+        // Mock a document save event
+        const mockDocument = {
+          uri: { fsPath: '/workspace/test.ts' },
+          fileName: 'test.ts'
+        };
+
+        // Mock workspace folders
+        (vscode.workspace as any).workspaceFolders = [
+          { uri: { fsPath: '/workspace' } }
+        ];
+
+        // Get the file save callback that was registered
+        const onDidSaveCallback = (vscode.workspace.onDidSaveTextDocument as jest.Mock).mock.calls[0][0];
+        
+        mockAnalysisEngine.runAnalysis.mockClear();
+        await onDidSaveCallback(mockDocument);
+
+        expect(mockAnalysisEngine.runAnalysis).toHaveBeenCalledWith({
+          triggerSource: 'file-save'
+        });
+      });
+
+      test('should not run analysis on file save when autoAnalyzeOnSave is disabled', async () => {
+        mockConfigManager.getConfig.mockReturnValue({
+          runInterval: 0,
+          autoAnalyzeOnSave: false,
+          analyzeOnStartup: false,
+          archetype: 'default',
+          cliExtraArgs: []
+        } as any);
+
+        extensionManager = new ExtensionManager(mockContext);
+        
+        // Verify that onDidSaveTextDocument was not called when disabled
+        expect(vscode.workspace.onDidSaveTextDocument).not.toHaveBeenCalled();
+      });
     });
   });
 
@@ -566,6 +666,95 @@ describe('ExtensionManager Unit Tests', () => {
     test('should handle configuration changes', () => {
       // Verify that configuration changes are being listened to
       expect(mockConfigManager.onConfigurationChanged).toBeDefined();
+    });
+  });
+
+  describe('Error Handling', () => {
+    let originalShowInformationMessage: any;
+
+    beforeEach(() => {
+      // Store original implementation
+      originalShowInformationMessage = vscode.window.showInformationMessage;
+      extensionManager = new ExtensionManager(mockContext);
+    });
+
+    afterEach(() => {
+      // Restore original implementation
+      (vscode.window as any).showInformationMessage = originalShowInformationMessage;
+    });
+
+    test('should handle errors in showAnalysisCompleteNotification', async () => {
+      const mockWindowShowInformationMessage = jest.fn();
+      (vscode.window as any).showInformationMessage = mockWindowShowInformationMessage;
+      
+      // Mock an error being thrown in the notification logic
+      mockWindowShowInformationMessage.mockImplementation(() => {
+        throw new Error('Notification failed');
+      });
+
+      // Mock the logger error method
+      const loggerErrorSpy = jest.spyOn(extensionManager['logger'], 'error');
+
+      // Create a mock processed results object that would trigger the notification
+      const mockProcessed = {
+        totalIssues: 5,
+        successfulIssues: 3,
+        failedIssuesCount: 2
+      };
+
+      // Set trigger source to manual to ensure notification is shown
+      extensionManager['lastTriggerSource'] = 'manual';
+
+      // Call the private method directly using bracket notation
+      (extensionManager as any).showAnalysisCompleteNotification(mockProcessed);
+
+      // Verify error was logged
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Failed to show analysis complete notification',
+        expect.any(Error)
+      );
+    });
+  });
+
+  describe('File Save Watcher Disposal', () => {
+    let originalShowInformationMessage: any;
+
+    beforeEach(() => {
+      // Store and restore proper mock to avoid contamination from other tests
+      originalShowInformationMessage = vscode.window.showInformationMessage;
+      (vscode.window as any).showInformationMessage = jest.fn();
+    });
+
+    afterEach(() => {
+      // Restore original implementation
+      (vscode.window as any).showInformationMessage = originalShowInformationMessage;
+    });
+
+    test('should dispose file save watcher when it exists', () => {
+      extensionManager = new ExtensionManager(mockContext);
+      
+      // Set up a mock file save watcher
+      const mockFileSaveWatcher = {
+        dispose: jest.fn()
+      };
+      extensionManager['fileSaveWatcher'] = mockFileSaveWatcher as any;
+
+      // Call dispose
+      extensionManager.dispose();
+
+      // Verify the file save watcher was disposed
+      expect(mockFileSaveWatcher.dispose).toHaveBeenCalled();
+      expect(extensionManager['fileSaveWatcher']).toBeUndefined();
+    });
+
+    test('should handle disposal when file save watcher does not exist', () => {
+      extensionManager = new ExtensionManager(mockContext);
+      
+      // Ensure no file save watcher exists
+      extensionManager['fileSaveWatcher'] = undefined;
+
+      // Call dispose - should not throw error
+      expect(() => extensionManager.dispose()).not.toThrow();
     });
   });
 });

@@ -82,7 +82,7 @@ const mockConfigStore = {
   localConfigPath: '',
   runInterval: 0,
   autoAnalyzeOnSave: false,
-  autoAnalyzeOnFileChange: false,
+  analyzeOnStartup: true,
   cliExtraArgs: [],
   openaiEnabled: false,
   telemetryCollector: '',
@@ -112,8 +112,7 @@ const mockConfigStore = {
   customPlugins: [],
   ruleOverrides: {},
   cacheResults: true,
-  cacheTTL: 10,
-  analyzeOnStartup: true
+  cacheTTL: 10
 };
 
 // Store initial values for reset
