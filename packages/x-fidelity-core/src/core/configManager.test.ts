@@ -1108,8 +1108,8 @@ describe('ConfigManager - Additional Coverage', () => {
 
         beforeEach(() => {
             mockProcess = {
-                ...process,
-                cwd: jest.fn().mockReturnValue('/test/workspace')
+                cwd: jest.fn().mockReturnValue('/test/workspace'),
+                env: { ...process.env }
             };
             // Mock fs for workspace root detection
             (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
@@ -1121,6 +1121,12 @@ describe('ConfigManager - Additional Coverage', () => {
                 }
                 return false;
             });
+        });
+
+        afterEach(() => {
+            // Clean up any mocks
+            jest.clearAllMocks();
+            mockProcess = null;
         });
 
         test('should detect workspace root with package.json and packages directory', async () => {
