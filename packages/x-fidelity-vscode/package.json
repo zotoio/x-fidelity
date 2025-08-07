@@ -2,7 +2,7 @@
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity",
   "description": "VSCode extension for X-Fidelity code quality analysis with real-time diagnostics, comprehensive UI integration, and improved CLI embedding",
-  "version": "5.2.5",
+  "version": "5.3.0",
   "publisher": "zotoio",
   "private": true,
   "license": "MIT",
@@ -100,7 +100,6 @@
         "title": "Show Rule Info",
         "icon": "$(info)"
       },
-
       {
         "command": "xfidelity.showDashboard",
         "title": "X-Fidelity: Dashboard",
@@ -416,7 +415,6 @@
           "description": "📏 Maximum file size to analyze (bytes, default: 512KB)",
           "order": 32
         },
-
         "xfidelity.generateReports": {
           "type": "boolean",
           "default": false,
@@ -465,7 +463,6 @@
           "description": "🤖 Enable OpenAI-powered analysis for advanced code insights (requires API key)",
           "order": 50
         },
-
         "xfidelity.telemetryCollector": {
           "type": "string",
           "default": "",
@@ -510,9 +507,17 @@
           "default": [],
           "description": "🛠️ Additional command-line arguments to pass to the analysis engine. Examples: ['--verbose', '--no-color', '--format=json']",
           "examples": [
-            ["--verbose"],
-            ["--no-color", "--format=json"],
-            ["--debug", "--show-timing"]
+            [
+              "--verbose"
+            ],
+            [
+              "--no-color",
+              "--format=json"
+            ],
+            [
+              "--debug",
+              "--show-timing"
+            ]
           ],
           "order": 71
         },
@@ -524,8 +529,13 @@
           "default": [],
           "description": "🔌 Paths to custom X-Fidelity plugin directories or files. Paths are relative to workspace root.",
           "examples": [
-            ["./custom-plugins", "./my-plugin.js"],
-            ["../shared-plugins/security-plugin"]
+            [
+              "./custom-plugins",
+              "./my-plugin.js"
+            ],
+            [
+              "../shared-plugins/security-plugin"
+            ]
           ],
           "order": 72
         },
@@ -558,13 +568,13 @@
               "description": "Command for explaining issues",
               "examples": [
                 "github.copilot.interactiveEditor.explain",
-                "codeium.explainCodeBlock", 
+                "codeium.explainCodeBlock",
                 "built-in"
               ]
             },
             "fixIssue": {
               "type": "string",
-              "default": "built-in", 
+              "default": "built-in",
               "description": "Command for fixing single issues",
               "examples": [
                 "github.copilot.interactiveEditor.generateDocs",
@@ -577,7 +587,7 @@
               "default": "built-in",
               "description": "Command for batch fixing multiple issues",
               "examples": [
-                "github.copilot.interactiveEditor.generateDocs", 
+                "github.copilot.interactiveEditor.generateDocs",
                 "workbench.action.terminal.sendSequence",
                 "built-in"
               ]

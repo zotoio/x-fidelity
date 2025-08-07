@@ -2,6 +2,34 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.3.0](https://github.com/zotoio/x-fidelity/compare/v5.2.5...v5.3.0) (2025-08-07)
+
+### ⚠ BREAKING CHANGES
+
+* **vscode:** Remove autoAnalyzeOnFileChange setting and detectArchetype command
+
+- Fix automation settings (runInterval, autoAnalyzeOnSave) by removing hardcoding
+- Implement proper analyzeOnStartup setting check with default true
+- Enhance command providers to use command names instead of extension IDs
+- Update githubConfigUpdateFrequency default to 4 hours (240 minutes)
+- Remove telemetryEnabled and maxConcurrentAnalysis from UI (keep hardcoded)
+- Add comprehensive configuration descriptions and resolution order docs
+- Implement file save watching and periodic analysis timer management
+- Simplify command delegation to use direct VSCode command execution
+- Remove detect archetype command from control panel
+- Update all unit and integration tests for new functionality
+
+Closes automation configuration issues and improves user experience
+
+### Bug Fixes
+
+* **core:** resolve Jest open handle warning in configManager tests ([5d3a81c](https://github.com/zotoio/x-fidelity/commit/5d3a81c8e867c7d959023c2e143e595146298bed))
+* **vscode:** resolve Windows timeout issues in integration tests ([70b74c8](https://github.com/zotoio/x-fidelity/commit/70b74c8b779ea690144e8a79a541a8da28b8ba1b))
+
+### Features
+
+* **vscode:** enhance configuration and automation features ([bfa54cd](https://github.com/zotoio/x-fidelity/commit/bfa54cdf1b1e96a455965ded57a1457056675e12))
+
 ## [5.2.5](https://github.com/zotoio/x-fidelity/compare/v5.2.4...v5.2.5) (2025-08-06)
 
 ### Bug Fixes
