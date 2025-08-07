@@ -43,14 +43,13 @@ suite('Configuration Management Tests', () => {
       'archetype',
       'runInterval',
       'autoAnalyzeOnSave',
-      'autoAnalyzeOnFileChange',
+      'analyzeOnStartup',
       'configServer',
       'localConfigPath',
       'githubConfigLocation',
       'githubConfigUpdateFrequency',
       'openaiEnabled',
       'telemetryCollector',
-      'telemetryEnabled',
       'generateReports',
       'reportOutputDir',
       'reportFormats',
@@ -65,14 +64,12 @@ suite('Configuration Management Tests', () => {
       'analysisTimeout',
       'excludePatterns',
       'includePatterns',
-      'maxConcurrentAnalysis',
       'debugMode',
       'customPlugins',
       'ruleOverrides',
       'cacheResults',
       'cacheTTL',
-      'cliExtraArgs',
-      'analyzeOnStartup'
+      'cliExtraArgs'
     ];
 
     const missingProperties: string[] = [];
@@ -203,8 +200,8 @@ suite('Configuration Management Tests', () => {
     );
     assert.strictEqual(
       githubConfigUpdateFrequency,
-      60,
-      'githubConfigUpdateFrequency should default to 60 minutes'
+      240,
+      'githubConfigUpdateFrequency should default to 240 minutes (4 hours)'
     );
 
     // Test default values

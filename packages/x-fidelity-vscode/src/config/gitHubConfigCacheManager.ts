@@ -70,7 +70,7 @@ export class GitHubConfigCacheManager implements vscode.Disposable {
       githubConfigLocation: config.get<string>('githubConfigLocation', ''),
       githubConfigUpdateFrequency: config.get<number>(
         'githubConfigUpdateFrequency',
-        60
+        240
       )
     };
   }

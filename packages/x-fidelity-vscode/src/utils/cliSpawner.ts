@@ -574,10 +574,10 @@ export class CLISpawner {
         'githubConfigLocation',
         ''
       );
-      // GitHub config update frequency setting - currently unused but kept for future implementation
+      // GitHub config update frequency - available for future implementation
       // const githubConfigUpdateFrequency = config.get<number>(
       //   'githubConfigUpdateFrequency',
-      //   60
+      //   240
       // );
 
       // Get traditional configuration settings

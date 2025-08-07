@@ -38,6 +38,7 @@ export class ExtensionManager implements vscode.Disposable {
   private periodicAnalysisTimer?: NodeJS.Timeout;
   private isPeriodicAnalysisRunning = false;
   private lastTriggerSource: string = 'unknown'; // Track the last analysis trigger source
+  private fileSaveWatcher?: vscode.Disposable;
 
   constructor(private context: vscode.ExtensionContext) {
     // PHASE 1: Initialize logger provider FIRST for universal logging
@@ -112,6 +113,9 @@ export class ExtensionManager implements vscode.Disposable {
 
       // ENHANCEMENT: Run automatic analysis on extension activation (but don't open sidebar)
       this.scheduleStartupAnalysis();
+
+      // ENHANCEMENT: Set up automation features (file save watching, periodic analysis)
+      this.setupAutomationFeatures();
     } catch (error) {
       this.logger.error('❌ Extension Manager initialization failed:', error);
       throw error;
@@ -160,6 +164,7 @@ export class ExtensionManager implements vscode.Disposable {
     this.disposables.push(
       this.configManager.onConfigurationChanged.event(() => {
         this.logger.info('Configuration changed, updating components...');
+        this.setupAutomationFeatures();
       })
     );
   }
@@ -1129,6 +1134,15 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
    * ENHANCEMENT: Schedule automatic analysis on startup (without opening sidebar)
    */
   private scheduleStartupAnalysis(): void {
+    // Check if analyze on startup is enabled
+    const config = this.configManager.getConfig();
+    if (!config.analyzeOnStartup) {
+      this.logger.info(
+        '🚫 Startup analysis disabled by analyzeOnStartup setting'
+      );
+      return;
+    }
+
     // Run analysis after a short delay to ensure everything is initialized
     setTimeout(async () => {
       try {
@@ -1143,6 +1157,104 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
         // Don't show error messages for automatic startup analysis
       }
     }, 2000); // 2-second delay to ensure full initialization
+  }
+
+  /**
+   * Setup automation features based on current configuration
+   */
+  private setupAutomationFeatures(): void {
+    const config = this.configManager.getConfig();
+
+    // Setup or update periodic analysis
+    this.setupPeriodicAnalysis(config.runInterval);
+
+    // Setup or update file save watching
+    this.setupFileSaveWatching(config.autoAnalyzeOnSave);
+  }
+
+  /**
+   * Setup periodic analysis timer
+   */
+  private setupPeriodicAnalysis(runInterval: number): void {
+    // Stop existing timer
+    if (this.periodicAnalysisTimer) {
+      clearInterval(this.periodicAnalysisTimer);
+      this.periodicAnalysisTimer = undefined;
+      this.isPeriodicAnalysisRunning = false;
+      this.logger.info('🛑 Stopped existing periodic analysis');
+    }
+
+    // Start new timer if interval > 0
+    if (runInterval > 0) {
+      const intervalMs = runInterval * 1000;
+      this.periodicAnalysisTimer = setInterval(async () => {
+        try {
+          this.logger.info('🔄 Running periodic analysis...');
+          await this.analysisEngine.runAnalysis({ triggerSource: 'periodic' });
+        } catch (error) {
+          this.logger.error('❌ Periodic analysis failed:', error);
+        }
+      }, intervalMs);
+
+      this.isPeriodicAnalysisRunning = true;
+      this.logger.info(
+        `🔄 Periodic analysis started with ${runInterval}s interval`
+      );
+    } else {
+      this.logger.info('🚫 Periodic analysis disabled (runInterval = 0)');
+    }
+  }
+
+  /**
+   * Setup file save watching for autoAnalyzeOnSave
+   */
+  private setupFileSaveWatching(autoAnalyzeOnSave: boolean): void {
+    // Dispose existing watcher
+    if (this.fileSaveWatcher) {
+      this.fileSaveWatcher.dispose();
+      this.fileSaveWatcher = undefined;
+      this.logger.info('🛑 Stopped file save watching');
+    }
+
+    // Setup new watcher if enabled
+    if (autoAnalyzeOnSave) {
+      this.fileSaveWatcher = vscode.workspace.onDidSaveTextDocument(
+        async document => {
+          // Only analyze if the saved file is in a workspace and is a relevant file type
+          const workspaceFolders = vscode.workspace.workspaceFolders;
+          if (!workspaceFolders) {
+            return;
+          }
+
+          const isInWorkspace = workspaceFolders.some(folder =>
+            document.uri.fsPath.startsWith(folder.uri.fsPath)
+          );
+
+          const isRelevantFile =
+            /\.(ts|tsx|js|jsx|json|py|java|cs|php|rb|go|rs|cpp|c|h)$/.test(
+              document.fileName
+            );
+
+          if (isInWorkspace && isRelevantFile) {
+            try {
+              this.logger.info(
+                `💾 File saved, running analysis: ${vscode.workspace.asRelativePath(document.uri)}`
+              );
+              await this.analysisEngine.runAnalysis({
+                triggerSource: 'file-save'
+              });
+            } catch (error) {
+              this.logger.error('❌ File save analysis failed:', error);
+            }
+          }
+        }
+      );
+
+      this.disposables.push(this.fileSaveWatcher);
+      this.logger.info('💾 File save watching enabled');
+    } else {
+      this.logger.info('🚫 File save watching disabled');
+    }
   }
 
   private debugDiagnosticsInfo(): void {
@@ -1455,6 +1567,12 @@ Check Output Console (X-Fidelity) for full details.`;
     this.logger.info('🔄 Disposing Extension Manager...');
 
     this.stopPeriodicAnalysis();
+
+    // Clean up file save watcher
+    if (this.fileSaveWatcher) {
+      this.fileSaveWatcher.dispose();
+      this.fileSaveWatcher = undefined;
+    }
 
     this.disposables.forEach(d => d.dispose());
     this.analysisEngine.dispose();

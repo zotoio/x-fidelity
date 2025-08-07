@@ -182,30 +182,13 @@ describe('CommandDelegationRegistry', () => {
       );
     });
 
-    it('should delegate to external extension when configured', async () => {
-      const mockExtension = {
-        id: 'test.extension',
-        packageJSON: {
-          contributes: {
-            'xfidelity.issueExplainer': {
-              id: 'test-explainer',
-              displayName: 'Test Explainer',
-              command: 'test.explainIssue'
-            }
-          }
-        },
-        isActive: true
-      };
-
-      mockExtensions.all = [mockExtension];
-      mockExtensions.getExtension.mockReturnValue(mockExtension as any);
-      
+    it('should delegate to external command when configured', async () => {
       const mockConfig = { get: jest.fn(), update: jest.fn() };
       mockWorkspace.getConfiguration.mockReturnValue(mockConfig as any);
       
       mockConfig.get.mockImplementation((key: string) => {
         if (key === 'enableCommandDelegation') {return true;}
-        if (key === 'commandProviders.explainIssue') {return 'test.extension';}
+        if (key === 'commandProviders.explainIssue') {return 'github.copilot.interactiveEditor.explain';}
         return undefined;
       });
 
@@ -213,43 +196,30 @@ describe('CommandDelegationRegistry', () => {
       await registry.delegateExplainIssue(mockIssueContext);
 
       expect(mockCommands.executeCommand).toHaveBeenCalledWith(
-        'test.explainIssue',
+        'github.copilot.interactiveEditor.explain',
         mockIssueContext
       );
     });
 
-    it('should fall back to built-in when external extension fails', async () => {
-      const mockExtension = {
-        id: 'test.extension',
-        packageJSON: {
-          contributes: {
-            'xfidelity.issueExplainer': {
-              id: 'test-explainer',
-              displayName: 'Test Explainer',
-              command: 'test.explainIssue'
-            }
-          }
-        },
-        isActive: true
-      };
-
-      mockExtensions.all = [mockExtension];
-      mockExtensions.getExtension.mockReturnValue(mockExtension as any);
-      mockCommands.executeCommand.mockRejectedValue(new Error('Command failed'));
-      
+    it('should fall back to built-in when external command fails', async () => {
       const mockConfig = { get: jest.fn(), update: jest.fn() };
       mockWorkspace.getConfiguration.mockReturnValue(mockConfig as any);
       
       mockConfig.get.mockImplementation((key: string) => {
         if (key === 'enableCommandDelegation') {return true;}
-        if (key === 'commandProviders.explainIssue') {return 'test.extension';}
+        if (key === 'commandProviders.explainIssue') {return 'nonexistent.command';}
         return undefined;
       });
+
+      mockCommands.executeCommand.mockRejectedValue(new Error('Command not found'));
 
       registry = new CommandDelegationRegistry(mockContext);
       await registry.delegateExplainIssue(mockIssueContext);
 
-      expect(mockCommands.executeCommand).toHaveBeenCalled();
+      expect(mockCommands.executeCommand).toHaveBeenCalledWith(
+        'nonexistent.command',
+        mockIssueContext
+      );
       expect(mockWindow.showInformationMessage).toHaveBeenCalledWith(
         expect.stringContaining('Rule: test-rule'),
         expect.any(Object),
@@ -290,31 +260,13 @@ describe('CommandDelegationRegistry', () => {
       );
     });
 
-    it('should delegate to external fixer when configured', async () => {
-      const mockExtension = {
-        id: 'test.extension',
-        packageJSON: {
-          contributes: {
-            'xfidelity.issueFixer': {
-              id: 'test-fixer',
-              displayName: 'Test Fixer',
-              command: 'test.fixIssue',
-              supportsBatch: false
-            }
-          }
-        },
-        isActive: true
-      };
-
-      mockExtensions.all = [mockExtension];
-      mockExtensions.getExtension.mockReturnValue(mockExtension as any);
-      
+    it('should delegate to external command when configured', async () => {
       const mockConfig = { get: jest.fn(), update: jest.fn() };
       mockWorkspace.getConfiguration.mockReturnValue(mockConfig as any);
       
       mockConfig.get.mockImplementation((key: string) => {
         if (key === 'enableCommandDelegation') {return true;}
-        if (key === 'commandProviders.fixIssue') {return 'test.extension';}
+        if (key === 'commandProviders.fixIssue') {return 'github.copilot.interactiveEditor.generateDocs';}
         return undefined;
       });
 
@@ -322,7 +274,7 @@ describe('CommandDelegationRegistry', () => {
       await registry.delegateFixIssue(mockIssueContext);
 
       expect(mockCommands.executeCommand).toHaveBeenCalledWith(
-        'test.fixIssue',
+        'github.copilot.interactiveEditor.generateDocs',
         mockIssueContext
       );
     });
@@ -395,31 +347,13 @@ describe('CommandDelegationRegistry', () => {
       );
     });
 
-    it('should delegate to batch-capable fixer', async () => {
-      const mockExtension = {
-        id: 'test.extension',
-        packageJSON: {
-          contributes: {
-            'xfidelity.issueFixer': {
-              id: 'test-fixer',
-              displayName: 'Test Batch Fixer',
-              command: 'test.fixIssueGroup',
-              supportsBatch: true
-            }
-          }
-        },
-        isActive: true
-      };
-
-      mockExtensions.all = [mockExtension];
-      mockExtensions.getExtension.mockReturnValue(mockExtension as any);
-      
+    it('should delegate to external command for batch operations', async () => {
       const mockConfig = { get: jest.fn(), update: jest.fn() };
       mockWorkspace.getConfiguration.mockReturnValue(mockConfig as any);
       
       mockConfig.get.mockImplementation((key: string) => {
         if (key === 'enableCommandDelegation') {return true;}
-        if (key === 'commandProviders.fixIssueGroup') {return 'test.extension';}
+        if (key === 'commandProviders.fixIssueGroup') {return 'workbench.action.terminal.sendSequence';}
         return undefined;
       });
 
@@ -427,7 +361,7 @@ describe('CommandDelegationRegistry', () => {
       await registry.delegateFixIssueGroup(mockGroupContext);
 
       expect(mockCommands.executeCommand).toHaveBeenCalledWith(
-        'test.fixIssueGroup',
+        'workbench.action.terminal.sendSequence',
         mockGroupContext
       );
     });

@@ -17,7 +17,7 @@ export interface ExtensionConfig {
   // Core Analysis Settings
   runInterval: number; // Auto-analysis interval in seconds (0 = disabled)
   autoAnalyzeOnSave: boolean; // Trigger analysis on file save
-  autoAnalyzeOnFileChange: boolean; // Trigger analysis on file change (debounced)
+  analyzeOnStartup: boolean; // Run analysis automatically when extension starts
   archetype: string; // X-Fidelity archetype
 
   // CLI Settings - VSCode extension always spawns CLI with --mode vscode
@@ -135,13 +135,10 @@ export class ConfigManager {
       // CLI Settings - VSCode extension always spawns CLI with --mode vscode
       cliExtraArgs: workspaceConfig.get('cliExtraArgs', []),
 
-      // Performance Settings - OPTIMIZED FOR SPEED
-      runInterval: 0, // DISABLED - was causing concurrent analysis conflicts
-      autoAnalyzeOnSave: false, // DISABLED - was causing performance issues
-      autoAnalyzeOnFileChange: workspaceConfig.get(
-        'autoAnalyzeOnFileChange',
-        false
-      ),
+      // Core Analysis Settings
+      runInterval: workspaceConfig.get('runInterval', 0),
+      autoAnalyzeOnSave: workspaceConfig.get('autoAnalyzeOnSave', false),
+      analyzeOnStartup: workspaceConfig.get('analyzeOnStartup', true),
       generateReports: workspaceConfig.get('generateReports', false),
 
       // Resource Limits - REDUCED FOR PERFORMANCE
@@ -157,10 +154,10 @@ export class ConfigManager {
       includePatterns: workspaceConfig.get('includePatterns', []),
       maxConcurrentAnalysis: 1, // FORCED TO 1 - no concurrent analysis
 
-      // Analysis Features - DISABLED for performance
+      // Analysis Features
       openaiEnabled: workspaceConfig.get('openaiEnabled', false),
       telemetryCollector: workspaceConfig.get('telemetryCollector', ''),
-      telemetryEnabled: workspaceConfig.get('telemetryEnabled', false), // DISABLED for performance
+      telemetryEnabled: false, // Hardcoded - not exposed in UI
 
       // Output & Reporting - DISABLED for performance
       reportOutputDir: workspaceConfig.get('reportOutputDir', ''),

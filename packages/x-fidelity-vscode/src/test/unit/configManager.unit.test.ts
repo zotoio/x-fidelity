@@ -42,8 +42,11 @@ describe('ConfigManager Unit Tests', () => {
 
     expect(config).toBeDefined();
     expect(config.archetype).toBe('node-fullstack');
-    expect(config.runInterval).toBe(0); // DISABLED for performance
-    expect(config.autoAnalyzeOnSave).toBe(false);
+    expect(config.runInterval).toBe(0); // Default disabled
+    expect(config.autoAnalyzeOnSave).toBe(false); // Default disabled
+    expect(config.analyzeOnStartup).toBe(true); // Default enabled
+    expect(config.telemetryEnabled).toBe(false); // Hardcoded disabled
+    expect(config.maxConcurrentAnalysis).toBe(1); // Hardcoded to 1
   });
 
   test('should call workspace.getConfiguration with correct parameters', async () => {
