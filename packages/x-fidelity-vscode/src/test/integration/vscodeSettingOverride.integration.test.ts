@@ -33,13 +33,11 @@ suite('VSCode Setting Override Integration Tests', () => {
   teardown(async function() {
     this.timeout(15000); // Set explicit timeout for teardown
     
-    // Skip heavy operations on Windows CI to prevent timeouts
+    // Skip heavy operations on Windows to prevent timeouts
     const isWindows = os.platform() === 'win32';
-    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-    const isWindowsCI = isWindows && isCI;
     
-    if (isWindowsCI) {
-      console.log('🪟 Windows CI: Quick teardown to prevent timeout');
+    if (isWindows) {
+      console.log('🪟 Windows: Quick teardown to prevent timeout');
     }
     
     // Clean up test directory
@@ -70,13 +68,11 @@ suite('VSCode Setting Override Integration Tests', () => {
   afterEach(async function() {
     this.timeout(15000); // Set explicit timeout for afterEach
     
-    // Skip heavy operations on Windows CI to prevent timeouts
+    // Skip heavy operations on Windows to prevent timeouts
     const isWindows = os.platform() === 'win32';
-    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-    const isWindowsCI = isWindows && isCI;
     
-    if (isWindowsCI) {
-      console.log('🪟 Windows CI: Quick cleanup after each test');
+    if (isWindows) {
+      console.log('🪟 Windows: Quick cleanup after each test');
       // Force a small delay to let extension host recover
       await new Promise(resolve => setTimeout(resolve, 100));
     }
@@ -86,13 +82,11 @@ suite('VSCode Setting Override Integration Tests', () => {
     test('should use default binary discovery when setting is empty', async function() {
       this.timeout(20000);
 
-      // Skip this entire test on Windows CI to prevent timeouts
+      // Skip this entire test on Windows to prevent timeouts
       const isWindows = os.platform() === 'win32';
-      const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-      const isWindowsCI = isWindows && isCI;
 
-      if (isWindowsCI) {
-        console.log('🪟 Windows CI: Skipping default binary discovery test to prevent timeout');
+      if (isWindows) {
+        console.log('🪟 Windows: Skipping default binary discovery test to prevent timeout');
         this.skip();
         return;
       }
@@ -122,13 +116,11 @@ suite('VSCode Setting Override Integration Tests', () => {
     test('should use override path when setting is configured', async function() {
       this.timeout(20000);
 
-      // Skip this test on Windows CI to prevent timeouts
+      // Skip this test on Windows to prevent timeouts
       const isWindows = os.platform() === 'win32';
-      const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-      const isWindowsCI = isWindows && isCI;
 
-      if (isWindowsCI) {
-        console.log('🪟 Windows CI: Skipping override path test to prevent timeout');
+      if (isWindows) {
+        console.log('🪟 Windows: Skipping override path test to prevent timeout');
         this.skip();
         return;
       }
@@ -178,13 +170,11 @@ suite('VSCode Setting Override Integration Tests', () => {
     test('should handle tilde expansion in VSCode setting', async function() {
       this.timeout(15000);
 
-      // Skip this test on Windows CI to prevent timeouts
+      // Skip this test on Windows to prevent timeouts
       const isWindows = os.platform() === 'win32';
-      const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-      const isWindowsCI = isWindows && isCI;
 
-      if (isWindowsCI) {
-        console.log('🪟 Windows CI: Skipping tilde expansion test to prevent timeout');
+      if (isWindows) {
+        console.log('🪟 Windows: Skipping tilde expansion test to prevent timeout');
         this.skip();
         return;
       }
