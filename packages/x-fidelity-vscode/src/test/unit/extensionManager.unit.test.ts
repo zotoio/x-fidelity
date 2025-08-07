@@ -668,4 +668,93 @@ describe('ExtensionManager Unit Tests', () => {
       expect(mockConfigManager.onConfigurationChanged).toBeDefined();
     });
   });
+
+  describe('Error Handling', () => {
+    let originalShowInformationMessage: any;
+
+    beforeEach(() => {
+      // Store original implementation
+      originalShowInformationMessage = vscode.window.showInformationMessage;
+      extensionManager = new ExtensionManager(mockContext);
+    });
+
+    afterEach(() => {
+      // Restore original implementation
+      (vscode.window as any).showInformationMessage = originalShowInformationMessage;
+    });
+
+    test('should handle errors in showAnalysisCompleteNotification', async () => {
+      const mockWindowShowInformationMessage = jest.fn();
+      (vscode.window as any).showInformationMessage = mockWindowShowInformationMessage;
+      
+      // Mock an error being thrown in the notification logic
+      mockWindowShowInformationMessage.mockImplementation(() => {
+        throw new Error('Notification failed');
+      });
+
+      // Mock the logger error method
+      const loggerErrorSpy = jest.spyOn(extensionManager['logger'], 'error');
+
+      // Create a mock processed results object that would trigger the notification
+      const mockProcessed = {
+        totalIssues: 5,
+        successfulIssues: 3,
+        failedIssuesCount: 2
+      };
+
+      // Set trigger source to manual to ensure notification is shown
+      extensionManager['lastTriggerSource'] = 'manual';
+
+      // Call the private method directly using bracket notation
+      (extensionManager as any).showAnalysisCompleteNotification(mockProcessed);
+
+      // Verify error was logged
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Failed to show analysis complete notification',
+        expect.any(Error)
+      );
+    });
+  });
+
+  describe('File Save Watcher Disposal', () => {
+    let originalShowInformationMessage: any;
+
+    beforeEach(() => {
+      // Store and restore proper mock to avoid contamination from other tests
+      originalShowInformationMessage = vscode.window.showInformationMessage;
+      (vscode.window as any).showInformationMessage = jest.fn();
+    });
+
+    afterEach(() => {
+      // Restore original implementation
+      (vscode.window as any).showInformationMessage = originalShowInformationMessage;
+    });
+
+    test('should dispose file save watcher when it exists', () => {
+      extensionManager = new ExtensionManager(mockContext);
+      
+      // Set up a mock file save watcher
+      const mockFileSaveWatcher = {
+        dispose: jest.fn()
+      };
+      extensionManager['fileSaveWatcher'] = mockFileSaveWatcher as any;
+
+      // Call dispose
+      extensionManager.dispose();
+
+      // Verify the file save watcher was disposed
+      expect(mockFileSaveWatcher.dispose).toHaveBeenCalled();
+      expect(extensionManager['fileSaveWatcher']).toBeUndefined();
+    });
+
+    test('should handle disposal when file save watcher does not exist', () => {
+      extensionManager = new ExtensionManager(mockContext);
+      
+      // Ensure no file save watcher exists
+      extensionManager['fileSaveWatcher'] = undefined;
+
+      // Call dispose - should not throw error
+      expect(() => extensionManager.dispose()).not.toThrow();
+    });
+  });
 });
