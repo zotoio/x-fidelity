@@ -23,7 +23,7 @@ The key tools it uses are:
 ## Quick Starts
 The two simplest ways to use X-Fi are CLI and VSCode Extension.  Note that while installation is simple to run with demo comfig, you will need to take the time to design and implement you 'archetypes', as these are how you tell X-Fi what checks you want to perform to meet your requirements.  Review the Full Documentation to understand how this works.
 
-**📚 Full Documentation: https://zotoio.github.io/x-fidelity/**
+**🚀 Quickstart: https://zotoio.github.io/x-fidelity/docs/quickstart**  |  **📚 Full Documentation: https://zotoio.github.io/x-fidelity/**
 
 ### Installing the CLI
 

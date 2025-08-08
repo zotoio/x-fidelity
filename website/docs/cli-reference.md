@@ -66,7 +66,7 @@ xfidelity . --output-format json --output-file results.json
 
 ### Server Mode Options
 
-- **`-m, --mode <mode>`** - Run mode: 'client' (default) or 'server'
+- **`-m, --mode <mode>`** - Run mode: 'cli' (default), 'vscode', 'server', or 'hook' (note: 'client' is deprecated; use 'cli')
 - **`-p, --port <number>`** - Server port when running in server mode (default: 8888)
 - **`-j, --jsonTTL <minutes>`** - Server JSON cache TTL in minutes (default: 10)
 
@@ -98,6 +98,9 @@ xfidelity . --openaiEnabled --archetype node-fullstack
 # Use remote configuration
 xfidelity . --configServer http://config-server:8888
 
+# Use a GitHub config location
+xfidelity . --githubConfigLocation https://github.com/org/repo/tree/main/xfi-config
+
 # Analyze specific files only
 xfidelity . --zap '["src/index.js", "src/app.js"]'
 
@@ -117,6 +120,8 @@ xfidelity . --output-format json
 # Save JSON output to file
 xfidelity . --output-format json --output-file analysis-results.json
 
+# If no output file is specified with --output-format json, results are also written to .xfiResults/structured-output.json
+
 # Pretty-print JSON to console
 xfidelity . --output-format json | jq .
 ```
@@ -127,8 +132,8 @@ xfidelity . --output-format json | jq .
 # Increase file cache TTL for large projects
 xfidelity . --file-cache-ttl 120
 
-# Disable TreeSitter worker for debugging
-xfidelity . --disableTreeSitterWorker
+# Enable TreeSitter worker (disabled by default in CLI)
+xfidelity . --enable-tree-sitter-worker
 
 # Analyze only specific files for faster feedback
 xfidelity . --zap '["src/critical-file.js"]'
@@ -159,7 +164,7 @@ The default human-readable output includes:
 
 ### JSON Format
 
-The JSON output provides structured data:
+The JSON output provides structured data (note: `telemetryData` is nested under `XFI_RESULT`):
 
 ```json
 {
@@ -202,17 +207,17 @@ The JSON output provides structured data:
           }
         ]
       }
-    ]
-  },
-  "telemetryData": {
-    "performanceMetrics": {
-      "totalDuration": 2500,
-      "pluginTiming": {},
-      "memoryUsage": 45.2
-    }
-  },
-  "timestamp": "2024-12-07T10:30:00Z",
-  "version": "3.28.0"
+    ],
+    "telemetryData": {
+      "performanceMetrics": {
+        "totalDuration": 2500,
+        "pluginTiming": {},
+        "memoryUsage": 45.2
+      }
+    },
+    "timestamp": "2024-12-07T10:30:00Z",
+    "version": "3.28.0"
+  }
 }
 ```
 
@@ -226,7 +231,8 @@ The JSON output provides structured data:
 ## Environment Variables
 
 - **`XFI_LOG_LEVEL`** - Set logging level (trace, debug, info, warn, error, fatal)
-- **`XFI_CONFIG_PATH`** - Default path for configuration files
+- **`XFI_CONFIG_PATH`** - Override path for configuration files
+- **`XFI_LOG_COLORS`** - Set to `false` to disable colored CLI output (used when CLI is spawned by the VSCode extension)
 - **`NODE_ENV`** - Affects default logging behavior
 
 ## Performance Considerations
@@ -310,6 +316,9 @@ XFI_LOG_LEVEL=debug xfidelity .
 
 # Trace plugin loading
 XFI_LOG_LEVEL=trace xfidelity . --examine
+
+# Enable file logging to .xfiResults/x-fidelity.log
+xfidelity . --enable-file-logging
 ```
 
-For more information, see the [Getting Started Guide](./getting-started.md) and [Configuration Reference](./archetypes.md).
+For more information, see the [Quickstart](./quickstart.md) and [Configuration Reference](./archetypes.md).

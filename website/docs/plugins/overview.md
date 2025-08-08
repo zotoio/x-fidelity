@@ -25,14 +25,14 @@ X-Fidelity comes with **9 built-in plugins** that provide comprehensive code ana
 
 #### 1. AST Analysis Plugin (`xfiPluginAst`)
 Advanced abstract syntax tree analysis for JavaScript/TypeScript with Tree-sitter:
-- **Facts**: `ast`, `codeRhythm`, `functionComplexity`, `functionCount`
+- **Facts**: `ast`, `functionComplexity`, `functionCount`
 - **Operators**: `astComplexity`, `functionCount`
 - **Capabilities**: Code complexity analysis, function metrics, Tree-sitter parsing with worker threads
 - **Performance**: Enhanced with caching and optimized memory usage
 
 #### 2. Dependency Plugin (`xfiPluginDependency`)
 Package dependency version checking and analysis:
-- **Facts**: `repoDependencyVersions`, `repoDependencyFacts`, `dependencyData`, `repoDependencyAnalysis`
+- **Facts**: `repoDependencyVersions`, `repoDependencyFacts`
 - **Operators**: `outdatedFramework`
 - **Capabilities**: Semver validation, dependency audit, version compliance
 
@@ -138,16 +138,14 @@ xfidelity . -e xfi-custom-plugin another-plugin
 Specify plugins directly in your archetype configuration:
 ```json
 {
-    "name": "my-archetype",
-    "plugins": [
-        "xfiPluginAst",
-        "xfiPluginDependency", 
-        "xfi-custom-plugin"
-    ],
-    "rules": ["myRule-global"],
-    "config": {
-        // archetype configuration...
-    }
+  "name": "my-archetype",
+  "plugins": [
+    "xfiPluginAst",
+    "xfiPluginDependency",
+    "xfi-custom-plugin"
+  ],
+  "rules": ["myRule-global"],
+  "config": {}
 }
 ```
 

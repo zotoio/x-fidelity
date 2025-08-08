@@ -43,12 +43,11 @@ Centralized access to all X-Fidelity functionality:
 - **Quick Fixes**: Where applicable, suggested fixes for issues
 
 #### Command Palette
-All 47 commands accessible through VSCode's command palette:
+Commands accessible through VSCode's command palette:
 
 **Core Analysis:**
 - `X-Fidelity: Run Analysis Now` - Standard analysis
 - `X-Fidelity: Cancel Analysis` - Stop running analysis
-- `X-Fidelity: Run Analysis with Directory` - Debug with explicit workspace path
 - `X-Fidelity: Detect Archetype` - Auto-detect project type
 
 **UI & Management:**
@@ -60,8 +59,6 @@ All 47 commands accessible through VSCode's command palette:
 **Periodic Analysis:**
 - `X-Fidelity: Start Periodic Analysis` - Enable background analysis
 - `X-Fidelity: Stop Periodic Analysis` - Disable background analysis
-- `X-Fidelity: Restart Periodic Analysis` - Restart background monitoring
-- `X-Fidelity: Show Periodic Analysis Status` - View background state
 
 **Performance & Debug:**
 - `X-Fidelity: Show Performance Metrics` - View performance data
@@ -72,39 +69,36 @@ All 47 commands accessible through VSCode's command palette:
 - `X-Fidelity: Export Report` - Copy results to clipboard
 - `X-Fidelity: Report History` - View analysis history
 - `X-Fidelity: Share Report` - Share analysis results
-- `X-Fidelity: Compare Reports` - Compare analysis results
-- `X-Fidelity: View Trends` - View analysis trends
+- `X-Fidelity: Compare Reports` - Compare analysis results (preview)
+- `X-Fidelity: View Trends` - View analysis trends (coming soon)
 
 ### 4. Advanced Configuration
 
 #### Settings Integration
-Comprehensive configuration through 40+ VSCode settings:
+Commonly used VSCode settings:
 
 ```json
 {
   "xfidelity.archetype": "node-fullstack",
   "xfidelity.autoAnalyzeOnSave": false,
-  "xfidelity.analysisEngine": "cli",
-  "xfidelity.cliSource": "bundled",
-  "xfidelity.cliTimeout": 60000,
+  "xfidelity.enableTreeSitterWasm": true,
+  "xfidelity.analysisTimeout": 60000,
   "xfidelity.configServer": "http://localhost:8888",
   "xfidelity.openaiEnabled": false,
   "xfidelity.maxFileSize": 524288,
   "xfidelity.cacheTTL": 30,
-  "xfidelity.maxConcurrentAnalysis": 1,
-  "xfidelity.decorationLimit": 50,
-  "xfidelity.astCacheSize": 150,
-  "xfidelity.periodicAnalysis.enabled": false,
-  "xfidelity.periodicAnalysis.intervalMinutes": 5,
+  
+  
   "xfidelity.statusBarVisibility": true,
   "xfidelity.showInlineDecorations": true,
-  "xfidelity.excludePatterns": ["**/node_modules/**", "**/dist/**"]
+  "xfidelity.excludePatterns": ["**/node_modules/**", "**/dist/**"],
+  "xfidelity.reportOutputDir": ".xfiResults"
 }
 ```
 
 #### Workspace Support
-- **Multi-workspace**: Support for VSCode multi-root workspaces
-- **Monorepo Aware**: Intelligent handling of monorepo structures
+- **Workspace-aware**: Operates on the current workspace folder
+- **Monorepo Aware**: Works well in monorepos; commands operate on the active folder
 - **Project-specific Config**: Support for `.xfi-config.json` files
 - **Workspace Settings**: Workspace-level configuration overrides
 
@@ -143,7 +137,7 @@ Detailed performance insights accessible through commands:
 - **Tree-sitter Integration**: Advanced AST parsing capabilities
 - **Multi-language Support**: JavaScript, TypeScript, and extensible to other languages
 - **Pattern Matching**: Sophisticated code pattern detection
-- **Fallback Mechanisms**: Graceful degradation when WASM is unavailable
+- **WASM Default**: WASM Tree-sitter is the default in VSCode (fallback to native if needed)
 
 #### Plugin System Integration
 Full access to all 9 X-Fidelity plugins with universal logging:
@@ -208,8 +202,9 @@ For detailed information, see the [Command Delegation Guide](command-delegation.
 
 #### Result Storage
 - **Dedicated Directory**: Results stored in `.xfiResults/` directory
-- **Timestamped Files**: Automatic timestamping of all reports
-- **Cleanup Management**: Automatic cleanup of old reports
+- **Latest File**: `XFI_RESULT.json` is maintained and never deleted
+- **Timestamped Files**: Automatic timestamping of reports (JSON/Markdown)
+- **Cleanup Management**: Automatic cleanup of old timestamped reports
 - **Workspace Isolation**: Results isolated per workspace
 
 ## Usage Examples
