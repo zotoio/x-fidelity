@@ -9,6 +9,8 @@ X-Fidelity is a comprehensive code analysis framework that provides opinionated 
 
 ## Key Features
 
+> Start here: See the 5‑minute [Quickstart](./quickstart) to run your first analysis.
+
 ### Core Capabilities
 - **Flexible Archetype System**: Define custom project archetypes with specific rules and configurations
 - **Comprehensive Rule Engine**: JSON-based rules engine with conditions and actions
@@ -130,7 +132,7 @@ xfidelity . --archetype node-fullstack --output-format json
 
 ## Next Steps
 
-- **[Getting Started Guide](/docs/getting-started)** - Comprehensive setup instructions
+- **[Quickstart](/docs/quickstart)** - Run your first analysis in minutes
 - **[VSCode Extension](/docs/vscode-extension/overview)** - Full-featured development experience  
 - **[Key Concepts](/docs/key-concepts)** - Understanding archetypes, rules, and facts
 - **[Plugin Development](/docs/plugins/overview)** - Extending X-Fidelity functionality

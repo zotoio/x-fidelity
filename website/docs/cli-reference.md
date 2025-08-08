@@ -321,4 +321,4 @@ XFI_LOG_LEVEL=trace xfidelity . --examine
 xfidelity . --enable-file-logging
 ```
 
-For more information, see the [Getting Started Guide](./getting-started.md) and [Configuration Reference](./archetypes.md).
+For more information, see the [Quickstart](./quickstart.md) and [Configuration Reference](./archetypes.md).
