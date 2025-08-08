@@ -2829,7 +2829,7 @@
     "@babel/types" "^7.23.0"
     "@types/body-parser" "^1.19.5"
     "@types/vscode" "^1.101.0"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-core-0.0.0-semantically-released-bf65eb08-3b96-41e0-8714-7f68e64a1396-1754482899990/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-core-0.0.0-semantically-released-72a19cdd-442e-42a7-ad56-0fe970887ef0-1754653695160/node_modules/@x-fidelity/x-fidelity-types"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.10.0"
     body-parser "^1.20.3"
@@ -2862,13 +2862,15 @@
   dependencies:
     "@babel/parser" "^7.23.0"
     "@babel/types" "^7.23.0"
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-a1d7081e-6d0e-49c2-8355-edd5a277f2cb-1754482899994/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-a1d7081e-6d0e-49c2-8355-edd5a277f2cb-1754482899994/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-89292bc4-f62c-4e45-a485-a94286341455-1754653695162/node_modules/@x-fidelity/x-fidelity-core"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-89292bc4-f62c-4e45-a485-a94286341455-1754653695162/node_modules/@x-fidelity/x-fidelity-types"
+    "@xmldom/xmldom" "^0.8.10"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.8.1"
     dotenv "^16.4.7"
     esprima "^4.0.1"
     glob "11.0.3"
+    jsonpath-plus "^10.0.0"
     lodash "^4.17.21"
     openai "^4.86.1"
     semver "^7.7.1"
@@ -2876,13 +2878,15 @@
     tree-sitter-javascript "^0.23.1"
     tree-sitter-typescript "^0.23.2"
     web-tree-sitter "^0.25.0"
+    xpath "^0.0.34"
+    yaml "^2.6.0"
 
 "@x-fidelity/server@file:packages/x-fidelity-server":
   version "0.0.0-semantically-released"
   dependencies:
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-30afc2e9-05e1-4ff1-8754-85cdef9e4b23-1754482899996/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/plugins" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-30afc2e9-05e1-4ff1-8754-85cdef9e4b23-1754482899996/node_modules/@x-fidelity/x-fidelity-plugins"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-30afc2e9-05e1-4ff1-8754-85cdef9e4b23-1754482899996/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-9d9a42b6-906c-4d60-8be1-0b1cc6aa1f90-1754653695165/node_modules/@x-fidelity/x-fidelity-core"
+    "@x-fidelity/plugins" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-9d9a42b6-906c-4d60-8be1-0b1cc6aa1f90-1754653695165/node_modules/@x-fidelity/x-fidelity-plugins"
+    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-9d9a42b6-906c-4d60-8be1-0b1cc6aa1f90-1754653695165/node_modules/@x-fidelity/x-fidelity-types"
     body-parser "^1.20.3"
     chokidar "^3.6.0"
     express "^4.21.2"
@@ -2894,6 +2898,11 @@
 
 "@x-fidelity/types@file:packages/x-fidelity-types":
   version "0.0.0-semantically-released"
+
+"@xmldom/xmldom@^0.8.10":
+  version "0.8.10"
+  resolved "https://registry.yarnpkg.com/@xmldom/xmldom/-/xmldom-0.8.10.tgz#a1337ca426aa61cef9fe15b5b28e340a72f6fa99"
+  integrity sha512-2WALfTl4xo2SkGCYRt6rDTFfk9R1czmBvUQy12gK2KuRKIpWEhcbbzy8EZXtz/jkRqHX8bFEc6FC1HjX4TUWYw==
 
 "@yarnpkg/lockfile@^1.1.0":
   version "1.1.0"
@@ -7180,7 +7189,7 @@ jsonparse@^1.3.1:
   resolved "https://registry.npmjs.org/jsonparse/-/jsonparse-1.3.1.tgz"
   integrity sha512-POQXvpdL69+CluYsillJ7SUhKvytYjW9vG/GKpnf+xP8UWgYEM/RaMzHHofbALDiKbbP1W8UEYmgGl39WkPZsg==
 
-jsonpath-plus@^10.3.0:
+jsonpath-plus@^10.0.0, jsonpath-plus@^10.3.0:
   version "10.3.0"
   resolved "https://registry.npmjs.org/jsonpath-plus/-/jsonpath-plus-10.3.0.tgz"
   integrity sha512-8TNmfeTCk2Le33A3vRRwtuworG/L5RrgMvdjhKZxvyShO+mBu2fP50OWUjRLNtvw344DdDarFh9buFAZs5ujeA==
@@ -11447,6 +11456,11 @@ xmlbuilder@~11.0.0:
   version "11.0.1"
   resolved "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-11.0.1.tgz"
   integrity sha512-fDlsI/kFEx7gLvbecc0/ohLG50fugQp8ryHzMTuW9vSa1GJ0XYWKnhsUx7oie3G98+r56aTQIUB4kht42R3JvA==
+
+xpath@^0.0.34:
+  version "0.0.34"
+  resolved "https://registry.yarnpkg.com/xpath/-/xpath-0.0.34.tgz#a769255e8816e0938e1e0005f2baa7279be8be12"
+  integrity sha512-FxF6+rkr1rNSQrhUNYrAFJpRXNzlDoMxeXN5qI84939ylEv3qqPFKa85Oxr6tDaJKqwW6KKyo2v26TSv3k6LeA==
 
 xtend@~4.0.1:
   version "4.0.2"

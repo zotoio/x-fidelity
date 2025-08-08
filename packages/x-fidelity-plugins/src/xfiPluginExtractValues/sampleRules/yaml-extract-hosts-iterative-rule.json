@@ -1,0 +1,22 @@
+{
+  "name": "yaml-extract-images-iterative",
+  "conditions": {
+    "all": [
+      {
+        "fact": "extractValues",
+        "params": {
+          "resultFact": "composeImages",
+          "strategies": { ".yml": { "type": "yaml-jsonpath", "paths": ["$.services[*].image"] } }
+        },
+        "operator": "matchesSatisfy",
+        "value": { "requireMatches": true, "count": { "op": ">=", "value": 1 } }
+      }
+    ]
+  },
+  "event": {
+    "type": "info",
+    "params": { "message": "Extracted docker images", "details": { "fact": "composeImages" } }
+  }
+}
+
+

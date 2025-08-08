@@ -1,0 +1,22 @@
+{
+  "name": "xml-extract-ids-iterative",
+  "conditions": {
+    "all": [
+      {
+        "fact": "extractValues",
+        "params": {
+          "resultFact": "xmlServiceIds",
+          "strategies": { ".xml": { "type": "xpath", "expressions": ["//service/@id"] } }
+        },
+        "operator": "matchesSatisfy",
+        "value": { "requireMatches": true, "count": { "op": ">=", "value": 1 } }
+      }
+    ]
+  },
+  "event": {
+    "type": "info",
+    "params": { "message": "Extracted IDs", "details": { "fact": "xmlServiceIds" } }
+  }
+}
+
+
