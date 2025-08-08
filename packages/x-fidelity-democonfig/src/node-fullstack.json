@@ -17,7 +17,9 @@
         "functionCount-iterative",
         "reactHooksDependency-iterative",
         "reactHooksMigration-global",
-        "customFactExample-iterative"
+        "customFactExample-iterative",
+        "extractPackageVersion-iterative",
+        "extractEnvApiKey-iterative"
     ],
     "config": {
         "minimumDependencyVersions": {
@@ -49,6 +51,7 @@
         "whitelistPatterns": [
             ".*\\.(ts|tsx|js|jsx|json)$",
             ".*xfiTestMatch\\.json$",
+            ".*\\.env$",
             ".*customExample\\.json$",
             ".*\\/README\\.md$"
         ],
