@@ -10,9 +10,9 @@ Get X‑Fidelity running and see results in minutes.
 
 ```bash
 # From your project root
-yarn dlx x-fidelity --help  # or install globally: yarn global add x-fidelity
+yarn global add x-fidelity
 
-# Analyze current directory
+# Analyze current git repo directory with demo config
 xfidelity .
 ```
 
@@ -29,7 +29,7 @@ xfidelity .
 ## 3. Common commands
 
 ```bash
-# Monorepo root (workspace root)
+# repo root (with monorepo support)
 xfidelity .
 
 # JSON for CI and save to file

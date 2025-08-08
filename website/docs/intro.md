@@ -9,7 +9,7 @@ X-Fidelity is a comprehensive code analysis framework that provides opinionated 
 
 ## Key Features
 
-> Start here: See the 5‑minute [Quickstart](./quickstart) to run your first analysis.
+> Start here: See the 5‑minute [Quickstart](./quickstart.md) to run your first analysis.
 
 ### Core Capabilities
 - **Flexible Archetype System**: Define custom project archetypes with specific rules and configurations

@@ -138,16 +138,14 @@ xfidelity . -e xfi-custom-plugin another-plugin
 Specify plugins directly in your archetype configuration:
 ```json
 {
-    "name": "my-archetype",
-    "plugins": [
-        "xfiPluginAst",
-        "xfiPluginDependency", 
-        "xfi-custom-plugin"
-    ],
-    "rules": ["myRule-global"],
-    "config": {
-        // archetype configuration...
-    }
+  "name": "my-archetype",
+  "plugins": [
+    "xfiPluginAst",
+    "xfiPluginDependency",
+    "xfi-custom-plugin"
+  ],
+  "rules": ["myRule-global"],
+  "config": {}
 }
 ```
 
