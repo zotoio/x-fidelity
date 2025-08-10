@@ -24,7 +24,7 @@
     "test:coverage": "yarn check-types && yarn lint && jest --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "check-types": "tsc --noEmit --incremental"
+    "check-types": "tsc --noEmit"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
