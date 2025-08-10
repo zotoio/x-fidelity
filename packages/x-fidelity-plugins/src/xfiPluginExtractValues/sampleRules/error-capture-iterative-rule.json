@@ -1,0 +1,22 @@
+{
+  "name": "error-capture-iterative",
+  "conditions": {
+    "all": [
+      {
+        "fact": "extractValues",
+        "params": {
+          "resultFact": "badJsonPath",
+          "strategies": { ".json": { "type": "jsonpath", "paths": ["$..["] } }
+        },
+        "operator": "matchesSatisfy",
+        "value": { "requireNoErrors": false, "count": { "op": "==", "value": 0 } }
+      }
+    ]
+  },
+  "event": {
+    "type": "info",
+    "params": { "message": "Errors captured as part of result", "details": { "fact": "badJsonPath" } }
+  }
+}
+
+

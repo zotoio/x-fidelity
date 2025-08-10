@@ -1,0 +1,22 @@
+{
+  "name": "json-extract-version-iterative",
+  "conditions": {
+    "all": [
+      {
+        "fact": "extractValues",
+        "params": {
+          "resultFact": "pkgVersion",
+          "strategies": { ".json": { "type": "jsonpath", "paths": ["$.version"] } }
+        },
+        "operator": "matchesSatisfy",
+        "value": { "requireMatches": true, "count": { "op": "==", "value": 1 }, "every": { "predicate": "isString" } }
+      }
+    ]
+  },
+  "event": {
+    "type": "info",
+    "params": { "message": "Extracted package version", "details": { "fact": "pkgVersion" } }
+  }
+}
+
+

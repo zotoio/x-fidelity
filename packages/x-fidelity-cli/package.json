@@ -32,7 +32,7 @@
     "test:coverage": "yarn check-types && yarn lint && OPENAI_API_KEY= jest --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "check-types": "tsc --noEmit --incremental",
+    "check-types": "tsc --noEmit",
     "package": "yarn pack",
     "release": "echo '⚠️  Individual package releases are disabled. Use root-level semantic-release for unified releases.'",
     "start": "OPENAI_API_KEY= jest --watch",

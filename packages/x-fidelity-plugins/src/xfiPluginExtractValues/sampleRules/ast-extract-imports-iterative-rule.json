@@ -1,0 +1,22 @@
+{
+  "name": "ast-extract-imports-iterative",
+  "conditions": {
+    "all": [
+      {
+        "fact": "extractValues",
+        "params": {
+          "resultFact": "moduleImports",
+          "strategies": { ".ts": { "type": "ast-jsonpath", "paths": ["$.tree.rootNode.type"] } }
+        },
+        "operator": "matchesSatisfy",
+        "value": { "requireNoErrors": true, "count": { "op": ">=", "value": 1 } }
+      }
+    ]
+  },
+  "event": {
+    "type": "info",
+    "params": { "message": "Extracted AST info", "details": { "fact": "moduleImports" } }
+  }
+}
+
+

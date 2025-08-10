@@ -1,0 +1,23 @@
+{
+  "name": "regex-env-api-key-iterative",
+  "conditions": {
+    "all": [
+      {
+        "fact": "extractValues",
+        "params": {
+          "resultFact": "envApiKey",
+          "defaultStrategy": { "type": "regex", "pattern": "^API_KEY=(.*)$", "flags": "im" },
+          "captureContext": true
+        },
+        "operator": "matchesSatisfy",
+        "value": { "requireMatches": true, "count": { "op": ">=", "value": 1 } }
+      }
+    ]
+  },
+  "event": {
+    "type": "warning",
+    "params": { "message": "API key detected", "details": { "fact": "envApiKey" } }
+  }
+}
+
+

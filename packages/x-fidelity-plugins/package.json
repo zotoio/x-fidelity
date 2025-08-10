@@ -1,7 +1,7 @@
 {
   "name": "@x-fidelity/plugins",
   "version": "0.0.0-semantically-released",
-  "description": "9 built-in plugins for X-Fidelity: AST analysis, filesystem checks, dependency validation, OpenAI integration, and more",
+  "description": "10 built-in plugins for X-Fidelity: AST analysis, filesystem checks, dependency validation, OpenAI integration, extract-values, and more",
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,7 +23,7 @@
     "test:coverage": "yarn check-types && yarn lint && jest --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "check-types": "tsc --noEmit --incremental"
+    "check-types": "tsc --noEmit"
   },
   "repository": "git@github.com:zotoio/x-fidelity.git",
   "author": "wyvern8 <io@zoto.io>",
@@ -52,16 +52,20 @@
     "@x-fidelity/core": "file:../x-fidelity-core",
     "@x-fidelity/types": "file:../x-fidelity-types",
     "@yarnpkg/lockfile": "^1.1.0",
+    "@xmldom/xmldom": "^0.8.10",
     "axios": "^1.8.1",
     "dotenv": "^16.4.7",
     "esprima": "^4.0.1",
     "glob": "11.0.3",
+    "jsonpath-plus": "^10.0.0",
     "lodash": "^4.17.21",
     "openai": "^4.86.1",
     "semver": "^7.7.1",
     "tree-sitter": "^0.22.4",
     "tree-sitter-javascript": "^0.23.1",
     "tree-sitter-typescript": "^0.23.2",
-    "web-tree-sitter": "^0.25.0"
+    "web-tree-sitter": "^0.25.0",
+    "xpath": "^0.0.34",
+    "yaml": "^2.6.0"
   }
 }

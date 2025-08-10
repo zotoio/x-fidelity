@@ -19,7 +19,7 @@ Plugins are Node.js modules that extend X-Fidelity's capabilities:
 
 ## Built-in Plugins
 
-X-Fidelity comes with **9 built-in plugins** that provide comprehensive code analysis capabilities with universal logging support and enhanced error handling:
+X-Fidelity comes with **10 built-in plugins** that provide comprehensive code analysis capabilities with universal logging support and enhanced error handling:
 
 ### Core Analysis Plugins
 
@@ -95,9 +95,15 @@ AI-powered code analysis using OpenAI's language models:
 - **Capabilities**: AI code review, pattern detection, best practice suggestions
 - **Note**: Requires `OPENAI_API_KEY` environment variable
 
+#### 9. Extract Values Plugin (`xfiPluginExtractValues`)
+Flexible multi-strategy value extraction into runtime facts:
+- **Facts**: `extractValues`
+- **Operators**: `matchesSatisfy`
+- **Capabilities**: JSONPath/YAML→JSONPath/XPath/AST/Regex extraction with security and limits
+
 ### Development Plugins
 
-#### 9. Simple Example Plugin (`xfiPluginSimpleExample`)
+#### 10. Simple Example Plugin (`xfiPluginSimpleExample`)
 Template plugin demonstrating plugin structure:
 - **Facts**: `customFact`
 - **Operators**: `customOperator`
