@@ -2829,7 +2829,7 @@
     "@babel/types" "^7.23.0"
     "@types/body-parser" "^1.19.5"
     "@types/vscode" "^1.101.0"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-core-0.0.0-semantically-released-72a19cdd-442e-42a7-ad56-0fe970887ef0-1754653695160/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/types" "file:packages/x-fidelity-types"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.10.0"
     body-parser "^1.20.3"
@@ -2862,8 +2862,8 @@
   dependencies:
     "@babel/parser" "^7.23.0"
     "@babel/types" "^7.23.0"
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-89292bc4-f62c-4e45-a485-a94286341455-1754653695162/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-89292bc4-f62c-4e45-a485-a94286341455-1754653695162/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:packages/x-fidelity-core"
+    "@x-fidelity/types" "file:packages/x-fidelity-types"
     "@xmldom/xmldom" "^0.8.10"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.8.1"
@@ -2884,9 +2884,9 @@
 "@x-fidelity/server@file:packages/x-fidelity-server":
   version "0.0.0-semantically-released"
   dependencies:
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-9d9a42b6-906c-4d60-8be1-0b1cc6aa1f90-1754653695165/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/plugins" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-9d9a42b6-906c-4d60-8be1-0b1cc6aa1f90-1754653695165/node_modules/@x-fidelity/x-fidelity-plugins"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-9d9a42b6-906c-4d60-8be1-0b1cc6aa1f90-1754653695165/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:packages/x-fidelity-core"
+    "@x-fidelity/plugins" "file:packages/x-fidelity-plugins"
+    "@x-fidelity/types" "file:packages/x-fidelity-types"
     body-parser "^1.20.3"
     chokidar "^3.6.0"
     express "^4.21.2"
@@ -4111,17 +4111,16 @@ cookiejar@^2.1.4:
   resolved "https://registry.npmjs.org/cookiejar/-/cookiejar-2.1.4.tgz"
   integrity sha512-LDx6oHrK+PhzLKJU9j5S7/Y3jM/mUHvD/DeI1WQmJn652iPC5Y4TBzC9l+5OMOXlyTTA+SmVUPm0HQUwpD5Jqw==
 
-copy-webpack-plugin@^12.0.2:
-  version "12.0.2"
-  resolved "https://registry.npmjs.org/copy-webpack-plugin/-/copy-webpack-plugin-12.0.2.tgz"
-  integrity sha512-SNwdBeHyII+rWvee/bTnAYyO8vfVdcSTud4EIb6jcZ8inLeWucJE0DnxXQBjlQ5zlteuuvooGQy3LIyGxhvlOA==
+copy-webpack-plugin@^13.0.0:
+  version "13.0.0"
+  resolved "https://registry.yarnpkg.com/copy-webpack-plugin/-/copy-webpack-plugin-13.0.0.tgz#793342576eed76fdbc7936b873eae17aa7a7d9a3"
+  integrity sha512-FgR/h5a6hzJqATDGd9YG41SeDViH+0bkHn6WNXCi5zKAZkeESeSxLySSsFLHqLEVCh0E+rITmCf0dusXWYukeQ==
   dependencies:
-    fast-glob "^3.3.2"
     glob-parent "^6.0.1"
-    globby "^14.0.0"
     normalize-path "^3.0.0"
     schema-utils "^4.2.0"
     serialize-javascript "^6.0.2"
+    tinyglobby "^0.2.12"
 
 core-util-is@~1.0.0:
   version "1.0.3"
