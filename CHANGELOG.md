@@ -2,6 +2,13 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.4.0](https://github.com/zotoio/x-fidelity/compare/v5.3.0...v5.4.0) (2025-08-10)
+
+### Features
+
+* **plugin:** extractValues ([a71d2b2](https://github.com/zotoio/x-fidelity/commit/a71d2b2946cf55793f18583afe77379769c39664))
+* **plugins:** add xfiPluginExtractValues with multi-strategy extraction (jsonpath/yaml-xpath/regex/ast) and flexible matchesSatisfy operator; add docs, sample rules, and colocated tests ([568f4dc](https://github.com/zotoio/x-fidelity/commit/568f4dc974a11e19a31f35f78dfb5c444793c349))
+
 ## [5.3.0](https://github.com/zotoio/x-fidelity/compare/v5.2.5...v5.3.0) (2025-08-07)
 
 ### ⚠ BREAKING CHANGES
