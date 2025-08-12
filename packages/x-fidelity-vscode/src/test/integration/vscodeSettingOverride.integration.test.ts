@@ -6,6 +6,9 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { CLISpawner, CLISpawnOptions } from '../../utils/cliSpawner';
 
+// Cross-file platform flag used in multiple tests
+const isWindows = os.platform() === 'win32';
+
 suite('VSCode Setting Override Integration Tests', () => {
   let testHomeDir: string;
   let testWorkspace: string;
