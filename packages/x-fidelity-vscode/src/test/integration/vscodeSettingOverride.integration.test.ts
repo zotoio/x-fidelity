@@ -12,7 +12,6 @@ const isWindows = os.platform() === 'win32';
 suite('VSCode Setting Override Integration Tests', () => {
   let testHomeDir: string;
   let testWorkspace: string;
-  let workspaceAdded = false;
 
   setup(async function() {
     this.timeout(30000);
@@ -33,24 +32,9 @@ suite('VSCode Setting Override Integration Tests', () => {
       JSON.stringify(packageJson, null, 2)
     );
 
-    // Ensure a workspace folder is present so Workspace-scoped settings are valid
-    try {
-      const folderUri = vscode.Uri.file(testWorkspace);
-      // Avoid duplicate additions
-      const alreadyPresent = (vscode.workspace.workspaceFolders || []).some(
-        f => f.uri.fsPath === folderUri.fsPath
-      );
-      if (!alreadyPresent) {
-        workspaceAdded = vscode.workspace.updateWorkspaceFolders(0, 0, {
-          uri: folderUri,
-          name: 'xfi-vscode-setting-override-test'
-        });
-        // Give VSCode a moment to register the workspace folder
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    } catch (err) {
-      console.warn('Could not set up workspace folder for tests:', err);
-    }
+    // No need to modify the active VSCode workspace.
+    // The test harness already opens a fixture workspace; we only use
+    // a separate temporary folder for CLI execution to keep isolation.
   });
 
   teardown(async function() {
@@ -89,19 +73,7 @@ suite('VSCode Setting Override Integration Tests', () => {
       console.warn('Could not reset VSCode configuration:', error);
     }
 
-    // Remove the temporary workspace folder to fully isolate configuration
-    try {
-      if (workspaceAdded && vscode.workspace.workspaceFolders) {
-        const index = vscode.workspace.workspaceFolders.findIndex(
-          f => f.uri.fsPath === testWorkspace
-        );
-        if (index >= 0) {
-          vscode.workspace.updateWorkspaceFolders(index, 1);
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to remove temporary workspace folder:', err);
-    }
+    // No workspace folder changes were made; nothing to remove.
   });
 
   afterEach(function() {
