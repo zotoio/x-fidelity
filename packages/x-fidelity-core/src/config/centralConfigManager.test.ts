@@ -263,6 +263,23 @@ describe('CentralConfigManager', () => {
       expect(result.path).toMatch(/x-fidelity-democonfig/);
     });
 
+    it('should use demo config near executed CLI binary when present', async () => {
+      const originalArgv1 = process.argv[1];
+      process.argv[1] = '/cli/dist/xfidelity';
+
+      (mockFs.existsSync as jest.Mock).mockImplementation((p: any) => p === '/cli/dist/demoConfig');
+
+      const result = await manager.resolveConfigPath({
+        archetype: 'node-fullstack'
+      });
+
+      expect(result.source).toBe('demo');
+      expect(result.path).toBe('/cli/dist/demoConfig');
+
+      // restore
+      process.argv[1] = originalArgv1;
+    });
+
     it('should prioritize environment variable over central config', async () => {
       process.env.XFI_CONFIG_PATH = '/env/config/path';
       mockFs.existsSync.mockImplementation((path: any) => {

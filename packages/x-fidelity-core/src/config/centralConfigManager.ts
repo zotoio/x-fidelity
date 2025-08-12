@@ -432,8 +432,9 @@ export class CentralConfigManager {
   private getDemoConfigPath(): string {
     // CRITICAL: Priority order for demo config resolution
     // 1. VSCode extension embedded demo config (when running from VSCode)
-    // 2. Bundled demo config (for CLI installations)
-    // 3. Monorepo structure (for development)
+    // 2. CLI executable location heuristics (local/global installs)
+    // 3. Bundled demo config near module (__dirname)
+    // 4. Monorepo structure (for development)
     
     logger.debug('Resolving demo config path', { 
       __dirname, 
@@ -469,25 +470,60 @@ export class CentralConfigManager {
       });
     }
 
-    // 2. Try bundled config in same directory as bundle (for CLI installations)
-    const bundledPathSameDir = path.resolve(__dirname, '..', '..', 'demoConfig');
-    if (fs.existsSync(bundledPathSameDir)) {
-      logger.debug('Using bundled demo config (same dir)', { 
-        path: bundledPathSameDir 
+    // 2. Try paths relative to the executed CLI binary (covers global/local installs)
+    const mainFiles = [process.argv?.[1], require.main?.filename].filter((p): p is string => !!p);
+    const execCandidates: string[] = [];
+    for (const file of mainFiles) {
+      const base = path.dirname(file);
+      execCandidates.push(path.join(base, 'demoConfig'));
+      execCandidates.push(path.join(base, '..', 'demoConfig'));
+      execCandidates.push(path.join(base, '..', '..', 'demoConfig'));
+    }
+    for (const candidate of execCandidates) {
+      if (fs.existsSync(candidate)) {
+        logger.debug('Using demo config near executable', { path: candidate });
+        return candidate;
+      }
+    }
+
+    // 3. Try bundled config paths relative to the executing bundle
+    // When the core is bundled into the CLI, __dirname points to the CLI dist directory.
+    // In that case, demo config is copied to dist/demoConfig.
+    const bundledPathCurrentDir = path.resolve(__dirname, 'demoConfig');
+    if (fs.existsSync(bundledPathCurrentDir)) {
+      logger.debug('Using bundled demo config (current dir)', {
+        path: bundledPathCurrentDir
       });
-      return bundledPathSameDir;
+      return bundledPathCurrentDir;
+    }
+
+    // Some configurations may place demoConfig one level up from the executing file
+    const bundledPathOneUp = path.resolve(__dirname, '..', 'demoConfig');
+    if (fs.existsSync(bundledPathOneUp)) {
+      logger.debug('Using bundled demo config (one level up)', {
+        path: bundledPathOneUp
+      });
+      return bundledPathOneUp;
+    }
+
+    // Legacy: when running core unbundled from its own dist, climb up further
+    const bundledPathTwoUp = path.resolve(__dirname, '..', '..', 'demoConfig');
+    if (fs.existsSync(bundledPathTwoUp)) {
+      logger.debug('Using bundled demo config (two levels up)', {
+        path: bundledPathTwoUp
+      });
+      return bundledPathTwoUp;
+    }
+
+    const bundledPathThreeUp = path.resolve(__dirname, '..', '..', '..', 'demoConfig');
+    if (fs.existsSync(bundledPathThreeUp)) {
+      logger.debug('Using bundled demo config (three levels up)', {
+        path: bundledPathThreeUp
+      });
+      return bundledPathThreeUp;
     }
     
-    // Try bundled config one level up (for some build configurations)
-    const bundledPathParent = path.resolve(__dirname, '..', '..', '..', 'demoConfig');
-    if (fs.existsSync(bundledPathParent)) {
-      logger.debug('Using bundled demo config (parent dir)', { 
-        path: bundledPathParent 
-      });
-      return bundledPathParent;
-    }
-    
-    // 3. Fall back to monorepo structure (for development)
+    // 4. Fall back to monorepo structure (for development)
     // Find workspace root by looking for the packages directory
     let workspaceRoot = process.cwd();
     let currentDir = process.cwd();
@@ -517,12 +553,16 @@ export class CentralConfigManager {
     }
     
     const demoConfigPath = path.join(workspaceRoot, 'packages', 'x-fidelity-democonfig', 'src');
-    logger.debug('Using workspace demo config (development mode)', { 
-      workspaceRoot, 
-      demoConfigPath 
-    });
-    
-    return demoConfigPath;
+    if (fs.existsSync(demoConfigPath)) {
+      logger.debug('Using workspace demo config (development mode)', { 
+        workspaceRoot, 
+        demoConfigPath 
+      });
+      return demoConfigPath;
+    }
+
+    logger.warn('Workspace demo config not found at expected path', { workspaceRoot, demoConfigPath });
+    return demoConfigPath; // final fallback for clearer error messages
   }
 
   /**
