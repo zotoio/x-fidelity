@@ -387,9 +387,17 @@
           "default": [
             "node_modules/**",
             ".git/**",
-            "dist/**",
-            "build/**",
-            ".xfiResults/**"
+            "*.log",
+            "*.lock",
+            "**/node_modules/**",
+            "**/dist/**",
+            "**/build/**",
+            "**/out/**",
+            "**/coverage/**",
+            "**/logs/**",
+            ".xfiResults/**",
+            "**/.xfiResults/**",
+            "temp/"
           ],
           "description": "🚫 File patterns to exclude from analysis (glob patterns). Each archetype configuration contains sensible defaults that are merged with these patterns.",
           "order": 30

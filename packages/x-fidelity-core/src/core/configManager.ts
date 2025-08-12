@@ -285,6 +285,19 @@ export class ConfigManager {
                 path.resolve(workspaceRoot, 'packages', 'x-fidelity-cli', 'dist'),
                 path.resolve(workspaceRoot, 'packages', 'x-fidelity-vscode', 'dist'),
                 path.resolve(workspaceRoot, 'packages', 'x-fidelity-core', 'dist'),
+                // Also allow paths relative to the executed CLI binary (global/local installs)
+                ...(require.main?.filename ? [
+                    path.dirname(require.main.filename),
+                    path.join(path.dirname(require.main.filename), 'demoConfig'),
+                    path.resolve(path.dirname(require.main.filename), '..'),
+                    path.join(path.resolve(path.dirname(require.main.filename), '..'), 'demoConfig'),
+                ] : []),
+                ...(process.argv?.[1] ? [
+                    path.dirname(process.argv[1]),
+                    path.join(path.dirname(process.argv[1]), 'demoConfig'),
+                    path.resolve(path.dirname(process.argv[1]), '..'),
+                    path.join(path.resolve(path.dirname(process.argv[1]), '..'), 'demoConfig'),
+                ] : []),
                 // Allow access to test fixtures for consistency testing
                 path.resolve(workspaceRoot, 'packages', 'x-fidelity-fixtures'),
                 // Allow access to temp directories used by tests
