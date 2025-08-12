@@ -9,6 +9,7 @@ import { CLISpawner, CLISpawnOptions } from '../../utils/cliSpawner';
 suite('VSCode Setting Override Integration Tests', () => {
   let testHomeDir: string;
   let testWorkspace: string;
+  let workspaceAdded = false;
 
   setup(async function() {
     this.timeout(30000);
@@ -28,6 +29,25 @@ suite('VSCode Setting Override Integration Tests', () => {
       path.join(testWorkspace, 'package.json'),
       JSON.stringify(packageJson, null, 2)
     );
+
+    // Ensure a workspace folder is present so Workspace-scoped settings are valid
+    try {
+      const folderUri = vscode.Uri.file(testWorkspace);
+      // Avoid duplicate additions
+      const alreadyPresent = (vscode.workspace.workspaceFolders || []).some(
+        f => f.uri.fsPath === folderUri.fsPath
+      );
+      if (!alreadyPresent) {
+        workspaceAdded = vscode.workspace.updateWorkspaceFolders(0, 0, {
+          uri: folderUri,
+          name: 'xfi-vscode-setting-override-test'
+        });
+        // Give VSCode a moment to register the workspace folder
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    } catch (err) {
+      console.warn('Could not set up workspace folder for tests:', err);
+    }
   });
 
   teardown(async function() {
@@ -49,32 +69,44 @@ suite('VSCode Setting Override Integration Tests', () => {
       }
     }
 
-    // Reset VSCode configuration with timeout protection
+    // Reset VSCode configuration (Workspace scope) with timeout protection
     try {
       const config = vscode.workspace.getConfiguration('xfidelity');
-      
-      // Use Promise.race to prevent hanging on Windows CI
       await Promise.race([
-        config.update('nodeGlobalBinPath', undefined, vscode.ConfigurationTarget.Global),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Config update timeout')), 5000)
+        config.update(
+          'nodeGlobalBinPath',
+          undefined,
+          vscode.ConfigurationTarget.Workspace
+        ),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Config update timeout')), 3000)
         )
       ]);
     } catch (error) {
       console.warn('Could not reset VSCode configuration:', error);
     }
+
+    // Remove the temporary workspace folder to fully isolate configuration
+    try {
+      if (workspaceAdded && vscode.workspace.workspaceFolders) {
+        const index = vscode.workspace.workspaceFolders.findIndex(
+          f => f.uri.fsPath === testWorkspace
+        );
+        if (index >= 0) {
+          vscode.workspace.updateWorkspaceFolders(index, 1);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to remove temporary workspace folder:', err);
+    }
   });
 
-  afterEach(async function() {
-    this.timeout(15000); // Set explicit timeout for afterEach
-    
-    // Skip heavy operations on Windows to prevent timeouts
+  afterEach(function() {
+    // Keep Windows cleanup synchronous; async timers can hang if the host is stalled
     const isWindows = os.platform() === 'win32';
-    
     if (isWindows) {
-      console.log('🪟 Windows: Quick cleanup after each test');
-      // Force a small delay to let extension host recover
-      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('🪟 Windows: Quick cleanup after each test (no async work)');
+      return;
     }
   });
 
@@ -82,18 +114,13 @@ suite('VSCode Setting Override Integration Tests', () => {
     test('should use default binary discovery when setting is empty', async function() {
       this.timeout(20000);
 
-      // Skip this entire test on Windows to prevent timeouts
-      const isWindows = os.platform() === 'win32';
-
-      if (isWindows) {
-        console.log('🪟 Windows: Skipping default binary discovery test to prevent timeout');
-        this.skip();
-        return;
-      }
-
       // Ensure setting is empty
       const config = vscode.workspace.getConfiguration('xfidelity');
-      await config.update('nodeGlobalBinPath', '', vscode.ConfigurationTarget.Global);
+      await config.update(
+        'nodeGlobalBinPath',
+        '',
+        vscode.ConfigurationTarget.Workspace
+      );
 
       const cliSpawner = new CLISpawner();
       const options: CLISpawnOptions = {
@@ -115,15 +142,6 @@ suite('VSCode Setting Override Integration Tests', () => {
 
     test('should use override path when setting is configured', async function() {
       this.timeout(20000);
-
-      // Skip this test on Windows to prevent timeouts
-      const isWindows = os.platform() === 'win32';
-
-      if (isWindows) {
-        console.log('🪟 Windows: Skipping override path test to prevent timeout');
-        this.skip();
-        return;
-      }
 
       // Create a test override directory with fake binaries
       const overrideDir = path.join(testHomeDir, 'fake-node-bin');
@@ -151,7 +169,11 @@ suite('VSCode Setting Override Integration Tests', () => {
 
       // Set the VSCode configuration
       const config = vscode.workspace.getConfiguration('xfidelity');
-      await config.update('nodeGlobalBinPath', overrideDir, vscode.ConfigurationTarget.Global);
+      await config.update(
+        'nodeGlobalBinPath',
+        overrideDir,
+        vscode.ConfigurationTarget.Workspace
+      );
 
       // In VSCode test environment, configuration may not persist
       // Check if the setting was applied, but allow graceful failure
@@ -170,15 +192,6 @@ suite('VSCode Setting Override Integration Tests', () => {
     test('should handle tilde expansion in VSCode setting', async function() {
       this.timeout(15000);
 
-      // Skip this test on Windows to prevent timeouts
-      const isWindows = os.platform() === 'win32';
-
-      if (isWindows) {
-        console.log('🪟 Windows: Skipping tilde expansion test to prevent timeout');
-        this.skip();
-        return;
-      }
-
       const tildeOverride = '~/test-node-override';
       const expandedPath = tildeOverride.replace(/^~/, os.homedir());
       
@@ -188,7 +201,11 @@ suite('VSCode Setting Override Integration Tests', () => {
       try {
         // Set the VSCode configuration with tilde
         const config = vscode.workspace.getConfiguration('xfidelity');
-        await config.update('nodeGlobalBinPath', tildeOverride, vscode.ConfigurationTarget.Global);
+        await config.update(
+          'nodeGlobalBinPath',
+          tildeOverride,
+          vscode.ConfigurationTarget.Workspace
+        );
 
         // In VSCode test environment, configuration may not persist
         const configValue = config.get<string>('nodeGlobalBinPath');
@@ -223,7 +240,11 @@ suite('VSCode Setting Override Integration Tests', () => {
 
       let settingsWorking = true;
       for (const testValue of testValues) {
-        await config.update('nodeGlobalBinPath', testValue, vscode.ConfigurationTarget.Global);
+        await config.update(
+          'nodeGlobalBinPath',
+          testValue,
+          vscode.ConfigurationTarget.Workspace
+        );
         const retrievedValue = config.get<string>('nodeGlobalBinPath');
         
         if (retrievedValue === testValue) {
@@ -247,7 +268,11 @@ suite('VSCode Setting Override Integration Tests', () => {
       
       // Set invalid path
       const config = vscode.workspace.getConfiguration('xfidelity');
-      await config.update('nodeGlobalBinPath', invalidPath, vscode.ConfigurationTarget.Global);
+      await config.update(
+        'nodeGlobalBinPath',
+        invalidPath,
+        vscode.ConfigurationTarget.Workspace
+      );
 
       const cliSpawner = new CLISpawner();
       const options: CLISpawnOptions = {
@@ -278,7 +303,11 @@ suite('VSCode Setting Override Integration Tests', () => {
       fs.mkdirSync(testDir, { recursive: true });
 
       const config = vscode.workspace.getConfiguration('xfidelity');
-      await config.update('nodeGlobalBinPath', testDir, vscode.ConfigurationTarget.Global);
+      await config.update(
+        'nodeGlobalBinPath',
+        testDir,
+        vscode.ConfigurationTarget.Workspace
+      );
 
       const configValue = config.get<string>('nodeGlobalBinPath');
       if (configValue === testDir) {
@@ -301,7 +330,11 @@ suite('VSCode Setting Override Integration Tests', () => {
         : '/usr/local/node/bin';
 
       const config = vscode.workspace.getConfiguration('xfidelity');
-      await config.update('nodeGlobalBinPath', testPath, vscode.ConfigurationTarget.Global);
+      await config.update(
+        'nodeGlobalBinPath',
+        testPath,
+        vscode.ConfigurationTarget.Workspace
+      );
 
       const configValue = config.get<string>('nodeGlobalBinPath');
       if (configValue === testPath) {
@@ -323,7 +356,11 @@ suite('VSCode Setting Override Integration Tests', () => {
 
       // Set the configuration
       const config1 = vscode.workspace.getConfiguration('xfidelity');
-      await config1.update('nodeGlobalBinPath', testPath, vscode.ConfigurationTarget.Global);
+      await config1.update(
+        'nodeGlobalBinPath',
+        testPath,
+        vscode.ConfigurationTarget.Workspace
+      );
 
       // Read from fresh configuration instance
       const config2 = vscode.workspace.getConfiguration('xfidelity');
@@ -346,7 +383,11 @@ suite('VSCode Setting Override Integration Tests', () => {
       const config = vscode.workspace.getConfiguration('xfidelity');
       
       // Set a value
-      await config.update('nodeGlobalBinPath', testPath, vscode.ConfigurationTarget.Global);
+      await config.update(
+        'nodeGlobalBinPath',
+        testPath,
+        vscode.ConfigurationTarget.Workspace
+      );
       const setValue = config.get<string>('nodeGlobalBinPath');
       
       if (setValue === testPath) {
@@ -354,7 +395,11 @@ suite('VSCode Setting Override Integration Tests', () => {
         assert.strictEqual(setValue, testPath);
 
         // Reset to undefined
-        await config.update('nodeGlobalBinPath', undefined, vscode.ConfigurationTarget.Global);
+        await config.update(
+          'nodeGlobalBinPath',
+          undefined,
+          vscode.ConfigurationTarget.Workspace
+        );
         const resetValue = config.get<string>('nodeGlobalBinPath');
         
         assert.strictEqual(resetValue, '', 'Reset setting should return to default empty value');
