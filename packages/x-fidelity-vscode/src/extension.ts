@@ -55,7 +55,7 @@ export async function activate(context: vscode.ExtensionContext) {
           }
         );
 
-        // Set environment variable to disable problematic features
+        // Set environment variable to disable problematic features.
         process.env.XFI_SAFE_MODE = 'true';
         process.env.XFI_DISABLE_NATIVE = 'true';
 
