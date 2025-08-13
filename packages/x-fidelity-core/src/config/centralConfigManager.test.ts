@@ -7,6 +7,7 @@ import * as os from 'os';
 // Mock dependencies
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
+  readdirSync: jest.fn(),
   promises: {
     mkdir: jest.fn(),
     writeFile: jest.fn(),
@@ -299,6 +300,41 @@ describe('CentralConfigManager', () => {
         path: '/env/config/path',
         source: 'environment'
       });
+    });
+
+    it('should ignore path traversal in archetype and not escape configs directory', async () => {
+      // Simulate an archetype that attempts to traverse outside configs dir
+      const result = await manager.resolveConfigPath({
+        archetype: '../evil'
+      });
+
+      // Should not throw and should not use the traversed path; falls back to demo
+      expect(result.source).toBe('demo');
+    });
+
+    it('should ignore invalid metadata JSON when checking default central config', async () => {
+      const defaultConfigPath = '/home/user/.config/xfidelity/configs/default';
+
+      // Default config directory exists with required structure
+      mockFs.existsSync.mockImplementation((p: any) => {
+        if (p === defaultConfigPath) return true;
+        if (p === mockPath.join(defaultConfigPath, 'rules')) return true;
+        // Metadata file exists
+        if (p === mockPath.join(defaultConfigPath, 'xfi-metadata.json')) return true;
+        return false;
+      });
+
+      // Metadata is invalid JSON -> should be caught and ignored
+      mockFsPromises.readFile.mockImplementation(async (p: any) => {
+        if (String(p).includes('xfi-metadata.json')) {
+          return 'invalid-json';
+        }
+        return '{}';
+      });
+
+      const result = await manager.resolveConfigPath({ archetype: 'node-fullstack' });
+
+      expect(result).toEqual({ path: defaultConfigPath, source: 'central-default' });
     });
   });
 
@@ -608,6 +644,25 @@ describe('CentralConfigManager', () => {
       
       // Restore
       CentralConfigManager.getInstance = originalGetInstance;
+    });
+
+    it('should include individual config directories discovered on disk', () => {
+      const basePaths = ['/some/path'];
+
+      // Simulate existing configs directory with two subdirectories
+      (mockFs.existsSync as jest.Mock).mockImplementation((p: any) =>
+        String(p).includes('/home/user/.config/xfidelity/configs')
+      );
+      (mockFs.readdirSync as jest.Mock).mockReturnValue([
+        { name: 'node-fullstack', isDirectory: () => true },
+        { name: 'java-microservice', isDirectory: () => true },
+        { name: 'README.md', isDirectory: () => false }
+      ]);
+
+      const result = CentralConfigManager.updateSecurityAllowedPaths(basePaths);
+
+      expect(result).toContain('/home/user/.config/xfidelity/configs/node-fullstack');
+      expect(result).toContain('/home/user/.config/xfidelity/configs/java-microservice');
     });
   });
 
