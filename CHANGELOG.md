@@ -2,6 +2,16 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.4.1](https://github.com/zotoio/x-fidelity/compare/v5.4.0...v5.4.1) (2025-08-14)
+
+### Bug Fixes
+
+* **release:** bump ([08e89c5](https://github.com/zotoio/x-fidelity/commit/08e89c5e4a92db1c834c38918ee5cedf5a41259e))
+
+### Performance Improvements
+
+* **core,plugins:** add high-resolution timing logs for dependency collection and binary discovery\n\n- Add timings for discoverBinary, createEnhancedEnvironment, exec/execSync durations, and JSON.parse in repo dependency fact\n- Add timings for resolveNvmDefaultPath/resolveVoltaPath/resolveFnmPath and total time in getPackageManagerPaths; time createEnhancedEnvironment\n- No functional behavior changes; aids diagnosing hangs and environment issues\n\nRefs: dependency plugin execution delays, binary discovery diagnostics ([032999e](https://github.com/zotoio/x-fidelity/commit/032999ee2209af6db563ddcda5c289f6f6742598))
+
 ## [5.4.0](https://github.com/zotoio/x-fidelity/compare/v5.3.0...v5.4.0) (2025-08-10)
 
 ### Features
