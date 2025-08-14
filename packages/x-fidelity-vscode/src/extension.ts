@@ -65,7 +65,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         logger.info('Successfully initialized in macOS safe mode');
       } else {
-        throw error; // Re-throw if it's not a known macOS issue
+        throw error; // Re-throw if it's not a known macOS issue.
       }
     }
 

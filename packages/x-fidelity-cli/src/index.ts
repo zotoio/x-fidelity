@@ -190,7 +190,7 @@ ${versionLine}
 
 const outcomeMessage = (message: string) => `\n
 ==========================================================================
-${message}
+${message}.
 ==========================================================================`;
 
 // Main function with proper ordering..

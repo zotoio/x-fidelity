@@ -176,6 +176,7 @@ export async function findBinaryWithWhich(binaryName: string): Promise<string | 
  * @param overridePath Optional override path to use as first priority
  */
 export async function getPackageManagerPaths(overridePath?: string): Promise<string[]> {
+  const totalStart = Date.now();
   const paths: string[] = [];
   const homeDir = os.homedir();
   const platform = process.platform;
@@ -192,13 +193,22 @@ export async function getPackageManagerPaths(overridePath?: string): Promise<str
   }
   
   // Version manager paths (highest priority)
+  const nvmStart = Date.now();
   const nvmPath = await resolveNvmDefaultPath();
+  const nvmMs = Date.now() - nvmStart;
+  logger.debug(`binaryDiscovery: resolveNvmDefaultPath() took ${nvmMs}ms`);
   if (nvmPath) paths.push(nvmPath);
   
+  const voltaStart = Date.now();
   const voltaPath = await resolveVoltaPath();
+  const voltaMs = Date.now() - voltaStart;
+  logger.debug(`binaryDiscovery: resolveVoltaPath() took ${voltaMs}ms`);
   if (voltaPath) paths.push(voltaPath);
   
+  const fnmStart = Date.now();
   const fnmPath = await resolveFnmPath();
+  const fnmMs = Date.now() - fnmStart;
+  logger.debug(`binaryDiscovery: resolveFnmPath() took ${fnmMs}ms`);
   if (fnmPath) paths.push(fnmPath);
   
   // Platform-specific paths
@@ -246,7 +256,13 @@ export async function getPackageManagerPaths(overridePath?: string): Promise<str
     nvmPath: nvmPath || 'not found',
     voltaPath: voltaPath || 'not found',
     fnmPath: fnmPath || 'not found',
-    platform
+    platform,
+    timingMs: {
+      nvm: nvmMs,
+      volta: voltaMs,
+      fnm: fnmMs,
+      total: Date.now() - totalStart
+    }
   });
   
   return uniquePaths;
@@ -358,6 +374,7 @@ export async function discoverPackageManagers(): Promise<{
  * @param overridePath Optional override path to use as first priority
  */
 export async function createEnhancedEnvironment(overridePath?: string): Promise<Record<string, string>> {
+  const start = Date.now();
   const packageManagerPaths = await getPackageManagerPaths(overridePath);
   const pathSeparator = process.platform === 'win32' ? ';' : ':';
   
@@ -367,6 +384,7 @@ export async function createEnhancedEnvironment(overridePath?: string): Promise<
     .filter((p, i, arr) => p && arr.indexOf(p) === i) // Deduplicate
     .join(pathSeparator);
   
+  logger.debug(`createEnhancedEnvironment: completed in ${Date.now() - start}ms`);
   return {
     ...process.env,
     PATH: enhancedPath

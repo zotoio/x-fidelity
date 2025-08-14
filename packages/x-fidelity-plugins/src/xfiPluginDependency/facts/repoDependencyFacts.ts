@@ -135,9 +135,17 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
 async function collectNodeDependencies(packageManager: string, repoPath?: string): Promise<LocalDependencies[]> {
     const emptyDeps: LocalDependencies[] = [];
     const actualRepoPath = repoPath || options.dir || process.cwd();
+    // Prepare timing variables at function scope for use in finally
+    let execMethod = 'exec';
+    let execMs = 0;
+    const overallStart = Date.now();
     try {
+        logger.debug(`collectNodeDependencies: start for ${packageManager} (cwd: ${actualRepoPath})`);
         // Discover the actual binary path for reliable execution
+        const discoverStart = Date.now();
         const binaryResult = await discoverBinary(packageManager);
+        const discoverMs = Date.now() - discoverStart;
+        logger.debug(`collectNodeDependencies: discoverBinary(${packageManager}) took ${discoverMs}ms`);
         
         if (!binaryResult) {
             logger.warn(`${packageManager} binary not found, skipping dependency collection`);
@@ -145,7 +153,10 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
         }
 
         const binaryPath = binaryResult.path;
+        const envStart = Date.now();
         const enhancedEnv = await createEnhancedEnvironment();
+        const envMs = Date.now() - envStart;
+        logger.debug(`collectNodeDependencies: createEnhancedEnvironment() took ${envMs}ms`);
         
         let stdout: string;
         let stderr: string = '';
@@ -153,27 +164,34 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
         try {
             // Use discovered binary path with enhanced environment
             if (packageManager === 'npm') {
+                const execStart = Date.now();
                 const result = await execPromise(`"${binaryPath}" ls -a --json`, {
-                    cwd: actualRepoPath, maxBuffer: 10485760, env: enhancedEnv
+                    cwd: actualRepoPath, maxBuffer: 10485760 * 2, env: enhancedEnv
                 });
+                execMs = Date.now() - execStart;
                 stdout = result.stdout;
                 stderr = result.stderr;
             } else {
+                const execStart = Date.now();
                 const result = await execPromise(`"${binaryPath}" list --json`, {
-                    cwd: actualRepoPath, maxBuffer: 10485760, env: enhancedEnv
+                    cwd: actualRepoPath, maxBuffer: 10485760 * 2, env: enhancedEnv
                 });
+                execMs = Date.now() - execStart;
                 stdout = result.stdout;
                 stderr = result.stderr;
             }
         } catch (execError) {
             // If promisified exec fails, fall back to execSync
             logger.warn(`Falling back to execSync for ${packageManager} dependencies`);
+            execMethod = 'execSync';
+            const execStart = Date.now();
             const output = execSync(
                 packageManager === 'npm' ? `"${binaryPath}" ls -a --json` : `"${binaryPath}" list --json`,
                 {
                     cwd: actualRepoPath, maxBuffer: 10485760, env: enhancedEnv
                 }
             );
+            execMs = Date.now() - execStart;
             stdout = output.toString();
         }
 
@@ -188,7 +206,10 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
         }
 
         try {
+            const parseStart = Date.now();
             const result = JSON.parse(stdout);
+            const parseMs = Date.now() - parseStart;
+            logger.debug(`collectNodeDependencies: JSON.parse took ${parseMs}ms`);
             logger.trace(`collectNodeDependencies ${packageManager}: ${JSON.stringify(result)}`);
             return packageManager === 'npm' ?
                 processNpmDependencies(result) :
@@ -214,6 +235,13 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             type: 'dependency-error'
         }, 'Error determining dependencies');
         throw new Error(message);
+    }
+    finally {
+        // Log final timing even on error paths
+        try {
+            const end = Date.now();
+            logger.debug(`collectNodeDependencies: finished for ${packageManager} using ${execMethod} in ${typeof execMs === 'number' ? execMs : 0}ms (total ${end - overallStart}ms)`);
+        } catch {}
     }
 }
 
