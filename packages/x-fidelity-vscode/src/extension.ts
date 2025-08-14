@@ -114,7 +114,7 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     }
 
-    // Performance warning for slow activation
+    // Performance warning for slow activation.
     if (activationTime > 30000) {
       // Increased threshold since we're optimizing
       logger.warn('Slow extension activation detected', { activationTime });
