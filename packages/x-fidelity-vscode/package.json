@@ -320,8 +320,8 @@
         },
         "xfidelity.runInterval": {
           "type": "number",
-          "default": 0,
-          "minimum": 0,
+          "default": 14400,
+          "minimum": 600,
           "description": "⏱️ Automatically run analysis every N seconds (0 = disabled). Recommended for CI/monitoring workflows. Note: May impact performance.",
           "order": 12
         },
