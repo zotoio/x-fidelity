@@ -83,7 +83,7 @@
     "release:dry-run": "semantic-release --dry-run"
   },
   "dependencies": {
-    "@types/node": "^22.10.5",
+    "@types/node": "^24.2.1",
     "ajv": "^8.17.1",
     "depcheck": "^1.4.7"
   },
