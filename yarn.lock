@@ -2299,12 +2299,12 @@
     "@types/node" "*"
     form-data "^4.0.0"
 
-"@types/node@*", "@types/node@^22.10.5", "@types/node@^22.x":
-  version "22.16.5"
-  resolved "https://registry.npmjs.org/@types/node/-/node-22.16.5.tgz"
-  integrity sha512-bJFoMATwIGaxxx8VJPeM8TonI8t579oRvgAuT8zFugJsJZgzqv0Fu8Mhp68iecjzG7cnN3mO2dJQ5uUM2EFrgQ==
+"@types/node@*", "@types/node@^24.4.0", "@types/node@^24.x":
+  version "24.4.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-24.4.0.tgz#4ca9168c016a55ab15b7765ad1674ab807489600"
+  integrity sha512-gUuVEAK4/u6F9wRLznPUU4WGUacSEBDPoC2TrBkw3GAnOLHBL45QdfHOXp1kJ4ypBGLxTOB+t7NJLpKoC3gznQ==
   dependencies:
-    undici-types "~6.21.0"
+    undici-types "~7.11.0"
 
 "@types/node@^18.11.18":
   version "18.19.120"
@@ -2829,7 +2829,7 @@
     "@babel/types" "^7.23.0"
     "@types/body-parser" "^1.19.5"
     "@types/vscode" "^1.101.0"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-core-0.0.0-semantically-released-72a19cdd-442e-42a7-ad56-0fe970887ef0-1754653695160/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/types" "file:packages/x-fidelity-types"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.10.0"
     body-parser "^1.20.3"
@@ -2862,8 +2862,8 @@
   dependencies:
     "@babel/parser" "^7.23.0"
     "@babel/types" "^7.23.0"
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-89292bc4-f62c-4e45-a485-a94286341455-1754653695162/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-plugins-0.0.0-semantically-released-89292bc4-f62c-4e45-a485-a94286341455-1754653695162/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:packages/x-fidelity-core"
+    "@x-fidelity/types" "file:packages/x-fidelity-types"
     "@xmldom/xmldom" "^0.8.10"
     "@yarnpkg/lockfile" "^1.1.0"
     axios "^1.8.1"
@@ -2884,9 +2884,9 @@
 "@x-fidelity/server@file:packages/x-fidelity-server":
   version "0.0.0-semantically-released"
   dependencies:
-    "@x-fidelity/core" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-9d9a42b6-906c-4d60-8be1-0b1cc6aa1f90-1754653695165/node_modules/@x-fidelity/x-fidelity-core"
-    "@x-fidelity/plugins" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-9d9a42b6-906c-4d60-8be1-0b1cc6aa1f90-1754653695165/node_modules/@x-fidelity/x-fidelity-plugins"
-    "@x-fidelity/types" "file:../../../.cache/yarn/v6/npm-@x-fidelity-server-0.0.0-semantically-released-9d9a42b6-906c-4d60-8be1-0b1cc6aa1f90-1754653695165/node_modules/@x-fidelity/x-fidelity-types"
+    "@x-fidelity/core" "file:packages/x-fidelity-core"
+    "@x-fidelity/plugins" "file:packages/x-fidelity-plugins"
+    "@x-fidelity/types" "file:packages/x-fidelity-types"
     body-parser "^1.20.3"
     chokidar "^3.6.0"
     express "^4.21.2"
@@ -10979,10 +10979,10 @@ undici-types@~5.26.4:
   resolved "https://registry.npmjs.org/undici-types/-/undici-types-5.26.5.tgz"
   integrity sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==
 
-undici-types@~6.21.0:
-  version "6.21.0"
-  resolved "https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz"
-  integrity sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==
+undici-types@~7.11.0:
+  version "7.11.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-7.11.0.tgz#075798115d0bbc4e4fc7c173f38727ca66bfb592"
+  integrity sha512-kt1ZriHTi7MU+Z/r9DOdAI3ONdaR3M3csEaRc6ewa4f4dTvX4cQCbJ4NkEn0ohE4hHtq85+PhPSTY+pO/1PwgA==
 
 undici@^7.10.0:
   version "7.12.0"
