@@ -16,10 +16,10 @@
     "check-types": "echo 'Type checking noop for eslint-config - no TypeScript files'"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.35.0",
-    "@typescript-eslint/parser": "^8.35.0",
-    "eslint": "^9.29.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^9.39.0",
     "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-turbo": "^2.4.0"
+    "eslint-plugin-turbo": "^2.6.0"
   }
 } 
