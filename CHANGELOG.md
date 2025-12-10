@@ -2,6 +2,12 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.4.3](https://github.com/zotoio/x-fidelity/compare/v5.4.2...v5.4.3) (2025-12-10)
+
+### Bug Fixes
+
+* **release:** bump version for patch release ([b8ae196](https://github.com/zotoio/x-fidelity/commit/b8ae196b1099d3c9c68ccbacc470294c2dcd7e37))
+
 ## [5.4.2](https://github.com/zotoio/x-fidelity/compare/v5.4.1...v5.4.2) (2025-12-10)
 
 ### Bug Fixes
