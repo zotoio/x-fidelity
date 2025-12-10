@@ -1,6 +1,6 @@
 {
   "name": "x-fidelity",
-  "version": "5.4.1",
+  "version": "5.4.2",
   "description": "CLI tool for opinionated framework adherence checks with performance optimizations and caching",
   "private": false,
   "bin": {

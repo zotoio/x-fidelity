@@ -2,6 +2,12 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.4.2](https://github.com/zotoio/x-fidelity/compare/v5.4.1...v5.4.2) (2025-12-10)
+
+### Bug Fixes
+
+* **vscode:** disable startup popup and fix command delegation tests ([9f07317](https://github.com/zotoio/x-fidelity/commit/9f073177f68bcb7d752967b0cb487ff098395339))
+
 ## [5.4.1](https://github.com/zotoio/x-fidelity/compare/v5.4.0...v5.4.1) (2025-08-14)
 
 ### Bug Fixes
