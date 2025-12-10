@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { createComponentLogger } from '../utils/globalLogger';
+import { getBestAIProvider, getIDEName } from '../utils/ideDetection';
 
 const logger = createComponentLogger('CommandDelegationRegistry');
 
@@ -13,15 +14,56 @@ interface CommandProvider {
   supportsBatch?: boolean;
 }
 
-interface IssueContext {
+export interface IssueContext {
+  // Basic identification
   ruleId: string;
   message: string;
   file: string;
+
+  // Location information (1-based line/column numbers)
   line: number;
   column: number;
+  endLine?: number;
+  endColumn?: number;
+
+  // Issue metadata
   severity: string;
   category: string;
   fixable: boolean;
+  exempted?: boolean;
+  issueId?: string;
+
+  // Context and documentation
+  codeSnippet?: string;
+  documentation?: string;
+  ruleDocUrl?: string;
+
+  // Fix suggestions
+  suggestedFix?: {
+    description: string;
+    edits: Array<{
+      range: {
+        startLine: number;
+        startColumn: number;
+        endLine: number;
+        endColumn: number;
+      };
+      newText: string;
+    }>;
+  } | null;
+
+  // Original data for advanced providers
+  originalData?: any;
+
+  // Workspace context
+  workspaceRoot?: string;
+
+  // Related issues
+  relatedIssues?: Array<{
+    file: string;
+    line: number;
+    message: string;
+  }>;
 }
 
 interface IssueGroupContext {
@@ -126,6 +168,25 @@ export class CommandDelegationRegistry {
   }
 
   /**
+   * Get the effective command provider based on preset or custom config
+   */
+  private getEffectiveProvider(
+    commandType: 'explainIssue' | 'fixIssue' | 'fixIssueGroup'
+  ): string {
+    const config = vscode.workspace.getConfiguration('xfidelity');
+    const preset = config.get<string>('aiIntegrationPreset', 'auto-detect');
+
+    // If custom mode, use manual command overrides
+    if (preset === 'custom') {
+      return config.get<string>(`commandProviders.${commandType}`, 'built-in');
+    }
+
+    // For presets, return the preset name which will be handled by default implementations
+    // The preset is used by the default implementation methods to decide which AI to use
+    return preset;
+  }
+
+  /**
    * Delegate explain issue command
    */
   async delegateExplainIssue(issueContext: IssueContext): Promise<void> {
@@ -134,27 +195,32 @@ export class CommandDelegationRegistry {
       return;
     }
 
-    const config = vscode.workspace.getConfiguration('xfidelity');
-    const commandName = config.get<string>(
-      'commandProviders.explainIssue',
-      'built-in'
-    );
+    const provider = this.getEffectiveProvider('explainIssue');
 
-    if (commandName === 'built-in') {
-      await this.defaultExplainIssue(issueContext);
+    // Check if provider is a preset (auto-detect, cursor, github-copilot, amazon-q, built-in)
+    if (
+      [
+        'auto-detect',
+        'cursor',
+        'github-copilot',
+        'amazon-q',
+        'built-in'
+      ].includes(provider)
+    ) {
+      await this.defaultExplainIssue(issueContext, provider);
       return;
     }
 
-    // Try to execute the configured command directly
+    // Otherwise, it's a custom command name - try to execute it
     try {
-      logger.debug(`Delegating explainIssue to command: ${commandName}`);
-      await vscode.commands.executeCommand(commandName, issueContext);
+      logger.debug(`Delegating explainIssue to custom command: ${provider}`);
+      await vscode.commands.executeCommand(provider, issueContext);
       logger.debug(
-        `Successfully delegated explainIssue to command: ${commandName}`
+        `Successfully delegated explainIssue to command: ${provider}`
       );
     } catch (error) {
       logger.error(
-        `Command delegation failed for command '${commandName}': ${error}. Falling back to built-in.`
+        `Command delegation failed for command '${provider}': ${error}. Falling back to built-in.`
       );
       await this.defaultExplainIssue(issueContext);
     }
@@ -169,27 +235,30 @@ export class CommandDelegationRegistry {
       return;
     }
 
-    const config = vscode.workspace.getConfiguration('xfidelity');
-    const commandName = config.get<string>(
-      'commandProviders.fixIssue',
-      'built-in'
-    );
+    const provider = this.getEffectiveProvider('fixIssue');
 
-    if (commandName === 'built-in') {
-      await this.defaultFixIssue(issueContext);
+    // Check if provider is a preset (auto-detect, cursor, github-copilot, amazon-q, built-in)
+    if (
+      [
+        'auto-detect',
+        'cursor',
+        'github-copilot',
+        'amazon-q',
+        'built-in'
+      ].includes(provider)
+    ) {
+      await this.defaultFixIssue(issueContext, provider);
       return;
     }
 
-    // Try to execute the configured command directly
+    // Otherwise, it's a custom command name - try to execute it
     try {
-      logger.debug(`Delegating fixIssue to command: ${commandName}`);
-      await vscode.commands.executeCommand(commandName, issueContext);
-      logger.debug(
-        `Successfully delegated fixIssue to command: ${commandName}`
-      );
+      logger.debug(`Delegating fixIssue to custom command: ${provider}`);
+      await vscode.commands.executeCommand(provider, issueContext);
+      logger.debug(`Successfully delegated fixIssue to command: ${provider}`);
     } catch (error) {
       logger.error(
-        `Command delegation failed for command '${commandName}': ${error}. Falling back to built-in.`
+        `Command delegation failed for command '${provider}': ${error}. Falling back to built-in.`
       );
       await this.defaultFixIssue(issueContext);
     }
@@ -204,27 +273,32 @@ export class CommandDelegationRegistry {
       return;
     }
 
-    const config = vscode.workspace.getConfiguration('xfidelity');
-    const commandName = config.get<string>(
-      'commandProviders.fixIssueGroup',
-      'built-in'
-    );
+    const provider = this.getEffectiveProvider('fixIssueGroup');
 
-    if (commandName === 'built-in') {
-      await this.defaultFixIssueGroup(groupContext);
+    // Check if provider is a preset (auto-detect, cursor, github-copilot, amazon-q, built-in)
+    if (
+      [
+        'auto-detect',
+        'cursor',
+        'github-copilot',
+        'amazon-q',
+        'built-in'
+      ].includes(provider)
+    ) {
+      await this.defaultFixIssueGroup(groupContext, provider);
       return;
     }
 
-    // Try to execute the configured command directly
+    // Otherwise, it's a custom command name - try to execute it
     try {
-      logger.debug(`Delegating fixIssueGroup to command: ${commandName}`);
-      await vscode.commands.executeCommand(commandName, groupContext);
+      logger.debug(`Delegating fixIssueGroup to custom command: ${provider}`);
+      await vscode.commands.executeCommand(provider, groupContext);
       logger.debug(
-        `Successfully delegated fixIssueGroup to command: ${commandName}`
+        `Successfully delegated fixIssueGroup to command: ${provider}`
       );
     } catch (error) {
       logger.error(
-        `Command delegation failed for command '${commandName}': ${error}. Falling back to built-in.`
+        `Command delegation failed for command '${provider}': ${error}. Falling back to built-in.`
       );
       await this.defaultFixIssueGroup(groupContext);
     }
@@ -311,9 +385,27 @@ export class CommandDelegationRegistry {
 
     if (selected && selected.detail) {
       const config = vscode.workspace.getConfiguration('xfidelity');
+
+      // Get the current commandProviders object
+      const currentProviders = config.get<Record<string, string>>(
+        'commandProviders',
+        {
+          explainIssue: 'built-in',
+          fixIssue: 'built-in',
+          fixIssueGroup: 'built-in'
+        }
+      );
+
+      // Update the specific property
+      const updatedProviders = {
+        ...currentProviders,
+        [commandType]: selected.detail
+      };
+
+      // Write the entire object back
       await config.update(
-        `commandProviders.${commandType}`,
-        selected.detail,
+        'commandProviders',
+        updatedProviders,
         vscode.ConfigurationTarget.Global
       );
 
@@ -323,15 +415,174 @@ export class CommandDelegationRegistry {
     }
   }
 
-  // Default implementations (stubs)
-  private async defaultExplainIssue(context: IssueContext): Promise<void> {
+  // Default implementations using available AI providers
+  private async defaultExplainIssue(
+    context: IssueContext,
+    preset?: string
+  ): Promise<void> {
+    const ideName = getIDEName();
+
+    // Determine which AI provider to use based on preset
+    let aiProvider: string;
+    if (preset === 'auto-detect') {
+      aiProvider = getBestAIProvider();
+    } else if (preset === 'cursor') {
+      aiProvider = 'cursor';
+    } else if (preset === 'github-copilot') {
+      aiProvider = 'copilot';
+    } else if (preset === 'amazon-q') {
+      aiProvider = 'amazon-q';
+    } else {
+      // 'built-in' or undefined - auto-detect
+      aiProvider = getBestAIProvider();
+    }
+
+    // Try to use the selected AI provider
+    if (aiProvider === 'cursor') {
+      await this.explainWithCursor(context);
+    } else if (aiProvider === 'copilot') {
+      await this.explainWithCopilot(context);
+    } else if (aiProvider === 'amazon-q') {
+      await this.explainWithAmazonQ(context);
+    } else {
+      // Fallback: Show detailed message for user to copy
+      await this.showExplainFallback(context, ideName);
+    }
+  }
+
+  /**
+   * Use Cursor AI to explain the issue
+   */
+  private async explainWithCursor(context: IssueContext): Promise<void> {
+    try {
+      // Cursor's AI chat command
+      const prompt = this.buildExplanationPrompt(context);
+
+      // Try to use Cursor's chat/composer
+      await vscode.commands.executeCommand('cursor.composer.chat', {
+        prompt: prompt
+      });
+    } catch (error) {
+      logger.debug('Failed to use Cursor AI, trying alternative:', error);
+
+      // Fallback to showing the prompt for user to copy
+      await this.showExplainFallback(context, 'Cursor');
+    }
+  }
+
+  /**
+   * Use GitHub Copilot to explain the issue
+   */
+  private async explainWithCopilot(context: IssueContext): Promise<void> {
+    try {
+      const prompt = this.buildExplanationPrompt(context);
+
+      // Try GitHub Copilot Chat
+      await vscode.commands.executeCommand('github.copilot.chat.open', {
+        prompt: prompt
+      });
+    } catch (error) {
+      logger.debug('Failed to use GitHub Copilot, trying alternative:', error);
+
+      // Try alternative Copilot command
+      try {
+        await vscode.commands.executeCommand(
+          'workbench.panel.chat.view.copilot.open'
+        );
+        // Show the prompt for user to paste
+        await vscode.env.clipboard.writeText(
+          this.buildExplanationPrompt(context)
+        );
+        await vscode.window.showInformationMessage(
+          'Copilot Chat opened. The explanation prompt has been copied to your clipboard - paste it in the chat.',
+          'OK'
+        );
+      } catch {
+        await this.showExplainFallback(context, 'GitHub Copilot');
+      }
+    }
+  }
+
+  /**
+   * Use Amazon Q to explain the issue
+   */
+  private async explainWithAmazonQ(context: IssueContext): Promise<void> {
+    try {
+      const prompt = this.buildExplanationPrompt(context);
+
+      // Try Amazon Q Chat command
+      await vscode.commands.executeCommand('aws.amazonq.explainCode', {
+        prompt: prompt
+      });
+    } catch (error) {
+      logger.debug('Failed to use Amazon Q explain, trying chat:', error);
+
+      // Try alternative Amazon Q chat command
+      try {
+        await vscode.commands.executeCommand('aws.amazonq.chat.open');
+        // Copy the prompt for user to paste
+        await vscode.env.clipboard.writeText(
+          this.buildExplanationPrompt(context)
+        );
+        await vscode.window.showInformationMessage(
+          'Amazon Q Chat opened. The explanation prompt has been copied to your clipboard - paste it in the chat.',
+          'OK'
+        );
+      } catch {
+        await this.showExplainFallback(context, 'Amazon Q');
+      }
+    }
+  }
+
+  /**
+   * Build a comprehensive explanation prompt
+   */
+  private buildExplanationPrompt(context: IssueContext): string {
+    let prompt = `Please explain this code quality issue:\n\n`;
+    prompt += `**Rule:** ${context.ruleId}\n`;
+    prompt += `**Message:** ${context.message}\n`;
+    prompt += `**Severity:** ${context.severity}\n`;
+    prompt += `**Category:** ${context.category}\n`;
+    prompt += `**File:** ${context.file}:${context.line}:${context.column}\n\n`;
+
+    if (context.codeSnippet) {
+      prompt += `**Code Context:**\n\`\`\`\n${context.codeSnippet}\n\`\`\`\n\n`;
+    }
+
+    if (context.documentation) {
+      prompt += `**Rule Documentation:**\n${context.documentation}\n\n`;
+    }
+
+    prompt += `Please provide:\n`;
+    prompt += `1. An explanation of why this is an issue\n`;
+    prompt += `2. The potential impact or risks\n`;
+    prompt += `3. Best practices to address it\n`;
+    prompt += `4. Example of how to fix it\n`;
+
+    return prompt;
+  }
+
+  /**
+   * Show fallback explanation message
+   */
+  private async showExplainFallback(
+    context: IssueContext,
+    ideName: string
+  ): Promise<void> {
+    const prompt = this.buildExplanationPrompt(context);
+
+    // Copy to clipboard
+    await vscode.env.clipboard.writeText(prompt);
+
     const message =
-      `**Rule: ${context.ruleId}**\n\n` +
-      `${context.message}\n\n` +
-      `**Severity:** ${context.severity}\n` +
-      `**Category:** ${context.category}\n` +
-      `**Location:** ${context.file}:${context.line}:${context.column}\n\n` +
-      `*Install an extension that provides issue explanation capabilities for enhanced explanations.*`;
+      `X-Fidelity Issue Explanation\n\n` +
+      `A detailed explanation prompt has been copied to your clipboard.\n\n` +
+      `**To get an AI explanation:**\n` +
+      `1. Open your AI assistant (${ideName} AI, ChatGPT, etc.)\n` +
+      `2. Paste the prompt from your clipboard\n` +
+      `3. Get a detailed explanation and fix suggestions\n\n` +
+      `**Or configure an AI provider:**\n` +
+      `Click "Configure Providers" to set up automatic AI-powered explanations.`;
 
     const selection = await vscode.window.showInformationMessage(
       message,
@@ -345,30 +596,364 @@ export class CommandDelegationRegistry {
     }
   }
 
-  private async defaultFixIssue(context: IssueContext): Promise<void> {
-    if (!context.fixable) {
-      await vscode.window.showInformationMessage(
-        `Rule ${context.ruleId} does not have an automated fix available.`
-      );
-      return;
+  private async defaultFixIssue(
+    context: IssueContext,
+    preset?: string
+  ): Promise<void> {
+    const ideName = getIDEName();
+
+    // Determine which AI provider to use based on preset
+    let aiProvider: string;
+    if (preset === 'auto-detect') {
+      aiProvider = getBestAIProvider();
+    } else if (preset === 'cursor') {
+      aiProvider = 'cursor';
+    } else if (preset === 'github-copilot') {
+      aiProvider = 'copilot';
+    } else if (preset === 'amazon-q') {
+      aiProvider = 'amazon-q';
+    } else {
+      // 'built-in' or undefined - auto-detect
+      aiProvider = getBestAIProvider();
     }
 
+    // Try to use the selected AI provider
+    if (aiProvider === 'cursor') {
+      await this.fixWithCursor(context);
+    } else if (aiProvider === 'copilot') {
+      await this.fixWithCopilot(context);
+    } else if (aiProvider === 'amazon-q') {
+      await this.fixWithAmazonQ(context);
+    } else {
+      // Fallback: Show detailed message for user to copy
+      await this.showFixFallback(context, ideName);
+    }
+  }
+
+  /**
+   * Use Cursor AI to fix the issue
+   */
+  private async fixWithCursor(context: IssueContext): Promise<void> {
+    try {
+      const prompt = this.buildFixPrompt(context);
+
+      // Try to use Cursor's composer for inline edits
+      await vscode.commands.executeCommand('cursor.composer.edit', {
+        prompt: prompt,
+        location: {
+          uri: vscode.Uri.file(context.file),
+          range: new vscode.Range(
+            context.line - 1,
+            context.column - 1,
+            (context.endLine || context.line) - 1,
+            (context.endColumn || context.column) - 1
+          )
+        }
+      });
+    } catch (error) {
+      logger.debug('Failed to use Cursor AI for fix, trying chat:', error);
+
+      // Fallback to chat
+      try {
+        const prompt = this.buildFixPrompt(context);
+        await vscode.commands.executeCommand('cursor.composer.chat', {
+          prompt: prompt
+        });
+      } catch {
+        await this.showFixFallback(context, 'Cursor');
+      }
+    }
+  }
+
+  /**
+   * Use GitHub Copilot to fix the issue
+   */
+  private async fixWithCopilot(context: IssueContext): Promise<void> {
+    try {
+      const prompt = this.buildFixPrompt(context);
+
+      // Try GitHub Copilot inline suggestion
+      await vscode.commands.executeCommand('github.copilot.generate', {
+        prompt: prompt,
+        location: vscode.Uri.file(context.file)
+      });
+    } catch (error) {
+      logger.debug('Failed to use GitHub Copilot for fix, trying chat:', error);
+
+      // Fallback to Copilot chat
+      try {
+        await vscode.commands.executeCommand(
+          'workbench.panel.chat.view.copilot.open'
+        );
+        await vscode.env.clipboard.writeText(this.buildFixPrompt(context));
+        await vscode.window.showInformationMessage(
+          'Copilot Chat opened. The fix prompt has been copied to your clipboard - paste it in the chat.',
+          'OK'
+        );
+      } catch {
+        await this.showFixFallback(context, 'GitHub Copilot');
+      }
+    }
+  }
+
+  /**
+   * Use Amazon Q to fix the issue
+   */
+  private async fixWithAmazonQ(context: IssueContext): Promise<void> {
+    try {
+      const prompt = this.buildFixPrompt(context);
+
+      // Try Amazon Q fix command
+      await vscode.commands.executeCommand('aws.amazonq.fixCode', {
+        prompt: prompt,
+        location: vscode.Uri.file(context.file)
+      });
+    } catch (error) {
+      logger.debug('Failed to use Amazon Q for fix, trying chat:', error);
+
+      // Fallback to Amazon Q chat
+      try {
+        await vscode.commands.executeCommand('aws.amazonq.chat.open');
+        await vscode.env.clipboard.writeText(this.buildFixPrompt(context));
+        await vscode.window.showInformationMessage(
+          'Amazon Q Chat opened. The fix prompt has been copied to your clipboard - paste it in the chat.',
+          'OK'
+        );
+      } catch {
+        await this.showFixFallback(context, 'Amazon Q');
+      }
+    }
+  }
+
+  /**
+   * Build a comprehensive fix prompt
+   */
+  private buildFixPrompt(context: IssueContext): string {
+    let prompt = `Please fix this code quality issue:\n\n`;
+    prompt += `**Rule:** ${context.ruleId}\n`;
+    prompt += `**Message:** ${context.message}\n`;
+    prompt += `**Severity:** ${context.severity}\n`;
+    prompt += `**File:** ${context.file}:${context.line}:${context.column}\n\n`;
+
+    if (context.codeSnippet) {
+      prompt += `**Current Code:**\n\`\`\`\n${context.codeSnippet}\n\`\`\`\n\n`;
+    }
+
+    if (context.suggestedFix) {
+      prompt += `**Suggested Fix:**\n${context.suggestedFix.description}\n\n`;
+    }
+
+    if (context.documentation) {
+      prompt += `**Rule Documentation:**\n${context.documentation}\n\n`;
+    }
+
+    prompt += `Please provide:\n`;
+    prompt += `1. The corrected code\n`;
+    prompt += `2. Explanation of the changes\n`;
+    prompt += `3. Any additional considerations\n`;
+
+    return prompt;
+  }
+
+  /**
+   * Show fallback fix message
+   */
+  private async showFixFallback(
+    context: IssueContext,
+    ideName: string
+  ): Promise<void> {
+    const prompt = this.buildFixPrompt(context);
+
+    // Copy to clipboard
+    await vscode.env.clipboard.writeText(prompt);
+
+    const message =
+      `X-Fidelity Issue Fix\n\n` +
+      `A detailed fix prompt has been copied to your clipboard.\n\n` +
+      `**To get an AI-generated fix:**\n` +
+      `1. Open your AI assistant (${ideName} AI, ChatGPT, etc.)\n` +
+      `2. Paste the prompt from your clipboard\n` +
+      `3. Review and apply the suggested fix\n\n` +
+      `**Or configure an AI provider:**\n` +
+      `Click "Configure Providers" to set up automatic AI-powered fixes.`;
+
     const selection = await vscode.window.showInformationMessage(
-      `Default fix implementation for ${context.ruleId}. Install an extension that provides automated fixing capabilities for enhanced fixes.`,
+      message,
+      { modal: true },
       'Configure Providers',
+      'Open File',
       'OK'
     );
 
     if (selection === 'Configure Providers') {
       await this.showConfigurationUI();
+    } else if (selection === 'Open File') {
+      // Open the file at the issue location
+      const document = await vscode.workspace.openTextDocument(context.file);
+      const editor = await vscode.window.showTextDocument(document);
+      const position = new vscode.Position(
+        context.line - 1,
+        context.column - 1
+      );
+      editor.selection = new vscode.Selection(position, position);
+      editor.revealRange(
+        new vscode.Range(position, position),
+        vscode.TextEditorRevealType.InCenter
+      );
     }
   }
 
   private async defaultFixIssueGroup(
-    context: IssueGroupContext
+    context: IssueGroupContext,
+    preset?: string
   ): Promise<void> {
+    const ideName = getIDEName();
+
+    // Determine which AI provider to use based on preset
+    let aiProvider: string;
+    if (preset === 'auto-detect') {
+      aiProvider = getBestAIProvider();
+    } else if (preset === 'cursor') {
+      aiProvider = 'cursor';
+    } else if (preset === 'github-copilot') {
+      aiProvider = 'copilot';
+    } else if (preset === 'amazon-q') {
+      aiProvider = 'amazon-q';
+    } else {
+      // 'built-in' or undefined - auto-detect
+      aiProvider = getBestAIProvider();
+    }
+
+    // Try to use the selected AI provider
+    if (aiProvider === 'cursor') {
+      await this.fixGroupWithCursor(context);
+    } else if (aiProvider === 'copilot') {
+      await this.fixGroupWithCopilot(context);
+    } else if (aiProvider === 'amazon-q') {
+      await this.fixGroupWithAmazonQ(context);
+    } else {
+      // Fallback: Show detailed message for user to copy
+      await this.showFixGroupFallback(context, ideName);
+    }
+  }
+
+  /**
+   * Use Cursor AI to fix a group of issues
+   */
+  private async fixGroupWithCursor(context: IssueGroupContext): Promise<void> {
+    try {
+      const prompt = this.buildBatchFixPrompt(context);
+
+      // Try to use Cursor's composer chat for batch operations
+      await vscode.commands.executeCommand('cursor.composer.chat', {
+        prompt: prompt
+      });
+    } catch (error) {
+      logger.debug('Failed to use Cursor AI for batch fix:', error);
+      await this.showFixGroupFallback(context, 'Cursor');
+    }
+  }
+
+  /**
+   * Use GitHub Copilot to fix a group of issues
+   */
+  private async fixGroupWithCopilot(context: IssueGroupContext): Promise<void> {
+    try {
+      const prompt = this.buildBatchFixPrompt(context);
+
+      // Try GitHub Copilot Chat for batch operations
+      await vscode.commands.executeCommand(
+        'workbench.panel.chat.view.copilot.open'
+      );
+      await vscode.env.clipboard.writeText(prompt);
+      await vscode.window.showInformationMessage(
+        `Copilot Chat opened. A prompt for fixing ${context.issues.length} issues has been copied to your clipboard - paste it in the chat.`,
+        'OK'
+      );
+    } catch (error) {
+      logger.debug('Failed to use GitHub Copilot for batch fix:', error);
+      await this.showFixGroupFallback(context, 'GitHub Copilot');
+    }
+  }
+
+  /**
+   * Use Amazon Q to fix a group of issues
+   */
+  private async fixGroupWithAmazonQ(context: IssueGroupContext): Promise<void> {
+    try {
+      const prompt = this.buildBatchFixPrompt(context);
+
+      // Try Amazon Q Chat for batch operations
+      await vscode.commands.executeCommand('aws.amazonq.chat.open');
+      await vscode.env.clipboard.writeText(prompt);
+      await vscode.window.showInformationMessage(
+        `Amazon Q Chat opened. A prompt for fixing ${context.issues.length} issues has been copied to your clipboard - paste it in the chat.`,
+        'OK'
+      );
+    } catch (error) {
+      logger.debug('Failed to use Amazon Q for batch fix:', error);
+      await this.showFixGroupFallback(context, 'Amazon Q');
+    }
+  }
+
+  /**
+   * Build a comprehensive batch fix prompt
+   */
+  private buildBatchFixPrompt(context: IssueGroupContext): string {
+    let prompt = `Please fix the following ${context.issues.length} code quality issues:\n\n`;
+    prompt += `**Group Type:** ${context.groupType}\n`;
+    prompt += `**Group Key:** ${context.groupKey}\n\n`;
+
+    prompt += `**Issues to Fix:**\n\n`;
+
+    context.issues.forEach((issue, index) => {
+      prompt += `${index + 1}. **${issue.ruleId}** in ${issue.file}:${issue.line}\n`;
+      prompt += `   Message: ${issue.message}\n`;
+      prompt += `   Severity: ${issue.severity}\n`;
+
+      if (issue.codeSnippet) {
+        prompt += `   Code:\n   \`\`\`\n${issue.codeSnippet
+          .split('\n')
+          .map(l => '   ' + l)
+          .join('\n')}\n   \`\`\`\n`;
+      }
+
+      prompt += `\n`;
+    });
+
+    prompt += `\nPlease provide:\n`;
+    prompt += `1. Fixes for all issues\n`;
+    prompt += `2. Explanation of changes for each\n`;
+    prompt += `3. Any patterns or common solutions\n`;
+
+    return prompt;
+  }
+
+  /**
+   * Show fallback batch fix message
+   */
+  private async showFixGroupFallback(
+    context: IssueGroupContext,
+    ideName: string
+  ): Promise<void> {
+    const prompt = this.buildBatchFixPrompt(context);
+
+    // Copy to clipboard
+    await vscode.env.clipboard.writeText(prompt);
+
+    const message =
+      `X-Fidelity Batch Fix\n\n` +
+      `A prompt for fixing ${context.issues.length} issues has been copied to your clipboard.\n\n` +
+      `**To get AI-generated fixes:**\n` +
+      `1. Open your AI assistant (${ideName} AI, ChatGPT, etc.)\n` +
+      `2. Paste the prompt from your clipboard\n` +
+      `3. Review and apply the suggested fixes\n\n` +
+      `**Or configure an AI provider:**\n` +
+      `Click "Configure Providers" to set up automatic batch fixing.`;
+
     const selection = await vscode.window.showInformationMessage(
-      `Default batch fix implementation for ${context.issues.length} issues. Install an extension that provides batch fixing capabilities for automated group fixes.`,
+      message,
+      { modal: true },
       'Configure Providers',
       'OK'
     );

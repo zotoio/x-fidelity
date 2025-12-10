@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "out/test",
+    "outDir": "out",
     "rootDir": "src",
     "target": "ES2022",
     "lib": ["ES2022"],

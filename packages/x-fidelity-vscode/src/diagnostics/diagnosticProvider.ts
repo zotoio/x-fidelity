@@ -34,6 +34,12 @@ interface DiagnosticIssue {
   code?: string;
   tags?: vscode.DiagnosticTag[];
   isFileLevelRule?: boolean;
+  fixable?: boolean;
+  exempted?: boolean;
+  ruleDocUrl?: string;
+  suggestedFix?: any;
+  originalData?: any;
+  relatedIssues?: any[];
 }
 
 // Internal issue metadata type for location resolution (currently unused)
@@ -836,22 +842,53 @@ export class DiagnosticProvider implements vscode.Disposable {
       ];
     }
 
-    // ENHANCEMENT: Preserve file path for hover context and other metadata
+    // ENHANCEMENT: Store comprehensive metadata for command providers
+    // This metadata is available when the diagnostic is passed to explainIssue/fixIssue commands
+    (diagnostic as any).xfidelity = {
+      // Basic identification
+      ruleId: issue.ruleId,
+      issueId: issue.issueId,
+      category: issue.category,
+
+      // Location information
+      filePath: issue.file,
+      line: issue.line,
+      column: issue.column,
+      endLine: issue.endLine || issue.line,
+      endColumn: issue.endColumn || issue.column + 1,
+
+      // Issue metadata
+      fixable: issue.fixable || false,
+      exempted: issue.exempted || false,
+      originalLevel: (issue as any).originalLevel,
+
+      // Documentation and context
+      documentation: issue.documentation,
+      ruleDocUrl: issue.ruleDocUrl,
+
+      // Fix suggestions
+      suggestedFix: issue.suggestedFix,
+
+      // Original data for advanced providers
+      originalData: issue.originalData,
+
+      // Related issues
+      relatedIssues: issue.relatedIssues || [],
+
+      // Location extraction metadata (for debugging)
+      locationSource: (issue as any).locationSource || 'unknown',
+      locationConfidence: (issue as any).locationConfidence || 'unknown',
+      isFileLevelRule: issue.isFileLevelRule || false,
+      hasDetails: (issue as any).hasDetails || false,
+      detailsKeys: (issue as any).detailsKeys || []
+    };
+
+    // LEGACY: Keep old properties for backward compatibility
     (diagnostic as any).filePath = issue.file;
     (diagnostic as any).category = issue.category;
-    (diagnostic as any).fixable = (issue as any).fixable || false;
+    (diagnostic as any).fixable = issue.fixable || false;
     (diagnostic as any).ruleId = issue.ruleId;
     (diagnostic as any).originalLevel = (issue as any).originalLevel;
-
-    // ENHANCEMENT: Preserve location extraction metadata for debugging and analysis
-    (diagnostic as any).locationSource =
-      (issue as any).locationSource || 'unknown';
-    (diagnostic as any).locationConfidence =
-      (issue as any).locationConfidence || 'unknown';
-    (diagnostic as any).isFileLevelRule =
-      (issue as any).isFileLevelRule || false;
-    (diagnostic as any).hasDetails = (issue as any).hasDetails || false;
-    (diagnostic as any).detailsKeys = (issue as any).detailsKeys || [];
 
     // CRITICAL FIX: Add toJSON method to prevent Windows serialization crashes
     // This ensures the diagnostic can be safely serialized without throwing "Method not found: toJSON" errors
@@ -872,16 +909,14 @@ export class DiagnosticProvider implements vscode.Disposable {
         source: this.source,
         code: this.code,
         tags: this.tags,
+        // Include comprehensive xfidelity metadata
+        xfidelity: this.xfidelity,
+        // Legacy properties for backward compatibility
         filePath: this.filePath,
         category: this.category,
         fixable: this.fixable,
         ruleId: this.ruleId,
-        originalLevel: this.originalLevel,
-        locationSource: this.locationSource,
-        locationConfidence: this.locationConfidence,
-        isFileLevelRule: this.isFileLevelRule,
-        hasDetails: this.hasDetails,
-        detailsKeys: this.detailsKeys
+        originalLevel: this.originalLevel
       };
     };
 

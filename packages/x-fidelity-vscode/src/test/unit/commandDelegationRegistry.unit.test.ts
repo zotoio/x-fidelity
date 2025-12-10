@@ -32,7 +32,14 @@ jest.mock('vscode', () => ({
       }),
       update: jest.fn()
     })),
-    onDidChangeConfiguration: jest.fn(() => ({ dispose: jest.fn() }))
+    onDidChangeConfiguration: jest.fn(() => ({ dispose: jest.fn() })),
+    workspaceFolders: []
+  },
+  env: {
+    appName: 'Visual Studio Code',
+    clipboard: {
+      writeText: jest.fn()
+    }
   },
   extensions: mockExtensions,
   ConfigurationTarget: {
@@ -155,7 +162,7 @@ describe('CommandDelegationRegistry', () => {
       await registry.delegateExplainIssue(mockIssueContext);
 
       expect(mockWindow.showInformationMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Rule: test-rule'),
+        expect.stringContaining('X-Fidelity Issue Explanation'),
         expect.any(Object),
         'Configure Providers',
         'OK'
@@ -168,14 +175,17 @@ describe('CommandDelegationRegistry', () => {
       
       mockConfig.get.mockImplementation((key: string) => {
         if (key === 'enableCommandDelegation') {return true;}
+        // Use 'built-in' preset which triggers default implementation with fallback UI
+        if (key === 'aiIntegrationPreset') {return 'built-in';}
         if (key === 'commandProviders.explainIssue') {return 'built-in';}
         return undefined;
       });
 
       await registry.delegateExplainIssue(mockIssueContext);
 
+      // With built-in preset in non-AI environment, it shows the fallback modal
       expect(mockWindow.showInformationMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Rule: test-rule'),
+        expect.stringContaining('X-Fidelity Issue Explanation'),
         expect.any(Object),
         'Configure Providers',
         'OK'
@@ -188,6 +198,8 @@ describe('CommandDelegationRegistry', () => {
       
       mockConfig.get.mockImplementation((key: string) => {
         if (key === 'enableCommandDelegation') {return true;}
+        // Must set preset to 'custom' to use commandProviders values
+        if (key === 'aiIntegrationPreset') {return 'custom';}
         if (key === 'commandProviders.explainIssue') {return 'github.copilot.interactiveEditor.explain';}
         return undefined;
       });
@@ -207,6 +219,8 @@ describe('CommandDelegationRegistry', () => {
       
       mockConfig.get.mockImplementation((key: string) => {
         if (key === 'enableCommandDelegation') {return true;}
+        // Must set preset to 'custom' to use commandProviders values
+        if (key === 'aiIntegrationPreset') {return 'custom';}
         if (key === 'commandProviders.explainIssue') {return 'nonexistent.command';}
         return undefined;
       });
@@ -221,7 +235,7 @@ describe('CommandDelegationRegistry', () => {
         mockIssueContext
       );
       expect(mockWindow.showInformationMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Rule: test-rule'),
+        expect.stringContaining('X-Fidelity Issue Explanation'),
         expect.any(Object),
         'Configure Providers',
         'OK'
@@ -255,8 +269,13 @@ describe('CommandDelegationRegistry', () => {
 
       await registry.delegateFixIssue(nonFixableContext);
 
+      // With the enhanced AI fallback, even non-fixable issues get AI assistance
       expect(mockWindow.showInformationMessage).toHaveBeenCalledWith(
-        'Rule test-rule does not have an automated fix available.'
+        expect.stringContaining('X-Fidelity Issue Fix'),
+        expect.any(Object),
+        'Configure Providers',
+        expect.any(String),
+        'OK'
       );
     });
 
@@ -266,6 +285,8 @@ describe('CommandDelegationRegistry', () => {
       
       mockConfig.get.mockImplementation((key: string) => {
         if (key === 'enableCommandDelegation') {return true;}
+        // Must set preset to 'custom' to use commandProviders values
+        if (key === 'aiIntegrationPreset') {return 'custom';}
         if (key === 'commandProviders.fixIssue') {return 'github.copilot.interactiveEditor.generateDocs';}
         return undefined;
       });
@@ -341,7 +362,8 @@ describe('CommandDelegationRegistry', () => {
 
       // Should fall back to built-in because provider doesn't support batch
       expect(mockWindow.showInformationMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Default batch fix implementation'),
+        expect.stringContaining('X-Fidelity Batch Fix'),
+        { modal: true },
         'Configure Providers',
         'OK'
       );
@@ -353,6 +375,8 @@ describe('CommandDelegationRegistry', () => {
       
       mockConfig.get.mockImplementation((key: string) => {
         if (key === 'enableCommandDelegation') {return true;}
+        // Must set preset to 'custom' to use commandProviders values
+        if (key === 'aiIntegrationPreset') {return 'custom';}
         if (key === 'commandProviders.fixIssueGroup') {return 'workbench.action.terminal.sendSequence';}
         return undefined;
       });
@@ -369,7 +393,19 @@ describe('CommandDelegationRegistry', () => {
 
   describe('configuration UI', () => {
     it('should show configuration options', async () => {
-      const mockConfig = { get: jest.fn(), update: jest.fn() };
+      const mockConfig = { 
+        get: jest.fn((key: string) => {
+          if (key === 'commandProviders') {
+            return {
+              explainIssue: 'built-in',
+              fixIssue: 'built-in',
+              fixIssueGroup: 'built-in'
+            };
+          }
+          return undefined;
+        }), 
+        update: jest.fn() 
+      };
       mockWorkspace.getConfiguration.mockReturnValue(mockConfig as any);
       
       mockWindow.showQuickPick.mockResolvedValueOnce({
@@ -386,8 +422,12 @@ describe('CommandDelegationRegistry', () => {
 
       expect(mockWindow.showQuickPick).toHaveBeenCalledTimes(2);
       expect(mockConfig.update).toHaveBeenCalledWith(
-        'commandProviders.explainIssue',
-        'built-in',
+        'commandProviders',
+        {
+          explainIssue: 'built-in',
+          fixIssue: 'built-in',
+          fixIssueGroup: 'built-in'
+        },
         vscode.ConfigurationTarget.Global
       );
     });

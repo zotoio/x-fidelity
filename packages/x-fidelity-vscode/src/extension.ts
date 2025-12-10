@@ -89,7 +89,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const config = vscode.workspace.getConfiguration('xfidelity', workspaceFolder?.uri);
       const showPerformanceNotice = !config.get(
         'performance.hideOptimizationNotice',
-        false
+        true
       );
 
       if (showPerformanceNotice) {
