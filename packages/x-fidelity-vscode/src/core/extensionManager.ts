@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ConfigManager } from '../configuration/configManager';
 import { DiagnosticProvider } from '../diagnostics/diagnosticProvider';
+import { XFidelityCodeActionProvider } from '../diagnostics/codeActionProvider';
 import { CLIAnalysisManager } from '../analysis/cliAnalysisManager';
 import { StatusBarProvider } from '../ui/statusBarProvider';
 import { IssuesTreeViewManager } from '../ui/treeView/issuesTreeViewManager';
@@ -14,12 +15,16 @@ import { getAnalysisTargetDirectory } from '../utils/workspaceUtils';
 import { LoggerProvider } from '@x-fidelity/core';
 import { EXECUTION_MODES } from '@x-fidelity/types';
 import { showCLIDiagnosticsDialog } from '../utils/cliDiagnostics';
-import { CommandDelegationRegistry } from './commandDelegationRegistry';
+import {
+  CommandDelegationRegistry,
+  IssueContext
+} from './commandDelegationRegistry';
 import { ResultCoordinator } from './resultCoordinator';
 import {
   getGitHubConfigCacheManager,
   disposeGitHubConfigCacheManager
 } from '../config/gitHubConfigCacheManager';
+import { CodeSnippetExtractor } from '../utils/codeSnippetExtractor';
 
 export class ExtensionManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
@@ -109,6 +114,7 @@ export class ExtensionManager implements vscode.Disposable {
 
       this.setupEventListeners();
       this.registerCommands();
+      this.registerCodeActionProvider();
       this.logger.info('✅ Extension Manager initialized successfully');
 
       // ENHANCEMENT: Run automatic analysis on extension activation (but don't open sidebar)
@@ -167,6 +173,25 @@ export class ExtensionManager implements vscode.Disposable {
         this.setupAutomationFeatures();
       })
     );
+  }
+
+  /**
+   * Register Code Action Provider for lightbulb quick fixes
+   */
+  private registerCodeActionProvider(): void {
+    const codeActionProvider = new XFidelityCodeActionProvider();
+
+    // Register for all file types
+    const disposable = vscode.languages.registerCodeActionsProvider(
+      { scheme: 'file' },
+      codeActionProvider,
+      {
+        providedCodeActionKinds: [vscode.CodeActionKind.QuickFix]
+      }
+    );
+
+    this.disposables.push(disposable);
+    this.logger.debug('✅ Code Action Provider registered for quick fixes');
   }
 
   private registerCommands(): void {
@@ -593,7 +618,7 @@ export class ExtensionManager implements vscode.Disposable {
               return;
             }
 
-            const issueContext = this.extractIssueContext(context);
+            const issueContext = await this.extractIssueContext(context);
             await this.commandDelegationRegistry.delegateExplainIssue(
               issueContext
             );
@@ -620,7 +645,7 @@ export class ExtensionManager implements vscode.Disposable {
               return;
             }
 
-            const issueContext = this.extractIssueContext(context);
+            const issueContext = await this.extractIssueContext(context);
             await this.commandDelegationRegistry.delegateFixIssue(issueContext);
           } catch (error) {
             this.logger.error('Failed to fix issue:', error);
@@ -645,7 +670,7 @@ export class ExtensionManager implements vscode.Disposable {
               return;
             }
 
-            const groupContext = this.extractGroupContext(context);
+            const groupContext = await this.extractGroupContext(context);
             await this.commandDelegationRegistry.delegateFixIssueGroup(
               groupContext
             );
@@ -670,6 +695,103 @@ export class ExtensionManager implements vscode.Disposable {
             this.logger.error('Failed to configure command providers:', error);
             vscode.window.showErrorMessage(
               `Failed to configure command providers: ${error instanceof Error ? error.message : String(error)}`
+            );
+          }
+        }
+      )
+    );
+
+    // NEW: Register editor context menu commands (right-click on code)
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        'xfidelity.explainIssueAtCursor',
+        async () => {
+          try {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+              vscode.window.showWarningMessage('No active editor');
+              return;
+            }
+
+            const position = editor.selection.active;
+            const diagnostics = vscode.languages.getDiagnostics(
+              editor.document.uri
+            );
+
+            // Find X-Fidelity diagnostic at cursor position
+            const diagnostic = diagnostics.find(
+              d => d.source === 'X-Fidelity' && d.range.contains(position)
+            );
+
+            if (!diagnostic) {
+              vscode.window.showInformationMessage(
+                'No X-Fidelity issue found at cursor position'
+              );
+              return;
+            }
+
+            // Extract context from diagnostic's xfidelity metadata
+            const xfiData = (diagnostic as any).xfidelity || {};
+            const issueContext = await this.extractIssueContext({
+              ...xfiData,
+              message: diagnostic.message,
+              code: diagnostic.code
+            });
+
+            await this.commandDelegationRegistry.delegateExplainIssue(
+              issueContext
+            );
+          } catch (error) {
+            this.logger.error('Failed to explain issue at cursor:', error);
+            vscode.window.showErrorMessage(
+              `Failed to explain issue: ${error instanceof Error ? error.message : String(error)}`
+            );
+          }
+        }
+      )
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        'xfidelity.fixIssueAtCursor',
+        async () => {
+          try {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+              vscode.window.showWarningMessage('No active editor');
+              return;
+            }
+
+            const position = editor.selection.active;
+            const diagnostics = vscode.languages.getDiagnostics(
+              editor.document.uri
+            );
+
+            // Find X-Fidelity diagnostic at cursor position
+            const diagnostic = diagnostics.find(
+              d => d.source === 'X-Fidelity' && d.range.contains(position)
+            );
+
+            if (!diagnostic) {
+              vscode.window.showInformationMessage(
+                'No X-Fidelity issue found at cursor position'
+              );
+              return;
+            }
+
+            // Extract context from diagnostic's xfidelity metadata
+            const xfiData = (diagnostic as any).xfidelity || {};
+            const issueContext = await this.extractIssueContext({
+              ...xfiData,
+              message: diagnostic.message,
+              code: diagnostic.code
+            });
+
+            await this.commandDelegationRegistry.delegateFixIssue(issueContext);
+          } catch (error) {
+            this.logger.error('Failed to fix issue at cursor:', error);
+            vscode.window.showErrorMessage(
+              `Failed to fix issue: ${error instanceof Error ? error.message : String(error)}`
             );
           }
         }
@@ -1472,46 +1594,88 @@ Check Output Console (X-Fidelity) for full details.`;
   }
 
   /**
-   * Extract issue context from various input formats
+   * Extract issue context from various input formats with complete metadata
    */
-  private extractIssueContext(context: any): any {
-    // Handle tree view item context
-    if (context.issue) {
-      return {
-        ruleId: context.issue.rule || 'unknown',
-        message: context.issue.message || '',
-        file: context.issue.file || '',
-        line: context.issue.line || 1,
-        column: context.issue.column || 1,
-        severity: context.issue.severity || 'info',
-        category: context.issue.category || 'general',
-        fixable: context.issue.fixable || false
-      };
+  private async extractIssueContext(context: any): Promise<IssueContext> {
+    // Determine source of context data
+    const issueData = context.issue || context;
+
+    // Extract basic location information
+    const file = issueData.file || issueData.filePath || '';
+    const line = issueData.line || 1;
+    const column = issueData.column || 1;
+    const endLine = issueData.endLine || line;
+    const endColumn = issueData.endColumn || column + 1;
+
+    // Extract code snippet if file path is available
+    let codeSnippet = '';
+    if (file) {
+      try {
+        codeSnippet = await CodeSnippetExtractor.extractSnippet(
+          file,
+          line,
+          endLine,
+          { contextLines: 3, highlightRange: true }
+        );
+      } catch (error) {
+        this.logger.debug('Failed to extract code snippet:', error);
+      }
     }
 
-    // Handle diagnostic context from hover
-    return {
-      ruleId: context.ruleId || context.code || 'unknown',
-      message: context.message || '',
-      file: context.file || '',
-      line: context.line || 1,
-      column: context.column || 1,
-      severity: context.severity || 'info',
-      category: context.category || 'general',
-      fixable: context.fixable || false
+    // Build comprehensive issue context
+    const issueContext: IssueContext = {
+      // Basic identification
+      ruleId: issueData.ruleId || issueData.rule || issueData.code || 'unknown',
+      message: issueData.message || '',
+      file: file,
+
+      // Location information (1-based)
+      line: line,
+      column: column,
+      endLine: endLine,
+      endColumn: endColumn,
+
+      // Issue metadata
+      severity: issueData.severity || 'info',
+      category: issueData.category || 'general',
+      fixable: issueData.fixable || false,
+      exempted: issueData.exempted || false,
+      issueId: issueData.issueId || issueData.id || undefined,
+
+      // Context and documentation
+      codeSnippet: codeSnippet,
+      documentation: issueData.documentation || undefined,
+      ruleDocUrl: issueData.ruleDocUrl || undefined,
+
+      // Fix suggestions (if available)
+      suggestedFix: issueData.suggestedFix || null,
+
+      // Original data for advanced providers
+      originalData: issueData.originalData || undefined,
+
+      // Workspace context
+      workspaceRoot: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '',
+
+      // Related issues (if available)
+      relatedIssues: issueData.relatedIssues || []
     };
+
+    return issueContext;
   }
 
   /**
    * Extract group context for batch operations
    */
-  private extractGroupContext(context: any): any {
+  private async extractGroupContext(context: any): Promise<any> {
     // Handle tree view group context
     if (context.groupKey) {
       const issues = context.issues || [];
+      const issueContexts = await Promise.all(
+        issues.map((issue: any) => this.extractIssueContext({ issue }))
+      );
       return {
         groupKey: context.groupKey,
-        issues: issues.map((issue: any) => this.extractIssueContext({ issue })),
+        issues: issueContexts,
         groupType: context.groupType || 'rule'
       };
     }
@@ -1519,7 +1683,7 @@ Check Output Console (X-Fidelity) for full details.`;
     // Fallback for single issue
     return {
       groupKey: 'single-issue',
-      issues: [this.extractIssueContext(context)],
+      issues: [await this.extractIssueContext(context)],
       groupType: 'rule'
     };
   }

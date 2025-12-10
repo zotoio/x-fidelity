@@ -179,6 +179,31 @@
         "command": "xfidelity.configureCommandProviders",
         "title": "X-Fidelity: Configure Command Providers",
         "icon": "$(gear)"
+      },
+      {
+        "command": "xfidelity.explainIssue",
+        "title": "X-Fidelity: Explain Issue",
+        "icon": "$(question)"
+      },
+      {
+        "command": "xfidelity.fixIssue",
+        "title": "X-Fidelity: Fix Issue",
+        "icon": "$(wrench)"
+      },
+      {
+        "command": "xfidelity.fixAllIssues",
+        "title": "X-Fidelity: Fix All Issues",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "xfidelity.explainIssueAtCursor",
+        "title": "X-Fidelity: Explain Issue at Cursor",
+        "icon": "$(question)"
+      },
+      {
+        "command": "xfidelity.fixIssueAtCursor",
+        "title": "X-Fidelity: Fix Issue at Cursor",
+        "icon": "$(wrench)"
       }
     ],
     "extensionPoints": [
@@ -320,8 +345,8 @@
         },
         "xfidelity.runInterval": {
           "type": "number",
-          "default": 0,
-          "minimum": 0,
+          "default": 14400,
+          "minimum": 600,
           "description": "⏱️ Automatically run analysis every N seconds (0 = disabled). Recommended for CI/monitoring workflows. Note: May impact performance.",
           "order": 12
         },
@@ -566,9 +591,29 @@
           ],
           "order": 73
         },
+        "xfidelity.aiIntegrationPreset": {
+          "type": "string",
+          "default": "auto-detect",
+          "enum": [
+            "auto-detect",
+            "cursor",
+            "github-copilot",
+            "built-in",
+            "custom"
+          ],
+          "enumDescriptions": [
+            "🔍 Automatically detect and use the best available AI assistant (Cursor, GitHub Copilot, etc.)",
+            "🎯 Use Cursor's AI features (Composer, Chat) for issue explanations and fixes",
+            "🤖 Use GitHub Copilot for issue explanations and fixes",
+            "🏠 Use X-Fidelity's built-in AI integrations with fallbacks",
+            "⚙️ Use custom command overrides configured in 'commandProviders' setting"
+          ],
+          "description": "🤖 Quick preset for AI assistant integration. Select 'custom' to use manual command overrides.",
+          "order": 73
+        },
         "xfidelity.commandProviders": {
           "type": "object",
-          "description": "🔗 Configure which VSCode commands provide X-Fidelity functionality. Format: 'command.name' not 'extension.id'. Requires 'enableCommandDelegation' to be enabled.",
+          "description": "🔗 Advanced: Manual command overrides for X-Fidelity functionality. Only used when 'aiIntegrationPreset' is set to 'custom'. Format: 'command.name' not 'extension.id'.",
           "properties": {
             "explainIssue": {
               "type": "string",
@@ -645,6 +690,18 @@
       ]
     },
     "menus": {
+      "editor/context": [
+        {
+          "command": "xfidelity.explainIssueAtCursor",
+          "when": "editorTextFocus",
+          "group": "xfidelity@1"
+        },
+        {
+          "command": "xfidelity.fixIssueAtCursor",
+          "when": "editorTextFocus",
+          "group": "xfidelity@2"
+        }
+      ],
       "view/title": [
         {
           "command": "xfidelity.refreshIssuesTree",

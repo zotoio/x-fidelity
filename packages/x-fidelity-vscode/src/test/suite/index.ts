@@ -87,8 +87,8 @@ export function run(): Promise<void> {
     console.log(`🔍 Discovering tests in: ${testsRoot}`);
 
     // Glob patterns to find all test files
+    // Note: Unit tests are excluded as they use Jest, not Mocha
     const testPatterns = [
-      '**/test/unit/**/*.test.js',
       '**/test/integration/**/*.test.js',
       '**/test/suite/**/*.test.js',
       '**/test/e2e/**/*.test.js'

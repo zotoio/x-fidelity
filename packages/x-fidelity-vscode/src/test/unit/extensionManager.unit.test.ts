@@ -21,6 +21,13 @@ jest.mock('vscode', () => {
       ...commands,
       registerCommand: jest.fn()
     },
+    languages: {
+      registerCodeActionsProvider: jest.fn(() => ({ dispose: jest.fn() })),
+      getDiagnostics: jest.fn(() => [])
+    },
+    CodeActionKind: {
+      QuickFix: { value: 'quickfix' }
+    },
     ExtensionKind: {
       Workspace: 1,
       UI: 2

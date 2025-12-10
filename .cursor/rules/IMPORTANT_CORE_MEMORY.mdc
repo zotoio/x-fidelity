@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+# IMPORTANT CORE MEMORY
+
+R=req→if gap→assume+mark; C=obs→cite path:lines; Δ=R≠C→tag{code|tests|req}+why; PLAN=min files+change; PATCH=surgical diff; CHECK=run/add tests|static verify; STATE=upd R/C/Δ; mem=repo>chat; no halluc; no full rewrite w/o proof.
