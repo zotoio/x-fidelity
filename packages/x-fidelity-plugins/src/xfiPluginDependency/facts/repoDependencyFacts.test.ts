@@ -128,7 +128,7 @@ describe('repoDependencyFacts', () => {
                     ]
                 }
             ]);
-            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list --json --depth=Infinity', expect.any(Object));
+            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list -r --json --depth=Infinity', expect.any(Object));
         });
 
         it('should collect dependencies from pnpm-lock.yaml with object format dependencies', async () => {
@@ -209,7 +209,7 @@ describe('repoDependencyFacts', () => {
             const result = await collectLocalDependencies();
 
             // Should have used pnpm, not yarn or npm
-            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list --json --depth=Infinity', expect.any(Object));
+            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list -r --json --depth=Infinity', expect.any(Object));
             expect(result).toEqual([
                 { name: 'pnpm-package', version: '1.0.0' }
             ]);

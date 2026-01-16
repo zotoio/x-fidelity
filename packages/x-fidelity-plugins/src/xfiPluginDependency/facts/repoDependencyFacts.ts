@@ -171,7 +171,7 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             if (packageManager === 'npm') {
                 command = `"${binaryPath}" ls -a --json`;
             } else if (packageManager === 'pnpm') {
-                command = `"${binaryPath}" list --json --depth=Infinity`;
+                command = `"${binaryPath}" list -r --json --depth=Infinity`;
             } else {
                 // yarn
                 command = `"${binaryPath}" list --json`;
@@ -194,7 +194,7 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             if (packageManager === 'npm') {
                 command = `"${binaryPath}" ls -a --json`;
             } else if (packageManager === 'pnpm') {
-                command = `"${binaryPath}" list --json --depth=Infinity`;
+                command = `"${binaryPath}" list -r --json --depth=Infinity`;
             } else {
                 // yarn
                 command = `"${binaryPath}" list --json`;
