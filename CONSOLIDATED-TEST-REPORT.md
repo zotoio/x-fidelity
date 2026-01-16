@@ -1,7 +1,7 @@
 # Consolidated Test Report
 
-> **Generated:** 2025-12-10 16:42 GMT+1100  
-> **Duration:** 52.89s  
+> **Generated:** 2026-01-16 17:45 GMT+1100  
+> **Duration:** 103.89s  
 > **Status:** PASSED ✅
 
 ## 📊 Executive Summary
@@ -9,11 +9,11 @@
 | Metric | Value |
 |--------|-------|
 | **Overall Status** | PASSED ✅ |
-| **Total Tests** | 1563 |
+| **Total Tests** | 1576 |
 | **Test Success Rate** | 100.0% |
 | **Packages Tested** | 6 |
 | **Cache Hit Rate** | 100.0% |
-| **Total Execution Time** | 52.89s |
+| **Total Execution Time** | 103.89s |
 
 ## 🔧 Linting & Code Formatting
 
@@ -27,28 +27,28 @@
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| ✅ **Passed** | 1563 | 100.0% |
+| ✅ **Passed** | 1576 | 100.0% |
 | ❌ **Failed** | 0 | 0.0% |
 | ⏭️ **Skipped** | 0 | 0.0% |
 | 💾 **Cached Packages** | 0 | - |
-| 📊 **Total Tests** | 1563 | 100% |
+| 📊 **Total Tests** | 1576 | 100% |
 
 ## 📊 Code Coverage
 
 | Coverage Type | Percentage |
 |---------------|------------|
-| 📝 **Statements** | 46.8% |
-| 🌿 **Branches** | 49.5% |
-| 🔧 **Functions** | 40.8% |
-| 📏 **Lines** | 46.9% |
+| 📝 **Statements** | 47% |
+| 🌿 **Branches** | 49.7% |
+| 🔧 **Functions** | 41% |
+| 📏 **Lines** | 47.1% |
 
 ## 💾 Turbo Cache Performance
 
 | Metric | Value |
 |--------|-------|
-| 🎯 **Cache Hits** | 27 tasks |
+| 🎯 **Cache Hits** | 22 tasks |
 | 🔄 **Cache Misses** | 0 tasks |
-| 📊 **Total Tasks** | 27 tasks |
+| 📊 **Total Tasks** | 22 tasks |
 | 📈 **Cache Hit Rate** | 100.0% |
 
 ## 📦 Package Details
@@ -58,7 +58,7 @@
 | `x-fidelity-cli` | 🏃 Executed | 62 | 0 | 0 | 62 | 63.2% |
 | `x-fidelity-core` | 🏃 Executed | 864 | 0 | 0 | 864 | 67.8% |
 | `x-fidelity-types` | 🏃 Executed | 51 | 0 | 0 | 51 | 91.9% |
-| `x-fidelity-plugins` | 🏃 Executed | 328 | 0 | 0 | 328 | 55.9% |
+| `x-fidelity-plugins` | 🏃 Executed | 341 | 0 | 0 | 341 | 56.6% |
 | `x-fidelity-server` | 🏃 Executed | 60 | 0 | 0 | 60 | 57.2% |
 | `x-fidelity-vscode` | 🏃 Executed | 198 | 0 | 0 | 198 | 26.1% |
 
@@ -70,7 +70,7 @@
 - **Packages cached:** 0
 
 ### Performance Metrics
-- **Average time per package:** 8.82s
+- **Average time per package:** 17.31s
 - **Cache efficiency:** 100.0% (higher is better)
 
 ### Status Indicators

@@ -61,6 +61,7 @@ function getDependencyCacheKey(repoPath?: string): string {
     const actualRepoPath = repoPath || options.dir || process.cwd();
     const files = [
         path.join(actualRepoPath, 'package.json'),
+        path.join(actualRepoPath, 'pnpm-lock.yaml'),
         path.join(actualRepoPath, 'yarn.lock'),
         path.join(actualRepoPath, 'package-lock.json'),
         path.join(actualRepoPath, 'npm-shrinkwrap.json')
@@ -110,12 +111,14 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
     logger.debug('Cache miss, collecting dependencies from package manager...');
 
     let result: LocalDependencies[] = [];
-    if (fs.existsSync(path.join(actualRepoPath, 'yarn.lock'))) {
+    if (fs.existsSync(path.join(actualRepoPath, 'pnpm-lock.yaml'))) {
+        result = await collectNodeDependencies('pnpm', actualRepoPath);
+    } else if (fs.existsSync(path.join(actualRepoPath, 'yarn.lock'))) {
         result = await collectNodeDependencies('yarn', actualRepoPath);
     } else if (fs.existsSync(path.join(actualRepoPath, 'package-lock.json'))) {
         result = await collectNodeDependencies('npm', actualRepoPath);
     } else {
-        logger.warn('No yarn.lock or package-lock.json found - returning empty dependencies array');
+        logger.warn('No pnpm-lock.yaml, yarn.lock or package-lock.json found - returning empty dependencies array');
         return []; // ✅ Return empty array instead of exiting process
     }
 
@@ -163,34 +166,44 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
 
         try {
             // Use discovered binary path with enhanced environment
+            // Determine the appropriate command for each package manager
+            let command: string;
             if (packageManager === 'npm') {
-                const execStart = Date.now();
-                const result = await execPromise(`"${binaryPath}" ls -a --json`, {
-                    cwd: actualRepoPath, maxBuffer: 10485760 * 2, env: enhancedEnv
-                });
-                execMs = Date.now() - execStart;
-                stdout = result.stdout;
-                stderr = result.stderr;
+                command = `"${binaryPath}" ls -a --json`;
+            } else if (packageManager === 'pnpm') {
+                command = `"${binaryPath}" list --json --depth=Infinity`;
             } else {
-                const execStart = Date.now();
-                const result = await execPromise(`"${binaryPath}" list --json`, {
-                    cwd: actualRepoPath, maxBuffer: 10485760 * 2, env: enhancedEnv
-                });
-                execMs = Date.now() - execStart;
-                stdout = result.stdout;
-                stderr = result.stderr;
+                // yarn
+                command = `"${binaryPath}" list --json`;
             }
+
+            const execStart = Date.now();
+            const result = await execPromise(command, {
+                cwd: actualRepoPath, maxBuffer: 10485760 * 2, env: enhancedEnv
+            });
+            execMs = Date.now() - execStart;
+            stdout = result.stdout;
+            stderr = result.stderr;
         } catch (execError) {
             // If promisified exec fails, fall back to execSync
             logger.warn(`Falling back to execSync for ${packageManager} dependencies`);
             execMethod = 'execSync';
+            
+            // Determine the appropriate command for each package manager
+            let command: string;
+            if (packageManager === 'npm') {
+                command = `"${binaryPath}" ls -a --json`;
+            } else if (packageManager === 'pnpm') {
+                command = `"${binaryPath}" list --json --depth=Infinity`;
+            } else {
+                // yarn
+                command = `"${binaryPath}" list --json`;
+            }
+
             const execStart = Date.now();
-            const output = execSync(
-                packageManager === 'npm' ? `"${binaryPath}" ls -a --json` : `"${binaryPath}" list --json`,
-                {
-                    cwd: actualRepoPath, maxBuffer: 10485760, env: enhancedEnv
-                }
-            );
+            const output = execSync(command, {
+                cwd: actualRepoPath, maxBuffer: 10485760, env: enhancedEnv
+            });
             execMs = Date.now() - execStart;
             stdout = output.toString();
         }
@@ -211,9 +224,14 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             const parseMs = Date.now() - parseStart;
             logger.debug(`collectNodeDependencies: JSON.parse took ${parseMs}ms`);
             logger.trace(`collectNodeDependencies ${packageManager}: ${JSON.stringify(result)}`);
-            return packageManager === 'npm' ?
-                processNpmDependencies(result) :
-                processYarnDependencies(result)
+            
+            if (packageManager === 'npm') {
+                return processNpmDependencies(result);
+            } else if (packageManager === 'pnpm') {
+                return processPnpmDependencies(result);
+            } else {
+                return processYarnDependencies(result);
+            }
 
         } catch (e) {
             logger.error({
@@ -293,6 +311,113 @@ function processNpmDependencies(npmOutput: any): LocalDependencies[] {
             dependencies.push(processDependency(name, info));
         });
     }
+    return dependencies;
+}
+
+function processPnpmDependencies(pnpmOutput: any): LocalDependencies[] {
+    const dependencies: LocalDependencies[] = [];
+    
+    // pnpm list --json can return an array (for workspaces) or a single object
+    // We need to handle both cases
+    const outputs = Array.isArray(pnpmOutput) ? pnpmOutput : [pnpmOutput];
+    
+    const processDependency = (depNode: any): LocalDependencies => {
+        const newDep: LocalDependencies = { 
+            name: depNode.name, 
+            version: depNode.version 
+        };
+        
+        // pnpm can have dependencies as an array or object depending on version
+        if (depNode.dependencies) {
+            newDep.dependencies = [];
+            if (Array.isArray(depNode.dependencies)) {
+                // pnpm list --json returns dependencies as an array
+                depNode.dependencies.forEach((child: any) => {
+                    newDep.dependencies?.push(processDependency(child));
+                });
+            } else {
+                // Handle object format (older pnpm versions or different output modes)
+                Object.entries(depNode.dependencies).forEach(([childName, childInfo]: [string, any]) => {
+                    const childDep: LocalDependencies = {
+                        name: childName,
+                        version: typeof childInfo === 'string' ? childInfo : childInfo.version
+                    };
+                    if (typeof childInfo === 'object' && childInfo.dependencies) {
+                        childDep.dependencies = [];
+                        if (Array.isArray(childInfo.dependencies)) {
+                            childInfo.dependencies.forEach((grandChild: any) => {
+                                childDep.dependencies?.push(processDependency(grandChild));
+                            });
+                        } else {
+                            Object.entries(childInfo.dependencies).forEach(([gcName, gcInfo]: [string, any]) => {
+                                childDep.dependencies?.push({
+                                    name: gcName,
+                                    version: typeof gcInfo === 'string' ? gcInfo : gcInfo.version
+                                });
+                            });
+                        }
+                    }
+                    newDep.dependencies?.push(childDep);
+                });
+            }
+        }
+        
+        return newDep;
+    };
+    
+    for (const output of outputs) {
+        // Process top-level dependencies from pnpm list output
+        if (output.dependencies) {
+            if (Array.isArray(output.dependencies)) {
+                // pnpm list --json returns dependencies as an array
+                output.dependencies.forEach((dep: any) => {
+                    dependencies.push(processDependency(dep));
+                });
+            } else {
+                // Handle object format
+                Object.entries(output.dependencies).forEach(([name, info]: [string, any]) => {
+                    const dep: LocalDependencies = {
+                        name,
+                        version: typeof info === 'string' ? info : info.version
+                    };
+                    if (typeof info === 'object' && info.dependencies) {
+                        dep.dependencies = [];
+                        if (Array.isArray(info.dependencies)) {
+                            info.dependencies.forEach((child: any) => {
+                                dep.dependencies?.push(processDependency(child));
+                            });
+                        } else {
+                            Object.entries(info.dependencies).forEach(([childName, childInfo]: [string, any]) => {
+                                dep.dependencies?.push({
+                                    name: childName,
+                                    version: typeof childInfo === 'string' ? childInfo : childInfo.version
+                                });
+                            });
+                        }
+                    }
+                    dependencies.push(dep);
+                });
+            }
+        }
+        
+        // Also handle devDependencies if present
+        if (output.devDependencies) {
+            if (Array.isArray(output.devDependencies)) {
+                output.devDependencies.forEach((dep: any) => {
+                    dependencies.push(processDependency(dep));
+                });
+            } else {
+                Object.entries(output.devDependencies).forEach(([name, info]: [string, any]) => {
+                    const dep: LocalDependencies = {
+                        name,
+                        version: typeof info === 'string' ? info : info.version
+                    };
+                    dependencies.push(dep);
+                });
+            }
+        }
+    }
+    
     return dependencies;
 }
 
