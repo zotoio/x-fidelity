@@ -249,24 +249,16 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             }
 
         } catch (e) {
-            logger.error({
-                err: e,
-                packageManager,
-                type: 'parse-error'
-            }, 'Error parsing dependencies');
+            logger.error(`Error parsing ${packageManager} dependencies: ${JSON.stringify(e)}`);
             throw new Error(`Error parsing ${packageManager} dependencies`);
         }
     } catch (e: any) {
-        let message = `Error determining ${packageManager} dependencies: ${e}`;
+        let message = `Error determining ${packageManager} dependencies: ${JSON.stringify(e)}`;
 
         if (e.message?.includes('ELSPROBLEMS')) {
             message += `\nError determining ${packageManager} dependencies: did you forget to run '${packageManager} install' first?`;
         }
-        logger.error({
-            err: e,
-            packageManager,
-            type: 'dependency-error'
-        }, 'Error determining dependencies');
+        logger.error(`Error determining ${packageManager} dependencies: ${JSON.stringify(e)}`);
         throw new Error(message);
     }
     finally {
