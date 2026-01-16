@@ -135,6 +135,17 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
     return result;
 }
 
+/**
+ * Check if the project is a pnpm workspace (has pnpm-workspace.yaml)
+ */
+function isPnpmWorkspace(repoPath: string): boolean {
+    try {
+        return fs.existsSync(path.join(repoPath, 'pnpm-workspace.yaml'));
+    } catch {
+        return false;
+    }
+}
+
 async function collectNodeDependencies(packageManager: string, repoPath?: string): Promise<LocalDependencies[]> {
     const emptyDeps: LocalDependencies[] = [];
     const actualRepoPath = repoPath || options.dir || process.cwd();
@@ -171,7 +182,9 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             if (packageManager === 'npm') {
                 command = `"${binaryPath}" ls -a --json`;
             } else if (packageManager === 'pnpm') {
-                command = `"${binaryPath}" list -r --json --depth=Infinity`;
+                // Use -r flag only for pnpm workspaces
+                const recursiveFlag = isPnpmWorkspace(actualRepoPath) ? '-r ' : '';
+                command = `"${binaryPath}" list ${recursiveFlag}--json --depth=Infinity`;
             } else {
                 // yarn
                 command = `"${binaryPath}" list --json`;
@@ -194,7 +207,9 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             if (packageManager === 'npm') {
                 command = `"${binaryPath}" ls -a --json`;
             } else if (packageManager === 'pnpm') {
-                command = `"${binaryPath}" list -r --json --depth=Infinity`;
+                // Use -r flag only for pnpm workspaces
+                const recursiveFlag = isPnpmWorkspace(actualRepoPath) ? '-r ' : '';
+                command = `"${binaryPath}" list ${recursiveFlag}--json --depth=Infinity`;
             } else {
                 // yarn
                 command = `"${binaryPath}" list --json`;

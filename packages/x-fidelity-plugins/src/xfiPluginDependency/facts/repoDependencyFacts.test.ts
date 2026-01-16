@@ -128,7 +128,7 @@ describe('repoDependencyFacts', () => {
                     ]
                 }
             ]);
-            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list -r --json --depth=Infinity', expect.any(Object));
+            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list --json --depth=Infinity', expect.any(Object));
         });
 
         it('should collect dependencies from pnpm-lock.yaml with object format dependencies', async () => {
@@ -208,10 +208,44 @@ describe('repoDependencyFacts', () => {
 
             const result = await collectLocalDependencies();
 
-            // Should have used pnpm, not yarn or npm
-            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list -r --json --depth=Infinity', expect.any(Object));
+            // Should have used pnpm, not yarn or npm (no -r flag since no pnpm-workspace.yaml)
+            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list --json --depth=Infinity', expect.any(Object));
             expect(result).toEqual([
                 { name: 'pnpm-package', version: '1.0.0' }
+            ]);
+        });
+
+        it('should use -r flag for pnpm workspaces', async () => {
+            // Both pnpm-lock.yaml and pnpm-workspace.yaml exist (workspace project)
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml') || filePath.includes('pnpm-workspace.yaml');
+            });
+
+            const { discoverBinary } = require('@x-fidelity/core');
+            discoverBinary.mockImplementation((binaryName: string) => {
+                return Promise.resolve({
+                    binary: binaryName,
+                    path: `/usr/local/bin/${binaryName}`,
+                    source: 'system'
+                });
+            });
+
+            const mockPnpmOutput = [
+                {
+                    dependencies: [
+                        { name: 'workspace-package', version: '1.0.0' }
+                    ]
+                }
+            ];
+
+            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+
+            const result = await collectLocalDependencies();
+
+            // Should use -r flag for workspace projects
+            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list -r --json --depth=Infinity', expect.any(Object));
+            expect(result).toEqual([
+                { name: 'workspace-package', version: '1.0.0' }
             ]);
         });
 
