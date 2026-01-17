@@ -201,7 +201,7 @@ function parsePnpmLockfile(repoPath: string): LocalDependencies[] {
         const dependencies: LocalDependencies[] = [];
         
         // Process each importer (workspace package or root)
-        for (const [importerPath, importer] of Object.entries(lockfile.importers)) {
+        for (const importer of Object.values(lockfile.importers)) {
             const importerData = importer as any;
             
             // Helper to add dependency if not already present
