@@ -70,6 +70,7 @@ export class DiagnosticLocationExtractor {
       this.extractFromFileLevelRules,
 
       // High confidence extractors (precise location data)
+      this.extractFromDependencyLocation, // NEW: Handle dependency failures with manifest locations
       this.extractFromComplexityMetrics,
       this.extractFromLocationObject,
       this.extractFromASTNode,
@@ -175,6 +176,81 @@ export class DiagnosticLocationExtractor {
           confidence: 'medium' // Medium because it's intentionally file-level
         };
       }
+    }
+
+    return {
+      location: DiagnosticLocationExtractor.getDefaultLocation(),
+      found: false,
+      confidence: 'low'
+    };
+  }
+
+  /**
+   * Extract from dependency location info (dependency plugin)
+   * Handles dependency failures that include manifest file location data
+   *
+   * Structure: details.details[].location.{lineNumber, columnNumber, endLineNumber, endColumnNumber}
+   */
+  private static extractFromDependencyLocation(
+    error: any
+  ): LocationExtractionResult {
+    // Check for dependency failure with location info
+    // The details.details array contains dependency failures with location data
+    const dependencyDetails = error.details?.details;
+
+    if (Array.isArray(dependencyDetails) && dependencyDetails.length > 0) {
+      // Find the first dependency failure with location info
+      const depWithLocation = dependencyDetails.find(
+        (dep: any) =>
+          dep && dep.location && typeof dep.location.lineNumber === 'number'
+      );
+
+      if (depWithLocation && depWithLocation.location) {
+        const loc = depWithLocation.location;
+        return {
+          location: {
+            startLine: loc.lineNumber,
+            startColumn: loc.columnNumber || 1,
+            endLine: loc.endLineNumber || loc.lineNumber,
+            endColumn: loc.endColumnNumber || (loc.columnNumber || 1) + 30,
+            source: 'dependency-manifest-location'
+          },
+          found: true,
+          confidence: 'high',
+          metadata: {
+            originalMatch: depWithLocation.dependency,
+            pattern: `${depWithLocation.currentVersion} -> ${depWithLocation.requiredVersion}`,
+            extractorUsed: 'extractFromDependencyLocation'
+          }
+        };
+      }
+    }
+
+    // Also check for single dependency failure (not in array)
+    const directDep = error.details?.details;
+    if (
+      directDep &&
+      !Array.isArray(directDep) &&
+      directDep.location &&
+      typeof directDep.location.lineNumber === 'number'
+    ) {
+      const loc = directDep.location;
+      return {
+        location: {
+          startLine: loc.lineNumber,
+          startColumn: loc.columnNumber || 1,
+          endLine: loc.endLineNumber || loc.lineNumber,
+          endColumn: loc.endColumnNumber || (loc.columnNumber || 1) + 30,
+          source: 'dependency-manifest-location'
+        },
+        found: true,
+        confidence: 'high',
+        metadata: {
+          originalMatch: directDep.dependency,
+          pattern: `${directDep.currentVersion} -> ${directDep.requiredVersion}`,
+          extractorUsed: 'extractFromDependencyLocation'
+        }
+      };
     }
 
     return {

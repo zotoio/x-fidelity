@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import util from 'util';
 import { FactDefn } from '@x-fidelity/types';
+import { enhanceDependencyFailuresWithLocations, DependencyLocation } from '../utils/manifestLocationParser';
 
 // Create a properly typed promisified exec function
 const execPromise = util.promisify(exec);
@@ -530,6 +531,20 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
         // Get dependency data from the repoDependencyVersions fact
         const installedVersions: VersionData[] = await almanac.factValue('repoDependencyVersions') || [];
         
+        // Get repoPath from params or almanac for location parsing
+        let repoPath: string | undefined;
+        try {
+            const fileData = await almanac.factValue('fileData') as { filePath?: string } | undefined;
+            if (fileData && fileData.filePath) {
+                // Extract repo path from file path (REPO_GLOBAL_CHECK uses the repo path)
+                repoPath = fileData.filePath === 'REPO_GLOBAL_CHECK' 
+                    ? options.dir || process.cwd()
+                    : path.dirname(fileData.filePath);
+            }
+        } catch {
+            repoPath = options.dir || process.cwd();
+        }
+        
         // ✅ Create cache key to avoid redundant computation
         const cacheKey = `dependency-analysis-${installedVersions.length}-${JSON.stringify(installedVersions.slice(0, 3)).substring(0, 50)}`;
         
@@ -576,22 +591,34 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
             }
         });
 
-        result.result = analysis;
+        // ✅ Enhance failures with manifest file locations for precise highlighting
+        let enhancedAnalysis = analysis;
+        if (analysis.length > 0 && repoPath) {
+            try {
+                enhancedAnalysis = await enhanceDependencyFailuresWithLocations(analysis, repoPath);
+                logger.debug(`Enhanced ${enhancedAnalysis.filter((f: any) => f.location).length}/${analysis.length} dependency failures with manifest locations`);
+            } catch (locationError) {
+                logger.warn(`Could not enhance dependency failures with locations: ${locationError}`);
+                // Continue with unenhanced analysis
+            }
+        }
+
+        result.result = enhancedAnalysis;
         
         // ✅ Cache the result for future use
         analysisCache.set(cacheKey, {
-            analysis,
+            analysis: enhancedAnalysis,
             cacheKey,
             timestamp: Date.now()
         });
 
         // ✅ Add runtime fact with rule-specific name
         if (params.resultFact) {
-            almanac.addRuntimeFact(params.resultFact, analysis);
+            almanac.addRuntimeFact(params.resultFact, enhancedAnalysis);
         }
 
         logger.debug(`repoDependencyAnalysis result: ${safeStringify(result)}`);
-        logger.debug(`repoDependencyAnalysis returning analysis array directly: ${safeStringify(analysis)}`);
+        logger.debug(`repoDependencyAnalysis returning analysis array directly: ${safeStringify(enhancedAnalysis)}`);
 
         // Return just the analysis array for the outdatedFramework operator
         return result.result;

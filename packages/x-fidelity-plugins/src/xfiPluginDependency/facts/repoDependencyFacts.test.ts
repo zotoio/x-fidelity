@@ -1015,8 +1015,8 @@ describe('repoDependencyFacts', () => {
                 { dependency: 'package1', currentVersion: '1.0.0', requiredVersion: '^2.0.0' }
             ]);
             
-            // Should have called factValue twice (once for each call)
-            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(2);
+            // Should have called factValue 4 times (twice per call: once for repoDependencyVersions and once for fileData)
+            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(4);
             
             // Should have set runtime facts for both calls
             expect(mockAlmanac.addRuntimeFact).toHaveBeenCalledWith('testResult1', expect.any(Array));
@@ -1049,7 +1049,8 @@ describe('repoDependencyFacts', () => {
 
             expect(result1).toEqual([]);
             expect(result2).toEqual([]);
-            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(2);
+            // 4 times: twice per call (repoDependencyVersions + fileData)
+            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(4);
         });
         
         it('should handle errors during analysis', async () => {
@@ -1251,8 +1252,9 @@ describe('repoDependencyFacts', () => {
             // Second call - should compute again due to cache clear
             await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'test2' }, mockAlmanac);
 
-            // Should have called factValue twice since cache was cleared
-            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(2);
+            // Should have called factValue 4 times since cache was cleared:
+            // 2 calls for repoDependencyVersions + 2 calls for fileData (repoPath lookup)
+            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(4);
         });
 
         it('should clear all caches when clearDependencyCache is called', async () => {
@@ -1272,7 +1274,9 @@ describe('repoDependencyFacts', () => {
             // Second call should recompute
             await repoDependencyFacts.repoDependencyAnalysis({ resultFact: 'test2' }, mockAlmanac);
 
-            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(2);
+            // Should have called factValue 4 times:
+            // 2 calls for repoDependencyVersions + 2 calls for fileData (repoPath lookup)
+            expect(mockAlmanac.factValue).toHaveBeenCalledTimes(4);
         });
     });
 

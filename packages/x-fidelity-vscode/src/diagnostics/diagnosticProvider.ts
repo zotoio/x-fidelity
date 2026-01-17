@@ -388,6 +388,20 @@ export class DiagnosticProvider implements vscode.Disposable {
             continue;
           }
 
+          // ENHANCEMENT: Check if this is a dependency issue with manifest location
+          // If so, route it to the manifest file (e.g., package.json) instead of REPO_GLOBAL_CHECK
+          let effectiveFilePath = filePath;
+          const dependencyWithLocation =
+            this.extractDependencyWithLocation(ruleFailure);
+          if (dependencyWithLocation) {
+            effectiveFilePath = dependencyWithLocation.manifestPath;
+            this.logger.debug('Routing dependency issue to manifest file', {
+              originalFilePath: filePath,
+              manifestPath: effectiveFilePath,
+              dependency: dependencyWithLocation.dependency
+            });
+          }
+
           // Use enhanced location extraction with proper fallbacks
           const locationResult =
             DiagnosticLocationExtractor.extractLocation(ruleFailure);
@@ -413,9 +427,17 @@ export class DiagnosticProvider implements vscode.Disposable {
           let message = this.cleanMessage(rawMessage);
 
           // Enhance message for file-level rules
-          if (location.source === 'file-level-rule') {
-            const fileName = filePath.split('/').pop() || 'file';
+          if (
+            location.source === 'file-level-rule' &&
+            !dependencyWithLocation
+          ) {
+            const fileName = effectiveFilePath.split('/').pop() || 'file';
             message = `${message} (affects entire ${fileName})`;
+          }
+
+          // ENHANCEMENT: Enhance message for dependency issues with specific dependency info
+          if (dependencyWithLocation) {
+            message = `${message} [${dependencyWithLocation.dependency}: ${dependencyWithLocation.currentVersion} → ${dependencyWithLocation.requiredVersion}]`;
           }
 
           // Convert 1-based to 0-based coordinates with proper validation
@@ -441,7 +463,7 @@ export class DiagnosticProvider implements vscode.Disposable {
           const endColumn = validatedRange.endColumn;
 
           const diagnosticIssue: DiagnosticIssue = {
-            file: filePath,
+            file: effectiveFilePath, // Use effectiveFilePath to route to manifest file for dependency issues
             line: startLine,
             column: startColumn,
             endLine: endLine,
@@ -631,6 +653,74 @@ export class DiagnosticProvider implements vscode.Disposable {
       typeof ruleFailure.ruleFailure === 'string' &&
       (ruleFailure.level === undefined || typeof ruleFailure.level === 'string')
     );
+  }
+
+  /**
+   * Extract dependency with location info from a rule failure
+   * Returns the first dependency failure that has manifest location data
+   */
+  private extractDependencyWithLocation(ruleFailure: any): {
+    manifestPath: string;
+    dependency: string;
+    currentVersion: string;
+    requiredVersion: string;
+    lineNumber: number;
+    columnNumber: number;
+    endLineNumber: number;
+    endColumnNumber: number;
+  } | null {
+    // Check for dependency failures with location info in details.details array
+    const dependencyDetails = ruleFailure.details?.details;
+
+    if (Array.isArray(dependencyDetails) && dependencyDetails.length > 0) {
+      // Find a dependency failure with location info
+      const depWithLocation = dependencyDetails.find(
+        (dep: any) =>
+          dep &&
+          dep.location &&
+          typeof dep.location.manifestPath === 'string' &&
+          typeof dep.location.lineNumber === 'number'
+      );
+
+      if (depWithLocation && depWithLocation.location) {
+        return {
+          manifestPath: depWithLocation.location.manifestPath,
+          dependency: depWithLocation.dependency || 'unknown',
+          currentVersion: depWithLocation.currentVersion || 'unknown',
+          requiredVersion: depWithLocation.requiredVersion || 'unknown',
+          lineNumber: depWithLocation.location.lineNumber,
+          columnNumber: depWithLocation.location.columnNumber || 1,
+          endLineNumber:
+            depWithLocation.location.endLineNumber ||
+            depWithLocation.location.lineNumber,
+          endColumnNumber: depWithLocation.location.endColumnNumber || 100
+        };
+      }
+    }
+
+    // Check for single dependency failure (not in array)
+    const directDep = ruleFailure.details?.details;
+    if (
+      directDep &&
+      !Array.isArray(directDep) &&
+      directDep.location &&
+      typeof directDep.location.manifestPath === 'string' &&
+      typeof directDep.location.lineNumber === 'number'
+    ) {
+      return {
+        manifestPath: directDep.location.manifestPath,
+        dependency: directDep.dependency || 'unknown',
+        currentVersion: directDep.currentVersion || 'unknown',
+        requiredVersion: directDep.requiredVersion || 'unknown',
+        lineNumber: directDep.location.lineNumber,
+        columnNumber: directDep.location.columnNumber || 1,
+        endLineNumber:
+          directDep.location.endLineNumber || directDep.location.lineNumber,
+        endColumnNumber: directDep.location.endColumnNumber || 100
+      };
+    }
+
+    return null;
   }
 
   /**
