@@ -5,12 +5,18 @@
  * precise line and column locations for dependencies.
  * 
  * This enables highlighting dependency issues directly in the manifest files.
+ * 
+ * Supports workspaces:
+ * - yarn workspaces (package.json "workspaces" field)
+ * - pnpm workspaces (pnpm-workspace.yaml)
+ * - npm workspaces (package.json "workspaces" field)
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '@x-fidelity/core';
 import type { DependencyLocation } from '@x-fidelity/types';
+import * as yaml from 'js-yaml';
 
 // Re-export for convenience
 export type { DependencyLocation } from '@x-fidelity/types';
@@ -27,24 +33,207 @@ interface ManifestCache {
 const manifestCache = new Map<string, ManifestCache>();
 
 /**
+ * Cache for workspace package.json paths
+ */
+interface WorkspaceCache {
+    mtime: number;
+    packagePaths: string[];
+}
+
+const workspaceCache = new Map<string, WorkspaceCache>();
+
+/**
  * Clear the manifest cache (useful for testing)
  */
 export function clearManifestCache(): void {
     manifestCache.clear();
+    workspaceCache.clear();
 }
 
 /**
- * Parse package.json and extract dependency locations
- * 
- * @param repoPath - Path to the repository root
- * @returns Map of dependency names to their locations
+ * Expand glob patterns to match files/directories
+ * Simple implementation for workspace patterns like "packages/*"
  */
-export async function parsePackageJsonLocations(repoPath: string): Promise<Map<string, DependencyLocation>> {
-    const packageJsonPath = path.join(repoPath, 'package.json');
+function expandGlobPattern(repoPath: string, pattern: string): string[] {
+    const results: string[] = [];
+    
+    // Handle negation patterns (e.g., "!packages/internal")
+    if (pattern.startsWith('!')) {
+        return []; // Skip negation patterns for now
+    }
+    
+    // Split pattern into parts
+    const parts = pattern.split('/');
+    let currentPaths = [repoPath];
+    
+    for (const part of parts) {
+        const nextPaths: string[] = [];
+        
+        for (const currentPath of currentPaths) {
+            if (part === '*' || part === '**') {
+                // Wildcard - match all directories
+                try {
+                    const entries = fs.readdirSync(currentPath, { withFileTypes: true });
+                    for (const entry of entries) {
+                        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+                            nextPaths.push(path.join(currentPath, entry.name));
+                        }
+                    }
+                } catch {
+                    // Ignore read errors
+                }
+            } else if (part.includes('*')) {
+                // Pattern like "package-*"
+                const regex = new RegExp('^' + part.replace(/\*/g, '.*') + '$');
+                try {
+                    const entries = fs.readdirSync(currentPath, { withFileTypes: true });
+                    for (const entry of entries) {
+                        if (entry.isDirectory() && regex.test(entry.name)) {
+                            nextPaths.push(path.join(currentPath, entry.name));
+                        }
+                    }
+                } catch {
+                    // Ignore read errors
+                }
+            } else {
+                // Exact match
+                const fullPath = path.join(currentPath, part);
+                if (fs.existsSync(fullPath)) {
+                    nextPaths.push(fullPath);
+                }
+            }
+        }
+        
+        currentPaths = nextPaths;
+    }
+    
+    return currentPaths;
+}
+
+/**
+ * Get workspace package paths from pnpm-workspace.yaml
+ */
+function getPnpmWorkspacePackages(repoPath: string): string[] {
+    const workspaceFile = path.join(repoPath, 'pnpm-workspace.yaml');
+    
+    if (!fs.existsSync(workspaceFile)) {
+        return [];
+    }
     
     try {
+        const content = fs.readFileSync(workspaceFile, 'utf-8');
+        const config = yaml.load(content) as { packages?: string[] };
+        
+        if (!config.packages || !Array.isArray(config.packages)) {
+            return [];
+        }
+        
+        const packagePaths: string[] = [];
+        for (const pattern of config.packages) {
+            const expanded = expandGlobPattern(repoPath, pattern);
+            packagePaths.push(...expanded);
+        }
+        
+        return packagePaths;
+    } catch (error) {
+        logger.debug(`Error reading pnpm-workspace.yaml: ${error}`);
+        return [];
+    }
+}
+
+/**
+ * Get workspace package paths from package.json workspaces field
+ * (Used by yarn and npm workspaces)
+ */
+function getPackageJsonWorkspaces(repoPath: string): string[] {
+    const packageJsonPath = path.join(repoPath, 'package.json');
+    
+    if (!fs.existsSync(packageJsonPath)) {
+        return [];
+    }
+    
+    try {
+        const content = fs.readFileSync(packageJsonPath, 'utf-8');
+        const pkg = JSON.parse(content);
+        
+        let patterns: string[] = [];
+        
+        if (Array.isArray(pkg.workspaces)) {
+            patterns = pkg.workspaces;
+        } else if (pkg.workspaces && Array.isArray(pkg.workspaces.packages)) {
+            // Yarn workspaces with nohoist
+            patterns = pkg.workspaces.packages;
+        }
+        
+        if (patterns.length === 0) {
+            return [];
+        }
+        
+        const packagePaths: string[] = [];
+        for (const pattern of patterns) {
+            const expanded = expandGlobPattern(repoPath, pattern);
+            packagePaths.push(...expanded);
+        }
+        
+        return packagePaths;
+    } catch (error) {
+        logger.debug(`Error reading package.json workspaces: ${error}`);
+        return [];
+    }
+}
+
+/**
+ * Get all workspace package paths (pnpm, yarn, npm workspaces)
+ */
+function getWorkspacePackagePaths(repoPath: string): string[] {
+    // Check cache
+    const rootPackageJson = path.join(repoPath, 'package.json');
+    const pnpmWorkspace = path.join(repoPath, 'pnpm-workspace.yaml');
+    
+    try {
+        const cacheKey = repoPath;
+        let latestMtime = 0;
+        
+        if (fs.existsSync(rootPackageJson)) {
+            latestMtime = Math.max(latestMtime, fs.statSync(rootPackageJson).mtime.getTime());
+        }
+        if (fs.existsSync(pnpmWorkspace)) {
+            latestMtime = Math.max(latestMtime, fs.statSync(pnpmWorkspace).mtime.getTime());
+        }
+        
+        const cached = workspaceCache.get(cacheKey);
+        if (cached && cached.mtime === latestMtime) {
+            return cached.packagePaths;
+        }
+        
+        // Try pnpm workspaces first
+        let packagePaths = getPnpmWorkspacePackages(repoPath);
+        
+        // If no pnpm workspaces, try yarn/npm workspaces
+        if (packagePaths.length === 0) {
+            packagePaths = getPackageJsonWorkspaces(repoPath);
+        }
+        
+        // Cache the result
+        workspaceCache.set(cacheKey, {
+            mtime: latestMtime,
+            packagePaths
+        });
+        
+        logger.debug(`Found ${packagePaths.length} workspace packages`);
+        return packagePaths;
+    } catch (error) {
+        logger.debug(`Error getting workspace packages: ${error}`);
+        return [];
+    }
+}
+
+/**
+ * Parse a single package.json and extract dependency locations
+ */
+function parseSinglePackageJson(packageJsonPath: string): Map<string, DependencyLocation> {
+    try {
         if (!fs.existsSync(packageJsonPath)) {
-            logger.debug(`No package.json found at ${packageJsonPath}`);
             return new Map();
         }
         
@@ -54,7 +243,6 @@ export async function parsePackageJsonLocations(repoPath: string): Promise<Map<s
         // Check cache
         const cached = manifestCache.get(packageJsonPath);
         if (cached && cached.mtime === mtime) {
-            logger.debug('Using cached package.json locations');
             return cached.locations;
         }
         
@@ -68,8 +256,50 @@ export async function parsePackageJsonLocations(repoPath: string): Promise<Map<s
             locations
         });
         
-        logger.debug(`Parsed ${locations.size} dependency locations from package.json`);
         return locations;
+    } catch (error) {
+        logger.debug(`Error parsing ${packageJsonPath}: ${error}`);
+        return new Map();
+    }
+}
+
+/**
+ * Parse package.json files and extract dependency locations
+ * Supports workspaces (yarn, pnpm, npm) - parses all workspace package.json files
+ * 
+ * @param repoPath - Path to the repository root
+ * @returns Map of dependency names to their locations
+ */
+export async function parsePackageJsonLocations(repoPath: string): Promise<Map<string, DependencyLocation>> {
+    const allLocations = new Map<string, DependencyLocation>();
+    
+    try {
+        // Parse root package.json
+        const rootPackageJson = path.join(repoPath, 'package.json');
+        const rootLocations = parseSinglePackageJson(rootPackageJson);
+        for (const [name, location] of rootLocations) {
+            allLocations.set(name, location);
+        }
+        
+        // Parse workspace package.json files
+        const workspacePackages = getWorkspacePackagePaths(repoPath);
+        for (const packagePath of workspacePackages) {
+            const packageJsonPath = path.join(packagePath, 'package.json');
+            const locations = parseSinglePackageJson(packageJsonPath);
+            
+            // Merge locations (workspace packages take precedence for their own deps)
+            for (const [name, location] of locations) {
+                // Only override if not already set (root takes precedence)
+                // Actually, for precision, we might want the most specific location
+                // For now, first found wins - this matches common monorepo patterns
+                if (!allLocations.has(name)) {
+                    allLocations.set(name, location);
+                }
+            }
+        }
+        
+        logger.debug(`Parsed ${allLocations.size} dependency locations from ${1 + workspacePackages.length} package.json files`);
+        return allLocations;
         
     } catch (error) {
         logger.error(`Error parsing package.json locations: ${error}`);

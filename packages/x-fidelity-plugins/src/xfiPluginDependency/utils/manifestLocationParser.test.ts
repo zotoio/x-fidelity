@@ -126,17 +126,23 @@ describe('manifestLocationParser', () => {
   }
 }`;
             
-            mockFs.existsSync.mockReturnValue(true);
+            // Mock existsSync to only return true for root package.json, not workspace files
+            mockFs.existsSync.mockImplementation((filePath: fs.PathLike) => {
+                const p = filePath.toString();
+                return p.endsWith('package.json') && !p.includes('pnpm-workspace');
+            });
             mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
             mockFs.readFileSync.mockReturnValue(packageJsonContent);
             
-            // First call
+            // First call - reads package.json twice (once for parsing, once for workspace detection)
+            // but workspace detection reads the same cached content
+            const initialReadCount = mockFs.readFileSync.mock.calls.length;
             await parsePackageJsonLocations('/test/repo');
-            expect(mockFs.readFileSync).toHaveBeenCalledTimes(1);
+            const firstCallReads = mockFs.readFileSync.mock.calls.length - initialReadCount;
             
-            // Second call should use cache
+            // Second call should use cache (no additional reads)
             await parsePackageJsonLocations('/test/repo');
-            expect(mockFs.readFileSync).toHaveBeenCalledTimes(1); // Still 1, not 2
+            expect(mockFs.readFileSync).toHaveBeenCalledTimes(firstCallReads); // Same count as after first call
         });
 
         it('should handle peerDependencies section', async () => {
@@ -333,7 +339,11 @@ describe('manifestLocationParser', () => {
   }
 }`;
             
-            mockFs.existsSync.mockReturnValue(true);
+            // Mock to only return true for root package.json
+            mockFs.existsSync.mockImplementation((filePath: fs.PathLike) => {
+                const p = filePath.toString();
+                return p.endsWith('package.json') && !p.includes('pnpm-workspace');
+            });
             mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
             mockFs.readFileSync.mockReturnValue(packageJsonContent);
             
@@ -349,9 +359,6 @@ describe('manifestLocationParser', () => {
             expect(enhanced[0].location?.lineNumber).toBe(3);
             expect(enhanced[1].location).toBeDefined();
             expect(enhanced[1].location?.lineNumber).toBe(4);
-            
-            // Should only read the file once
-            expect(mockFs.readFileSync).toHaveBeenCalledTimes(1);
         });
 
         it('should handle mixed found and not found dependencies', async () => {
@@ -361,7 +368,10 @@ describe('manifestLocationParser', () => {
   }
 }`;
             
-            mockFs.existsSync.mockReturnValue(true);
+            mockFs.existsSync.mockImplementation((filePath: fs.PathLike) => {
+                const p = filePath.toString();
+                return p.endsWith('package.json') && !p.includes('pnpm-workspace');
+            });
             mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
             mockFs.readFileSync.mockReturnValue(packageJsonContent);
             
@@ -375,6 +385,152 @@ describe('manifestLocationParser', () => {
             expect(enhanced).toHaveLength(2);
             expect(enhanced[0].location).toBeDefined();
             expect(enhanced[1].location).toBeUndefined();
+        });
+    });
+
+    describe('workspace support', () => {
+        it('should find dependencies in yarn/npm workspace packages', async () => {
+            const rootPackageJson = `{
+  "name": "monorepo",
+  "workspaces": ["packages/*"],
+  "dependencies": {
+    "root-dep": "^1.0.0"
+  }
+}`;
+            const workspacePackageJson = `{
+  "name": "@test/pkg",
+  "dependencies": {
+    "workspace-dep": "^2.0.0"
+  }
+}`;
+            
+            mockFs.existsSync.mockImplementation((filePath: fs.PathLike) => {
+                const p = filePath.toString();
+                // Allow root package.json, workspace package.json, packages dir and packages/pkg
+                return p === '/test/repo/package.json' || 
+                       p === '/test/repo/packages' ||
+                       p === '/test/repo/packages/pkg' ||
+                       p === '/test/repo/packages/pkg/package.json';
+            });
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockImplementation((filePath: fs.PathOrFileDescriptor) => {
+                const p = filePath.toString();
+                if (p === '/test/repo/packages/pkg/package.json') {
+                    return workspacePackageJson;
+                }
+                return rootPackageJson;
+            });
+            mockFs.readdirSync.mockImplementation((dirPath: fs.PathLike, options?: any) => {
+                const p = dirPath.toString();
+                if (p === '/test/repo/packages') {
+                    // Return Dirent-like objects when withFileTypes is used
+                    return [{ name: 'pkg', isDirectory: () => true }] as any;
+                }
+                return [];
+            });
+            
+            const locations = await parsePackageJsonLocations('/test/repo');
+            
+            // Should find deps from both root and workspace package
+            expect(locations.get('root-dep')).toBeDefined();
+            expect(locations.get('workspace-dep')).toBeDefined();
+        });
+
+        it('should find dependencies in pnpm workspace packages', async () => {
+            const rootPackageJson = `{
+  "name": "monorepo",
+  "dependencies": {
+    "root-dep": "^1.0.0"
+  }
+}`;
+            const pnpmWorkspaceYaml = `packages:
+  - 'packages/*'
+`;
+            const workspacePackageJson = `{
+  "name": "@test/pkg",
+  "dependencies": {
+    "pnpm-workspace-dep": "^3.0.0"
+  }
+}`;
+            
+            mockFs.existsSync.mockImplementation((filePath: fs.PathLike) => {
+                const p = filePath.toString();
+                return p === '/test/repo/package.json' || 
+                       p === '/test/repo/pnpm-workspace.yaml' || 
+                       p === '/test/repo/packages' ||
+                       p === '/test/repo/packages/pkg' ||
+                       p === '/test/repo/packages/pkg/package.json';
+            });
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockImplementation((filePath: fs.PathOrFileDescriptor) => {
+                const p = filePath.toString();
+                if (p === '/test/repo/pnpm-workspace.yaml') {
+                    return pnpmWorkspaceYaml;
+                }
+                if (p === '/test/repo/packages/pkg/package.json') {
+                    return workspacePackageJson;
+                }
+                return rootPackageJson;
+            });
+            mockFs.readdirSync.mockImplementation((dirPath: fs.PathLike, options?: any) => {
+                const p = dirPath.toString();
+                if (p === '/test/repo/packages') {
+                    return [{ name: 'pkg', isDirectory: () => true }] as any;
+                }
+                return [];
+            });
+            
+            const locations = await parsePackageJsonLocations('/test/repo');
+            
+            // Should find deps from both root and workspace package
+            expect(locations.get('root-dep')).toBeDefined();
+            expect(locations.get('pnpm-workspace-dep')).toBeDefined();
+        });
+
+        it('should use root package.json location when dependency exists in both', async () => {
+            const rootPackageJson = `{
+  "name": "monorepo",
+  "workspaces": ["packages/*"],
+  "dependencies": {
+    "shared-dep": "^1.0.0"
+  }
+}`;
+            const workspacePackageJson = `{
+  "name": "@test/pkg",
+  "dependencies": {
+    "shared-dep": "^2.0.0"
+  }
+}`;
+            
+            mockFs.existsSync.mockImplementation((filePath: fs.PathLike) => {
+                const p = filePath.toString();
+                return p === '/test/repo/package.json' || 
+                       p === '/test/repo/packages' ||
+                       p === '/test/repo/packages/pkg' ||
+                       p === '/test/repo/packages/pkg/package.json';
+            });
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockImplementation((filePath: fs.PathOrFileDescriptor) => {
+                const p = filePath.toString();
+                if (p === '/test/repo/packages/pkg/package.json') {
+                    return workspacePackageJson;
+                }
+                return rootPackageJson;
+            });
+            mockFs.readdirSync.mockImplementation((dirPath: fs.PathLike, options?: any) => {
+                const p = dirPath.toString();
+                if (p === '/test/repo/packages') {
+                    return [{ name: 'pkg', isDirectory: () => true }] as any;
+                }
+                return [];
+            });
+            
+            const locations = await parsePackageJsonLocations('/test/repo');
+            
+            // Should find shared-dep at root location (root takes precedence)
+            const sharedDepLocation = locations.get('shared-dep');
+            expect(sharedDepLocation).toBeDefined();
+            expect(sharedDepLocation?.manifestPath).toBe('/test/repo/package.json');
         });
     });
 });
