@@ -10,6 +10,19 @@
  * - yarn workspaces (package.json "workspaces" field)
  * - pnpm workspaces (pnpm-workspace.yaml)
  * - npm workspaces (package.json "workspaces" field)
+ * 
+ * Supports dependency override/resolution fields:
+ * - dependencies, devDependencies, peerDependencies, optionalDependencies
+ * - bundledDependencies, bundleDependencies
+ * - resolutions (Yarn classic - override transitive dependency versions)
+ * - overrides (npm 8.3+ - similar to resolutions)
+ * - pnpm.overrides (pnpm equivalent)
+ * 
+ * Handles resolution/override patterns:
+ * - Simple: "lodash": "4.17.21"
+ * - Glob patterns: "**\/lodash": "4.17.21", "react/*": "18.0.0"
+ * - Version constraints: "@scope/package@1.0.0": "2.0.0"
+ * - Nested resolutions: "parent/child": "1.0.0"
  */
 
 import * as fs from 'fs';
@@ -323,63 +336,107 @@ export async function parsePackageJsonLocations(repoPath: string): Promise<Map<s
 /**
  * Parse package.json content and extract dependency locations
  * Uses a text-based approach to find exact line/column positions
+ * 
+ * Supports:
+ * - Standard dependency sections (dependencies, devDependencies, etc.)
+ * - Yarn resolutions (resolutions field)
+ * - npm overrides (overrides field) 
+ * - pnpm overrides (pnpm.overrides field)
  */
 function parsePackageJsonContent(content: string, filePath: string): Map<string, DependencyLocation> {
     const locations = new Map<string, DependencyLocation>();
     const lines = content.split('\n');
     
-    // Sections that contain dependencies
-    const dependencySections = [
+    // Sections that contain dependencies (top-level simple objects)
+    const simpleDependencySections = [
         'dependencies',
         'devDependencies',
         'peerDependencies',
         'optionalDependencies',
         'bundledDependencies',
-        'bundleDependencies'
+        'bundleDependencies',
+        'resolutions',    // Yarn classic resolutions
+        'overrides'       // npm 8.3+ overrides
     ];
     
     let currentSection: string | null = null;
-    let braceDepth = 0;
-    let inDependencySection = false;
+    let inPnpmSection = false;
+    let pnpmBraceDepth = 0;
+    let sectionBraceDepth = 0;
     
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
         const line = lines[lineIndex];
         const lineNumber = lineIndex + 1; // 1-based
         
-        // Track brace depth to know when we exit a section
-        for (const char of line) {
-            if (char === '{') braceDepth++;
-            if (char === '}') braceDepth--;
+        // Count braces on this line
+        const openBraces = (line.match(/\{/g) || []).length;
+        const closeBraces = (line.match(/\}/g) || []).length;
+        
+        // Check for entering pnpm section
+        if (!inPnpmSection && !currentSection) {
+            const pnpmMatch = line.match(/"pnpm"\s*:\s*\{/);
+            if (pnpmMatch) {
+                inPnpmSection = true;
+                pnpmBraceDepth = 1;
+                continue;
+            }
         }
         
-        // Check if we're entering a dependency section
-        for (const section of dependencySections) {
-            const sectionMatch = line.match(new RegExp(`"${section}"\\s*:\\s*\\{?`));
-            if (sectionMatch) {
-                currentSection = section;
-                inDependencySection = true;
-                // If opening brace is on the same line, we're in the section
-                if (line.includes('{')) {
-                    braceDepth = line.split('{').length - line.split('}').length;
+        // If we're in pnpm section but not in a subsection, look for overrides
+        if (inPnpmSection && !currentSection) {
+            const overridesMatch = line.match(/"overrides"\s*:\s*\{/);
+            if (overridesMatch) {
+                currentSection = 'pnpm.overrides';
+                sectionBraceDepth = 1;
+                continue;
+            }
+            
+            // Track pnpm brace depth
+            pnpmBraceDepth += openBraces - closeBraces;
+            if (pnpmBraceDepth <= 0) {
+                inPnpmSection = false;
+                pnpmBraceDepth = 0;
+            }
+            continue;
+        }
+        
+        // Check if we're entering a simple dependency section (only at top level)
+        if (!currentSection && !inPnpmSection) {
+            for (const section of simpleDependencySections) {
+                const sectionMatch = line.match(new RegExp(`"${section}"\\s*:\\s*\\{`));
+                if (sectionMatch) {
+                    currentSection = section;
+                    sectionBraceDepth = 1;
+                    break;
                 }
+            }
+            if (currentSection) {
                 continue;
             }
         }
         
         // If we're in a dependency section, look for dependency entries
-        if (inDependencySection && currentSection) {
+        if (currentSection) {
             // Match dependency entries: "package-name": "version"
             // Handles various formats:
             // - "react": "^18.0.0"
             // - "@scope/package": "1.0.0"
+            // - "react/*": "18.0.0" (resolutions glob patterns)
+            // - "**/lodash": "4.17.21" (resolutions with ** prefix)
+            // - "@scope/package@1.0.0": "2.0.0" (resolutions with version constraint)
             const depMatch = line.match(/^\s*"([^"]+)"\s*:\s*"([^"]+)"/);
             
             if (depMatch) {
-                const [fullMatch, depName, version] = depMatch;
+                const [, depName] = depMatch;
                 const columnStart = line.indexOf(`"${depName}"`) + 1; // 1-based, start of quotes
                 const columnEnd = line.lastIndexOf('"') + 2; // After the closing quote of version
                 
-                locations.set(depName, {
+                // Normalize dependency name for resolutions/overrides
+                // Remove glob patterns and version constraints for lookup
+                const normalizedName = normalizeDependencyName(depName);
+                
+                // Store with both the original and normalized name for flexibility
+                const locationData: DependencyLocation = {
                     manifestPath: filePath,
                     lineNumber,
                     columnNumber: columnStart + 1, // Start after the opening quote
@@ -387,18 +444,86 @@ function parsePackageJsonContent(content: string, filePath: string): Map<string,
                     endColumnNumber: columnEnd,
                     section: currentSection,
                     lineContent: line.trim()
-                });
+                };
+                
+                // Use original name as key (for exact matches)
+                locations.set(depName, locationData);
+                
+                // Also store normalized name if different (for flexible lookup)
+                if (normalizedName !== depName && !locations.has(normalizedName)) {
+                    locations.set(normalizedName, locationData);
+                }
             }
             
-            // Check if we've exited the dependency section (closing brace at depth 1)
-            if (line.includes('}') && braceDepth <= 1) {
-                inDependencySection = false;
+            // Update section brace depth
+            sectionBraceDepth += openBraces - closeBraces;
+            
+            // Check if we've exited the current section
+            if (sectionBraceDepth <= 0) {
+                // If we were in pnpm.overrides, stay in pnpm section
+                if (currentSection === 'pnpm.overrides') {
+                    // Adjust pnpm brace depth for the closing brace we just processed
+                    pnpmBraceDepth += openBraces - closeBraces - 1; // -1 for the section close
+                }
                 currentSection = null;
+                sectionBraceDepth = 0;
             }
         }
     }
     
     return locations;
+}
+
+/**
+ * Normalize dependency name from resolutions/overrides format
+ * Removes glob patterns, version constraints, and path prefixes
+ * 
+ * Examples:
+ * - "react" → "react"
+ * - "react/*" → "react"
+ * - "**\/lodash" → "lodash"
+ * - "@scope/package" → "@scope/package"
+ * - "@scope/package@1.0.0" → "@scope/package"
+ * - "parent/child" → "child" (for nested resolution)
+ */
+function normalizeDependencyName(name: string): string {
+    let normalized = name;
+    
+    // Remove ** prefix (yarn resolution glob)
+    if (normalized.startsWith('**/')) {
+        normalized = normalized.substring(3);
+    }
+    
+    // Remove /* suffix (yarn resolution glob)
+    if (normalized.endsWith('/*')) {
+        normalized = normalized.slice(0, -2);
+    }
+    
+    // Handle version constraint in name like "@scope/package@1.0.0"
+    // But be careful with scoped packages that start with @
+    if (normalized.includes('@') && !normalized.startsWith('@')) {
+        // Non-scoped with version: "lodash@4.0.0" → "lodash"
+        normalized = normalized.split('@')[0];
+    } else if (normalized.startsWith('@')) {
+        // Scoped package: check if there's a version after the package name
+        // "@scope/package@1.0.0" → "@scope/package"
+        const parts = normalized.split('@');
+        if (parts.length === 3) {
+            // ['', 'scope/package', '1.0.0']
+            normalized = `@${parts[1]}`;
+        }
+    }
+    
+    // Handle nested resolution paths like "package-a/lodash"
+    // In this case, we want "lodash" (the actual dependency)
+    // But NOT for scoped packages like "@scope/package"
+    if (!normalized.startsWith('@') && normalized.includes('/')) {
+        // Take the last segment as the actual package name
+        const segments = normalized.split('/');
+        normalized = segments[segments.length - 1];
+    }
+    
+    return normalized;
 }
 
 /**

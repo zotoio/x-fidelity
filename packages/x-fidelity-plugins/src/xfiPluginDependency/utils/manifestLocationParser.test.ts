@@ -533,4 +533,188 @@ describe('manifestLocationParser', () => {
             expect(sharedDepLocation?.manifestPath).toBe('/test/repo/package.json');
         });
     });
+
+    describe('resolutions and overrides support', () => {
+        it('should parse yarn resolutions section', async () => {
+            const packageJsonContent = `{
+  "name": "test-package",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "^18.0.0"
+  },
+  "resolutions": {
+    "lodash": "4.17.21",
+    "@types/node": "18.0.0"
+  }
+}`;
+            
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockReturnValue(packageJsonContent);
+            
+            const locations = await parsePackageJsonLocations('/test/repo');
+            
+            // react + lodash + @types/node (no duplicates since none have glob patterns)
+            expect(locations.size).toBe(3);
+            
+            const lodashLocation = locations.get('lodash');
+            expect(lodashLocation).toBeDefined();
+            expect(lodashLocation?.lineNumber).toBe(8);
+            expect(lodashLocation?.section).toBe('resolutions');
+            
+            const typesNodeLocation = locations.get('@types/node');
+            expect(typesNodeLocation).toBeDefined();
+            expect(typesNodeLocation?.lineNumber).toBe(9);
+            expect(typesNodeLocation?.section).toBe('resolutions');
+        });
+
+        it('should parse yarn resolutions with glob patterns', async () => {
+            const packageJsonContent = `{
+  "name": "test-package",
+  "version": "1.0.0",
+  "resolutions": {
+    "**/lodash": "4.17.21",
+    "react/*": "18.0.0",
+    "parent/child": "1.0.0"
+  }
+}`;
+            
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockReturnValue(packageJsonContent);
+            
+            const locations = await parsePackageJsonLocations('/test/repo');
+            
+            // Should store both original and normalized names
+            expect(locations.get('**/lodash')).toBeDefined();
+            expect(locations.get('lodash')).toBeDefined();
+            expect(locations.get('lodash')?.lineNumber).toBe(5);
+            
+            expect(locations.get('react/*')).toBeDefined();
+            expect(locations.get('react')).toBeDefined();
+            expect(locations.get('react')?.lineNumber).toBe(6);
+            
+            expect(locations.get('parent/child')).toBeDefined();
+            expect(locations.get('child')).toBeDefined();
+            expect(locations.get('child')?.lineNumber).toBe(7);
+        });
+
+        it('should parse yarn resolutions with version constraints', async () => {
+            const packageJsonContent = `{
+  "name": "test-package",
+  "version": "1.0.0",
+  "resolutions": {
+    "lodash@^4.0.0": "4.17.21",
+    "@scope/package@1.0.0": "2.0.0"
+  }
+}`;
+            
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockReturnValue(packageJsonContent);
+            
+            const locations = await parsePackageJsonLocations('/test/repo');
+            
+            // Should store both original and normalized names
+            expect(locations.get('lodash@^4.0.0')).toBeDefined();
+            expect(locations.get('lodash')).toBeDefined();
+            expect(locations.get('lodash')?.lineNumber).toBe(5);
+            
+            expect(locations.get('@scope/package@1.0.0')).toBeDefined();
+            expect(locations.get('@scope/package')).toBeDefined();
+            expect(locations.get('@scope/package')?.lineNumber).toBe(6);
+        });
+
+        it('should parse npm overrides section', async () => {
+            const packageJsonContent = `{
+  "name": "test-package",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "^18.0.0"
+  },
+  "overrides": {
+    "lodash": "4.17.21",
+    "minimist": "1.2.6"
+  }
+}`;
+            
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockReturnValue(packageJsonContent);
+            
+            const locations = await parsePackageJsonLocations('/test/repo');
+            
+            const lodashLocation = locations.get('lodash');
+            expect(lodashLocation).toBeDefined();
+            expect(lodashLocation?.lineNumber).toBe(8);
+            expect(lodashLocation?.section).toBe('overrides');
+            
+            const minimistLocation = locations.get('minimist');
+            expect(minimistLocation).toBeDefined();
+            expect(minimistLocation?.lineNumber).toBe(9);
+            expect(minimistLocation?.section).toBe('overrides');
+        });
+
+        it('should parse pnpm.overrides section', async () => {
+            const packageJsonContent = `{
+  "name": "test-package",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "^18.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "lodash": "4.17.21",
+      "@types/node": "18.0.0"
+    }
+  }
+}`;
+            
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockReturnValue(packageJsonContent);
+            
+            const locations = await parsePackageJsonLocations('/test/repo');
+            
+            const lodashLocation = locations.get('lodash');
+            expect(lodashLocation).toBeDefined();
+            expect(lodashLocation?.lineNumber).toBe(9);
+            expect(lodashLocation?.section).toBe('pnpm.overrides');
+            
+            const typesNodeLocation = locations.get('@types/node');
+            expect(typesNodeLocation).toBeDefined();
+            expect(typesNodeLocation?.lineNumber).toBe(10);
+            expect(typesNodeLocation?.section).toBe('pnpm.overrides');
+        });
+
+        it('should handle all dependency sections together', async () => {
+            const packageJsonContent = `{
+  "name": "test-package",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "resolutions": {
+    "lodash": "4.17.21"
+  },
+  "overrides": {
+    "minimist": "1.2.6"
+  }
+}`;
+            
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockReturnValue(packageJsonContent);
+            
+            const locations = await parsePackageJsonLocations('/test/repo');
+            
+            expect(locations.get('react')?.section).toBe('dependencies');
+            expect(locations.get('typescript')?.section).toBe('devDependencies');
+            expect(locations.get('lodash')?.section).toBe('resolutions');
+            expect(locations.get('minimist')?.section).toBe('overrides');
+        });
+    });
 });
