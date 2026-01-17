@@ -38,6 +38,42 @@ export interface IssueContext {
   documentation?: string;
   ruleDocUrl?: string;
 
+  // Enhanced highlighting details
+  highlighting?: {
+    /** The actual text that was matched/flagged */
+    matchedText?: string;
+    /** The pattern that triggered this issue (regex, rule condition, etc.) */
+    pattern?: string;
+    /** Context around the match for clarity */
+    matchContext?: string;
+    /** Source of the location information (e.g., 'complexity-metrics', 'dependency-manifest-location') */
+    locationSource?: string;
+    /** Confidence level of the location extraction */
+    confidence?: 'high' | 'medium' | 'low';
+    /** Additional matches if multiple occurrences were found */
+    additionalMatches?: Array<{
+      line: number;
+      column: number;
+      matchedText?: string;
+    }>;
+  };
+
+  // Rule recommendations and descriptions
+  recommendations?: string[];
+  ruleDescription?: string;
+
+  // Dependency-specific details (for dependency version issues)
+  dependencyInfo?: {
+    /** The dependency section (dependencies, devDependencies, peerDependencies) */
+    section?: string;
+    /** Current installed version */
+    currentVersion?: string;
+    /** Required/minimum version */
+    requiredVersion?: string;
+    /** Full line content from manifest file */
+    lineContent?: string;
+  };
+
   // Fix suggestions
   suggestedFix?: {
     description: string;
@@ -535,7 +571,7 @@ export class CommandDelegationRegistry {
   }
 
   /**
-   * Build a comprehensive explanation prompt
+   * Build a comprehensive explanation prompt with enhanced details
    */
   private buildExplanationPrompt(context: IssueContext): string {
     let prompt = `Please explain this code quality issue:\n\n`;
@@ -543,14 +579,70 @@ export class CommandDelegationRegistry {
     prompt += `**Message:** ${context.message}\n`;
     prompt += `**Severity:** ${context.severity}\n`;
     prompt += `**Category:** ${context.category}\n`;
-    prompt += `**File:** ${context.file}:${context.line}:${context.column}\n\n`;
+    prompt += `**File:** ${context.file}:${context.line}:${context.column}\n`;
+
+    // Add end position if available for precise location
+    if (context.endLine && context.endColumn) {
+      prompt += `**Range:** Lines ${context.line}-${context.endLine}, Columns ${context.column}-${context.endColumn}\n`;
+    }
+    prompt += `\n`;
+
+    // Add highlighting details if available
+    if (context.highlighting) {
+      if (context.highlighting.matchedText) {
+        prompt += `**Matched Text:** \`${context.highlighting.matchedText}\`\n`;
+      }
+      if (context.highlighting.pattern) {
+        prompt += `**Pattern:** \`${context.highlighting.pattern}\`\n`;
+      }
+      if (context.highlighting.matchContext) {
+        prompt += `**Match Context:** ${context.highlighting.matchContext}\n`;
+      }
+      if (
+        context.highlighting.additionalMatches &&
+        context.highlighting.additionalMatches.length > 0
+      ) {
+        prompt += `**Additional Occurrences:** ${context.highlighting.additionalMatches.length} more locations\n`;
+      }
+      prompt += `\n`;
+    }
+
+    // Add dependency-specific information
+    if (context.dependencyInfo) {
+      prompt += `**Dependency Details:**\n`;
+      if (context.dependencyInfo.section) {
+        prompt += `- Section: ${context.dependencyInfo.section}\n`;
+      }
+      if (context.dependencyInfo.currentVersion) {
+        prompt += `- Current Version: ${context.dependencyInfo.currentVersion}\n`;
+      }
+      if (context.dependencyInfo.requiredVersion) {
+        prompt += `- Required Version: ${context.dependencyInfo.requiredVersion}\n`;
+      }
+      if (context.dependencyInfo.lineContent) {
+        prompt += `- Manifest Line: \`${context.dependencyInfo.lineContent}\`\n`;
+      }
+      prompt += `\n`;
+    }
 
     if (context.codeSnippet) {
       prompt += `**Code Context:**\n\`\`\`\n${context.codeSnippet}\n\`\`\`\n\n`;
     }
 
+    if (context.ruleDescription) {
+      prompt += `**Rule Description:** ${context.ruleDescription}\n\n`;
+    }
+
     if (context.documentation) {
       prompt += `**Rule Documentation:**\n${context.documentation}\n\n`;
+    }
+
+    if (context.recommendations && context.recommendations.length > 0) {
+      prompt += `**Recommendations:**\n`;
+      context.recommendations.forEach((rec, i) => {
+        prompt += `${i + 1}. ${rec}\n`;
+      });
+      prompt += `\n`;
     }
 
     prompt += `Please provide:\n`;
@@ -726,14 +818,61 @@ export class CommandDelegationRegistry {
   }
 
   /**
-   * Build a comprehensive fix prompt
+   * Build a comprehensive fix prompt with enhanced details
    */
   private buildFixPrompt(context: IssueContext): string {
     let prompt = `Please fix this code quality issue:\n\n`;
     prompt += `**Rule:** ${context.ruleId}\n`;
     prompt += `**Message:** ${context.message}\n`;
     prompt += `**Severity:** ${context.severity}\n`;
-    prompt += `**File:** ${context.file}:${context.line}:${context.column}\n\n`;
+    prompt += `**File:** ${context.file}:${context.line}:${context.column}\n`;
+
+    // Add end position if available for precise location
+    if (context.endLine && context.endColumn) {
+      prompt += `**Range:** Lines ${context.line}-${context.endLine}, Columns ${context.column}-${context.endColumn}\n`;
+    }
+    prompt += `\n`;
+
+    // Add highlighting details to help AI understand what to fix
+    if (context.highlighting) {
+      if (context.highlighting.matchedText) {
+        prompt += `**Problematic Code:** \`${context.highlighting.matchedText}\`\n`;
+      }
+      if (context.highlighting.pattern) {
+        prompt += `**Violation Pattern:** \`${context.highlighting.pattern}\`\n`;
+      }
+      if (
+        context.highlighting.additionalMatches &&
+        context.highlighting.additionalMatches.length > 0
+      ) {
+        prompt += `**Note:** There are ${context.highlighting.additionalMatches.length} additional occurrences of this issue that may also need fixing:\n`;
+        context.highlighting.additionalMatches.slice(0, 5).forEach(match => {
+          prompt += `  - Line ${match.line}${match.matchedText ? `: \`${match.matchedText}\`` : ''}\n`;
+        });
+        if (context.highlighting.additionalMatches.length > 5) {
+          prompt += `  - ... and ${context.highlighting.additionalMatches.length - 5} more\n`;
+        }
+      }
+      prompt += `\n`;
+    }
+
+    // Add dependency-specific information for dependency fixes
+    if (context.dependencyInfo) {
+      prompt += `**Dependency Fix Details:**\n`;
+      if (context.dependencyInfo.section) {
+        prompt += `- Update in: ${context.dependencyInfo.section}\n`;
+      }
+      if (
+        context.dependencyInfo.currentVersion &&
+        context.dependencyInfo.requiredVersion
+      ) {
+        prompt += `- Change version from: ${context.dependencyInfo.currentVersion} to: ${context.dependencyInfo.requiredVersion}\n`;
+      }
+      if (context.dependencyInfo.lineContent) {
+        prompt += `- Current manifest line: \`${context.dependencyInfo.lineContent}\`\n`;
+      }
+      prompt += `\n`;
+    }
 
     if (context.codeSnippet) {
       prompt += `**Current Code:**\n\`\`\`\n${context.codeSnippet}\n\`\`\`\n\n`;
@@ -741,6 +880,14 @@ export class CommandDelegationRegistry {
 
     if (context.suggestedFix) {
       prompt += `**Suggested Fix:**\n${context.suggestedFix.description}\n\n`;
+    }
+
+    if (context.recommendations && context.recommendations.length > 0) {
+      prompt += `**Recommendations:**\n`;
+      context.recommendations.forEach((rec, i) => {
+        prompt += `${i + 1}. ${rec}\n`;
+      });
+      prompt += `\n`;
     }
 
     if (context.documentation) {
@@ -897,7 +1044,7 @@ export class CommandDelegationRegistry {
   }
 
   /**
-   * Build a comprehensive batch fix prompt
+   * Build a comprehensive batch fix prompt with enhanced details
    */
   private buildBatchFixPrompt(context: IssueGroupContext): string {
     let prompt = `Please fix the following ${context.issues.length} code quality issues:\n\n`;
@@ -911,11 +1058,34 @@ export class CommandDelegationRegistry {
       prompt += `   Message: ${issue.message}\n`;
       prompt += `   Severity: ${issue.severity}\n`;
 
+      // Include highlighting details for precise fixes
+      if (issue.highlighting?.matchedText) {
+        prompt += `   Problematic Code: \`${issue.highlighting.matchedText}\`\n`;
+      }
+      if (issue.highlighting?.pattern) {
+        prompt += `   Pattern: \`${issue.highlighting.pattern}\`\n`;
+      }
+
+      // Include dependency info for dependency issues
+      if (issue.dependencyInfo) {
+        if (
+          issue.dependencyInfo.currentVersion &&
+          issue.dependencyInfo.requiredVersion
+        ) {
+          prompt += `   Version: ${issue.dependencyInfo.currentVersion} → ${issue.dependencyInfo.requiredVersion}\n`;
+        }
+      }
+
       if (issue.codeSnippet) {
         prompt += `   Code:\n   \`\`\`\n${issue.codeSnippet
           .split('\n')
           .map(l => '   ' + l)
           .join('\n')}\n   \`\`\`\n`;
+      }
+
+      // Include recommendations if available
+      if (issue.recommendations && issue.recommendations.length > 0) {
+        prompt += `   Recommendations: ${issue.recommendations.join('; ')}\n`;
       }
 
       prompt += `\n`;
