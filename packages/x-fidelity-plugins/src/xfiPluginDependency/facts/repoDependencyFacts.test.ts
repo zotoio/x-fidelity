@@ -619,6 +619,100 @@ describe('repoDependencyFacts', () => {
             expect(result).toEqual([]);
         });
 
+        it('should handle pnpm output with circular reference objects', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const { discoverBinary } = require('@x-fidelity/core');
+            discoverBinary.mockImplementation((binaryName: string) => {
+                return Promise.resolve({
+                    binary: binaryName,
+                    path: `/usr/local/bin/${binaryName}`,
+                    source: 'system'
+                });
+            });
+
+            // Simulate pnpm output where the same object reference appears multiple times
+            // This tests that we handle potential circular references gracefully
+            const sharedDep = { name: 'shared-dep', version: '1.0.0' };
+            const mockPnpmOutput = [
+                {
+                    dependencies: [
+                        {
+                            name: 'package-a',
+                            version: '1.0.0',
+                            dependencies: [sharedDep]
+                        },
+                        {
+                            name: 'package-b',
+                            version: '1.0.0',
+                            dependencies: [sharedDep] // Same object reference
+                        }
+                    ]
+                }
+            ];
+
+            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+
+            const result = await collectLocalDependencies();
+
+            // Should handle the shared reference without crashing
+            expect(result.length).toBe(2);
+            expect(result[0].name).toBe('package-a');
+            expect(result[1].name).toBe('package-b');
+        });
+
+        it('should handle pnpm output with deeply nested dependencies without stack overflow', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const { discoverBinary } = require('@x-fidelity/core');
+            discoverBinary.mockImplementation((binaryName: string) => {
+                return Promise.resolve({
+                    binary: binaryName,
+                    path: `/usr/local/bin/${binaryName}`,
+                    source: 'system'
+                });
+            });
+
+            // Create a deeply nested dependency structure (but not circular in the JSON)
+            const createNestedDep = (depth: number, maxDepth: number): any => {
+                if (depth >= maxDepth) {
+                    return { name: `level-${depth}`, version: '1.0.0' };
+                }
+                return {
+                    name: `level-${depth}`,
+                    version: '1.0.0',
+                    dependencies: [createNestedDep(depth + 1, maxDepth)]
+                };
+            };
+
+            const mockPnpmOutput = [
+                {
+                    dependencies: [createNestedDep(1, 50)] // 50 levels deep
+                }
+            ];
+
+            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+
+            const result = await collectLocalDependencies();
+
+            // Should handle deep nesting without stack overflow
+            expect(result.length).toBe(1);
+            expect(result[0].name).toBe('level-1');
+            
+            // Verify the structure is preserved
+            let current = result[0];
+            let depth = 1;
+            while (current.dependencies && current.dependencies.length > 0) {
+                current = current.dependencies[0];
+                depth++;
+            }
+            expect(depth).toBe(50);
+        });
+
         it('should handle pnpm object format devDependencies', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');

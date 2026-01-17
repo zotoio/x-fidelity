@@ -696,8 +696,8 @@ describe('ReportGenerator', () => {
             });
         });
 
-        describe('parseComplexityIssue', () => {
-            it('should parse complexity issue details', () => {
+        describe('parseComplexityIssues', () => {
+            it('should parse complexity issue details from message', () => {
                 const error = {
                     ruleFailure: 'functionComplexity',
                     level: 'error',
@@ -705,12 +705,50 @@ describe('ReportGenerator', () => {
                         message: 'Function: myFunction is too complex, Cyclomatic: 15, Line: 45'
                     }
                 };
-                const issue = (generator as any).parseComplexityIssue('/test/file.ts', error);
+                const issues = (generator as any).parseComplexityIssues('/test/file.ts', error);
                 
-                expect(issue.file).toBe('/test/file.ts');
-                expect(issue.function).toBe('myFunction');
-                expect(issue.cyclomaticComplexity).toBe(15);
-                expect(issue.line).toBe(45);
+                expect(issues).toHaveLength(1);
+                expect(issues[0].file).toBe('/test/file.ts');
+                expect(issues[0].function).toBe('myFunction');
+                expect(issues[0].cyclomaticComplexity).toBe(15);
+                expect(issues[0].line).toBe(45);
+            });
+
+            it('should parse complexity issues from structured data', () => {
+                const error = {
+                    ruleFailure: 'functionComplexity',
+                    level: 'error',
+                    details: {
+                        message: 'Functions detected with high complexity',
+                        complexities: [
+                            {
+                                name: 'myFunction',
+                                metrics: {
+                                    name: 'myFunction',
+                                    cyclomaticComplexity: 24,
+                                    cognitiveComplexity: 89,
+                                    nestingDepth: 11,
+                                    parameterCount: 10,
+                                    returnCount: 15,
+                                    location: {
+                                        startLine: 22
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                };
+                const issues = (generator as any).parseComplexityIssues('/test/file.ts', error);
+                
+                expect(issues).toHaveLength(1);
+                expect(issues[0].file).toBe('/test/file.ts');
+                expect(issues[0].function).toBe('myFunction');
+                expect(issues[0].cyclomaticComplexity).toBe(24);
+                expect(issues[0].cognitiveComplexity).toBe(89);
+                expect(issues[0].nestingDepth).toBe(11);
+                expect(issues[0].parameterCount).toBe(10);
+                expect(issues[0].returnCount).toBe(15);
+                expect(issues[0].line).toBe(22);
             });
 
             it('should handle missing function name', () => {
@@ -721,14 +759,15 @@ describe('ReportGenerator', () => {
                         message: 'Complexity too high'
                     }
                 };
-                const issue = (generator as any).parseComplexityIssue('/test/file.ts', error);
-                expect(issue.function).toBe('unknown');
+                const issues = (generator as any).parseComplexityIssues('/test/file.ts', error);
+                expect(issues).toHaveLength(1);
+                expect(issues[0].function).toBe('unknown');
             });
 
             it('should handle try-catch errors gracefully', () => {
                 const error = null; // This will cause an error in parsing
-                const issue = (generator as any).parseComplexityIssue('/test/file.ts', error);
-                expect(issue).toBeNull();
+                const issues = (generator as any).parseComplexityIssues('/test/file.ts', error);
+                expect(issues).toEqual([]);
             });
         });
 

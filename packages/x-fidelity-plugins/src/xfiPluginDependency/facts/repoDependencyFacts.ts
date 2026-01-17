@@ -191,8 +191,9 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             }
 
             const execStart = Date.now();
+            // maxBuffer: 200MB to handle large pnpm workspaces with --depth=Infinity
             const result = await execPromise(command, {
-                cwd: actualRepoPath, maxBuffer: 10485760 * 2, env: enhancedEnv
+                cwd: actualRepoPath, maxBuffer: 1024 * 1024 * 200, env: enhancedEnv
             });
             execMs = Date.now() - execStart;
             stdout = result.stdout;
@@ -200,6 +201,7 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
         } catch (execError) {
             // If promisified exec fails, fall back to execSync
             logger.warn(`Falling back to execSync for ${packageManager} dependencies`);
+            logger.trace(execError);
             execMethod = 'execSync';
             
             // Determine the appropriate command for each package manager
@@ -216,8 +218,9 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             }
 
             const execStart = Date.now();
+            // maxBuffer: 200MB to handle large pnpm workspaces with --depth=Infinity
             const output = execSync(command, {
-                cwd: actualRepoPath, maxBuffer: 10485760, env: enhancedEnv
+                cwd: actualRepoPath, maxBuffer: 1024 * 1024 * 200, env: enhancedEnv
             });
             execMs = Date.now() - execStart;
             stdout = output.toString();
@@ -238,7 +241,7 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             const result = JSON.parse(stdout);
             const parseMs = Date.now() - parseStart;
             logger.debug(`collectNodeDependencies: JSON.parse took ${parseMs}ms`);
-            logger.trace(`collectNodeDependencies ${packageManager}: ${JSON.stringify(result)}`);
+            logger.trace(`collectNodeDependencies ${packageManager}: ${safeStringify(result)}`);
             
             if (packageManager === 'npm') {
                 return processNpmDependencies(result);
@@ -249,16 +252,18 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             }
 
         } catch (e) {
-            logger.error(`Error parsing ${packageManager} dependencies: ${JSON.stringify(e)}`);
-            throw new Error(`Error parsing ${packageManager} dependencies`);
+            const errorMessage = e instanceof Error ? e.message : safeStringify(e);
+            logger.error(`Error parsing ${packageManager} dependencies: ${errorMessage}`);
+            throw new Error(`Error parsing ${packageManager} dependencies: ${errorMessage}`);
         }
     } catch (e: any) {
-        let message = `Error determining ${packageManager} dependencies: ${JSON.stringify(e)}`;
+        const errorMessage = e instanceof Error ? e.message : safeStringify(e);
+        let message = `Error determining ${packageManager} dependencies: ${errorMessage}`;
 
         if (e.message?.includes('ELSPROBLEMS')) {
             message += `\nError determining ${packageManager} dependencies: did you forget to run '${packageManager} install' first?`;
         }
-        logger.error(`Error determining ${packageManager} dependencies: ${JSON.stringify(e)}`);
+        logger.error(`Error determining ${packageManager} dependencies: ${errorMessage}`);
         throw new Error(message);
     }
     finally {

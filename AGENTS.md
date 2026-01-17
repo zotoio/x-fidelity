@@ -1,6 +1,6 @@
-# CLAUDE.md
+# For all AI agents to read
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Cursor, Claude and other agents when working with code in this repository.
 
 ## Repository Structure
 
@@ -14,6 +14,8 @@ This is a monorepo containing the X-Fidelity framework for opinionated code adhe
 - `packages/x-fidelity-types`: Shared TypeScript types
 - `packages/x-fidelity-democonfig`: Demo configurations and rules
 - `packages/x-fidelity-fixtures`: Test fixtures
+- `packages/typescript-config`: Shared TypeScript configuration
+- `packages/eslint-config`: Shared ESLint configuration
 
 ## Common Commands
 
@@ -44,12 +46,6 @@ yarn test
 yarn workspace @x-fidelity/core test
 yarn workspace @x-fidelity/plugins test
 yarn workspace x-fidelity-vscode test
-
-# Run consistency testing specifically (CLI package)
-yarn workspace x-fidelity test:consistency
-
-# Run quick consistency test
-yarn workspace x-fidelity test:consistency:quick
 ```
 
 ### CLI Global Install Testing (Using Yarn Workspaces)
@@ -120,7 +116,7 @@ Plugin-based architecture for extensibility:
 
 ### VSCode Extension (`x-fidelity-vscode`)
 - **Extension Manager** (`core/extensionManager.ts`): Main extension coordinator
-- **Analysis Manager** (`analysis/analysisManager.ts`): Handles analysis workflows
+- **CLI Analysis Manager** (`analysis/cliAnalysisManager.ts`): Handles analysis workflows
 - **Tree View Providers**: Issues and control center UI components
 - **Diagnostic Provider**: VSCode diagnostics integration
 - **Report Management**: Analysis result handling and visualization

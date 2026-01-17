@@ -335,9 +335,8 @@ ${criticalIssues}`;
             .flatMap(detail => 
                 detail.errors
                     .filter(error => error.ruleFailure?.includes('functionComplexity') || error.ruleFailure?.includes('complexity'))
-                    .map(error => this.parseComplexityIssue(detail.filePath, error))
-            )
-            .filter(issue => issue !== null);
+                    .flatMap(error => this.parseComplexityIssues(detail.filePath, error))
+            );
 
         if (complexityIssues.length === 0) {
             return '';
@@ -870,23 +869,50 @@ ${githubLink !== path.basename(filePath) ? `**Source:** ${githubLink}` : ''}
         return titleMatch ? titleMatch[1].trim() : 'Critical Issue';
     }
 
-    private parseComplexityIssue(filePath: string, error: any): FunctionComplexityIssue | null {
+    private parseComplexityIssues(filePath: string, error: any): FunctionComplexityIssue[] {
         try {
+            // First try to get structured complexity data from error.details.complexities
+            if (error.details?.complexities && Array.isArray(error.details.complexities)) {
+                const complexities = error.details.complexities;
+                
+                // Return all complexity issues for this file
+                return complexities.map((complexity: any) => {
+                    const metrics = complexity.metrics || complexity;
+                    return {
+                        file: filePath,
+                        function: metrics.name || complexity.name || 'unknown',
+                        cyclomaticComplexity: metrics.cyclomaticComplexity,
+                        cognitiveComplexity: metrics.cognitiveComplexity,
+                        nestingDepth: metrics.nestingDepth,
+                        parameterCount: metrics.parameterCount,
+                        returnCount: metrics.returnCount,
+                        line: metrics.location?.startLine || complexity.location?.startLine
+                    };
+                });
+            }
+
+            // Fallback to message parsing for backwards compatibility
             const message = error.details?.message || error.message || '';
             const functionMatch = message.match(/function[:\s]+([^\s,]+)/i);
             const cyclomaticMatch = message.match(/cyclomatic[:\s]+(\d+)/i);
             const cognitiveMatch = message.match(/cognitive[:\s]+(\d+)/i);
+            const nestingMatch = message.match(/nesting[:\s]+(\d+)/i);
+            const paramMatch = message.match(/parameter[s]?[:\s]+(\d+)/i);
+            const returnMatch = message.match(/return[s]?[:\s]+(\d+)/i);
             const lineMatch = message.match(/line[:\s]+(\d+)/i);
 
-            return {
+            return [{
                 file: filePath,
                 function: functionMatch ? functionMatch[1] : 'unknown',
                 cyclomaticComplexity: cyclomaticMatch ? parseInt(cyclomaticMatch[1]) : undefined,
                 cognitiveComplexity: cognitiveMatch ? parseInt(cognitiveMatch[1]) : undefined,
+                nestingDepth: nestingMatch ? parseInt(nestingMatch[1]) : undefined,
+                parameterCount: paramMatch ? parseInt(paramMatch[1]) : undefined,
+                returnCount: returnMatch ? parseInt(returnMatch[1]) : undefined,
                 line: lineMatch ? parseInt(lineMatch[1]) : undefined
-            };
+            }];
         } catch (e) {
-            return null;
+            return [];
         }
     }
 

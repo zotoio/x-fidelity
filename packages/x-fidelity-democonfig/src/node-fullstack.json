@@ -18,7 +18,6 @@
         "reactHooksDependency-iterative",
         "reactHooksMigration-global",
         "customFactExample-iterative",
-        "extractPackageVersion-iterative",
         "extractEnvApiKey-iterative"
     ],
     "config": {
