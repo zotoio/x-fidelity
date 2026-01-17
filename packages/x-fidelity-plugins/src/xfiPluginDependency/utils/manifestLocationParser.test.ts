@@ -197,6 +197,43 @@ describe('manifestLocationParser', () => {
             expect(location?.lineNumber).toBe(3);
         });
 
+        it('should handle scoped package names correctly', async () => {
+            const packageJsonContent = `{
+  "dependencies": {
+    "@x-fidelity/core": "^1.0.0"
+  }
+}`;
+            
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockReturnValue(packageJsonContent);
+            
+            // "@x-fidelity/core" should be treated as a single package, not transitive
+            const location = await getDependencyLocation('/test/repo', '@x-fidelity/core');
+            
+            expect(location).not.toBeNull();
+            expect(location?.lineNumber).toBe(3);
+        });
+
+        it('should handle scoped package with transitive dep correctly', async () => {
+            const packageJsonContent = `{
+  "dependencies": {
+    "@x-fidelity/core": "^1.0.0"
+  }
+}`;
+            
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockReturnValue(packageJsonContent);
+            
+            // "@x-fidelity/core/react" means react is a transitive dep of @x-fidelity/core
+            // We should look for the root dep (@x-fidelity/core)
+            const location = await getDependencyLocation('/test/repo', '@x-fidelity/core/react');
+            
+            expect(location).not.toBeNull();
+            expect(location?.lineNumber).toBe(3);
+        });
+
         it('should return null for non-existent dependency', async () => {
             const packageJsonContent = `{
   "dependencies": {

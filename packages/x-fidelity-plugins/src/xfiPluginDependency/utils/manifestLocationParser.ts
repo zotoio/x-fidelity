@@ -159,6 +159,40 @@ function parsePackageJsonContent(content: string, filePath: string): Map<string,
 }
 
 /**
+ * Extract the root dependency name from a dependency path
+ * Handles scoped packages correctly:
+ * - "react" → "react"
+ * - "lodash/deep" → "lodash" (transitive dep)
+ * - "@scope/package" → "@scope/package"
+ * - "@scope/package/subdep" → "@scope/package" (transitive dep)
+ * - "@x-fidelity/core/react" → "@x-fidelity/core" (react is transitive of @x-fidelity/core)
+ */
+function extractRootDependency(dependencyPath: string): { rootDep: string; isTransitive: boolean } {
+    if (!dependencyPath.includes('/')) {
+        // Simple package name like "react"
+        return { rootDep: dependencyPath, isTransitive: false };
+    }
+    
+    if (dependencyPath.startsWith('@')) {
+        // Scoped package - need to include the scope and package name
+        // @scope/package or @scope/package/subdep
+        const parts = dependencyPath.split('/');
+        if (parts.length === 2) {
+            // Just "@scope/package" - not transitive
+            return { rootDep: dependencyPath, isTransitive: false };
+        } else {
+            // "@scope/package/subdep/..." - transitive dep
+            // Root is "@scope/package"
+            return { rootDep: `${parts[0]}/${parts[1]}`, isTransitive: true };
+        }
+    } else {
+        // Non-scoped with path like "lodash/deep"
+        // Root is "lodash"
+        return { rootDep: dependencyPath.split('/')[0], isTransitive: true };
+    }
+}
+
+/**
  * Get location for a specific dependency from package.json
  * 
  * @param repoPath - Path to the repository root
@@ -171,23 +205,20 @@ export async function getDependencyLocation(
 ): Promise<DependencyLocation | null> {
     const locations = await parsePackageJsonLocations(repoPath);
     
-    // The dependencyName might include path info like "react/lodash" for transitive deps
-    // We need to extract the root dependency name
-    const rootDepName = dependencyName.includes('/') 
-        ? dependencyName.split('/')[0] 
-        : dependencyName;
+    // Extract the root dependency name, handling scoped packages correctly
+    const { rootDep } = extractRootDependency(dependencyName);
     
     // Handle scoped packages (e.g., @scope/package might be stored with or without @)
-    let location = locations.get(rootDepName);
+    let location = locations.get(rootDep);
     
-    if (!location && rootDepName.startsWith('@')) {
-        // Try without @ prefix
-        location = locations.get(rootDepName.substring(1));
+    if (!location && rootDep.startsWith('@')) {
+        // Try without @ prefix (unlikely but for compatibility)
+        location = locations.get(rootDep.substring(1));
     }
     
-    if (!location && !rootDepName.startsWith('@')) {
+    if (!location && !rootDep.startsWith('@')) {
         // Try with @ prefix
-        location = locations.get(`@${rootDepName}`);
+        location = locations.get(`@${rootDep}`);
     }
     
     return location || null;
@@ -218,8 +249,8 @@ export async function enhanceDependencyFailureWithLocation(
 }> {
     const location = await getDependencyLocation(repoPath, failure.dependency);
     
-    // Determine if this is a transitive dependency (contains path separator)
-    const isTransitive = failure.dependency.includes('/');
+    // Determine if this is a transitive dependency using proper scoped package handling
+    const { isTransitive } = extractRootDependency(failure.dependency);
     
     if (location) {
         return {
@@ -265,21 +296,18 @@ export async function enhanceDependencyFailuresWithLocations(
     const locations = await parsePackageJsonLocations(repoPath);
     
     return failures.map(failure => {
-        const rootDepName = failure.dependency.includes('/') 
-            ? failure.dependency.split('/')[0] 
-            : failure.dependency;
-        
-        const isTransitive = failure.dependency.includes('/');
+        // Extract the root dependency name, handling scoped packages correctly
+        const { rootDep, isTransitive } = extractRootDependency(failure.dependency);
         
         // Try to find location with various name formats
-        let location = locations.get(rootDepName);
+        let location = locations.get(rootDep);
         
-        if (!location && rootDepName.startsWith('@')) {
-            location = locations.get(rootDepName.substring(1));
+        if (!location && rootDep.startsWith('@')) {
+            location = locations.get(rootDep.substring(1));
         }
         
-        if (!location && !rootDepName.startsWith('@')) {
-            location = locations.get(`@${rootDepName}`);
+        if (!location && !rootDep.startsWith('@')) {
+            location = locations.get(`@${rootDep}`);
         }
         
         if (location) {
