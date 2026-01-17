@@ -35,7 +35,7 @@ export async function generateAst(context: AstGenerationContext): Promise<AstRes
   // Auto-detect language if not provided
   const language = context.language || getLanguageFromPath(filePath);
   if (!language) {
-    logger.info(`🚫 AST: Unsupported file type for ${fileName}`);
+    logger.debug(`🚫 AST: Unsupported file type for ${fileName}`);
     return createFailedAstResult(context, 'Unsupported file type for AST generation');
   }
 

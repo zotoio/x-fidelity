@@ -229,3 +229,4 @@ jest-results.json
 *.tgz
 temp/
 .test-results-cache.json
+CONSOLIDATED-TEST-REPORT.md

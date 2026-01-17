@@ -267,22 +267,25 @@ function parseSinglePackageJson(packageJsonPath: string): Map<string, Dependency
  * Parse package.json files and extract dependency locations
  * Supports workspaces (yarn, pnpm, npm) - parses all workspace package.json files
  * 
- * @param repoPath - Path to the repository root
+ * @param repoPath - Path to the repository root (can be relative or absolute)
  * @returns Map of dependency names to their locations
  */
 export async function parsePackageJsonLocations(repoPath: string): Promise<Map<string, DependencyLocation>> {
     const allLocations = new Map<string, DependencyLocation>();
     
+    // Resolve to absolute path to ensure consistent behavior
+    const absoluteRepoPath = path.resolve(repoPath);
+    
     try {
         // Parse root package.json
-        const rootPackageJson = path.join(repoPath, 'package.json');
+        const rootPackageJson = path.join(absoluteRepoPath, 'package.json');
         const rootLocations = parseSinglePackageJson(rootPackageJson);
         for (const [name, location] of rootLocations) {
             allLocations.set(name, location);
         }
         
         // Parse workspace package.json files
-        const workspacePackages = getWorkspacePackagePaths(repoPath);
+        const workspacePackages = getWorkspacePackagePaths(absoluteRepoPath);
         for (const packagePath of workspacePackages) {
             const packageJsonPath = path.join(packagePath, 'package.json');
             const locations = parseSinglePackageJson(packageJsonPath);

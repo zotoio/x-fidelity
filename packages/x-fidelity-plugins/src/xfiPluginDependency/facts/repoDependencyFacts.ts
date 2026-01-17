@@ -532,17 +532,19 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
         const installedVersions: VersionData[] = await almanac.factValue('repoDependencyVersions') || [];
         
         // Get repoPath from params or almanac for location parsing
+        // Always resolve to absolute path for consistent behavior
         let repoPath: string | undefined;
         try {
             const fileData = await almanac.factValue('fileData') as { filePath?: string } | undefined;
             if (fileData && fileData.filePath) {
                 // Extract repo path from file path (REPO_GLOBAL_CHECK uses the repo path)
-                repoPath = fileData.filePath === 'REPO_GLOBAL_CHECK' 
+                const rawPath = fileData.filePath === 'REPO_GLOBAL_CHECK' 
                     ? options.dir || process.cwd()
                     : path.dirname(fileData.filePath);
+                repoPath = path.resolve(rawPath);
             }
         } catch {
-            repoPath = options.dir || process.cwd();
+            repoPath = path.resolve(options.dir || process.cwd());
         }
         
         // ✅ Create cache key to avoid redundant computation
