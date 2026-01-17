@@ -2,6 +2,47 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.5.0](https://github.com/zotoio/x-fidelity/compare/v5.4.3...v5.5.0) (2026-01-17)
+
+### ⚠ BREAKING CHANGES
+
+* **plugins:** Dependencies are now collected by parsing lockfiles directly
+instead of running pnpm/yarn/npm list commands. This means:
+- No need for node_modules to be installed
+- Faster analysis (no subprocess spawning)
+- Works on CI where dependencies may not be fully installed
+
+Supported lockfiles:
+- pnpm-lock.yaml (parses importers section for resolved versions)
+- yarn.lock (regex parsing for version entries)
+- package-lock.json (JSON parsing of packages object)
+
+Note: Some tests need updating to mock fs.readFileSync instead of execSync.
+The implementation has been verified to work correctly with pnpm workspaces.
+
+### Bug Fixes
+
+* **core,vscode,democonfig:** fix complexity report data and settings ([fbe471e](https://github.com/zotoio/x-fidelity/commit/fbe471e0638a256cb3de92f7a9316d138055f9e2))
+* **plugins:** add -r flag to pnpm list for workspace subpackages ([047186c](https://github.com/zotoio/x-fidelity/commit/047186cab5680b6cc105cc6a643c67eba07acb54))
+* **plugins:** detect pnpm workspace before using -r flag ([8de999d](https://github.com/zotoio/x-fidelity/commit/8de999df53e0682aeb66cf0989d39f0ee9555995))
+* **plugins:** don't cache empty dependency results ([16c9b73](https://github.com/zotoio/x-fidelity/commit/16c9b73b0fe39a075b2c208e963851748a36c76e))
+* **plugins:** fix scoped package detection in yarn lockfile and add test coverage ([4d3b206](https://github.com/zotoio/x-fidelity/commit/4d3b2063592c603df6d4e172d939ffec5bb2f3d2))
+* **plugins:** handle scoped packages in manifest location parser ([61f9dca](https://github.com/zotoio/x-fidelity/commit/61f9dca30c1f764c9dd0308c6cc82a8e3ed6d53e))
+* **plugins:** resolve relative paths in manifest location parsing ([1331f54](https://github.com/zotoio/x-fidelity/commit/1331f549f1b8cebe904c31cef26e59039f747114))
+* **plugins:** use JSON.stringify for error logging in dependency plugin ([41e2159](https://github.com/zotoio/x-fidelity/commit/41e2159b73c8b945996edfc55bff2d30709fdd6b))
+* **plugins:** use relative paths for manifestPath in dependency locations ([68e1b1d](https://github.com/zotoio/x-fidelity/commit/68e1b1d85e2ba6c7c09edc2a211012039bba2225))
+* **vscode:** restore diagnostics from cache when toggled back ON ([b148faf](https://github.com/zotoio/x-fidelity/commit/b148faf4554c9a4e1775d229c459db3df41f3d0e))
+
+### Features
+
+* **plugins,vscode:** highlight dependency issues in manifest files ([4de09ff](https://github.com/zotoio/x-fidelity/commit/4de09ff035089ab018350169f99c2f3d2b2ae3ec))
+* **plugins:** add pnpm support as primary package manager in xfiPluginDependency ([1fb30ac](https://github.com/zotoio/x-fidelity/commit/1fb30ac00953c9ba8938ad77367dbe11483e74f2))
+* **plugins:** add support for yarn resolutions and package overrides ([2da8ee9](https://github.com/zotoio/x-fidelity/commit/2da8ee930072e7bd6767a0b6498193a3d4e21100))
+* **plugins:** add workspace support for manifest location parsing ([11f936e](https://github.com/zotoio/x-fidelity/commit/11f936e039fe3df1193632e891560a066a932ffd))
+* **plugins:** parse lockfiles directly instead of running package manager commands ([dea2782](https://github.com/zotoio/x-fidelity/commit/dea2782916cd7233eda3c9c991076d6601b8e4b4))
+* **vscode,deps:** add session toggles and upgrade dependencies ([9eb8963](https://github.com/zotoio/x-fidelity/commit/9eb896338dc8b2b048d1d7e8fed65aa928030ccf))
+* **vscode:** enhance IssueContext with highlighting and match details for AI providers ([ff5cb02](https://github.com/zotoio/x-fidelity/commit/ff5cb02f49c784962a7d039746600e9cf0b68792))
+
 ## [Unreleased]
 
 ### Features
