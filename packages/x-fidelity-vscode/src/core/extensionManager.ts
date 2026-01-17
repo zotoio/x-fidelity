@@ -25,6 +25,7 @@ import {
   disposeGitHubConfigCacheManager
 } from '../config/gitHubConfigCacheManager';
 import { CodeSnippetExtractor } from '../utils/codeSnippetExtractor';
+import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
 
 export class ExtensionManager implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
@@ -144,6 +145,14 @@ export class ExtensionManager implements vscode.Disposable {
             `📊 Analysis completed and distributed: ${processed.totalIssues} total issues ` +
               `(${processed.successfulIssues} successful, ${processed.failedIssuesCount} unhandled)`
           );
+
+          // If diagnostics are disabled for this session, clear them after update
+          if (!this.controlCenterTreeViewManager.isDiagnosticsEnabled()) {
+            this.logger.debug(
+              '🔕 Diagnostics disabled - clearing squiggly lines'
+            );
+            this.diagnosticProvider.clearDiagnostics();
+          }
 
           // Show user notifications based on trigger source and results
           this.showAnalysisCompleteNotification(processed);
@@ -595,6 +604,73 @@ export class ExtensionManager implements vscode.Disposable {
           this.showPeriodicAnalysisStatus();
         }
       )
+    );
+
+    // Toggle commands for session-based settings
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        'xfidelity.toggleDiagnostics',
+        async () => {
+          const enabled = this.controlCenterTreeViewManager.toggleDiagnostics();
+          if (enabled) {
+            // Restore diagnostics from cached results
+            this.logger.info(
+              '🔔 Diagnostics enabled - restoring from cached results'
+            );
+
+            // Try to restore from cache
+            const restored =
+              await this.resultCoordinator.restoreDiagnosticsFromCache({
+                diagnosticProvider: this.diagnosticProvider,
+                issuesTreeViewManager: this.issuesTreeViewManager,
+                statusBarProvider: this.statusBarProvider
+              });
+
+            if (restored) {
+              vscode.window.showInformationMessage(
+                'X-Fidelity: Diagnostics restored for this session'
+              );
+            } else {
+              // No cached results - inform user they need to run analysis
+              vscode.window.showInformationMessage(
+                'X-Fidelity: Diagnostics enabled. Run analysis to see issues.'
+              );
+            }
+          } else {
+            // Clear all diagnostics
+            this.logger.info(
+              '🔕 Diagnostics disabled - clearing squiggly lines'
+            );
+            this.diagnosticProvider.clearDiagnostics();
+            vscode.window.showInformationMessage(
+              'X-Fidelity: Diagnostics disabled for this session'
+            );
+          }
+        }
+      )
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.toggleAutorun', () => {
+        const enabled = this.controlCenterTreeViewManager.toggleAutorun();
+        if (enabled) {
+          // Re-enable automation features
+          this.logger.info(
+            '🔄 Autorun enabled - restoring automation features'
+          );
+          this.setupAutomationFeatures();
+          vscode.window.showInformationMessage(
+            'X-Fidelity: Autorun enabled for this session'
+          );
+        } else {
+          // Disable automation features (stop periodic analysis and file save watching)
+          this.logger.info('⏸️ Autorun disabled - pausing automation features');
+          this.pauseAutomationFeatures();
+          vscode.window.showInformationMessage(
+            'X-Fidelity: Autorun disabled for this session'
+          );
+        }
+      })
     );
 
     this.disposables.push(
@@ -1285,6 +1361,14 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
    * Setup automation features based on current configuration
    */
   private setupAutomationFeatures(): void {
+    // Skip if autorun is disabled for this session
+    if (!this.controlCenterTreeViewManager.isAutorunEnabled()) {
+      this.logger.info(
+        '⏸️ Autorun disabled for this session - skipping automation setup'
+      );
+      return;
+    }
+
     const config = this.configManager.getConfig();
 
     // Setup or update periodic analysis
@@ -1292,6 +1376,26 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
 
     // Setup or update file save watching
     this.setupFileSaveWatching(config.autoAnalyzeOnSave);
+  }
+
+  /**
+   * Pause automation features for current session (without changing settings)
+   */
+  private pauseAutomationFeatures(): void {
+    // Stop periodic analysis
+    if (this.periodicAnalysisTimer) {
+      clearInterval(this.periodicAnalysisTimer);
+      this.periodicAnalysisTimer = undefined;
+      this.isPeriodicAnalysisRunning = false;
+      this.logger.info('⏸️ Paused periodic analysis for session');
+    }
+
+    // Stop file save watching
+    if (this.fileSaveWatcher) {
+      this.fileSaveWatcher.dispose();
+      this.fileSaveWatcher = undefined;
+      this.logger.info('⏸️ Paused file save watching for session');
+    }
   }
 
   /**
@@ -1595,10 +1699,12 @@ Check Output Console (X-Fidelity) for full details.`;
 
   /**
    * Extract issue context from various input formats with complete metadata
+   * Enhanced to include highlighting details, dependency info, and recommendations
    */
   private async extractIssueContext(context: any): Promise<IssueContext> {
     // Determine source of context data
     const issueData = context.issue || context;
+    const originalData = issueData.originalData || issueData;
 
     // Extract basic location information
     const file = issueData.file || issueData.filePath || '';
@@ -1606,6 +1712,17 @@ Check Output Console (X-Fidelity) for full details.`;
     const column = issueData.column || 1;
     const endLine = issueData.endLine || line;
     const endColumn = issueData.endColumn || column + 1;
+
+    // Use DiagnosticLocationExtractor to get enhanced location details
+    let locationResult: ReturnType<
+      typeof DiagnosticLocationExtractor.extractLocation
+    > | null = null;
+    try {
+      locationResult =
+        DiagnosticLocationExtractor.extractLocation(originalData);
+    } catch (error) {
+      this.logger.debug('Failed to extract enhanced location:', error);
+    }
 
     // Extract code snippet if file path is available
     let codeSnippet = '';
@@ -1621,6 +1738,19 @@ Check Output Console (X-Fidelity) for full details.`;
         this.logger.debug('Failed to extract code snippet:', error);
       }
     }
+
+    // Extract highlighting details from location result and original data
+    const highlighting = this.extractHighlightingDetails(
+      locationResult,
+      originalData
+    );
+
+    // Extract dependency-specific information
+    const dependencyInfo = this.extractDependencyInfo(originalData);
+
+    // Extract recommendations from rule details
+    const recommendations = this.extractRecommendations(originalData);
+    const ruleDescription = this.extractRuleDescription(originalData);
 
     // Build comprehensive issue context
     const issueContext: IssueContext = {
@@ -1647,6 +1777,16 @@ Check Output Console (X-Fidelity) for full details.`;
       documentation: issueData.documentation || undefined,
       ruleDocUrl: issueData.ruleDocUrl || undefined,
 
+      // Enhanced highlighting details
+      highlighting: highlighting,
+
+      // Rule recommendations and description
+      recommendations: recommendations,
+      ruleDescription: ruleDescription,
+
+      // Dependency-specific details
+      dependencyInfo: dependencyInfo,
+
       // Fix suggestions (if available)
       suggestedFix: issueData.suggestedFix || null,
 
@@ -1661,6 +1801,194 @@ Check Output Console (X-Fidelity) for full details.`;
     };
 
     return issueContext;
+  }
+
+  /**
+   * Extract highlighting details from location result and original data
+   */
+  private extractHighlightingDetails(
+    locationResult: ReturnType<
+      typeof DiagnosticLocationExtractor.extractLocation
+    > | null,
+    originalData: any
+  ): IssueContext['highlighting'] {
+    const highlighting: IssueContext['highlighting'] = {};
+    let hasContent = false;
+
+    // Extract from location result metadata
+    if (locationResult?.metadata) {
+      if (locationResult.metadata.originalMatch) {
+        highlighting.matchedText = locationResult.metadata.originalMatch;
+        hasContent = true;
+      }
+      if (locationResult.metadata.pattern) {
+        highlighting.pattern = locationResult.metadata.pattern;
+        hasContent = true;
+      }
+    }
+
+    // Extract location source and confidence
+    if (locationResult?.found) {
+      highlighting.locationSource = locationResult.location.source;
+      highlighting.confidence = locationResult.confidence;
+      hasContent = true;
+    }
+
+    // Try to extract match details from original data structures
+    const details = originalData?.details;
+
+    // Handle sensitive logging patterns
+    if (Array.isArray(details?.details)) {
+      const patterns = details.details.filter(
+        (d: any) => d && typeof d.lineNumber === 'number' && d.match
+      );
+      if (patterns.length > 0) {
+        // First match
+        if (!highlighting.matchedText && patterns[0].match) {
+          highlighting.matchedText = patterns[0].match.substring(0, 100);
+          hasContent = true;
+        }
+        if (!highlighting.pattern && patterns[0].pattern) {
+          highlighting.pattern = patterns[0].pattern;
+          hasContent = true;
+        }
+        if (patterns[0].context) {
+          highlighting.matchContext = patterns[0].context;
+          hasContent = true;
+        }
+        // Additional matches
+        if (patterns.length > 1) {
+          highlighting.additionalMatches = patterns.slice(1).map((p: any) => ({
+            line: p.lineNumber,
+            column: p.columnNumber || 1,
+            matchedText: p.match?.substring(0, 50)
+          }));
+          hasContent = true;
+        }
+      }
+    }
+
+    // Handle pattern matches array
+    const matches = details?.matches || details?.details?.matches;
+    if (Array.isArray(matches) && matches.length > 0) {
+      const firstMatch = matches[0];
+      if (!highlighting.matchedText && (firstMatch.match || firstMatch.text)) {
+        highlighting.matchedText = (
+          firstMatch.match || firstMatch.text
+        ).substring(0, 100);
+        hasContent = true;
+      }
+      // Additional matches
+      if (matches.length > 1 && !highlighting.additionalMatches) {
+        highlighting.additionalMatches = matches.slice(1).map((m: any) => ({
+          line: m.lineNumber || m.line,
+          column: m.columnNumber || m.column || 1,
+          matchedText: (m.match || m.text)?.substring(0, 50)
+        }));
+        hasContent = true;
+      }
+    }
+
+    // Handle complexity metrics (for function complexity rules)
+    const complexities =
+      details?.details?.complexities || details?.complexities;
+    if (Array.isArray(complexities) && complexities.length > 0) {
+      const firstFunc = complexities[0];
+      if (firstFunc.functionName) {
+        highlighting.matchedText = `function ${firstFunc.functionName}`;
+        hasContent = true;
+      }
+      if (firstFunc.metrics) {
+        highlighting.matchContext = `Complexity: ${firstFunc.metrics.cyclomatic || 'N/A'}, Lines: ${firstFunc.metrics.lines || 'N/A'}`;
+        hasContent = true;
+      }
+    }
+
+    return hasContent ? highlighting : undefined;
+  }
+
+  /**
+   * Extract dependency-specific information from original data
+   */
+  private extractDependencyInfo(
+    originalData: any
+  ): IssueContext['dependencyInfo'] {
+    const details = originalData?.details;
+    const depDetails = details?.details;
+
+    // Check for array of dependency failures
+    if (Array.isArray(depDetails) && depDetails.length > 0) {
+      const dep = depDetails.find(
+        (d: any) =>
+          d && (d.dependency || d.location?.section || d.currentVersion)
+      );
+      if (dep) {
+        return {
+          section: dep.location?.section || dep.section,
+          currentVersion: dep.currentVersion,
+          requiredVersion: dep.requiredVersion,
+          lineContent: dep.location?.lineContent
+        };
+      }
+    }
+
+    // Check for single dependency failure
+    if (depDetails && !Array.isArray(depDetails)) {
+      if (
+        depDetails.dependency ||
+        depDetails.location?.section ||
+        depDetails.currentVersion
+      ) {
+        return {
+          section: depDetails.location?.section || depDetails.section,
+          currentVersion: depDetails.currentVersion,
+          requiredVersion: depDetails.requiredVersion,
+          lineContent: depDetails.location?.lineContent
+        };
+      }
+    }
+
+    // Check for version data in details
+    if (details?.dep || details?.ver || details?.min) {
+      return {
+        currentVersion: details.ver,
+        requiredVersion: details.min
+      };
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Extract recommendations from rule details
+   */
+  private extractRecommendations(originalData: any): string[] | undefined {
+    const details = originalData?.details;
+
+    // Check for recommendations array
+    if (Array.isArray(details?.recommendations)) {
+      return details.recommendations;
+    }
+
+    // Check nested details
+    if (Array.isArray(details?.details?.recommendations)) {
+      return details.details.recommendations;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Extract rule description from original data
+   */
+  private extractRuleDescription(originalData: any): string | undefined {
+    const details = originalData?.details;
+
+    return (
+      details?.ruleDescription ||
+      details?.details?.ruleDescription ||
+      originalData?.ruleDescription
+    );
   }
 
   /**

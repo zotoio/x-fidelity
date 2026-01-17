@@ -167,6 +167,46 @@ export interface VersionData {
     [key: string]: any;  // Allow additional properties for flexibility
 }
 
+/**
+ * Location information for a dependency in a manifest file
+ * Used to enable precise highlighting of dependency issues in package.json, build.gradle, etc.
+ */
+export interface DependencyLocation {
+    /** Path to the manifest file */
+    manifestPath: string;
+    /** 1-based line number where the dependency is defined */
+    lineNumber: number;
+    /** 1-based column number where the dependency name starts */
+    columnNumber: number;
+    /** End line number (usually same as lineNumber for package.json) */
+    endLineNumber: number;
+    /** End column number (after the version value) */
+    endColumnNumber: number;
+    /** The dependency section (dependencies, devDependencies, etc.) */
+    section: string;
+    /** The full line content for context */
+    lineContent?: string;
+}
+
+/**
+ * Enhanced dependency failure with optional location information
+ * Used by the dependency plugin to report version issues with manifest file locations
+ */
+export interface DependencyFailure {
+    /** Dependency name (may include path like "parent/child" for transitive deps) */
+    dependency: string;
+    /** Currently installed version */
+    currentVersion: string;
+    /** Required minimum version from archetype config */
+    requiredVersion: string;
+    /** Location in the manifest file (if available) */
+    location?: DependencyLocation;
+    /** Whether this is a transitive dependency */
+    isTransitive?: boolean;
+    /** Note if location couldn't be determined */
+    locationNote?: string;
+}
+
 export interface MinimumDepVersions {
     [propertyName: string]: string;
 }

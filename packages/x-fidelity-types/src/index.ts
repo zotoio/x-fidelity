@@ -65,6 +65,10 @@ export type {
     LocalDependencies,
     MinimumDepVersions,
     
+    // Dependency location types (for manifest file highlighting)
+    DependencyLocation,
+    DependencyFailure,
+    
     // Server types
     StartServerParams
 } from './core';

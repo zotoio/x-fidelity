@@ -204,6 +204,16 @@
         "command": "xfidelity.fixIssueAtCursor",
         "title": "X-Fidelity: Fix Issue at Cursor",
         "icon": "$(wrench)"
+      },
+      {
+        "command": "xfidelity.toggleDiagnostics",
+        "title": "X-Fidelity: Toggle Diagnostics",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "xfidelity.toggleAutorun",
+        "title": "X-Fidelity: Toggle Autorun",
+        "icon": "$(sync)"
       }
     ],
     "extensionPoints": [
@@ -339,7 +349,7 @@
         },
         "xfidelity.analyzeOnStartup": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "🚀 Run analysis automatically when the extension starts",
           "order": 11
         },
@@ -609,7 +619,7 @@
             "⚙️ Use custom command overrides configured in 'commandProviders' setting"
           ],
           "description": "🤖 Quick preset for AI assistant integration. Select 'custom' to use manual command overrides.",
-          "order": 73
+          "order": 74
         },
         "xfidelity.commandProviders": {
           "type": "object",
@@ -652,13 +662,13 @@
             "fixIssueGroup": "built-in"
           },
           "additionalProperties": false,
-          "order": 74
+          "order": 75
         },
         "xfidelity.enableCommandDelegation": {
           "type": "boolean",
           "default": true,
           "description": "🔀 Allow commands to be handled by other VSCode extensions",
-          "order": 75
+          "order": 76
         }
       }
     },

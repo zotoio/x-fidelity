@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import util from 'util';
 import { FactDefn } from '@x-fidelity/types';
+import { enhanceDependencyFailuresWithLocations, DependencyLocation } from '../utils/manifestLocationParser';
 
 // Create a properly typed promisified exec function
 const execPromise = util.promisify(exec);
@@ -61,6 +62,7 @@ function getDependencyCacheKey(repoPath?: string): string {
     const actualRepoPath = repoPath || options.dir || process.cwd();
     const files = [
         path.join(actualRepoPath, 'package.json'),
+        path.join(actualRepoPath, 'pnpm-lock.yaml'),
         path.join(actualRepoPath, 'yarn.lock'),
         path.join(actualRepoPath, 'package-lock.json'),
         path.join(actualRepoPath, 'npm-shrinkwrap.json')
@@ -107,29 +109,235 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
         return cached.dependencies;
     }
 
-    logger.debug('Cache miss, collecting dependencies from package manager...');
+    logger.debug('Cache miss, collecting dependencies...');
 
     let result: LocalDependencies[] = [];
-    if (fs.existsSync(path.join(actualRepoPath, 'yarn.lock'))) {
-        result = await collectNodeDependencies('yarn', actualRepoPath);
+    
+    // pnpm: parse lockfile directly (no need for node_modules)
+    // yarn/npm: use command-based collection with lockfile fallback
+    if (fs.existsSync(path.join(actualRepoPath, 'pnpm-lock.yaml'))) {
+        logger.debug('Using pnpm lockfile parsing');
+        result = parsePnpmLockfile(actualRepoPath);
+    } else if (fs.existsSync(path.join(actualRepoPath, 'yarn.lock'))) {
+        logger.debug('Using yarn command-based collection');
+        try {
+            result = await collectNodeDependencies('yarn', actualRepoPath);
+        } catch (error) {
+            logger.debug(`Yarn command failed, falling back to lockfile parsing: ${error}`);
+        }
+        // Fallback to lockfile parsing if command returns empty or fails
+        if (result.length === 0) {
+            logger.debug('Yarn command returned empty, trying lockfile parsing');
+            result = parseYarnLockfile(actualRepoPath);
+        }
     } else if (fs.existsSync(path.join(actualRepoPath, 'package-lock.json'))) {
-        result = await collectNodeDependencies('npm', actualRepoPath);
+        logger.debug('Using npm command-based collection');
+        try {
+            result = await collectNodeDependencies('npm', actualRepoPath);
+        } catch (error) {
+            logger.debug(`npm command failed, falling back to lockfile parsing: ${error}`);
+        }
+        // Fallback to lockfile parsing if command returns empty or fails
+        if (result.length === 0) {
+            logger.debug('npm command returned empty, trying lockfile parsing');
+            result = parseNpmLockfile(actualRepoPath);
+        }
     } else {
-        logger.warn('No yarn.lock or package-lock.json found - returning empty dependencies array');
-        return []; // ✅ Return empty array instead of exiting process
+        logger.warn('No pnpm-lock.yaml, yarn.lock or package-lock.json found - returning empty dependencies array');
+        return [];
     }
 
     // Cache the result
-    dependencyCache.set(cacheKey, {
-        dependencies: result,
-        cacheKey,
-        timestamp: Date.now()
-    });
+    if (result.length > 0) {
+        dependencyCache.set(cacheKey, {
+            dependencies: result,
+            cacheKey,
+            timestamp: Date.now()
+        });
+    }
 
     const executionTime = Date.now() - startTime;
     logger.debug(`collectLocalDependencies completed in ${executionTime}ms (cache: ${cached ? 'HIT' : 'MISS'})`);
     logger.trace(`collectLocalDependencies: ${safeStringify(result)}`);
     return result;
+}
+
+/**
+ * Check if the project is a pnpm workspace (has pnpm-workspace.yaml)
+ */
+function isPnpmWorkspace(repoPath: string): boolean {
+    try {
+        return fs.existsSync(path.join(repoPath, 'pnpm-workspace.yaml'));
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Parse pnpm-lock.yaml to extract dependencies without requiring node_modules
+ */
+function parsePnpmLockfile(repoPath: string): LocalDependencies[] {
+    const lockfilePath = path.join(repoPath, 'pnpm-lock.yaml');
+    
+    logger.debug(`Attempting to parse pnpm lockfile at: ${lockfilePath}`);
+    
+    if (!fs.existsSync(lockfilePath)) {
+        logger.debug('pnpm-lock.yaml not found');
+        return [];
+    }
+    
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const yaml = require('js-yaml');
+        const content = fs.readFileSync(lockfilePath, 'utf-8');
+        logger.debug(`Read pnpm-lock.yaml, size: ${content.length} bytes`);
+        const lockfile = yaml.load(content) as any;
+        
+        if (!lockfile || !lockfile.importers) {
+            logger.debug('pnpm-lock.yaml has no importers section');
+            return [];
+        }
+        
+        const dependencies: LocalDependencies[] = [];
+        
+        // Process each importer (workspace package or root)
+        for (const importer of Object.values(lockfile.importers)) {
+            const importerData = importer as any;
+            
+            // Helper to add dependency if not already present
+            const addDep = (name: string, version: string) => {
+                // Skip if already added (deduplication across importers)
+                if (!dependencies.some(d => d.name === name)) {
+                    dependencies.push({ name, version });
+                }
+            };
+
+            // Process dependencies
+            if (importerData.dependencies) {
+                for (const [name, info] of Object.entries(importerData.dependencies)) {
+                    const depInfo = info as any;
+                    // Skip workspace links
+                    if (depInfo.version && !depInfo.version.startsWith('link:')) {
+                        addDep(name, depInfo.version);
+                    }
+                }
+            }
+            
+            // Process devDependencies
+            if (importerData.devDependencies) {
+                for (const [name, info] of Object.entries(importerData.devDependencies)) {
+                    const depInfo = info as any;
+                    // Skip workspace links
+                    if (depInfo.version && !depInfo.version.startsWith('link:')) {
+                        addDep(name, depInfo.version);
+                    }
+                }
+            }
+            
+            // Process peerDependencies
+            if (importerData.peerDependencies) {
+                for (const [name, info] of Object.entries(importerData.peerDependencies)) {
+                    const depInfo = info as any;
+                    if (depInfo.version && !depInfo.version.startsWith('link:')) {
+                        addDep(name, depInfo.version);
+                    }
+                }
+            }
+        }
+        
+        logger.debug(`Parsed ${dependencies.length} dependencies from pnpm-lock.yaml`);
+        return dependencies;
+        
+    } catch (error) {
+        logger.warn(`Failed to parse pnpm-lock.yaml: ${error}`);
+        return [];
+    }
+}
+
+/**
+ * Parse yarn.lock to extract dependencies without requiring node_modules
+ * This is a fallback when yarn list returns empty
+ */
+function parseYarnLockfile(repoPath: string): LocalDependencies[] {
+    const lockfilePath = path.join(repoPath, 'yarn.lock');
+    
+    if (!fs.existsSync(lockfilePath)) {
+        return [];
+    }
+    
+    try {
+        const content = fs.readFileSync(lockfilePath, 'utf-8');
+        const dependencies: LocalDependencies[] = [];
+        
+        // Parse yarn.lock format - each entry looks like:
+        // "package@^version":
+        //   version "resolved-version"
+        // Also handles scoped packages like "@scope/package@^version"
+        const entryRegex = /^"?(@?[^@\s"][^@\s]*)@[^":]+?"?:\s*\n\s+version\s+"([^"]+)"/gm;
+        let match;
+        
+        while ((match = entryRegex.exec(content)) !== null) {
+            const [, name, version] = match;
+            // Avoid duplicates
+            if (!dependencies.some(d => d.name === name)) {
+                dependencies.push({ name, version });
+            }
+        }
+        
+        logger.debug(`Parsed ${dependencies.length} dependencies from yarn.lock`);
+        return dependencies;
+        
+    } catch (error) {
+        logger.warn(`Failed to parse yarn.lock: ${error}`);
+        return [];
+    }
+}
+
+/**
+ * Parse package-lock.json to extract dependencies without requiring node_modules
+ */
+function parseNpmLockfile(repoPath: string): LocalDependencies[] {
+    const lockfilePath = path.join(repoPath, 'package-lock.json');
+    
+    if (!fs.existsSync(lockfilePath)) {
+        return [];
+    }
+    
+    try {
+        const content = fs.readFileSync(lockfilePath, 'utf-8');
+        const lockfile = JSON.parse(content);
+        const dependencies: LocalDependencies[] = [];
+        
+        // npm lockfile v2/v3 uses "packages" object
+        if (lockfile.packages) {
+            for (const [pkgPath, info] of Object.entries(lockfile.packages)) {
+                const pkgInfo = info as any;
+                if (pkgPath && pkgPath.includes('node_modules/') && pkgInfo.version) {
+                    // Extract package name from path like "node_modules/react"
+                    const name = pkgPath.replace(/^.*node_modules\//, '');
+                    if (!dependencies.some(d => d.name === name)) {
+                        dependencies.push({ name, version: pkgInfo.version });
+                    }
+                }
+            }
+        }
+        // Fallback for npm lockfile v1
+        else if (lockfile.dependencies) {
+            for (const [name, info] of Object.entries(lockfile.dependencies)) {
+                const depInfo = info as any;
+                if (depInfo.version) {
+                    dependencies.push({ name, version: depInfo.version });
+                }
+            }
+        }
+        
+        logger.debug(`Parsed ${dependencies.length} dependencies from package-lock.json`);
+        return dependencies;
+        
+    } catch (error) {
+        logger.warn(`Failed to parse package-lock.json: ${error}`);
+        return [];
+    }
 }
 
 async function collectNodeDependencies(packageManager: string, repoPath?: string): Promise<LocalDependencies[]> {
@@ -163,34 +371,51 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
 
         try {
             // Use discovered binary path with enhanced environment
+            // Determine the appropriate command for each package manager
+            let command: string;
             if (packageManager === 'npm') {
-                const execStart = Date.now();
-                const result = await execPromise(`"${binaryPath}" ls -a --json`, {
-                    cwd: actualRepoPath, maxBuffer: 10485760 * 2, env: enhancedEnv
-                });
-                execMs = Date.now() - execStart;
-                stdout = result.stdout;
-                stderr = result.stderr;
+                command = `"${binaryPath}" ls -a --json`;
+            } else if (packageManager === 'pnpm') {
+                // Use -r flag only for pnpm workspaces
+                const recursiveFlag = isPnpmWorkspace(actualRepoPath) ? '-r ' : '';
+                command = `"${binaryPath}" list ${recursiveFlag}--json --depth=Infinity`;
             } else {
-                const execStart = Date.now();
-                const result = await execPromise(`"${binaryPath}" list --json`, {
-                    cwd: actualRepoPath, maxBuffer: 10485760 * 2, env: enhancedEnv
-                });
-                execMs = Date.now() - execStart;
-                stdout = result.stdout;
-                stderr = result.stderr;
+                // yarn
+                command = `"${binaryPath}" list --json`;
             }
+
+            const execStart = Date.now();
+            // maxBuffer: 200MB to handle large pnpm workspaces with --depth=Infinity
+            const result = await execPromise(command, {
+                cwd: actualRepoPath, maxBuffer: 1024 * 1024 * 200, env: enhancedEnv
+            });
+            execMs = Date.now() - execStart;
+            stdout = result.stdout;
+            stderr = result.stderr;
         } catch (execError) {
             // If promisified exec fails, fall back to execSync
             logger.warn(`Falling back to execSync for ${packageManager} dependencies`);
+            logger.trace(execError);
             execMethod = 'execSync';
+            
+            // Determine the appropriate command for each package manager
+            let command: string;
+            if (packageManager === 'npm') {
+                command = `"${binaryPath}" ls -a --json`;
+            } else if (packageManager === 'pnpm') {
+                // Use -r flag only for pnpm workspaces
+                const recursiveFlag = isPnpmWorkspace(actualRepoPath) ? '-r ' : '';
+                command = `"${binaryPath}" list ${recursiveFlag}--json --depth=Infinity`;
+            } else {
+                // yarn
+                command = `"${binaryPath}" list --json`;
+            }
+
             const execStart = Date.now();
-            const output = execSync(
-                packageManager === 'npm' ? `"${binaryPath}" ls -a --json` : `"${binaryPath}" list --json`,
-                {
-                    cwd: actualRepoPath, maxBuffer: 10485760, env: enhancedEnv
-                }
-            );
+            // maxBuffer: 200MB to handle large pnpm workspaces with --depth=Infinity
+            const output = execSync(command, {
+                cwd: actualRepoPath, maxBuffer: 1024 * 1024 * 200, env: enhancedEnv
+            });
             execMs = Date.now() - execStart;
             stdout = output.toString();
         }
@@ -210,30 +435,29 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
             const result = JSON.parse(stdout);
             const parseMs = Date.now() - parseStart;
             logger.debug(`collectNodeDependencies: JSON.parse took ${parseMs}ms`);
-            logger.trace(`collectNodeDependencies ${packageManager}: ${JSON.stringify(result)}`);
-            return packageManager === 'npm' ?
-                processNpmDependencies(result) :
-                processYarnDependencies(result)
+            logger.trace(`collectNodeDependencies ${packageManager}: ${safeStringify(result)}`);
+            
+            if (packageManager === 'npm') {
+                return processNpmDependencies(result);
+            } else if (packageManager === 'pnpm') {
+                return processPnpmDependencies(result);
+            } else {
+                return processYarnDependencies(result);
+            }
 
         } catch (e) {
-            logger.error({
-                err: e,
-                packageManager,
-                type: 'parse-error'
-            }, 'Error parsing dependencies');
-            throw new Error(`Error parsing ${packageManager} dependencies`);
+            const errorMessage = e instanceof Error ? e.message : safeStringify(e);
+            logger.error(`Error parsing ${packageManager} dependencies: ${errorMessage}`);
+            throw new Error(`Error parsing ${packageManager} dependencies: ${errorMessage}`);
         }
     } catch (e: any) {
-        let message = `Error determining ${packageManager} dependencies: ${e}`;
+        const errorMessage = e instanceof Error ? e.message : safeStringify(e);
+        let message = `Error determining ${packageManager} dependencies: ${errorMessage}`;
 
         if (e.message?.includes('ELSPROBLEMS')) {
             message += `\nError determining ${packageManager} dependencies: did you forget to run '${packageManager} install' first?`;
         }
-        logger.error({
-            err: e,
-            packageManager,
-            type: 'dependency-error'
-        }, 'Error determining dependencies');
+        logger.error(`Error determining ${packageManager} dependencies: ${errorMessage}`);
         throw new Error(message);
     }
     finally {
@@ -293,6 +517,113 @@ function processNpmDependencies(npmOutput: any): LocalDependencies[] {
             dependencies.push(processDependency(name, info));
         });
     }
+    return dependencies;
+}
+
+function processPnpmDependencies(pnpmOutput: any): LocalDependencies[] {
+    const dependencies: LocalDependencies[] = [];
+    
+    // pnpm list --json can return an array (for workspaces) or a single object
+    // We need to handle both cases
+    const outputs = Array.isArray(pnpmOutput) ? pnpmOutput : [pnpmOutput];
+    
+    const processDependency = (depNode: any): LocalDependencies => {
+        const newDep: LocalDependencies = { 
+            name: depNode.name, 
+            version: depNode.version 
+        };
+        
+        // pnpm can have dependencies as an array or object depending on version
+        if (depNode.dependencies) {
+            newDep.dependencies = [];
+            if (Array.isArray(depNode.dependencies)) {
+                // pnpm list --json returns dependencies as an array
+                depNode.dependencies.forEach((child: any) => {
+                    newDep.dependencies?.push(processDependency(child));
+                });
+            } else {
+                // Handle object format (older pnpm versions or different output modes)
+                Object.entries(depNode.dependencies).forEach(([childName, childInfo]: [string, any]) => {
+                    const childDep: LocalDependencies = {
+                        name: childName,
+                        version: typeof childInfo === 'string' ? childInfo : childInfo.version
+                    };
+                    if (typeof childInfo === 'object' && childInfo.dependencies) {
+                        childDep.dependencies = [];
+                        if (Array.isArray(childInfo.dependencies)) {
+                            childInfo.dependencies.forEach((grandChild: any) => {
+                                childDep.dependencies?.push(processDependency(grandChild));
+                            });
+                        } else {
+                            Object.entries(childInfo.dependencies).forEach(([gcName, gcInfo]: [string, any]) => {
+                                childDep.dependencies?.push({
+                                    name: gcName,
+                                    version: typeof gcInfo === 'string' ? gcInfo : gcInfo.version
+                                });
+                            });
+                        }
+                    }
+                    newDep.dependencies?.push(childDep);
+                });
+            }
+        }
+        
+        return newDep;
+    };
+    
+    for (const output of outputs) {
+        // Process top-level dependencies from pnpm list output
+        if (output.dependencies) {
+            if (Array.isArray(output.dependencies)) {
+                // pnpm list --json returns dependencies as an array
+                output.dependencies.forEach((dep: any) => {
+                    dependencies.push(processDependency(dep));
+                });
+            } else {
+                // Handle object format
+                Object.entries(output.dependencies).forEach(([name, info]: [string, any]) => {
+                    const dep: LocalDependencies = {
+                        name,
+                        version: typeof info === 'string' ? info : info.version
+                    };
+                    if (typeof info === 'object' && info.dependencies) {
+                        dep.dependencies = [];
+                        if (Array.isArray(info.dependencies)) {
+                            info.dependencies.forEach((child: any) => {
+                                dep.dependencies?.push(processDependency(child));
+                            });
+                        } else {
+                            Object.entries(info.dependencies).forEach(([childName, childInfo]: [string, any]) => {
+                                dep.dependencies?.push({
+                                    name: childName,
+                                    version: typeof childInfo === 'string' ? childInfo : childInfo.version
+                                });
+                            });
+                        }
+                    }
+                    dependencies.push(dep);
+                });
+            }
+        }
+        
+        // Also handle devDependencies if present
+        if (output.devDependencies) {
+            if (Array.isArray(output.devDependencies)) {
+                output.devDependencies.forEach((dep: any) => {
+                    dependencies.push(processDependency(dep));
+                });
+            } else {
+                Object.entries(output.devDependencies).forEach(([name, info]: [string, any]) => {
+                    const dep: LocalDependencies = {
+                        name,
+                        version: typeof info === 'string' ? info : info.version
+                    };
+                    dependencies.push(dep);
+                });
+            }
+        }
+    }
+    
     return dependencies;
 }
 
@@ -393,6 +724,22 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
         // Get dependency data from the repoDependencyVersions fact
         const installedVersions: VersionData[] = await almanac.factValue('repoDependencyVersions') || [];
         
+        // Get repoPath from params or almanac for location parsing
+        // Always resolve to absolute path for consistent behavior
+        let repoPath: string | undefined;
+        try {
+            const fileData = await almanac.factValue('fileData') as { filePath?: string } | undefined;
+            if (fileData && fileData.filePath) {
+                // Extract repo path from file path (REPO_GLOBAL_CHECK uses the repo path)
+                const rawPath = fileData.filePath === 'REPO_GLOBAL_CHECK' 
+                    ? options.dir || process.cwd()
+                    : path.dirname(fileData.filePath);
+                repoPath = path.resolve(rawPath);
+            }
+        } catch {
+            repoPath = path.resolve(options.dir || process.cwd());
+        }
+        
         // ✅ Create cache key to avoid redundant computation
         const cacheKey = `dependency-analysis-${installedVersions.length}-${JSON.stringify(installedVersions.slice(0, 3)).substring(0, 50)}`;
         
@@ -439,22 +786,34 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
             }
         });
 
-        result.result = analysis;
+        // ✅ Enhance failures with manifest file locations for precise highlighting
+        let enhancedAnalysis = analysis;
+        if (analysis.length > 0 && repoPath) {
+            try {
+                enhancedAnalysis = await enhanceDependencyFailuresWithLocations(analysis, repoPath);
+                logger.debug(`Enhanced ${enhancedAnalysis.filter((f: any) => f.location).length}/${analysis.length} dependency failures with manifest locations`);
+            } catch (locationError) {
+                logger.warn(`Could not enhance dependency failures with locations: ${locationError}`);
+                // Continue with unenhanced analysis
+            }
+        }
+
+        result.result = enhancedAnalysis;
         
         // ✅ Cache the result for future use
         analysisCache.set(cacheKey, {
-            analysis,
+            analysis: enhancedAnalysis,
             cacheKey,
             timestamp: Date.now()
         });
 
         // ✅ Add runtime fact with rule-specific name
         if (params.resultFact) {
-            almanac.addRuntimeFact(params.resultFact, analysis);
+            almanac.addRuntimeFact(params.resultFact, enhancedAnalysis);
         }
 
         logger.debug(`repoDependencyAnalysis result: ${safeStringify(result)}`);
-        logger.debug(`repoDependencyAnalysis returning analysis array directly: ${safeStringify(analysis)}`);
+        logger.debug(`repoDependencyAnalysis returning analysis array directly: ${safeStringify(enhancedAnalysis)}`);
 
         // Return just the analysis array for the outdatedFramework operator
         return result.result;
