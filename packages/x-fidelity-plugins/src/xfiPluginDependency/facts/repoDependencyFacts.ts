@@ -123,12 +123,17 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
         return []; // ✅ Return empty array instead of exiting process
     }
 
-    // Cache the result
-    dependencyCache.set(cacheKey, {
-        dependencies: result,
-        cacheKey,
-        timestamp: Date.now()
-    });
+    // Cache the result only if we got actual dependencies
+    // Don't cache empty results as they might be from missing node_modules
+    if (result.length > 0) {
+        dependencyCache.set(cacheKey, {
+            dependencies: result,
+            cacheKey,
+            timestamp: Date.now()
+        });
+    } else {
+        logger.debug('Not caching empty dependency result - node_modules may not be installed');
+    }
 
     const executionTime = Date.now() - startTime;
     logger.debug(`collectLocalDependencies completed in ${executionTime}ms (cache: ${cached ? 'HIT' : 'MISS'})`);
