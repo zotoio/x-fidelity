@@ -63,7 +63,7 @@ export class CodeSnippetExtractor {
         contextLines,
         maxLength
       );
-    } catch (_error) {
+    } catch {
       // Return empty string if extraction fails
       return '';
     }

@@ -2,6 +2,49 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [Unreleased]
+
+### Features
+
+* **plugins:** Add pnpm support with direct lockfile parsing - parses `pnpm-lock.yaml` directly without requiring `node_modules`
+* **plugins:** Add yarn/npm lockfile fallback parsing when commands return empty results
+* **plugins:** Add manifest location parser for precise dependency issue highlighting in `package.json`
+* **plugins:** Support yarn `resolutions`, npm `overrides`, and pnpm `pnpm.overrides` fields
+* **plugins:** Add workspace support (yarn, pnpm, npm workspaces) for manifest location parsing
+* **vscode:** Add session toggles for diagnostics and autorun via Control Center
+* **vscode:** Add `aiIntegrationPreset` setting for quick AI provider configuration (auto-detect, cursor, github-copilot, amazon-q, built-in, custom)
+* **vscode:** Enhance `IssueContext` with highlighting metadata, match details, and dependency info for AI providers
+* **vscode:** Add IDE detection utilities for Cursor, GitHub Copilot, and Amazon Q
+* **vscode:** Add code snippet extractor for AI context preparation
+* **vscode:** Add editor context menu commands for explain/fix issue at cursor
+
+### Bug Fixes
+
+* **plugins:** Fix scoped package detection in yarn lockfile parsing - regex now correctly handles `@scope/package` format
+* **plugins:** Use relative paths for `manifestPath` in dependency locations
+* **plugins:** Don't cache empty dependency results
+
+### Breaking Changes
+
+* **vscode:** `xfidelity.analyzeOnStartup` now defaults to `false` (was `true`)
+* **vscode:** `xfidelity.runInterval` now defaults to `14400` seconds (4 hours) with minimum of `600` seconds (was `0` with no minimum)
+
+### Migration Notes
+
+If you relied on automatic analysis on startup, add this to your settings:
+```json
+{
+  "xfidelity.analyzeOnStartup": true
+}
+```
+
+If you want to disable periodic analysis (previous default), set:
+```json
+{
+  "xfidelity.runInterval": 0
+}
+```
+
 ## [5.4.2](https://github.com/zotoio/x-fidelity/compare/v5.4.1...v5.4.2) (2025-12-10)
 
 ### Bug Fixes

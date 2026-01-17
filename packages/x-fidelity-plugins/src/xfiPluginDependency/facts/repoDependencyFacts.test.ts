@@ -286,7 +286,10 @@ packages: {}
             expect(logger.warn).toHaveBeenCalled();
         });
 
-        it('should handle npm command errors gracefully', async () => {
+        it('should handle npm command errors by falling back to lockfile parsing', async () => {
+            // Clear cache to ensure fresh test
+            clearDependencyCache();
+            
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return !filePath.includes('pnpm-lock.yaml') && 
                        !filePath.includes('yarn.lock') && 
@@ -306,11 +309,20 @@ packages: {}
                 throw new Error('npm command failed');
             });
             
-            await expect(collectLocalDependencies()).rejects.toThrow(/Error determining npm dependencies/);
-            expect(logger.error).toHaveBeenCalled();
+            // Mock empty lockfile so lockfile parsing returns empty
+            (fs.readFileSync as jest.Mock).mockReturnValue('{}');
+            
+            // Now it falls back to lockfile parsing instead of throwing
+            const result = await collectLocalDependencies();
+            expect(result).toEqual([]);
+            // Should log debug about command failure and fallback
+            expect(logger.debug).toHaveBeenCalled();
         });
         
-        it('should handle yarn command errors gracefully', async () => {
+        it('should handle yarn command errors by falling back to lockfile parsing', async () => {
+            // Clear cache to ensure fresh test
+            clearDependencyCache();
+            
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return !filePath.includes('pnpm-lock.yaml') && filePath.includes('yarn.lock');
             });
@@ -319,8 +331,14 @@ packages: {}
                 throw new Error('yarn command failed');
             });
             
-            await expect(collectLocalDependencies()).rejects.toThrow(/Error determining yarn dependencies/);
-            expect(logger.error).toHaveBeenCalled();
+            // Mock empty lockfile content so lockfile parsing returns empty
+            (fs.readFileSync as jest.Mock).mockReturnValue('');
+            
+            // Now it falls back to lockfile parsing instead of throwing
+            const result = await collectLocalDependencies();
+            expect(result).toEqual([]);
+            // Should log debug about command failure and fallback
+            expect(logger.debug).toHaveBeenCalled();
         });
         
         it('should handle invalid YAML in pnpm lockfile', async () => {
@@ -392,6 +410,116 @@ packages: {}
             expect(result).toEqual([
                 { name: '@scope/package', version: '1.0.0' }
             ]);
+        });
+
+        it('should handle yarn lockfile fallback with scoped packages', async () => {
+            // Clear cache to ensure fresh test
+            clearDependencyCache();
+            
+            // Mock yarn.lock exists but no pnpm-lock.yaml
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return !filePath.includes('pnpm-lock.yaml') && filePath.includes('yarn.lock');
+            });
+
+            // Mock yarn command to fail (no node_modules)
+            const { discoverBinary } = require('@x-fidelity/core');
+            discoverBinary.mockResolvedValue(null);
+
+            // Mock yarn.lock content with scoped packages
+            const mockYarnLock = `"@types/node@^20.0.0":
+  version "20.11.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.11.0.tgz"
+  integrity sha512-test
+
+"@scope/package@^1.0.0":
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/@scope/package/-/package-1.2.3.tgz"
+  integrity sha512-test
+
+"lodash@^4.17.0":
+  version "4.17.21"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz"
+  integrity sha512-test
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockYarnLock);
+
+            const result = await collectLocalDependencies();
+
+            // Should correctly parse scoped packages from yarn.lock
+            expect(result).toContainEqual({ name: '@types/node', version: '20.11.0' });
+            expect(result).toContainEqual({ name: '@scope/package', version: '1.2.3' });
+            expect(result).toContainEqual({ name: 'lodash', version: '4.17.21' });
+        });
+
+        it('should handle yarn lockfile fallback when yarn command returns empty', async () => {
+            // Clear cache to ensure fresh test
+            clearDependencyCache();
+            
+            // Mock yarn.lock exists but no pnpm-lock.yaml
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return !filePath.includes('pnpm-lock.yaml') && filePath.includes('yarn.lock');
+            });
+
+            // Mock yarn command to succeed but return empty result
+            const { discoverBinary } = require('@x-fidelity/core');
+            discoverBinary.mockResolvedValue({
+                binary: 'yarn',
+                path: '/usr/bin/yarn',
+                version: '1.22.0'
+            });
+
+            // Mock yarn list to return empty trees
+            mockExecSync.mockReturnValue(JSON.stringify({
+                data: { trees: [] }
+            }));
+
+            // Mock yarn.lock content
+            const mockYarnLock = `"react@^18.0.0":
+  version "18.2.0"
+  resolved "https://registry.yarnpkg.com/react/-/react-18.2.0.tgz"
+  integrity sha512-test
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockYarnLock);
+
+            const result = await collectLocalDependencies();
+
+            // Should fallback to lockfile parsing
+            expect(result).toContainEqual({ name: 'react', version: '18.2.0' });
+        });
+
+        it('should handle npm lockfile fallback with scoped packages', async () => {
+            // Clear cache to ensure fresh test
+            clearDependencyCache();
+            
+            // Mock package-lock.json exists but no pnpm-lock.yaml or yarn.lock
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return !filePath.includes('pnpm-lock.yaml') && 
+                       !filePath.includes('yarn.lock') &&
+                       filePath.includes('package-lock.json');
+            });
+
+            // Mock npm command to fail (no node_modules)
+            const { discoverBinary } = require('@x-fidelity/core');
+            discoverBinary.mockResolvedValue(null);
+
+            // Mock package-lock.json content (v2/v3 format) with scoped packages
+            const mockPackageLock = JSON.stringify({
+                lockfileVersion: 3,
+                packages: {
+                    '': { name: 'test-project' },
+                    'node_modules/@types/node': { version: '20.11.0' },
+                    'node_modules/@scope/package': { version: '1.2.3' },
+                    'node_modules/lodash': { version: '4.17.21' }
+                }
+            });
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockPackageLock);
+
+            const result = await collectLocalDependencies();
+
+            // Should correctly parse scoped packages from package-lock.json
+            expect(result).toContainEqual({ name: '@types/node', version: '20.11.0' });
+            expect(result).toContainEqual({ name: '@scope/package', version: '1.2.3' });
+            expect(result).toContainEqual({ name: 'lodash', version: '4.17.21' });
         });
 
         it('should skip workspace link dependencies in lockfile', async () => {

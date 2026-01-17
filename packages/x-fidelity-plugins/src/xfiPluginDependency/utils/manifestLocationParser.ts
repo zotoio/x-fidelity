@@ -102,8 +102,8 @@ function expandGlobPattern(repoPath: string, pattern: string): string[] {
                             nextPaths.push(path.join(currentPath, entry.name));
                         }
                     }
-                } catch {
-                    // Ignore read errors
+                } catch (error) {
+                    logger.debug(`Unable to read directory ${currentPath}: ${error}`);
                 }
             } else if (part.includes('*')) {
                 // Pattern like "package-*"
@@ -115,8 +115,8 @@ function expandGlobPattern(repoPath: string, pattern: string): string[] {
                             nextPaths.push(path.join(currentPath, entry.name));
                         }
                     }
-                } catch {
-                    // Ignore read errors
+                } catch (error) {
+                    logger.debug(`Unable to read directory ${currentPath} for pattern ${part}: ${error}`);
                 }
             } else {
                 // Exact match

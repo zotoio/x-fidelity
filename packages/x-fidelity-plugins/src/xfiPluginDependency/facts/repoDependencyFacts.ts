@@ -114,16 +114,34 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
     let result: LocalDependencies[] = [];
     
     // pnpm: parse lockfile directly (no need for node_modules)
-    // yarn/npm: use command-based collection (more reliable for complex lockfiles)
+    // yarn/npm: use command-based collection with lockfile fallback
     if (fs.existsSync(path.join(actualRepoPath, 'pnpm-lock.yaml'))) {
         logger.debug('Using pnpm lockfile parsing');
         result = parsePnpmLockfile(actualRepoPath);
     } else if (fs.existsSync(path.join(actualRepoPath, 'yarn.lock'))) {
         logger.debug('Using yarn command-based collection');
-        result = await collectNodeDependencies('yarn', actualRepoPath);
+        try {
+            result = await collectNodeDependencies('yarn', actualRepoPath);
+        } catch (error) {
+            logger.debug(`Yarn command failed, falling back to lockfile parsing: ${error}`);
+        }
+        // Fallback to lockfile parsing if command returns empty or fails
+        if (result.length === 0) {
+            logger.debug('Yarn command returned empty, trying lockfile parsing');
+            result = parseYarnLockfile(actualRepoPath);
+        }
     } else if (fs.existsSync(path.join(actualRepoPath, 'package-lock.json'))) {
         logger.debug('Using npm command-based collection');
-        result = await collectNodeDependencies('npm', actualRepoPath);
+        try {
+            result = await collectNodeDependencies('npm', actualRepoPath);
+        } catch (error) {
+            logger.debug(`npm command failed, falling back to lockfile parsing: ${error}`);
+        }
+        // Fallback to lockfile parsing if command returns empty or fails
+        if (result.length === 0) {
+            logger.debug('npm command returned empty, trying lockfile parsing');
+            result = parseNpmLockfile(actualRepoPath);
+        }
     } else {
         logger.warn('No pnpm-lock.yaml, yarn.lock or package-lock.json found - returning empty dependencies array');
         return [];
@@ -254,7 +272,8 @@ function parseYarnLockfile(repoPath: string): LocalDependencies[] {
         // Parse yarn.lock format - each entry looks like:
         // "package@^version":
         //   version "resolved-version"
-        const entryRegex = /^"?([^@\s]+)@[^"]+?"?:\s*\n\s+version\s+"([^"]+)"/gm;
+        // Also handles scoped packages like "@scope/package@^version"
+        const entryRegex = /^"?(@?[^@\s"][^@\s]*)@[^":]+?"?:\s*\n\s+version\s+"([^"]+)"/gm;
         let match;
         
         while ((match = entryRegex.exec(content)) !== null) {
