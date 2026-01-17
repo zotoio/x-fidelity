@@ -109,30 +109,29 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
         return cached.dependencies;
     }
 
-    logger.debug('Cache miss, collecting dependencies from package manager...');
+    logger.debug('Cache miss, parsing lockfile for dependencies...');
 
     let result: LocalDependencies[] = [];
+    
+    // Parse lockfile directly - no need for node_modules to be installed
     if (fs.existsSync(path.join(actualRepoPath, 'pnpm-lock.yaml'))) {
-        result = await collectNodeDependencies('pnpm', actualRepoPath);
+        result = parsePnpmLockfile(actualRepoPath);
     } else if (fs.existsSync(path.join(actualRepoPath, 'yarn.lock'))) {
-        result = await collectNodeDependencies('yarn', actualRepoPath);
+        result = parseYarnLockfile(actualRepoPath);
     } else if (fs.existsSync(path.join(actualRepoPath, 'package-lock.json'))) {
-        result = await collectNodeDependencies('npm', actualRepoPath);
+        result = parseNpmLockfile(actualRepoPath);
     } else {
         logger.warn('No pnpm-lock.yaml, yarn.lock or package-lock.json found - returning empty dependencies array');
-        return []; // ✅ Return empty array instead of exiting process
+        return [];
     }
 
-    // Cache the result only if we got actual dependencies
-    // Don't cache empty results as they might be from missing node_modules
+    // Cache the result
     if (result.length > 0) {
         dependencyCache.set(cacheKey, {
             dependencies: result,
             cacheKey,
             timestamp: Date.now()
         });
-    } else {
-        logger.debug('Not caching empty dependency result - node_modules may not be installed');
     }
 
     const executionTime = Date.now() - startTime;
@@ -149,6 +148,178 @@ function isPnpmWorkspace(repoPath: string): boolean {
         return fs.existsSync(path.join(repoPath, 'pnpm-workspace.yaml'));
     } catch {
         return false;
+    }
+}
+
+/**
+ * Parse pnpm-lock.yaml to extract dependencies without requiring node_modules
+ */
+function parsePnpmLockfile(repoPath: string): LocalDependencies[] {
+    const lockfilePath = path.join(repoPath, 'pnpm-lock.yaml');
+    
+    logger.debug(`Attempting to parse pnpm lockfile at: ${lockfilePath}`);
+    
+    if (!fs.existsSync(lockfilePath)) {
+        logger.debug('pnpm-lock.yaml not found');
+        return [];
+    }
+    
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const yaml = require('js-yaml');
+        const content = fs.readFileSync(lockfilePath, 'utf-8');
+        logger.debug(`Read pnpm-lock.yaml, size: ${content.length} bytes`);
+        const lockfile = yaml.load(content) as any;
+        
+        if (!lockfile || !lockfile.importers) {
+            logger.debug('pnpm-lock.yaml has no importers section');
+            return [];
+        }
+        
+        const dependencies: LocalDependencies[] = [];
+        
+        // Process each importer (workspace package or root)
+        for (const [importerPath, importer] of Object.entries(lockfile.importers)) {
+            const importerData = importer as any;
+            
+            // Process dependencies
+            if (importerData.dependencies) {
+                for (const [name, info] of Object.entries(importerData.dependencies)) {
+                    const depInfo = info as any;
+                    // Skip workspace links
+                    if (depInfo.version && !depInfo.version.startsWith('link:')) {
+                        dependencies.push({
+                            name,
+                            version: depInfo.version
+                        });
+                    }
+                }
+            }
+            
+            // Process devDependencies
+            if (importerData.devDependencies) {
+                for (const [name, info] of Object.entries(importerData.devDependencies)) {
+                    const depInfo = info as any;
+                    // Skip workspace links
+                    if (depInfo.version && !depInfo.version.startsWith('link:')) {
+                        // Check if already added from dependencies
+                        if (!dependencies.some(d => d.name === name)) {
+                            dependencies.push({
+                                name,
+                                version: depInfo.version
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Process peerDependencies
+            if (importerData.peerDependencies) {
+                for (const [name, info] of Object.entries(importerData.peerDependencies)) {
+                    const depInfo = info as any;
+                    if (depInfo.version && !depInfo.version.startsWith('link:')) {
+                        if (!dependencies.some(d => d.name === name)) {
+                            dependencies.push({
+                                name,
+                                version: depInfo.version
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        logger.debug(`Parsed ${dependencies.length} dependencies from pnpm-lock.yaml`);
+        return dependencies;
+        
+    } catch (error) {
+        logger.warn(`Failed to parse pnpm-lock.yaml: ${error}`);
+        return [];
+    }
+}
+
+/**
+ * Parse yarn.lock to extract dependencies without requiring node_modules
+ * This is a fallback when yarn list returns empty
+ */
+function parseYarnLockfile(repoPath: string): LocalDependencies[] {
+    const lockfilePath = path.join(repoPath, 'yarn.lock');
+    
+    if (!fs.existsSync(lockfilePath)) {
+        return [];
+    }
+    
+    try {
+        const content = fs.readFileSync(lockfilePath, 'utf-8');
+        const dependencies: LocalDependencies[] = [];
+        
+        // Parse yarn.lock format - each entry looks like:
+        // "package@^version":
+        //   version "resolved-version"
+        const entryRegex = /^"?([^@\s]+)@[^"]+?"?:\s*\n\s+version\s+"([^"]+)"/gm;
+        let match;
+        
+        while ((match = entryRegex.exec(content)) !== null) {
+            const [, name, version] = match;
+            // Avoid duplicates
+            if (!dependencies.some(d => d.name === name)) {
+                dependencies.push({ name, version });
+            }
+        }
+        
+        logger.debug(`Parsed ${dependencies.length} dependencies from yarn.lock`);
+        return dependencies;
+        
+    } catch (error) {
+        logger.warn(`Failed to parse yarn.lock: ${error}`);
+        return [];
+    }
+}
+
+/**
+ * Parse package-lock.json to extract dependencies without requiring node_modules
+ */
+function parseNpmLockfile(repoPath: string): LocalDependencies[] {
+    const lockfilePath = path.join(repoPath, 'package-lock.json');
+    
+    if (!fs.existsSync(lockfilePath)) {
+        return [];
+    }
+    
+    try {
+        const content = fs.readFileSync(lockfilePath, 'utf-8');
+        const lockfile = JSON.parse(content);
+        const dependencies: LocalDependencies[] = [];
+        
+        // npm lockfile v2/v3 uses "packages" object
+        if (lockfile.packages) {
+            for (const [pkgPath, info] of Object.entries(lockfile.packages)) {
+                const pkgInfo = info as any;
+                if (pkgPath && pkgPath.includes('node_modules/') && pkgInfo.version) {
+                    // Extract package name from path like "node_modules/react"
+                    const name = pkgPath.replace(/^.*node_modules\//, '');
+                    if (!dependencies.some(d => d.name === name)) {
+                        dependencies.push({ name, version: pkgInfo.version });
+                    }
+                }
+            }
+        }
+        // Fallback for npm lockfile v1
+        else if (lockfile.dependencies) {
+            for (const [name, info] of Object.entries(lockfile.dependencies)) {
+                const depInfo = info as any;
+                if (depInfo.version) {
+                    dependencies.push({ name, version: depInfo.version });
+                }
+            }
+        }
+        
+        logger.debug(`Parsed ${dependencies.length} dependencies from package-lock.json`);
+        return dependencies;
+        
+    } catch (error) {
+        logger.warn(`Failed to parse package-lock.json: ${error}`);
+        return [];
     }
 }
 

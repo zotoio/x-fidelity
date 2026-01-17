@@ -22,6 +22,16 @@ import * as yaml from 'js-yaml';
 export type { DependencyLocation } from '@x-fidelity/types';
 
 /**
+ * Represents a dependency with its declared version from package.json
+ */
+export interface DeclaredDependency {
+    name: string;
+    version: string;
+    section: string;
+    manifestPath: string;
+}
+
+/**
  * Cache for parsed manifest locations to avoid re-parsing
  */
 interface ManifestCache {
