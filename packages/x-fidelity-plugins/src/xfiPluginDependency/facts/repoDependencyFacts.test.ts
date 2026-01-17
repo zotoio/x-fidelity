@@ -79,104 +79,55 @@ describe('repoDependencyFacts', () => {
     });
 
     describe('collectLocalDependencies', () => {
+        // Helper to create pnpm lockfile content
+        const createPnpmLockfile = (deps: Record<string, string>, devDeps?: Record<string, string>) => {
+            let content = `lockfileVersion: '9.0'\nimporters:\n  .:\n`;
+            if (Object.keys(deps).length > 0) {
+                content += `    dependencies:\n`;
+                for (const [name, version] of Object.entries(deps)) {
+                    content += `      '${name}':\n        specifier: ^${version}\n        version: ${version}\n`;
+                }
+            }
+            if (devDeps && Object.keys(devDeps).length > 0) {
+                content += `    devDependencies:\n`;
+                for (const [name, version] of Object.entries(devDeps)) {
+                    content += `      '${name}':\n        specifier: ^${version}\n        version: ${version}\n`;
+                }
+            }
+            content += `packages: {}\n`;
+            return content;
+        };
+
         it('should collect dependencies from pnpm-lock.yaml (primary choice)', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            // Override the discoverBinary mock specifically for pnpm
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                if (binaryName === 'pnpm') {
-                    return Promise.resolve({
-                        binary: 'pnpm',
-                        path: '/usr/local/bin/pnpm',
-                        source: 'system'
-                    });
-                }
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            const mockPnpmOutput = [
-                {
-                    dependencies: [
-                        {
-                            name: 'package1',
-                            version: '1.0.0',
-                            dependencies: [
-                                { name: 'dependency1', version: '0.1.0' }
-                            ]
-                        }
-                    ]
-                }
-            ];
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            const mockLockfile = createPnpmLockfile({ 'package1': '1.0.0' });
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
             expect(result).toEqual([
-                {
-                    name: 'package1',
-                    version: '1.0.0',
-                    dependencies: [
-                        { name: 'dependency1', version: '0.1.0' }
-                    ]
-                }
+                { name: 'package1', version: '1.0.0' }
             ]);
-            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list --json --depth=Infinity', expect.any(Object));
         });
 
-        it('should collect dependencies from pnpm-lock.yaml with object format dependencies', async () => {
+        it('should collect dependencies from pnpm-lock.yaml with multiple dependencies', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                if (binaryName === 'pnpm') {
-                    return Promise.resolve({
-                        binary: 'pnpm',
-                        path: '/usr/local/bin/pnpm',
-                        source: 'system'
-                    });
-                }
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
+            const mockLockfile = createPnpmLockfile({ 
+                'package1': '1.0.0',
+                'dependency1': '0.1.0'
             });
-
-            // Test object format (older pnpm versions)
-            const mockPnpmOutput = {
-                dependencies: {
-                    'package1': {
-                        version: '1.0.0',
-                        dependencies: {
-                            'dependency1': { version: '0.1.0' }
-                        }
-                    }
-                }
-            };
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
-            expect(result).toEqual([
-                {
-                    name: 'package1',
-                    version: '1.0.0',
-                    dependencies: [
-                        { name: 'dependency1', version: '0.1.0' }
-                    ]
-                }
-            ]);
+            expect(result).toContainEqual({ name: 'package1', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'dependency1', version: '0.1.0' });
         });
 
         it('should prioritize pnpm-lock.yaml over yarn.lock and package-lock.json', async () => {
@@ -187,66 +138,41 @@ describe('repoDependencyFacts', () => {
                        filePath.includes('package-lock.json');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            const mockPnpmOutput = [
-                {
-                    dependencies: [
-                        { name: 'pnpm-package', version: '1.0.0' }
-                    ]
-                }
-            ];
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            const mockLockfile = createPnpmLockfile({ 'pnpm-package': '1.0.0' });
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
-            // Should have used pnpm, not yarn or npm (no -r flag since no pnpm-workspace.yaml)
-            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list --json --depth=Infinity', expect.any(Object));
             expect(result).toEqual([
                 { name: 'pnpm-package', version: '1.0.0' }
             ]);
         });
 
-        it('should use -r flag for pnpm workspaces', async () => {
-            // Both pnpm-lock.yaml and pnpm-workspace.yaml exist (workspace project)
+        it('should parse pnpm workspace lockfile with multiple importers', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml') || filePath.includes('pnpm-workspace.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            const mockPnpmOutput = [
-                {
-                    dependencies: [
-                        { name: 'workspace-package', version: '1.0.0' }
-                    ]
-                }
-            ];
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  packages/pkg-a:
+    dependencies:
+      package-a:
+        specifier: ^1.0.0
+        version: 1.0.0
+  packages/pkg-b:
+    dependencies:
+      package-b:
+        specifier: ^2.0.0
+        version: 2.0.0
+packages: {}
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
-            // Should use -r flag for workspace projects
-            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/pnpm" list -r --json --depth=Infinity', expect.any(Object));
-            expect(result).toEqual([
-                { name: 'workspace-package', version: '1.0.0' }
-            ]);
+            expect(result).toContainEqual({ name: 'package-a', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'package-b', version: '2.0.0' });
         });
 
         it('should collect dependencies from yarn.lock', async () => {
@@ -254,87 +180,47 @@ describe('repoDependencyFacts', () => {
                 return filePath.includes('yarn.lock') && !filePath.includes('pnpm-lock.yaml');
             });
         
-            const mockYarnOutput = {
-                data: {
-                    trees: [
-                        {
-                            name: 'package1@1.0.0',
-                            children: [
-                                { name: 'dependency1@0.1.0' }
-                            ]
-                        }
-                    ]
-                }
-            };
-        
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
+            const mockYarnLock = `# yarn lockfile v1
+
+"package1@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.npmjs.org/package1/-/package1-1.0.0.tgz"
+
+"dependency1@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.npmjs.org/dependency1/-/dependency1-0.1.0.tgz"
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockYarnLock);
         
             const result = await collectLocalDependencies();
         
-            expect(result).toEqual([
-                {
-                    name: 'package1',
-                    version: '1.0.0',
-                    dependencies: [
-                        { name: 'dependency1', version: '0.1.0' }
-                    ]
-                }
-            ]);
-            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/yarn" list --json', expect.any(Object));
+            expect(result).toContainEqual({ name: 'package1', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'dependency1', version: '0.1.0' });
         });
         
         it('should collect dependencies from package-lock.json', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
-                // Only package-lock.json exists (not pnpm-lock.yaml or yarn.lock)
                 return !filePath.includes('pnpm-lock.yaml') && 
                        !filePath.includes('yarn.lock') && 
                        filePath.includes('package-lock.json');
             });
-
-            // Override the discoverBinary mock specifically for npm
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                if (binaryName === 'npm') {
-                    return Promise.resolve({
-                        binary: 'npm',
-                        path: '/usr/local/bin/npm',
-                        source: 'system'
-                    });
+            
+            const mockNpmLock = JSON.stringify({
+                name: "test-project",
+                lockfileVersion: 2,
+                packages: {
+                    "": { name: "test-project", version: "1.0.0" },
+                    "node_modules/package1": { version: "1.0.0" },
+                    "node_modules/dependency1": { version: "0.1.0" }
                 }
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
             });
             
-            const mockNpmOutput = {
-                dependencies: {
-                    'package1': {
-                        version: '1.0.0',
-                        dependencies: {
-                            'dependency1': {
-                                version: '0.1.0'
-                            }
-                        }
-                    }
-                }
-            };
-            
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockNpmOutput)));
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockNpmLock);
             
             const result = await collectLocalDependencies();
             
-            expect(result).toEqual([
-                {
-                    name: 'package1',
-                    version: '1.0.0',
-                    dependencies: [
-                        { name: 'dependency1', version: '0.1.0' }
-                    ]
-                }
-            ]);
-            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/npm" ls -a --json', expect.any(Object));
+            expect(result).toContainEqual({ name: 'package1', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'dependency1', version: '0.1.0' });
         });
         
         it('should return empty array when no lock files are found', async () => {
@@ -348,93 +234,70 @@ describe('repoDependencyFacts', () => {
             expect(logger.warn).toHaveBeenCalledWith('No pnpm-lock.yaml, yarn.lock or package-lock.json found - returning empty dependencies array');
         });
         
-        it('should handle pnpm command errors', async () => {
+        it('should handle pnpm lockfile parsing errors gracefully', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
-
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
+            
+            (fs.readFileSync as jest.Mock).mockImplementation(() => {
+                throw new Error('Read error');
             });
             
-            mockExecSync.mockImplementation(() => {
-                throw new Error('ELSPROBLEMS');
-            });
-            
-            await expect(collectLocalDependencies()).rejects.toThrow(/Error determining pnpm dependencies/);
-            expect(logger.error).toHaveBeenCalled();
+            const result = await collectLocalDependencies();
+            expect(result).toEqual([]);
+            expect(logger.warn).toHaveBeenCalled();
         });
 
-        it('should handle npm command errors', async () => {
+        it('should handle npm lockfile parsing errors gracefully', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return !filePath.includes('pnpm-lock.yaml') && 
                        !filePath.includes('yarn.lock') && 
                        filePath.includes('package-lock.json');
             });
             
-            mockExecSync.mockImplementation(() => {
-                throw new Error('ELSPROBLEMS');
-            });
+            (fs.readFileSync as jest.Mock).mockReturnValue('Invalid JSON');
             
-            await expect(collectLocalDependencies()).rejects.toThrow(/Error determining npm dependencies/);
-            expect(logger.error).toHaveBeenCalled();
+            const result = await collectLocalDependencies();
+            expect(result).toEqual([]);
+            expect(logger.warn).toHaveBeenCalled();
         });
         
-        it('should handle yarn command errors', async () => {
+        it('should handle yarn lockfile parsing errors gracefully', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return !filePath.includes('pnpm-lock.yaml') && filePath.includes('yarn.lock');
             });
             
-            mockExecSync.mockImplementation(() => {
-                throw new Error('Command failed');
+            (fs.readFileSync as jest.Mock).mockImplementation(() => {
+                throw new Error('Read error');
             });
             
-            await expect(collectLocalDependencies()).rejects.toThrow(/Error determining yarn dependencies/);
-            expect(logger.error).toHaveBeenCalled();
+            const result = await collectLocalDependencies();
+            expect(result).toEqual([]);
+            expect(logger.warn).toHaveBeenCalled();
         });
         
-        it('should handle JSON parsing errors', async () => {
+        it('should handle invalid YAML in pnpm lockfile', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
-                return !filePath.includes('pnpm-lock.yaml') && filePath.includes('yarn.lock');
+                return filePath.includes('pnpm-lock.yaml');
             });
             
-            mockExecSync.mockReturnValue(Buffer.from('Invalid JSON'));
+            (fs.readFileSync as jest.Mock).mockReturnValue('invalid: yaml: content: [');
             
-            await expect(collectLocalDependencies()).rejects.toThrow();
-            expect(logger.error).toHaveBeenCalled();
+            const result = await collectLocalDependencies();
+            expect(result).toEqual([]);
+            expect(logger.warn).toHaveBeenCalled();
         });
 
-        it('should handle pnpm devDependencies', async () => {
+        it('should handle pnpm devDependencies from lockfile', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            const mockPnpmOutput = [
-                {
-                    dependencies: [
-                        { name: 'prod-package', version: '1.0.0' }
-                    ],
-                    devDependencies: [
-                        { name: 'dev-package', version: '2.0.0' }
-                    ]
-                }
-            ];
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            const mockLockfile = createPnpmLockfile(
+                { 'prod-package': '1.0.0' },
+                { 'dev-package': '2.0.0' }
+            );
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
@@ -442,34 +305,26 @@ describe('repoDependencyFacts', () => {
             expect(result).toContainEqual({ name: 'dev-package', version: '2.0.0' });
         });
 
-        it('should handle pnpm workspace output (multiple packages in array)', async () => {
+        it('should handle pnpm workspace output (multiple packages in lockfile)', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            const mockPnpmOutput = [
-                {
-                    dependencies: [
-                        { name: 'package-a', version: '1.0.0' }
-                    ]
-                },
-                {
-                    dependencies: [
-                        { name: 'package-b', version: '2.0.0' }
-                    ]
-                }
-            ];
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  packages/pkg-a:
+    dependencies:
+      package-a:
+        specifier: ^1.0.0
+        version: 1.0.0
+  packages/pkg-b:
+    dependencies:
+      package-b:
+        specifier: ^2.0.0
+        version: 2.0.0
+packages: {}
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
@@ -477,29 +332,13 @@ describe('repoDependencyFacts', () => {
             expect(result).toContainEqual({ name: 'package-b', version: '2.0.0' });
         });
 
-        it('should handle pnpm scoped packages', async () => {
+        it('should handle pnpm scoped packages in lockfile', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            const mockPnpmOutput = [
-                {
-                    dependencies: [
-                        { name: '@scope/package', version: '1.0.0' }
-                    ]
-                }
-            ];
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            const mockLockfile = createPnpmLockfile({ '@scope/package': '1.0.0' });
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
@@ -508,232 +347,120 @@ describe('repoDependencyFacts', () => {
             ]);
         });
 
-        it('should handle pnpm nested dependencies deeply', async () => {
+        it('should skip workspace link dependencies in lockfile', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            const mockPnpmOutput = [
-                {
-                    dependencies: [
-                        {
-                            name: 'level1',
-                            version: '1.0.0',
-                            dependencies: [
-                                {
-                                    name: 'level2',
-                                    version: '2.0.0',
-                                    dependencies: [
-                                        { name: 'level3', version: '3.0.0' }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ];
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            // Lockfile parsing returns flat structure (no nested deps like pnpm list)
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      '@internal/pkg':
+        specifier: workspace:*
+        version: link:packages/pkg
+      external-dep:
+        specifier: ^1.0.0
+        version: 1.0.0
+packages: {}
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
+            // Should skip workspace links, only include external deps
             expect(result).toEqual([
-                {
-                    name: 'level1',
-                    version: '1.0.0',
-                    dependencies: [
-                        {
-                            name: 'level2',
-                            version: '2.0.0',
-                            dependencies: [
-                                { name: 'level3', version: '3.0.0' }
-                            ]
-                        }
-                    ]
-                }
+                { name: 'external-dep', version: '1.0.0' }
             ]);
         });
 
-        it('should handle pnpm empty dependencies', async () => {
+        it('should handle pnpm empty dependencies in lockfile', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            const mockPnpmOutput = [
-                {
-                    dependencies: []
-                }
-            ];
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .: {}
+packages: {}
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
             expect(result).toEqual([]);
         });
 
-        it('should handle pnpm output with missing dependencies field', async () => {
+        it('should handle pnpm lockfile with no importers field', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            const mockPnpmOutput = [
-                {
-                    name: 'root-package',
-                    version: '1.0.0'
-                    // no dependencies field
-                }
-            ];
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            const mockLockfile = `lockfileVersion: '9.0'
+packages: {}
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
             expect(result).toEqual([]);
         });
 
-        it('should handle pnpm output with circular reference objects', async () => {
+        it('should deduplicate dependencies across importers', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            // Simulate pnpm output where the same object reference appears multiple times
-            // This tests that we handle potential circular references gracefully
-            const sharedDep = { name: 'shared-dep', version: '1.0.0' };
-            const mockPnpmOutput = [
-                {
-                    dependencies: [
-                        {
-                            name: 'package-a',
-                            version: '1.0.0',
-                            dependencies: [sharedDep]
-                        },
-                        {
-                            name: 'package-b',
-                            version: '1.0.0',
-                            dependencies: [sharedDep] // Same object reference
-                        }
-                    ]
-                }
-            ];
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            // Same dependency in multiple importers
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  packages/pkg-a:
+    dependencies:
+      shared-dep:
+        specifier: ^1.0.0
+        version: 1.0.0
+  packages/pkg-b:
+    dependencies:
+      shared-dep:
+        specifier: ^1.0.0
+        version: 1.0.0
+packages: {}
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
-            // Should handle the shared reference without crashing
-            expect(result.length).toBe(2);
-            expect(result[0].name).toBe('package-a');
-            expect(result[1].name).toBe('package-b');
+            // Should deduplicate
+            const sharedDepCount = result.filter(d => d.name === 'shared-dep').length;
+            expect(sharedDepCount).toBe(1);
         });
 
-        it('should handle pnpm output with deeply nested dependencies without stack overflow', async () => {
+        it('should handle many dependencies without performance issues', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            // Create a deeply nested dependency structure (but not circular in the JSON)
-            const createNestedDep = (depth: number, maxDepth: number): any => {
-                if (depth >= maxDepth) {
-                    return { name: `level-${depth}`, version: '1.0.0' };
-                }
-                return {
-                    name: `level-${depth}`,
-                    version: '1.0.0',
-                    dependencies: [createNestedDep(depth + 1, maxDepth)]
-                };
-            };
-
-            const mockPnpmOutput = [
-                {
-                    dependencies: [createNestedDep(1, 50)] // 50 levels deep
-                }
-            ];
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
-
-            const result = await collectLocalDependencies();
-
-            // Should handle deep nesting without stack overflow
-            expect(result.length).toBe(1);
-            expect(result[0].name).toBe('level-1');
-            
-            // Verify the structure is preserved
-            let current = result[0];
-            let depth = 1;
-            while (current.dependencies && current.dependencies.length > 0) {
-                current = current.dependencies[0];
-                depth++;
+            // Generate a lockfile with many dependencies
+            const deps: Record<string, string> = {};
+            for (let i = 0; i < 100; i++) {
+                deps[`package-${i}`] = `${i}.0.0`;
             }
-            expect(depth).toBe(50);
+            const mockLockfile = createPnpmLockfile(deps);
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            expect(result.length).toBe(100);
         });
 
-        it('should handle pnpm object format devDependencies', async () => {
+        it('should handle pnpm lockfile with only devDependencies', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
-
-            const mockPnpmOutput = {
-                devDependencies: {
-                    'dev-package': { version: '1.0.0' }
-                }
-            };
-
-            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockPnpmOutput)));
+            const mockLockfile = createPnpmLockfile({}, { 'dev-package': '1.0.0' });
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
@@ -743,58 +470,53 @@ describe('repoDependencyFacts', () => {
         });
 
         it('should handle pnpm discoverBinary returning null', async () => {
+            // This test is no longer relevant since we parse lockfiles directly
+            // Keep for backward compatibility but adjust expectations
             clearDependencyCache();
             
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
 
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockClear();
-            discoverBinary.mockResolvedValue(null);
+            const mockLockfile = createPnpmLockfile({ 'test-pkg': '1.0.0' });
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
 
             const result = await collectLocalDependencies();
 
-            expect(result).toEqual([]);
+            // Now parses lockfile directly, so should still get results
+            expect(result).toEqual([
+                { name: 'test-pkg', version: '1.0.0' }
+            ]);
         });
 
-        it('should handle pnpm JSON parsing errors', async () => {
+        it('should handle malformed pnpm lockfile gracefully', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
-
-            const { discoverBinary } = require('@x-fidelity/core');
-            discoverBinary.mockImplementation((binaryName: string) => {
-                return Promise.resolve({
-                    binary: binaryName,
-                    path: `/usr/local/bin/${binaryName}`,
-                    source: 'system'
-                });
-            });
             
-            mockExecSync.mockReturnValue(Buffer.from('Invalid JSON'));
+            (fs.readFileSync as jest.Mock).mockReturnValue('not: valid: yaml: [broken');
             
-            await expect(collectLocalDependencies()).rejects.toThrow();
-            expect(logger.error).toHaveBeenCalled();
+            const result = await collectLocalDependencies();
+            expect(result).toEqual([]);
+            expect(logger.warn).toHaveBeenCalled();
         });
     });
 
     describe('getDependencyVersionFacts', () => {
-        beforeEach(() => {
-            // Reset the mock implementation for collectLocalDependencies
-            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies')
-                .mockImplementation(async () => {
-                    return [
-                        {
-                            name: 'package1',
-                            version: '1.0.0'
-                        }
-                    ];
-                });
-        });
+        // Helper to create pnpm lockfile content (duplicated for this describe block)
+        const createLockfile = (deps: Record<string, string>) => {
+            let content = `lockfileVersion: '9.0'\nimporters:\n  .:\n`;
+            if (Object.keys(deps).length > 0) {
+                content += `    dependencies:\n`;
+                for (const [name, version] of Object.entries(deps)) {
+                    content += `      '${name}':\n        specifier: ^${version}\n        version: ${version}\n`;
+                }
+            }
+            content += `packages: {}\n`;
+            return content;
+        };
 
-        it('should return dependency version facts', async () => {
-            // Mock successful dependency collection
+        it('should return dependency version facts from lockfile', async () => {
             const mockArchetypeConfig = {
                 facts: ['repoDependencyFacts'],
                 config: {
@@ -804,23 +526,13 @@ describe('repoDependencyFacts', () => {
                 }
             };
 
-            // Mock fs.existsSync to return true for yarn.lock (not pnpm-lock.yaml)
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
-                return !filePath.includes('pnpm-lock.yaml') && filePath.includes('yarn.lock');
+                return filePath.includes('pnpm-lock.yaml');
             });
-
-            // Mock execSync to return valid JSON
-            const mockYarnOutput = {
-                data: {
-                    trees: [
-                        {
-                            name: 'package1@1.0.0',
-                            children: []
-                        }
-                    ]
-                }
-            };
-            (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
+            (fs.statSync as jest.Mock).mockReturnValue({ mtime: { getTime: () => 12345 } });
+            
+            const mockLockfile = createLockfile({ 'package1': '1.0.0' });
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
             
             const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
             
@@ -831,29 +543,23 @@ describe('repoDependencyFacts', () => {
         
 
         it('should return empty array when no local dependencies are found', async () => {
-            // Mock empty dependency collection
-            jest.spyOn(repoDependencyFacts, 'collectLocalDependencies')
-                .mockImplementation(async () => []);
-
             const mockArchetypeConfig = {
                 facts: ['repoDependencyFacts'],
                 config: {
-                    minimumDependencyVersions: {}
+                    minimumDependencyVersions: {
+                        'package1': '^1.0.0'
+                    }
                 }
             };
 
-            // Mock fs.existsSync to return true for yarn.lock (not pnpm-lock.yaml)
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
-                return !filePath.includes('pnpm-lock.yaml') && filePath.includes('yarn.lock');
+                return filePath.includes('pnpm-lock.yaml');
             });
+            (fs.statSync as jest.Mock).mockReturnValue({ mtime: { getTime: () => 12345 } });
 
-            // Mock execSync to return valid JSON with no dependencies
-            const mockYarnOutput = {
-                data: {
-                    trees: []
-                }
-            };
-            (execSync as jest.Mock).mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
+            // Empty lockfile
+            const mockLockfile = `lockfileVersion: '9.0'\nimporters:\n  .: {}\npackages: {}\n`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
             
             const result = await getDependencyVersionFacts(mockArchetypeConfig as any);
             

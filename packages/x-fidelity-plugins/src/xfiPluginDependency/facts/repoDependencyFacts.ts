@@ -182,16 +182,21 @@ function parsePnpmLockfile(repoPath: string): LocalDependencies[] {
         for (const [importerPath, importer] of Object.entries(lockfile.importers)) {
             const importerData = importer as any;
             
+            // Helper to add dependency if not already present
+            const addDep = (name: string, version: string) => {
+                // Skip if already added (deduplication across importers)
+                if (!dependencies.some(d => d.name === name)) {
+                    dependencies.push({ name, version });
+                }
+            };
+
             // Process dependencies
             if (importerData.dependencies) {
                 for (const [name, info] of Object.entries(importerData.dependencies)) {
                     const depInfo = info as any;
                     // Skip workspace links
                     if (depInfo.version && !depInfo.version.startsWith('link:')) {
-                        dependencies.push({
-                            name,
-                            version: depInfo.version
-                        });
+                        addDep(name, depInfo.version);
                     }
                 }
             }
@@ -202,13 +207,7 @@ function parsePnpmLockfile(repoPath: string): LocalDependencies[] {
                     const depInfo = info as any;
                     // Skip workspace links
                     if (depInfo.version && !depInfo.version.startsWith('link:')) {
-                        // Check if already added from dependencies
-                        if (!dependencies.some(d => d.name === name)) {
-                            dependencies.push({
-                                name,
-                                version: depInfo.version
-                            });
-                        }
+                        addDep(name, depInfo.version);
                     }
                 }
             }
@@ -218,12 +217,7 @@ function parsePnpmLockfile(repoPath: string): LocalDependencies[] {
                 for (const [name, info] of Object.entries(importerData.peerDependencies)) {
                     const depInfo = info as any;
                     if (depInfo.version && !depInfo.version.startsWith('link:')) {
-                        if (!dependencies.some(d => d.name === name)) {
-                            dependencies.push({
-                                name,
-                                version: depInfo.version
-                            });
-                        }
+                        addDep(name, depInfo.version);
                     }
                 }
             }
