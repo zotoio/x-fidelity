@@ -608,27 +608,46 @@ export class ExtensionManager implements vscode.Disposable {
 
     // Toggle commands for session-based settings
     this.disposables.push(
-      vscode.commands.registerCommand('xfidelity.toggleDiagnostics', () => {
-        const enabled = this.controlCenterTreeViewManager.toggleDiagnostics();
-        if (enabled) {
-          // Re-run analysis to restore diagnostics
-          this.logger.info(
-            '🔔 Diagnostics enabled - refreshing analysis results'
-          );
-          vscode.window.showInformationMessage(
-            'X-Fidelity: Diagnostics enabled for this session'
-          );
-          // Trigger a refresh to restore diagnostics from cached results
-          this.issuesTreeViewManager.refresh();
-        } else {
-          // Clear all diagnostics
-          this.logger.info('🔕 Diagnostics disabled - clearing squiggly lines');
-          this.diagnosticProvider.clearDiagnostics();
-          vscode.window.showInformationMessage(
-            'X-Fidelity: Diagnostics disabled for this session'
-          );
+      vscode.commands.registerCommand(
+        'xfidelity.toggleDiagnostics',
+        async () => {
+          const enabled = this.controlCenterTreeViewManager.toggleDiagnostics();
+          if (enabled) {
+            // Restore diagnostics from cached results
+            this.logger.info(
+              '🔔 Diagnostics enabled - restoring from cached results'
+            );
+
+            // Try to restore from cache
+            const restored =
+              await this.resultCoordinator.restoreDiagnosticsFromCache({
+                diagnosticProvider: this.diagnosticProvider,
+                issuesTreeViewManager: this.issuesTreeViewManager,
+                statusBarProvider: this.statusBarProvider
+              });
+
+            if (restored) {
+              vscode.window.showInformationMessage(
+                'X-Fidelity: Diagnostics restored for this session'
+              );
+            } else {
+              // No cached results - inform user they need to run analysis
+              vscode.window.showInformationMessage(
+                'X-Fidelity: Diagnostics enabled. Run analysis to see issues.'
+              );
+            }
+          } else {
+            // Clear all diagnostics
+            this.logger.info(
+              '🔕 Diagnostics disabled - clearing squiggly lines'
+            );
+            this.diagnosticProvider.clearDiagnostics();
+            vscode.window.showInformationMessage(
+              'X-Fidelity: Diagnostics disabled for this session'
+            );
+          }
         }
-      })
+      )
     );
 
     this.disposables.push(

@@ -38,14 +38,66 @@ interface DiagnosticIssue {
  * 2. Distributing identical processed data to all components
  * 3. Tracking both successful and failed diagnostic conversions
  * 4. Ensuring all UI components show consistent counts
+ * 5. Caching results for diagnostic toggle support
  */
 export class ResultCoordinator implements vscode.Disposable {
   private logger: any;
   private disposables: vscode.Disposable[] = [];
 
+  /**
+   * Cache of the last processed analysis result.
+   * Used to restore diagnostics when toggled back on without re-running analysis.
+   */
+  private lastProcessedResult: ProcessedAnalysisResult | null = null;
+
   constructor() {
     this.logger = createComponentLogger('ResultCoordinator');
     this.logger.info('ResultCoordinator initialized');
+  }
+
+  /**
+   * Get the last processed analysis result (for diagnostic restoration)
+   */
+  public getLastProcessedResult(): ProcessedAnalysisResult | null {
+    return this.lastProcessedResult;
+  }
+
+  /**
+   * Check if there are cached results available
+   */
+  public hasCachedResults(): boolean {
+    return this.lastProcessedResult !== null;
+  }
+
+  /**
+   * Restore diagnostics from cached results
+   * Used when diagnostics are toggled back ON
+   */
+  public async restoreDiagnosticsFromCache(components: {
+    diagnosticProvider: any;
+    issuesTreeViewManager: any;
+    statusBarProvider: any;
+  }): Promise<boolean> {
+    if (!this.lastProcessedResult) {
+      this.logger.warn(
+        'No cached results available - user must run analysis again'
+      );
+      return false;
+    }
+
+    this.logger.info('Restoring diagnostics from cached results', {
+      cachedIssues: this.lastProcessedResult.totalIssues,
+      diagnosticFiles: this.lastProcessedResult.diagnostics.size
+    });
+
+    try {
+      await this.distributeToComponents(this.lastProcessedResult, components);
+      this.logger.info('Diagnostics restored successfully from cache');
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to restore diagnostics from cache', error);
+      return false;
+    }
   }
 
   /**
@@ -80,7 +132,11 @@ export class ResultCoordinator implements vscode.Disposable {
       // 2. Update ALL components directly with the SAME processed data
       await this.distributeToComponents(processed, components);
 
-      // 3. Log final reconciliation
+      // 3. Cache the processed result for diagnostic toggle support
+      this.lastProcessedResult = processed;
+      this.logger.debug('Cached processed result for diagnostic restoration');
+
+      // 4. Log final reconciliation
       this.logReconciliation(processed, rawResult);
 
       const processingTime = performance.now() - startTime;
