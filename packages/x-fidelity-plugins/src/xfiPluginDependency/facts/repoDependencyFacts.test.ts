@@ -175,52 +175,90 @@ packages: {}
             expect(result).toContainEqual({ name: 'package-b', version: '2.0.0' });
         });
 
-        it('should collect dependencies from yarn.lock', async () => {
+        it('should collect dependencies from yarn.lock using yarn command', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('yarn.lock') && !filePath.includes('pnpm-lock.yaml');
             });
         
-            const mockYarnLock = `# yarn lockfile v1
-
-"package1@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.npmjs.org/package1/-/package1-1.0.0.tgz"
-
-"dependency1@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.npmjs.org/dependency1/-/dependency1-0.1.0.tgz"
-`;
-            (fs.readFileSync as jest.Mock).mockReturnValue(mockYarnLock);
+            const mockYarnOutput = {
+                data: {
+                    trees: [
+                        {
+                            name: 'package1@1.0.0',
+                            children: [
+                                { name: 'dependency1@0.1.0' }
+                            ]
+                        }
+                    ]
+                }
+            };
+        
+            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockYarnOutput)));
         
             const result = await collectLocalDependencies();
         
-            expect(result).toContainEqual({ name: 'package1', version: '1.0.0' });
-            expect(result).toContainEqual({ name: 'dependency1', version: '0.1.0' });
+            expect(result).toEqual([
+                {
+                    name: 'package1',
+                    version: '1.0.0',
+                    dependencies: [
+                        { name: 'dependency1', version: '0.1.0' }
+                    ]
+                }
+            ]);
+            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/yarn" list --json', expect.any(Object));
         });
         
-        it('should collect dependencies from package-lock.json', async () => {
+        it('should collect dependencies from package-lock.json using npm command', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return !filePath.includes('pnpm-lock.yaml') && 
                        !filePath.includes('yarn.lock') && 
                        filePath.includes('package-lock.json');
             });
-            
-            const mockNpmLock = JSON.stringify({
-                name: "test-project",
-                lockfileVersion: 2,
-                packages: {
-                    "": { name: "test-project", version: "1.0.0" },
-                    "node_modules/package1": { version: "1.0.0" },
-                    "node_modules/dependency1": { version: "0.1.0" }
+
+            const { discoverBinary } = require('@x-fidelity/core');
+            discoverBinary.mockImplementation((binaryName: string) => {
+                if (binaryName === 'npm') {
+                    return Promise.resolve({
+                        binary: 'npm',
+                        path: '/usr/local/bin/npm',
+                        source: 'system'
+                    });
                 }
+                return Promise.resolve({
+                    binary: binaryName,
+                    path: `/usr/local/bin/${binaryName}`,
+                    source: 'system'
+                });
             });
             
-            (fs.readFileSync as jest.Mock).mockReturnValue(mockNpmLock);
+            const mockNpmOutput = {
+                dependencies: {
+                    'package1': {
+                        version: '1.0.0',
+                        dependencies: {
+                            'dependency1': {
+                                version: '0.1.0'
+                            }
+                        }
+                    }
+                }
+            };
+            
+            mockExecSync.mockReturnValue(Buffer.from(JSON.stringify(mockNpmOutput)));
             
             const result = await collectLocalDependencies();
             
-            expect(result).toContainEqual({ name: 'package1', version: '1.0.0' });
-            expect(result).toContainEqual({ name: 'dependency1', version: '0.1.0' });
+            expect(result).toEqual([
+                {
+                    name: 'package1',
+                    version: '1.0.0',
+                    dependencies: [
+                        { name: 'dependency1', version: '0.1.0' }
+                    ]
+                }
+            ]);
+            expect(mockExecSync).toHaveBeenCalledWith('"/usr/local/bin/npm" ls -a --json', expect.any(Object));
         });
         
         it('should return empty array when no lock files are found', async () => {
@@ -248,32 +286,41 @@ packages: {}
             expect(logger.warn).toHaveBeenCalled();
         });
 
-        it('should handle npm lockfile parsing errors gracefully', async () => {
+        it('should handle npm command errors gracefully', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return !filePath.includes('pnpm-lock.yaml') && 
                        !filePath.includes('yarn.lock') && 
                        filePath.includes('package-lock.json');
             });
+
+            const { discoverBinary } = require('@x-fidelity/core');
+            discoverBinary.mockImplementation((binaryName: string) => {
+                return Promise.resolve({
+                    binary: binaryName,
+                    path: `/usr/local/bin/${binaryName}`,
+                    source: 'system'
+                });
+            });
             
-            (fs.readFileSync as jest.Mock).mockReturnValue('Invalid JSON');
+            mockExecSync.mockImplementation(() => {
+                throw new Error('npm command failed');
+            });
             
-            const result = await collectLocalDependencies();
-            expect(result).toEqual([]);
-            expect(logger.warn).toHaveBeenCalled();
+            await expect(collectLocalDependencies()).rejects.toThrow(/Error determining npm dependencies/);
+            expect(logger.error).toHaveBeenCalled();
         });
         
-        it('should handle yarn lockfile parsing errors gracefully', async () => {
+        it('should handle yarn command errors gracefully', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return !filePath.includes('pnpm-lock.yaml') && filePath.includes('yarn.lock');
             });
             
-            (fs.readFileSync as jest.Mock).mockImplementation(() => {
-                throw new Error('Read error');
+            mockExecSync.mockImplementation(() => {
+                throw new Error('yarn command failed');
             });
             
-            const result = await collectLocalDependencies();
-            expect(result).toEqual([]);
-            expect(logger.warn).toHaveBeenCalled();
+            await expect(collectLocalDependencies()).rejects.toThrow(/Error determining yarn dependencies/);
+            expect(logger.error).toHaveBeenCalled();
         });
         
         it('should handle invalid YAML in pnpm lockfile', async () => {

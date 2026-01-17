@@ -109,17 +109,21 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
         return cached.dependencies;
     }
 
-    logger.debug('Cache miss, parsing lockfile for dependencies...');
+    logger.debug('Cache miss, collecting dependencies...');
 
     let result: LocalDependencies[] = [];
     
-    // Parse lockfile directly - no need for node_modules to be installed
+    // pnpm: parse lockfile directly (no need for node_modules)
+    // yarn/npm: use command-based collection (more reliable for complex lockfiles)
     if (fs.existsSync(path.join(actualRepoPath, 'pnpm-lock.yaml'))) {
+        logger.debug('Using pnpm lockfile parsing');
         result = parsePnpmLockfile(actualRepoPath);
     } else if (fs.existsSync(path.join(actualRepoPath, 'yarn.lock'))) {
-        result = parseYarnLockfile(actualRepoPath);
+        logger.debug('Using yarn command-based collection');
+        result = await collectNodeDependencies('yarn', actualRepoPath);
     } else if (fs.existsSync(path.join(actualRepoPath, 'package-lock.json'))) {
-        result = parseNpmLockfile(actualRepoPath);
+        logger.debug('Using npm command-based collection');
+        result = await collectNodeDependencies('npm', actualRepoPath);
     } else {
         logger.warn('No pnpm-lock.yaml, yarn.lock or package-lock.json found - returning empty dependencies array');
         return [];
