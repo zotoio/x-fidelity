@@ -530,7 +530,7 @@ describe('manifestLocationParser', () => {
             // Should find shared-dep at root location (root takes precedence)
             const sharedDepLocation = locations.get('shared-dep');
             expect(sharedDepLocation).toBeDefined();
-            expect(sharedDepLocation?.manifestPath).toBe('/test/repo/package.json');
+            expect(sharedDepLocation?.manifestPath).toBe('package.json');
         });
     });
 

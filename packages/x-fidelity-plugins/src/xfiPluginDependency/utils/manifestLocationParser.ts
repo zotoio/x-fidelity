@@ -253,8 +253,10 @@ function getWorkspacePackagePaths(repoPath: string): string[] {
 
 /**
  * Parse a single package.json and extract dependency locations
+ * @param packageJsonPath - Absolute path to the package.json file
+ * @param repoPath - Repository root path (used to make manifest paths relative)
  */
-function parseSinglePackageJson(packageJsonPath: string): Map<string, DependencyLocation> {
+function parseSinglePackageJson(packageJsonPath: string, repoPath?: string): Map<string, DependencyLocation> {
     try {
         if (!fs.existsSync(packageJsonPath)) {
             return new Map();
@@ -263,17 +265,23 @@ function parseSinglePackageJson(packageJsonPath: string): Map<string, Dependency
         const stats = fs.statSync(packageJsonPath);
         const mtime = stats.mtime.getTime();
         
+        // Create cache key that includes repoPath for relative path handling
+        const cacheKey = repoPath ? `${packageJsonPath}:${repoPath}` : packageJsonPath;
+        
         // Check cache
-        const cached = manifestCache.get(packageJsonPath);
+        const cached = manifestCache.get(cacheKey);
         if (cached && cached.mtime === mtime) {
             return cached.locations;
         }
         
         const content = fs.readFileSync(packageJsonPath, 'utf-8');
-        const locations = parsePackageJsonContent(content, packageJsonPath);
+        
+        // Use relative path for manifestPath if repoPath is provided
+        const manifestPath = repoPath ? path.relative(repoPath, packageJsonPath) : packageJsonPath;
+        const locations = parsePackageJsonContent(content, manifestPath);
         
         // Cache the result
-        manifestCache.set(packageJsonPath, {
+        manifestCache.set(cacheKey, {
             content,
             mtime,
             locations
@@ -302,7 +310,7 @@ export async function parsePackageJsonLocations(repoPath: string): Promise<Map<s
     try {
         // Parse root package.json
         const rootPackageJson = path.join(absoluteRepoPath, 'package.json');
-        const rootLocations = parseSinglePackageJson(rootPackageJson);
+        const rootLocations = parseSinglePackageJson(rootPackageJson, absoluteRepoPath);
         for (const [name, location] of rootLocations) {
             allLocations.set(name, location);
         }
@@ -311,7 +319,7 @@ export async function parsePackageJsonLocations(repoPath: string): Promise<Map<s
         const workspacePackages = getWorkspacePackagePaths(absoluteRepoPath);
         for (const packagePath of workspacePackages) {
             const packageJsonPath = path.join(packagePath, 'package.json');
-            const locations = parseSinglePackageJson(packageJsonPath);
+            const locations = parseSinglePackageJson(packageJsonPath, absoluteRepoPath);
             
             // Merge locations (workspace packages take precedence for their own deps)
             for (const [name, location] of locations) {
