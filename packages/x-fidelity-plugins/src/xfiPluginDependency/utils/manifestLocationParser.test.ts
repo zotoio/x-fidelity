@@ -687,6 +687,46 @@ describe('manifestLocationParser', () => {
             expect(typesNodeLocation?.section).toBe('pnpm.overrides');
         });
 
+        it('should ignore nested dependency sections after pnpm.overrides', async () => {
+            const packageJsonContent = `{
+  "name": "test-package",
+  "version": "1.0.0",
+  "pnpm": {
+    "overrides": {
+      "lodash": "4.17.21"
+    },
+    "packageExtensions": {
+      "foo@1.0.0": {
+        "dependencies": {
+          "left-pad": "1.3.0"
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "react": "^18.0.0"
+  }
+}`;
+
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.statSync.mockReturnValue({ mtime: { getTime: () => 12345 } } as any);
+            mockFs.readFileSync.mockReturnValue(packageJsonContent);
+
+            const locations = await parsePackageJsonLocations('/test/repo');
+
+            const lodashLocation = locations.get('lodash');
+            expect(lodashLocation).toBeDefined();
+            expect(lodashLocation?.lineNumber).toBe(6);
+            expect(lodashLocation?.section).toBe('pnpm.overrides');
+
+            const reactLocation = locations.get('react');
+            expect(reactLocation).toBeDefined();
+            expect(reactLocation?.lineNumber).toBe(17);
+            expect(reactLocation?.section).toBe('dependencies');
+
+            expect(locations.get('left-pad')).toBeUndefined();
+        });
+
         it('should handle all dependency sections together', async () => {
             const packageJsonContent = `{
   "name": "test-package",

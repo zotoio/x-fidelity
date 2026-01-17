@@ -470,8 +470,8 @@ function parsePackageJsonContent(content: string, filePath: string): Map<string,
             if (sectionBraceDepth <= 0) {
                 // If we were in pnpm.overrides, stay in pnpm section
                 if (currentSection === 'pnpm.overrides') {
-                    // Adjust pnpm brace depth for the closing brace we just processed
-                    pnpmBraceDepth += openBraces - closeBraces - 1; // -1 for the section close
+                    // Adjust pnpm brace depth, excluding the overrides closing brace
+                    pnpmBraceDepth += openBraces - closeBraces + 1;
                 }
                 currentSection = null;
                 sectionBraceDepth = 0;
