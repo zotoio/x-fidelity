@@ -12,6 +12,14 @@ export interface ControlCenterTreeItem {
   readonly children?: ControlCenterTreeItem[];
 }
 
+/**
+ * Session state for toggleable features in the control center
+ */
+export interface ControlCenterSessionState {
+  diagnosticsEnabled: boolean;
+  autorunEnabled: boolean;
+}
+
 export class ControlCenterTreeProvider
   implements vscode.TreeDataProvider<ControlCenterTreeItem>
 {
@@ -23,9 +31,60 @@ export class ControlCenterTreeProvider
   > = this._onDidChangeTreeData.event;
 
   private treeData: ControlCenterTreeItem[] = [];
+  
+  // Session state for toggles (defaults to enabled)
+  private sessionState: ControlCenterSessionState = {
+    diagnosticsEnabled: true,
+    autorunEnabled: true
+  };
+
+  // Event emitter for state changes
+  private _onStateChanged = new vscode.EventEmitter<ControlCenterSessionState>();
+  readonly onStateChanged: vscode.Event<ControlCenterSessionState> = this._onStateChanged.event;
 
   constructor() {
     this.buildTreeData();
+  }
+
+  /**
+   * Get current session state
+   */
+  getSessionState(): ControlCenterSessionState {
+    return { ...this.sessionState };
+  }
+
+  /**
+   * Toggle diagnostics (squiggly lines) enabled/disabled for current session
+   */
+  toggleDiagnostics(): boolean {
+    this.sessionState.diagnosticsEnabled = !this.sessionState.diagnosticsEnabled;
+    this._onStateChanged.fire(this.getSessionState());
+    this.refresh();
+    return this.sessionState.diagnosticsEnabled;
+  }
+
+  /**
+   * Toggle autorun enabled/disabled for current session
+   */
+  toggleAutorun(): boolean {
+    this.sessionState.autorunEnabled = !this.sessionState.autorunEnabled;
+    this._onStateChanged.fire(this.getSessionState());
+    this.refresh();
+    return this.sessionState.autorunEnabled;
+  }
+
+  /**
+   * Check if diagnostics are enabled
+   */
+  isDiagnosticsEnabled(): boolean {
+    return this.sessionState.diagnosticsEnabled;
+  }
+
+  /**
+   * Check if autorun is enabled
+   */
+  isAutorunEnabled(): boolean {
+    return this.sessionState.autorunEnabled;
   }
 
   refresh(): void {
@@ -93,6 +152,34 @@ export class ControlCenterTreeProvider
               command: 'xfidelity.openSettings',
               title: 'Open Settings'
             }
+          },
+          {
+            id: 'toggle-diagnostics',
+            label: this.sessionState.diagnosticsEnabled ? 'Disable Squiggly Lines' : 'Enable Squiggly Lines',
+            tooltip: this.sessionState.diagnosticsEnabled 
+              ? 'Click to hide diagnostic squiggly lines for this session' 
+              : 'Click to show diagnostic squiggly lines for this session',
+            description: this.sessionState.diagnosticsEnabled ? 'On' : 'Off',
+            iconPath: new vscode.ThemeIcon(this.sessionState.diagnosticsEnabled ? 'check' : 'circle-slash'),
+            collapsibleState: vscode.TreeItemCollapsibleState.None,
+            command: {
+              command: 'xfidelity.toggleDiagnostics',
+              title: 'Toggle Diagnostics'
+            }
+          },
+          {
+            id: 'toggle-autorun',
+            label: this.sessionState.autorunEnabled ? 'Disable Autorun' : 'Enable Autorun',
+            tooltip: this.sessionState.autorunEnabled 
+              ? 'Click to disable automatic analysis for this session' 
+              : 'Click to enable automatic analysis for this session',
+            description: this.sessionState.autorunEnabled ? 'On' : 'Off',
+            iconPath: new vscode.ThemeIcon(this.sessionState.autorunEnabled ? 'check' : 'circle-slash'),
+            collapsibleState: vscode.TreeItemCollapsibleState.None,
+            command: {
+              command: 'xfidelity.toggleAutorun',
+              title: 'Toggle Autorun'
+            }
           }
         ]
       },
@@ -140,24 +227,13 @@ export class ControlCenterTreeProvider
         ]
       },
 
-      // Configuration Section
+      // Advanced Section (formerly Configuration)
       {
-        id: 'configuration',
-        label: 'Configuration',
+        id: 'advanced',
+        label: 'Advanced',
         iconPath: new vscode.ThemeIcon('tools'),
         collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
         children: [
-          {
-            id: 'detect-archetype',
-            label: 'Detect Archetype',
-            tooltip: 'Auto-detect project archetype',
-            iconPath: new vscode.ThemeIcon('search'),
-            collapsibleState: vscode.TreeItemCollapsibleState.None,
-            command: {
-              command: 'xfidelity.detectArchetype',
-              title: 'Detect Archetype'
-            }
-          },
           {
             id: 'reset-config',
             label: 'Reset Configuration',
@@ -178,17 +254,6 @@ export class ControlCenterTreeProvider
             command: {
               command: 'xfidelity.resetToDefaults',
               title: 'Reset All Settings'
-            }
-          },
-          {
-            id: 'advanced-settings',
-            label: 'Advanced Settings',
-            tooltip: 'Open advanced configuration options',
-            iconPath: new vscode.ThemeIcon('settings'),
-            collapsibleState: vscode.TreeItemCollapsibleState.None,
-            command: {
-              command: 'xfidelity.showSettingsUI',
-              title: 'Show Advanced Settings'
             }
           }
         ]

@@ -145,6 +145,14 @@ export class ExtensionManager implements vscode.Disposable {
               `(${processed.successfulIssues} successful, ${processed.failedIssuesCount} unhandled)`
           );
 
+          // If diagnostics are disabled for this session, clear them after update
+          if (!this.controlCenterTreeViewManager.isDiagnosticsEnabled()) {
+            this.logger.debug(
+              '🔕 Diagnostics disabled - clearing squiggly lines'
+            );
+            this.diagnosticProvider.clearDiagnostics();
+          }
+
           // Show user notifications based on trigger source and results
           this.showAnalysisCompleteNotification(processed);
         } catch (error) {
@@ -595,6 +603,54 @@ export class ExtensionManager implements vscode.Disposable {
           this.showPeriodicAnalysisStatus();
         }
       )
+    );
+
+    // Toggle commands for session-based settings
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.toggleDiagnostics', () => {
+        const enabled = this.controlCenterTreeViewManager.toggleDiagnostics();
+        if (enabled) {
+          // Re-run analysis to restore diagnostics
+          this.logger.info(
+            '🔔 Diagnostics enabled - refreshing analysis results'
+          );
+          vscode.window.showInformationMessage(
+            'X-Fidelity: Diagnostics enabled for this session'
+          );
+          // Trigger a refresh to restore diagnostics from cached results
+          this.issuesTreeViewManager.refresh();
+        } else {
+          // Clear all diagnostics
+          this.logger.info('🔕 Diagnostics disabled - clearing squiggly lines');
+          this.diagnosticProvider.clearDiagnostics();
+          vscode.window.showInformationMessage(
+            'X-Fidelity: Diagnostics disabled for this session'
+          );
+        }
+      })
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.toggleAutorun', () => {
+        const enabled = this.controlCenterTreeViewManager.toggleAutorun();
+        if (enabled) {
+          // Re-enable automation features
+          this.logger.info(
+            '🔄 Autorun enabled - restoring automation features'
+          );
+          this.setupAutomationFeatures();
+          vscode.window.showInformationMessage(
+            'X-Fidelity: Autorun enabled for this session'
+          );
+        } else {
+          // Disable automation features (stop periodic analysis and file save watching)
+          this.logger.info('⏸️ Autorun disabled - pausing automation features');
+          this.pauseAutomationFeatures();
+          vscode.window.showInformationMessage(
+            'X-Fidelity: Autorun disabled for this session'
+          );
+        }
+      })
     );
 
     this.disposables.push(
@@ -1285,6 +1341,14 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
    * Setup automation features based on current configuration
    */
   private setupAutomationFeatures(): void {
+    // Skip if autorun is disabled for this session
+    if (!this.controlCenterTreeViewManager.isAutorunEnabled()) {
+      this.logger.info(
+        '⏸️ Autorun disabled for this session - skipping automation setup'
+      );
+      return;
+    }
+
     const config = this.configManager.getConfig();
 
     // Setup or update periodic analysis
@@ -1292,6 +1356,26 @@ CLI Mutex: ${this.analysisEngine.isAnalysisRunning ? 'Locked' : 'Available'}`;
 
     // Setup or update file save watching
     this.setupFileSaveWatching(config.autoAnalyzeOnSave);
+  }
+
+  /**
+   * Pause automation features for current session (without changing settings)
+   */
+  private pauseAutomationFeatures(): void {
+    // Stop periodic analysis
+    if (this.periodicAnalysisTimer) {
+      clearInterval(this.periodicAnalysisTimer);
+      this.periodicAnalysisTimer = undefined;
+      this.isPeriodicAnalysisRunning = false;
+      this.logger.info('⏸️ Paused periodic analysis for session');
+    }
+
+    // Stop file save watching
+    if (this.fileSaveWatcher) {
+      this.fileSaveWatcher.dispose();
+      this.fileSaveWatcher = undefined;
+      this.logger.info('⏸️ Paused file save watching for session');
+    }
   }
 
   /**

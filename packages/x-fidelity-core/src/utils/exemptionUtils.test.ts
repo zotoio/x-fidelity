@@ -69,13 +69,18 @@ describe('normalizeGitHubUrl', () => {
 
 describe('isExempt', () => {
     it('should check exemption expiration dates', () => {
+        // Use a date one year in the future to ensure this test doesn't become stale
+        const futureDate = new Date();
+        futureDate.setFullYear(futureDate.getFullYear() + 1);
+        const futureExpirationDate = futureDate.toISOString().split('T')[0];
+        
         const params = {
             repoUrl: 'org/repo',
             ruleName: 'test-rule',
             exemptions: [{
                 repoUrl: 'org/repo',
                 rule: 'test-rule',
-                expirationDate: '2025-12-31',
+                expirationDate: futureExpirationDate,
                 reason: 'test reason'
             }],
             logPrefix: 'test'

@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 
 import {
   ControlCenterTreeProvider,
-  type ControlCenterTreeItem
+  type ControlCenterTreeItem,
+  type ControlCenterSessionState
 } from './controlCenterTreeProvider';
 
 import { createComponentLogger } from '../../utils/globalLogger';
@@ -77,6 +78,55 @@ export class ControlCenterTreeViewManager implements vscode.Disposable {
 
   public reveal(item: ControlCenterTreeItem): void {
     this.treeView.reveal(item, { expand: true, focus: true, select: true });
+  }
+
+  /**
+   * Get the tree data provider for accessing toggle state and methods
+   */
+  public getProvider(): ControlCenterTreeProvider {
+    return this.treeDataProvider;
+  }
+
+  /**
+   * Get current session state for toggles
+   */
+  public getSessionState(): ControlCenterSessionState {
+    return this.treeDataProvider.getSessionState();
+  }
+
+  /**
+   * Event for when session state changes (diagnostics/autorun toggles)
+   */
+  public get onStateChanged(): vscode.Event<ControlCenterSessionState> {
+    return this.treeDataProvider.onStateChanged;
+  }
+
+  /**
+   * Toggle diagnostics display for current session
+   */
+  public toggleDiagnostics(): boolean {
+    return this.treeDataProvider.toggleDiagnostics();
+  }
+
+  /**
+   * Toggle autorun for current session
+   */
+  public toggleAutorun(): boolean {
+    return this.treeDataProvider.toggleAutorun();
+  }
+
+  /**
+   * Check if diagnostics are currently enabled
+   */
+  public isDiagnosticsEnabled(): boolean {
+    return this.treeDataProvider.isDiagnosticsEnabled();
+  }
+
+  /**
+   * Check if autorun is currently enabled
+   */
+  public isAutorunEnabled(): boolean {
+    return this.treeDataProvider.isAutorunEnabled();
   }
 
   dispose(): void {

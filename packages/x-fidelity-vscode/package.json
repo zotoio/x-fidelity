@@ -204,6 +204,16 @@
         "command": "xfidelity.fixIssueAtCursor",
         "title": "X-Fidelity: Fix Issue at Cursor",
         "icon": "$(wrench)"
+      },
+      {
+        "command": "xfidelity.toggleDiagnostics",
+        "title": "X-Fidelity: Toggle Diagnostics",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "xfidelity.toggleAutorun",
+        "title": "X-Fidelity: Toggle Autorun",
+        "icon": "$(sync)"
       }
     ],
     "extensionPoints": [
