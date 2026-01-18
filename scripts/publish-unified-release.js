@@ -62,26 +62,38 @@ function runCommand(command, cwd, description, continueOnError = false) {
   }
 }
 
+function isOIDCEnvironment() {
+  // GitHub Actions OIDC environment detection
+  // When id-token: write permission is set, these variables are available
+  return !!(process.env.ACTIONS_ID_TOKEN_REQUEST_URL && process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN);
+}
+
 function publishCLI(cliDir, version) {
   log('blue', `📦 Publishing CLI package v${version} to npm...`);
   
-  // Verify NPM_TOKEN exists
-  if (!process.env.NPM_TOKEN) {
-    log('red', '❌ NPM_TOKEN environment variable is required');
-    return false;
-  }
-
-  // Configure npm authentication
-  const os = require('os');
-  const npmrcPath = path.join(os.homedir(), '.npmrc');
-  const npmrcContent = `//registry.npmjs.org/:_authToken=${process.env.NPM_TOKEN}\nregistry=https://registry.npmjs.org/\n`;
+  const useOIDC = isOIDCEnvironment();
   
-  try {
-    fs.writeFileSync(npmrcPath, npmrcContent);
-    log('blue', '✅ npm authentication configured');
-  } catch (error) {
-    log('red', `❌ Failed to configure npm authentication: ${error.message}`);
-    return false;
+  if (useOIDC) {
+    // Using npm trusted publishing via OIDC - no token needed
+    // See: https://docs.npmjs.com/trusted-publishers
+    log('blue', '🔐 Using OIDC trusted publishing (no NPM_TOKEN required)');
+  } else if (process.env.NPM_TOKEN) {
+    // Fallback to traditional token-based authentication
+    log('blue', '🔑 Using NPM_TOKEN for authentication');
+    const os = require('os');
+    const npmrcPath = path.join(os.homedir(), '.npmrc');
+    const npmrcContent = `//registry.npmjs.org/:_authToken=${process.env.NPM_TOKEN}\nregistry=https://registry.npmjs.org/\n`;
+    
+    try {
+      fs.writeFileSync(npmrcPath, npmrcContent);
+      log('blue', '✅ npm authentication configured');
+    } catch (error) {
+      log('red', `❌ Failed to configure npm authentication: ${error.message}`);
+      return false;
+    }
+  } else {
+    log('yellow', '⚠️  No OIDC environment detected and NPM_TOKEN not set');
+    log('yellow', '   Attempting publish anyway (may work if already authenticated)');
   }
 
   // Publish to npm
