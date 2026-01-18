@@ -86,6 +86,24 @@ When working on X-Fidelity tasks, proactively delegate to specialized subagents 
 - Understanding platform-wide impact of changes
 - Feature specifications need to be written
 
+### xfi-planner
+**Auto-trigger when:**
+- User invokes `/xfi-plan` command
+- Complex multi-step engineering initiatives
+- Need to coordinate multiple subagents on a project
+- Plan execution via `/xfi-plan-execute` command
+- Breaking down features into subtasks
+- Tracking progress across multiple work streams
+
+### xfi-engineer
+**Auto-trigger when:**
+- Implementation tasks from plan subtasks
+- Coding and feature development work
+- Bug fixes requiring code changes
+- Refactoring tasks
+- General engineering work not specific to other domains
+- Plan subtask execution when assigned
+
 ## Parallel Execution Strategy
 
 ### Independent Tasks (Run in Parallel)
@@ -154,4 +172,26 @@ Task these subagents in sequence:
 1. xfi-system-design: "Create architecture design for [feature]"
 2. xfi-code-reviewer: "Review the proposed design"
 3. xfi-docs-expert: "Identify documentation requirements"
+```
+
+### Complex Multi-Step Initiative
+```
+Task the xfi-planner subagent with:
+"Plan this engineering initiative: [description]
+Break it down into subtasks with clear deliverables and dependencies"
+```
+
+### Execute an Engineering Plan
+```
+Task the xfi-planner subagent with:
+"Execute plan: knowledge/plans/[yyyymmdd]-[feature-name]/
+Coordinate subtask execution per the dependency graph"
+```
+
+### Implementation Task
+```
+Task the xfi-engineer subagent with:
+"Implement: [task description]
+Files to modify: [list of files]
+Requirements: [specific requirements]"
 ```

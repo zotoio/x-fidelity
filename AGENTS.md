@@ -208,6 +208,8 @@ This repository includes specialized AI subagents that are Subject Matter Expert
 | `xfi-docs-expert` | README, website, CHANGELOG, API docs | Documentation updates, website changes |
 | `xfi-code-reviewer` | Balanced code review, quality, security | After code changes, before commits, PR reviews |
 | `xfi-system-design` | Platform architecture, feature design, technical specs | New features, architecture decisions, cross-package changes |
+| `xfi-planner` | Engineering planning, subtask coordination, plan execution | /xfi-plan command, complex multi-step initiatives |
+| `xfi-engineer` | Implementation, coding, feature development | Engineering tasks, plan subtask execution, coding work |
 
 ### Subagent Auto-Triggering
 
@@ -223,6 +225,8 @@ Subagents should be invoked proactively based on context:
 - **Documentation updates** → `xfi-docs-expert`
 - **Code changes ready for review** → `xfi-code-reviewer`
 - **New feature design or architecture** → `xfi-system-design`
+- **Complex engineering initiatives** → `xfi-planner`
+- **Implementation and coding tasks** → `xfi-engineer`
 
 ### Parallel Execution
 

@@ -9,10 +9,13 @@ knowledge/
 ├── README.md                    # This file
 ├── KNOWLEDGE_GUIDELINES.md      # Knowledge management rules
 ├── shared/                      # Cross-cutting knowledge used by all agents
+├── plans/                       # Engineering plan files (see plans/README.md)
 ├── build-expert/                # xfi-build-expert knowledge
 ├── code-reviewer/               # xfi-code-reviewer knowledge
 ├── debugger/                    # xfi-debugger knowledge
 ├── docs-expert/                 # xfi-docs-expert knowledge
+├── engineer/                    # xfi-engineer knowledge
+├── planner/                     # xfi-planner knowledge
 ├── plugin-expert/               # xfi-plugin-expert knowledge
 ├── rules-expert/                # xfi-rules-expert knowledge
 ├── security-expert/             # xfi-security-expert knowledge
