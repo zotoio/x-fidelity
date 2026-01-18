@@ -77,6 +77,15 @@ When working on X-Fidelity tasks, proactively delegate to specialized subagents 
 - PR review requests
 - After completing a feature
 
+### xfi-system-design
+**Auto-trigger when:**
+- Planning new features or enhancements
+- Architecture decisions are needed
+- Cross-package changes are being designed
+- Technical design documentation is required
+- Understanding platform-wide impact of changes
+- Feature specifications need to be written
+
 ## Parallel Execution Strategy
 
 ### Independent Tasks (Run in Parallel)
@@ -130,4 +139,19 @@ Task these subagents in parallel:
 Task the xfi-debugger subagent with:
 "Investigate this error: [stack trace]
 Context: [what operation was being performed]"
+```
+
+### New Feature Planning
+```
+Task the xfi-system-design subagent with:
+"Design [feature name]: [requirements]
+Consider: affected packages, architecture impact, integration points"
+```
+
+### Architecture Review Before Major Changes
+```
+Task these subagents in sequence:
+1. xfi-system-design: "Create architecture design for [feature]"
+2. xfi-code-reviewer: "Review the proposed design"
+3. xfi-docs-expert: "Identify documentation requirements"
 ```

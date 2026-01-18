@@ -207,6 +207,7 @@ This repository includes specialized AI subagents that are Subject Matter Expert
 | `xfi-debugger` | Error analysis, logging, troubleshooting | Errors, test failures, unexpected behavior |
 | `xfi-docs-expert` | README, website, CHANGELOG, API docs | Documentation updates, website changes |
 | `xfi-code-reviewer` | Balanced code review, quality, security | After code changes, before commits, PR reviews |
+| `xfi-system-design` | Platform architecture, feature design, technical specs | New features, architecture decisions, cross-package changes |
 
 ### Subagent Auto-Triggering
 
@@ -221,6 +222,7 @@ Subagents should be invoked proactively based on context:
 - **Errors or debugging needs** → `xfi-debugger`
 - **Documentation updates** → `xfi-docs-expert`
 - **Code changes ready for review** → `xfi-code-reviewer`
+- **New feature design or architecture** → `xfi-system-design`
 
 ### Parallel Execution
 
@@ -243,3 +245,30 @@ Use the xfi-code-reviewer subagent to review my recent changes.
 ```
 
 Or let the AI auto-delegate based on the task context.
+
+## Knowledge Management
+
+All agents maintain domain-specific knowledge in the `knowledge/` directory at the repository root.
+
+```
+knowledge/
+├── README.md                 # Overview and file naming
+├── KNOWLEDGE_GUIDELINES.md   # Full management rules
+├── shared/                   # Cross-cutting knowledge
+└── {agent-name}/             # Agent-specific knowledge
+```
+
+### Quick Reference
+
+- **File format**: `[ORDERING]-[topic]-[STATUS]-[YYMMDD].md`
+- **CONFIRMED**: Source of truth, use for decisions
+- **DRAFT**: Pending verification, don't treat as fact
+- **Append-only**: Never reorder facts within files
+
+### Agent Responsibilities
+
+1. **Read** CONFIRMED files before making decisions
+2. **Write** new facts by appending to topic files
+3. **Confirm** with user before promoting DRAFT → CONFIRMED
+
+See `knowledge/README.md` for file naming and `knowledge/KNOWLEDGE_GUIDELINES.md` for complete details.
