@@ -2,6 +2,13 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.7.4](https://github.com/zotoio/x-fidelity/compare/v5.7.3...v5.7.4) (2026-01-18)
+
+### Bug Fixes
+
+* **ci:** add NODE_AUTH_TOKEN and remove OIDC permissions ([29f4ba3](https://github.com/zotoio/x-fidelity/commit/29f4ba384a1acb2ecf196c47b96bac687bf33969))
+* **release:** bump CLI and VSCode extension to 5.7.4 ([f79430b](https://github.com/zotoio/x-fidelity/commit/f79430ba0039edd03adc704f0152cb5e94415c86))
+
 ## [5.7.3](https://github.com/zotoio/x-fidelity/compare/v5.7.2...v5.7.3) (2026-01-18)
 
 ### Bug Fixes
