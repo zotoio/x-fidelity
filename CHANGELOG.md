@@ -2,6 +2,31 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.7.0](https://github.com/zotoio/x-fidelity/compare/v5.6.0...v5.7.0) (2026-01-18)
+
+### Bug Fixes
+
+* resolve complexity data path mismatch in report generator ([0ec7bc4](https://github.com/zotoio/x-fidelity/commit/0ec7bc49da069459aea0a3c9a03742d0aa4a7cb4))
+* update copyright information in docusaurus config ([5f2c42d](https://github.com/zotoio/x-fidelity/commit/5f2c42d725d48b5a3be0a6eb66024db3c2a853e9))
+* **vscode:** add test file type-checking to test scripts ([012e94f](https://github.com/zotoio/x-fidelity/commit/012e94fb2f762353e57933f4136f601924fd9926))
+* **vscode:** resolve TypeScript errors in unit tests ([00d6bdb](https://github.com/zotoio/x-fidelity/commit/00d6bdb477b8ee98144aa8970ff93a9aa7115ed0))
+* **website:** prevent dropdown clipping in SimulationPanel ([c176b2d](https://github.com/zotoio/x-fidelity/commit/c176b2dcf548e12496372124a474e0c69f9e4da0))
+* **website:** resolve TypeScript errors in rule-builder ([f37f72c](https://github.com/zotoio/x-fidelity/commit/f37f72ce322123a9954b0fedb777d700352f6806))
+
+### Features
+
+* add Cursor slash commands for X-Fidelity development workflows ([b61e567](https://github.com/zotoio/x-fidelity/commit/b61e56723bdfcb8139473669cebbff9a00cda265))
+* add project-specific skills for common development workflows ([5530cbb](https://github.com/zotoio/x-fidelity/commit/5530cbbee3edd5c37c3d5afef624833101cbf80b))
+* add X-Fidelity SME subagents for specialized AI assistance ([79ea4cc](https://github.com/zotoio/x-fidelity/commit/79ea4ccf0a9253d2eff263e5eb14086674f49f08))
+* add xfi-planner and xfi-engineer agents with planning system ([bd35ea4](https://github.com/zotoio/x-fidelity/commit/bd35ea43f179edadd9b8108117b6e731483a4256))
+* add xfi-system-design agent and knowledge management system ([27c8f93](https://github.com/zotoio/x-fidelity/commit/27c8f938bc139833be03ed04cca9618f638cd1af))
+* **plan:** add web-based rule builder GUI engineering plan ([9616051](https://github.com/zotoio/x-fidelity/commit/96160510f90c3be1eb086b8bcebfcf1fff453f46))
+* switch to npm OIDC trusted publishing ([7b33f1f](https://github.com/zotoio/x-fidelity/commit/7b33f1fb057abc1e2160c2450d7f7db218069c19))
+* **vscode:** add configurable prompt prefixes for AI commands ([996fe22](https://github.com/zotoio/x-fidelity/commit/996fe220f92982289b555098eac587509a6a1832))
+* **vscode:** combine diagnostics and autorun toggles into single Session Active toggle ([32826c4](https://github.com/zotoio/x-fidelity/commit/32826c4151f1125ea6dc4031b1bf0d62ba48cd0f))
+* **vscode:** unify issue details structure for reports, tooltips, and AI prompts ([e4a31f5](https://github.com/zotoio/x-fidelity/commit/e4a31f5f507e3d8f0221bda7f4ff9ab860fb7306))
+* **website:** add interactive Rule Builder GUI for visual rule creation ([2536da2](https://github.com/zotoio/x-fidelity/commit/2536da248552d80b5f38ef5535feff80f88ca9b1))
+
 ## [5.7.0] - 2026-01-18
 
 ### Added
