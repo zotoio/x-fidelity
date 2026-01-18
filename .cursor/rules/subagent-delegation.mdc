@@ -1,0 +1,133 @@
+---
+description: Guidelines for automatic subagent delegation and parallel execution
+alwaysApply: true
+---
+
+# X-Fidelity Subagent Delegation
+
+## Automatic Delegation
+
+When working on X-Fidelity tasks, proactively delegate to specialized subagents based on context. Each subagent is a Subject Matter Expert in their domain.
+
+## Subagent Trigger Conditions
+
+### xfi-build-expert
+**Auto-trigger when:**
+- Build command fails (`yarn build`, `turbo build`)
+- Dependency resolution errors
+- TypeScript compilation errors across packages
+- CI pipeline failures
+- esbuild bundling issues
+
+### xfi-testing-expert
+**Auto-trigger when:**
+- Test command fails (`yarn test`)
+- Coverage thresholds not met
+- Jest configuration issues
+- Mock setup problems
+- VSCode extension test failures
+
+### xfi-plugin-expert
+**Auto-trigger when:**
+- Creating or modifying plugins in `packages/x-fidelity-plugins/`
+- AST analysis or tree-sitter issues
+- Fact or operator development
+- Rule JSON creation
+
+### xfi-vscode-expert
+**Auto-trigger when:**
+- Working in `packages/x-fidelity-vscode/`
+- Extension activation issues
+- Webview or tree view problems
+- CLI-Extension consistency failures
+- F5 debug workflow issues
+
+### xfi-rules-expert
+**Auto-trigger when:**
+- Creating or modifying archetypes
+- Rule definition issues
+- Exemption configuration
+- json-rules-engine problems
+
+### xfi-security-expert
+**Auto-trigger when:**
+- Path validation errors
+- Security review requests
+- Webhook implementation
+- Secret handling code changes
+
+### xfi-debugger
+**Auto-trigger when:**
+- Runtime errors with stack traces
+- Unexpected behavior
+- Log analysis needed
+- Error code investigation (1000-1699)
+
+### xfi-docs-expert
+**Auto-trigger when:**
+- README.md needs updating
+- Website documentation changes
+- API documentation
+- After significant code changes
+
+### xfi-code-reviewer
+**Auto-trigger when:**
+- Code changes ready for review
+- Before creating commits
+- PR review requests
+- After completing a feature
+
+## Parallel Execution Strategy
+
+### Independent Tasks (Run in Parallel)
+When multiple aspects need attention simultaneously, launch subagents in parallel:
+
+```
+Example scenario: After implementing a new plugin
+├── xfi-plugin-expert (verify plugin structure)
+├── xfi-testing-expert (check test coverage)
+├── xfi-code-reviewer (review code quality)
+└── xfi-docs-expert (check documentation)
+```
+
+### Dependent Tasks (Run Sequentially)
+When tasks have dependencies, run them in order:
+
+```
+Example scenario: Fixing a build failure
+1. xfi-build-expert (diagnose and fix)
+2. xfi-testing-expert (verify tests pass)
+3. xfi-code-reviewer (review the fix)
+```
+
+## Delegation Best Practices
+
+1. **Be proactive**: Don't wait for explicit requests to delegate
+2. **Use parallel execution**: When domains are independent, run multiple subagents
+3. **Provide context**: Include relevant error messages, file paths, and symptoms
+4. **Trust subagent output**: Subagents are SMEs in their domains
+5. **Combine insights**: Synthesize results from multiple subagents
+
+## Example Delegations
+
+### Build Failure
+```
+Task the xfi-build-expert subagent with:
+"Diagnose this build failure: [error output]
+Focus on: dependency order, turbo config, esbuild externals"
+```
+
+### New Feature Complete
+```
+Task these subagents in parallel:
+- xfi-code-reviewer: "Review changes in [files] for quality and security"
+- xfi-testing-expert: "Verify test coverage for new functionality"
+- xfi-docs-expert: "Check if README or website needs updates"
+```
+
+### Runtime Error
+```
+Task the xfi-debugger subagent with:
+"Investigate this error: [stack trace]
+Context: [what operation was being performed]"
+```
