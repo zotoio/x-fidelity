@@ -5,6 +5,7 @@ module.exports = {
   baseUrl: '/x-fidelity/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
+  onBrokenAnchors: 'warn',
   favicon: 'img/x-fi.png',
   organizationName: 'zotoio',
   projectName: 'x-fidelity',
@@ -60,10 +61,11 @@ module.exports = {
           label: 'Getting Started',
         },
         {
-          href: '/x-fidelity/rule-builder/',
+          href: 'https://zotoio.github.io/x-fidelity/rule-builder/',
           position: 'left',
           label: 'Rule Builder',
           className: 'navbar-rule-builder',
+          target: '_self',
         },
         {
           href: 'https://github.com/zotoio/x-fidelity',

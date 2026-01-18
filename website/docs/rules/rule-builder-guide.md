@@ -8,7 +8,7 @@ The X-Fidelity Rule Builder is an interactive web-based tool for creating and ed
 
 ## Launch the Rule Builder
 
-**[Open Rule Builder](/x-fidelity/rule-builder/)**
+**[Open Rule Builder](https://zotoio.github.io/x-fidelity/rule-builder/)**
 
 ## Features
 

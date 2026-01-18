@@ -178,7 +178,7 @@ Built-in error actions:
 
 ## Next Steps
 
-- **[Rule Builder GUI](/x-fidelity/rule-builder/)** - Create rules visually without writing JSON
+- **[Rule Builder GUI](https://zotoio.github.io/x-fidelity/rule-builder/)** - Create rules visually without writing JSON
 - Learn about [Operators](operators)
 - Explore [Facts](facts)
 - Understand [Exemptions](exemptions)
