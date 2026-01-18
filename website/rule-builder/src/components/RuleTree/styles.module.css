@@ -1,0 +1,284 @@
+/**
+ * RuleTree Component Styles
+ * 
+ * Matches Docusaurus sidebar style using CSS custom properties
+ * for theme consistency across light and dark modes.
+ */
+
+/* Tree container */
+.treeContainer {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Tree wrapper with role="tree" */
+.tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Tree node wrapper */
+.treeNodeWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tree node row - the clickable part */
+.treeNode {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+  outline: none;
+  border: 1px solid transparent;
+}
+
+.treeNode:hover {
+  background-color: var(--xfi-accent);
+}
+
+.treeNode:focus-visible {
+  outline: 2px solid var(--xfi-color-primary);
+  outline-offset: -2px;
+}
+
+/* Selected state */
+.treeNode.selected {
+  background-color: var(--xfi-color-primary-light);
+  color: white;
+}
+
+.treeNode.selected:hover {
+  background-color: var(--xfi-color-primary);
+}
+
+/* Dark mode selected */
+:global(.dark) .treeNode.selected {
+  background-color: var(--xfi-color-primary-dark);
+}
+
+/* Error indicator */
+.treeNode.hasError {
+  border-left: 3px solid #ef4444;
+  padding-left: calc(0.5rem - 3px);
+}
+
+/* Expand/collapse button */
+.expandButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--xfi-foreground-muted);
+  transition: transform 0.2s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.expandButton:hover {
+  color: var(--xfi-foreground);
+}
+
+.expandButton.expanded {
+  transform: rotate(90deg);
+}
+
+/* Placeholder for non-expandable nodes */
+.expandPlaceholder {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* Node icon container */
+.nodeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Node label */
+.nodeLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Node children container */
+.nodeChildren {
+  margin-left: 1.25rem;
+  border-left: 1px solid var(--xfi-border);
+  padding-left: 0.25rem;
+}
+
+/* Collapsible content animation */
+.collapsibleContent {
+  overflow: hidden;
+}
+
+.collapsibleContent[data-state='open'] {
+  animation: slideDown 150ms ease-out;
+}
+
+.collapsibleContent[data-state='closed'] {
+  animation: slideUp 150ms ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+/* Validation error message */
+.errorMessage {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  margin-left: 2.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+  border-radius: 0.25rem;
+  margin-top: 0.125rem;
+  margin-bottom: 0.125rem;
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-top: 0.125rem;
+}
+
+/* Empty state */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--xfi-foreground-muted);
+}
+
+.emptyStateIcon {
+  width: 2.5rem;
+  height: 2.5rem;
+  opacity: 0.5;
+  margin-bottom: 0.75rem;
+}
+
+.emptyStateTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.emptyStateDescription {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Action button */
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--xfi-foreground-muted);
+  background: transparent;
+  border: 1px dashed var(--xfi-border);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.actionButton:hover {
+  border-color: var(--xfi-color-primary);
+  color: var(--xfi-color-primary);
+}
+
+.actionButton:focus-visible {
+  outline: 2px solid var(--xfi-color-primary);
+  outline-offset: 2px;
+}
+
+/* Condition preview text */
+.conditionPreview {
+  color: var(--xfi-foreground-muted);
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-left: 0.25rem;
+}
+
+.treeNode.selected .conditionPreview {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Drag and drop styles */
+.treeNode.dragging {
+  opacity: 0.5;
+  background-color: var(--xfi-accent);
+}
+
+.treeNode.dragOver {
+  background-color: var(--xfi-accent);
+}
+
+.treeNode.dropBefore {
+  border-top: 2px solid var(--xfi-color-primary);
+  margin-top: -1px;
+}
+
+.treeNode.dropAfter {
+  border-bottom: 2px solid var(--xfi-color-primary);
+  margin-bottom: -1px;
+}
+
+.treeNode.dropInside {
+  border: 2px dashed var(--xfi-color-primary);
+  background-color: rgba(74, 144, 226, 0.1);
+}
+
+/* Draggable cursor */
+.treeNode[draggable='true'] {
+  cursor: grab;
+}
+
+.treeNode[draggable='true']:active {
+  cursor: grabbing;
+}

@@ -60,6 +60,12 @@ module.exports = {
           label: 'Getting Started',
         },
         {
+          href: '/x-fidelity/rule-builder/',
+          position: 'left',
+          label: 'Rule Builder',
+          className: 'navbar-rule-builder',
+        },
+        {
           href: 'https://github.com/zotoio/x-fidelity',
           label: 'GitHub',
           position: 'right',
