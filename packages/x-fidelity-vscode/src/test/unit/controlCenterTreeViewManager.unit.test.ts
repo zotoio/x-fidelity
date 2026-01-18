@@ -304,12 +304,12 @@ describe('ControlCenterTreeViewManager', () => {
       manager = new ControlCenterTreeViewManager(mockContext);
       
       // Get the visibility change callback
-      const calls = mockTreeView.onDidChangeVisibility.mock.calls;
+      const calls = mockTreeView.onDidChangeVisibility.mock.calls as unknown[][];
       if (calls.length === 0) {
         // Test passes if no visibility callback registered (implementation may vary)
         return;
       }
-      const visibilityCallback = calls[0]?.[0];
+      const visibilityCallback = calls[0]?.[0] as ((e: { visible: boolean }) => void) | undefined;
       if (!visibilityCallback) {
         return;
       }
@@ -324,12 +324,12 @@ describe('ControlCenterTreeViewManager', () => {
     it('should not refresh when tree view becomes hidden', () => {
       manager = new ControlCenterTreeViewManager(mockContext);
       
-      const calls = mockTreeView.onDidChangeVisibility.mock.calls;
+      const calls = mockTreeView.onDidChangeVisibility.mock.calls as unknown[][];
       if (calls.length === 0) {
         // Test passes if no visibility callback registered (implementation may vary)
         return;
       }
-      const visibilityCallback = calls[0]?.[0];
+      const visibilityCallback = calls[0]?.[0] as ((e: { visible: boolean }) => void) | undefined;
       if (!visibilityCallback) {
         return;
       }

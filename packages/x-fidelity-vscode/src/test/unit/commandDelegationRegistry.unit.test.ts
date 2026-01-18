@@ -44,7 +44,15 @@ jest.mock('vscode', () => ({
   extensions: mockExtensions,
   ConfigurationTarget: {
     Global: 1
-  }
+  },
+  Uri: {
+    file: jest.fn((path: string) => ({ fsPath: path, path: path, scheme: 'file' })),
+    parse: jest.fn((uri: string) => ({ fsPath: uri, path: uri, scheme: 'file' }))
+  },
+  Range: jest.fn().mockImplementation((startLine: number, startCol: number, endLine: number, endCol: number) => ({
+    start: { line: startLine, character: startCol },
+    end: { line: endLine, character: endCol }
+  }))
 }));
 
 import * as vscode from 'vscode';
@@ -1277,6 +1285,9 @@ describe('CommandDelegationRegistry', () => {
 
   describe('extension change watching', () => {
     it('should rediscover providers when extensions change', () => {
+      // Clear mocks to get fresh call tracking
+      jest.clearAllMocks();
+      
       const newExtension = {
         id: 'new.extension',
         packageJSON: {
@@ -1290,6 +1301,7 @@ describe('CommandDelegationRegistry', () => {
         }
       };
 
+      // Create fresh registry after clearing mocks
       registry = new CommandDelegationRegistry(mockContext);
       
       // Initially no explainers
@@ -1297,7 +1309,8 @@ describe('CommandDelegationRegistry', () => {
       
       // Add extension and trigger change
       mockExtensions.all = [newExtension];
-      const calls = mockExtensions.onDidChange.mock.calls;
+      const calls = mockExtensions.onDidChange.mock.calls as unknown[][];
+      // Use the first (and only) call after we cleared mocks
       if (calls.length > 0 && calls[0] && calls[0][0]) {
         const changeCallback = calls[0][0] as () => void;
         changeCallback();
