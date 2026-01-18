@@ -477,4 +477,147 @@ describe('CommandDelegationRegistry', () => {
       expect(secondCall[0][1].label).toContain('Batch Fixer');
     });
   });
+
+  describe('prompt prefixes', () => {
+    const mockIssueContext = {
+      ruleId: 'test-rule',
+      message: 'Test issue message',
+      file: '/path/to/file.ts',
+      line: 10,
+      column: 5,
+      severity: 'warning',
+      category: 'test-category',
+      fixable: true
+    };
+
+    const mockGroupContext = {
+      groupKey: 'test-group',
+      issues: [mockIssueContext],
+      groupType: 'rule' as const
+    };
+
+    it('should use empty prefix when no prefix configured', async () => {
+      const mockConfig = {
+        get: jest.fn((key: string) => {
+          if (key === 'aiIntegrationPreset') {return 'built-in';}
+          if (key === 'promptPrefixes') {return undefined;}
+          return undefined;
+        }),
+        update: jest.fn()
+      };
+      mockWorkspace.getConfiguration.mockReturnValue(mockConfig as any);
+
+      registry = new CommandDelegationRegistry(mockContext);
+      await registry.delegateExplainIssue(mockIssueContext);
+
+      // The clipboard should contain the prompt without a prefix
+      const clipboardCall = (vscode.env.clipboard.writeText as jest.Mock).mock.calls[0];
+      expect(clipboardCall[0]).toMatch(/^Please explain this code quality issue:/);
+    });
+
+    it('should prepend explainIssue prefix when configured', async () => {
+      const mockConfig = {
+        get: jest.fn((key: string) => {
+          if (key === 'aiIntegrationPreset') {return 'built-in';}
+          if (key === 'promptPrefixes') {
+            return {
+              explainIssue: '/explain @codebase',
+              fixIssue: '',
+              fixIssueGroup: ''
+            };
+          }
+          return undefined;
+        }),
+        update: jest.fn()
+      };
+      mockWorkspace.getConfiguration.mockReturnValue(mockConfig as any);
+
+      registry = new CommandDelegationRegistry(mockContext);
+      await registry.delegateExplainIssue(mockIssueContext);
+
+      // The clipboard should contain the prefix at the start
+      const clipboardCall = (vscode.env.clipboard.writeText as jest.Mock).mock.calls[0];
+      expect(clipboardCall[0]).toMatch(/^\/explain @codebase\n\nPlease explain this code quality issue:/);
+    });
+
+    it('should prepend fixIssue prefix when configured', async () => {
+      const mockConfig = {
+        get: jest.fn((key: string) => {
+          if (key === 'aiIntegrationPreset') {return 'built-in';}
+          if (key === 'promptPrefixes') {
+            return {
+              explainIssue: '',
+              fixIssue: '/fix @workspace',
+              fixIssueGroup: ''
+            };
+          }
+          return undefined;
+        }),
+        update: jest.fn()
+      };
+      mockWorkspace.getConfiguration.mockReturnValue(mockConfig as any);
+
+      registry = new CommandDelegationRegistry(mockContext);
+      await registry.delegateFixIssue(mockIssueContext);
+
+      // The clipboard should contain the prefix at the start
+      const clipboardCall = (vscode.env.clipboard.writeText as jest.Mock).mock.calls[0];
+      expect(clipboardCall[0]).toMatch(/^\/fix @workspace\n\nPlease fix this code quality issue:/);
+    });
+
+    it('should prepend fixIssueGroup prefix when configured', async () => {
+      const mockConfig = {
+        get: jest.fn((key: string) => {
+          if (key === 'aiIntegrationPreset') {return 'built-in';}
+          if (key === 'promptPrefixes') {
+            return {
+              explainIssue: '',
+              fixIssue: '',
+              fixIssueGroup: '/agent fix-all'
+            };
+          }
+          return undefined;
+        }),
+        update: jest.fn()
+      };
+      mockWorkspace.getConfiguration.mockReturnValue(mockConfig as any);
+
+      registry = new CommandDelegationRegistry(mockContext);
+      await registry.delegateFixIssueGroup(mockGroupContext);
+
+      // The clipboard should contain the prefix at the start
+      const clipboardCall = (vscode.env.clipboard.writeText as jest.Mock).mock.calls[0];
+      expect(clipboardCall[0]).toMatch(/^\/agent fix-all\n\nPlease fix the following 1 code quality issues:/);
+    });
+
+    it('should handle partially configured prefixes', async () => {
+      const mockConfig = {
+        get: jest.fn((key: string) => {
+          if (key === 'aiIntegrationPreset') {return 'built-in';}
+          if (key === 'promptPrefixes') {
+            // Only explainIssue is configured
+            return {
+              explainIssue: '@docs'
+            };
+          }
+          return undefined;
+        }),
+        update: jest.fn()
+      };
+      mockWorkspace.getConfiguration.mockReturnValue(mockConfig as any);
+
+      registry = new CommandDelegationRegistry(mockContext);
+      
+      // explainIssue should use the configured prefix
+      await registry.delegateExplainIssue(mockIssueContext);
+      let clipboardCall = (vscode.env.clipboard.writeText as jest.Mock).mock.calls[0];
+      expect(clipboardCall[0]).toMatch(/^@docs\n\nPlease explain this code quality issue:/);
+
+      // fixIssue should work without prefix since it's not configured
+      jest.clearAllMocks();
+      await registry.delegateFixIssue(mockIssueContext);
+      clipboardCall = (vscode.env.clipboard.writeText as jest.Mock).mock.calls[0];
+      expect(clipboardCall[0]).toMatch(/^Please fix this code quality issue:/);
+    });
+  });
 }); 

@@ -674,6 +674,34 @@
           "default": true,
           "description": "🔀 Allow commands to be handled by other VSCode extensions",
           "order": 76
+        },
+        "xfidelity.promptPrefixes": {
+          "type": "object",
+          "description": "📝 Optional prefixes to add to AI prompts. Use for custom slash commands (e.g., '/explain'), context loading instructions, or project-specific guidance.",
+          "properties": {
+            "explainIssue": {
+              "type": "string",
+              "default": "",
+              "description": "Prefix for issue explanation prompts (e.g., '/explain ' or '@codebase ')"
+            },
+            "fixIssue": {
+              "type": "string",
+              "default": "",
+              "description": "Prefix for single issue fix prompts (e.g., '/fix ' or '@workspace ')"
+            },
+            "fixIssueGroup": {
+              "type": "string",
+              "default": "",
+              "description": "Prefix for batch fix prompts (e.g., '/agent ' or '@project ')"
+            }
+          },
+          "default": {
+            "explainIssue": "",
+            "fixIssue": "",
+            "fixIssueGroup": ""
+          },
+          "additionalProperties": false,
+          "order": 77
         }
       }
     },

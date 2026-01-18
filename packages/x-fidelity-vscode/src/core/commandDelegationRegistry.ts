@@ -231,6 +231,27 @@ export class CommandDelegationRegistry {
   }
 
   /**
+   * Get the prompt prefix for a given prompt type
+   * Users can configure prefixes for custom slash commands or context loading instructions
+   */
+  private getPromptPrefix(
+    promptType: 'explainIssue' | 'fixIssue' | 'fixIssueGroup'
+  ): string {
+    const config = vscode.workspace.getConfiguration('xfidelity');
+    const defaultPrefixes = {
+      explainIssue: '',
+      fixIssue: '',
+      fixIssueGroup: ''
+    };
+    const prefixes = config.get<Record<string, string>>('promptPrefixes');
+    // Handle undefined config (e.g., in tests) or missing keys
+    if (!prefixes) {
+      return defaultPrefixes[promptType];
+    }
+    return prefixes[promptType] ?? defaultPrefixes[promptType];
+  }
+
+  /**
    * Delegate explain issue command
    */
   async delegateExplainIssue(issueContext: IssueContext): Promise<void> {
@@ -582,7 +603,9 @@ export class CommandDelegationRegistry {
    * Build a comprehensive explanation prompt with enhanced details
    */
   private buildExplanationPrompt(context: IssueContext): string {
-    let prompt = `Please explain this code quality issue:\n\n`;
+    const prefix = this.getPromptPrefix('explainIssue');
+    let prompt = prefix ? `${prefix}\n\n` : '';
+    prompt += `Please explain this code quality issue:\n\n`;
     prompt += `**Rule:** ${context.ruleId}\n`;
     prompt += `**Message:** ${context.message}\n`;
     prompt += `**Severity:** ${context.severity}\n`;
@@ -842,7 +865,9 @@ export class CommandDelegationRegistry {
    * Build a comprehensive fix prompt with enhanced details
    */
   private buildFixPrompt(context: IssueContext): string {
-    let prompt = `Please fix this code quality issue:\n\n`;
+    const prefix = this.getPromptPrefix('fixIssue');
+    let prompt = prefix ? `${prefix}\n\n` : '';
+    prompt += `Please fix this code quality issue:\n\n`;
     prompt += `**Rule:** ${context.ruleId}\n`;
     prompt += `**Message:** ${context.message}\n`;
     prompt += `**Severity:** ${context.severity}\n`;
@@ -1081,7 +1106,9 @@ export class CommandDelegationRegistry {
    * Build a comprehensive batch fix prompt with enhanced details
    */
   private buildBatchFixPrompt(context: IssueGroupContext): string {
-    let prompt = `Please fix the following ${context.issues.length} code quality issues:\n\n`;
+    const prefix = this.getPromptPrefix('fixIssueGroup');
+    let prompt = prefix ? `${prefix}\n\n` : '';
+    prompt += `Please fix the following ${context.issues.length} code quality issues:\n\n`;
     prompt += `**Group Type:** ${context.groupType}\n`;
     prompt += `**Group Key:** ${context.groupKey}\n\n`;
 
@@ -1399,6 +1426,10 @@ export class CommandDelegationRegistry {
 
     if (items.length > 10) {
       result += `- ... and ${items.length - 10} more\n`;
+    }
+
+    if (mode === 'fix') {
+      result += `\n**Action Required:** Review and address the items listed above.\n`;
     }
 
     return result;
