@@ -3,7 +3,9 @@ import type { AnalysisResult } from '../analysis/types';
 import type {
   ProcessedAnalysisResult,
   ProcessedIssue,
-  FailedIssue
+  FailedIssue,
+  EnhancedIssueDetails,
+  EnhancedIssueItem
 } from '../types/issues';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
@@ -28,6 +30,8 @@ interface DiagnosticIssue {
   code?: string;
   tags?: vscode.DiagnosticTag[];
   isFileLevelRule?: boolean;
+  // Raw error details for extracting dependency locations
+  rawError?: any;
 }
 
 /**
@@ -375,7 +379,8 @@ export class ResultCoordinator implements vscode.Disposable {
             ruleId: ruleFailure.ruleFailure || 'unknown-rule',
             category: this.extractCategory(ruleFailure),
             code: ruleFailure.ruleFailure,
-            source: 'X-Fidelity'
+            source: 'X-Fidelity',
+            rawError: ruleFailure // Pass raw error for dependency location extraction
           };
 
           issues.push(diagnosticIssue);
@@ -432,21 +437,44 @@ export class ResultCoordinator implements vscode.Disposable {
         diagnostics.get(uriString)!.push(diagnostic);
 
         // Create processed issue for tree view with translated file source
-        const displayFile = FileSourceTranslator.translateFileSourceForDisplay(
-          issue.file
-        );
+        // For dependency issues, use manifest file location instead of README.md
+        const isGlobalCheck = FileSourceTranslator.isGlobalCheck(issue.file);
+        const depLocation = this.extractFirstDependencyLocation(issue.rawError);
+
+        let displayFile: string;
+        let displayLine: number;
+        let displayColumn: number;
+
+        if (isGlobalCheck && depLocation) {
+          // Use the manifest file and location from the dependency
+          displayFile = depLocation.manifestPath;
+          displayLine = depLocation.lineNumber;
+          displayColumn = depLocation.columnNumber;
+        } else {
+          displayFile = FileSourceTranslator.translateFileSourceForDisplay(
+            issue.file
+          );
+          displayLine = issue.line + 1; // Convert back to 1-based for display
+          displayColumn = issue.column + 1;
+        }
+
+        // Extract enhanced details for all issue types
+        const enhancedDetails = this.extractEnhancedDetails(issue.rawError);
+
         const processedIssue: ProcessedIssue = {
           id: `${issue.file}-${issue.ruleId}-${issue.line}`,
           file: displayFile,
           rule: issue.ruleId,
           severity: this.mapSeverityToString(diagnostic.severity),
           message: issue.message,
-          line: issue.line + 1, // Convert back to 1-based for display
-          column: issue.column + 1,
+          line: displayLine,
+          column: displayColumn,
           category: issue.category || 'general',
           fixable: false, // TODO: Extract from issue metadata
           exempted: false, // TODO: Extract from issue metadata
-          dateFound: Date.now()
+          dateFound: Date.now(),
+          isGlobalCheck,
+          enhancedDetails
         };
 
         processedIssues.push(processedIssue);
@@ -623,6 +651,415 @@ export class ResultCoordinator implements vscode.Disposable {
 
   private extractCategory(ruleFailure: any): string {
     return ruleFailure?.category || ruleFailure?.details?.category || 'general';
+  }
+
+  /**
+   * Extract the first dependency location from a rule failure's details
+   * Used to get manifest file path and line number for dependency issues
+   */
+  private extractFirstDependencyLocation(ruleFailure: any): {
+    manifestPath: string;
+    lineNumber: number;
+    columnNumber: number;
+  } | null {
+    if (!ruleFailure) {
+      return null;
+    }
+
+    // Check for dependency details array
+    const dependencyDetails = ruleFailure.details?.details;
+    if (Array.isArray(dependencyDetails) && dependencyDetails.length > 0) {
+      const firstDep = dependencyDetails.find(
+        (dep: any) =>
+          dep &&
+          dep.location &&
+          typeof dep.location.manifestPath === 'string' &&
+          typeof dep.location.lineNumber === 'number'
+      );
+
+      if (firstDep?.location) {
+        return {
+          manifestPath: firstDep.location.manifestPath,
+          lineNumber: firstDep.location.lineNumber,
+          columnNumber: firstDep.location.columnNumber || 1
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Extract enhanced details from a rule failure for tooltips and commands
+   * Coerces all issue types into a unified structure
+   */
+  private extractEnhancedDetails(
+    ruleFailure: any
+  ): EnhancedIssueDetails | undefined {
+    if (!ruleFailure) {
+      return undefined;
+    }
+
+    const ruleId = ruleFailure.ruleFailure || '';
+    const details = ruleFailure.details;
+
+    // Try to detect and extract dependency issues
+    const dependencyItems = this.extractDependencyItems(details);
+    if (dependencyItems.length > 0) {
+      return {
+        type: 'dependency',
+        summary: `${dependencyItems.length} outdated dependenc${dependencyItems.length === 1 ? 'y' : 'ies'}`,
+        actionable: true,
+        items: dependencyItems,
+        rawDetails: details
+      };
+    }
+
+    // Try to detect and extract complexity issues
+    const complexityItems = this.extractComplexityItems(details);
+    if (complexityItems.length > 0) {
+      return {
+        type: 'complexity',
+        summary: `${complexityItems.length} complex function${complexityItems.length === 1 ? '' : 's'}`,
+        actionable: true,
+        items: complexityItems,
+        rawDetails: details
+      };
+    }
+
+    // Try to detect and extract sensitive data issues
+    const sensitiveItems = this.extractSensitiveDataItems(details, ruleId);
+    if (sensitiveItems.length > 0) {
+      return {
+        type: 'sensitive-data',
+        summary: `${sensitiveItems.length} sensitive data pattern${sensitiveItems.length === 1 ? '' : 's'}`,
+        actionable: true,
+        items: sensitiveItems,
+        rawDetails: details
+      };
+    }
+
+    // Try to detect and extract pattern match issues (database calls, etc.)
+    const patternItems = this.extractPatternMatchItems(details, ruleId);
+    if (patternItems.length > 0) {
+      return {
+        type: 'pattern-match',
+        summary: `${patternItems.length} pattern match${patternItems.length === 1 ? '' : 'es'}`,
+        actionable: true,
+        items: patternItems,
+        rawDetails: details
+      };
+    }
+
+    // Try to detect validation issues (remote validation, etc.)
+    const validationItems = this.extractValidationItems(details, ruleId);
+    if (validationItems.length > 0) {
+      return {
+        type: 'validation',
+        summary: `${validationItems.length} validation issue${validationItems.length === 1 ? '' : 's'}`,
+        actionable: true,
+        items: validationItems,
+        rawDetails: details
+      };
+    }
+
+    // Generic fallback - extract any structured data
+    const genericItems = this.extractGenericItems(details);
+    if (genericItems.length > 0) {
+      return {
+        type: 'generic',
+        summary: `${genericItems.length} detail${genericItems.length === 1 ? '' : 's'}`,
+        actionable: false,
+        items: genericItems,
+        rawDetails: details
+      };
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Extract dependency items into unified structure
+   */
+  private extractDependencyItems(details: any): EnhancedIssueItem[] {
+    const items: EnhancedIssueItem[] = [];
+    const dependencyDetails = details?.details;
+
+    if (Array.isArray(dependencyDetails)) {
+      for (const dep of dependencyDetails) {
+        if (dep?.dependency && dep?.location?.manifestPath) {
+          items.push({
+            label: dep.dependency,
+            description: `${dep.currentVersion || 'unknown'} → ${dep.requiredVersion || 'unknown'}`,
+            file: dep.location.manifestPath,
+            line: dep.location.lineNumber,
+            column: dep.location.columnNumber || 1,
+            currentValue: dep.currentVersion,
+            expectedValue: dep.requiredVersion,
+            itemSeverity: dep.requiredVersion?.startsWith('>=')
+              ? 'medium'
+              : 'high',
+            metadata: {
+              section: dep.location.section,
+              isTransitive: dep.isTransitive
+            }
+          });
+        }
+      }
+    }
+
+    return items;
+  }
+
+  /**
+   * Extract complexity items into unified structure
+   */
+  private extractComplexityItems(details: any): EnhancedIssueItem[] {
+    const items: EnhancedIssueItem[] = [];
+    let complexities: any[] | undefined;
+
+    if (
+      details?.details?.complexities &&
+      Array.isArray(details.details.complexities)
+    ) {
+      complexities = details.details.complexities;
+    } else if (details?.complexities && Array.isArray(details.complexities)) {
+      complexities = details.complexities;
+    }
+
+    if (complexities) {
+      for (const c of complexities) {
+        const metrics = c.metrics || c;
+        const metricsObj: Record<string, number> = {};
+
+        if (metrics.cyclomaticComplexity !== undefined) {
+          metricsObj.cyclomatic = metrics.cyclomaticComplexity;
+        }
+        if (metrics.cognitiveComplexity !== undefined) {
+          metricsObj.cognitive = metrics.cognitiveComplexity;
+        }
+        if (metrics.nestingDepth !== undefined) {
+          metricsObj.nesting = metrics.nestingDepth;
+        }
+        if (metrics.parameterCount !== undefined) {
+          metricsObj.parameters = metrics.parameterCount;
+        }
+        if (metrics.returnCount !== undefined) {
+          metricsObj.returns = metrics.returnCount;
+        }
+
+        const severity = this.calculateComplexitySeverity(metrics);
+
+        items.push({
+          label: metrics.name || c.name || 'anonymous',
+          description: this.formatComplexityDescription(metricsObj),
+          line: metrics.location?.startLine || c.location?.startLine,
+          itemSeverity: severity,
+          metrics: metricsObj
+        });
+      }
+    }
+
+    return items;
+  }
+
+  /**
+   * Extract sensitive data items into unified structure
+   */
+  private extractSensitiveDataItems(
+    details: any,
+    ruleId: string
+  ): EnhancedIssueItem[] {
+    const items: EnhancedIssueItem[] = [];
+
+    if (
+      !ruleId.includes('sensitive') &&
+      !ruleId.includes('logging') &&
+      !ruleId.includes('secret')
+    ) {
+      return items;
+    }
+
+    // Check for line/match data in details
+    if (details?.line || details?.lineNumber) {
+      items.push({
+        label: details.pattern || details.match || 'Sensitive pattern',
+        description: details.message || 'Potential sensitive data detected',
+        line: details.line || details.lineNumber,
+        itemSeverity: 'high',
+        metadata: {
+          pattern: details.pattern,
+          match: details.match
+        }
+      });
+    }
+
+    // Check for matches array
+    if (Array.isArray(details?.matches)) {
+      for (const match of details.matches) {
+        items.push({
+          label: match.pattern || match.text || 'Pattern match',
+          description: match.context || 'Sensitive data found',
+          line: match.line || match.lineNumber,
+          itemSeverity: 'high',
+          metadata: { match }
+        });
+      }
+    }
+
+    return items;
+  }
+
+  /**
+   * Extract pattern match items (database calls, etc.)
+   */
+  private extractPatternMatchItems(
+    details: any,
+    ruleId: string
+  ): EnhancedIssueItem[] {
+    const items: EnhancedIssueItem[] = [];
+
+    if (
+      !ruleId.includes('database') &&
+      !ruleId.includes('pattern') &&
+      !ruleId.includes('noDatabases')
+    ) {
+      return items;
+    }
+
+    if (details?.lineNumber || details?.line) {
+      items.push({
+        label: details.pattern || details.match || 'Pattern detected',
+        description: details.message || 'Code pattern violation',
+        line: details.line || details.lineNumber,
+        itemSeverity: 'medium',
+        metadata: {
+          pattern: details.pattern,
+          context: details.context
+        }
+      });
+    }
+
+    return items;
+  }
+
+  /**
+   * Extract validation items (remote validation failures, etc.)
+   */
+  private extractValidationItems(
+    details: any,
+    ruleId: string
+  ): EnhancedIssueItem[] {
+    const items: EnhancedIssueItem[] = [];
+
+    if (
+      !ruleId.includes('validation') &&
+      !ruleId.includes('invalid') &&
+      !ruleId.includes('extracted')
+    ) {
+      return items;
+    }
+
+    // Check for validation results
+    if (Array.isArray(details?.validationResults)) {
+      for (const result of details.validationResults) {
+        if (!result.valid) {
+          items.push({
+            label: result.value || result.key || 'Invalid value',
+            description: result.reason || 'Validation failed',
+            currentValue: result.value,
+            expectedValue: result.expected,
+            itemSeverity: 'high',
+            metadata: { result }
+          });
+        }
+      }
+    }
+
+    // Check for extracted values that failed
+    if (Array.isArray(details?.extractedValues)) {
+      for (const value of details.extractedValues) {
+        items.push({
+          label: value.key || value.path || 'Extracted value',
+          description: value.message || 'Validation issue',
+          currentValue: value.value,
+          itemSeverity: 'medium',
+          metadata: { value }
+        });
+      }
+    }
+
+    return items;
+  }
+
+  /**
+   * Extract generic items from any structured details
+   */
+  private extractGenericItems(details: any): EnhancedIssueItem[] {
+    const items: EnhancedIssueItem[] = [];
+
+    if (!details) {
+      return items;
+    }
+
+    // Try to extract any array of objects
+    const detailsArray = details?.details;
+    if (Array.isArray(detailsArray)) {
+      for (const item of detailsArray.slice(0, 10)) {
+        // Limit to 10 items
+        if (typeof item === 'object' && item !== null) {
+          const label =
+            item.name ||
+            item.id ||
+            item.key ||
+            item.label ||
+            Object.keys(item)[0] ||
+            'Detail';
+          items.push({
+            label: String(label),
+            description:
+              item.description ||
+              item.message ||
+              item.value ||
+              JSON.stringify(item).slice(0, 100),
+            line: item.line || item.lineNumber,
+            metadata: item
+          });
+        }
+      }
+    }
+
+    return items;
+  }
+
+  /**
+   * Calculate severity based on complexity metrics
+   */
+  private calculateComplexitySeverity(metrics: any): 'high' | 'medium' | 'low' {
+    const cyclo = metrics.cyclomaticComplexity || 0;
+    const cognitive = metrics.cognitiveComplexity || 0;
+    const nesting = metrics.nestingDepth || 0;
+
+    if (cyclo > 50 || cognitive > 100 || nesting > 10) {
+      return 'high';
+    }
+    if (cyclo > 25 || cognitive > 50 || nesting > 6) {
+      return 'medium';
+    }
+    return 'low';
+  }
+
+  /**
+   * Format complexity metrics for display
+   */
+  private formatComplexityDescription(metrics: Record<string, number>): string {
+    const parts: string[] = [];
+    for (const [key, value] of Object.entries(metrics)) {
+      if (value !== undefined) {
+        parts.push(`${key}: ${value}`);
+      }
+    }
+    return parts.join(', ') || 'Complex function';
   }
 
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {

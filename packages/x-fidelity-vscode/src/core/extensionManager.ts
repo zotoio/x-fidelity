@@ -606,70 +606,61 @@ export class ExtensionManager implements vscode.Disposable {
       )
     );
 
-    // Toggle commands for session-based settings
+    // Combined session toggle command (controls both diagnostics and autorun)
+    // Session state is in-memory only, so it resets to active on IDE restart
     this.disposables.push(
-      vscode.commands.registerCommand(
-        'xfidelity.toggleDiagnostics',
-        async () => {
-          const enabled = this.controlCenterTreeViewManager.toggleDiagnostics();
-          if (enabled) {
-            // Restore diagnostics from cached results
-            this.logger.info(
-              '🔔 Diagnostics enabled - restoring from cached results'
-            );
+      vscode.commands.registerCommand('xfidelity.toggleSession', async () => {
+        const active = this.controlCenterTreeViewManager.toggleSessionActive();
+        if (active) {
+          // Session resumed - restore diagnostics and enable automation
+          this.logger.info(
+            '▶️ Session resumed - restoring diagnostics and automation'
+          );
 
-            // Try to restore from cache
-            const restored =
-              await this.resultCoordinator.restoreDiagnosticsFromCache({
-                diagnosticProvider: this.diagnosticProvider,
-                issuesTreeViewManager: this.issuesTreeViewManager,
-                statusBarProvider: this.statusBarProvider
-              });
+          // Re-enable automation features
+          this.setupAutomationFeatures();
 
-            if (restored) {
-              vscode.window.showInformationMessage(
-                'X-Fidelity: Diagnostics restored for this session'
-              );
-            } else {
-              // No cached results - inform user they need to run analysis
-              vscode.window.showInformationMessage(
-                'X-Fidelity: Diagnostics enabled. Run analysis to see issues.'
-              );
-            }
-          } else {
-            // Clear all diagnostics
-            this.logger.info(
-              '🔕 Diagnostics disabled - clearing squiggly lines'
-            );
-            this.diagnosticProvider.clearDiagnostics();
+          // Try to restore diagnostics from cache
+          const restored =
+            await this.resultCoordinator.restoreDiagnosticsFromCache({
+              diagnosticProvider: this.diagnosticProvider,
+              issuesTreeViewManager: this.issuesTreeViewManager,
+              statusBarProvider: this.statusBarProvider
+            });
+
+          if (restored) {
             vscode.window.showInformationMessage(
-              'X-Fidelity: Diagnostics disabled for this session'
+              'X-Fidelity: Session resumed - diagnostics restored'
+            );
+          } else {
+            vscode.window.showInformationMessage(
+              'X-Fidelity: Session resumed. Run analysis to see issues.'
             );
           }
+        } else {
+          // Session paused - clear diagnostics and pause automation
+          this.logger.info(
+            '⏸️ Session paused - clearing diagnostics and pausing automation'
+          );
+          this.diagnosticProvider.clearDiagnostics();
+          this.pauseAutomationFeatures();
+          vscode.window.showInformationMessage(
+            'X-Fidelity: Session paused for this IDE session'
+          );
         }
-      )
+      })
+    );
+
+    // Legacy toggle commands - redirect to toggleSession for backward compatibility
+    this.disposables.push(
+      vscode.commands.registerCommand('xfidelity.toggleDiagnostics', () => {
+        vscode.commands.executeCommand('xfidelity.toggleSession');
+      })
     );
 
     this.disposables.push(
       vscode.commands.registerCommand('xfidelity.toggleAutorun', () => {
-        const enabled = this.controlCenterTreeViewManager.toggleAutorun();
-        if (enabled) {
-          // Re-enable automation features
-          this.logger.info(
-            '🔄 Autorun enabled - restoring automation features'
-          );
-          this.setupAutomationFeatures();
-          vscode.window.showInformationMessage(
-            'X-Fidelity: Autorun enabled for this session'
-          );
-        } else {
-          // Disable automation features (stop periodic analysis and file save watching)
-          this.logger.info('⏸️ Autorun disabled - pausing automation features');
-          this.pauseAutomationFeatures();
-          vscode.window.showInformationMessage(
-            'X-Fidelity: Autorun disabled for this session'
-          );
-        }
+        vscode.commands.executeCommand('xfidelity.toggleSession');
       })
     );
 

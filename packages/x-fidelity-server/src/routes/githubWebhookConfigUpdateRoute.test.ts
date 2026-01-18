@@ -200,4 +200,216 @@ describe('githubWebhookConfigUpdateRoute', () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
     expect(mockResponse.send).toHaveBeenCalledWith('Webhook received and processed');
   });
+
+  describe('repository validation security', () => {
+    beforeEach(() => {
+      process.env.GITHUB_WEBHOOK_SECRET = 'test-secret';
+    });
+
+    it('should reject invalid repository owner format', async () => {
+      mockRequest.body.repository.owner.name = 'invalid owner with spaces';
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid repository owner'));
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.send).toHaveBeenCalledWith('Invalid repository information');
+    });
+
+    it('should reject repository owner with special characters', async () => {
+      mockRequest.body.repository.owner.name = 'owner<script>';
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid repository owner'));
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should reject repository name with path traversal', async () => {
+      mockRequest.body.repository.name = '../../../etc/passwd';
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid repository name'));
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should reject repository name with special characters', async () => {
+      mockRequest.body.repository.name = 'repo;rm -rf /';
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid repository name'));
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should reject very long repository names', async () => {
+      mockRequest.body.repository.name = 'a'.repeat(150);
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid repository name'));
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should reject branch name with path traversal', async () => {
+      // The branch name extracted from ref would be '../../../etc/passwd' after split
+      mockRequest.body.ref = 'refs/heads/..';
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid branch name'));
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should reject branch name with command injection', async () => {
+      mockRequest.body.ref = 'refs/heads/main;rm -rf /';
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid branch name'));
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+  });
+
+  describe('payload validation security', () => {
+    beforeEach(() => {
+      process.env.GITHUB_WEBHOOK_SECRET = 'test-secret';
+    });
+
+    it('should reject missing repository in payload', async () => {
+      mockRequest.body = { ref: 'refs/heads/main' };
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.error).toHaveBeenCalledWith('Invalid GitHub webhook payload structure');
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should reject missing owner in payload', async () => {
+      mockRequest.body.repository = { name: 'repo' };
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.error).toHaveBeenCalledWith('Invalid GitHub webhook payload structure');
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should reject missing ref in payload', async () => {
+      mockRequest.body = { 
+        repository: { 
+          owner: { name: 'owner' }, 
+          name: 'repo' 
+        } 
+      };
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.error).toHaveBeenCalledWith('Invalid GitHub webhook payload structure');
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+  });
+
+  describe('download URL validation security', () => {
+    beforeEach(() => {
+      process.env.GITHUB_WEBHOOK_SECRET = 'test-secret';
+    });
+
+    it('should skip files with non-GitHub download URLs', async () => {
+      (axios.get as jest.Mock).mockResolvedValueOnce({
+        data: [
+          { 
+            type: 'file', 
+            name: 'file1.json', 
+            download_url: 'https://evil.com/malicious.json', 
+            path: 'file1.json' 
+          }
+        ]
+      });
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Skipping invalid download URL'));
+      // File should not be downloaded
+      expect(fs.promises.writeFile).not.toHaveBeenCalled();
+    });
+
+    it('should skip files with HTTP (non-HTTPS) download URLs', async () => {
+      (axios.get as jest.Mock).mockResolvedValueOnce({
+        data: [
+          { 
+            type: 'file', 
+            name: 'file1.json', 
+            download_url: 'http://raw.githubusercontent.com/owner/repo/main/file.json', 
+            path: 'file1.json' 
+          }
+        ]
+      });
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Non-HTTPS download URL'));
+    });
+
+    it('should accept valid GitHub raw content URLs', async () => {
+      (axios.get as jest.Mock)
+        .mockResolvedValueOnce({
+          data: [
+            { 
+              type: 'file', 
+              name: 'file1.json', 
+              download_url: 'https://raw.githubusercontent.com/owner/repo/main/file.json', 
+              path: 'file1.json' 
+            }
+          ]
+        })
+        .mockResolvedValueOnce({
+          data: Buffer.from('{}')
+        });
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(fs.promises.writeFile).toHaveBeenCalled();
+    });
+  });
+
+  describe('SSRF protection', () => {
+    beforeEach(() => {
+      process.env.GITHUB_WEBHOOK_SECRET = 'test-secret';
+    });
+
+    it('should block localhost download URLs', async () => {
+      (axios.get as jest.Mock).mockResolvedValueOnce({
+        data: [
+          { 
+            type: 'file', 
+            name: 'file1.json', 
+            download_url: 'https://localhost/secret/data', 
+            path: 'file1.json' 
+          }
+        ]
+      });
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid download URL'));
+    });
+
+    it('should block internal IP download URLs', async () => {
+      (axios.get as jest.Mock).mockResolvedValueOnce({
+        data: [
+          { 
+            type: 'file', 
+            name: 'file1.json', 
+            download_url: 'https://192.168.1.1/internal/data', 
+            path: 'file1.json' 
+          }
+        ]
+      });
+      
+      await githubWebhookConfigUpdateRoute(mockRequest, mockResponse);
+      
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid download URL'));
+    });
+  });
 });

@@ -14,9 +14,14 @@ export interface ControlCenterTreeItem {
 
 /**
  * Session state for toggleable features in the control center
+ * Note: sessionActive controls both diagnostics and autorun as a single toggle
  */
 export interface ControlCenterSessionState {
+  /** Combined session active state - controls both diagnostics and autorun */
+  sessionActive: boolean;
+  /** @deprecated Use sessionActive instead */
   diagnosticsEnabled: boolean;
+  /** @deprecated Use sessionActive instead */
   autorunEnabled: boolean;
 }
 
@@ -31,16 +36,20 @@ export class ControlCenterTreeProvider
   > = this._onDidChangeTreeData.event;
 
   private treeData: ControlCenterTreeItem[] = [];
-  
-  // Session state for toggles (defaults to enabled)
+
+  // Session state for toggles (defaults to active/enabled)
+  // This is in-memory only, so it resets to true on IDE restart
   private sessionState: ControlCenterSessionState = {
-    diagnosticsEnabled: true,
-    autorunEnabled: true
+    sessionActive: true,
+    diagnosticsEnabled: true, // Derived from sessionActive for backward compatibility
+    autorunEnabled: true // Derived from sessionActive for backward compatibility
   };
 
   // Event emitter for state changes
-  private _onStateChanged = new vscode.EventEmitter<ControlCenterSessionState>();
-  readonly onStateChanged: vscode.Event<ControlCenterSessionState> = this._onStateChanged.event;
+  private _onStateChanged =
+    new vscode.EventEmitter<ControlCenterSessionState>();
+  readonly onStateChanged: vscode.Event<ControlCenterSessionState> =
+    this._onStateChanged.event;
 
   constructor() {
     this.buildTreeData();
@@ -54,37 +63,56 @@ export class ControlCenterTreeProvider
   }
 
   /**
-   * Toggle diagnostics (squiggly lines) enabled/disabled for current session
+   * Toggle session active state (controls both diagnostics and autorun)
+   * Returns the new state (true = active, false = inactive)
    */
-  toggleDiagnostics(): boolean {
-    this.sessionState.diagnosticsEnabled = !this.sessionState.diagnosticsEnabled;
+  toggleSessionActive(): boolean {
+    this.sessionState.sessionActive = !this.sessionState.sessionActive;
+    // Keep legacy properties in sync
+    this.sessionState.diagnosticsEnabled = this.sessionState.sessionActive;
+    this.sessionState.autorunEnabled = this.sessionState.sessionActive;
     this._onStateChanged.fire(this.getSessionState());
     this.refresh();
-    return this.sessionState.diagnosticsEnabled;
+    return this.sessionState.sessionActive;
+  }
+
+  /**
+   * Check if session is active (both diagnostics and autorun enabled)
+   */
+  isSessionActive(): boolean {
+    return this.sessionState.sessionActive;
+  }
+
+  /**
+   * Toggle diagnostics (squiggly lines) enabled/disabled for current session
+   * @deprecated Use toggleSessionActive instead
+   */
+  toggleDiagnostics(): boolean {
+    return this.toggleSessionActive();
   }
 
   /**
    * Toggle autorun enabled/disabled for current session
+   * @deprecated Use toggleSessionActive instead
    */
   toggleAutorun(): boolean {
-    this.sessionState.autorunEnabled = !this.sessionState.autorunEnabled;
-    this._onStateChanged.fire(this.getSessionState());
-    this.refresh();
-    return this.sessionState.autorunEnabled;
+    return this.toggleSessionActive();
   }
 
   /**
    * Check if diagnostics are enabled
+   * @deprecated Use isSessionActive instead
    */
   isDiagnosticsEnabled(): boolean {
-    return this.sessionState.diagnosticsEnabled;
+    return this.sessionState.sessionActive;
   }
 
   /**
    * Check if autorun is enabled
+   * @deprecated Use isSessionActive instead
    */
   isAutorunEnabled(): boolean {
-    return this.sessionState.autorunEnabled;
+    return this.sessionState.sessionActive;
   }
 
   refresh(): void {
@@ -154,31 +182,19 @@ export class ControlCenterTreeProvider
             }
           },
           {
-            id: 'toggle-diagnostics',
-            label: this.sessionState.diagnosticsEnabled ? 'Disable Squiggly Lines' : 'Enable Squiggly Lines',
-            tooltip: this.sessionState.diagnosticsEnabled 
-              ? 'Click to hide diagnostic squiggly lines for this session' 
-              : 'Click to show diagnostic squiggly lines for this session',
-            description: this.sessionState.diagnosticsEnabled ? 'On' : 'Off',
-            iconPath: new vscode.ThemeIcon(this.sessionState.diagnosticsEnabled ? 'check' : 'circle-slash'),
+            id: 'toggle-session',
+            label: 'Session Active',
+            tooltip: this.sessionState.sessionActive
+              ? 'Click to pause X-Fidelity for this session (disables diagnostics and autorun)'
+              : 'Click to resume X-Fidelity for this session (enables diagnostics and autorun)',
+            description: this.sessionState.sessionActive ? 'On' : 'Off',
+            iconPath: new vscode.ThemeIcon(
+              this.sessionState.sessionActive ? 'check' : 'circle-slash'
+            ),
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             command: {
-              command: 'xfidelity.toggleDiagnostics',
-              title: 'Toggle Diagnostics'
-            }
-          },
-          {
-            id: 'toggle-autorun',
-            label: this.sessionState.autorunEnabled ? 'Disable Autorun' : 'Enable Autorun',
-            tooltip: this.sessionState.autorunEnabled 
-              ? 'Click to disable automatic analysis for this session' 
-              : 'Click to enable automatic analysis for this session',
-            description: this.sessionState.autorunEnabled ? 'On' : 'Off',
-            iconPath: new vscode.ThemeIcon(this.sessionState.autorunEnabled ? 'check' : 'circle-slash'),
-            collapsibleState: vscode.TreeItemCollapsibleState.None,
-            command: {
-              command: 'xfidelity.toggleAutorun',
-              title: 'Toggle Autorun'
+              command: 'xfidelity.toggleSession',
+              title: 'Toggle Session'
             }
           }
         ]

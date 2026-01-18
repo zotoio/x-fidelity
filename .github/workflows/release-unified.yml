@@ -5,8 +5,8 @@ on:
     branches: [master]
 
 permissions:
-  id-token: write  # Required for OIDC
-  contents: read    
+  id-token: write   # Required for npm OIDC trusted publishing
+  contents: write   # Required for semantic-release to push commits and tags    
 
 env:
   NODE_VERSION: '22.16.0'

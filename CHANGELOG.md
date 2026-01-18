@@ -2,6 +2,27 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.7.0] - 2026-01-18
+
+### Added
+
+- **Rule Builder GUI**: Interactive web-based tool for creating X-Fidelity rules
+  - Visual tree and form interface for rule construction
+  - Live bidirectional JSON editing with Monaco editor
+  - Template library with pre-built rules organized by plugin, use case, and complexity
+  - In-browser rule simulation using browser-adapted plugins
+  - Comprehensive tooltips and contextual documentation
+  - Copy-to-clipboard export with naming convention guidance
+  - Dark/light theme support synchronized with Docusaurus
+  - Full integration with Docusaurus documentation site
+
+### Documentation
+
+- Added comprehensive Rule Builder guide at `/docs/rules/rule-builder-guide`
+- Added template creation documentation for contributors
+- Updated getting started guide with Rule Builder links
+- Updated rules documentation with Rule Builder references
+
 ## [5.6.0](https://github.com/zotoio/x-fidelity/compare/v5.5.2...v5.6.0) (2026-01-18)
 
 ### Features

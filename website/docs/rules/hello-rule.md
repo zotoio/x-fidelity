@@ -68,5 +68,6 @@ xfidelity . --localConfigPath /absolute/path/to/config
 
 ## 5. Next
 
+- Try the [Rule Builder GUI](/x-fidelity/rule-builder/) to create rules visually
 - Explore the [Rules Cookbook](./rules-cookbook)
 - Learn about [Operators](../operators)

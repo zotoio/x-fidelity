@@ -60,6 +60,12 @@ module.exports = {
           label: 'Getting Started',
         },
         {
+          href: '/x-fidelity/rule-builder/',
+          position: 'left',
+          label: 'Rule Builder',
+          className: 'navbar-rule-builder',
+        },
+        {
           href: 'https://github.com/zotoio/x-fidelity',
           label: 'GitHub',
           position: 'right',
@@ -69,7 +75,7 @@ module.exports = {
     footer: {
       style: 'dark',
       
-      copyright: `Copyright © ${new Date().getFullYear()} x-fidelity. Built with Docusaurus and https://aider.chat`,
+      copyright: `Copyright © ${new Date().getFullYear()} x-fidelity. Built with Docusaurus, https://aider.chat, https://cursor.sh`,
     },
     prism: {
       theme: require('prism-react-renderer').themes.github,

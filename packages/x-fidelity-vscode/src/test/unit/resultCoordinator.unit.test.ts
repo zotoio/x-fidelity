@@ -567,4 +567,532 @@ describe('ResultCoordinator Unit Tests', () => {
     assert.strictEqual(processed.issueBreakdown.exempt, 0); // exempt doesn't get preserved in mapSeverity
     assert.strictEqual(processed.issueBreakdown.unhandled, 0);
   });
+
+  it('should cache processed results for diagnostic restoration', async () => {
+    const mockAnalysisResult: AnalysisResult = {
+      metadata: {
+        XFI_RESULT: {
+          repoXFIConfig: {} as any,
+          telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+          memoryUsage: {},
+          factMetrics: {},
+          options: {},
+          archetype: 'node-fullstack',
+          repoPath: '/test/path',
+          repoUrl: 'https://test.com/repo',
+          xfiVersion: '1.0.0',
+          fileCount: 1,
+          totalIssues: 1,
+          warningCount: 1,
+          errorCount: 0,
+          fatalityCount: 0,
+          exemptCount: 0,
+          startTime: 1704067200000,
+          finishTime: 1704067230000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:00:30+10:00',
+          durationSeconds: 30,
+          issueDetails: [
+            {
+              filePath: '/test/file.ts',
+              errors: [
+                { ruleFailure: 'test-rule', level: 'warning', details: { message: 'Test', lineNumber: 1 } }
+              ]
+            }
+          ]
+        }
+      },
+      diagnostics: new Map(),
+      timestamp: Date.now(),
+      duration: 30000,
+      summary: { totalIssues: 1, filesAnalyzed: 1, analysisTimeMs: 30000 }
+    };
+
+    await coordinator.processAndDistributeResults(
+      mockAnalysisResult,
+      {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      }
+    );
+
+    // Should have cached results
+    assert.strictEqual(coordinator.hasCachedResults(), true);
+    
+    const cachedResult = coordinator.getLastProcessedResult();
+    assert.ok(cachedResult);
+    assert.strictEqual(cachedResult.totalIssues, 1);
+  });
+
+  it('should restore diagnostics from cache', async () => {
+    const mockAnalysisResult: AnalysisResult = {
+      metadata: {
+        XFI_RESULT: {
+          repoXFIConfig: {} as any,
+          telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+          memoryUsage: {},
+          factMetrics: {},
+          options: {},
+          archetype: 'node-fullstack',
+          repoPath: '/test/path',
+          repoUrl: 'https://test.com/repo',
+          xfiVersion: '1.0.0',
+          fileCount: 1,
+          totalIssues: 1,
+          warningCount: 1,
+          errorCount: 0,
+          fatalityCount: 0,
+          exemptCount: 0,
+          startTime: 1704067200000,
+          finishTime: 1704067230000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:00:30+10:00',
+          durationSeconds: 30,
+          issueDetails: [
+            {
+              filePath: '/test/file.ts',
+              errors: [
+                { ruleFailure: 'test-rule', level: 'warning', details: { message: 'Test', lineNumber: 1 } }
+              ]
+            }
+          ]
+        }
+      },
+      diagnostics: new Map(),
+      timestamp: Date.now(),
+      duration: 30000,
+      summary: { totalIssues: 1, filesAnalyzed: 1, analysisTimeMs: 30000 }
+    };
+
+    await coordinator.processAndDistributeResults(
+      mockAnalysisResult,
+      {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      }
+    );
+
+    // Reset the mock providers
+    mockDiagnosticProvider.updateFromProcessedResultCalled = false;
+    mockTreeViewManager.updateFromProcessedResultCalled = false;
+    mockStatusBarProvider.updateFromProcessedResultCalled = false;
+
+    // Restore from cache
+    const restored = await coordinator.restoreDiagnosticsFromCache({
+      diagnosticProvider: mockDiagnosticProvider,
+      issuesTreeViewManager: mockTreeViewManager,
+      statusBarProvider: mockStatusBarProvider
+    });
+
+    assert.strictEqual(restored, true);
+    assert.strictEqual(mockDiagnosticProvider.updateFromProcessedResultCalled, true);
+    assert.strictEqual(mockTreeViewManager.updateFromProcessedResultCalled, true);
+    assert.strictEqual(mockStatusBarProvider.updateFromProcessedResultCalled, true);
+  });
+
+  it('should return false when no cached results available', async () => {
+    // No results have been processed yet
+    assert.strictEqual(coordinator.hasCachedResults(), false);
+
+    const restored = await coordinator.restoreDiagnosticsFromCache({
+      diagnosticProvider: mockDiagnosticProvider,
+      issuesTreeViewManager: mockTreeViewManager,
+      statusBarProvider: mockStatusBarProvider
+    });
+
+    assert.strictEqual(restored, false);
+  });
+
+  it('should extract dependency enhanced details', async () => {
+    const mockAnalysisResult: AnalysisResult = {
+      metadata: {
+        XFI_RESULT: {
+          repoXFIConfig: {} as any,
+          telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+          memoryUsage: {},
+          factMetrics: {},
+          options: {},
+          archetype: 'node-fullstack',
+          repoPath: '/test/path',
+          repoUrl: 'https://test.com/repo',
+          xfiVersion: '1.0.0',
+          fileCount: 1,
+          totalIssues: 1,
+          warningCount: 1,
+          errorCount: 0,
+          fatalityCount: 0,
+          exemptCount: 0,
+          startTime: 1704067200000,
+          finishTime: 1704067230000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:00:30+10:00',
+          durationSeconds: 30,
+          issueDetails: [
+            {
+              filePath: 'REPO_GLOBAL_CHECK',
+              errors: [
+                {
+                  ruleFailure: 'outdated-dependencies-global',
+                  level: 'warning',
+                  details: {
+                    message: 'Outdated dependencies found',
+                    details: [
+                      {
+                        dependency: 'react',
+                        currentVersion: '16.0.0',
+                        requiredVersion: '18.0.0',
+                        location: {
+                          manifestPath: 'package.json',
+                          lineNumber: 15,
+                          columnNumber: 5,
+                          section: 'dependencies'
+                        }
+                      },
+                      {
+                        dependency: 'lodash',
+                        currentVersion: '4.0.0',
+                        requiredVersion: '4.17.0',
+                        location: {
+                          manifestPath: 'package.json',
+                          lineNumber: 20,
+                          columnNumber: 5,
+                          section: 'dependencies'
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      diagnostics: new Map(),
+      timestamp: Date.now(),
+      duration: 30000,
+      summary: { totalIssues: 1, filesAnalyzed: 1, analysisTimeMs: 30000 }
+    };
+
+    const processed = await coordinator.processAndDistributeResults(
+      mockAnalysisResult,
+      {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      }
+    );
+
+    assert.strictEqual(processed.totalIssues, 1);
+    const issue = processed.processedIssues[0];
+    assert.ok(issue);
+    assert.ok(issue.enhancedDetails);
+    assert.strictEqual(issue.enhancedDetails.type, 'dependency');
+    assert.strictEqual(issue.enhancedDetails.items.length, 2);
+    assert.strictEqual(issue.enhancedDetails.items[0].label, 'react');
+  });
+
+  it('should extract complexity enhanced details', async () => {
+    const mockAnalysisResult: AnalysisResult = {
+      metadata: {
+        XFI_RESULT: {
+          repoXFIConfig: {} as any,
+          telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+          memoryUsage: {},
+          factMetrics: {},
+          options: {},
+          archetype: 'node-fullstack',
+          repoPath: '/test/path',
+          repoUrl: 'https://test.com/repo',
+          xfiVersion: '1.0.0',
+          fileCount: 1,
+          totalIssues: 1,
+          warningCount: 1,
+          errorCount: 0,
+          fatalityCount: 0,
+          exemptCount: 0,
+          startTime: 1704067200000,
+          finishTime: 1704067230000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:00:30+10:00',
+          durationSeconds: 30,
+          issueDetails: [
+            {
+              filePath: '/test/complex.ts',
+              errors: [
+                {
+                  ruleFailure: 'function-complexity-iterative',
+                  level: 'warning',
+                  details: {
+                    message: 'Complex functions detected',
+                    details: {
+                      complexities: [
+                        {
+                          name: 'processData',
+                          metrics: {
+                            cyclomaticComplexity: 25,
+                            cognitiveComplexity: 45,
+                            nestingDepth: 8,
+                            parameterCount: 6,
+                            returnCount: 5,
+                            location: { startLine: 10 }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      diagnostics: new Map(),
+      timestamp: Date.now(),
+      duration: 30000,
+      summary: { totalIssues: 1, filesAnalyzed: 1, analysisTimeMs: 30000 }
+    };
+
+    const processed = await coordinator.processAndDistributeResults(
+      mockAnalysisResult,
+      {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      }
+    );
+
+    assert.strictEqual(processed.totalIssues, 1);
+    const issue = processed.processedIssues[0];
+    assert.ok(issue);
+    assert.ok(issue.enhancedDetails);
+    assert.strictEqual(issue.enhancedDetails.type, 'complexity');
+    assert.strictEqual(issue.enhancedDetails.items.length, 1);
+    assert.strictEqual(issue.enhancedDetails.items[0].label, 'processData');
+  });
+
+  it('should handle global check file path translation', async () => {
+    const mockAnalysisResult: AnalysisResult = {
+      metadata: {
+        XFI_RESULT: {
+          repoXFIConfig: {} as any,
+          telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+          memoryUsage: {},
+          factMetrics: {},
+          options: {},
+          archetype: 'node-fullstack',
+          repoPath: '/test/path',
+          repoUrl: 'https://test.com/repo',
+          xfiVersion: '1.0.0',
+          fileCount: 1,
+          totalIssues: 1,
+          warningCount: 1,
+          errorCount: 0,
+          fatalityCount: 0,
+          exemptCount: 0,
+          startTime: 1704067200000,
+          finishTime: 1704067230000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:00:30+10:00',
+          durationSeconds: 30,
+          issueDetails: [
+            {
+              filePath: 'REPO_GLOBAL_CHECK',
+              errors: [
+                {
+                  ruleFailure: 'global-rule',
+                  level: 'warning',
+                  details: {
+                    message: 'Global issue',
+                    details: [
+                      {
+                        dependency: 'react',
+                        currentVersion: '16.0.0',
+                        requiredVersion: '18.0.0',
+                        location: {
+                          manifestPath: 'package.json',
+                          lineNumber: 15,
+                          columnNumber: 5
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      diagnostics: new Map(),
+      timestamp: Date.now(),
+      duration: 30000,
+      summary: { totalIssues: 1, filesAnalyzed: 1, analysisTimeMs: 30000 }
+    };
+
+    const processed = await coordinator.processAndDistributeResults(
+      mockAnalysisResult,
+      {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      }
+    );
+
+    assert.strictEqual(processed.totalIssues, 1);
+    const issue = processed.processedIssues[0];
+    assert.ok(issue);
+    // Should have isGlobalCheck flag set
+    assert.strictEqual(issue.isGlobalCheck, true);
+    // File should be translated to manifest path
+    assert.strictEqual(issue.file, 'package.json');
+    assert.strictEqual(issue.line, 15);
+  });
+
+  it('should map severity levels correctly', async () => {
+    const mockAnalysisResult: AnalysisResult = {
+      metadata: {
+        XFI_RESULT: {
+          repoXFIConfig: {} as any,
+          telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+          memoryUsage: {},
+          factMetrics: {},
+          options: {},
+          archetype: 'node-fullstack',
+          repoPath: '/test/path',
+          repoUrl: 'https://test.com/repo',
+          xfiVersion: '1.0.0',
+          fileCount: 4,
+          totalIssues: 4,
+          warningCount: 2,
+          errorCount: 1,
+          fatalityCount: 1,
+          exemptCount: 0,
+          startTime: 1704067200000,
+          finishTime: 1704067260000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:01:00+10:00',
+          durationSeconds: 60,
+          issueDetails: [
+            { filePath: '/test/f1.ts', errors: [{ ruleFailure: 'r1', level: 'fatality', details: { message: 'Fatal error', lineNumber: 1 } }] },
+            { filePath: '/test/f2.ts', errors: [{ ruleFailure: 'r2', level: 'error', details: { message: 'Error', lineNumber: 2 } }] },
+            { filePath: '/test/f3.ts', errors: [{ ruleFailure: 'r3', level: 'warning', details: { message: 'Warning', lineNumber: 3 } }] },
+            { filePath: '/test/f4.ts', errors: [{ ruleFailure: 'r4', level: 'exempt', details: { message: 'Exempt', lineNumber: 4 } }] }
+          ]
+        }
+      },
+      diagnostics: new Map(),
+      timestamp: Date.now(),
+      duration: 60000,
+      summary: { totalIssues: 4, filesAnalyzed: 4, analysisTimeMs: 60000 }
+    };
+
+    const processed = await coordinator.processAndDistributeResults(
+      mockAnalysisResult,
+      {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      }
+    );
+
+    // fatality and error should map to error
+    assert.strictEqual(processed.issueBreakdown.error, 2);
+    // warning should map to warning
+    assert.strictEqual(processed.issueBreakdown.warning, 1);
+    // exempt should map to info
+    assert.strictEqual(processed.issueBreakdown.info, 1);
+  });
+
+  it('should handle missing metadata gracefully', async () => {
+    const mockAnalysisResult: AnalysisResult = {
+      metadata: {} as any,
+      diagnostics: new Map(),
+      timestamp: Date.now(),
+      duration: 30000,
+      summary: { totalIssues: 0, filesAnalyzed: 0, analysisTimeMs: 30000 }
+    };
+
+    const processed = await coordinator.processAndDistributeResults(
+      mockAnalysisResult,
+      {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      }
+    );
+
+    assert.strictEqual(processed.totalIssues, 0);
+    assert.strictEqual(processed.successfulIssues, 0);
+    assert.strictEqual(processed.failedIssuesCount, 0);
+  });
+
+  it('should clean messages properly', async () => {
+    const mockAnalysisResult: AnalysisResult = {
+      metadata: {
+        XFI_RESULT: {
+          repoXFIConfig: {} as any,
+          telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+          memoryUsage: {},
+          factMetrics: {},
+          options: {},
+          archetype: 'node-fullstack',
+          repoPath: '/test/path',
+          repoUrl: 'https://test.com/repo',
+          xfiVersion: '1.0.0',
+          fileCount: 1,
+          totalIssues: 1,
+          warningCount: 1,
+          errorCount: 0,
+          fatalityCount: 0,
+          exemptCount: 0,
+          startTime: 1704067200000,
+          finishTime: 1704067230000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:00:30+10:00',
+          durationSeconds: 30,
+          issueDetails: [
+            {
+              filePath: '/test/file.ts',
+              errors: [
+                {
+                  ruleFailure: 'test-rule',
+                  level: 'warning',
+                  details: {
+                    message: '  Message with\n\nnewlines   and    spaces  '
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      diagnostics: new Map(),
+      timestamp: Date.now(),
+      duration: 30000,
+      summary: { totalIssues: 1, filesAnalyzed: 1, analysisTimeMs: 30000 }
+    };
+
+    const processed = await coordinator.processAndDistributeResults(
+      mockAnalysisResult,
+      {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      }
+    );
+
+    const issue = processed.processedIssues[0];
+    assert.ok(issue);
+    // Message should be cleaned of excess whitespace
+    assert.ok(!issue.message.includes('\n\n'));
+    assert.ok(!issue.message.includes('   '));
+  });
+
+  it('should dispose correctly', () => {
+    // Should not throw
+    coordinator.dispose();
+    // Should be safe to call multiple times
+    coordinator.dispose();
+  });
 }); 

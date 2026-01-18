@@ -55,9 +55,10 @@ yarn release
 
 ### Required Environment Variables
 - `GH_TOKEN` - GitHub token for releases and git operations
-- `NPM_TOKEN` - npm token for CLI package publishing
 - `VSCE_PAT` - Visual Studio Code marketplace token
 - `OVSX_PAT` - Open VSX registry token
+
+**Note:** `NPM_TOKEN` is no longer required. The CLI is published using [npm trusted publishing via OIDC](https://docs.npmjs.com/trusted-publishers), which provides enhanced security by eliminating the need for long-lived tokens.
 
 ## Commit Conventions
 

@@ -189,3 +189,90 @@ JSON-based rule definitions using json-rules-engine:
 - Update README.md and website documentation when making changes
 - Use consistent error handling and logging patterns
 - Follow cursor rules in `.cursor/rules/core-tenets.mdc`
+
+## X-Fidelity SME Subagents
+
+This repository includes specialized AI subagents that are Subject Matter Experts in different aspects of X-Fidelity. These agents are located in `.cursor/agents/` and can run in parallel for comprehensive assistance.
+
+### Available Subagents
+
+| Agent | Domain | Auto-Triggers |
+|-------|--------|---------------|
+| `xfi-build-expert` | Build system, CI/CD, Turbo, esbuild | Build failures, dependency issues, CI problems |
+| `xfi-testing-expert` | Jest, coverage, integration tests | Test failures, coverage gaps, mocking issues |
+| `xfi-plugin-expert` | Plugin architecture, facts, operators, AST | Plugin development, tree-sitter, rule creation |
+| `xfi-vscode-expert` | VSCode extension, webviews, diagnostics | Extension issues, UI problems, F5 workflow |
+| `xfi-rules-expert` | json-rules-engine, archetypes, exemptions | Rule creation, archetype config, exemptions |
+| `xfi-security-expert` | Path validation, webhooks, secrets | Security reviews, path issues, vulnerabilities |
+| `xfi-debugger` | Error analysis, logging, troubleshooting | Errors, test failures, unexpected behavior |
+| `xfi-docs-expert` | README, website, CHANGELOG, API docs | Documentation updates, website changes |
+| `xfi-code-reviewer` | Balanced code review, quality, security | After code changes, before commits, PR reviews |
+| `xfi-system-design` | Platform architecture, feature design, technical specs | New features, architecture decisions, cross-package changes |
+| `xfi-planner` | Engineering planning, subtask coordination, plan execution | /xfi-plan command, complex multi-step initiatives |
+| `xfi-engineer` | Implementation, coding, feature development | Engineering tasks, plan subtask execution, coding work |
+
+### Subagent Auto-Triggering
+
+Subagents should be invoked proactively based on context:
+
+- **Build/CI failures** → `xfi-build-expert`
+- **Test failures or coverage issues** → `xfi-testing-expert`
+- **Plugin development or AST issues** → `xfi-plugin-expert`
+- **VSCode extension work** → `xfi-vscode-expert`
+- **Rule or archetype changes** → `xfi-rules-expert`
+- **Security concerns or path validation** → `xfi-security-expert`
+- **Errors or debugging needs** → `xfi-debugger`
+- **Documentation updates** → `xfi-docs-expert`
+- **Code changes ready for review** → `xfi-code-reviewer`
+- **New feature design or architecture** → `xfi-system-design`
+- **Complex engineering initiatives** → `xfi-planner`
+- **Implementation and coding tasks** → `xfi-engineer`
+
+### Parallel Execution
+
+Multiple subagents can run in parallel when their domains are independent:
+
+```
+# Example: After significant changes, run in parallel:
+- xfi-code-reviewer (review the changes)
+- xfi-testing-expert (check test coverage)
+- xfi-docs-expert (check documentation needs)
+```
+
+### Using Subagents
+
+Invoke a subagent by asking it to perform its specialized task:
+
+```
+Use the xfi-build-expert subagent to help with this build failure.
+Use the xfi-code-reviewer subagent to review my recent changes.
+```
+
+Or let the AI auto-delegate based on the task context.
+
+## Knowledge Management
+
+All agents maintain domain-specific knowledge in the `knowledge/` directory at the repository root.
+
+```
+knowledge/
+├── README.md                 # Overview and file naming
+├── KNOWLEDGE_GUIDELINES.md   # Full management rules
+├── shared/                   # Cross-cutting knowledge
+└── {agent-name}/             # Agent-specific knowledge
+```
+
+### Quick Reference
+
+- **File format**: `[ORDERING]-[topic]-[STATUS]-[YYMMDD].md`
+- **CONFIRMED**: Source of truth, use for decisions
+- **DRAFT**: Pending verification, don't treat as fact
+- **Append-only**: Never reorder facts within files
+
+### Agent Responsibilities
+
+1. **Read** CONFIRMED files before making decisions
+2. **Write** new facts by appending to topic files
+3. **Confirm** with user before promoting DRAFT → CONFIRMED
+
+See `knowledge/README.md` for file naming and `knowledge/KNOWLEDGE_GUIDELINES.md` for complete details.

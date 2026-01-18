@@ -106,6 +106,17 @@ The tool is designed to be highly customizable, allowing teams to define their o
 - **Enhanced Remote Validation:** Support for remote string validation via the `invalidRemoteValidation` operator. This operator allows x‑fidelity to send extracted string values to an external API (with interpolated parameters such as "#MATCH#") to validate them. (See the sample rule `invalidSystemIdConfigured-iterative-rule.json` in the demo config.)
 - **GitHub Webhook Integration:** The config server now exposes endpoints (e.g. `/github-config-update` and `/github-pull-request-check`) that let you trigger configuration reloads and validation checks automatically when a GitHub event (push or pull request) occurs.
 
+### Rule Builder GUI
+
+Create X-Fidelity rules visually with our interactive web-based Rule Builder:
+
+- **Visual Editor**: Build rules using a tree and form interface
+- **Live JSON Sync**: Edit JSON directly with bidirectional updates
+- **Templates**: Start from pre-built templates for common use cases
+- **Simulation**: Test rules against sample code before deployment
+
+[Launch Rule Builder](https://zotoio.github.io/x-fidelity/rule-builder/) | [Documentation](https://zotoio.github.io/x-fidelity/docs/rules/rule-builder-guide)
+
 ## Components and entity names to understand
 
 - **Archetype**: A predefined configuration template for a specific type of project or technology stack. It defines the rules, operators, facts, and other settings to be applied during analysis.

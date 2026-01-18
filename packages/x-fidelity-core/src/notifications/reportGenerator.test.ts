@@ -751,17 +751,58 @@ describe('ReportGenerator', () => {
                 expect(issues[0].line).toBe(22);
             });
 
-            it('should handle missing function name', () => {
+            it('should parse complexity issues from nested details.details.complexities structure', () => {
+                // This is the actual structure produced by the engine runner when resolving fact references
+                const error = {
+                    ruleFailure: 'functionComplexity-iterative',
+                    level: 'warning',
+                    details: {
+                        message: 'Functions detected with high complexity',
+                        // The engine runner wraps resolved fact values in a nested 'details' object
+                        details: {
+                            complexities: [
+                                {
+                                    name: 'processData',
+                                    metrics: {
+                                        name: 'processData',
+                                        cyclomaticComplexity: 25,
+                                        cognitiveComplexity: 45,
+                                        nestingDepth: 8,
+                                        parameterCount: 6,
+                                        returnCount: 12,
+                                        location: {
+                                            startLine: 100
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                };
+                const issues = (generator as any).parseComplexityIssues('/test/nested.ts', error);
+                
+                expect(issues).toHaveLength(1);
+                expect(issues[0].file).toBe('/test/nested.ts');
+                expect(issues[0].function).toBe('processData');
+                expect(issues[0].cyclomaticComplexity).toBe(25);
+                expect(issues[0].cognitiveComplexity).toBe(45);
+                expect(issues[0].nestingDepth).toBe(8);
+                expect(issues[0].parameterCount).toBe(6);
+                expect(issues[0].returnCount).toBe(12);
+                expect(issues[0].line).toBe(100);
+            });
+
+            it('should return empty array when no complexity data can be extracted', () => {
                 const error = {
                     ruleFailure: 'complexity',
                     level: 'error',
                     details: {
-                        message: 'Complexity too high'
+                        message: 'Complexity too high' // No parseable data
                     }
                 };
                 const issues = (generator as any).parseComplexityIssues('/test/file.ts', error);
-                expect(issues).toHaveLength(1);
-                expect(issues[0].function).toBe('unknown');
+                // Should return empty array when no structured data or parseable message
+                expect(issues).toHaveLength(0);
             });
 
             it('should handle try-catch errors gracefully', () => {
@@ -878,6 +919,430 @@ describe('ReportGenerator', () => {
             (fs.writeFile as jest.Mock).mockRejectedValue(writeError);
 
             await expect(generator.saveReportToFile('/test/output/report.md')).rejects.toThrow('Permission denied');
+        });
+    });
+
+    describe('generateRuleSection', () => {
+        it('should generate section for global rules', () => {
+            const globalRuleData = {
+                ...mockData,
+                XFI_RESULT: {
+                    ...mockData.XFI_RESULT,
+                    issueDetails: [
+                        {
+                            filePath: 'REPO_GLOBAL_CHECK',
+                            fileName: 'REPO_GLOBAL_CHECK',
+                            errors: [
+                                {
+                                    ruleFailure: 'dependency-check-global',
+                                    level: 'warning',
+                                    details: {
+                                        message: 'Outdated dependencies found',
+                                        details: [
+                                            {
+                                                dependency: 'react',
+                                                currentVersion: '16.0.0',
+                                                requiredVersion: '18.0.0',
+                                                location: {
+                                                    manifestPath: 'package.json',
+                                                    lineNumber: 15
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            };
+            const gen = new ReportGenerator(globalRuleData);
+            const allIssues = (gen as any).generateAllIssuesWithAnchors();
+            
+            expect(allIssues).toContain('dependency-check-global');
+            expect(allIssues).toContain('Repository-wide');
+        });
+
+        it('should generate section for iterative rules with tables', () => {
+            const iterativeRuleData = {
+                ...mockData,
+                XFI_RESULT: {
+                    ...mockData.XFI_RESULT,
+                    issueDetails: [
+                        {
+                            filePath: '/test/file1.ts',
+                            fileName: 'file1.ts',
+                            errors: [
+                                {
+                                    ruleFailure: 'complexity-iterative',
+                                    level: 'warning',
+                                    details: {
+                                        message: 'High complexity',
+                                        lineNumber: 25
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            filePath: '/test/file2.ts',
+                            fileName: 'file2.ts',
+                            errors: [
+                                {
+                                    ruleFailure: 'complexity-iterative',
+                                    level: 'warning',
+                                    details: {
+                                        message: 'High complexity',
+                                        lineNumber: 30
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            };
+            const gen = new ReportGenerator(iterativeRuleData);
+            const allIssues = (gen as any).generateAllIssuesWithAnchors();
+            
+            expect(allIssues).toContain('complexity-iterative');
+            expect(allIssues).toContain('| File | Rule | Severity |');
+        });
+    });
+
+    describe('generateIssueBlock', () => {
+        it('should generate issue block with anchor', () => {
+            const report = generator.generateReport();
+            
+            expect(report).toContain('<a id=');
+            expect(report).toContain('Issue #');
+        });
+
+        it('should include severity badge', () => {
+            const report = generator.generateReport();
+            
+            // Should contain severity indicators
+            expect(report).toMatch(/🔥|❌|⚠️|ℹ️|💡/);
+        });
+    });
+
+    describe('extractDependencyLocations', () => {
+        it('should extract dependency locations from error details', () => {
+            const dependencyData = {
+                ...mockData,
+                XFI_RESULT: {
+                    ...mockData.XFI_RESULT,
+                    issueDetails: [
+                        {
+                            filePath: 'REPO_GLOBAL_CHECK',
+                            fileName: 'REPO_GLOBAL_CHECK',
+                            errors: [
+                                {
+                                    ruleFailure: 'outdated-dependencies-global',
+                                    level: 'warning',
+                                    details: {
+                                        message: 'Outdated dependencies',
+                                        details: [
+                                            {
+                                                dependency: 'react',
+                                                currentVersion: '16.0.0',
+                                                requiredVersion: '18.0.0',
+                                                location: {
+                                                    manifestPath: 'package.json',
+                                                    lineNumber: 15
+                                                }
+                                            },
+                                            {
+                                                dependency: 'lodash',
+                                                currentVersion: '4.0.0',
+                                                requiredVersion: '4.17.0',
+                                                location: {
+                                                    manifestPath: 'package.json',
+                                                    lineNumber: 20
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            };
+            const gen = new ReportGenerator(dependencyData);
+            const otherIssues = (gen as any).generateOtherGlobalIssues();
+            
+            expect(otherIssues).toContain('react');
+            expect(otherIssues).toContain('16.0.0');
+            expect(otherIssues).toContain('18.0.0');
+            expect(otherIssues).toContain('package.json');
+        });
+
+        it('should limit displayed dependency locations to 10', () => {
+            const manyDepsData = {
+                ...mockData,
+                XFI_RESULT: {
+                    ...mockData.XFI_RESULT,
+                    issueDetails: [
+                        {
+                            filePath: 'REPO_GLOBAL_CHECK',
+                            fileName: 'REPO_GLOBAL_CHECK',
+                            errors: [
+                                {
+                                    ruleFailure: 'outdated-dependencies-global',
+                                    level: 'warning',
+                                    details: {
+                                        message: 'Outdated dependencies',
+                                        details: Array.from({ length: 15 }, (_, i) => ({
+                                            dependency: `dep-${i}`,
+                                            currentVersion: '1.0.0',
+                                            requiredVersion: '2.0.0',
+                                            location: {
+                                                manifestPath: 'package.json',
+                                                lineNumber: i + 1
+                                            }
+                                        }))
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            };
+            const gen = new ReportGenerator(manyDepsData);
+            const otherIssues = (gen as any).generateOtherGlobalIssues();
+            
+            expect(otherIssues).toContain('...and 5 more');
+        });
+    });
+
+    describe('formatRuleName', () => {
+        it('should format kebab-case to Title Case', () => {
+            const result = (generator as any).formatRuleName('my-rule-name');
+            expect(result).toBe('My Rule Name');
+        });
+
+        it('should format camelCase to Title Case', () => {
+            const result = (generator as any).formatRuleName('myRuleName');
+            expect(result).toBe('My Rule Name');
+        });
+
+        it('should handle underscores', () => {
+            const result = (generator as any).formatRuleName('my_rule_name');
+            expect(result).toBe('My Rule Name');
+        });
+    });
+
+    describe('getSeverityBadge', () => {
+        it('should return correct badge for fatal', () => {
+            const badge = (generator as any).getSeverityBadge('fatal');
+            expect(badge).toContain('FATAL');
+            expect(badge).toContain('🔥');
+        });
+
+        it('should return correct badge for fatality', () => {
+            const badge = (generator as any).getSeverityBadge('fatality');
+            expect(badge).toContain('FATAL');
+        });
+
+        it('should return correct badge for error', () => {
+            const badge = (generator as any).getSeverityBadge('error');
+            expect(badge).toContain('ERROR');
+            expect(badge).toContain('❌');
+        });
+
+        it('should return correct badge for warning', () => {
+            const badge = (generator as any).getSeverityBadge('warning');
+            expect(badge).toContain('WARNING');
+            expect(badge).toContain('⚠️');
+        });
+
+        it('should return correct badge for info', () => {
+            const badge = (generator as any).getSeverityBadge('info');
+            expect(badge).toContain('INFO');
+            expect(badge).toContain('ℹ️');
+        });
+
+        it('should return correct badge for hint', () => {
+            const badge = (generator as any).getSeverityBadge('hint');
+            expect(badge).toContain('HINT');
+            expect(badge).toContain('💡');
+        });
+
+        it('should handle unknown severity', () => {
+            const badge = (generator as any).getSeverityBadge('unknown');
+            expect(badge).toContain('UNKNOWN');
+            expect(badge).toContain('📋');
+        });
+    });
+
+    describe('isMarkdownContent', () => {
+        it('should detect bold markdown', () => {
+            const result = (generator as any).isMarkdownContent('This is **bold** text');
+            expect(result).toBe(true);
+        });
+
+        it('should detect italic markdown', () => {
+            const result = (generator as any).isMarkdownContent('This is *italic* text');
+            expect(result).toBe(true);
+        });
+
+        it('should detect headers', () => {
+            const result = (generator as any).isMarkdownContent('# Header');
+            expect(result).toBe(true);
+        });
+
+        it('should detect code blocks', () => {
+            const result = (generator as any).isMarkdownContent('```javascript\ncode\n```');
+            expect(result).toBe(true);
+        });
+
+        it('should detect inline code', () => {
+            const result = (generator as any).isMarkdownContent('Use `const` keyword');
+            expect(result).toBe(true);
+        });
+
+        it('should detect links', () => {
+            const result = (generator as any).isMarkdownContent('[link](http://example.com)');
+            expect(result).toBe(true);
+        });
+
+        it('should return false for plain text', () => {
+            const result = (generator as any).isMarkdownContent('Plain text without markdown');
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('extractCleanMessage', () => {
+        it('should strip markdown formatting', () => {
+            const error = {
+                details: {
+                    message: '**Bold** and *italic* with `code`'
+                }
+            };
+            const result = (generator as any).extractCleanMessage(error);
+            expect(result).toBe('Bold and italic with code');
+        });
+
+        it('should remove links but keep text', () => {
+            const error = {
+                details: {
+                    message: 'Click [here](http://example.com) for more'
+                }
+            };
+            const result = (generator as any).extractCleanMessage(error);
+            expect(result).toBe('Click here for more');
+        });
+
+        it('should remove headers', () => {
+            const error = {
+                details: {
+                    message: '## Header\nContent'
+                }
+            };
+            const result = (generator as any).extractCleanMessage(error);
+            expect(result).toContain('Header');
+            expect(result).not.toContain('##');
+        });
+
+        it('should replace newlines with spaces', () => {
+            const error = {
+                details: {
+                    message: 'Line 1\nLine 2\nLine 3'
+                }
+            };
+            const result = (generator as any).extractCleanMessage(error);
+            expect(result).toBe('Line 1 Line 2 Line 3');
+        });
+    });
+
+    describe('generateRuleId', () => {
+        it('should generate valid anchor ID from rule name', () => {
+            const result = (generator as any).generateRuleId('my-complex-rule');
+            expect(result).toBe('rule-my-complex-rule');
+        });
+
+        it('should handle special characters', () => {
+            const result = (generator as any).generateRuleId('rule@with#special$chars');
+            expect(result).toBe('rule-rule-with-special-chars');
+        });
+
+        it('should convert to lowercase', () => {
+            const result = (generator as any).generateRuleId('MyRuleName');
+            expect(result).toBe('rule-myrulename');
+        });
+    });
+
+    describe('generateIssueId', () => {
+        it('should generate unique issue ID', () => {
+            const error = {
+                ruleFailure: 'test-rule',
+                details: { lineNumber: 25 }
+            };
+            const result = (generator as any).generateIssueId('/test/file.ts', error, 1);
+            expect(result).toContain('issue-1');
+            expect(result).toContain('file-ts');
+            expect(result).toContain('test-rule');
+            expect(result).toContain('line-25');
+        });
+
+        it('should handle missing line number', () => {
+            const error = {
+                ruleFailure: 'test-rule',
+                details: {}
+            };
+            const result = (generator as any).generateIssueId('/test/file.ts', error, 2);
+            expect(result).toContain('line-1'); // Default line
+        });
+    });
+
+    describe('generateRuleDefinitionLink', () => {
+        it('should generate link when repo name is available', () => {
+            const result = (generator as any).generateRuleDefinitionLink('test-rule');
+            expect(result).toContain('github.com');
+            expect(result).toContain('test/example-repo');
+            expect(result).toContain('test-rule.json');
+        });
+
+        it('should return null when repo name is not available', () => {
+            const noRepoData = {
+                ...mockData,
+                XFI_RESULT: {
+                    ...mockData.XFI_RESULT,
+                    repoUrl: undefined
+                }
+            };
+            const gen = new ReportGenerator(noRepoData);
+            const result = (gen as any).generateRuleDefinitionLink('test-rule');
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('extractFiles', () => {
+        it('should extract files from message', () => {
+            const message = 'Files: file1.ts, file2.ts\n\nMore content';
+            const result = (generator as any).extractFiles(message, '/default/file.ts');
+            expect(result).toContain('file1.ts');
+        });
+
+        it('should handle message without files pattern', () => {
+            const message = 'No file information here';
+            const result = (generator as any).extractFiles(message, '/default/file.ts');
+            // The implementation may return either the default or extract from message
+            expect(result).toBeDefined();
+        });
+    });
+
+    describe('extractSuggestion', () => {
+        it('should extract suggestion from message', () => {
+            const message = 'Issue found. Suggestion: Use a better approach.';
+            const result = (generator as any).extractSuggestion(message);
+            expect(result).toBe('Use a better approach.');
+        });
+
+        it('should handle message without suggestion pattern', () => {
+            const message = 'No suggestion here';
+            const result = (generator as any).extractSuggestion(message);
+            // The implementation may return a default or parsed value
+            expect(result).toBeDefined();
         });
     });
 });

@@ -36,6 +36,16 @@ module.exports = {
     },
     {
       type: 'category',
+      label: 'Rule Creation',
+      items: [
+        'rules/hello-rule',
+        'rules/rules-cookbook',
+        'rules/rule-builder-guide',
+        'rules/rule-builder-templates',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Configuration',
       items: [
         'local-config',
@@ -82,8 +92,12 @@ module.exports = {
       ],
     },
     {
-      type: 'doc',
-      id: 'contributing',
+      type: 'category',
+      label: 'Contributing',
+      items: [
+        'contributing',
+        'contributing/building-with-cursor',
+      ],
     },
   ],
 };

@@ -50,8 +50,7 @@ yarn coverage:merge
 # 3. Validate against codecov targets
 yarn codecov:local
 
-# 4. Upload to codecov (existing)
-yarn coverage:upload
+# 4. Coverage is automatically uploaded by the codecov GitHub Action in CI
 ```
 
 ## Codecov Configuration
@@ -235,11 +234,12 @@ coverage:
 yarn test:coverage         # Run tests with coverage
 yarn coverage:merge        # Merge package coverage reports  
 yarn coverage:check        # Check coverage thresholds
-yarn coverage:upload       # Upload to codecov
 
-# New codecov local commands
+# Codecov local commands
 yarn codecov:local         # Local validation only
 yarn codecov:validate      # Merge + validate
 yarn codecov:check         # Test + validate
 yarn codecov:config        # Config validation only
 ```
+
+> **Note:** Coverage is automatically uploaded to Codecov by the `codecov/codecov-action` GitHub Action in CI. The deprecated `codecov` npm CLI has been removed.

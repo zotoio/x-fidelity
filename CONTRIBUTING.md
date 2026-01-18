@@ -2,81 +2,140 @@
 
 We welcome contributions to x-fidelity! This document provides guidelines for contributing to the project.
 
+## Building with Cursor
+
+X-Fidelity includes specialized AI tooling for Cursor IDE that significantly accelerates development. When working on the codebase, you have access to:
+
+### Slash Commands
+
+Use these commands in Cursor chat (type `/xfi-*`) for guided workflows:
+
+| Command | Description |
+|---------|-------------|
+| `/xfi-review` | Comprehensive code review with parallel expert analysis |
+| `/xfi-test` | Run tests and diagnose failures |
+| `/xfi-build` | Build and diagnose issues |
+| `/xfi-create-plugin` | Create new plugins with step-by-step guidance |
+| `/xfi-create-rule` | Create new analysis rules |
+| `/xfi-create-archetype` | Create new archetype configurations |
+| `/xfi-debug` | Debug errors and exceptions |
+| `/xfi-fix` | Smart routing to appropriate expert |
+| `/xfi-release` | Release preparation workflow |
+| `/xfi-docs` | Documentation updates |
+| `/xfi-analyze` | Troubleshoot analysis issues |
+| `/xfi-consistency` | CLI-Extension parity checks |
+| `/xfi-security` | Security review |
+
+### Specialized Subagents
+
+The AI has access to domain-specific expert subagents that can be invoked for specialized tasks:
+
+| Subagent | Expertise |
+|----------|-----------|
+| `xfi-build-expert` | Turbo, yarn workspaces, esbuild, TypeScript compilation |
+| `xfi-testing-expert` | Jest, coverage, integration tests, VSCode extension testing |
+| `xfi-plugin-expert` | Plugin architecture, facts, operators, AST analysis |
+| `xfi-vscode-expert` | VSCode extension, webviews, diagnostics, packaging |
+| `xfi-rules-expert` | json-rules-engine, archetypes, exemptions |
+| `xfi-security-expert` | Path validation, webhooks, secret handling |
+| `xfi-debugger` | Error analysis, logging, troubleshooting |
+| `xfi-docs-expert` | README, website docs, CHANGELOG |
+| `xfi-code-reviewer` | Balanced code review, quality assessment |
+
+### Skills
+
+Step-by-step guides for common development tasks (automatically loaded when relevant):
+
+| Skill | Purpose |
+|-------|---------|
+| `xfi-create-plugin` | Complete plugin creation workflow |
+| `xfi-create-rule` | Rule creation with fact/operator guidance |
+| `xfi-create-archetype` | Archetype configuration guide |
+| `xfi-release-workflow` | Release process and conventional commits |
+| `xfi-debug-analysis` | Troubleshooting analysis issues |
+| `xfi-consistency-testing` | CLI-Extension parity verification |
+| `xfi-documentation-update` | Documentation sync guide |
+| `xfi-add-package` | Adding new monorepo packages |
+
+These tools are defined in `.cursor/commands/`, `.cursor/agents/`, and `.cursor/skills/`.
+
 ## Getting Started
 
 1. Fork the repository on GitHub.
 2. Clone your fork locally.
 3. Install dependencies with `yarn install`.
-4. Build all packages with `npx nx run-many --target=build --all`.
+4. Build all packages with `yarn build`.
 5. Create a new branch for your feature or bug fix.
 
 ## Making Changes
 
 1. Make your changes in your feature branch.
 2. Add or update tests as necessary.
-3. Ensure all tests pass by running `npx nx run-many --target=test --all`.
-4. When modifying documentation to cover new functionality (such as remote validation, GitHub webhook integration, enhanced telemetry, or new plugins), please update both the README and PLUGIN_GUIDANCE accordingly.
-5. Ensure the code lints properly by running `npx nx run-many --target=lint --all`.
+3. Ensure all tests pass by running `yarn test`.
+4. When modifying documentation, update both the README and website docs accordingly.
+5. Ensure the code lints properly by running `yarn lint`.
 
-## Development Workflow with Nx
+## Development Workflow
 
-This project uses Nx as a monorepo build system. Here are the key commands:
+This project uses Yarn Workspaces with Turbo for the monorepo build system. Here are the key commands:
 
 ### Building
 
 ```bash
-# Build all packages
-npx nx run-many --target=build --all
+# Build all packages (with Turbo)
+yarn build
+
+# Clean and rebuild everything
+yarn build:clean
 
 # Build specific package
-npx nx run core:build
-npx nx run cli:build
-npx nx run vscode:build
-npx nx run plugins:build
-
-# Build with dependencies
-npx nx run cli:build  # automatically builds dependencies first
+yarn workspace @x-fidelity/core build
+yarn workspace @x-fidelity/plugins build
+yarn workspace x-fidelity build
+yarn workspace x-fidelity-vscode build
 ```
 
 ### Testing
 
 ```bash
-# Run all tests
-npx nx run-many --target=test --all
+# Run all tests with quality checks
+yarn test
 
 # Test specific package
-npx nx run core:test
-npx nx run plugins:test
+yarn workspace @x-fidelity/core test
+yarn workspace @x-fidelity/plugins test
+yarn workspace x-fidelity-vscode test
 
-# Run tests in parallel (faster)
-npx nx run-many --target=test --all --parallel
+# VSCode extension tests
+yarn workspace x-fidelity-vscode test:unit
+yarn workspace x-fidelity-vscode test:integration
 ```
 
 ### Linting
 
 ```bash
 # Lint all packages
-npx nx run-many --target=lint --all
+yarn lint
+
+# Lint with auto-fix
+yarn lint:fix
 
 # Lint specific package
-npx nx run core:lint
-npx nx run vscode:lint
+yarn workspace @x-fidelity/core lint
+yarn workspace x-fidelity-vscode lint
 ```
 
-### Useful Nx Commands
+### VSCode Extension Development
 
 ```bash
-# Show project dependencies
-npx nx graph
+# Launch extension in debug mode (F5)
+yarn workspace x-fidelity-vscode dev
 
-# Show all available projects
-npx nx show projects
+# Launch with fresh user data
+yarn workspace x-fidelity-vscode dev:fresh
 
-# Show details about a specific project
-npx nx show project core
-
-# Reset Nx cache (if having issues)
-npx nx reset
+# Package extension
+yarn workspace x-fidelity-vscode package
 ```
 
 ## Commit Messages
