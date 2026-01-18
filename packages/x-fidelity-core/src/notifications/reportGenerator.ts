@@ -871,9 +871,15 @@ ${githubLink !== path.basename(filePath) ? `**Source:** ${githubLink}` : ''}
 
     private parseComplexityIssues(filePath: string, error: any): FunctionComplexityIssue[] {
         try {
-            // First try to get structured complexity data from error.details.complexities
-            if (error.details?.complexities && Array.isArray(error.details.complexities)) {
-                const complexities = error.details.complexities;
+            // First try to get structured complexity data
+            // Check both error.details.details.complexities (resolved fact wrapped in details)
+            // and error.details.complexities (direct structure) for compatibility
+            let complexities = error.details?.details?.complexities;
+            if (!complexities || !Array.isArray(complexities)) {
+                complexities = error.details?.complexities;
+            }
+            
+            if (complexities && Array.isArray(complexities)) {
                 
                 // Return all complexity issues for this file
                 return complexities.map((complexity: any) => {

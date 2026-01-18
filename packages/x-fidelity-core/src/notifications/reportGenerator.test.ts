@@ -751,6 +751,47 @@ describe('ReportGenerator', () => {
                 expect(issues[0].line).toBe(22);
             });
 
+            it('should parse complexity issues from nested details.details.complexities structure', () => {
+                // This is the actual structure produced by the engine runner when resolving fact references
+                const error = {
+                    ruleFailure: 'functionComplexity-iterative',
+                    level: 'warning',
+                    details: {
+                        message: 'Functions detected with high complexity',
+                        // The engine runner wraps resolved fact values in a nested 'details' object
+                        details: {
+                            complexities: [
+                                {
+                                    name: 'processData',
+                                    metrics: {
+                                        name: 'processData',
+                                        cyclomaticComplexity: 25,
+                                        cognitiveComplexity: 45,
+                                        nestingDepth: 8,
+                                        parameterCount: 6,
+                                        returnCount: 12,
+                                        location: {
+                                            startLine: 100
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                };
+                const issues = (generator as any).parseComplexityIssues('/test/nested.ts', error);
+                
+                expect(issues).toHaveLength(1);
+                expect(issues[0].file).toBe('/test/nested.ts');
+                expect(issues[0].function).toBe('processData');
+                expect(issues[0].cyclomaticComplexity).toBe(25);
+                expect(issues[0].cognitiveComplexity).toBe(45);
+                expect(issues[0].nestingDepth).toBe(8);
+                expect(issues[0].parameterCount).toBe(6);
+                expect(issues[0].returnCount).toBe(12);
+                expect(issues[0].line).toBe(100);
+            });
+
             it('should handle missing function name', () => {
                 const error = {
                     ruleFailure: 'complexity',
