@@ -2,6 +2,8 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.5.2](https://github.com/zotoio/x-fidelity/compare/v5.5.1...v5.5.2) (2026-01-18)
+
 ## [5.5.1](https://github.com/zotoio/x-fidelity/compare/v5.5.0...v5.5.1) (2026-01-17)
 
 ## [5.5.0](https://github.com/zotoio/x-fidelity/compare/v5.4.3...v5.5.0) (2026-01-17)
