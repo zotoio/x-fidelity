@@ -45,15 +45,26 @@ const FeatureList: FeatureItem[] = [
         No JSON knowledge required.
       </>
     ),
-    link: '/x-fidelity/rule-builder/',
+    link: 'https://zotoio.github.io/x-fidelity/rule-builder/',
   },
 ];
 
 function Feature({title, description, link}: FeatureItem) {
+  const isExternal = link?.startsWith('http');
   return (
     <div className={clsx('col col--3')}>
       <div className="text--center padding-horiz--md padding-vert--md">
-        <h3>{link ? <Link to={link}>{title}</Link> : title}</h3>
+        <h3>
+          {link ? (
+            isExternal ? (
+              <a href={link}>{title}</a>
+            ) : (
+              <Link to={link}>{title}</Link>
+            )
+          ) : (
+            title
+          )}
+        </h3>
         <p>{description}</p>
       </div>
     </div>

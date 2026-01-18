@@ -6,7 +6,7 @@ sidebar_position: 2
 
 Practical rule snippets you can copy‑paste and adapt.
 
-> **Tip**: Use the [Rule Builder](/x-fidelity/rule-builder/) to create and test rules visually before exporting them as JSON.
+> **Tip**: Use the [Rule Builder](https://zotoio.github.io/x-fidelity/rule-builder/) to create and test rules visually before exporting them as JSON.
 
 ## Regex policy (ban pattern)
 

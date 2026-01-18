@@ -8,7 +8,7 @@
     "build": "yarn build:rule-builder && docusaurus build && yarn copy:rule-builder",
     "build:docs-only": "docusaurus build",
     "build:rule-builder": "cd rule-builder && yarn install && yarn build",
-    "copy:rule-builder": "cp -r rule-builder/dist build/rule-builder",
+    "copy:rule-builder": "cp -r rule-builder/dist/* build/rule-builder/",
     "build:production": "yarn build",
     "docusaurus": "docusaurus",
     "start": "docusaurus start",

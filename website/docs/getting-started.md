@@ -208,5 +208,5 @@ xfidelity -m server -p 8888 -l /path/to/config
 ### Core Concepts
 - [Archetypes](./archetypes) - Project templates and rule sets
 - [Rules](./rules) - Define your code quality standards
-- [Rule Builder](/x-fidelity/rule-builder/) - Create rules visually with the interactive GUI
+- [Rule Builder](https://zotoio.github.io/x-fidelity/rule-builder/) - Create rules visually with the interactive GUI
 - [Facts and Operators](./facts) - Understanding the analysis engine
