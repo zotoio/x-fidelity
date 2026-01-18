@@ -2,6 +2,12 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.6.0](https://github.com/zotoio/x-fidelity/compare/v5.5.2...v5.6.0) (2026-01-18)
+
+### Features
+
+* add xfiPluginExtractValues to default plugins list ([bf000d2](https://github.com/zotoio/x-fidelity/commit/bf000d2a437c16ee12cffe5069f923d88f7aaff6))
+
 ## [5.5.2](https://github.com/zotoio/x-fidelity/compare/v5.5.1...v5.5.2) (2026-01-18)
 
 ## [5.5.1](https://github.com/zotoio/x-fidelity/compare/v5.5.0...v5.5.1) (2026-01-17)
