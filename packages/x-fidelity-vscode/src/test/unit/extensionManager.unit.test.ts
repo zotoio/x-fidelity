@@ -194,11 +194,18 @@ describe('ExtensionManager Unit Tests', () => {
 
     mockControlCenterTreeViewManager = {
       dispose: jest.fn(),
+      isSessionActive: jest.fn().mockReturnValue(true),
+      toggleSessionActive: jest.fn().mockReturnValue(false),
+      // Legacy methods (deprecated but still supported)
       isAutorunEnabled: jest.fn().mockReturnValue(true),
       isDiagnosticsEnabled: jest.fn().mockReturnValue(true),
       toggleAutorun: jest.fn().mockReturnValue(false),
       toggleDiagnostics: jest.fn().mockReturnValue(false),
-      getSessionState: jest.fn().mockReturnValue({ diagnosticsEnabled: true, autorunEnabled: true }),
+      getSessionState: jest.fn().mockReturnValue({
+        sessionActive: true,
+        diagnosticsEnabled: true,
+        autorunEnabled: true
+      }),
       onStateChanged: { event: jest.fn() }
     } as any;
     (ControlCenterTreeViewManager as jest.Mock).mockImplementation(() => mockControlCenterTreeViewManager);

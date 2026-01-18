@@ -206,13 +206,18 @@
         "icon": "$(wrench)"
       },
       {
+        "command": "xfidelity.toggleSession",
+        "title": "X-Fidelity: Toggle Session Active",
+        "icon": "$(debug-pause)"
+      },
+      {
         "command": "xfidelity.toggleDiagnostics",
-        "title": "X-Fidelity: Toggle Diagnostics",
+        "title": "X-Fidelity: Toggle Session (Legacy)",
         "icon": "$(eye)"
       },
       {
         "command": "xfidelity.toggleAutorun",
-        "title": "X-Fidelity: Toggle Autorun",
+        "title": "X-Fidelity: Toggle Session (Legacy)",
         "icon": "$(sync)"
       }
     ],
