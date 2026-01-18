@@ -792,17 +792,17 @@ describe('ReportGenerator', () => {
                 expect(issues[0].line).toBe(100);
             });
 
-            it('should handle missing function name', () => {
+            it('should return empty array when no complexity data can be extracted', () => {
                 const error = {
                     ruleFailure: 'complexity',
                     level: 'error',
                     details: {
-                        message: 'Complexity too high'
+                        message: 'Complexity too high' // No parseable data
                     }
                 };
                 const issues = (generator as any).parseComplexityIssues('/test/file.ts', error);
-                expect(issues).toHaveLength(1);
-                expect(issues[0].function).toBe('unknown');
+                // Should return empty array when no structured data or parseable message
+                expect(issues).toHaveLength(0);
             });
 
             it('should handle try-catch errors gracefully', () => {

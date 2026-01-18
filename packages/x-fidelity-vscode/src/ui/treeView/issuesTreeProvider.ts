@@ -354,7 +354,7 @@ export class IssuesTreeProvider
 
   private buildIssueTooltip(issue: ProcessedIssue): vscode.MarkdownString {
     const markdown = new vscode.MarkdownString();
-    
+
     // ENHANCEMENT: Enable HTML support and make it trusted for better interactivity
     markdown.isTrusted = true;
     markdown.supportHtml = true;
@@ -364,7 +364,13 @@ export class IssuesTreeProvider
     markdown.appendMarkdown(`**${severityEmoji} ${issue.rule}**\n\n`);
 
     // Issue message (main content)
-    markdown.appendMarkdown(`${issue.message}\n\n`);
+    markdown.appendMarkdown(`${issue.message}`);
+
+    // Add scope indicator for global issues
+    if (issue.isGlobalCheck) {
+      markdown.appendMarkdown(` *(affects entire REPO_GLOBAL_CHECK)*`);
+    }
+    markdown.appendMarkdown(`\n\n`);
 
     // Details section
     markdown.appendMarkdown(`---\n\n`);
@@ -386,6 +392,44 @@ export class IssuesTreeProvider
       markdown.appendMarkdown(`**🏷️ Category:** ${issue.category}\n\n`);
     }
 
+    // ENHANCEMENT: Show enhanced details based on issue type
+    if (issue.enhancedDetails && issue.enhancedDetails.items.length > 0) {
+      const details = issue.enhancedDetails;
+      const icon = this.getDetailsIcon(details.type);
+      markdown.appendMarkdown(`**${icon} ${details.summary}:**\n\n`);
+
+      const itemsToShow = details.items.slice(0, 5);
+      for (const item of itemsToShow) {
+        const lineInfo = item.line ? ` (line ${item.line})` : '';
+        const fileInfo = item.file ? ` in \`${item.file}\`` : '';
+        const severityIcon = this.getItemSeverityIcon(item.itemSeverity);
+
+        if (details.type === 'dependency') {
+          // Dependency-specific format
+          markdown.appendMarkdown(
+            `- ${severityIcon} \`${item.label}\` (${item.currentValue} → ${item.expectedValue})${fileInfo}${lineInfo}\n`
+          );
+        } else if (details.type === 'complexity') {
+          // Complexity-specific format
+          markdown.appendMarkdown(
+            `- ${severityIcon} \`${item.label}\`${lineInfo}: ${item.description}\n`
+          );
+        } else {
+          // Generic format for other types
+          markdown.appendMarkdown(
+            `- ${severityIcon} \`${item.label}\`${lineInfo}${item.description ? `: ${item.description}` : ''}\n`
+          );
+        }
+      }
+
+      if (details.items.length > 5) {
+        markdown.appendMarkdown(
+          `- *...and ${details.items.length - 5} more*\n`
+        );
+      }
+      markdown.appendMarkdown(`\n`);
+    }
+
     // Status indicators
     const statusItems: string[] = [];
     if (issue.fixable) {
@@ -403,7 +447,7 @@ export class IssuesTreeProvider
     markdown.appendMarkdown(`---\n\n`);
     markdown.appendMarkdown(`**🛠️ Actions:**\n\n`);
 
-    // Create issue context for commands
+    // Create issue context for commands - include enhanced data
     const issueContext = {
       message: issue.message,
       ruleId: issue.rule,
@@ -413,7 +457,9 @@ export class IssuesTreeProvider
       line: issue.line || 1,
       column: issue.column || 1,
       fixable: issue.fixable || false,
-      exempted: issue.exempted || false
+      exempted: issue.exempted || false,
+      isGlobalCheck: issue.isGlobalCheck,
+      enhancedDetails: issue.enhancedDetails
     };
 
     // ENHANCEMENT: Add Explain Issue action link
@@ -494,6 +540,52 @@ export class IssuesTreeProvider
         return '🛡️';
       default:
         return '●';
+    }
+  }
+
+  /**
+   * Get icon for enhanced details type
+   */
+  private getDetailsIcon(
+    type:
+      | 'dependency'
+      | 'complexity'
+      | 'sensitive-data'
+      | 'pattern-match'
+      | 'validation'
+      | 'generic'
+  ): string {
+    switch (type) {
+      case 'dependency':
+        return '📦';
+      case 'complexity':
+        return '📊';
+      case 'sensitive-data':
+        return '🔒';
+      case 'pattern-match':
+        return '🔍';
+      case 'validation':
+        return '✅';
+      case 'generic':
+        return '📋';
+      default:
+        return '📋';
+    }
+  }
+
+  /**
+   * Get icon for item severity
+   */
+  private getItemSeverityIcon(severity?: 'high' | 'medium' | 'low'): string {
+    switch (severity) {
+      case 'high':
+        return '🔴';
+      case 'medium':
+        return '🟡';
+      case 'low':
+        return '🟢';
+      default:
+        return '⚪';
     }
   }
 
