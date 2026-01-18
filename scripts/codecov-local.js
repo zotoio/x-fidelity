@@ -214,59 +214,14 @@ class LocalCodecovValidator {
   }
 
   /**
-   * Validate codecov CLI configuration
+   * Display codecov upload information
+   * Note: Coverage upload is handled by the codecov/codecov-action GitHub Action in CI.
+   * The deprecated codecov npm CLI has been removed.
    */
-  async validateCodecovCLI() {
-    console.log('\n🔧 Validating codecov CLI setup...');
-    
-    try {
-      const { execSync } = require('child_process');
-      
-      // Check if codecov CLI is available
-      try {
-        // Try using local codecov installation first
-        const localCodecovVersion = execSync('./node_modules/.bin/codecov --version', { 
-          encoding: 'utf8', 
-          stdio: 'pipe',
-          cwd: this.rootDir 
-        });
-        console.log(`✅ Codecov CLI available (local): ${localCodecovVersion.trim()}`);
-      } catch (error) {
-        try {
-          // Fallback to npx
-          const version = execSync('npx codecov --version', { encoding: 'utf8', stdio: 'pipe' });
-          console.log(`✅ Codecov CLI available (npx): ${version.trim()}`);
-        } catch (npxError) {
-          this.warnings.push('⚠️  Codecov CLI not available via local or npx installation');
-          console.log('✅ Codecov CLI check skipped (not required for local validation)');
-          return true; // Not a hard failure - we can still validate configuration
-        }
-      }
-
-      // Validate codecov.yml without uploading (optional)
-      try {
-        // Use local installation if available
-        let codecovCmd = './node_modules/.bin/codecov';
-        if (!fs.existsSync(path.join(this.rootDir, 'node_modules/.bin/codecov'))) {
-          codecovCmd = 'npx codecov';
-        }
-        
-        execSync(`${codecovCmd} --dry-run --disable=gcov`, { 
-          cwd: this.rootDir, 
-          stdio: 'pipe',
-          timeout: 10000 // 10 second timeout
-        });
-        console.log('✅ Codecov configuration validated successfully');
-        return true;
-      } catch (error) {
-        // This is not a critical failure - the dry-run may fail for various reasons
-        console.log('ℹ️  Codecov dry-run validation skipped (configuration is valid)');
-        return true;
-      }
-    } catch (error) {
-      this.warnings.push(`⚠️  Codecov CLI validation warning: ${error.message}`);
-      return true; // Don't fail the entire validation for CLI issues
-    }
+  displayUploadInfo() {
+    console.log('\n🔧 Codecov Upload Information:');
+    console.log('   Coverage uploads are handled by the codecov/codecov-action GitHub Action in CI.');
+    console.log('   Local validation is for checking coverage targets before pushing.');
   }
 
   /**
@@ -318,7 +273,7 @@ class LocalCodecovValidator {
     // Run validations
     const configValid = this.validateConfig();
     const targetsValid = this.checkCoverageTargets();
-    await this.validateCodecovCLI();
+    this.displayUploadInfo();
 
     // Generate final report
     const success = this.generateReport();
@@ -337,8 +292,8 @@ class LocalCodecovValidator {
       process.exit(1);
     }
 
-    console.log('\n🎉 All coverage targets met! Ready for codecov upload!');
-    console.log('💡 Run "yarn coverage:upload" to upload to codecov');
+    console.log('\n🎉 All coverage targets met! Ready for CI coverage upload!');
+    console.log('💡 Coverage is automatically uploaded by the codecov GitHub Action in CI.');
     process.exit(0);
   }
 }
