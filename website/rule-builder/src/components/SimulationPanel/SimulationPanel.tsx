@@ -174,7 +174,7 @@ export function SimulationPanel(): JSX.Element {
   const canRun = scope === 'global' ? canRunGlobal : (mode === 'fixtures' ? canRunFixtures : canRunManual);
 
   return (
-    <div className="rounded-lg border border-border bg-background-soft overflow-hidden">
+    <div className="rounded-lg border border-border bg-background-soft">
       {/* Header - always visible */}
       <button
         type="button"
