@@ -82,8 +82,12 @@ module.exports = {
       ],
     },
     {
-      type: 'doc',
-      id: 'contributing',
+      type: 'category',
+      label: 'Contributing',
+      items: [
+        'contributing',
+        'contributing/building-with-cursor',
+      ],
     },
   ],
 };
