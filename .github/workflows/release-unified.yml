@@ -4,10 +4,6 @@ on:
   push:
     branches: [master]
 
-permissions:
-  id-token: write   # Required for npm OIDC trusted publishing
-  contents: write   # Required for semantic-release to push commits and tags    
-
 env:
   NODE_VERSION: '22.16.0'
   NODE_OPTIONS: '--max-old-space-size=4096'
@@ -52,6 +48,7 @@ jobs:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
 
       - name: Upload CLI artifacts
