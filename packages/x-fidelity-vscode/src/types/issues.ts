@@ -31,6 +31,40 @@ export interface ProcessedIssue {
   isUnhandled?: boolean;
   failureReason?: string;
   originalData?: any;
+
+  // Enhanced data for dependency issues
+  dependencyDetails?: DependencyDetail[];
+
+  // Enhanced data for complexity issues
+  complexityDetails?: ComplexityDetail[];
+
+  // Flag indicating this is a global/repository-wide issue
+  isGlobalCheck?: boolean;
+}
+
+/**
+ * Dependency failure detail for actionable tooltips
+ */
+export interface DependencyDetail {
+  dependency: string;
+  currentVersion: string;
+  requiredVersion: string;
+  manifestPath: string;
+  lineNumber?: number;
+  columnNumber?: number;
+}
+
+/**
+ * Function complexity detail for actionable tooltips
+ */
+export interface ComplexityDetail {
+  functionName: string;
+  cyclomaticComplexity?: number;
+  cognitiveComplexity?: number;
+  nestingDepth?: number;
+  parameterCount?: number;
+  returnCount?: number;
+  lineNumber?: number;
 }
 
 // New interface for tracking failed diagnostic conversions

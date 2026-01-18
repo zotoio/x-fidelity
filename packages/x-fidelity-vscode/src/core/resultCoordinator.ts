@@ -3,7 +3,9 @@ import type { AnalysisResult } from '../analysis/types';
 import type {
   ProcessedAnalysisResult,
   ProcessedIssue,
-  FailedIssue
+  FailedIssue,
+  DependencyDetail,
+  ComplexityDetail
 } from '../types/issues';
 import type { ResultMetadata } from '@x-fidelity/types';
 import { DiagnosticLocationExtractor } from '../utils/diagnosticLocationExtractor';
@@ -28,6 +30,8 @@ interface DiagnosticIssue {
   code?: string;
   tags?: vscode.DiagnosticTag[];
   isFileLevelRule?: boolean;
+  // Raw error details for extracting dependency locations
+  rawError?: any;
 }
 
 /**
@@ -375,7 +379,8 @@ export class ResultCoordinator implements vscode.Disposable {
             ruleId: ruleFailure.ruleFailure || 'unknown-rule',
             category: this.extractCategory(ruleFailure),
             code: ruleFailure.ruleFailure,
-            source: 'X-Fidelity'
+            source: 'X-Fidelity',
+            rawError: ruleFailure // Pass raw error for dependency location extraction
           };
 
           issues.push(diagnosticIssue);
@@ -432,21 +437,52 @@ export class ResultCoordinator implements vscode.Disposable {
         diagnostics.get(uriString)!.push(diagnostic);
 
         // Create processed issue for tree view with translated file source
-        const displayFile = FileSourceTranslator.translateFileSourceForDisplay(
-          issue.file
+        // For dependency issues, use manifest file location instead of README.md
+        const isGlobalCheck = FileSourceTranslator.isGlobalCheck(issue.file);
+        const depLocation = this.extractFirstDependencyLocation(issue.rawError);
+
+        let displayFile: string;
+        let displayLine: number;
+        let displayColumn: number;
+
+        if (isGlobalCheck && depLocation) {
+          // Use the manifest file and location from the dependency
+          displayFile = depLocation.manifestPath;
+          displayLine = depLocation.lineNumber;
+          displayColumn = depLocation.columnNumber;
+        } else {
+          displayFile = FileSourceTranslator.translateFileSourceForDisplay(
+            issue.file
+          );
+          displayLine = issue.line + 1; // Convert back to 1-based for display
+          displayColumn = issue.column + 1;
+        }
+
+        // Extract dependency and complexity details for enhanced tooltips
+        const dependencyDetails = this.extractAllDependencyDetails(
+          issue.rawError
         );
+        const complexityDetails = this.extractAllComplexityDetails(
+          issue.rawError
+        );
+
         const processedIssue: ProcessedIssue = {
           id: `${issue.file}-${issue.ruleId}-${issue.line}`,
           file: displayFile,
           rule: issue.ruleId,
           severity: this.mapSeverityToString(diagnostic.severity),
           message: issue.message,
-          line: issue.line + 1, // Convert back to 1-based for display
-          column: issue.column + 1,
+          line: displayLine,
+          column: displayColumn,
           category: issue.category || 'general',
           fixable: false, // TODO: Extract from issue metadata
           exempted: false, // TODO: Extract from issue metadata
-          dateFound: Date.now()
+          dateFound: Date.now(),
+          isGlobalCheck,
+          dependencyDetails:
+            dependencyDetails.length > 0 ? dependencyDetails : undefined,
+          complexityDetails:
+            complexityDetails.length > 0 ? complexityDetails : undefined
         };
 
         processedIssues.push(processedIssue);
@@ -623,6 +659,115 @@ export class ResultCoordinator implements vscode.Disposable {
 
   private extractCategory(ruleFailure: any): string {
     return ruleFailure?.category || ruleFailure?.details?.category || 'general';
+  }
+
+  /**
+   * Extract the first dependency location from a rule failure's details
+   * Used to get manifest file path and line number for dependency issues
+   */
+  private extractFirstDependencyLocation(ruleFailure: any): {
+    manifestPath: string;
+    lineNumber: number;
+    columnNumber: number;
+  } | null {
+    if (!ruleFailure) {
+      return null;
+    }
+
+    // Check for dependency details array
+    const dependencyDetails = ruleFailure.details?.details;
+    if (Array.isArray(dependencyDetails) && dependencyDetails.length > 0) {
+      const firstDep = dependencyDetails.find(
+        (dep: any) =>
+          dep &&
+          dep.location &&
+          typeof dep.location.manifestPath === 'string' &&
+          typeof dep.location.lineNumber === 'number'
+      );
+
+      if (firstDep?.location) {
+        return {
+          manifestPath: firstDep.location.manifestPath,
+          lineNumber: firstDep.location.lineNumber,
+          columnNumber: firstDep.location.columnNumber || 1
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Extract all dependency details from a rule failure for tooltips
+   */
+  private extractAllDependencyDetails(ruleFailure: any): DependencyDetail[] {
+    const details: DependencyDetail[] = [];
+
+    if (!ruleFailure) {
+      return details;
+    }
+
+    // Check for dependency details array
+    const dependencyDetails = ruleFailure.details?.details;
+    if (Array.isArray(dependencyDetails)) {
+      for (const dep of dependencyDetails) {
+        if (dep?.dependency && dep?.location?.manifestPath) {
+          details.push({
+            dependency: dep.dependency,
+            currentVersion: dep.currentVersion || 'unknown',
+            requiredVersion: dep.requiredVersion || 'unknown',
+            manifestPath: dep.location.manifestPath,
+            lineNumber: dep.location.lineNumber,
+            columnNumber: dep.location.columnNumber || 1
+          });
+        }
+      }
+    }
+
+    return details;
+  }
+
+  /**
+   * Extract all complexity details from a rule failure for tooltips
+   */
+  private extractAllComplexityDetails(ruleFailure: any): ComplexityDetail[] {
+    const details: ComplexityDetail[] = [];
+
+    if (!ruleFailure) {
+      return details;
+    }
+
+    // Check for complexity details in various paths
+    let complexities: any[] | undefined;
+
+    if (
+      ruleFailure.details?.details?.complexities &&
+      Array.isArray(ruleFailure.details.details.complexities)
+    ) {
+      complexities = ruleFailure.details.details.complexities;
+    } else if (
+      ruleFailure.details?.complexities &&
+      Array.isArray(ruleFailure.details.complexities)
+    ) {
+      complexities = ruleFailure.details.complexities;
+    }
+
+    if (complexities) {
+      for (const c of complexities) {
+        const metrics = c.metrics || c;
+        details.push({
+          functionName: metrics.name || c.name || 'anonymous',
+          cyclomaticComplexity: metrics.cyclomaticComplexity,
+          cognitiveComplexity: metrics.cognitiveComplexity,
+          nestingDepth: metrics.nestingDepth,
+          parameterCount: metrics.parameterCount,
+          returnCount: metrics.returnCount,
+          lineNumber: metrics.location?.startLine || c.location?.startLine
+        });
+      }
+    }
+
+    return details;
   }
 
   private async resolveFileUri(filePath: string): Promise<vscode.Uri | null> {
