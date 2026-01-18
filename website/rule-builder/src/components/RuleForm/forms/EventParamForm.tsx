@@ -15,7 +15,6 @@ import { useRuleStore } from '../../../store/ruleStore';
 import { useValidation } from '../../../hooks';
 import { FieldTooltip } from '../tooltips/FieldTooltip';
 import { DEBOUNCE_DELAYS } from '../../../lib/utils/debounce';
-import { getAtPath } from '../../../lib/utils/pathUtils';
 import type { RuleEvent } from '../../../types';
 
 export interface EventParamFormProps {
@@ -443,7 +442,7 @@ export function EventParamForm({ path, data }: EventParamFormProps): JSX.Element
         <EventTypeEditor
           value={(localValue as EventType) || 'warning'}
           onChange={handleImmediateUpdate}
-          error={error}
+          error={error ?? undefined}
         />
       );
     }
@@ -459,7 +458,7 @@ export function EventParamForm({ path, data }: EventParamFormProps): JSX.Element
         <MessageEditor
           value={(localValue as string) || ''}
           onChange={handleDebouncedUpdate}
-          error={error}
+          error={error ?? undefined}
         />
       );
     }

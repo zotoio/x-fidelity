@@ -66,6 +66,10 @@ function getIconType(node: TreeNodeData): 'root' | 'conditions' | 'all' | 'any' 
   if (node.type === 'condition-group') {
     return getGroupTypeFromLabel(node.label);
   }
+  // Map node types to valid icon types
+  if (node.type === 'event-param') {
+    return 'event';
+  }
   return node.type;
 }
 
@@ -166,14 +170,6 @@ export function TreeNode({
       onToggle(pathString);
     }
   }, [node.path, onSelect, hasChildren, pathString, onToggle]);
-  
-  /**
-   * Handle expand/collapse button click
-   */
-  const handleToggleClick = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggle(pathString);
-  }, [pathString, onToggle]);
   
   /**
    * Handle keyboard navigation

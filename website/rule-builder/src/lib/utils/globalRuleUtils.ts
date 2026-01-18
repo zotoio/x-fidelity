@@ -89,6 +89,7 @@ export function findGlobalCheckPath(
 ): string[] | null {
   for (let i = 0; i < conditions.length; i++) {
     const item = conditions[i];
+    if (!item) continue;
     const currentPath = [...basePath, String(i)];
     
     // Check if it's a simple condition

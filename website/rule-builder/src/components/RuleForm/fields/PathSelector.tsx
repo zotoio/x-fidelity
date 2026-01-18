@@ -11,7 +11,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import * as Select from '@radix-ui/react-select';
 import { ChevronDownIcon, ChevronUpIcon, CheckIcon, Pencil2Icon } from '@radix-ui/react-icons';
-import { getSuggestedPaths, allowsCustomPath, type SuggestedPath } from '../data/factCatalog';
+import { getSuggestedPaths, allowsCustomPath } from '../data/factCatalog';
 import { FieldTooltip } from '../tooltips/FieldTooltip';
 
 export interface PathSelectorProps {
@@ -132,8 +132,9 @@ export function PathSelector({
     setCustomValue('');
     setLocalError(null);
     // Select first suggested path or empty
-    if (suggestedPaths.length > 0) {
-      onChange(suggestedPaths[0].path);
+    const firstPath = suggestedPaths[0];
+    if (firstPath) {
+      onChange(firstPath.path);
     } else {
       onChange('');
     }

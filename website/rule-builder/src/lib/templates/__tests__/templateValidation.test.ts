@@ -10,7 +10,6 @@ import { allTemplates, teachingTemplates, democonfigTemplates } from '../index';
 import { validateRule, validateRuleName } from '../../validation/validator';
 import { getFactByName, factCatalog } from '../../../components/RuleForm/data/factCatalog';
 import { getOperatorByName, operatorCatalog } from '../../../components/RuleForm/data/operatorCatalog';
-import type { RuleTemplate } from '../types';
 import type { RuleCondition, NestedCondition } from '../../../types';
 
 /**

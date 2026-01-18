@@ -602,7 +602,7 @@ const patternsFacts: FactMetadata[] = [
     suggestedPaths: [
       { path: '$.matches', description: 'Array of extracted values', valueType: 'array' },
       { path: '$.matches.length', description: 'Number of matches found', valueType: 'number' },
-      { path: '$.matches[0].value', description: 'First extracted value', valueType: 'any' },
+      { path: '$.matches[0].value', description: 'First extracted value', valueType: 'string' },
       { path: '$.matches[*].value', description: 'All extracted values', valueType: 'array' },
       { path: '$.strategyUsed', description: 'Extraction strategy that was used', valueType: 'string' },
       { path: '$.errors', description: 'Array of extraction errors', valueType: 'array' },
