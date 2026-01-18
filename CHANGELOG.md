@@ -2,6 +2,12 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.7.3](https://github.com/zotoio/x-fidelity/compare/v5.7.2...v5.7.3) (2026-01-18)
+
+### Bug Fixes
+
+* **release:** bump CLI and VSCode extension to 5.7.3 ([14c6fcd](https://github.com/zotoio/x-fidelity/commit/14c6fcd4c365145ac71fc233e7013668924fc821))
+
 ## [5.7.2](https://github.com/zotoio/x-fidelity/compare/v5.7.1...v5.7.2) (2026-01-18)
 
 ### Bug Fixes
