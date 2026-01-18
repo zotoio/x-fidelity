@@ -2,6 +2,12 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.7.1](https://github.com/zotoio/x-fidelity/compare/v5.7.0...v5.7.1) (2026-01-18)
+
+### Bug Fixes
+
+* **website:** resolve broken rule-builder links in Docusaurus build ([cdf5b44](https://github.com/zotoio/x-fidelity/commit/cdf5b44d01bd557abda6efe8456b1db7e2126ffd))
+
 ## [5.7.0](https://github.com/zotoio/x-fidelity/compare/v5.6.0...v5.7.0) (2026-01-18)
 
 ### Bug Fixes
