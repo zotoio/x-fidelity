@@ -210,6 +210,7 @@ This repository includes specialized AI subagents that are Subject Matter Expert
 | `xfi-system-design` | Platform architecture, feature design, technical specs | New features, architecture decisions, cross-package changes |
 | `xfi-planner` | Engineering planning, subtask coordination, plan execution | /xfi-plan command, complex multi-step initiatives |
 | `xfi-engineer` | Implementation, coding, feature development | Engineering tasks, plan subtask execution, coding work |
+| `crux-rule-expert` | Semantic compression, token reduction | Compressing rules, AGENTS.md, documentation for context efficiency |
 
 ### Subagent Auto-Triggering
 
@@ -227,6 +228,7 @@ Subagents should be invoked proactively based on context:
 - **New feature design or architecture** → `xfi-system-design`
 - **Complex engineering initiatives** → `xfi-planner`
 - **Implementation and coding tasks** → `xfi-engineer`
+- **Compressing docs for context efficiency** → `crux-rule-expert`
 
 ### Parallel Execution
 

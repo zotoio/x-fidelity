@@ -106,6 +106,28 @@ The tool is designed to be highly customizable, allowing teams to define their o
 - **Enhanced Remote Validation:** Support for remote string validation via the `invalidRemoteValidation` operator. This operator allows x‑fidelity to send extracted string values to an external API (with interpolated parameters such as "#MATCH#") to validate them. (See the sample rule `invalidSystemIdConfigured-iterative-rule.json` in the demo config.)
 - **GitHub Webhook Integration:** The config server now exposes endpoints (e.g. `/github-config-update` and `/github-pull-request-check`) that let you trigger configuration reloads and validation checks automatically when a GitHub event (push or pull request) occurs.
 
+### Package Size Analysis
+
+X-Fidelity can analyze package sizes in monorepos and alert on packages that exceed configured thresholds:
+
+- **Automatic Monorepo Detection**: Supports yarn, npm, and pnpm workspaces
+- **Configurable Thresholds**: Set warning (default: 1 MB) and fatality (default: 5 MB) limits per archetype
+- **Console Table Output**: Visual summary during analysis with color-coded indicators
+- **Report Integration**: Package sizes included in analysis reports with Mermaid pie charts
+- **File Type Breakdown**: See which file types consume the most space
+
+Example output:
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Package Size Analysis                        │
+├───────────────────────┬───────────┬───────────┬─────────────────┤
+│ Package               │ Source    │ Build     │ Total           │
+├───────────────────────┼───────────┼───────────┼─────────────────┤
+│ x-fidelity-core       │ 245.3 KB  │ 312.1 KB  │ 557.4 KB        │
+│ x-fidelity-plugins    │ 189.7 KB  │ 201.5 KB  │ 391.2 KB   !    │
+└───────────────────────┴───────────┴───────────┴─────────────────┘
+```
+
 ### Rule Builder GUI
 
 Create X-Fidelity rules visually with our interactive web-based Rule Builder:

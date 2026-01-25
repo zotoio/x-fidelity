@@ -104,6 +104,13 @@ When working on X-Fidelity tasks, proactively delegate to specialized subagents 
 - General engineering work not specific to other domains
 - Plan subtask execution when assigned
 
+### crux-rule-expert
+**Auto-trigger when:**
+- User asks to compress rules, AGENTS.md
+- Need to reduce token usage for context-heavy files
+- Preparing compressed reference material for LLM context
+- Converting verbose Markdown to compact CRUX notation
+
 ## Parallel Execution Strategy
 
 ### Independent Tasks (Run in Parallel)
@@ -194,4 +201,11 @@ Task the xfi-engineer subagent with:
 "Implement: [task description]
 Files to modify: [list of files]
 Requirements: [specific requirements]"
+```
+
+### Compress Documentation
+```
+Task the crux-rule-expert subagent with:
+"Compress this file into Ultra notation: [file path]
+Target: <20% of original size while preserving all actionable information"
 ```
