@@ -272,6 +272,7 @@ alwaysApply: true
 
 ---
 generated: yyyy-mm-dd hh:mm
+sourceCommit: [7-char git short hash of source file's last commit]
 beforeTokens: [estimated token count of source file]
 afterTokens: [estimated token count of this CRUX file]
 alwaysApply: true

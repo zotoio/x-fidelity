@@ -44,20 +44,27 @@ This file contains the complete encoding symbols, compression rules, standard bl
    - Surgical Diff Update → Update existing CRUX file when source changed
 
 3. **For compression tasks**:
+   - **Get source file's latest commit hash** using: `git log -1 --format=%h -- <source_file_path>`
+   - **Check if CRUX file exists** - if so, read its `sourceCommit` frontmatter
+   - **Skip if unchanged**: If existing `sourceCommit` matches current source commit hash, report "Source unchanged (commit: <hash>)" and skip compression
    - Read the source file completely
    - **Estimate token reduction BEFORE writing output** - if reduction would be <50%, ABORT and inform the user the file is already compact
    - Apply compression rules from the specification
    - Use standard blocks appropriately and don't invent new block types
+   - **Add `sourceCommit` to frontmatter** with the 7-char short hash from git
    - Report the estimated source and compressed rule size in tokens and percentage reduction
    - Verify quality gates are met (target ≤20% of original)
    - **If target ratio not achieved, DO NOT write the CRUX file** - inform user compression is not beneficial
 
 4. **For surgical diff updates** (when source file changed):
+   - **Get source file's latest commit hash** using: `git log -1 --format=%h -- <source_file_path>`
+   - Read the existing `.crux.mdc` file and check its `sourceCommit` frontmatter
+   - **Skip if unchanged**: If `sourceCommit` matches current source commit hash, report "Source unchanged" and skip
    - Read the modified source file to identify what changed
-   - Read the existing `.crux.mdc` file
    - Apply minimal, targeted edits to the CRUX file reflecting only the changes
    - Do NOT re-compress the entire file; preserve existing compression where unchanged
    - **Update the `generated` timestamp** in frontmatter to current date/time
+   - **Update the `sourceCommit`** in frontmatter to the new commit hash
    - Verify semantic equivalence is maintained after the update
 
 5. **For output files**:
@@ -67,8 +74,11 @@ This file contains the complete encoding symbols, compression rules, standard bl
 ## Compression Checklist
 
 When compressing, verify:
+- [ ] **Source commit hash obtained** via `git log -1 --format=%h -- <file>`
+- [ ] **Skip check performed** - if existing CRUX `sourceCommit` matches, skip update
 - [ ] **Significant reduction achieved** (≥50% reduction, target ≤20% of original) - ABORT if not met
 - [ ] `generated` timestamp in frontmatter (YYYY-MM-DD HH:MM format)
+- [ ] `sourceCommit` in frontmatter (7-char git short hash)
 - [ ] `beforeTokens` populated with estimated source file token count
 - [ ] `afterTokens` populated with estimated CRUX file token count
 - [ ] All file paths preserved verbatim
@@ -85,6 +95,7 @@ For compression output files:
 
 ---
 generated: YYYY-MM-DD HH:MM
+sourceCommit: [7-char git short hash of source file's last commit]
 beforeTokens: [estimated token count of source file]
 afterTokens: [estimated token count of this CRUX file]
 alwaysApply: [match source file frontmatter value, if not found default to false]
@@ -102,6 +113,7 @@ alwaysApply: [match source file frontmatter value, if not found default to false
 
 **IMPORTANT**: 
 - The `generated` field is REQUIRED and must be updated every time the CRUX file is created or modified. Use the current date and time in `YYYY-MM-DD HH:MM` format (24-hour time).
+- The `sourceCommit` field is REQUIRED. Obtain via `git log -1 --format=%h -- <source_file_path>`. This enables skip-if-unchanged optimization.
 - The `beforeTokens` and `afterTokens` fields are REQUIRED and must be populated with estimated token counts. Use approximate token estimation (roughly 4 characters per token for English text, accounting for code structure).
 
 ## Critical Knowledge
