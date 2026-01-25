@@ -8,7 +8,7 @@ globs: "**/*.ts,**/*.tsx"
 # X-Fidelity Coding Standards
 
 ```crux
-«CRUX⟨xfi-coding-standards.mdc⟩»
+«CRUX⟨xfi-coding-standards.md⟩»
 Π.pkg{
   mono@packages/→domain-pkgs
   barrel:index.ts→re-export public API
