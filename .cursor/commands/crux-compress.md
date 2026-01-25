@@ -10,20 +10,47 @@ Compress markdown rule files with `crux: true` frontmatter into CRUX notation fo
 /crux-compress @file1.md @file2.md    - Compress multiple file references
 ```
 
+## Parallelism Limits
+
+**Maximum parallel agents: 4**
+
+When processing multiple files, spawn at most 4 `crux-cursor-rule-manager` subagent instances simultaneously. If there are more than 4 eligible files, process them in sequential batches:
+
+- **Batch 1**: Files 1-4 (parallel)
+- **Batch 2**: Files 5-8 (parallel, after Batch 1 completes)
+- **Batch N**: Continue until all files processed
+
+This prevents resource exhaustion and ensures reliable processing.
+
+## Source Commit Tracking
+
+**CRUX files track the source file's git commit hash to avoid unnecessary updates.**
+
+Each `.crux.mdc` file includes a `sourceCommit` field in its frontmatter containing the 7-character short hash of the source file's last commit. Before processing:
+
+1. Agent runs `git log -1 --format=%h -- <source_file_path>` to get current commit
+2. If existing CRUX file's `sourceCommit` matches, the source is unchanged - **skip update**
+3. If no match (or no existing CRUX file), proceed with compression
+4. After compression, store the new `sourceCommit` in the output frontmatter
+
+This optimization prevents redundant recompression of unchanged files.
+
 ## Instructions
 
 ### When invoked with file reference(s) (`@path/to/file.md`)
 
 1. **For each file reference provided**, spawn a **fresh `crux-cursor-rule-manager` subagent instance**:
    - Each file gets its own dedicated agent instance
-   - Multiple file references are processed in parallel
+   - Process files in batches of up to 4 parallel agents
+   - Wait for each batch to complete before starting the next
    - Task the subagent:
      ```
      Compress this rule file into CRUX notation:
      - Source: <file path>
      - Output: <file path with .crux.mdc extension>
      - Follow CRUX.md specification
-     - Report before/after token counts
+     - Check source commit hash vs existing CRUX sourceCommit - skip if unchanged
+     - Report before/after token counts (or "skipped - source unchanged")
      - If source lacks `crux: true` frontmatter, add it first
      - Ensure source uses .md extension (rename from .mdc if needed)
      ```
@@ -34,8 +61,8 @@ Compress markdown rule files with `crux: true` frontmatter into CRUX notation fo
    - Then proceed with compression
 
 3. **Collect results** and report:
-   - File processed
-   - Token reduction achieved
+   - File processed or skipped (with reason: "source unchanged" or "compression not beneficial")
+   - Token reduction achieved (if processed)
    - Any issues encountered
 
 ### When invoked with `ALL`
@@ -51,12 +78,15 @@ Compress markdown rule files with `crux: true` frontmatter into CRUX notation fo
      - Compress the source file
      - Create/update the `[filename].crux.mdc` version
      - Report token reduction metrics
-   - Run subagents in parallel for efficiency
+   - **Process in batches of up to 4 parallel agents**
+   - Wait for each batch to complete before starting the next batch
 
 3. **Collect results** from all subagents and report summary:
    - Number of files processed
    - Files created/updated
-   - Files skipped (already compact or compression not beneficial)
+   - Files skipped:
+     - Source unchanged (commit hash matches)
+     - Already compact (compression not beneficial)
    - Total token savings
 
 ## Eligibility Criteria
@@ -93,32 +123,57 @@ To make a rule file eligible for CRUX compression:
 «CRUX⟨core-tenets.md⟩»
 ```
 
-## Example Parallel Execution
+## Example Batch Execution
 
-### With `ALL`
-When `/crux-compress ALL` finds 3 eligible files:
+### With `ALL` (≤4 files)
+When `/crux-compress ALL` finds 4 or fewer eligible files:
 
 ```
-Launch in parallel (fresh agent per file):
+Batch 1 (parallel, max 4):
 ├── crux-cursor-rule-manager → core-tenets.md → core-tenets.crux.mdc
 ├── crux-cursor-rule-manager → xfi-coding-standards.md → xfi-coding-standards.crux.mdc
-└── crux-cursor-rule-manager → vscode-optimise.md → vscode-optimise.crux.mdc
+├── crux-cursor-rule-manager → vscode-optimise.md → vscode-optimise.crux.mdc
+└── crux-cursor-rule-manager → _IMPORTANT_CORE_MEMORY.md → _IMPORTANT_CORE_MEMORY.crux.mdc
 ```
 
-### With file references
-When `/crux-compress @.cursor/rules/core-tenets.md @.cursor/rules/xfi-coding-standards.md`:
+### With `ALL` (>4 files)
+When `/crux-compress ALL` finds 6 eligible files:
 
 ```
-Launch in parallel (fresh agent per file):
-├── crux-cursor-rule-manager → core-tenets.md → core-tenets.crux.mdc
-└── crux-cursor-rule-manager → xfi-coding-standards.md → xfi-coding-standards.crux.mdc
+Batch 1 (parallel, max 4):
+├── crux-cursor-rule-manager → file1.md → file1.crux.mdc
+├── crux-cursor-rule-manager → file2.md → file2.crux.mdc
+├── crux-cursor-rule-manager → file3.md → file3.crux.mdc
+└── crux-cursor-rule-manager → file4.md → file4.crux.mdc
+
+[Wait for Batch 1 to complete]
+
+Batch 2 (parallel, remaining files):
+├── crux-cursor-rule-manager → file5.md → file5.crux.mdc
+└── crux-cursor-rule-manager → file6.md → file6.crux.mdc
+```
+
+### With file references (>4 files)
+When `/crux-compress @file1.md @file2.md @file3.md @file4.md @file5.md`:
+
+```
+Batch 1 (parallel, max 4):
+├── crux-cursor-rule-manager → file1.md
+├── crux-cursor-rule-manager → file2.md
+├── crux-cursor-rule-manager → file3.md
+└── crux-cursor-rule-manager → file4.md
+
+[Wait for Batch 1 to complete]
+
+Batch 2 (parallel, remaining):
+└── crux-cursor-rule-manager → file5.md
 ```
 
 ### Single file
 When `/crux-compress @.cursor/rules/core-tenets.md`:
 
 ```
-Launch single agent:
+Single agent (no batching needed):
 └── crux-cursor-rule-manager → core-tenets.md → core-tenets.crux.mdc
 ```
 
