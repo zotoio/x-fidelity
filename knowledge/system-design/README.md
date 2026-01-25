@@ -15,7 +15,7 @@ See [../README.md](../README.md) for file naming conventions and [../KNOWLEDGE_G
 
 | File | Description |
 |------|-------------|
-| (none yet) | - |
+| `100-package-size-rule-learnings-DRAFT-260123.md` | Package size rule learnings and patterns |
 
 ## Related
 

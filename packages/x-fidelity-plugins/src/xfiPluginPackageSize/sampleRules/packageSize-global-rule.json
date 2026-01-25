@@ -1,0 +1,45 @@
+{
+    "_comment": "Package Size Global Rule - Checks if monorepo packages exceed size thresholds",
+    "_description": "This rule runs during the global check phase (REPO_GLOBAL_CHECK) and analyzes all packages in a monorepo for size violations. Default thresholds are: warning at 1MB, fatality at 5MB per package.",
+    "_usage": "Add 'packageSize-global' to your archetype's rules array. Customize thresholds in the 'value' object.",
+    "_thresholdReference": {
+        "100KB": 102400,
+        "500KB": 512000,
+        "1MB": 1048576,
+        "5MB": 5242880,
+        "10MB": 10485760,
+        "20MB": 20971520
+    },
+    "name": "packageSize-global",
+    "priority": 10,
+    "conditions": {
+        "all": [
+            {
+                "fact": "fileData",
+                "path": "$.fileName",
+                "operator": "equal",
+                "value": "REPO_GLOBAL_CHECK"
+            },
+            {
+                "fact": "packageSize",
+                "params": {
+                    "sourceDirs": ["src"],
+                    "buildDirs": ["dist", "build", "out", "lib"],
+                    "includeBreakdown": true
+                },
+                "operator": "packageSizeThreshold",
+                "value": {
+                    "warningThresholdBytes": 1048576,
+                    "fatalityThresholdBytes": 5242880
+                }
+            }
+        ]
+    },
+    "event": {
+        "type": "warning",
+        "params": {
+            "message": "One or more packages exceed size thresholds",
+            "suggestion": "Consider splitting large packages, removing unused dependencies, or optimizing assets. Run with --log-level debug to see detailed package size breakdown."
+        }
+    }
+}
