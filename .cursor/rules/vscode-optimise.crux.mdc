@@ -1,0 +1,43 @@
+---
+generated: 2025-01-25 21:45
+alwaysApply: false
+---
+
+# X-Fidelity VSCode Extension Optimization
+
+«CRUX⟨.cursor/rules/vscode-optimise.mdc⟩»
+Π.ext{arch=in-proc→¬CLI;ExtMgr+AnalysisMgr→plugins→XFI_RESULT→diag}
+
+Κ.tree-sitter{
+  init=singleton@activ;native|wasm fallback
+  Parser.init()→Language.load(*.wasm)→parser.parse(src)
+  node.[start|end]Position.{row,col}→range
+}
+
+Π.XFI_RESULT←xfi-types{
+  ∋[cfg,issueDetails:ScanResult*,telem]
+  ScanResult∋{path,RuleFailure*}
+  RuleFailure.details∋[line,col,endLine,endCol,msg]
+}
+
+Λ.bundle{esbuild→dist/extension.js;cp node_modules/*.wasm→dist/;path=extPath+'/dist/*.wasm'}
+
+P.no-fallback{
+  -[registerFallbackCommands,handleInitializationError,shouldUseFallbackMode]@extension.ts
+  -xfidelity.fallback.*@package.json;-fallback tests+mocks
+}
+
+R.impl{
+  1.embed:+web-tree-sitter deps;initializeWasmTreeSitter(ctx)@activ;singleton
+  2.ast-range:node.[start|end]Position→details.[start|end][Line|Column]
+  3.types@packages/x-fidelity-types/src/core.ts:+[startLine,startCol,endLine,endCol]:num
+  4.diag:Range(startLine-1,startCol,endLine-1,endCol)→Diagnostic(range,msg,sev)→diagCollection.set(uri,diags)
+  5.bundle:cp wasm→dist;verify vsce package
+}
+
+Ω.test{
+  unit:AST plugin→issueDetail range fields
+  integ@packages/x-fidelity-fixtures/node-fullstack:diags@correct ranges
+  -fallback mocks;lint+format∀Δ
+}
+«/CRUX»

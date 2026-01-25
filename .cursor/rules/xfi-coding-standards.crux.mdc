@@ -1,0 +1,93 @@
+---
+generated: 2026-01-26 10:15
+globs: "**/*.ts,**/*.tsx"
+---
+
+# X-Fidelity Coding Standards
+
+```crux
+«CRUX⟨xfi-coding-standards.mdc⟩»
+Π.pkg{
+  mono@packages/→domain-pkgs
+  barrel:index.ts→re-export public API
+  domain:[facts/,operators/,utils/,core/]
+  tests:*.test.ts→collocate w/src
+}
+
+R.ts{
+  interface>type #obj shapes
+  ¬any→specific types
+  types←@x-fidelity/types
+  params:{destruct+typed},defaults?
+}
+
+R.error{
+  codes:[1000-1099:cfg,1100-1199:plugin,1200-1299:analysis,1300-1399:fs,1400-1499:net,1500-1599:val,1600-1699:runtime]
+  StandardErrorFactory.create(ErrorCode.*,msg,{category,context:{component,function}})
+  catch→StandardErrorFactory.fromError(error,code,context)
+}
+
+R.log{
+  LoggerProvider.getLoggerForMode(mode)→logger #never direct
+  structured:{msg,context{k:v}}
+  levels:[debug,info,warn,error]
+  ExecutionContext.start|endExecution()→correlation
+  pluginLogger.create[Fact|Operator]Logger(plugin,name)
+}
+
+Π.plugin:XFiPlugin{
+  name,version,description
+  facts:[FactDefn*],operators:[OperatorDefn*]
+  initialize:(ctx:PluginContext)→void !
+  onError:(Error)→PluginError !
+  cleanup:()→void ?
+}
+
+Π.fact:FactDefn{
+  name,description
+  type:[global|global-function|iterative-function]
+  priority:number
+  fn:(params,almanac?)→Promise<any>
+}
+
+Π.operator:OperatorDefn{
+  name,description
+  fn:(factValue,operatorValue)→boolean
+}
+
+P.security{
+  path.resolve(base,user)→validate
+  ¬[..,\0]→PathTraversalError
+  ALLOWED_PATH_PREFIXES.some(p→resolved.startsWith(p))
+}
+
+R.test{
+  mock@top:jest.mock()
+  jest.mocked(dep)→typed
+  beforeEach→jest.clearAllMocks()
+  createAxiosResponse<T>→mock factory
+}
+
+R.async{
+  try/await+catch→StandardErrorFactory.fromError
+  indep→Promise.all([...])
+}
+
+R.naming{
+  files:camelCase,tests:*.test.ts
+  interface|class:PascalCase
+  fn:camelCase
+  const:UPPER_SNAKE_CASE
+  enum:PascalCase,values:UPPER_SNAKE_CASE
+}
+
+R.docs{JSDoc:@param,@returns,@throws;interface+fields:/** desc */}
+
+R.vscode{
+  activate(ctx:ExtensionContext)→ExtensionManager
+  ctx.subscriptions.push(mgr);deactivate→dispose()
+}
+
+R.imports{order:[node→ext→@x-fidelity/*→./relative]}
+«/CRUX»
+```
