@@ -7,7 +7,7 @@ alwaysApply: false
 
 # X-Fidelity VSCode Extension Optimization
 
-«CRUX⟨.cursor/rules/vscode-optimise.mdc⟩»
+«CRUX⟨vscode-optimise.md⟩»
 Π.ext{arch=in-proc→¬CLI;ExtMgr+AnalysisMgr→plugins→XFI_RESULT→diag}
 
 Κ.tree-sitter{

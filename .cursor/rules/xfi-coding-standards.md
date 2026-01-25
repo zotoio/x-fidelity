@@ -1,4 +1,5 @@
 ---
+crux: true
 globs: "**/*.ts,**/*.tsx"
 ---
 
