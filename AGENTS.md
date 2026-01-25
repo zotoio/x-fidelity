@@ -9,7 +9,7 @@ This repository uses CRUX notation for semantic compression. **Load `CRUX.md` fr
 
 ### Foundational CRUX Rules (MUST FOLLOW)
 
-1. **NEVER EDIT `CRUX.md`** - The specification is read-only
+1. **NEVER EDIT `CRUX.md`** - The specification is read-only unless the user specifically asks you by name to edit it, at which point ask the user to confirm before proceeding
 2. **DO NOT LOAD SOURCE FILES when CRUX exists** - When you see `«CRUX⟨source_file⟩»`, use the compressed CRUX content instead of loading the original source file. The CRUX version is semantically equivalent and more token-efficient.
 3. **SURGICAL DIFF UPDATES** - When updating a source file that has a corresponding `.crux.mdc` file, you MUST also update the CRUX file with surgical diff changes to maintain synchronization.
 4. **ABORT IF NO SIGNIFICANT REDUCTION** - If CRUX compression does not achieve significant token reduction (target ≤20% of original), DO NOT generate the CRUX file. The source is already compact enough.

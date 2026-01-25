@@ -17,7 +17,7 @@ This file contains the complete encoding symbols, compression rules, standard bl
 
 ## Foundational CRUX Rules (MUST ADHERE)
 
-1. **NEVER EDIT `CRUX.md`** - The specification is read-only. You may read it but never modify it.
+1. **NEVER EDIT `CRUX.md`** - The specification is read-only unless the user specifically asks you by name to edit it, at which point ask the user to confirm before proceeding.
 2. **DO NOT LOAD SOURCE FILES when CRUX exists** - When you encounter `«CRUX⟨source_file⟩»`, use the compressed CRUX content. DO NOT load the original source file referenced in the header. The CRUX notation is semantically equivalent.
 3. **SURGICAL DIFF UPDATES on source changes** - When a source file is modified that has a corresponding `.crux.mdc` file, you MUST apply surgical diff updates to the CRUX file to keep them synchronized. You are the designated agent for this task.
 
@@ -63,14 +63,17 @@ This file contains the complete encoding symbols, compression rules, standard bl
 ## Compression Checklist
 
 When compressing, verify:
+- [ ] Target ratio ≤20% achieved
+- [ ] `generated` timestamp in frontmatter (YYYY-MM-DD HH:MM format)
+- [ ] `beforeTokens` populated with estimated source file token count
+- [ ] `afterTokens` populated with estimated CRUX file token count
 - [ ] All file paths preserved verbatim
 - [ ] All commands reconstructable
 - [ ] No hallucinated content added
 - [ ] Semantic equivalence maintained
-- [ ] Target ratio ≤20% achieved
 - [ ] Encoding symbols used correctly
 - [ ] Standard blocks applied where appropriate
-- [ ] Token reduction metrics are communicated.
+- [ ] Token reduction metrics communicated to user
 
 ## Output Format
 
@@ -78,6 +81,9 @@ For compression output files:
 
 ```
 ---
+generated: YYYY-MM-DD HH:MM
+beforeTokens: [estimated token count of source file]
+afterTokens: [estimated token count of this CRUX file]
 alwaysApply: [match source file frontmatter value, if not found default to false]
 [copy any other frontmatter from source file]
 ---
@@ -88,6 +94,10 @@ alwaysApply: [match source file frontmatter value, if not found default to false
 {compressed content, one concept per line, max ~80 chars/line}
 «/CRUX»
 ```
+
+**IMPORTANT**: 
+- The `generated` field is REQUIRED and must be updated every time the CRUX file is created or modified. Use the current date and time in `YYYY-MM-DD HH:MM` format (24-hour time).
+- The `beforeTokens` and `afterTokens` fields are REQUIRED and must be populated with estimated token counts. Use approximate token estimation (roughly 4 characters per token for English text, accounting for code structure).
 
 ## Critical Knowledge
 

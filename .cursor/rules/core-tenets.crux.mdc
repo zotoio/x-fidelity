@@ -1,6 +1,8 @@
 ---
-alwaysApply: true
 generated: 2026-01-26 10:15
+beforeTokens: 225
+afterTokens: 150
+alwaysApply: true
 ---
 
 # Core Tenets

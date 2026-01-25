@@ -14,7 +14,7 @@ When asked to compress a markdown rule file, delegate this to the crux-cursor-ru
 
 # Foundational CRUX Rules (MUST FOLLOW)
 
-1. **NEVER EDIT `CRUX.md`** - The specification is read-only
+1. **NEVER EDIT `CRUX.md`** - The specification is read-only unless the user specifically asks you by name to edit it, at which point ask the user to confirm before proceeding
 2. **DO NOT LOAD SOURCE FILES when CRUX exists** - When you encounter `«CRUX⟨source_file⟩»`, use the compressed CRUX content. DO NOT load the original source file referenced in the header. The CRUX notation is semantically equivalent.
 3. **SURGICAL DIFF UPDATES on source changes** - When you modify a source file that has a corresponding `.crux.mdc` file, you MUST apply surgical diff updates to the CRUX file to keep them synchronized. invoke the crux-cursor-rule-manager agent to make the update.
 
