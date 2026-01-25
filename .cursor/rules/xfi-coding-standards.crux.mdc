@@ -1,5 +1,7 @@
 ---
 generated: 2026-01-26 10:15
+beforeTokens: 3600
+afterTokens: 600
 globs: "**/*.ts,**/*.tsx"
 ---
 

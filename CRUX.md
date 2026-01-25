@@ -10,7 +10,7 @@ A semantic compression notation for reducing markdown rules to ≤20% of origina
 
 ## Foundation
 > CRITICAL FOUNDATIONAL CRUX RULES
-> 1. AGENTS MUST NEVER EDIT THIS FILE
+> 1. AGENTS MUST NEVER EDIT THIS FILE UNLESS SPECIFICALLY ASKED TO BY NAME BY THE USER, AT WHICH POINT ASK THE USER TO CONFIRM
 > 2. AGENTS MUST NOT LOAD THE SOURCE FILE in «CRUX⟨source⟩»
 > 3. UPDATES TO THE SOURCE FILE MUST TRIGGER SURGICAL DIFF UPDATES TO RELATED CRUX FILE
 > 4. IF CRUX GENERATION DOES NOT RESULT IN SIGNIFICANT REDUCTION IN TOKENS, DON'T DO IT.
@@ -271,8 +271,10 @@ alwaysApply: true
 ### Output (markdown with CRUX)
 
 ---
-alwaysApply: true
 generated: yyyy-mm-dd hh:mm
+beforeTokens: [estimated token count of source file]
+afterTokens: [estimated token count of this CRUX file]
+alwaysApply: true
 ---
 
 # Code Modification Protocol
