@@ -4,7 +4,7 @@ globs: *.ts,*.tsx
 
 # TypeScript Coding Standards
 
-## Code Quality Requirements
+## Code Quality Requirements.
 - Always use strict TypeScript configuration
 - Prefer explicit typing over `any` 
 - Use interfaces for object type definitions
