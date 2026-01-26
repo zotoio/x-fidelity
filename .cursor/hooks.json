@@ -2,65 +2,130 @@
   "version": 1,
   "hooks": {
     "sessionStart": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start sessionStart" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end sessionStart" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start sessionStart"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end sessionStart"
+      }
     ],
     "sessionEnd": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start sessionEnd" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end sessionEnd" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start sessionEnd"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end sessionEnd"
+      }
     ],
     "beforeSubmitPrompt": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start beforeSubmitPrompt" },
-      { "command": "bash .cursor/hooks/load-agents-context.sh" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end beforeSubmitPrompt" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start beforeSubmitPrompt"
+      },
+      {
+        "command": "bash .cursor/hooks/load-agents-context.sh"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end beforeSubmitPrompt"
+      }
     ],
     "preToolUse": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start preToolUse" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end preToolUse" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start preToolUse"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end preToolUse"
+      }
     ],
     "postToolUse": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start postToolUse" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end postToolUse" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start postToolUse"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end postToolUse"
+      }
     ],
     "subagentStart": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start subagentStart" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end subagentStart" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start subagentStart"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end subagentStart"
+      }
     ],
     "subagentStop": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start subagentStop" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end subagentStop" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start subagentStop"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end subagentStop"
+      }
     ],
     "beforeShellExecution": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start beforeShellExecution" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end beforeShellExecution" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start beforeShellExecution"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end beforeShellExecution"
+      }
     ],
     "afterShellExecution": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start afterShellExecution" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end afterShellExecution" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start afterShellExecution"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end afterShellExecution"
+      }
     ],
     "afterMCPExecution": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start afterMCPExecution" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end afterMCPExecution" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start afterMCPExecution"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end afterMCPExecution"
+      }
     ],
     "afterFileEdit": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start afterFileEdit" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end afterFileEdit" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start afterFileEdit"
+      },
+      {
+        "command": "bash .cursor/hooks/detect-crux-changes.sh"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end afterFileEdit"
+      }
     ],
     "preCompact": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start preCompact" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end preCompact" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start preCompact"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end preCompact"
+      }
     ],
     "stop": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start stop" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end stop" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start stop"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end stop"
+      }
     ],
     "beforeTabFileRead": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start beforeTabFileRead" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end beforeTabFileRead" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start beforeTabFileRead"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end beforeTabFileRead"
+      }
     ],
     "afterTabFileEdit": [
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start afterTabFileEdit" },
-      { "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end afterTabFileEdit" }
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh start afterTabFileEdit"
+      },
+      {
+        "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end afterTabFileEdit"
+      }
     ]
   }
 }
