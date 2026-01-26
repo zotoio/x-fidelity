@@ -2,6 +2,8 @@
 
 Compress markdown rule files with `crux: true` frontmatter into CRUX notation for token efficiency.
 
+**Repository**: [github.com/zotoio/CRUX-Compress](https://github.com/zotoio/CRUX-Compress)
+
 ## Usage
 
 ```
@@ -22,16 +24,16 @@ When processing multiple files, spawn at most 4 `crux-cursor-rule-manager` subag
 
 This prevents resource exhaustion and ensures reliable processing.
 
-## Source Commit Tracking
+## Source Checksum Tracking
 
-**CRUX files track the source file's git commit hash to avoid unnecessary updates.**
+**CRUX files track the source file's checksum to avoid unnecessary updates.**
 
-Each `.crux.mdc` file includes a `sourceCommit` field in its frontmatter containing the 7-character short hash of the source file's last commit. Before processing:
+Each `.crux.mdc` file includes a `sourceChecksum` field in its frontmatter containing the checksum of the source file (generated using the `cksum` utility). Before processing:
 
-1. Agent runs `git log -1 --format=%h -- <source_file_path>` to get current commit
-2. If existing CRUX file's `sourceCommit` matches, the source is unchanged - **skip update**
+1. Agent runs `cksum <source_file_path>` to get current checksum (outputs: checksum bytes filename)
+2. If existing CRUX file's `sourceChecksum` matches, the source is unchanged - **skip update**
 3. If no match (or no existing CRUX file), proceed with compression
-4. After compression, store the new `sourceCommit` in the output frontmatter
+4. After compression, store the new `sourceChecksum` in the output frontmatter (format: "checksum bytes")
 
 This optimization prevents redundant recompression of unchanged files.
 
@@ -49,7 +51,7 @@ This optimization prevents redundant recompression of unchanged files.
      - Source: <file path>
      - Output: <file path with .crux.mdc extension>
      - Follow CRUX.md specification
-     - Check source commit hash vs existing CRUX sourceCommit - skip if unchanged
+     - Check source checksum vs existing CRUX sourceChecksum - skip if unchanged
      - Report before/after token counts (or "skipped - source unchanged")
      - If source lacks `crux: true` frontmatter, add it first
      - Ensure source uses .md extension (rename from .mdc if needed)
@@ -60,9 +62,24 @@ This optimization prevents redundant recompression of unchanged files.
    - If the file lacks `crux: true` in frontmatter, add it
    - Then proceed with compression
 
-3. **Collect results** and report:
+3. **After compression completes**, spawn a **fresh `crux-cursor-rule-manager` instance for validation**:
+   - Task the validation agent:
+     ```
+     Perform semantic validation on this CRUX file:
+     - Source: <source .md file path>
+     - CRUX: <generated .crux.mdc file path>
+     - DO NOT use the CRUX specification - evaluate purely on semantic understanding
+     - Compare meaning and completeness between source and CRUX
+     - Return confidence score (0-100%)
+     - Flag any issues if confidence < 80%
+     ```
+   - The validation agent returns the confidence score
+   - Update the `.crux.mdc` frontmatter with `confidence: XX%`
+
+4. **Collect results** and report:
    - File processed or skipped (with reason: "source unchanged" or "compression not beneficial")
    - Token reduction achieved (if processed)
+   - **Confidence score** from validation
    - Any issues encountered
 
 ### When invoked with `ALL`
@@ -81,13 +98,20 @@ This optimization prevents redundant recompression of unchanged files.
    - **Process in batches of up to 4 parallel agents**
    - Wait for each batch to complete before starting the next batch
 
-3. **Collect results** from all subagents and report summary:
+3. **After each compression completes**, spawn a **fresh validation agent**:
+   - For each successfully compressed file, spawn a separate `crux-cursor-rule-manager` instance
+   - Task: semantic validation (compare CRUX to source, produce confidence score)
+   - Update the `.crux.mdc` frontmatter with the confidence score
+   - Validation agents can run in parallel with other compression agents (within the 4-agent limit)
+
+4. **Collect results** from all subagents and report summary:
    - Number of files processed
    - Files created/updated
    - Files skipped:
      - Source unchanged (commit hash matches)
      - Already compact (compression not beneficial)
    - Total token savings
+   - **Confidence scores** for each file (with average)
 
 ## Eligibility Criteria
 
@@ -173,9 +197,40 @@ Batch 2 (parallel, remaining):
 When `/crux-compress @.cursor/rules/core-tenets.md`:
 
 ```
-Single agent (no batching needed):
+Compression:
 └── crux-cursor-rule-manager → core-tenets.md → core-tenets.crux.mdc
+
+Validation (after compression completes):
+└── crux-cursor-rule-manager (fresh) → validate core-tenets.crux.mdc → confidence: 92%
 ```
+
+## Semantic Validation
+
+**Every compression is followed by validation** using a fresh agent instance:
+
+1. Compression agent writes `.crux.mdc` (without confidence)
+2. Fresh validation agent compares CRUX to source
+3. Validation agent returns confidence score (0-100%)
+4. Frontmatter is updated with `confidence: XX%`
+
+### Confidence Score
+
+The confidence score indicates how well the CRUX preserves the semantic meaning of the source:
+
+| Score | Status | Action |
+|-------|--------|--------|
+| ≥90% | Excellent | Accept as-is |
+| 80-89% | Good | Accept, minor improvements optional |
+| 70-79% | Marginal | Review flagged issues, consider revision |
+| <70% | Poor | Revise compression, re-validate |
+
+### Why Fresh Agent for Validation?
+
+Using a **separate agent instance** for validation ensures:
+- No bias from the compression process
+- Independent semantic evaluation
+- The validator doesn't rely on CRUX specification knowledge
+- True test of whether an LLM can understand the compressed notation
 
 ## Related
 
