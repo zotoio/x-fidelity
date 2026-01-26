@@ -1,95 +1,80 @@
 ---
-generated: 2026-01-26 10:15
-beforeTokens: 3600
-afterTokens: 600
-globs: "**/*.ts,**/*.tsx"
+generated: 2025-01-26 12:45
+sourceChecksum: "4235576096 11838"
+beforeTokens: 2625
+afterTokens: 420
+globs: "**/*.ts, **/*.tsx"
 ---
 
 # X-Fidelity Coding Standards
 
 ```crux
 «CRUX⟨xfi-coding-standards.md⟩»
-Π.pkg{
-  mono@packages/→domain-pkgs
-  barrel:index.ts→re-export public API
-  domain:[facts/,operators/,utils/,core/]
-  tests:*.test.ts→collocate w/src
+Π.file{
+  layout=packages/*;barrel=index.ts;domains=[facts,operators,utils,core]
+  tests=*.test.ts@collocated
 }
-
-R.ts{
-  interface>type #obj shapes
-  ¬any→specific types
-  types←@x-fidelity/types
-  params:{destruct+typed},defaults?
+R.types{
+  interface≻type #for obj shapes
+  ¬any→use @x-fidelity/types
+  params=destructured+defaults
 }
-
-R.error{
-  codes:[1000-1099:cfg,1100-1199:plugin,1200-1299:analysis,1300-1399:fs,1400-1499:net,1500-1599:val,1600-1699:runtime]
-  StandardErrorFactory.create(ErrorCode.*,msg,{category,context:{component,function}})
-  catch→StandardErrorFactory.fromError(error,code,context)
+R.errors{
+  use StandardErrorFactory.[create|fromError]
+  codes:1000-1099=cfg,1100-1199=plugin,1200-1299=analysis
+  codes:1300-1399=fs,1400-1499=net,1500-1599=val,1600-1699=runtime
 }
-
-R.log{
-  LoggerProvider.getLoggerForMode(mode)→logger #never direct
-  structured:{msg,context{k:v}}
-  levels:[debug,info,warn,error]
-  ExecutionContext.start|endExecution()→correlation
-  pluginLogger.create[Fact|Operator]Logger(plugin,name)
+R.logging{
+  ⊛LoggerProvider.getLoggerForMode()¬direct
+  ExecutionContext.[startExecution|endExecution]→correlation
+  pluginLogger.create[Fact|Operator]Logger()
+  structured:{msg,context}
 }
-
 Π.plugin:XFiPlugin{
-  name,version,description
-  facts:[FactDefn*],operators:[OperatorDefn*]
-  initialize:(ctx:PluginContext)→void !
-  onError:(Error)→PluginError !
-  cleanup:()→void ?
+  props=[name,version,description,facts[],operators[]]
+  hooks=[initialize(ctx),onError(err),cleanup?]
+  ctx:PluginContext∋{config,logger,utils,loggerContext}
 }
-
 Π.fact:FactDefn{
-  name,description
+  props=[name,description,type,priority,fn]
   type:[global|global-function|iterative-function]
-  priority:number
   fn:(params,almanac?)→Promise<any>
 }
-
 Π.operator:OperatorDefn{
-  name,description
+  props=[name,description,fn]
   fn:(factValue,operatorValue)→boolean
 }
-
-P.security{
-  path.resolve(base,user)→validate
-  ¬[..,\0]→PathTraversalError
-  ALLOWED_PATH_PREFIXES.some(p→resolved.startsWith(p))
+R.security{
+  ⊛path.resolve()+val against traversal
+  reject:[..|\\0]
+  val against ALLOWED_PATH_PREFIXES
 }
-
-R.test{
-  mock@top:jest.mock()
-  jest.mocked(dep)→typed
+R.testing{
+  jest.mock()@top;jest.mocked()→typing
   beforeEach→jest.clearAllMocks()
-  createAxiosResponse<T>→mock factory
+  helper:createAxiosResponse<T>()
 }
-
 R.async{
-  try/await+catch→StandardErrorFactory.fromError
-  indep→Promise.all([...])
+  async/await+StandardErrorFactory.fromError()
+  Promise.all()→parallel when independent
 }
-
 R.naming{
-  files:camelCase,tests:*.test.ts
-  interface|class:PascalCase
-  fn:camelCase
-  const:UPPER_SNAKE_CASE
-  enum:PascalCase,values:UPPER_SNAKE_CASE
+  files=camelCase;tests=camelCase.test
+  interfaces|classes=PascalCase
+  functions=camelCase;constants=UPPER_SNAKE_CASE
+  enums=PascalCase;enumValues=UPPER_SNAKE_CASE
 }
-
-R.docs{JSDoc:@param,@returns,@throws;interface+fields:/** desc */}
-
 R.vscode{
-  activate(ctx:ExtensionContext)→ExtensionManager
-  ctx.subscriptions.push(mgr);deactivate→dispose()
+  activate(ctx)→ExtensionManager→ctx.subscriptions.push()
+  deactivate()→dispose()
+  setContext cmd for UI state
 }
-
-R.imports{order:[node→ext→@x-fidelity/*→./relative]}
+R.imports{
+  order:[node→external→@x-fidelity/*→relative]
+}
+R.docs{
+  JSDoc∀public APIs
+  interface fields→doc comments
+}
 «/CRUX»
 ```

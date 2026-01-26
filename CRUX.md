@@ -8,8 +8,22 @@ readonly: true
 
 A semantic compression notation for reducing markdown rules to ≤20% of original rule file token count while preserving all actionable information.
 
+## Etymology
+
+**CRUX** = **C**ontext **R**eduction **U**sing **X**-encoding
+
+The "X" is intentionally flexible:
+- e**X**pressive symbols (→ ⊳ ⊲ ∋ ∀)
+- e**X**tensible notation (custom blocks)
+- e**X**change format (compress ↔ expand)
+
+The name also serves as a backronym for "crux" — the decisive or most important point — which is exactly what the compression preserves while stripping everything else.
+
+**Repository**: [github.com/zotoio/CRUX-Compress](https://github.com/zotoio/CRUX-Compress)
+
 ## Foundation
 > CRITICAL FOUNDATIONAL CRUX RULES
+> 0. ALWAYS INTERPRET AND UNDERSTAND ALL CRUX RULES FIRST - At session start, interpret all CRUX notation in rules. When new rules are added to context, interpret them immediately. Build a mental model of all rules that can be visualized on request.
 > 1. AGENTS MUST NEVER EDIT THIS FILE UNLESS SPECIFICALLY ASKED TO BY NAME BY THE USER, AT WHICH POINT ASK THE USER TO CONFIRM
 > 2. AGENTS MUST NOT LOAD THE SOURCE FILE in «CRUX⟨source⟩»
 > 3. UPDATES TO THE SOURCE FILE MUST TRIGGER SURGICAL DIFF UPDATES TO RELATED CRUX FILE
@@ -27,12 +41,37 @@ A semantic compression notation for reducing markdown rules to ≤20% of origina
 | `(grouping)` | Logical grouping |
 | `.sub` | Namespace (e.g., `Π.core`, `Λ.build`) |
 
+### Comparison (Numeric)
+
+| Symbol | Meaning |
+|--------|---------|
+| `>` | greater than |
+| `<` | less than |
+| `≥` | greater or equal |
+| `≤` | less or equal |
+
+### Priority / Preference
+
+| Symbol | Meaning |
+|--------|---------|
+| `≻` | preferred over / ranks above / takes precedence |
+| `≺` | ranks below / lower priority |
+
+Example: `CONFIRMED ≻ DRAFT` means CONFIRMED takes precedence over DRAFT
+
+### Data Flow
+
+| Symbol | Meaning |
+|--------|---------|
+| `→` | flows to / maps to / outputs |
+| `←` | flows from / derives from / inputs |
+
+Example: `trigger→action`, `source←upstream`
+
 ### Relations
 
 | Symbol | Meaning |
 |--------|---------|
-| `→` | maps to / outputs / becomes |
-| `←` | derives from / sourced by |
 | `⊳` | has domain/expertise (left=entity, right=capability) |
 | `⊲` | triggered by / activated on (left=entity, right=trigger) |
 | `@` | located at path |
@@ -68,6 +107,13 @@ A semantic compression notation for reducing markdown rules to ≤20% of origina
 | `?` | optional |
 | `!` | required / important |
 | `#` | comment / note |
+
+### Importance
+
+| Symbol | Meaning |
+|--------|---------|
+| `⊛` | critical / highest importance |
+| `◊` | lowest importance / trivial |
 
 ---
 
@@ -208,12 +254,16 @@ archetype∋[rules,plugins,deps,structure]
 ## Quick Reference
 
 ```
-STRUCTURE: «»⟨⟩{}[]().sub
-RELATIONS: → ← ⊳ ⊲ @ : = ∋
-LOGIC:     | & ⊤ ⊥ ∀ ∃ ¬
-CHANGE:    Δ + -
-QUALIFY:   * ? ! #
-BLOCKS:    Ρ E Λ Π Κ R P Γ M Φ Ω
+STRUCTURE:  «»⟨⟩{}[]().sub
+COMPARE:    > < ≥ ≤
+PRIORITY:   ≻ ≺
+DATA FLOW:  → ←
+RELATIONS:  ⊳ ⊲ @ : = ∋
+LOGIC:      | & ⊤ ⊥ ∀ ∃ ¬
+CHANGE:     Δ + -
+QUALIFY:    * ? ! #
+IMPORTANCE: ⊛ ◊
+BLOCKS:     Ρ E Λ Π Κ R P Γ M Φ Ω
 ```
 
 ---
@@ -272,9 +322,10 @@ alwaysApply: true
 
 ---
 generated: yyyy-mm-dd hh:mm
-sourceCommit: [7-char git short hash of source file's last commit]
+sourceChecksum: [cksum output of source file, format: "checksum bytes"]
 beforeTokens: [estimated token count of source file]
 afterTokens: [estimated token count of this CRUX file]
+confidence: [XX% - semantic validation score from separate agent]
 alwaysApply: true
 ---
 

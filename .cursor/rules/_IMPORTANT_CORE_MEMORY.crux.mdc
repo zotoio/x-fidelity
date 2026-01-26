@@ -1,7 +1,9 @@
 ---
-generated: 2026-01-26 12:00
-beforeTokens: 800
-afterTokens: 120
+generated: 2026-01-26 09:45
+sourceChecksum: "944452619 1600"
+beforeTokens: 450
+afterTokens: 95
+crux: true
 alwaysApply: true
 ---
 
@@ -9,6 +11,13 @@ alwaysApply: true
 
 ```crux
 «CRUX⟨_IMPORTANT_CORE_MEMORY.md⟩»
-R=req→if gap→assume+mark; C=obs→cite path:lines; Δ=R≠C→tag{code|tests|req}+why; PLAN=min files+change; PATCH=surgical diff; CHECK=run/add tests|static verify; STATE=upd R/C/Δ; mem=repo>chat; no halluc; no full rewrite w/o proof.
+R=req→truth;gap→assume+mark;?arch→ask first
+C=obs→cite path:lines;repo≻chat
+Δ=R≠C→tag{code|tests|req}+why
+PLAN=min files+targeted Δ;justify+file|broad
+PATCH=surgical diff;¬rewrite w/o proof
+CHECK=run/+tests|static val
+STATE={R,C,Δ}→upd on progress
+Ω{¬halluc;verified only}
 «/CRUX»
 ```

@@ -1,7 +1,8 @@
 ---
-generated: 2026-01-26 10:15
-beforeTokens: 225
-afterTokens: 150
+generated: 2026-01-26 10:45
+sourceChecksum: "4097962351 2221"
+beforeTokens: 385
+afterTokens: 75
 alwaysApply: true
 ---
 
@@ -10,17 +11,17 @@ alwaysApply: true
 ```crux
 «CRUX⟨core-tenets.md⟩»
 R{
-  ∀Δ.large→confirm?→commit(conventional)
-  ?unclear→ask #¬simple
-  temp/@=READONLY,¬Δ
-  Λ.pkg=yarn ¬npm
-  ∀Δ.sig→`yarn test`@ws.root;+coverage|adjacent
-  test.fail→fix impl ¬test #unless impl broken
-  ∀Δ→Δ[README.md,website];-stale
-  ¬+dup[files,funcs]→Δ existing
-  temp.artifacts→mv→temp/
-  vscode.Δ→target tests ¬all
-  lint.err→fix
+ ∀Δ.large→confirm?→commit(conventional)
+ ?unclear→ask #¬simple
+ temp/@=READONLY,¬Δ
+ Λ.pkg=yarn ¬npm
+ ∀Δ.sig→`yarn test`@ws.root;+coverage|adjacent
+ test.fail→fix impl ¬test #unless impl broken
+ ∀Δ→Δ[README.md,website];-stale
+ ¬+dup[files,funcs]→Δ existing
+ temp.artifacts→mv→temp/
+ vscode.Δ→target tests ¬all
+ lint.err→fix
 }
 «/CRUX»
 ```

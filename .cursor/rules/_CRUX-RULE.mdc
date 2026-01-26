@@ -2,6 +2,7 @@
 description: CRUX Compression of markdown rules
 alwaysApply: true
 version: 1.1
+repository: https://github.com/zotoio/CRUX-Compress
 ---
 
 # CRUX Decompression - CRITICAL
@@ -14,10 +15,11 @@ When asked to compress a markdown rule file, delegate this to the crux-cursor-ru
 
 # Foundational CRUX Rules (MUST FOLLOW)
 
+0. **ALWAYS INTERPRET AND UNDERSTAND ALL CRUX RULES FIRST** - At the beginning of each agent session, interpret and understand all crux notation detected in rules, and when a new rule(s) is added to context do the same for the new rule(s) immediately. Build a mental model of all rules in context that the user can ask for at any point in time that will include a visualisation.
 1. **NEVER EDIT `CRUX.md`** - The specification is read-only unless the user specifically asks you by name to edit it, at which point ask the user to confirm before proceeding
 2. **DO NOT LOAD SOURCE FILES when CRUX exists** - When you encounter `«CRUX⟨source_file⟩»`, use the compressed CRUX content. DO NOT load the original source file referenced in the header. The CRUX notation is semantically equivalent.
 3. **SURGICAL DIFF UPDATES on source changes** - When you modify a source file that has a corresponding `.crux.mdc` file, you MUST apply surgical diff updates to the CRUX file to keep them synchronized. Invoke the crux-cursor-rule-manager agent to make the update.
-4. **SOURCE COMMIT TRACKING** - CRUX files include `sourceCommit` in frontmatter (7-char git hash). Skip updates if source commit matches - the file hasn't changed.
+4. **SOURCE CHECKSUM TRACKING** - CRUX files include `sourceChecksum` in frontmatter (from `cksum` utility). Skip updates if source checksum matches - the file hasn't changed.
 
 # CRUX Rule Compression Specification
 load from CRUX.md
