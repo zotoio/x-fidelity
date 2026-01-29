@@ -15,4 +15,6 @@ See [../README.md](../README.md) for file naming conventions and [../KNOWLEDGE_G
 
 | File | Description |
 |------|-------------|
-| (none yet) | - |
+| `100-extension-architecture-CONFIRMED-260129.md` | ExtensionManager, activation, CLIAnalysisManager, command registration |
+| `200-tree-view-patterns-CONFIRMED-260129.md` | IssuesTreeProvider, IssuesTreeViewManager, ControlCenterTreeViewManager, refresh patterns |
+| `300-diagnostic-integration-CONFIRMED-260129.md` | DiagnosticProvider, XFI_RESULT validation, CodeActionProvider, diagnostic validation |

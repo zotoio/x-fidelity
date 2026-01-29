@@ -16,4 +16,6 @@ See [../README.md](../README.md) for file naming conventions and [../KNOWLEDGE_G
 
 | File | Description |
 |------|-------------|
-| (none yet) | - |
+| 100-turbo-pipelines-CONFIRMED-260129.md | Task dependencies, test ordering, global dependencies, cache settings |
+| 200-esbuild-bundling-CONFIRMED-260129.md | Alias resolution, native module externals, worker bundles, production optimizations |
+| 300-yarn-workspaces-CONFIRMED-260129.md | Nohoist patterns, package dependency graph, root scripts, semantic release |

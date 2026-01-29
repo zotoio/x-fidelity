@@ -15,4 +15,6 @@ See [../README.md](../README.md) for file naming conventions and [../KNOWLEDGE_G
 
 | File | Description |
 |------|-------------|
-| (none yet) | - |
+| 100-code-review-patterns-CONFIRMED-260129.md | Review checklist, security review requirements, cross-package guidelines |
+| 200-quality-standards-CONFIRMED-260129.md | ESLint rules, TypeScript strict mode, 100% test coverage requirement |
+| 300-common-issues-CONFIRMED-260129.md | Missing error types, type assertions, performance red flags |

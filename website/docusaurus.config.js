@@ -4,7 +4,6 @@ module.exports = {
   url: 'https://zotoio.github.io',
   baseUrl: '/x-fidelity/',
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
   onBrokenAnchors: 'warn',
   favicon: 'img/x-fi.png',
   organizationName: 'zotoio',
@@ -29,6 +28,9 @@ module.exports = {
   
   markdown: {
     mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
   },
   
   themes: ['@docusaurus/theme-mermaid'],

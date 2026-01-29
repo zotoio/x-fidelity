@@ -72,7 +72,6 @@ module.exports = {
         'plugins/creating-plugins',
         'plugins/plugin-examples',
         'plugins/best-practices',
-        'plugins/package-size',
         'plugins/xfi-plugin-extract-values',
       ],
     },
