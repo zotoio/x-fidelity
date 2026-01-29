@@ -1,10 +1,12 @@
 import React from 'react';
 import clsx from 'clsx';
+import Link from '@docusaurus/Link';
 import styles from './styles.module.css';
 
 type FeatureItem = {
   title: string;
   description: React.ReactNode;
+  link?: string;
 };
 
 const FeatureList: FeatureItem[] = [
@@ -35,13 +37,34 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
   },
+  {
+    title: 'Rule Builder GUI',
+    description: (
+      <>
+        Create analysis rules visually with our interactive Rule Builder.
+        No JSON knowledge required.
+      </>
+    ),
+    link: 'https://zotoio.github.io/x-fidelity/rule-builder/',
+  },
 ];
 
-function Feature({title, description}: FeatureItem) {
+function Feature({title, description, link}: FeatureItem) {
+  const isExternal = link?.startsWith('http');
   return (
-    <div className={clsx('col col--4')}>
+    <div className={clsx('col col--3')}>
       <div className="text--center padding-horiz--md padding-vert--md">
-        <h3>{title}</h3>
+        <h3>
+          {link ? (
+            isExternal ? (
+              <a href={link}>{title}</a>
+            ) : (
+              <Link to={link}>{title}</Link>
+            )
+          ) : (
+            title
+          )}
+        </h3>
         <p>{description}</p>
       </div>
     </div>

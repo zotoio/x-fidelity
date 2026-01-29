@@ -58,13 +58,7 @@
         "verifyReleaseCmd": "echo '🔍 Verifying unified release for version ${nextRelease.version}'",
         "prepareCmd": "echo '📝 Preparing unified release ${nextRelease.version}' && node scripts/prepare-unified-release.js ${nextRelease.version}",
         "publishCmd": "echo '🚀 Publishing unified release ${nextRelease.version}' && node scripts/publish-unified-release.js ${nextRelease.version}",
-        "successCmd": "echo '✅ Unified release ${nextRelease.version} published successfully'",
-        "env": {
-          "NPM_TOKEN": "${NPM_TOKEN}",
-          "VSCE_PAT": "${VSCE_PAT}",
-          "OVSX_PAT": "${OVSX_PAT}",
-          "GH_TOKEN": "${GH_TOKEN}"
-        }
+        "successCmd": "echo '✅ Unified release ${nextRelease.version} published successfully'"
       }
     ],
     [

@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * X-Fidelity Rule Builder Theme Variables
+ * These mirror Docusaurus/Infima theme colors for consistency
+ */
+:root {
+  /* Primary colors - matches Docusaurus --ifm-color-primary */
+  --xfi-color-primary: #2e8555;
+  --xfi-color-primary-dark: #25724a;
+  --xfi-color-primary-light: #3ba164;
+
+  /* Light mode colors */
+  --xfi-background: #ffffff;
+  --xfi-background-secondary: #f5f6f7;
+  --xfi-background-elevated: #ffffff;
+  --xfi-background-lighter: #f8f9fa;
+  --xfi-foreground: #1c1e21;
+  --xfi-foreground-muted: #606770;
+  --xfi-border: #dadde1;
+  --xfi-accent: #e3e3e3;
+
+  /* Typography */
+  --xfi-font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;
+  --xfi-font-family-mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  /* Sizing */
+  --xfi-header-height: 60px;
+  --xfi-panel-padding: 16px;
+  --xfi-border-radius: 8px;
+}
+
+/* Dark mode - matches Docusaurus dark theme */
+.dark {
+  --xfi-background: #1b1b1d;
+  --xfi-background-secondary: #242526;
+  --xfi-background-elevated: #2d2d30;
+  --xfi-background-lighter: #3a3a3d;
+  --xfi-foreground: #e3e3e3;
+  --xfi-foreground-muted: #a3a3a3;
+  --xfi-border: #3e4042;
+  --xfi-accent: #3e4042;
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--xfi-font-family);
+  background-color: var(--xfi-background);
+  color: var(--xfi-foreground);
+}
+
+#root {
+  height: 100%;
+}
+
+/* Focus ring utility */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
+}
+
+/* Panel styles */
+.panel {
+  @apply bg-background-secondary rounded-lg border border-border;
+}
+
+.panel-header {
+  @apply px-4 py-3 border-b border-border font-medium text-sm text-foreground-muted uppercase tracking-wide;
+}
+
+.panel-content {
+  @apply p-4;
+}
+
+/* Scrollbar styling for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--xfi-background-secondary);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--xfi-border);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--xfi-foreground-muted);
+}
+
+/* Custom Resizable Panel Handles */
+.resizer-handle {
+  width: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.resizer-handle:hover {
+  background: var(--xfi-accent);
+}
+
+.resizer-indicator {
+  width: 2px;
+  height: 32px;
+  background: var(--xfi-border);
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.resizer-handle:hover .resizer-indicator {
+  background: var(--xfi-color-primary);
+}
+
+/* Horizontal resizer for simulation panel height */
+.resizer-handle-horizontal {
+  height: 6px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: row-resize;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.resizer-handle-horizontal:hover {
+  background: var(--xfi-accent);
+}
+
+.resizer-indicator-horizontal {
+  width: 48px;
+  height: 2px;
+  background: var(--xfi-border);
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.resizer-handle-horizontal:hover .resizer-indicator-horizontal {
+  background: var(--xfi-color-primary);
+}

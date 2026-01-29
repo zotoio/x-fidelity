@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { createComponentLogger } from '../utils/globalLogger';
 import { getBestAIProvider, getIDEName } from '../utils/ideDetection';
+import type { EnhancedIssueDetails, EnhancedIssueItem } from '../types/issues';
 
 const logger = createComponentLogger('CommandDelegationRegistry');
 
@@ -100,6 +101,13 @@ export interface IssueContext {
     line: number;
     message: string;
   }>;
+
+  // Unified enhanced details structure for all issue types
+  // This provides consistent access to issue-specific data across all commands
+  enhancedDetails?: EnhancedIssueDetails;
+
+  // Flag indicating this is a global/repository-wide issue
+  isGlobalCheck?: boolean;
 }
 
 interface IssueGroupContext {
@@ -220,6 +228,27 @@ export class CommandDelegationRegistry {
     // For presets, return the preset name which will be handled by default implementations
     // The preset is used by the default implementation methods to decide which AI to use
     return preset;
+  }
+
+  /**
+   * Get the prompt prefix for a given prompt type
+   * Users can configure prefixes for custom slash commands or context loading instructions
+   */
+  private getPromptPrefix(
+    promptType: 'explainIssue' | 'fixIssue' | 'fixIssueGroup'
+  ): string {
+    const config = vscode.workspace.getConfiguration('xfidelity');
+    const defaultPrefixes = {
+      explainIssue: '',
+      fixIssue: '',
+      fixIssueGroup: ''
+    };
+    const prefixes = config.get<Record<string, string>>('promptPrefixes');
+    // Handle undefined config (e.g., in tests) or missing keys
+    if (!prefixes) {
+      return defaultPrefixes[promptType];
+    }
+    return prefixes[promptType] ?? defaultPrefixes[promptType];
   }
 
   /**
@@ -574,12 +603,19 @@ export class CommandDelegationRegistry {
    * Build a comprehensive explanation prompt with enhanced details
    */
   private buildExplanationPrompt(context: IssueContext): string {
-    let prompt = `Please explain this code quality issue:\n\n`;
+    const prefix = this.getPromptPrefix('explainIssue');
+    let prompt = prefix ? `${prefix}\n\n` : '';
+    prompt += `Please explain this code quality issue:\n\n`;
     prompt += `**Rule:** ${context.ruleId}\n`;
     prompt += `**Message:** ${context.message}\n`;
     prompt += `**Severity:** ${context.severity}\n`;
     prompt += `**Category:** ${context.category}\n`;
     prompt += `**File:** ${context.file}:${context.line}:${context.column}\n`;
+
+    // Add scope indicator for global issues
+    if (context.isGlobalCheck) {
+      prompt += `**Scope:** Repository-wide (affects entire codebase)\n`;
+    }
 
     // Add end position if available for precise location
     if (context.endLine && context.endColumn) {
@@ -587,8 +623,16 @@ export class CommandDelegationRegistry {
     }
     prompt += `\n`;
 
-    // Add highlighting details if available
-    if (context.highlighting) {
+    // Add unified enhanced details if available
+    if (context.enhancedDetails) {
+      prompt += this.formatEnhancedDetailsForPrompt(
+        context.enhancedDetails,
+        'explain'
+      );
+    }
+
+    // Legacy: Add highlighting details if available (fallback)
+    if (context.highlighting && !context.enhancedDetails) {
       if (context.highlighting.matchedText) {
         prompt += `**Matched Text:** \`${context.highlighting.matchedText}\`\n`;
       }
@@ -607,8 +651,8 @@ export class CommandDelegationRegistry {
       prompt += `\n`;
     }
 
-    // Add dependency-specific information
-    if (context.dependencyInfo) {
+    // Legacy: Add dependency-specific information (fallback)
+    if (context.dependencyInfo && !context.enhancedDetails) {
       prompt += `**Dependency Details:**\n`;
       if (context.dependencyInfo.section) {
         prompt += `- Section: ${context.dependencyInfo.section}\n`;
@@ -821,11 +865,18 @@ export class CommandDelegationRegistry {
    * Build a comprehensive fix prompt with enhanced details
    */
   private buildFixPrompt(context: IssueContext): string {
-    let prompt = `Please fix this code quality issue:\n\n`;
+    const prefix = this.getPromptPrefix('fixIssue');
+    let prompt = prefix ? `${prefix}\n\n` : '';
+    prompt += `Please fix this code quality issue:\n\n`;
     prompt += `**Rule:** ${context.ruleId}\n`;
     prompt += `**Message:** ${context.message}\n`;
     prompt += `**Severity:** ${context.severity}\n`;
     prompt += `**File:** ${context.file}:${context.line}:${context.column}\n`;
+
+    // Add scope indicator for global issues
+    if (context.isGlobalCheck) {
+      prompt += `**Scope:** Repository-wide (affects entire codebase)\n`;
+    }
 
     // Add end position if available for precise location
     if (context.endLine && context.endColumn) {
@@ -833,8 +884,16 @@ export class CommandDelegationRegistry {
     }
     prompt += `\n`;
 
-    // Add highlighting details to help AI understand what to fix
-    if (context.highlighting) {
+    // Add unified enhanced details if available
+    if (context.enhancedDetails) {
+      prompt += this.formatEnhancedDetailsForPrompt(
+        context.enhancedDetails,
+        'fix'
+      );
+    }
+
+    // Legacy: Add highlighting details to help AI understand what to fix (fallback)
+    if (context.highlighting && !context.enhancedDetails) {
       if (context.highlighting.matchedText) {
         prompt += `**Problematic Code:** \`${context.highlighting.matchedText}\`\n`;
       }
@@ -856,8 +915,8 @@ export class CommandDelegationRegistry {
       prompt += `\n`;
     }
 
-    // Add dependency-specific information for dependency fixes
-    if (context.dependencyInfo) {
+    // Legacy: Add dependency-specific information for dependency fixes (fallback)
+    if (context.dependencyInfo && !context.enhancedDetails) {
       prompt += `**Dependency Fix Details:**\n`;
       if (context.dependencyInfo.section) {
         prompt += `- Update in: ${context.dependencyInfo.section}\n`;
@@ -1047,7 +1106,9 @@ export class CommandDelegationRegistry {
    * Build a comprehensive batch fix prompt with enhanced details
    */
   private buildBatchFixPrompt(context: IssueGroupContext): string {
-    let prompt = `Please fix the following ${context.issues.length} code quality issues:\n\n`;
+    const prefix = this.getPromptPrefix('fixIssueGroup');
+    let prompt = prefix ? `${prefix}\n\n` : '';
+    prompt += `Please fix the following ${context.issues.length} code quality issues:\n\n`;
     prompt += `**Group Type:** ${context.groupType}\n`;
     prompt += `**Group Key:** ${context.groupKey}\n\n`;
 
@@ -1058,16 +1119,38 @@ export class CommandDelegationRegistry {
       prompt += `   Message: ${issue.message}\n`;
       prompt += `   Severity: ${issue.severity}\n`;
 
-      // Include highlighting details for precise fixes
-      if (issue.highlighting?.matchedText) {
+      // Include unified enhanced details if available
+      if (issue.enhancedDetails) {
+        const details = issue.enhancedDetails;
+        prompt += `   Type: ${details.type} (${details.summary})\n`;
+
+        // Show top items
+        const topItems = details.items.slice(0, 3);
+        topItems.forEach(item => {
+          prompt += `   - ${item.label}`;
+          if (item.currentValue && item.expectedValue) {
+            prompt += `: ${item.currentValue} → ${item.expectedValue}`;
+          } else if (item.description) {
+            prompt += `: ${item.description}`;
+          }
+          prompt += `\n`;
+        });
+
+        if (details.items.length > 3) {
+          prompt += `   - ... and ${details.items.length - 3} more\n`;
+        }
+      }
+
+      // Legacy: Include highlighting details for precise fixes (fallback)
+      if (issue.highlighting?.matchedText && !issue.enhancedDetails) {
         prompt += `   Problematic Code: \`${issue.highlighting.matchedText}\`\n`;
       }
-      if (issue.highlighting?.pattern) {
+      if (issue.highlighting?.pattern && !issue.enhancedDetails) {
         prompt += `   Pattern: \`${issue.highlighting.pattern}\`\n`;
       }
 
-      // Include dependency info for dependency issues
-      if (issue.dependencyInfo) {
+      // Legacy: Include dependency info for dependency issues (fallback)
+      if (issue.dependencyInfo && !issue.enhancedDetails) {
         if (
           issue.dependencyInfo.currentVersion &&
           issue.dependencyInfo.requiredVersion
@@ -1097,6 +1180,259 @@ export class CommandDelegationRegistry {
     prompt += `3. Any patterns or common solutions\n`;
 
     return prompt;
+  }
+
+  /**
+   * Format enhanced issue details for AI prompts
+   * Converts the unified structure to a prompt-friendly format based on issue type
+   */
+  private formatEnhancedDetailsForPrompt(
+    details: EnhancedIssueDetails,
+    mode: 'explain' | 'fix'
+  ): string {
+    let result = '';
+    const actionVerb = mode === 'fix' ? 'Fix' : 'Analysis';
+
+    switch (details.type) {
+      case 'dependency':
+        result += `**${actionVerb} - Outdated Dependencies (${details.items.length}):**\n`;
+        result += this.formatDependencyItemsForPrompt(details.items, mode);
+        break;
+
+      case 'complexity':
+        result += `**${actionVerb} - Complex Functions (${details.items.length}):**\n`;
+        result += this.formatComplexityItemsForPrompt(details.items, mode);
+        break;
+
+      case 'sensitive-data':
+        result += `**${actionVerb} - Sensitive Data Patterns (${details.items.length}):**\n`;
+        result += this.formatSensitiveDataItemsForPrompt(details.items, mode);
+        break;
+
+      case 'pattern-match':
+        result += `**${actionVerb} - Code Pattern Violations (${details.items.length}):**\n`;
+        result += this.formatPatternMatchItemsForPrompt(details.items, mode);
+        break;
+
+      case 'validation':
+        result += `**${actionVerb} - Validation Failures (${details.items.length}):**\n`;
+        result += this.formatValidationItemsForPrompt(details.items, mode);
+        break;
+
+      case 'generic':
+      default:
+        result += `**${actionVerb} Details (${details.items.length}):**\n`;
+        result += this.formatGenericItemsForPrompt(details.items, mode);
+        break;
+    }
+
+    result += `\n`;
+    return result;
+  }
+
+  /**
+   * Format dependency items for prompts
+   */
+  private formatDependencyItemsForPrompt(
+    items: EnhancedIssueItem[],
+    mode: 'explain' | 'fix'
+  ): string {
+    let result = '';
+    const itemsToShow = items.slice(0, 10);
+
+    itemsToShow.forEach(item => {
+      const severity =
+        item.itemSeverity === 'high'
+          ? '🔴'
+          : item.itemSeverity === 'medium'
+            ? '🟡'
+            : '🟢';
+      const fileInfo = item.file ? ` in \`${item.file}\`` : '';
+      const lineInfo = item.line ? `:${item.line}` : '';
+
+      result += `- ${severity} \`${item.label}\`: ${item.currentValue || 'unknown'} → ${item.expectedValue || 'unknown'}${fileInfo}${lineInfo}\n`;
+
+      if (mode === 'fix' && item.metadata?.section) {
+        result += `  Section: ${item.metadata.section}\n`;
+      }
+    });
+
+    if (items.length > 10) {
+      result += `- ... and ${items.length - 10} more dependencies\n`;
+    }
+
+    if (mode === 'fix') {
+      result += `\n**Action Required:** Update these dependencies to the required versions.\n`;
+    }
+
+    return result;
+  }
+
+  /**
+   * Format complexity items for prompts
+   */
+  private formatComplexityItemsForPrompt(
+    items: EnhancedIssueItem[],
+    mode: 'explain' | 'fix'
+  ): string {
+    let result = '';
+    const itemsToShow = items.slice(0, 10);
+
+    itemsToShow.forEach(item => {
+      const severity =
+        item.itemSeverity === 'high'
+          ? '🔴'
+          : item.itemSeverity === 'medium'
+            ? '🟡'
+            : '🟢';
+      const lineInfo = item.line ? ` (line ${item.line})` : '';
+
+      result += `- ${severity} \`${item.label}\`${lineInfo}\n`;
+
+      if (item.metrics) {
+        const metricsStr = Object.entries(item.metrics)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(', ');
+        result += `  Metrics: ${metricsStr}\n`;
+      }
+    });
+
+    if (items.length > 10) {
+      result += `- ... and ${items.length - 10} more functions\n`;
+    }
+
+    if (mode === 'fix') {
+      result += `\n**Action Required:** Refactor these functions to reduce complexity. Consider:\n`;
+      result += `- Breaking into smaller functions\n`;
+      result += `- Reducing nesting levels\n`;
+      result += `- Simplifying conditional logic\n`;
+    }
+
+    return result;
+  }
+
+  /**
+   * Format sensitive data items for prompts
+   */
+  private formatSensitiveDataItemsForPrompt(
+    items: EnhancedIssueItem[],
+    mode: 'explain' | 'fix'
+  ): string {
+    let result = '';
+    const itemsToShow = items.slice(0, 10);
+
+    itemsToShow.forEach(item => {
+      const lineInfo = item.line ? ` (line ${item.line})` : '';
+      result += `- 🔒 \`${item.label}\`${lineInfo}`;
+      if (item.description) {
+        result += `: ${item.description}`;
+      }
+      result += `\n`;
+    });
+
+    if (items.length > 10) {
+      result += `- ... and ${items.length - 10} more patterns\n`;
+    }
+
+    if (mode === 'fix') {
+      result += `\n**Action Required:** Remove or mask sensitive data. Consider:\n`;
+      result += `- Using environment variables\n`;
+      result += `- Masking in logs\n`;
+      result += `- Moving to secure storage\n`;
+    }
+
+    return result;
+  }
+
+  /**
+   * Format pattern match items for prompts
+   */
+  private formatPatternMatchItemsForPrompt(
+    items: EnhancedIssueItem[],
+    mode: 'explain' | 'fix'
+  ): string {
+    let result = '';
+    const itemsToShow = items.slice(0, 10);
+
+    itemsToShow.forEach(item => {
+      const lineInfo = item.line ? ` (line ${item.line})` : '';
+      result += `- 🔍 \`${item.label}\`${lineInfo}`;
+      if (item.description) {
+        result += `: ${item.description}`;
+      }
+      result += `\n`;
+    });
+
+    if (items.length > 10) {
+      result += `- ... and ${items.length - 10} more patterns\n`;
+    }
+
+    if (mode === 'fix') {
+      result += `\n**Action Required:** Replace direct usage with approved patterns or abstractions.\n`;
+    }
+
+    return result;
+  }
+
+  /**
+   * Format validation items for prompts
+   */
+  private formatValidationItemsForPrompt(
+    items: EnhancedIssueItem[],
+    mode: 'explain' | 'fix'
+  ): string {
+    let result = '';
+    const itemsToShow = items.slice(0, 10);
+
+    itemsToShow.forEach(item => {
+      result += `- ✅ \`${item.label}\``;
+      if (item.currentValue && item.expectedValue) {
+        result += `: got \`${item.currentValue}\`, expected \`${item.expectedValue}\``;
+      } else if (item.description) {
+        result += `: ${item.description}`;
+      }
+      result += `\n`;
+    });
+
+    if (items.length > 10) {
+      result += `- ... and ${items.length - 10} more issues\n`;
+    }
+
+    if (mode === 'fix') {
+      result += `\n**Action Required:** Update values to match expected format or requirements.\n`;
+    }
+
+    return result;
+  }
+
+  /**
+   * Format generic items for prompts
+   */
+  private formatGenericItemsForPrompt(
+    items: EnhancedIssueItem[],
+    mode: 'explain' | 'fix'
+  ): string {
+    let result = '';
+    const itemsToShow = items.slice(0, 10);
+
+    itemsToShow.forEach(item => {
+      const lineInfo = item.line ? ` (line ${item.line})` : '';
+      result += `- \`${item.label}\`${lineInfo}`;
+      if (item.description) {
+        result += `: ${item.description}`;
+      }
+      result += `\n`;
+    });
+
+    if (items.length > 10) {
+      result += `- ... and ${items.length - 10} more\n`;
+    }
+
+    if (mode === 'fix') {
+      result += `\n**Action Required:** Review and address the items listed above.\n`;
+    }
+
+    return result;
   }
 
   /**

@@ -2,6 +2,128 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.7.4](https://github.com/zotoio/x-fidelity/compare/v5.7.3...v5.7.4) (2026-01-18)
+
+### Bug Fixes
+
+* **ci:** add NODE_AUTH_TOKEN and remove OIDC permissions ([29f4ba3](https://github.com/zotoio/x-fidelity/commit/29f4ba384a1acb2ecf196c47b96bac687bf33969))
+* **release:** bump CLI and VSCode extension to 5.7.4 ([f79430b](https://github.com/zotoio/x-fidelity/commit/f79430ba0039edd03adc704f0152cb5e94415c86))
+
+## [5.7.3](https://github.com/zotoio/x-fidelity/compare/v5.7.2...v5.7.3) (2026-01-18)
+
+### Bug Fixes
+
+* **release:** bump CLI and VSCode extension to 5.7.3 ([14c6fcd](https://github.com/zotoio/x-fidelity/commit/14c6fcd4c365145ac71fc233e7013668924fc821))
+
+## [5.7.2](https://github.com/zotoio/x-fidelity/compare/v5.7.1...v5.7.2) (2026-01-18)
+
+### Bug Fixes
+
+* **release:** bump CLI and VSCode extension to 5.7.2 ([c8e468e](https://github.com/zotoio/x-fidelity/commit/c8e468e81a83b600d9c258a187c89e757fd308f6))
+
+## [5.7.1](https://github.com/zotoio/x-fidelity/compare/v5.7.0...v5.7.1) (2026-01-18)
+
+### Bug Fixes
+
+* **website:** resolve broken rule-builder links in Docusaurus build ([cdf5b44](https://github.com/zotoio/x-fidelity/commit/cdf5b44d01bd557abda6efe8456b1db7e2126ffd))
+
+## [5.7.0](https://github.com/zotoio/x-fidelity/compare/v5.6.0...v5.7.0) (2026-01-18)
+
+### Bug Fixes
+
+* resolve complexity data path mismatch in report generator ([0ec7bc4](https://github.com/zotoio/x-fidelity/commit/0ec7bc49da069459aea0a3c9a03742d0aa4a7cb4))
+* update copyright information in docusaurus config ([5f2c42d](https://github.com/zotoio/x-fidelity/commit/5f2c42d725d48b5a3be0a6eb66024db3c2a853e9))
+* **vscode:** add test file type-checking to test scripts ([012e94f](https://github.com/zotoio/x-fidelity/commit/012e94fb2f762353e57933f4136f601924fd9926))
+* **vscode:** resolve TypeScript errors in unit tests ([00d6bdb](https://github.com/zotoio/x-fidelity/commit/00d6bdb477b8ee98144aa8970ff93a9aa7115ed0))
+* **website:** prevent dropdown clipping in SimulationPanel ([c176b2d](https://github.com/zotoio/x-fidelity/commit/c176b2dcf548e12496372124a474e0c69f9e4da0))
+* **website:** resolve TypeScript errors in rule-builder ([f37f72c](https://github.com/zotoio/x-fidelity/commit/f37f72ce322123a9954b0fedb777d700352f6806))
+
+### Features
+
+* add Cursor slash commands for X-Fidelity development workflows ([b61e567](https://github.com/zotoio/x-fidelity/commit/b61e56723bdfcb8139473669cebbff9a00cda265))
+* add project-specific skills for common development workflows ([5530cbb](https://github.com/zotoio/x-fidelity/commit/5530cbbee3edd5c37c3d5afef624833101cbf80b))
+* add X-Fidelity SME subagents for specialized AI assistance ([79ea4cc](https://github.com/zotoio/x-fidelity/commit/79ea4ccf0a9253d2eff263e5eb14086674f49f08))
+* add xfi-planner and xfi-engineer agents with planning system ([bd35ea4](https://github.com/zotoio/x-fidelity/commit/bd35ea43f179edadd9b8108117b6e731483a4256))
+* add xfi-system-design agent and knowledge management system ([27c8f93](https://github.com/zotoio/x-fidelity/commit/27c8f938bc139833be03ed04cca9618f638cd1af))
+* **plan:** add web-based rule builder GUI engineering plan ([9616051](https://github.com/zotoio/x-fidelity/commit/96160510f90c3be1eb086b8bcebfcf1fff453f46))
+* switch to npm OIDC trusted publishing ([7b33f1f](https://github.com/zotoio/x-fidelity/commit/7b33f1fb057abc1e2160c2450d7f7db218069c19))
+* **vscode:** add configurable prompt prefixes for AI commands ([996fe22](https://github.com/zotoio/x-fidelity/commit/996fe220f92982289b555098eac587509a6a1832))
+* **vscode:** combine diagnostics and autorun toggles into single Session Active toggle ([32826c4](https://github.com/zotoio/x-fidelity/commit/32826c4151f1125ea6dc4031b1bf0d62ba48cd0f))
+* **vscode:** unify issue details structure for reports, tooltips, and AI prompts ([e4a31f5](https://github.com/zotoio/x-fidelity/commit/e4a31f5f507e3d8f0221bda7f4ff9ab860fb7306))
+* **website:** add interactive Rule Builder GUI for visual rule creation ([2536da2](https://github.com/zotoio/x-fidelity/commit/2536da248552d80b5f38ef5535feff80f88ca9b1))
+
+## [5.7.0] - 2026-01-18
+
+### Added
+
+- **Rule Builder GUI**: Interactive web-based tool for creating X-Fidelity rules
+  - Visual tree and form interface for rule construction
+  - Live bidirectional JSON editing with Monaco editor
+  - Template library with pre-built rules organized by plugin, use case, and complexity
+  - In-browser rule simulation using browser-adapted plugins
+  - Comprehensive tooltips and contextual documentation
+  - Copy-to-clipboard export with naming convention guidance
+  - Dark/light theme support synchronized with Docusaurus
+  - Full integration with Docusaurus documentation site
+
+### Documentation
+
+- Added comprehensive Rule Builder guide at `/docs/rules/rule-builder-guide`
+- Added template creation documentation for contributors
+- Updated getting started guide with Rule Builder links
+- Updated rules documentation with Rule Builder references
+
+## [5.6.0](https://github.com/zotoio/x-fidelity/compare/v5.5.2...v5.6.0) (2026-01-18)
+
+### Features
+
+* add xfiPluginExtractValues to default plugins list ([bf000d2](https://github.com/zotoio/x-fidelity/commit/bf000d2a437c16ee12cffe5069f923d88f7aaff6))
+
+## [5.5.2](https://github.com/zotoio/x-fidelity/compare/v5.5.1...v5.5.2) (2026-01-18)
+
+## [5.5.1](https://github.com/zotoio/x-fidelity/compare/v5.5.0...v5.5.1) (2026-01-17)
+
+## [5.5.0](https://github.com/zotoio/x-fidelity/compare/v5.4.3...v5.5.0) (2026-01-17)
+
+### ⚠ BREAKING CHANGES
+
+* **plugins:** Dependencies are now collected by parsing lockfiles directly
+instead of running pnpm/yarn/npm list commands. This means:
+- No need for node_modules to be installed
+- Faster analysis (no subprocess spawning)
+- Works on CI where dependencies may not be fully installed
+
+Supported lockfiles:
+- pnpm-lock.yaml (parses importers section for resolved versions)
+- yarn.lock (regex parsing for version entries)
+- package-lock.json (JSON parsing of packages object)
+
+Note: Some tests need updating to mock fs.readFileSync instead of execSync.
+The implementation has been verified to work correctly with pnpm workspaces.
+
+### Bug Fixes
+
+* **core,vscode,democonfig:** fix complexity report data and settings ([fbe471e](https://github.com/zotoio/x-fidelity/commit/fbe471e0638a256cb3de92f7a9316d138055f9e2))
+* **plugins:** add -r flag to pnpm list for workspace subpackages ([047186c](https://github.com/zotoio/x-fidelity/commit/047186cab5680b6cc105cc6a643c67eba07acb54))
+* **plugins:** detect pnpm workspace before using -r flag ([8de999d](https://github.com/zotoio/x-fidelity/commit/8de999df53e0682aeb66cf0989d39f0ee9555995))
+* **plugins:** don't cache empty dependency results ([16c9b73](https://github.com/zotoio/x-fidelity/commit/16c9b73b0fe39a075b2c208e963851748a36c76e))
+* **plugins:** fix scoped package detection in yarn lockfile and add test coverage ([4d3b206](https://github.com/zotoio/x-fidelity/commit/4d3b2063592c603df6d4e172d939ffec5bb2f3d2))
+* **plugins:** handle scoped packages in manifest location parser ([61f9dca](https://github.com/zotoio/x-fidelity/commit/61f9dca30c1f764c9dd0308c6cc82a8e3ed6d53e))
+* **plugins:** resolve relative paths in manifest location parsing ([1331f54](https://github.com/zotoio/x-fidelity/commit/1331f549f1b8cebe904c31cef26e59039f747114))
+* **plugins:** use JSON.stringify for error logging in dependency plugin ([41e2159](https://github.com/zotoio/x-fidelity/commit/41e2159b73c8b945996edfc55bff2d30709fdd6b))
+* **plugins:** use relative paths for manifestPath in dependency locations ([68e1b1d](https://github.com/zotoio/x-fidelity/commit/68e1b1d85e2ba6c7c09edc2a211012039bba2225))
+* **vscode:** restore diagnostics from cache when toggled back ON ([b148faf](https://github.com/zotoio/x-fidelity/commit/b148faf4554c9a4e1775d229c459db3df41f3d0e))
+
+### Features
+
+* **plugins,vscode:** highlight dependency issues in manifest files ([4de09ff](https://github.com/zotoio/x-fidelity/commit/4de09ff035089ab018350169f99c2f3d2b2ae3ec))
+* **plugins:** add pnpm support as primary package manager in xfiPluginDependency ([1fb30ac](https://github.com/zotoio/x-fidelity/commit/1fb30ac00953c9ba8938ad77367dbe11483e74f2))
+* **plugins:** add support for yarn resolutions and package overrides ([2da8ee9](https://github.com/zotoio/x-fidelity/commit/2da8ee930072e7bd6767a0b6498193a3d4e21100))
+* **plugins:** add workspace support for manifest location parsing ([11f936e](https://github.com/zotoio/x-fidelity/commit/11f936e039fe3df1193632e891560a066a932ffd))
+* **plugins:** parse lockfiles directly instead of running package manager commands ([dea2782](https://github.com/zotoio/x-fidelity/commit/dea2782916cd7233eda3c9c991076d6601b8e4b4))
+* **vscode,deps:** add session toggles and upgrade dependencies ([9eb8963](https://github.com/zotoio/x-fidelity/commit/9eb896338dc8b2b048d1d7e8fed65aa928030ccf))
+* **vscode:** enhance IssueContext with highlighting and match details for AI providers ([ff5cb02](https://github.com/zotoio/x-fidelity/commit/ff5cb02f49c784962a7d039746600e9cf0b68792))
+
 ## [Unreleased]
 
 ### Features

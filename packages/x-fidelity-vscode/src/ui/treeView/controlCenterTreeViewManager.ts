@@ -102,7 +102,23 @@ export class ControlCenterTreeViewManager implements vscode.Disposable {
   }
 
   /**
+   * Toggle session active state (controls both diagnostics and autorun)
+   * Returns the new state (true = active, false = inactive)
+   */
+  public toggleSessionActive(): boolean {
+    return this.treeDataProvider.toggleSessionActive();
+  }
+
+  /**
+   * Check if session is active (both diagnostics and autorun enabled)
+   */
+  public isSessionActive(): boolean {
+    return this.treeDataProvider.isSessionActive();
+  }
+
+  /**
    * Toggle diagnostics display for current session
+   * @deprecated Use toggleSessionActive instead
    */
   public toggleDiagnostics(): boolean {
     return this.treeDataProvider.toggleDiagnostics();
@@ -110,6 +126,7 @@ export class ControlCenterTreeViewManager implements vscode.Disposable {
 
   /**
    * Toggle autorun for current session
+   * @deprecated Use toggleSessionActive instead
    */
   public toggleAutorun(): boolean {
     return this.treeDataProvider.toggleAutorun();
@@ -117,6 +134,7 @@ export class ControlCenterTreeViewManager implements vscode.Disposable {
 
   /**
    * Check if diagnostics are currently enabled
+   * @deprecated Use isSessionActive instead
    */
   public isDiagnosticsEnabled(): boolean {
     return this.treeDataProvider.isDiagnosticsEnabled();
@@ -124,6 +142,7 @@ export class ControlCenterTreeViewManager implements vscode.Disposable {
 
   /**
    * Check if autorun is currently enabled
+   * @deprecated Use isSessionActive instead
    */
   public isAutorunEnabled(): boolean {
     return this.treeDataProvider.isAutorunEnabled();

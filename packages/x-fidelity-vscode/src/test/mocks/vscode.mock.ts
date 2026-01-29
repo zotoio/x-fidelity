@@ -51,6 +51,13 @@ export const ExtensionMode = {
   Test: 3
 };
 
+export const StatusBarAlignment = {
+  Left: 1,
+  Right: 2
+};
+
+export const ThemeColor = jest.fn((id: string) => ({ id }));
+
 export const window = {
   showInformationMessage: jest.fn(),
   showWarningMessage: jest.fn(),
@@ -317,6 +324,8 @@ const vscode = {
   DiagnosticSeverity,
   ConfigurationTarget,
   ExtensionMode,
+  StatusBarAlignment,
+  ThemeColor,
   window,
   workspace,
   commands,

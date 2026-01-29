@@ -116,7 +116,8 @@ export class ConfigManager {
                     'xfiPluginFilesystem',
                     'xfiPluginDependency',
                     'xfiPluginOpenAI',
-                    'xfiPluginPatterns'
+                    'xfiPluginPatterns',
+                    'xfiPluginExtractValues'
                 ];
             }
             

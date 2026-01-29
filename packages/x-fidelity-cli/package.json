@@ -1,6 +1,6 @@
 {
   "name": "x-fidelity",
-  "version": "5.4.3",
+  "version": "5.7.4",
   "description": "CLI tool for opinionated framework adherence checks with performance optimizations and caching",
   "private": false,
   "bin": {
@@ -112,6 +112,7 @@
     }
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

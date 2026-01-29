@@ -344,7 +344,9 @@ ${criticalIssues}`;
 
         const tableRows = complexityIssues.map(issue => {
             const githubLink = this.createGithubLink(issue.file, issue.line);
-            return `| ${githubLink} | ${issue.function} | ${issue.cyclomaticComplexity || 'N/A'} | ${issue.cognitiveComplexity || 'N/A'} | ${issue.nestingDepth || 'N/A'} | ${issue.parameterCount || 'N/A'} | ${issue.returnCount || 'N/A'} |`;
+            // Use explicit null/undefined check to handle 0 values correctly
+            const formatValue = (val: number | undefined) => val !== undefined && val !== null ? val : 'N/A';
+            return `| ${githubLink} | ${issue.function} | ${formatValue(issue.cyclomaticComplexity)} | ${formatValue(issue.cognitiveComplexity)} | ${formatValue(issue.nestingDepth)} | ${formatValue(issue.parameterCount)} | ${formatValue(issue.returnCount)} |`;
         }).join('\n');
 
         return `## Function Complexity Issues
@@ -449,12 +451,67 @@ ${tableRows}`;
         const issueList = globalIssues.map(error => {
             const level = error.level || 'warning';
             const message = error.details?.message || error.message || 'Global issue detected';
-            return `- **${error.ruleFailure}** (${level}): ${message}`;
-        }).join('\n');
+            let result = `- **${error.ruleFailure}** (${level}): ${message}`;
+            
+            // Extract and display dependency locations if available
+            const locations = this.extractDependencyLocations(error);
+            if (locations.length > 0) {
+                const locationItems = locations.slice(0, 10).map(loc => {
+                    const versionInfo = loc.currentVersion && loc.requiredVersion 
+                        ? ` (${loc.currentVersion} → ${loc.requiredVersion})`
+                        : '';
+                    const lineInfo = loc.lineNumber ? `:${loc.lineNumber}` : '';
+                    return `  - \`${loc.dependency}\`${versionInfo} in \`${loc.manifestPath}${lineInfo}\``;
+                });
+                result += '\n' + locationItems.join('\n');
+                if (locations.length > 10) {
+                    result += `\n  - *...and ${locations.length - 10} more*`;
+                }
+            }
+            
+            return result;
+        }).join('\n\n');
 
         return `## Other Global Issues
 
 ${issueList}`;
+    }
+
+    /**
+     * Extract dependency location details from error.details.details array
+     */
+    private extractDependencyLocations(error: any): Array<{
+        dependency: string;
+        currentVersion: string;
+        requiredVersion: string;
+        manifestPath: string;
+        lineNumber?: number;
+    }> {
+        const locations: Array<{
+            dependency: string;
+            currentVersion: string;
+            requiredVersion: string;
+            manifestPath: string;
+            lineNumber?: number;
+        }> = [];
+
+        // Check for dependency details array
+        const dependencyDetails = error.details?.details;
+        if (Array.isArray(dependencyDetails)) {
+            for (const dep of dependencyDetails) {
+                if (dep.dependency && dep.location?.manifestPath) {
+                    locations.push({
+                        dependency: dep.dependency,
+                        currentVersion: dep.currentVersion || 'unknown',
+                        requiredVersion: dep.requiredVersion || 'unknown',
+                        manifestPath: dep.location.manifestPath,
+                        lineNumber: dep.location.lineNumber
+                    });
+                }
+            }
+        }
+
+        return locations;
     }
 
     /**
@@ -531,11 +588,14 @@ ${ruleSections.join('\n\n')}`;
     }>): string {
         if (issues.length === 0) return '';
 
-        // Check if this is a global rule (affects REPO_GLOBAL_CHECK)
-        const isGlobalRule = issues.some(issue => 
-            issue.detail.filePath === 'REPO_GLOBAL_CHECK' || 
-            issue.detail.filePath.includes('global')
-        );
+        // Check if this is a global rule:
+        // 1. Rule name ends with '-global', OR
+        // 2. ALL issues for this rule have REPO_GLOBAL_CHECK as file path
+        const isGlobalRule = ruleName.endsWith('-global') || 
+            issues.every(issue => 
+                issue.detail.filePath === 'REPO_GLOBAL_CHECK' || 
+                issue.detail.filePath === ''
+            );
 
         // Create section header with rule anchor
         const ruleId = this.generateRuleId(ruleName);
@@ -601,16 +661,29 @@ ${ruleSections.join('\n\n')}`;
         tableHeader += '\n' + tableSeparator + '\n';
 
         // Build table rows
-        const tableRows = issues.map(({ detail, error, issueNumber }) => {
-            const fileName = path.basename(detail.filePath);
-            const githubLink = this.createGithubLink(detail.filePath, 
-                error.details?.lineNumber || error.details?.details?.[0]?.lineNumber);
+        const tableRows = issues.map(({ detail, error }) => {
+            // Check if this is a global check with dependency locations
+            const isGlobalCheck = detail.filePath === 'REPO_GLOBAL_CHECK' || detail.filePath === '';
+            const dependencyLocations = this.extractDependencyLocations(error);
+            
+            // Use manifest path for dependency issues
+            let effectiveFilePath = detail.filePath;
+            let effectiveLine = error.details?.lineNumber || error.details?.details?.[0]?.lineNumber;
+            
+            if (isGlobalCheck && dependencyLocations.length > 0) {
+                effectiveFilePath = dependencyLocations[0].manifestPath;
+                effectiveLine = dependencyLocations[0].lineNumber;
+            } else if (error.details?.details?.[0]?.location?.lineNumber) {
+                effectiveLine = error.details.details[0].location.lineNumber;
+            }
+            
+            const githubLink = this.createGithubLink(effectiveFilePath, effectiveLine);
             const severity = error.level || 'warning';
             
             let row = `| ${githubLink} | ${ruleName} | ${severity.toUpperCase()} |`;
 
             if (hasLineNumbers) {
-                const lineNumber = error.details?.lineNumber || error.details?.details?.[0]?.lineNumber || '';
+                const lineNumber = effectiveLine || '';
                 row += ` ${lineNumber} |`;
             }
 
@@ -627,7 +700,7 @@ ${ruleSections.join('\n\n')}`;
     }
 
     /**
-     * Generate a list for global rules
+     * Generate a list for global rules with dependency locations
      */
     private generateGlobalRuleIssues(issues: Array<{
         detail: any;
@@ -637,8 +710,26 @@ ${ruleSections.join('\n\n')}`;
         const issueList = issues.map(({ error }) => {
             const level = error.level || 'warning';
             const message = this.extractCleanMessage(error);
-            return `- **${error.ruleFailure}** (${level}): ${message}`;
-        }).join('\n');
+            let result = `- **${error.ruleFailure}** (${level}): ${message}`;
+            
+            // Extract and display dependency locations if available
+            const locations = this.extractDependencyLocations(error);
+            if (locations.length > 0) {
+                const locationItems = locations.slice(0, 10).map(loc => {
+                    const versionInfo = loc.currentVersion && loc.requiredVersion 
+                        ? ` (${loc.currentVersion} → ${loc.requiredVersion})`
+                        : '';
+                    const lineInfo = loc.lineNumber ? `:${loc.lineNumber}` : '';
+                    return `  - \`${loc.dependency}\`${versionInfo} in \`${loc.manifestPath}${lineInfo}\``;
+                });
+                result += '\n' + locationItems.join('\n');
+                if (locations.length > 10) {
+                    result += `\n  - *...and ${locations.length - 10} more*`;
+                }
+            }
+            
+            return result;
+        }).join('\n\n');
 
         return `This rule applies globally to the repository:\n\n${issueList}\n`;
     }
@@ -652,21 +743,40 @@ ${ruleSections.join('\n\n')}`;
         const level = error.level || 'warning';
         const message = this.extractAndFormatMessage(error);
         
-        // Extract line and column information
+        // Check if this is a global check with dependency locations
+        const isGlobalCheck = filePath === 'REPO_GLOBAL_CHECK' || filePath === '';
+        const dependencyLocations = this.extractDependencyLocations(error);
+        
+        // For global checks with dependency info, use the first manifest as the file reference
+        let displayFilePath = filePath;
         let lineInfo = '';
         
-        if (error.details?.lineNumber) {
+        if (isGlobalCheck && dependencyLocations.length > 0) {
+            // Use the first dependency's manifest file
+            const firstDep = dependencyLocations[0];
+            displayFilePath = firstDep.manifestPath;
+            if (firstDep.lineNumber) {
+                lineInfo = `Line ${firstDep.lineNumber}`;
+            }
+        } else if (error.details?.lineNumber) {
             lineInfo = `Line ${error.details.lineNumber}`;
         } else if (error.details?.details && Array.isArray(error.details.details)) {
             const firstDetail = error.details.details[0];
             if (firstDetail?.lineNumber) {
                 lineInfo = `Line ${firstDetail.lineNumber}`;
+            } else if (firstDetail?.location?.lineNumber) {
+                lineInfo = `Line ${firstDetail.location.lineNumber}`;
             }
         }
 
-        // Create GitHub link if available
-        const githubLink = this.createGithubLink(filePath, 
-            error.details?.lineNumber || error.details?.details?.[0]?.lineNumber);
+        // Create GitHub link using the effective file path
+        const effectiveFilePath = isGlobalCheck && dependencyLocations.length > 0 
+            ? dependencyLocations[0].manifestPath 
+            : filePath;
+        const effectiveLine = isGlobalCheck && dependencyLocations.length > 0 && dependencyLocations[0].lineNumber
+            ? dependencyLocations[0].lineNumber
+            : (error.details?.lineNumber || error.details?.details?.[0]?.location?.lineNumber);
+        const githubLink = this.createGithubLink(effectiveFilePath, effectiveLine);
         
         // Create severity badge
         const severityBadge = this.getSeverityBadge(level);
@@ -683,17 +793,22 @@ ${ruleSections.join('\n\n')}`;
         const fixableInfo = error.fixable ? 
             `**Fixable:** 💡 Yes  \n` : '';
 
+        // For global checks with dependencies, show scope indicator
+        const fileLabel = isGlobalCheck && dependencyLocations.length > 0 
+            ? `**Scope:** 📦 Repository-wide  \n**Manifest:** \`${displayFilePath}\` ${lineInfo ? `(${lineInfo})` : ''}`
+            : `**File:** \`${displayFilePath}\` ${lineInfo ? `(${lineInfo})` : ''}`;
+
         return `#### <a id="${issueId}"></a>Issue #${issueNumber}: ${ruleFailure}
 
 ${severityBadge}
 
-**File:** \`${filePath}\` ${lineInfo ? `(${lineInfo})` : ''}  
+${fileLabel}  
 ${categoryInfo}${exemptionInfo}${fixableInfo}**Rule:** \`${ruleFailure}\`  
 
 **Description:**  
 ${message}
 
-${githubLink !== path.basename(filePath) ? `**Source:** ${githubLink}` : ''}
+${githubLink !== path.basename(effectiveFilePath) ? `**Source:** ${githubLink}` : ''}
 
 ---`;
     }
@@ -871,16 +986,31 @@ ${githubLink !== path.basename(filePath) ? `**Source:** ${githubLink}` : ''}
 
     private parseComplexityIssues(filePath: string, error: any): FunctionComplexityIssue[] {
         try {
-            // First try to get structured complexity data from error.details.complexities
-            if (error.details?.complexities && Array.isArray(error.details.complexities)) {
-                const complexities = error.details.complexities;
-                
+            // Try multiple paths to find structured complexity data
+            // Path 1: error.details.details.complexities (resolved fact wrapped in details)
+            // Path 2: error.details.complexities (direct structure)
+            // Path 3: error.details.details (if it's an array of complexities directly)
+            let complexities: any[] | undefined;
+            
+            if (error.details?.details?.complexities && Array.isArray(error.details.details.complexities)) {
+                complexities = error.details.details.complexities;
+            } else if (error.details?.complexities && Array.isArray(error.details.complexities)) {
+                complexities = error.details.complexities;
+            } else if (Array.isArray(error.details?.details)) {
+                // Check if details array contains complexity objects
+                const first = error.details.details[0];
+                if (first && (first.metrics || first.cyclomaticComplexity !== undefined)) {
+                    complexities = error.details.details;
+                }
+            }
+            
+            if (complexities && complexities.length > 0) {
                 // Return all complexity issues for this file
                 return complexities.map((complexity: any) => {
                     const metrics = complexity.metrics || complexity;
                     return {
                         file: filePath,
-                        function: metrics.name || complexity.name || 'unknown',
+                        function: metrics.name || complexity.name || 'anonymous',
                         cyclomaticComplexity: metrics.cyclomaticComplexity,
                         cognitiveComplexity: metrics.cognitiveComplexity,
                         nestingDepth: metrics.nestingDepth,
@@ -901,16 +1031,22 @@ ${githubLink !== path.basename(filePath) ? `**Source:** ${githubLink}` : ''}
             const returnMatch = message.match(/return[s]?[:\s]+(\d+)/i);
             const lineMatch = message.match(/line[:\s]+(\d+)/i);
 
-            return [{
-                file: filePath,
-                function: functionMatch ? functionMatch[1] : 'unknown',
-                cyclomaticComplexity: cyclomaticMatch ? parseInt(cyclomaticMatch[1]) : undefined,
-                cognitiveComplexity: cognitiveMatch ? parseInt(cognitiveMatch[1]) : undefined,
-                nestingDepth: nestingMatch ? parseInt(nestingMatch[1]) : undefined,
-                parameterCount: paramMatch ? parseInt(paramMatch[1]) : undefined,
-                returnCount: returnMatch ? parseInt(returnMatch[1]) : undefined,
-                line: lineMatch ? parseInt(lineMatch[1]) : undefined
-            }];
+            // Only return a fallback entry if we found at least some data
+            if (functionMatch || cyclomaticMatch || cognitiveMatch || nestingMatch) {
+                return [{
+                    file: filePath,
+                    function: functionMatch ? functionMatch[1] : 'unknown',
+                    cyclomaticComplexity: cyclomaticMatch ? parseInt(cyclomaticMatch[1]) : undefined,
+                    cognitiveComplexity: cognitiveMatch ? parseInt(cognitiveMatch[1]) : undefined,
+                    nestingDepth: nestingMatch ? parseInt(nestingMatch[1]) : undefined,
+                    parameterCount: paramMatch ? parseInt(paramMatch[1]) : undefined,
+                    returnCount: returnMatch ? parseInt(returnMatch[1]) : undefined,
+                    line: lineMatch ? parseInt(lineMatch[1]) : undefined
+                }];
+            }
+            
+            // No structured data found, skip this entry
+            return [];
         } catch (e) {
             return [];
         }

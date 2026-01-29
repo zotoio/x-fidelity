@@ -5,6 +5,7 @@ module.exports = {
   baseUrl: '/x-fidelity/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
+  onBrokenAnchors: 'warn',
   favicon: 'img/x-fi.png',
   organizationName: 'zotoio',
   projectName: 'x-fidelity',
@@ -60,6 +61,13 @@ module.exports = {
           label: 'Getting Started',
         },
         {
+          href: 'https://zotoio.github.io/x-fidelity/rule-builder/',
+          position: 'left',
+          label: 'Rule Builder',
+          className: 'navbar-rule-builder',
+          target: '_self',
+        },
+        {
           href: 'https://github.com/zotoio/x-fidelity',
           label: 'GitHub',
           position: 'right',
@@ -69,7 +77,7 @@ module.exports = {
     footer: {
       style: 'dark',
       
-      copyright: `Copyright © ${new Date().getFullYear()} x-fidelity. Built with Docusaurus and https://aider.chat`,
+      copyright: `Copyright © ${new Date().getFullYear()} x-fidelity. Built with Docusaurus, https://aider.chat, https://cursor.sh`,
     },
     prism: {
       theme: require('prism-react-renderer').themes.github,

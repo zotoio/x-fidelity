@@ -2,7 +2,7 @@
   "name": "x-fidelity-vscode",
   "displayName": "X-Fidelity",
   "description": "VSCode extension for X-Fidelity code quality analysis with real-time diagnostics, comprehensive UI integration, and improved CLI embedding",
-  "version": "5.4.3",
+  "version": "5.7.4",
   "publisher": "zotoio",
   "private": true,
   "license": "MIT",
@@ -206,13 +206,18 @@
         "icon": "$(wrench)"
       },
       {
+        "command": "xfidelity.toggleSession",
+        "title": "X-Fidelity: Toggle Session Active",
+        "icon": "$(debug-pause)"
+      },
+      {
         "command": "xfidelity.toggleDiagnostics",
-        "title": "X-Fidelity: Toggle Diagnostics",
+        "title": "X-Fidelity: Toggle Session (Legacy)",
         "icon": "$(eye)"
       },
       {
         "command": "xfidelity.toggleAutorun",
-        "title": "X-Fidelity: Toggle Autorun",
+        "title": "X-Fidelity: Toggle Session (Legacy)",
         "icon": "$(sync)"
       }
     ],
@@ -669,6 +674,34 @@
           "default": true,
           "description": "🔀 Allow commands to be handled by other VSCode extensions",
           "order": 76
+        },
+        "xfidelity.promptPrefixes": {
+          "type": "object",
+          "description": "📝 Optional prefixes to add to AI prompts. Use for custom slash commands (e.g., '/explain'), context loading instructions, or project-specific guidance.",
+          "properties": {
+            "explainIssue": {
+              "type": "string",
+              "default": "",
+              "description": "Prefix for issue explanation prompts (e.g., '/explain ' or '@codebase ')"
+            },
+            "fixIssue": {
+              "type": "string",
+              "default": "",
+              "description": "Prefix for single issue fix prompts (e.g., '/fix ' or '@workspace ')"
+            },
+            "fixIssueGroup": {
+              "type": "string",
+              "default": "",
+              "description": "Prefix for batch fix prompts (e.g., '/agent ' or '@project ')"
+            }
+          },
+          "default": {
+            "explainIssue": "",
+            "fixIssue": "",
+            "fixIssueGroup": ""
+          },
+          "additionalProperties": false,
+          "order": 77
         }
       }
     },
@@ -845,9 +878,9 @@
     "rebuild-native": "yarn rebuild --runtime=electron --target=35.5.1 --cache=.npm --disturl=https://electronjs.org/headers",
     "rebuild-native:check": "node -e \"try { require('tree-sitter'); console.log('✅ Native modules OK'); } catch(e) { console.log('❌ Native rebuild needed:', e.message); process.exit(1); }\"",
     "pretest": "yarn build:dependencies && yarn verify:dependencies && yarn check-types && yarn build:test && yarn rebuild-native:check || yarn rebuild-native && yarn lint:fix && yarn clean:test-artifacts && node -e \"require('fs').mkdirSync('./vscode-test-user-data', {recursive: true})\" && yarn build:cli",
-    "test": "yarn check-types && yarn lint && yarn test:unit",
-    "test:coverage": "yarn check-types && yarn lint && jest --coverage",
-    "test:unit": "yarn check-types && yarn lint && jest",
+    "test": "yarn check-types && yarn build:test && yarn lint && yarn test:unit",
+    "test:coverage": "yarn check-types && yarn build:test && yarn lint && jest --coverage",
+    "test:unit": "yarn check-types && yarn build:test && yarn lint && jest",
     "test:integration": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration",
     "test:integration:binary": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration --grep \"Binary Discovery\"",
     "test:integration:vscode-setting": "yarn build && yarn build:test && yarn verify:dependencies && node scripts/test-cross-platform.js integration --grep \"VSCode Setting Override\"",

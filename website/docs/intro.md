@@ -17,6 +17,7 @@ X-Fidelity is a comprehensive code analysis framework that provides opinionated 
 - **Advanced Analysis**: AST-based code analysis with Tree-sitter, dependency checking, and pattern matching
 - **Plugin Architecture**: 9 built-in plugins with universal logging system and custom extension support
 - **Performance Optimization**: File caching, TTL-based invalidation, and performance monitoring
+- **Rule Builder GUI**: Create rules visually with an interactive web-based editor ([Launch](https://zotoio.github.io/x-fidelity/rule-builder/))
 
 ### User Interfaces
 - **VSCode Extension**: 47 commands, real-time analysis, Problems panel integration, 40+ settings
@@ -133,6 +134,7 @@ xfidelity . --archetype node-fullstack --output-format json
 ## Next Steps
 
 - **[Quickstart](/docs/quickstart)** - Run your first analysis in minutes
+- **[Rule Builder](https://zotoio.github.io/x-fidelity/rule-builder/)** - Create rules visually with the interactive GUI
 - **[VSCode Extension](/docs/vscode-extension/overview)** - Full-featured development experience  
 - **[Key Concepts](/docs/key-concepts)** - Understanding archetypes, rules, and facts
 - **[Plugin Development](/docs/plugins/overview)** - Extending X-Fidelity functionality

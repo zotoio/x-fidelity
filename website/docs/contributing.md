@@ -6,6 +6,10 @@ sidebar_position: 14
 
 We welcome contributions to x-fidelity! This guide explains how to contribute to the project.
 
+:::tip Cursor IDE Users
+If you're using [Cursor IDE](https://cursor.sh), check out our [Building with Cursor](./contributing/building-with-cursor.md) guide for specialized AI tooling including slash commands, expert subagents, and step-by-step skills that accelerate development.
+:::
+
 ## Getting Started
 
 1. Fork the repository on GitHub

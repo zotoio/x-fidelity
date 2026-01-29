@@ -6,6 +6,8 @@ sidebar_position: 2
 
 Practical rule snippets you can copy‑paste and adapt.
 
+> **Tip**: Use the [Rule Builder](https://zotoio.github.io/x-fidelity/rule-builder/) to create and test rules visually before exporting them as JSON.
+
 ## Regex policy (ban pattern)
 
 ```json
@@ -72,3 +74,9 @@ Practical rule snippets you can copy‑paste and adapt.
   "event": { "type": "warning", "params": { "message": "React is below v18" } }
 }
 ```
+
+## Next Steps
+
+- **[Rule Builder Guide](./rule-builder-guide)** - Create rules with the visual editor
+- **[Creating Templates](./rule-builder-templates)** - Contribute templates to the library
+- **[Hello Rule](./hello-rule)** - Step-by-step tutorial for your first rule
