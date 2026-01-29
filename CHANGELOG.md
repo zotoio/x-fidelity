@@ -2,6 +2,12 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.7.5](https://github.com/zotoio/x-fidelity/compare/v5.7.4...v5.7.5) (2026-01-29)
+
+### Bug Fixes
+
+* website/package.json to reduce vulnerabilities ([367f13a](https://github.com/zotoio/x-fidelity/commit/367f13a2f054402735c53254ab00619ccb141f9c))
+
 ## [5.7.4](https://github.com/zotoio/x-fidelity/compare/v5.7.3...v5.7.4) (2026-01-18)
 
 ### Bug Fixes
