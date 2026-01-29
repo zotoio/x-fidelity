@@ -1,28 +1,20 @@
 # Engineer Knowledge
 
-This directory contains domain-specific knowledge for the xfi-engineer subagent.
+Knowledge base for `xfi-engineer` agent.
 
-## Purpose
+See [../README.md](../README.md) for file naming conventions and [../KNOWLEDGE_GUIDELINES.md](../KNOWLEDGE_GUIDELINES.md) for management rules.
 
-The xfi-engineer agent uses this directory to store:
+## Domain
+
 - Implementation patterns and best practices
-- Code snippets and templates
-- Common solutions to recurring problems
+- Coding conventions and standards
+- Common utilities and helpers
 - Package-specific development notes
 
-## File Naming Convention
+## Contents
 
-Files follow the standard knowledge naming convention:
-`[ORDERING]-[topic]-[STATUS]-[YYMMDD].md`
-
-Example: `01-error-handling-patterns-CONFIRMED-260118.md`
-
-## Status Levels
-
-- **DRAFT**: Pending verification, don't treat as fact
-- **CONFIRMED**: Source of truth, use for decisions
-
-## See Also
-
-- `knowledge/README.md` - Knowledge directory overview
-- `knowledge/KNOWLEDGE_GUIDELINES.md` - Full management guidelines
+| File | Description |
+|------|-------------|
+| 100-implementation-patterns-CONFIRMED-260129.md | Async/await with performance logging, error handling, singleton registry, ExecutionContext |
+| 200-coding-conventions-CONFIRMED-260129.md | File/directory naming, import organization, TypeScript strict mode, documentation standards |
+| 300-common-utilities-CONFIRMED-260129.md | Logger interface, input validation, path validation, shared core types |

@@ -15,7 +15,9 @@ See [../README.md](../README.md) for file naming conventions and [../KNOWLEDGE_G
 
 | File | Description |
 |------|-------------|
-| (none yet) | - |
+| `100-platform-architecture-CONFIRMED-260129.md` | Platform architecture, layers, and contracts |
+| `200-design-patterns-CONFIRMED-260129.md` | Core design patterns and registries |
+| `300-feature-design-patterns-CONFIRMED-260129.md` | Feature design and integration patterns |
 
 ## Related
 

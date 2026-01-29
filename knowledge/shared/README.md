@@ -14,4 +14,5 @@ See [../README.md](../README.md) for file naming conventions and [../KNOWLEDGE_G
 
 | File | Description |
 |------|-------------|
-| (none yet) | - |
+| 100-package-structure-CONFIRMED-260129.md | Workspace packages, dependency graph, build order, entry points |
+| 200-core-data-flow-CONFIRMED-260129.md | Analysis engine flow, config sources, facts/operators, rule execution |

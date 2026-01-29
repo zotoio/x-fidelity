@@ -1,0 +1,23 @@
+---
+generated: 2026-01-26 09:45
+sourceChecksum: "944452619 1600"
+beforeTokens: 450
+afterTokens: 95
+crux: true
+alwaysApply: true
+---
+
+# Code Modification Protocol
+
+```crux
+«CRUX⟨_IMPORTANT_CORE_MEMORY.md⟩»
+R=req→truth;gap→assume+mark;?arch→ask first
+C=obs→cite path:lines;repo≻chat
+Δ=R≠C→tag{code|tests|req}+why
+PLAN=min files+targeted Δ;justify+file|broad
+PATCH=surgical diff;¬rewrite w/o proof
+CHECK=run/+tests|static val
+STATE={R,C,Δ}→upd on progress
+Ω{¬halluc;verified only}
+«/CRUX»
+```

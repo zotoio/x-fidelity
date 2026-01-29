@@ -1345,4 +1345,5 @@ describe('ReportGenerator', () => {
             expect(result).toBeDefined();
         });
     });
+
 });

@@ -1,4 +1,5 @@
 ---
+crux: true
 description: 
 globs: 
 alwaysApply: true
@@ -21,7 +22,7 @@ alwaysApply: true
 
 ## 7. before adding new files or functions, ensure that they are not duplications of existing equivalents.  instead the existing functions should be updated.
 
-## 8. do not leave temporary scripts and files created during execution of tools to analyse and fix issues scattered around the codebase.  move them to the local temp dir.
+## 8. do not leave temporary scripts and files created during execution of tools to analyse and fix issues scattered around the codebase.  move them to a 'temp' dir inside the repo.
 
 ## 9. vscode testing
 when changes are made that impact the vscode extension, ensure that any integration tests that execute to check the change are targeted rather than executing all of the integration test suites.

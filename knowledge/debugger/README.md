@@ -15,4 +15,6 @@ See [../README.md](../README.md) for file naming conventions and [../KNOWLEDGE_G
 
 | File | Description |
 |------|-------------|
-| (none yet) | - |
+| 100-standard-error-patterns-CONFIRMED-260129.md | StandardError class, error codes 1000-1699, factory patterns, helper functions |
+| 200-logging-conventions-CONFIRMED-260129.md | ILogger interface, LoggerProvider, ExecutionContext, PrefixingLogger, EnhancedLogger |
+| 300-troubleshooting-patterns-CONFIRMED-260129.md | Debug environment variables, error diagnosis by category, log interpretation, VSCode F5 debugging |

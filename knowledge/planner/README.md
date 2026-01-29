@@ -1,29 +1,24 @@
 # Planner Knowledge
 
-This directory contains domain-specific knowledge for the xfi-planner subagent.
+Knowledge base for `xfi-planner` agent.
 
-## Purpose
+See [../README.md](../README.md) for file naming conventions and [../KNOWLEDGE_GUIDELINES.md](../KNOWLEDGE_GUIDELINES.md) for management rules.
 
-The xfi-planner agent uses this directory to store:
+## Domain
+
 - Planning patterns and best practices
 - Lessons learned from plan executions
 - Common subtask breakdowns for feature types
 - Subagent delegation guidelines
 
-## File Naming Convention
+## Contents
 
-Files follow the standard knowledge naming convention:
-`[ORDERING]-[topic]-[STATUS]-[YYMMDD].md`
-
-Example: `01-planning-patterns-CONFIRMED-260118.md`
-
-## Status Levels
-
-- **DRAFT**: Pending verification, don't treat as fact
-- **CONFIRMED**: Source of truth, use for decisions
+| File | Description |
+|------|-------------|
+| 100-plan-structure-CONFIRMED-260129.md | Plan directory naming, index file structure, subtask files, status lifecycle |
+| 200-subtask-coordination-CONFIRMED-260129.md | Dependency graphs, parallel vs sequential execution, subagent delegation, progress tracking |
+| 300-execution-workflow-CONFIRMED-260129.md | Execution phases, user confirmation checkpoints, review gates, completion and knowledge capture |
 
 ## See Also
 
-- `knowledge/README.md` - Knowledge directory overview
-- `knowledge/KNOWLEDGE_GUIDELINES.md` - Full management guidelines
 - `knowledge/plans/` - Actual plan files (separate from knowledge)

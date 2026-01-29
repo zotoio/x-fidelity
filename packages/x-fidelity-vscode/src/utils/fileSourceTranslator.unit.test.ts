@@ -1,23 +1,35 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import * as path from 'path';
 import { FileSourceTranslator } from './fileSourceTranslator';
+
+// Use platform-appropriate mock workspace path
+const MOCK_WORKSPACE =
+  process.platform === 'win32' ? 'C:\\mock\\workspace' : '/mock/workspace';
 
 // Mock modules
 jest.mock('fs');
-jest.mock('vscode', () => ({
-  workspace: {
-    workspaceFolders: [
-      {
-        uri: {
-          fsPath: '/mock/workspace'
+jest.mock('vscode', () => {
+  const mockWorkspace =
+    process.platform === 'win32' ? 'C:\\mock\\workspace' : '/mock/workspace';
+  return {
+    workspace: {
+      workspaceFolders: [
+        {
+          uri: {
+            fsPath: mockWorkspace
+          }
         }
-      }
-    ]
-  },
-  Uri: {
-    file: (path: string) => ({ fsPath: path, toString: () => `file://${path}` })
-  }
-}));
+      ]
+    },
+    Uri: {
+      file: (filePath: string) => ({
+        fsPath: filePath,
+        toString: () => `file://${filePath}`
+      })
+    }
+  };
+});
 
 const mockFs = fs as jest.Mocked<typeof fs>;
 
@@ -81,49 +93,54 @@ describe('FileSourceTranslator', () => {
 
   describe('resolveFileUri', () => {
     test('should resolve REPO_GLOBAL_CHECK to README.md when it exists', async () => {
-      mockFs.existsSync.mockImplementation((path: fs.PathLike) => {
-        return path.toString() === '/mock/workspace/README.md';
+      const expectedReadmePath = path.join(MOCK_WORKSPACE, 'README.md');
+      mockFs.existsSync.mockImplementation((filePath: fs.PathLike) => {
+        return filePath.toString() === expectedReadmePath;
       });
 
       const result =
         await FileSourceTranslator.resolveFileUri('REPO_GLOBAL_CHECK');
 
       expect(result).toEqual({
-        fsPath: '/mock/workspace/README.md',
+        fsPath: expectedReadmePath,
         toString: expect.any(Function)
       });
     });
 
     test('should fallback to other files when README.md does not exist', async () => {
-      mockFs.existsSync.mockImplementation((path: fs.PathLike) => {
-        return path.toString() === '/mock/workspace/package.json';
+      const expectedPackageJsonPath = path.join(MOCK_WORKSPACE, 'package.json');
+      mockFs.existsSync.mockImplementation((filePath: fs.PathLike) => {
+        return filePath.toString() === expectedPackageJsonPath;
       });
 
       const result =
         await FileSourceTranslator.resolveFileUri('REPO_GLOBAL_CHECK');
 
       expect(result).toEqual({
-        fsPath: '/mock/workspace/package.json',
+        fsPath: expectedPackageJsonPath,
         toString: expect.any(Function)
       });
     });
 
     test('should resolve regular relative paths', async () => {
       const result = await FileSourceTranslator.resolveFileUri('src/index.ts');
+      const expectedPath = path.join(MOCK_WORKSPACE, 'src', 'index.ts');
 
       expect(result).toEqual({
-        fsPath: '/mock/workspace/src/index.ts',
+        fsPath: expectedPath,
         toString: expect.any(Function)
       });
     });
 
     test('should resolve absolute paths', async () => {
-      const result = await FileSourceTranslator.resolveFileUri(
-        '/absolute/path/file.ts'
-      );
+      const absolutePath =
+        process.platform === 'win32'
+          ? 'C:\\absolute\\path\\file.ts'
+          : '/absolute/path/file.ts';
+      const result = await FileSourceTranslator.resolveFileUri(absolutePath);
 
       expect(result).toEqual({
-        fsPath: '/absolute/path/file.ts',
+        fsPath: absolutePath,
         toString: expect.any(Function)
       });
     });

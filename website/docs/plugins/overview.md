@@ -122,7 +122,7 @@ Example usage:
 
 ### Built-in Plugin Loading
 
-All built-in plugins are automatically available and loaded as needed based on your archetype configuration. No additional installation is required for the 9 built-in plugins. Each plugin benefits from the universal logging system with context-aware loggers and enhanced error handling.
+All built-in plugins are automatically available and loaded as needed based on your archetype configuration. No additional installation is required for the 11 built-in plugins. Each plugin benefits from the universal logging system with context-aware loggers and enhanced error handling.
 
 ### External Plugin Loading
 
