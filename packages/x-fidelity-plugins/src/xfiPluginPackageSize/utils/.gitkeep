@@ -1,4 +1,0 @@
-# Placeholder for utils directory
-# This directory will contain:
-# - sizeCalculator.ts - Utility functions for calculating file/directory sizes
-# - workspaceDetector.ts - Utility for detecting monorepo workspace type

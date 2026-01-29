@@ -12,7 +12,6 @@ export { xfiPluginRemoteStringValidator } from './xfiPluginRemoteStringValidator
 export { xfiPluginRequiredFiles } from './xfiPluginRequiredFiles';
 export { xfiPluginSimpleExample } from './xfiPluginSimpleExample';
 export { xfiPluginExtractValues } from './xfiPluginExtractValues';
-export { xfiPluginPackageSize } from './xfiPluginPackageSize';
 
 // Create a registry of all available plugins for dynamic loading
 export const availablePlugins = {
@@ -26,7 +25,6 @@ export const availablePlugins = {
     xfiPluginRequiredFiles: () => import('./xfiPluginRequiredFiles').then(m => m.xfiPluginRequiredFiles),
     xfiPluginSimpleExample: () => import('./xfiPluginSimpleExample').then(m => m.xfiPluginSimpleExample),
     xfiPluginExtractValues: () => import('./xfiPluginExtractValues').then(m => m.xfiPluginExtractValues),
-    xfiPluginPackageSize: () => import('./xfiPluginPackageSize').then(m => m.xfiPluginPackageSize),
 };
 
 /**

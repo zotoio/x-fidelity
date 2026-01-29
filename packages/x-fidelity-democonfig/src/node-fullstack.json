@@ -10,7 +10,6 @@
         "openaiAnalysisTestCriticality-global",
         "invalidSystemIdConfigured-iterative",
         "missingRequiredFiles-global",
-        "packageSize-global",
         "factDoesNotAddResultToAlmanac-iterative",
         "newSdkFeatureNotAdoped-global",
         "lowMigrationToNewComponentLib-global",

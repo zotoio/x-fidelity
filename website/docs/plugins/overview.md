@@ -19,7 +19,7 @@ Plugins are Node.js modules that extend X-Fidelity's capabilities:
 
 ## Built-in Plugins
 
-X-Fidelity comes with **11 built-in plugins** that provide comprehensive code analysis capabilities with universal logging support and enhanced error handling:
+X-Fidelity comes with **10 built-in plugins** that provide comprehensive code analysis capabilities with universal logging support and enhanced error handling:
 
 ### Core Analysis Plugins
 
@@ -101,31 +101,9 @@ Flexible multi-strategy value extraction into runtime facts:
 - **Operators**: `matchesSatisfy`
 - **Capabilities**: JSONPath/YAML→JSONPath/XPath/AST/Regex extraction with security and limits
 
-#### 10. Package Size Plugin (`xfiPluginPackageSize`)
-Monorepo package size analysis and threshold enforcement:
-- **Facts**: `packageSize`
-- **Operators**: `packageSizeThreshold`
-- **Capabilities**: Workspace detection (yarn/npm/pnpm), source vs build separation, file type breakdown, console table output
-
-Example usage:
-```json
-{
-    "fact": "packageSize",
-    "params": {
-        "sourceDirs": ["src"],
-        "buildDirs": ["dist", "build", "out", "lib"]
-    },
-    "operator": "packageSizeThreshold",
-    "value": {
-        "warningThresholdBytes": 1048576,
-        "fatalityThresholdBytes": 5242880
-    }
-}
-```
-
 ### Development Plugins
 
-#### 11. Simple Example Plugin (`xfiPluginSimpleExample`)
+#### 10. Simple Example Plugin (`xfiPluginSimpleExample`)
 Template plugin demonstrating plugin structure:
 - **Facts**: `customFact`
 - **Operators**: `customOperator`
