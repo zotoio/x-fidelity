@@ -2,6 +2,24 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.8.0](https://github.com/zotoio/x-fidelity/compare/v5.7.5...v5.8.0) (2026-01-29)
+
+### Bug Fixes
+
+* **plugins:** normalize pnpm versions with peer dependency suffixes ([7cc7aae](https://github.com/zotoio/x-fidelity/commit/7cc7aaeaef50e7b4d7555ebffaac9763d490afc9))
+
+### Features
+
+* **crux:** add pending compression notifications and update docs ([228d919](https://github.com/zotoio/x-fidelity/commit/228d919e93b1a4454cb64a5b406eb95330b5d770)), closes [#0](https://github.com/zotoio/x-fidelity/issues/0)
+* **hooks:** add non-blocking debug logging for all lifecycle hooks ([3f60c9f](https://github.com/zotoio/x-fidelity/commit/3f60c9f19c5e38d69e8c6c5d34a084a4090884ab))
+* **hooks:** enhance debugging with session and execution logging ([62b57ee](https://github.com/zotoio/x-fidelity/commit/62b57eeca2a30bb2eb215cdb59b9cc3067aa049f))
+* **knowledge:** populate confirmed knowledge files for all subagents ([551f5b5](https://github.com/zotoio/x-fidelity/commit/551f5b5167ca4eb6de07b3250c7256538b8ac57e))
+* **plugins:** add package size analysis plugin with CRUX compression ([76bc085](https://github.com/zotoio/x-fidelity/commit/76bc085de7806008545f9e6ce0611972b57c4689))
+
+### Reverts
+
+* **plugins:** remove package size analysis plugin ([4f3c6a0](https://github.com/zotoio/x-fidelity/commit/4f3c6a0119a1167aa460bfcc0c1efdde07f82b50))
+
 ## [5.7.5](https://github.com/zotoio/x-fidelity/compare/v5.7.4...v5.7.5) (2026-01-29)
 
 ### Bug Fixes
