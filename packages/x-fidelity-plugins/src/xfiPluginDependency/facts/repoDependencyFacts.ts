@@ -113,11 +113,19 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
 
     let result: LocalDependencies[] = [];
     
-    // pnpm: parse lockfile directly (no need for node_modules)
-    // yarn/npm: use command-based collection with lockfile fallback
+    // All package managers: try command-based collection first, fall back to lockfile parsing
     if (fs.existsSync(path.join(actualRepoPath, 'pnpm-lock.yaml'))) {
-        logger.debug('Using pnpm lockfile parsing');
-        result = parsePnpmLockfile(actualRepoPath);
+        logger.debug('Using pnpm command-based collection');
+        try {
+            result = await collectNodeDependencies('pnpm', actualRepoPath);
+        } catch (error) {
+            logger.debug(`pnpm command failed, falling back to lockfile parsing: ${error}`);
+        }
+        // Fallback to lockfile parsing if command returns empty or fails
+        if (result.length === 0) {
+            logger.debug('pnpm command returned empty, trying lockfile parsing');
+            result = parsePnpmLockfile(actualRepoPath);
+        }
     } else if (fs.existsSync(path.join(actualRepoPath, 'yarn.lock'))) {
         logger.debug('Using yarn command-based collection');
         try {
@@ -174,6 +182,37 @@ function isPnpmWorkspace(repoPath: string): boolean {
 }
 
 /**
+ * Normalize a pnpm version string by stripping peer dependency suffixes.
+ * 
+ * pnpm lockfiles can contain version strings with peer dependency suffixes like:
+ * - '1.0.0(react@18.2.0)'
+ * - '1.0.0(react@18.2.0)(typescript@5.0.0)'
+ * - 'button@1.0.0(react@16.0.0(react-dom@16.0.0))'
+ * 
+ * These suffixes are pnpm-specific metadata and not valid semver.
+ * This function extracts just the base version for semver operations.
+ * 
+ * @param version The pnpm version string (may contain peer dep suffixes)
+ * @returns The normalized semver version string
+ */
+export function normalizePnpmVersion(version: string): string {
+    if (!version) {
+        return version;
+    }
+    
+    // Find the first opening parenthesis that starts a peer dep suffix
+    // The base version is everything before that
+    const parenIndex = version.indexOf('(');
+    if (parenIndex > 0) {
+        const baseVersion = version.substring(0, parenIndex);
+        logger.trace(`Normalized pnpm version '${version}' to '${baseVersion}'`);
+        return baseVersion;
+    }
+    
+    return version;
+}
+
+/**
  * Parse pnpm-lock.yaml to extract dependencies without requiring node_modules
  */
 function parsePnpmLockfile(repoPath: string): LocalDependencies[] {
@@ -208,7 +247,9 @@ function parsePnpmLockfile(repoPath: string): LocalDependencies[] {
             const addDep = (name: string, version: string) => {
                 // Skip if already added (deduplication across importers)
                 if (!dependencies.some(d => d.name === name)) {
-                    dependencies.push({ name, version });
+                    // Normalize version to strip pnpm peer dependency suffixes
+                    const normalizedVersion = normalizePnpmVersion(version);
+                    dependencies.push({ name, version: normalizedVersion });
                 }
             };
 
@@ -237,6 +278,16 @@ function parsePnpmLockfile(repoPath: string): LocalDependencies[] {
             // Process peerDependencies
             if (importerData.peerDependencies) {
                 for (const [name, info] of Object.entries(importerData.peerDependencies)) {
+                    const depInfo = info as any;
+                    if (depInfo.version && !depInfo.version.startsWith('link:')) {
+                        addDep(name, depInfo.version);
+                    }
+                }
+            }
+            
+            // Process optionalDependencies
+            if (importerData.optionalDependencies) {
+                for (const [name, info] of Object.entries(importerData.optionalDependencies)) {
                     const depInfo = info as any;
                     if (depInfo.version && !depInfo.version.startsWith('link:')) {
                         addDep(name, depInfo.version);
@@ -377,8 +428,9 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
                 command = `"${binaryPath}" ls -a --json`;
             } else if (packageManager === 'pnpm') {
                 // Use -r flag only for pnpm workspaces
+                // Use --lockfile-only to read from lockfile without requiring node_modules (pnpm v10.23.0+)
                 const recursiveFlag = isPnpmWorkspace(actualRepoPath) ? '-r ' : '';
-                command = `"${binaryPath}" list ${recursiveFlag}--json --depth=Infinity`;
+                command = `"${binaryPath}" list ${recursiveFlag}--json --depth=Infinity --lockfile-only`;
             } else {
                 // yarn
                 command = `"${binaryPath}" list --json`;
@@ -404,8 +456,9 @@ async function collectNodeDependencies(packageManager: string, repoPath?: string
                 command = `"${binaryPath}" ls -a --json`;
             } else if (packageManager === 'pnpm') {
                 // Use -r flag only for pnpm workspaces
+                // Use --lockfile-only to read from lockfile without requiring node_modules (pnpm v10.23.0+)
                 const recursiveFlag = isPnpmWorkspace(actualRepoPath) ? '-r ' : '';
-                command = `"${binaryPath}" list ${recursiveFlag}--json --depth=Infinity`;
+                command = `"${binaryPath}" list ${recursiveFlag}--json --depth=Infinity --lockfile-only`;
             } else {
                 // yarn
                 command = `"${binaryPath}" list --json`;
@@ -527,10 +580,16 @@ function processPnpmDependencies(pnpmOutput: any): LocalDependencies[] {
     // We need to handle both cases
     const outputs = Array.isArray(pnpmOutput) ? pnpmOutput : [pnpmOutput];
     
+    // Helper to normalize version and extract from various formats
+    const normalizeVersion = (version: string | undefined): string => {
+        if (!version) return '';
+        return normalizePnpmVersion(version);
+    };
+    
     const processDependency = (depNode: any): LocalDependencies => {
         const newDep: LocalDependencies = { 
             name: depNode.name, 
-            version: depNode.version 
+            version: normalizeVersion(depNode.version)
         };
         
         // pnpm can have dependencies as an array or object depending on version
@@ -546,7 +605,7 @@ function processPnpmDependencies(pnpmOutput: any): LocalDependencies[] {
                 Object.entries(depNode.dependencies).forEach(([childName, childInfo]: [string, any]) => {
                     const childDep: LocalDependencies = {
                         name: childName,
-                        version: typeof childInfo === 'string' ? childInfo : childInfo.version
+                        version: normalizeVersion(typeof childInfo === 'string' ? childInfo : childInfo.version)
                     };
                     if (typeof childInfo === 'object' && childInfo.dependencies) {
                         childDep.dependencies = [];
@@ -558,7 +617,7 @@ function processPnpmDependencies(pnpmOutput: any): LocalDependencies[] {
                             Object.entries(childInfo.dependencies).forEach(([gcName, gcInfo]: [string, any]) => {
                                 childDep.dependencies?.push({
                                     name: gcName,
-                                    version: typeof gcInfo === 'string' ? gcInfo : gcInfo.version
+                                    version: normalizeVersion(typeof gcInfo === 'string' ? gcInfo : gcInfo.version)
                                 });
                             });
                         }
@@ -584,7 +643,7 @@ function processPnpmDependencies(pnpmOutput: any): LocalDependencies[] {
                 Object.entries(output.dependencies).forEach(([name, info]: [string, any]) => {
                     const dep: LocalDependencies = {
                         name,
-                        version: typeof info === 'string' ? info : info.version
+                        version: normalizeVersion(typeof info === 'string' ? info : info.version)
                     };
                     if (typeof info === 'object' && info.dependencies) {
                         dep.dependencies = [];
@@ -596,7 +655,7 @@ function processPnpmDependencies(pnpmOutput: any): LocalDependencies[] {
                             Object.entries(info.dependencies).forEach(([childName, childInfo]: [string, any]) => {
                                 dep.dependencies?.push({
                                     name: childName,
-                                    version: typeof childInfo === 'string' ? childInfo : childInfo.version
+                                    version: normalizeVersion(typeof childInfo === 'string' ? childInfo : childInfo.version)
                                 });
                             });
                         }
@@ -616,7 +675,7 @@ function processPnpmDependencies(pnpmOutput: any): LocalDependencies[] {
                 Object.entries(output.devDependencies).forEach(([name, info]: [string, any]) => {
                     const dep: LocalDependencies = {
                         name,
-                        version: typeof info === 'string' ? info : info.version
+                        version: normalizeVersion(typeof info === 'string' ? info : info.version)
                     };
                     dependencies.push(dep);
                 });
@@ -826,9 +885,23 @@ export async function repoDependencyAnalysis(params: any, almanac: Almanac) {
 
 export function semverValid(installed: string, required: string): boolean {
 
-    // Remove potential @namespace from installed version
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    installed = installed.includes('@') ? installed.split('@').pop()! : installed;
+    // Normalize pnpm versions that may contain peer dependency suffixes
+    // e.g., '1.0.0(react@18.2.0)' -> '1.0.0'
+    installed = normalizePnpmVersion(installed);
+    
+    // Handle version strings that may include package name prefix
+    // e.g., '@scope/package@1.0.0' -> '1.0.0' or 'package@1.0.0' -> '1.0.0'
+    // Only strip if it looks like a package@version format (has @ after a package name)
+    if (installed.includes('@')) {
+        // For scoped packages like '@scope/pkg@1.0.0', find the last @ which separates name from version
+        const lastAtIndex = installed.lastIndexOf('@');
+        // Check if there's content after the @ that looks like a version
+        const afterAt = installed.substring(lastAtIndex + 1);
+        if (afterAt && /^\d/.test(afterAt)) {
+            // The part after @ starts with a digit, so it's likely the version
+            installed = afterAt;
+        }
+    }
 
     if (!installed || !required) {
         return true;

@@ -3,7 +3,7 @@ import fs from 'fs';
 import { execSync } from 'child_process';
 import { Almanac } from 'json-rules-engine';
 import { LocalDependencies, MinimumDepVersions, VersionData } from '@x-fidelity/types';
-import { semverValid, normalizePackageName, collectLocalDependencies, getDependencyVersionFacts, clearDependencyCache } from './repoDependencyFacts';
+import { semverValid, normalizePackageName, normalizePnpmVersion, collectLocalDependencies, getDependencyVersionFacts, clearDependencyCache } from './repoDependencyFacts';
 import * as util from 'util';
 import { logger } from '@x-fidelity/core';
 
@@ -80,7 +80,14 @@ describe('repoDependencyFacts', () => {
 
     describe('collectLocalDependencies', () => {
         // Helper to create pnpm lockfile content
-        const createPnpmLockfile = (deps: Record<string, string>, devDeps?: Record<string, string>) => {
+        interface PnpmLockfileOptions {
+            deps?: Record<string, string>;
+            devDeps?: Record<string, string>;
+            peerDeps?: Record<string, string>;
+            optionalDeps?: Record<string, string>;
+        }
+        
+        const createPnpmLockfile = (deps: Record<string, string>, devDeps?: Record<string, string>, options?: { peerDeps?: Record<string, string>; optionalDeps?: Record<string, string> }) => {
             let content = `lockfileVersion: '9.0'\nimporters:\n  .:\n`;
             if (Object.keys(deps).length > 0) {
                 content += `    dependencies:\n`;
@@ -91,6 +98,18 @@ describe('repoDependencyFacts', () => {
             if (devDeps && Object.keys(devDeps).length > 0) {
                 content += `    devDependencies:\n`;
                 for (const [name, version] of Object.entries(devDeps)) {
+                    content += `      '${name}':\n        specifier: ^${version}\n        version: ${version}\n`;
+                }
+            }
+            if (options?.peerDeps && Object.keys(options.peerDeps).length > 0) {
+                content += `    peerDependencies:\n`;
+                for (const [name, version] of Object.entries(options.peerDeps)) {
+                    content += `      '${name}':\n        specifier: ^${version}\n        version: ${version}\n`;
+                }
+            }
+            if (options?.optionalDeps && Object.keys(options.optionalDeps).length > 0) {
+                content += `    optionalDependencies:\n`;
+                for (const [name, version] of Object.entries(options.optionalDeps)) {
                     content += `      '${name}':\n        specifier: ^${version}\n        version: ${version}\n`;
                 }
             }
@@ -273,10 +292,17 @@ packages: {}
         });
         
         it('should handle pnpm lockfile parsing errors gracefully', async () => {
+            clearDependencyCache();
+            
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
             });
             
+            // Mock pnpm command to fail (binary not found)
+            const { discoverBinary } = require('@x-fidelity/core');
+            discoverBinary.mockImplementation(() => Promise.resolve(null));
+            
+            // Mock lockfile parsing to fail
             (fs.readFileSync as jest.Mock).mockImplementation(() => {
                 throw new Error('Read error');
             });
@@ -550,6 +576,45 @@ packages: {}
             ]);
         });
 
+        it('should strip pnpm peer dependency suffixes from versions in lockfile', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            // pnpm lockfiles can have versions with peer dependency suffixes
+            // See: https://github.com/pnpm/spec/blob/master/lockfile/9.0.md
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      react:
+        specifier: ^18.0.0
+        version: 18.2.0
+      button:
+        specifier: ^1.0.0
+        version: 1.0.0(react@18.2.0)
+      complex-dep:
+        specifier: ^2.0.0
+        version: 2.5.0(react@18.2.0)(typescript@5.0.0)
+    peerDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.3.0
+packages: {}
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            // Peer dependency suffixes should be stripped from versions
+            expect(result).toEqual([
+                { name: 'react', version: '18.2.0' },
+                { name: 'button', version: '1.0.0' },  // NOT '1.0.0(react@18.2.0)'
+                { name: 'complex-dep', version: '2.5.0' },  // NOT '2.5.0(react@18.2.0)(typescript@5.0.0)'
+                { name: 'typescript', version: '5.3.0' }
+            ]);
+        });
+
         it('should handle pnpm empty dependencies in lockfile', async () => {
             (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
                 return filePath.includes('pnpm-lock.yaml');
@@ -642,6 +707,49 @@ packages: {}
             expect(result).toEqual([
                 { name: 'dev-package', version: '1.0.0' }
             ]);
+        });
+
+        it('should handle pnpm lockfile with optionalDependencies', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = createPnpmLockfile(
+                { 'prod-package': '1.0.0' },
+                undefined,
+                { optionalDeps: { 'fsevents': '2.3.3', 'esbuild-linux': '0.19.0' } }
+            );
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            expect(result).toContainEqual({ name: 'prod-package', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'fsevents', version: '2.3.3' });
+            expect(result).toContainEqual({ name: 'esbuild-linux', version: '0.19.0' });
+        });
+
+        it('should handle pnpm lockfile with all dependency types', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = createPnpmLockfile(
+                { 'prod-dep': '1.0.0' },
+                { 'dev-dep': '2.0.0' },
+                { 
+                    peerDeps: { 'peer-dep': '3.0.0' },
+                    optionalDeps: { 'optional-dep': '4.0.0' }
+                }
+            );
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            expect(result).toContainEqual({ name: 'prod-dep', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'dev-dep', version: '2.0.0' });
+            expect(result).toContainEqual({ name: 'peer-dep', version: '3.0.0' });
+            expect(result).toContainEqual({ name: 'optional-dep', version: '4.0.0' });
+            expect(result.length).toBe(4);
         });
 
         it('should handle pnpm discoverBinary returning null', async () => {
@@ -972,6 +1080,43 @@ packages: {}
         });
     });
 
+    describe('normalizePnpmVersion', () => {
+        it('should return simple versions unchanged', () => {
+            expect(normalizePnpmVersion('1.0.0')).toBe('1.0.0');
+            expect(normalizePnpmVersion('18.2.0')).toBe('18.2.0');
+            expect(normalizePnpmVersion('5.0.0-beta.1')).toBe('5.0.0-beta.1');
+        });
+
+        it('should strip simple peer dependency suffixes', () => {
+            expect(normalizePnpmVersion('1.0.0(react@18.2.0)')).toBe('1.0.0');
+            expect(normalizePnpmVersion('2.5.0(typescript@5.0.0)')).toBe('2.5.0');
+        });
+
+        it('should strip multiple peer dependency suffixes', () => {
+            expect(normalizePnpmVersion('1.0.0(react@18.2.0)(typescript@5.0.0)')).toBe('1.0.0');
+        });
+
+        it('should strip nested peer dependency suffixes', () => {
+            // pnpm can produce nested suffixes like button@1.0.0(react@16.0.0(react-dom@16.0.0))
+            expect(normalizePnpmVersion('1.0.0(react@16.0.0(react-dom@16.0.0))')).toBe('1.0.0');
+        });
+
+        it('should handle pre-release versions with peer suffixes', () => {
+            expect(normalizePnpmVersion('1.0.0-beta.1(react@18.0.0)')).toBe('1.0.0-beta.1');
+        });
+
+        it('should handle empty and null-like values', () => {
+            expect(normalizePnpmVersion('')).toBe('');
+            expect(normalizePnpmVersion(null as any)).toBe(null);
+            expect(normalizePnpmVersion(undefined as any)).toBe(undefined);
+        });
+
+        it('should not strip if parenthesis is at position 0', () => {
+            // Edge case: version starting with ( should not be modified
+            expect(normalizePnpmVersion('(invalid)')).toBe('(invalid)');
+        });
+    });
+
     describe('semverValid', () => {
         it('should return true for valid version comparisons', () => {
             expect(semverValid('2.0.0', '>1.0.0')).toBe(true);
@@ -1070,6 +1215,31 @@ packages: {}
             
             semverValid('1.0.0', 'invalid-range');
             expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('invalid required version'));
+        });
+
+        it('should handle pnpm peer dependency suffixes in installed versions', () => {
+            // pnpm lockfiles can have versions like '1.0.0(react@18.2.0)'
+            expect(semverValid('1.0.0(react@18.2.0)', '^1.0.0')).toBe(true);
+            expect(semverValid('1.5.0(react@18.2.0)', '^1.0.0')).toBe(true);
+            expect(semverValid('0.9.0(react@18.2.0)', '^1.0.0')).toBe(false);
+        });
+
+        it('should handle pnpm versions with multiple peer dependency suffixes', () => {
+            expect(semverValid('2.0.0(react@18.0.0)(typescript@5.0.0)', '>=2.0.0')).toBe(true);
+            expect(semverValid('1.9.0(react@18.0.0)(typescript@5.0.0)', '>=2.0.0')).toBe(false);
+        });
+
+        it('should handle pnpm versions with nested peer dependency suffixes', () => {
+            // Nested peer deps like button@1.0.0(react@16.0.0(react-dom@16.0.0))
+            expect(semverValid('1.0.0(react@16.0.0(react-dom@16.0.0))', '^1.0.0')).toBe(true);
+            expect(semverValid('0.5.0(react@16.0.0(react-dom@16.0.0))', '^1.0.0')).toBe(false);
+        });
+
+        it('should handle package@version format in installed string', () => {
+            // Sometimes version strings can include the package name
+            expect(semverValid('package@1.0.0', '^1.0.0')).toBe(true);
+            expect(semverValid('@scope/package@1.0.0', '^1.0.0')).toBe(true);
+            expect(semverValid('@scope/package@0.5.0', '^1.0.0')).toBe(false);
         });
     });
 
