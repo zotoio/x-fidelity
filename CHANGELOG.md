@@ -2,6 +2,12 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.9.0](https://github.com/zotoio/x-fidelity/compare/v5.8.0...v5.9.0) (2026-01-30)
+
+### Features
+
+* **hooks:** add pending CRUX compression notification on session start ([6046c26](https://github.com/zotoio/x-fidelity/commit/6046c26fd6741efd21b07d621687b5687526adc6))
+
 ## [5.8.0](https://github.com/zotoio/x-fidelity/compare/v5.7.5...v5.8.0) (2026-01-29)
 
 ### Bug Fixes
