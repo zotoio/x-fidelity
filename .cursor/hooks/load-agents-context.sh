@@ -21,6 +21,8 @@ PENDING_FILE=".cursor/hooks/pending-crux-compress.json"
 if [[ -f "$PENDING_FILE" ]]; then
     pending_files=$(jq -r '.files | join(", ")' "$PENDING_FILE" 2>/dev/null)
     pending_count=$(jq -r '.files | length' "$PENDING_FILE" 2>/dev/null)
+    # Ensure pending_count is a valid positive integer (default to 0 if empty/non-numeric)
+    [[ "$pending_count" =~ ^[0-9]+$ ]] || pending_count=0
     if [[ -n "$pending_files" && "$pending_files" != "null" && "$pending_count" -gt 0 ]]; then
         # Log pending files
         echo "$(date '+%Y-%m-%d %H:%M:%S') - Pending CRUX compression: $pending_files" >> /tmp/xfi-hook-debug.log
