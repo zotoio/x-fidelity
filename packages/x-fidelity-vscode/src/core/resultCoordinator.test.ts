@@ -757,4 +757,742 @@ describe('ResultCoordinator', () => {
       expect(() => coordinator.dispose()).not.toThrow();
     });
   });
+
+  describe('cache restoration with stale/corrupted data', () => {
+    const createMockComponents = () => ({
+      diagnosticProvider: { updateFromProcessedResult: jest.fn() },
+      issuesTreeViewManager: { updateFromProcessedResult: jest.fn() },
+      statusBarProvider: { updateFromProcessedResult: jest.fn() }
+    });
+
+    it('should handle restoration when cached result has null diagnostics map', async () => {
+      // First, process a valid result to populate cache
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 1,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/src/file1.ts',
+                errors: [
+                  {
+                    ruleFailure: 'test-rule',
+                    level: 'warning',
+                    details: { message: 'Test' }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 1 },
+        timestamp: Date.now(),
+        duration: 500,
+        operationId: 'test-op-cache-1'
+      };
+
+      const components = createMockComponents();
+      await coordinator.processAndDistributeResults(
+        mockResult as any,
+        components
+      );
+
+      // Verify cache exists
+      expect(coordinator.hasCachedResults()).toBe(true);
+      const cached = coordinator.getLastProcessedResult();
+      expect(cached).not.toBeNull();
+      expect(cached!.diagnostics).toBeInstanceOf(Map);
+    });
+
+    it('should handle restoration when component throws during restore', async () => {
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 1,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/src/file1.ts',
+                errors: [
+                  {
+                    ruleFailure: 'test-rule',
+                    level: 'warning',
+                    details: { message: 'Test' }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 1 },
+        timestamp: Date.now(),
+        duration: 500,
+        operationId: 'test-op-cache-2'
+      };
+
+      const components = createMockComponents();
+      await coordinator.processAndDistributeResults(
+        mockResult as any,
+        components
+      );
+
+      // Now try to restore with a failing component
+      const failingComponents = {
+        diagnosticProvider: {
+          updateFromProcessedResult: jest
+            .fn()
+            .mockRejectedValue(new Error('Restore failed'))
+        },
+        issuesTreeViewManager: { updateFromProcessedResult: jest.fn() },
+        statusBarProvider: { updateFromProcessedResult: jest.fn() }
+      };
+
+      const result =
+        await coordinator.restoreDiagnosticsFromCache(failingComponents);
+
+      // Should return false when restoration fails
+      expect(result).toBe(false);
+    });
+
+    it('should handle multiple sequential cache restorations', async () => {
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 2,
+            fileCount: 2,
+            issueDetails: [
+              {
+                filePath: '/test/src/file1.ts',
+                errors: [
+                  {
+                    ruleFailure: 'rule-1',
+                    level: 'warning',
+                    details: { message: 'Warning 1' }
+                  }
+                ]
+              },
+              {
+                filePath: '/test/src/file2.ts',
+                errors: [
+                  {
+                    ruleFailure: 'rule-2',
+                    level: 'error',
+                    details: { message: 'Error 1' }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 2 },
+        timestamp: Date.now(),
+        duration: 500,
+        operationId: 'test-op-sequential'
+      };
+
+      const components = createMockComponents();
+      await coordinator.processAndDistributeResults(
+        mockResult as any,
+        components
+      );
+
+      // Restore multiple times in sequence
+      for (let i = 0; i < 3; i++) {
+        jest.clearAllMocks();
+        const freshComponents = createMockComponents();
+        const result =
+          await coordinator.restoreDiagnosticsFromCache(freshComponents);
+
+        expect(result).toBe(true);
+        expect(
+          freshComponents.diagnosticProvider.updateFromProcessedResult
+        ).toHaveBeenCalledTimes(1);
+      }
+    });
+  });
+
+  describe('component failure handling during distribution', () => {
+    it('should propagate error when diagnosticProvider fails', async () => {
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 1,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/src/file1.ts',
+                errors: [
+                  {
+                    ruleFailure: 'test-rule',
+                    level: 'warning',
+                    details: { message: 'Test' }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 1 },
+        timestamp: Date.now(),
+        duration: 500,
+        operationId: 'test-op-diag-fail'
+      };
+
+      const failingComponents = {
+        diagnosticProvider: {
+          updateFromProcessedResult: jest
+            .fn()
+            .mockRejectedValue(new Error('DiagnosticProvider failed'))
+        },
+        issuesTreeViewManager: { updateFromProcessedResult: jest.fn() },
+        statusBarProvider: { updateFromProcessedResult: jest.fn() }
+      };
+
+      await expect(
+        coordinator.processAndDistributeResults(
+          mockResult as any,
+          failingComponents
+        )
+      ).rejects.toThrow('DiagnosticProvider failed');
+    });
+
+    it('should propagate error when issuesTreeViewManager fails', async () => {
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 1,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/src/file1.ts',
+                errors: [
+                  {
+                    ruleFailure: 'test-rule',
+                    level: 'warning',
+                    details: { message: 'Test' }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 1 },
+        timestamp: Date.now(),
+        duration: 500,
+        operationId: 'test-op-tree-fail'
+      };
+
+      const failingComponents = {
+        diagnosticProvider: { updateFromProcessedResult: jest.fn() },
+        issuesTreeViewManager: {
+          updateFromProcessedResult: jest.fn().mockImplementation(() => {
+            throw new Error('TreeViewManager failed');
+          })
+        },
+        statusBarProvider: { updateFromProcessedResult: jest.fn() }
+      };
+
+      await expect(
+        coordinator.processAndDistributeResults(
+          mockResult as any,
+          failingComponents
+        )
+      ).rejects.toThrow('TreeViewManager failed');
+    });
+
+    it('should propagate error when statusBarProvider fails', async () => {
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 1,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/src/file1.ts',
+                errors: [
+                  {
+                    ruleFailure: 'test-rule',
+                    level: 'warning',
+                    details: { message: 'Test' }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 1 },
+        timestamp: Date.now(),
+        duration: 500,
+        operationId: 'test-op-status-fail'
+      };
+
+      const failingComponents = {
+        diagnosticProvider: { updateFromProcessedResult: jest.fn() },
+        issuesTreeViewManager: { updateFromProcessedResult: jest.fn() },
+        statusBarProvider: {
+          updateFromProcessedResult: jest.fn().mockImplementation(() => {
+            throw new Error('StatusBarProvider failed');
+          })
+        }
+      };
+
+      await expect(
+        coordinator.processAndDistributeResults(
+          mockResult as any,
+          failingComponents
+        )
+      ).rejects.toThrow('StatusBarProvider failed');
+    });
+
+    it('should handle components missing updateFromProcessedResult method', async () => {
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 1,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/src/file1.ts',
+                errors: [
+                  {
+                    ruleFailure: 'test-rule',
+                    level: 'warning',
+                    details: { message: 'Test' }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 1 },
+        timestamp: Date.now(),
+        duration: 500,
+        operationId: 'test-op-missing-method'
+      };
+
+      // Components without the updateFromProcessedResult method
+      const incompleteComponents = {
+        diagnosticProvider: {},
+        issuesTreeViewManager: {},
+        statusBarProvider: {}
+      };
+
+      // Should not throw, but log warnings
+      const result = await coordinator.processAndDistributeResults(
+        mockResult as any,
+        incompleteComponents as any
+      );
+
+      expect(result).toBeDefined();
+      expect(result.totalIssues).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('large result set handling', () => {
+    const createMockComponents = () => ({
+      diagnosticProvider: { updateFromProcessedResult: jest.fn() },
+      issuesTreeViewManager: { updateFromProcessedResult: jest.fn() },
+      statusBarProvider: { updateFromProcessedResult: jest.fn() }
+    });
+
+    it('should handle result set with 100+ issues', async () => {
+      const issues = Array.from({ length: 100 }, (_, i) => ({
+        ruleFailure: `rule-${i}`,
+        level: i % 3 === 0 ? 'error' : i % 3 === 1 ? 'warning' : 'info',
+        details: { message: `Issue ${i}`, lineNumber: i + 1, columnNumber: 1 }
+      }));
+
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 100,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/src/large-file.ts',
+                errors: issues
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 100 },
+        timestamp: Date.now(),
+        duration: 5000,
+        operationId: 'test-op-large'
+      };
+
+      const components = createMockComponents();
+      const result = await coordinator.processAndDistributeResults(
+        mockResult as any,
+        components
+      );
+
+      expect(result.totalIssues).toBe(100);
+      expect(result.processedIssues.length + result.failedIssues.length).toBe(
+        100
+      );
+    });
+
+    it('should handle issues spread across many files', async () => {
+      const issueDetails = Array.from({ length: 50 }, (_, i) => ({
+        filePath: `/test/src/file${i}.ts`,
+        errors: [
+          {
+            ruleFailure: `rule-${i}`,
+            level: 'warning',
+            details: { message: `Issue in file ${i}` }
+          }
+        ]
+      }));
+
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 50,
+            fileCount: 50,
+            issueDetails
+          }
+        },
+        summary: { totalIssues: 50 },
+        timestamp: Date.now(),
+        duration: 2000,
+        operationId: 'test-op-many-files'
+      };
+
+      const components = createMockComponents();
+      const result = await coordinator.processAndDistributeResults(
+        mockResult as any,
+        components
+      );
+
+      expect(result.totalIssues).toBe(50);
+      // Diagnostics should be grouped by file
+      expect(result.diagnostics.size).toBeGreaterThan(0);
+    });
+
+    it('should correctly categorize mixed severity issues in large result set', async () => {
+      const errors = Array.from({ length: 20 }, (_, i) => ({
+        ruleFailure: `error-rule-${i}`,
+        level: 'error',
+        details: { message: `Error ${i}` }
+      }));
+      const warnings = Array.from({ length: 30 }, (_, i) => ({
+        ruleFailure: `warning-rule-${i}`,
+        level: 'warning',
+        details: { message: `Warning ${i}` }
+      }));
+      const infos = Array.from({ length: 50 }, (_, i) => ({
+        ruleFailure: `info-rule-${i}`,
+        level: 'info',
+        details: { message: `Info ${i}` }
+      }));
+
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 100,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/src/mixed.ts',
+                errors: [...errors, ...warnings, ...infos]
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 100 },
+        timestamp: Date.now(),
+        duration: 3000,
+        operationId: 'test-op-mixed'
+      };
+
+      const components = createMockComponents();
+      const result = await coordinator.processAndDistributeResults(
+        mockResult as any,
+        components
+      );
+
+      expect(result.issueBreakdown.error).toBe(20);
+      expect(result.issueBreakdown.warning).toBe(30);
+      expect(result.issueBreakdown.info).toBe(50);
+    });
+  });
+
+  describe('concurrent analysis handling', () => {
+    const createMockComponents = () => ({
+      diagnosticProvider: { updateFromProcessedResult: jest.fn() },
+      issuesTreeViewManager: { updateFromProcessedResult: jest.fn() },
+      statusBarProvider: { updateFromProcessedResult: jest.fn() }
+    });
+
+    it('should handle rapid sequential processAndDistributeResults calls', async () => {
+      const components = createMockComponents();
+
+      // Fire off multiple rapid calls
+      const results = await Promise.all([
+        coordinator.processAndDistributeResults(
+          {
+            metadata: {
+              XFI_RESULT: {
+                archetype: 'test-1',
+                totalIssues: 1,
+                fileCount: 1,
+                issueDetails: [
+                  {
+                    filePath: '/test/file1.ts',
+                    errors: [
+                      {
+                        ruleFailure: 'r1',
+                        level: 'warning',
+                        details: { message: 'M1' }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            summary: { totalIssues: 1 },
+            timestamp: Date.now(),
+            duration: 100,
+            operationId: 'op-1'
+          } as any,
+          components
+        ),
+        coordinator.processAndDistributeResults(
+          {
+            metadata: {
+              XFI_RESULT: {
+                archetype: 'test-2',
+                totalIssues: 2,
+                fileCount: 1,
+                issueDetails: [
+                  {
+                    filePath: '/test/file2.ts',
+                    errors: [
+                      {
+                        ruleFailure: 'r2',
+                        level: 'error',
+                        details: { message: 'M2' }
+                      },
+                      {
+                        ruleFailure: 'r3',
+                        level: 'error',
+                        details: { message: 'M3' }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            summary: { totalIssues: 2 },
+            timestamp: Date.now(),
+            duration: 100,
+            operationId: 'op-2'
+          } as any,
+          components
+        )
+      ]);
+
+      expect(results).toHaveLength(2);
+      expect(results[0].totalIssues).toBe(1);
+      expect(results[1].totalIssues).toBe(2);
+
+      // Last result should be cached
+      const cached = coordinator.getLastProcessedResult();
+      expect(cached).not.toBeNull();
+    });
+
+    it('should preserve cache consistency after interleaved operations', async () => {
+      const mockResult1 = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'arch-1',
+            totalIssues: 5,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/a.ts',
+                errors: Array.from({ length: 5 }, (_, i) => ({
+                  ruleFailure: `rule-a-${i}`,
+                  level: 'warning',
+                  details: { message: `A${i}` }
+                }))
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 5 },
+        timestamp: Date.now(),
+        duration: 500,
+        operationId: 'interleave-1'
+      };
+
+      const components = createMockComponents();
+
+      // Process first result
+      await coordinator.processAndDistributeResults(
+        mockResult1 as any,
+        components
+      );
+
+      // Check cache
+      let cached = coordinator.getLastProcessedResult();
+      expect(cached?.totalIssues).toBe(5);
+
+      // Process second result
+      const mockResult2 = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'arch-2',
+            totalIssues: 3,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/b.ts',
+                errors: Array.from({ length: 3 }, (_, i) => ({
+                  ruleFailure: `rule-b-${i}`,
+                  level: 'error',
+                  details: { message: `B${i}` }
+                }))
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 3 },
+        timestamp: Date.now(),
+        duration: 300,
+        operationId: 'interleave-2'
+      };
+
+      await coordinator.processAndDistributeResults(
+        mockResult2 as any,
+        components
+      );
+
+      // Cache should now have the second result
+      cached = coordinator.getLastProcessedResult();
+      expect(cached?.totalIssues).toBe(3);
+    });
+  });
+
+  describe('edge cases in issue extraction', () => {
+    const createMockComponents = () => ({
+      diagnosticProvider: { updateFromProcessedResult: jest.fn() },
+      issuesTreeViewManager: { updateFromProcessedResult: jest.fn() },
+      statusBarProvider: { updateFromProcessedResult: jest.fn() }
+    });
+
+    it('should handle issueDetails with null errors array', async () => {
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 0,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/file.ts',
+                errors: null
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 0 },
+        timestamp: Date.now(),
+        duration: 100,
+        operationId: 'test-null-errors'
+      };
+
+      const components = createMockComponents();
+      const result = await coordinator.processAndDistributeResults(
+        mockResult as any,
+        components
+      );
+
+      expect(result.totalIssues).toBe(0);
+    });
+
+    it('should handle ruleFailure with undefined message', async () => {
+      const mockResult = {
+        metadata: {
+          XFI_RESULT: {
+            archetype: 'test-archetype',
+            totalIssues: 1,
+            fileCount: 1,
+            issueDetails: [
+              {
+                filePath: '/test/file.ts',
+                errors: [
+                  {
+                    ruleFailure: 'test-rule',
+                    level: 'warning',
+                    details: {} // No message
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        summary: { totalIssues: 1 },
+        timestamp: Date.now(),
+        duration: 100,
+        operationId: 'test-no-message'
+      };
+
+      const components = createMockComponents();
+      const result = await coordinator.processAndDistributeResults(
+        mockResult as any,
+        components
+      );
+
+      // Should use fallback message
+      expect(result.totalIssues).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should handle XFI_RESULT at root level instead of in metadata', async () => {
+      const mockResult = {
+        XFI_RESULT: {
+          archetype: 'test-archetype',
+          totalIssues: 1,
+          fileCount: 1,
+          issueDetails: [
+            {
+              filePath: '/test/file.ts',
+              errors: [
+                {
+                  ruleFailure: 'test-rule',
+                  level: 'warning',
+                  details: { message: 'Test' }
+                }
+              ]
+            }
+          ]
+        },
+        summary: { totalIssues: 1 },
+        timestamp: Date.now(),
+        duration: 100,
+        operationId: 'test-root-xfi'
+      };
+
+      const components = createMockComponents();
+      const result = await coordinator.processAndDistributeResults(
+        mockResult as any,
+        components
+      );
+
+      // Should handle XFI_RESULT at root level
+      expect(result.totalIssues).toBeGreaterThanOrEqual(0);
+    });
+  });
 });

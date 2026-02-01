@@ -1095,4 +1095,503 @@ describe('ResultCoordinator Unit Tests', () => {
     // Should be safe to call multiple times
     coordinator.dispose();
   });
+
+  describe('cache restoration edge cases', () => {
+    it('should handle restoration when component throws during restore', async () => {
+      const mockAnalysisResult: AnalysisResult = {
+        metadata: {
+          XFI_RESULT: {
+            repoXFIConfig: {} as any,
+            telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+            memoryUsage: {},
+            factMetrics: {},
+            options: {},
+            archetype: 'node-fullstack',
+            repoPath: '/test/path',
+            repoUrl: 'https://test.com/repo',
+            xfiVersion: '1.0.0',
+            fileCount: 1,
+            totalIssues: 1,
+            warningCount: 1,
+            errorCount: 0,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: 1704067200000,
+            finishTime: 1704067230000,
+            startTimeString: '2024-01-01T00:00:00+10:00',
+            finishTimeString: '2024-01-01T00:00:30+10:00',
+            durationSeconds: 30,
+            issueDetails: [
+              {
+                filePath: '/test/file.ts',
+                errors: [
+                  { ruleFailure: 'test-rule', level: 'warning', details: { message: 'Test', lineNumber: 1 } }
+                ]
+              }
+            ]
+          }
+        },
+        diagnostics: new Map(),
+        timestamp: Date.now(),
+        duration: 30000,
+        summary: { totalIssues: 1, filesAnalyzed: 1, analysisTimeMs: 30000 }
+      };
+
+      await coordinator.processAndDistributeResults(mockAnalysisResult, {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      });
+
+      // Now try to restore with a failing component
+      const failingProvider = {
+        updateFromProcessedResult: async () => { throw new Error('Restore failed'); }
+      };
+
+      const result = await coordinator.restoreDiagnosticsFromCache({
+        diagnosticProvider: failingProvider as any,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      });
+
+      // Should return false when restoration fails
+      assert.strictEqual(result, false);
+    });
+
+    it('should handle multiple sequential cache restorations', async () => {
+      const mockAnalysisResult: AnalysisResult = {
+        metadata: {
+          XFI_RESULT: {
+            repoXFIConfig: {} as any,
+            telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+            memoryUsage: {},
+            factMetrics: {},
+            options: {},
+            archetype: 'node-fullstack',
+            repoPath: '/test/path',
+            repoUrl: 'https://test.com/repo',
+            xfiVersion: '1.0.0',
+            fileCount: 2,
+            totalIssues: 2,
+            warningCount: 1,
+            errorCount: 1,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: 1704067200000,
+            finishTime: 1704067230000,
+            startTimeString: '2024-01-01T00:00:00+10:00',
+            finishTimeString: '2024-01-01T00:00:30+10:00',
+            durationSeconds: 30,
+            issueDetails: [
+              { filePath: '/test/file1.ts', errors: [{ ruleFailure: 'r1', level: 'warning', details: { message: 'W1', lineNumber: 1 } }] },
+              { filePath: '/test/file2.ts', errors: [{ ruleFailure: 'r2', level: 'error', details: { message: 'E1', lineNumber: 2 } }] }
+            ]
+          }
+        },
+        diagnostics: new Map(),
+        timestamp: Date.now(),
+        duration: 30000,
+        summary: { totalIssues: 2, filesAnalyzed: 2, analysisTimeMs: 30000 }
+      };
+
+      await coordinator.processAndDistributeResults(mockAnalysisResult, {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      });
+
+      // Restore multiple times in sequence
+      for (let i = 0; i < 3; i++) {
+        const freshProvider = new MockDiagnosticProvider();
+        const freshTreeView = new MockIssuesTreeViewManager();
+        const freshStatusBar = new MockStatusBarProvider();
+
+        const result = await coordinator.restoreDiagnosticsFromCache({
+          diagnosticProvider: freshProvider,
+          issuesTreeViewManager: freshTreeView,
+          statusBarProvider: freshStatusBar
+        });
+
+        assert.strictEqual(result, true);
+        assert.strictEqual(freshProvider.updateFromProcessedResultCalled, true);
+      }
+    });
+  });
+
+  describe('large result set handling', () => {
+    it('should handle result set with 100+ issues', async () => {
+      const errors = Array.from({ length: 100 }, (_, i) => ({
+        ruleFailure: `rule-${i}`,
+        level: (i % 3 === 0 ? 'error' : 'warning') as 'error' | 'warning',
+        details: { message: `Issue ${i}`, lineNumber: i + 1, columnNumber: 1 }
+      }));
+
+      const mockAnalysisResult: AnalysisResult = {
+        metadata: {
+          XFI_RESULT: {
+            repoXFIConfig: {} as any,
+            telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+            memoryUsage: {},
+            factMetrics: {},
+            options: {},
+            archetype: 'node-fullstack',
+            repoPath: '/test/path',
+            repoUrl: 'https://test.com/repo',
+            xfiVersion: '1.0.0',
+            fileCount: 1,
+            totalIssues: 100,
+            warningCount: 34,
+            errorCount: 34,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: 1704067200000,
+            finishTime: 1704067260000,
+            startTimeString: '2024-01-01T00:00:00+10:00',
+            finishTimeString: '2024-01-01T00:01:00+10:00',
+            durationSeconds: 60,
+            issueDetails: [{ filePath: '/test/large-file.ts', errors }]
+          }
+        },
+        diagnostics: new Map(),
+        timestamp: Date.now(),
+        duration: 60000,
+        summary: { totalIssues: 100, filesAnalyzed: 1, analysisTimeMs: 60000 }
+      };
+
+      const processed = await coordinator.processAndDistributeResults(mockAnalysisResult, {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      });
+
+      assert.strictEqual(processed.totalIssues, 100);
+      assert.strictEqual(processed.processedIssues.length + processed.failedIssues.length, 100);
+    });
+
+    it('should handle issues spread across many files', async () => {
+      const issueDetails = Array.from({ length: 50 }, (_, i) => ({
+        filePath: `/test/src/file${i}.ts`,
+        errors: [{ ruleFailure: `rule-${i}`, level: 'warning' as const, details: { message: `Issue in file ${i}`, lineNumber: 1 } }]
+      }));
+
+      const mockAnalysisResult: AnalysisResult = {
+        metadata: {
+          XFI_RESULT: {
+            repoXFIConfig: {} as any,
+            telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+            memoryUsage: {},
+            factMetrics: {},
+            options: {},
+            archetype: 'node-fullstack',
+            repoPath: '/test/path',
+            repoUrl: 'https://test.com/repo',
+            xfiVersion: '1.0.0',
+            fileCount: 50,
+            totalIssues: 50,
+            warningCount: 50,
+            errorCount: 0,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: 1704067200000,
+            finishTime: 1704067260000,
+            startTimeString: '2024-01-01T00:00:00+10:00',
+            finishTimeString: '2024-01-01T00:01:00+10:00',
+            durationSeconds: 60,
+            issueDetails
+          }
+        },
+        diagnostics: new Map(),
+        timestamp: Date.now(),
+        duration: 60000,
+        summary: { totalIssues: 50, filesAnalyzed: 50, analysisTimeMs: 60000 }
+      };
+
+      const processed = await coordinator.processAndDistributeResults(mockAnalysisResult, {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      });
+
+      assert.strictEqual(processed.totalIssues, 50);
+      // Diagnostics should be grouped by file
+      assert.ok(processed.diagnostics.size > 0);
+    });
+
+    it('should correctly categorize mixed severity issues in large result set', async () => {
+      const errors = Array.from({ length: 20 }, (_, i) => ({
+        ruleFailure: `error-rule-${i}`, level: 'error' as const, details: { message: `Error ${i}`, lineNumber: i + 1 }
+      }));
+      const warnings = Array.from({ length: 30 }, (_, i) => ({
+        ruleFailure: `warning-rule-${i}`, level: 'warning' as const, details: { message: `Warning ${i}`, lineNumber: i + 21 }
+      }));
+      // Use 'warning' level for info items since 'info' is not a valid ErrorLevel - it will be mapped to 'info' severity
+      const infos = Array.from({ length: 50 }, (_, i) => ({
+        ruleFailure: `info-rule-${i}`, level: 'exempt' as const, details: { message: `Info ${i}`, lineNumber: i + 51 }
+      }));
+
+      const mockAnalysisResult: AnalysisResult = {
+        metadata: {
+          XFI_RESULT: {
+            repoXFIConfig: {} as any,
+            telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+            memoryUsage: {},
+            factMetrics: {},
+            options: {},
+            archetype: 'node-fullstack',
+            repoPath: '/test/path',
+            repoUrl: 'https://test.com/repo',
+            xfiVersion: '1.0.0',
+            fileCount: 1,
+            totalIssues: 100,
+            warningCount: 30,
+            errorCount: 20,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: 1704067200000,
+            finishTime: 1704067260000,
+            startTimeString: '2024-01-01T00:00:00+10:00',
+            finishTimeString: '2024-01-01T00:01:00+10:00',
+            durationSeconds: 60,
+            issueDetails: [{ filePath: '/test/mixed.ts', errors: [...errors, ...warnings, ...infos] }]
+          }
+        },
+        diagnostics: new Map(),
+        timestamp: Date.now(),
+        duration: 60000,
+        summary: { totalIssues: 100, filesAnalyzed: 1, analysisTimeMs: 60000 }
+      };
+
+      const processed = await coordinator.processAndDistributeResults(mockAnalysisResult, {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      });
+
+      assert.strictEqual(processed.issueBreakdown.error, 20);
+      assert.strictEqual(processed.issueBreakdown.warning, 30);
+      // 'exempt' level gets mapped to 'info' severity
+      assert.strictEqual(processed.issueBreakdown.info, 50);
+    });
+  });
+
+  describe('concurrent analysis handling', () => {
+    it('should handle rapid sequential processAndDistributeResults calls', async () => {
+      const result1: AnalysisResult = {
+        metadata: {
+          XFI_RESULT: {
+            repoXFIConfig: {} as any,
+            telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+            memoryUsage: {},
+            factMetrics: {},
+            options: {},
+            archetype: 'test-1',
+            repoPath: '/test',
+            repoUrl: '',
+            xfiVersion: '1.0.0',
+            fileCount: 1,
+            totalIssues: 1,
+            warningCount: 1,
+            errorCount: 0,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: 0,
+            finishTime: 0,
+            startTimeString: '',
+            finishTimeString: '',
+            durationSeconds: 0,
+            issueDetails: [{ filePath: '/test/file1.ts', errors: [{ ruleFailure: 'r1', level: 'warning', details: { message: 'M1', lineNumber: 1 } }] }]
+          }
+        },
+        diagnostics: new Map(),
+        timestamp: Date.now(),
+        duration: 100,
+        summary: { totalIssues: 1, filesAnalyzed: 1, analysisTimeMs: 100 }
+      };
+
+      const result2: AnalysisResult = {
+        metadata: {
+          XFI_RESULT: {
+            repoXFIConfig: {} as any,
+            telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+            memoryUsage: {},
+            factMetrics: {},
+            options: {},
+            archetype: 'test-2',
+            repoPath: '/test',
+            repoUrl: '',
+            xfiVersion: '1.0.0',
+            fileCount: 1,
+            totalIssues: 2,
+            warningCount: 0,
+            errorCount: 2,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: 0,
+            finishTime: 0,
+            startTimeString: '',
+            finishTimeString: '',
+            durationSeconds: 0,
+            issueDetails: [{ filePath: '/test/file2.ts', errors: [
+              { ruleFailure: 'r2', level: 'error', details: { message: 'M2', lineNumber: 1 } },
+              { ruleFailure: 'r3', level: 'error', details: { message: 'M3', lineNumber: 2 } }
+            ] }]
+          }
+        },
+        diagnostics: new Map(),
+        timestamp: Date.now(),
+        duration: 100,
+        summary: { totalIssues: 2, filesAnalyzed: 1, analysisTimeMs: 100 }
+      };
+
+      // Fire off multiple rapid calls
+      const results = await Promise.all([
+        coordinator.processAndDistributeResults(result1, {
+          diagnosticProvider: mockDiagnosticProvider,
+          issuesTreeViewManager: mockTreeViewManager,
+          statusBarProvider: mockStatusBarProvider
+        }),
+        coordinator.processAndDistributeResults(result2, {
+          diagnosticProvider: new MockDiagnosticProvider(),
+          issuesTreeViewManager: new MockIssuesTreeViewManager(),
+          statusBarProvider: new MockStatusBarProvider()
+        })
+      ]);
+
+      assert.strictEqual(results.length, 2);
+      assert.strictEqual(results[0].totalIssues, 1);
+      assert.strictEqual(results[1].totalIssues, 2);
+
+      // Cache should have a result
+      assert.ok(coordinator.hasCachedResults());
+    });
+  });
+
+  describe('edge cases in issue extraction', () => {
+    it('should handle issueDetails with undefined errors array', async () => {
+      const mockAnalysisResult: AnalysisResult = {
+        metadata: {
+          XFI_RESULT: {
+            repoXFIConfig: {} as any,
+            telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+            memoryUsage: {},
+            factMetrics: {},
+            options: {},
+            archetype: 'node-fullstack',
+            repoPath: '/test/path',
+            repoUrl: 'https://test.com/repo',
+            xfiVersion: '1.0.0',
+            fileCount: 1,
+            totalIssues: 0,
+            warningCount: 0,
+            errorCount: 0,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: 1704067200000,
+            finishTime: 1704067230000,
+            startTimeString: '2024-01-01T00:00:00+10:00',
+            finishTimeString: '2024-01-01T00:00:30+10:00',
+            durationSeconds: 30,
+            issueDetails: [{ filePath: '/test/file.ts', errors: undefined as any }]
+          }
+        },
+        diagnostics: new Map(),
+        timestamp: Date.now(),
+        duration: 30000,
+        summary: { totalIssues: 0, filesAnalyzed: 1, analysisTimeMs: 30000 }
+      };
+
+      const processed = await coordinator.processAndDistributeResults(mockAnalysisResult, {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      });
+
+      assert.strictEqual(processed.totalIssues, 0);
+    });
+
+    it('should handle ruleFailure with empty details object', async () => {
+      const mockAnalysisResult: AnalysisResult = {
+        metadata: {
+          XFI_RESULT: {
+            repoXFIConfig: {} as any,
+            telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+            memoryUsage: {},
+            factMetrics: {},
+            options: {},
+            archetype: 'node-fullstack',
+            repoPath: '/test/path',
+            repoUrl: 'https://test.com/repo',
+            xfiVersion: '1.0.0',
+            fileCount: 1,
+            totalIssues: 1,
+            warningCount: 1,
+            errorCount: 0,
+            fatalityCount: 0,
+            exemptCount: 0,
+            startTime: 1704067200000,
+            finishTime: 1704067230000,
+            startTimeString: '2024-01-01T00:00:00+10:00',
+            finishTimeString: '2024-01-01T00:00:30+10:00',
+            durationSeconds: 30,
+            // Details with empty message - should use fallback or clean message
+            issueDetails: [{ filePath: '/test/file.ts', errors: [{ ruleFailure: 'test-rule', level: 'warning' as const, details: { message: '' } }] }]
+          }
+        },
+        diagnostics: new Map(),
+        timestamp: Date.now(),
+        duration: 30000,
+        summary: { totalIssues: 1, filesAnalyzed: 1, analysisTimeMs: 30000 }
+      };
+
+      const processed = await coordinator.processAndDistributeResults(mockAnalysisResult, {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      });
+
+      // Should use fallback message
+      assert.strictEqual(processed.totalIssues, 1);
+    });
+
+    it('should handle XFI_RESULT at root level instead of in metadata', async () => {
+      const mockAnalysisResult = {
+        XFI_RESULT: {
+          repoXFIConfig: {} as any,
+          telemetryData: { repoUrl: '', configServer: '', hostInfo: {} as any, userInfo: {} as any, startTime: 0 },
+          memoryUsage: {},
+          factMetrics: {},
+          options: {},
+          archetype: 'node-fullstack',
+          repoPath: '/test/path',
+          repoUrl: 'https://test.com/repo',
+          xfiVersion: '1.0.0',
+          fileCount: 1,
+          totalIssues: 1,
+          warningCount: 1,
+          errorCount: 0,
+          fatalityCount: 0,
+          exemptCount: 0,
+          startTime: 1704067200000,
+          finishTime: 1704067230000,
+          startTimeString: '2024-01-01T00:00:00+10:00',
+          finishTimeString: '2024-01-01T00:00:30+10:00',
+          durationSeconds: 30,
+          issueDetails: [{ filePath: '/test/file.ts', errors: [{ ruleFailure: 'test-rule', level: 'warning', details: { message: 'Test', lineNumber: 1 } }] }]
+        },
+        diagnostics: new Map(),
+        timestamp: Date.now(),
+        duration: 30000,
+        summary: { totalIssues: 1, filesAnalyzed: 1, analysisTimeMs: 30000 }
+      };
+
+      const processed = await coordinator.processAndDistributeResults(mockAnalysisResult as any, {
+        diagnosticProvider: mockDiagnosticProvider,
+        issuesTreeViewManager: mockTreeViewManager,
+        statusBarProvider: mockStatusBarProvider
+      });
+
+      // Should handle XFI_RESULT at root level
+      assert.strictEqual(processed.totalIssues, 1);
+    });
+  });
 }); 
