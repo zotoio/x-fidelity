@@ -1,80 +1,60 @@
 ---
-generated: 2025-01-26 12:45
-sourceChecksum: "4235576096 11838"
-beforeTokens: 2625
-afterTokens: 420
-globs: "**/*.ts, **/*.tsx"
+generated: 2026-02-01 12:00
+sourceChecksum: "4235576096"
+beforeTokens: 3201
+afterTokens: 481
+confidence: 92
+crux: true
+globs: "**/*.ts,**/*.tsx"
 ---
+
+> [!IMPORTANT]
+> Generated file - do not edit!
 
 # X-Fidelity Coding Standards
 
 ```crux
-«CRUX⟨xfi-coding-standards.md⟩»
-Π.file{
-  layout=packages/*;barrel=index.ts;domains=[facts,operators,utils,core]
-  tests=*.test.ts@collocated
+⟦CRUX:xfi-coding-standards.md
+Ρ{xfi TS coding standards}
+Κ{iface=interface;cls=class;fn=function;ctx=context;mgr=manager;cfg=config}
+
+Π.org{monorepo@packages/;barrel→index.ts;domain[facts/,operators/,utils/,core/];tests=*.test.ts}
+
+R.ts{iface≻type[obj];¬any!;types←@x-fidelity/types;fn.params→typed destructured+defaults}
+
+R.err{
+  StandardErrorFactory.create()|.fromError()
+  codes{1000..1099=cfg;1100..1199=plugin;1200..1299=analysis;
+    1300..1399=fs;1400..1499=net;1500..1599=val;1600..1699=runtime}
 }
-R.types{
-  interface≻type #for obj shapes
-  ¬any→use @x-fidelity/types
-  params=destructured+defaults
+
+R.log{
+  LoggerProvider.getLoggerForMode();¬direct!;structured{info('msg',{ctx})}
+  ExecutionContext.[start|end]Execution()
+  pluginLogger.create[Fact|Operator]Logger('plugin','name')
 }
-R.errors{
-  use StandardErrorFactory.[create|fromError]
-  codes:1000-1099=cfg,1100-1199=plugin,1200-1299=analysis
-  codes:1300-1399=fs,1400-1499=net,1500-1599=val,1600-1699=runtime
+
+R.plugin{
+  XFiPlugin{name,version,desc,facts,operators}
+  initialize(ctx)!;onError(err)→PluginError!;cleanup()?
+  FactDefn{name,desc,type[global|global-fn|iter-fn],priority,fn}
+  OperatorDefn{name,desc,fn→bool}
 }
-R.logging{
-  ⊛LoggerProvider.getLoggerForMode()¬direct
-  ExecutionContext.[startExecution|endExecution]→correlation
-  pluginLogger.create[Fact|Operator]Logger()
-  structured:{msg,context}
-}
-Π.plugin:XFiPlugin{
-  props=[name,version,description,facts[],operators[]]
-  hooks=[initialize(ctx),onError(err),cleanup?]
-  ctx:PluginContext∋{config,logger,utils,loggerContext}
-}
-Π.fact:FactDefn{
-  props=[name,description,type,priority,fn]
-  type:[global|global-function|iterative-function]
-  fn:(params,almanac?)→Promise<any>
-}
-Π.operator:OperatorDefn{
-  props=[name,description,fn]
-  fn:(factValue,operatorValue)→boolean
-}
-R.security{
-  ⊛path.resolve()+val against traversal
-  reject:[..|\\0]
-  val against ALLOWED_PATH_PREFIXES
-}
-R.testing{
-  jest.mock()@top;jest.mocked()→typing
-  beforeEach→jest.clearAllMocks()
-  helper:createAxiosResponse<T>()
-}
-R.async{
-  async/await+StandardErrorFactory.fromError()
-  Promise.all()→parallel when independent
-}
-R.naming{
-  files=camelCase;tests=camelCase.test
-  interfaces|classes=PascalCase
-  functions=camelCase;constants=UPPER_SNAKE_CASE
-  enums=PascalCase;enumValues=UPPER_SNAKE_CASE
-}
-R.vscode{
-  activate(ctx)→ExtensionManager→ctx.subscriptions.push()
-  deactivate()→dispose()
-  setContext cmd for UI state
-}
-R.imports{
-  order:[node→external→@x-fidelity/*→relative]
-}
-R.docs{
-  JSDoc∀public APIs
-  interface fields→doc comments
-}
-«/CRUX»
+
+R.security{path.val!;¬traversal['..','\\0'];ALLOWED_PATH_PREFIXES}
+
+R.test{jest.mock@top;jest.mocked();beforeEach→clearAllMocks;it(ok);it(err→rejects)}
+
+R.async{async/await+try/catch;∥→Promise.all()}
+
+R.naming{files=camelCase;iface|cls=PascalCase;fn=camelCase;const=UPPER_SNAKE}
+
+R.docs{JSDoc→pub APIs{@param,@returns,@throws}}
+
+R.vscode{activate→logger»setContext»ExtensionMgr;deactivate→dispose()}
+
+R.imports{node.builtins»external»@x-fidelity/*»relative}
+
+Ω{typed≻any;LoggerProvider;StandardError;path.val}
+⟧
 ```

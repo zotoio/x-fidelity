@@ -1,10 +1,10 @@
 ---
 name: crux-rule-compression-specification
-version: 1.0.0
+version: 2.4.1
 description: Semantic compressor for Markdown rules. Converts rules to CRUX notation achieving 5-10x token reduction while preserving all actionable information in a form LLMs understand.
 readonly: true
 ---
-# CRUX Rule Compression Specification v1.0.0
+# CRUX Rule Compression Specification v2.4.1
 
 A semantic compression notation for reducing markdown rules to ≤20% of original rule file token count while preserving all actionable information.
 
@@ -13,7 +13,7 @@ A semantic compression notation for reducing markdown rules to ≤20% of origina
 **CRUX** = **C**ontext **R**eduction **U**sing **X**-encoding
 
 The "X" is intentionally flexible:
-- e**X**pressive symbols (→ ⊳ ⊲ ∋ ∀)
+- e**X**pressive symbols (→ ⊳ ⊲ ∋ ∀ » ⊕)
 - e**X**tensible notation (custom blocks)
 - e**X**change format (compress ↔ expand)
 
@@ -25,7 +25,7 @@ The name also serves as a backronym for "crux" — the decisive or most importan
 > CRITICAL FOUNDATIONAL CRUX RULES
 > 0. ALWAYS INTERPRET AND UNDERSTAND ALL CRUX RULES FIRST - At session start, interpret all CRUX notation in rules. When new rules are added to context, interpret them immediately. Build a mental model of all rules that can be visualized on request.
 > 1. AGENTS MUST NEVER EDIT THIS FILE UNLESS SPECIFICALLY ASKED TO BY NAME BY THE USER, AT WHICH POINT ASK THE USER TO CONFIRM
-> 2. AGENTS MUST NOT LOAD THE SOURCE FILE in «CRUX⟨source⟩»
+> 2. AGENTS MUST NOT LOAD THE SOURCE FILE in ⟦CRUX:source ... ⟧
 > 3. UPDATES TO THE SOURCE FILE MUST TRIGGER SURGICAL DIFF UPDATES TO RELATED CRUX FILE
 > 4. IF CRUX GENERATION DOES NOT RESULT IN SIGNIFICANT REDUCTION IN TOKENS, DON'T DO IT.
 
@@ -35,11 +35,12 @@ The name also serves as a backronym for "crux" — the decisive or most importan
 
 | Symbol | Meaning |
 |--------|---------|
-| `«CRUX⟨source⟩»...«/CRUX»` | Block delimiters |
+| `⟦CRUX:source ... ⟧` | Block delimiters (source file reference after colon) |
 | `{k=v,k2=v2}` | Object/map |
 | `[a,b,c]` | List/array |
 | `(grouping)` | Logical grouping |
 | `.sub` | Namespace (e.g., `Π.core`, `Λ.build`) |
+| `;` | Statement separator (multiple clauses on one line) |
 
 ### Comparison (Numeric)
 
@@ -49,6 +50,8 @@ The name also serves as a backronym for "crux" — the decisive or most importan
 | `<` | less than |
 | `≥` | greater or equal |
 | `≤` | less or equal |
+| `≠` | not equal |
+| `..` | range / to (e.g., `20..30` = 20 to 30) |
 
 ### Priority / Preference
 
@@ -63,10 +66,18 @@ Example: `CONFIRMED ≻ DRAFT` means CONFIRMED takes precedence over DRAFT
 
 | Symbol | Meaning |
 |--------|---------|
-| `→` | flows to / maps to / outputs |
+| `→` | flows to / maps to / outputs / conditional then |
 | `←` | flows from / derives from / inputs |
 
-Example: `trigger→action`, `source←upstream`
+Example: `trigger→action`, `source←upstream`, `∀changes→run_tests`
+
+### Sequence
+
+| Symbol | Meaning |
+|--------|---------|
+| `»` | then / next step / sequential (ordered operations) |
+
+Example: `analyze»transform»output` (do analyze, then transform, then output)
 
 ### Relations
 
@@ -75,9 +86,11 @@ Example: `trigger→action`, `source←upstream`
 | `⊳` | has domain/expertise (left=entity, right=capability) |
 | `⊲` | triggered by / activated on (left=entity, right=trigger) |
 | `@` | located at path |
-| `:` | has type / is-a |
+| `:` | has type / is-a / key-value separator (context-dependent) |
 | `=` | equals / defined as |
 | `∋` | contains / includes |
+
+Note: `:` meaning depends on context — `agent:coordinator` (type), `{line:≥80%}` (key-value), `fix:typo` (prefix)
 
 ### Logic
 
@@ -96,8 +109,10 @@ Example: `trigger→action`, `source←upstream`
 | Symbol | Meaning |
 |--------|---------|
 | `Δ` | change / update / delta |
-| `+` | add / include |
+| `+` | add / include / with (context-dependent) |
 | `-` | remove / exclude |
+
+Note: `+` meaning depends on context — `+file` (add), `log+ctx` (with/and), `gap→assume+mark` (combination)
 
 ### Qualifiers
 
@@ -107,6 +122,7 @@ Example: `trigger→action`, `source←upstream`
 | `?` | optional |
 | `!` | required / important |
 | `#` | comment / note |
+| `⊕` | optimal / target (e.g., `≥80%⊕90%` = min 80%, target 90%) |
 
 ### Importance
 
@@ -184,18 +200,18 @@ archetype∋[rules,plugins,deps,structure]
 ### Template
 
 ```
-«CRUX⟨{filename of source markdown rules}⟩»
+⟦CRUX:{filename of source markdown rules}
 {blocks in logical order, one concept per line, max ~80 chars/line}
-«/CRUX»
+⟧
 ```
 
 ### Do
 
-- Start immediately with `«CRUX⟨...⟩»`
+- Start immediately with `⟦CRUX:{source_file}`
 - Use single line per logical unit
 - Group related items with namespaces
 - Preserve all actionable information
-- End with `«/CRUX»`
+- End with `⟧`
 
 ### Don't
 
@@ -229,6 +245,31 @@ archetype∋[rules,plugins,deps,structure]
 
 ---
 
+## Token Estimation
+
+Token counts are required in CRUX output frontmatter (`beforeTokens`, `afterTokens`).
+
+### Primary Method: CRUX-Utils Skill
+
+If the `CRUX-Utils` skill is available, use `--token-count` mode for deterministic token counting. The skill also provides `--cksum` mode for sourceChecksum generation.
+
+### Fallback Method: LLM-Based Estimation
+
+If the skill is not available, use these heuristics:
+
+| Content Type | Chars/Token | Notes |
+|--------------|-------------|-------|
+| Prose (markdown) | 4.0 | English text, headers, lists |
+| Code blocks | 3.5 | More symbols, shorter identifiers |
+| Special chars | 1.0 | CRUX Unicode symbols (→, ⊳, ⟦, », etc.) |
+
+**Estimation formula**:
+```
+total_tokens = (prose_chars / 4.0) + (code_chars / 3.5) + special_char_count
+```
+
+---
+
 ## Standard Abbreviations
 
 | Abbreviation | Full Word |
@@ -248,20 +289,36 @@ archetype∋[rules,plugins,deps,structure]
 | `auth` | authentication |
 | `val` | validation |
 | `repo` | repository |
+| `w/` | with |
+| `w/o` | without |
+| `ln` | lines |
+| `cls` | class |
+| `iface` | interface |
+| `svc` | service |
+| `txn` | transaction |
+| `idx` | index |
+| `fn` | function |
+| `var` | variable |
+| `param` | parameter |
+| `ctx` | context |
+| `msg` | message |
+| `req` | request |
+| `res` | response |
 
 ---
 
 ## Quick Reference
 
 ```
-STRUCTURE:  «»⟨⟩{}[]().sub
-COMPARE:    > < ≥ ≤
+STRUCTURE:  ⟦⟧{}[]().sub;
+COMPARE:    > < ≥ ≤ ≠ ..
 PRIORITY:   ≻ ≺
 DATA FLOW:  → ←
+SEQUENCE:   »
 RELATIONS:  ⊳ ⊲ @ : = ∋
 LOGIC:      | & ⊤ ⊥ ∀ ∃ ¬
 CHANGE:     Δ + -
-QUALIFY:    * ? ! #
+QUALIFY:    * ? ! # ⊕
 IMPORTANCE: ⊛ ◊
 BLOCKS:     Ρ E Λ Π Κ R P Γ M Φ Ω
 ```
@@ -322,9 +379,9 @@ alwaysApply: true
 
 ---
 generated: yyyy-mm-dd hh:mm
-sourceChecksum: [cksum output of source file, format: "checksum bytes"]
-beforeTokens: [estimated token count of source file]
-afterTokens: [estimated token count of this CRUX file]
+sourceChecksum: [checksum from CRUX-Utils skill]
+beforeTokens: ~400
+afterTokens: ~140
 confidence: [XX% - semantic validation score from separate agent]
 alwaysApply: true
 ---
@@ -332,48 +389,40 @@ alwaysApply: true
 # Code Modification Protocol
 
 ```crux
-«CRUX⟨{source_file}⟩»
-R=req→if gap→assume+mark; C=obs→cite path:lines; Δ=R≠C→tag{code|tests|req}+why
-«/CRUX»
+⟦CRUX:{source_file}
+R=req→truth;gap→assume+mark;?arch→ask first
+C=obs→cite path:lines;repo≻chat
+Δ=R≠C→tag{code|tests|req}+why
+PLAN=min files+targeted Δ;justify+file|broad
+PATCH=surgical diff;¬rewrite w/o proof
+CHECK=run/+tests|static val
+STATE={R,C,Δ}→upd on progress
+Ω{¬halluc;verified only}
+⟧
 ```
 
 ### LLM/agent interpretation (internal CoT trace)
 
-R=req→if gap→assume+mark
+`R=req→truth;gap→assume+mark;?arch→ask first`
+Requirements: user requirements are source of truth (req→truth); when gaps exist, assume and mark them (gap→assume+mark); when architecture is uncertain (?arch), ask first
 
-R = Requirements
-If requirements are unclear, make explicit assumptions and mark them
+`C=obs→cite path:lines;repo≻chat`
+Code analysis: observations should cite specific file paths and line numbers (obs→cite path:lines); trust repo over conversation history (repo≻chat)
 
-C=obs→cite path:lines
+`Δ=R≠C→tag{code|tests|req}+why`
+Changes: when requirements ≠ current code (R≠C), tag what's affected (code, tests, or requirements docs) and explain why (+why)
 
-C = Code observations
-When referencing code, always cite file/path:line-numbers
+`PLAN=min files+targeted Δ;justify+file|broad`
+Planning: touch minimum files with targeted changes (min files+targeted Δ); justify when adding files or making broad modifications (justify+file|broad)
 
-Δ=R≠C→tag{code|tests|req}+why
+`PATCH=surgical diff;¬rewrite w/o proof`
+Implementation: make surgical, precise edits using diffs; don't rewrite entire files without proof it's necessary (¬rewrite w/o proof)
 
-Δ = Delta/discrepancy
-When requirements ≠ actual code, tag what needs to change (code, tests, or requirements) and explain why
+`CHECK=run/+tests|static val`
+Verification: run existing tests, add new tests, or use static validation (run/+tests|static val)
 
-PLAN=min files+change
+`STATE={R,C,Δ}→upd on progress`
+Tracking: maintain mental model of requirements (R), code state (C), and changes (Δ); update as conversation progresses (→upd on progress)
 
-Plan changes to touch minimum files with minimum modifications
-
-PATCH=surgical diff
-
-Make precise, targeted edits (not wholesale rewrites)
-
-CHECK=run/add tests|static verify
-
-Verify changes by running tests, adding tests, or static analysis
-
-STATE=upd R/C/Δ
-
-Maintain updated tracking of Requirements, Code state, and Deltas
-
-mem=repo>chat
-
-Trust repository content over conversation history
-
-no halluc; no full rewrite w/o proof
-
-Don't fabricate information; don't rewrite entire files without clear justification
+`Ω{¬halluc;verified only}`
+Quality: never hallucinate (¬halluc); base all suggestions on verified information only

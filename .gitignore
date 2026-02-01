@@ -231,4 +231,3 @@ jest-results.json
 temp/
 .test-results-cache.json
 CONSOLIDATED-TEST-REPORT.md
-CRUX-Compress-*.zip

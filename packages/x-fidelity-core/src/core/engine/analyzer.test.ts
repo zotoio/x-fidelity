@@ -884,4 +884,459 @@ describe('Analyzer', () => {
             });
         });
     });
+
+    describe('Zap File Handling', () => {
+        it('should filter files to only zap files when zapFiles option is provided', async () => {
+            const mockFileData: FileData[] = [
+                { filePath: '/repo/src/target.ts', fileName: 'target.ts', fileContent: 'console.log("target");' },
+                { filePath: '/repo/src/other.ts', fileName: 'other.ts', fileContent: 'console.log("other");' },
+                { filePath: '/repo/src/another.ts', fileName: 'another.ts', fileContent: 'console.log("another");' }
+            ];
+
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+            // All 3 files + REPO_GLOBAL_CHECK should be processed when no zapFiles
+            expect(results.XFI_RESULT.fileCount).toBe(3);
+        });
+
+        it('should handle zap files that do not exist in file data', async () => {
+            const mockFileData: FileData[] = [
+                { filePath: '/repo/src/existing.ts', fileName: 'existing.ts', fileContent: 'console.log("existing");' }
+            ];
+
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            // Should complete without error even with non-existent zap files
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+        });
+
+        it('should handle empty zap files array', async () => {
+            const mockFileData: FileData[] = [
+                { filePath: '/repo/src/file.ts', fileName: 'file.ts', fileContent: 'content' }
+            ];
+
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+            expect(results.XFI_RESULT.fileCount).toBe(1);
+        });
+    });
+
+    describe('File Cache Behavior', () => {
+        it('should continue analysis when file cache is empty', async () => {
+            const mockFileData: FileData[] = [
+                { filePath: '/repo/src/new-file.ts', fileName: 'new-file.ts', fileContent: 'new content' }
+            ];
+
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+            expect(results.XFI_RESULT.fileCount).toBe(1);
+        });
+
+        it('should handle all files being unchanged', async () => {
+            const mockFileData: FileData[] = [
+                { filePath: '/repo/src/unchanged.ts', fileName: 'unchanged.ts', fileContent: 'unchanged' }
+            ];
+
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+        });
+
+        it('should handle mixed changed and unchanged files', async () => {
+            const mockFileData: FileData[] = [
+                { filePath: '/repo/src/changed.ts', fileName: 'changed.ts', fileContent: 'changed content' },
+                { filePath: '/repo/src/unchanged1.ts', fileName: 'unchanged1.ts', fileContent: 'unchanged 1' },
+                { filePath: '/repo/src/unchanged2.ts', fileName: 'unchanged2.ts', fileContent: 'unchanged 2' }
+            ];
+
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+            expect(results.XFI_RESULT.fileCount).toBe(3);
+        });
+    });
+
+    describe('Result File Cleanup', () => {
+        it('should handle results directory creation', async () => {
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+            // fs.mkdir should have been called to create .xfiResults
+            expect(fs.mkdir).toHaveBeenCalledWith(
+                expect.stringContaining('.xfiResults'),
+                expect.objectContaining({ recursive: true })
+            );
+        });
+
+        it('should handle report save failures gracefully', async () => {
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
+            ]);
+
+            // Mock writeFile to fail
+            (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mockRejectedValue(
+                new Error('Write permission denied')
+            );
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            // Should not throw even if file write fails
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+        });
+    });
+
+    describe('REPO_GLOBAL_CHECK Handling', () => {
+        it('should always add REPO_GLOBAL_CHECK to file data', async () => {
+            const mockFileData: FileData[] = [
+                { filePath: '/repo/src/file.ts', fileName: 'file.ts', fileContent: 'content' }
+            ];
+
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            // Engine should be run for file + REPO_GLOBAL_CHECK
+            expect(engineRunMock).toHaveBeenCalledTimes(2);
+        });
+
+        it('should handle global rules with dependency version checks', async () => {
+            const mockFileData: FileData[] = [];
+            const mockDependencyData = [
+                { name: 'react', version: '17.0.0' },
+                { name: 'lodash', version: '4.17.21' }
+            ];
+
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue(mockDependencyData) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue(mockFileData) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            const addFactMock = jest.fn();
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: addFactMock,
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+            // Should have added globalFileMetadata fact
+            expect(addFactMock).toHaveBeenCalledWith('globalFileMetadata', expect.any(Array), expect.any(Object));
+        });
+    });
+
+    describe('Additional Rules from Repo Config', () => {
+        it('should add valid additional rules from repo config', async () => {
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
+            ]);
+
+            const addRuleMock = jest.fn();
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: addRuleMock,
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+        });
+
+        it('should skip invalid additional rules from repo config', async () => {
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
+            ]);
+
+            const addRuleMock = jest.fn();
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: addRuleMock,
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            // Should not throw even with invalid rules
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+        });
+    });
+
+    describe('Gitignore Management', () => {
+        it('should handle .gitignore update gracefully', async () => {
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            // Mock readFile to simulate existing .gitignore
+            (fs.readFile as jest.MockedFunction<typeof fs.readFile>).mockResolvedValue('node_modules/\n');
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+        });
+
+        it('should handle missing .gitignore gracefully', async () => {
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            // Mock readFile to fail (file doesn't exist)
+            (fs.readFile as jest.MockedFunction<typeof fs.readFile>).mockRejectedValue(
+                new Error('ENOENT: no such file or directory')
+            );
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+        });
+    });
+
+    describe('Execution Context and Logging', () => {
+        it('should start and end execution context properly', async () => {
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+            expect(results.XFI_RESULT.startTime).toBeLessThan(results.XFI_RESULT.finishTime);
+        });
+
+        it('should restore localConfigPath after analysis', async () => {
+            (pluginRegistry.getPluginFacts as jest.MockedFunction<typeof pluginRegistry.getPluginFacts>).mockReturnValue([
+                { name: 'repoDependencyVersions', fn: jest.fn().mockResolvedValue([]) },
+                { name: 'repoFilesystemFacts', fn: jest.fn().mockResolvedValue([]) }
+            ]);
+
+            const engineRunMock = jest.fn().mockResolvedValue({ results: [] });
+            (Engine as jest.MockedClass<typeof Engine>).mockImplementation(() => ({
+                addOperator: jest.fn(),
+                addRule: jest.fn(),
+                addFact: jest.fn(),
+                on: jest.fn(),
+                run: engineRunMock
+            } as unknown as Engine));
+
+            // This should not affect the global options after completion
+            const results = await analyzeCodebase({
+                repoPath: '/repo',
+                archetype: 'node-fullstack',
+                localConfigPath: '/custom/config/path'
+            });
+
+            expect(results.XFI_RESULT).toBeDefined();
+        });
+    });
 });

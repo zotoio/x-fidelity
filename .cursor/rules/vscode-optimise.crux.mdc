@@ -1,43 +1,44 @@
 ---
-generated: 2026-01-26 10:42
-sourceChecksum: "3515113843 8895"
-beforeTokens: 1580
-afterTokens: 285
+generated: 2026-02-01 12:18
+sourceChecksum: "3515113843"
+beforeTokens: 2224
+afterTokens: 377
+confidence: 94%
 crux: true
 alwaysApply: false
 ---
 
-# X-Fidelity VSCode Extension Optimization
+> [!IMPORTANT]
+> Generated file - do not edit!
+
+# X-Fidelity VS Code Extension Architecture
 
 ```crux
-«CRUX⟨vscode-optimise.md⟩»
-Π.ext{
-  arch=in-process analysis;¬CLI;ExtMgr+AnalysisMgr→XFI_RESULT→diagnostics
-  tree-sitter:WASM|Node;singleton parser@activation;init→load grammars→parse
-  range=node.startPosition{row,col}+endPosition→vscode.Range(line-1,col)
-  result:XFI_RESULT∋[cfg,issueDetails:ScanResult[],telemetry]
-  bundle=esbuild→dist/extension.js;+copy WASM@dist/
+⟦CRUX:vscode-optimise.md
+Ρ{xfi-vscode;in-process;¬CLI}
+
+Π{
+  ExtMgr+AnalysisMgr→cfg+rules→plugins→XFI_RESULT{repoCfg,ScanResult[]}
+  treesitter:native→fallback:WASM;Parser.init()»Language.load(js|ts.wasm)
+  node{startPos,endPos}→RuleFailure.details∋{line,col,endLine,endCol}
+  vscode.Range(ln-1,col,endLn-1,endCol)→Diagnostic→diagnosticCollection
+  bundle:esbuild→dist/extension.js;copy *.wasm→dist/
 }
-R{
-  ⊛ in-process ≻ CLI fallback #always use plugins,¬external CLI
-  ⊛ ∀issue→full range{startLine,startCol,endLine,endCol}
-  tree-sitter.init=once@activation;graceful fail
-  diagnostics→Problems panel;click→navigate to span
+
+P{
+  ¬registerFallbackCommands!;¬handleInitializationError!;¬shouldUseFallbackMode!
+  ¬xfidelity.fallback.*@package.json!;¬fallback tests!
 }
-Λ.impl{
-  1.embed tree-sitter:+web-tree-sitter@deps;init@activation;load JS+TS grammars
-  2.ast-plugin:node.startPosition/endPosition→IssueDetail fields
-  3.xfi-types:+{startLine,startCol,endLine,endCol}@RuleFailure.details
-  4.ext:consume range fields→new vscode.Range→diagnosticCollection.set(uri,diags)
-  5.remove fallback:-shouldUseFallbackMode,-registerFallbackCommands,-handleInitializationError
-  6.pkg.json:-xfidelity.fallback.* commands/events
-  7.bundle:copy WASM←node_modules→dist/;path=extContext.extensionPath+'/dist/*.wasm'
+
+Λ{
+  1:+web-tree-sitter@deps;activate→initWasm(ctx);singleton;cache parser
+  2:@xfi-plugins:violation→node.pos{row,col}→IssueDetail∋{start,end}{Ln,Col}
+  3:@xfi-types/core.ts:+{startLine,startCol,endLine,endCol}:num;rebuild
+  4:@diagnosticProvider:read range→vscode.Range→Diagnostic→set(uri,diags)
+  5:rm fallback@extension.ts+package.json;upd tests
+  6:esbuild:copy wasm→dist;verify path;test vsce package
 }
-Λ.test{
-  unit:ast-plugin→assert IssueDetail∋range fields
-  integ:fixtures/node-fullstack→verify diag ranges
-  -fallback mocks;∀tests assume integrated mode
-  lint+format ∀Δ files
-}
-«/CRUX»
+
+Ω{unit:AST→range fields;integ:fixtures/node-fullstack;¬fallback;lint}
+⟧
 ```

@@ -1,6 +1,7 @@
 ---
 description: Guidelines for automatic subagent delegation and parallel execution
 alwaysApply: true
+crux: true
 ---
 
 # X-Fidelity Subagent Delegation
