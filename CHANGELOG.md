@@ -2,6 +2,12 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.10.0](https://github.com/zotoio/x-fidelity/compare/v5.9.0...v5.10.0) (2026-02-01)
+
+### Features
+
+* **crux:** add CRUX infrastructure and improve test coverage ([2421db1](https://github.com/zotoio/x-fidelity/commit/2421db17a987b781d808068b42938720c3b113a1))
+
 ## [5.9.0](https://github.com/zotoio/x-fidelity/compare/v5.8.0...v5.9.0) (2026-01-30)
 
 ### Features
