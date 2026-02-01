@@ -2,6 +2,12 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.11.0](https://github.com/zotoio/x-fidelity/compare/v5.10.0...v5.11.0) (2026-02-01)
+
+### Features
+
+* **rules:** add comprehensive documentation for development workflow, monorepo structure, plugin architecture, and security standards ([79d60b8](https://github.com/zotoio/x-fidelity/commit/79d60b8a3aa3d7b3c8b2c3b3cbfdd8f2a70843b3))
+
 ## [5.10.0](https://github.com/zotoio/x-fidelity/compare/v5.9.0...v5.10.0) (2026-02-01)
 
 ### Features
