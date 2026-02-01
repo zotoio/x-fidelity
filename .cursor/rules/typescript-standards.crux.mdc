@@ -1,0 +1,24 @@
+---
+generated: 2026-02-02 10:15
+sourceChecksum: 1383008561
+beforeTokens: 345
+afterTokens: 143
+confidence: 95% 
+globs: *.ts,*.tsx
+crux: true
+---
+
+> [!IMPORTANT]
+> Generated file - do not edit!
+
+# TypeScript Coding Standards
+
+```crux
+⟦CRUX:typescript-standards.md
+R{strict;types≻any;iface;typed err;PrefixingLogger;fn=destructured obj}
+R.err{StandardError{code:1000..1699,cat,tpl}}
+R.log{LoggerProvider;[debug,info,warn,error];+ctx}
+R.sec{path.resolve;validate@dirs;ws root[mono];Jest allowances}
+R.test{Jest;mock;[success,error];cov=100%}
+⟧
+```
