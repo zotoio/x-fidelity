@@ -1,0 +1,38 @@
+---
+generated: 2026-02-02 10:16
+sourceChecksum: "979701108"
+beforeTokens: 1554
+afterTokens: 268
+confidence: 89% 
+description: Guidelines for automatic subagent delegation and parallel execution
+alwaysApply: true
+crux: true
+---
+
+> [!IMPORTANT]
+> Generated file - do not edit!
+
+# X-Fidelity Subagent Delegation
+
+```crux
+⟦CRUX:subagent-delegation.md
+Γ{auto→subagent:SME@ctx}
+E{
+  build⊲build.fail|dep|TS|CI|esbuild
+  testing⊲test.fail|cov|jest|mock|vscode.test
+  plugin⊲Δplugins/|AST|fact|op|rule.json
+  vscode⊲Δvscode/|ext|webview|F5
+  rules⊲archetype|rule|exemption|json-rules
+  security⊲path.val|review|webhook|secret
+  debugger⊲err|unexpected|log|errcode
+  docs⊲README|website|API|post.Δ
+  reviewer⊲Δ.ready|commit|PR|feature.done
+  design⊲+feature|arch|cross-pkg|spec
+  planner⊲/xfi-plan|multi-step|coord
+  engineer⊲impl|bugfix|refactor|subtask
+  crux⊲compress|token.reduce
+}
+Γ{indep→‖;dep→seq}
+R{proactive!;‖@indep;+ctx;trust.SME}
+⟧
+```

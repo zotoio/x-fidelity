@@ -1,0 +1,25 @@
+---
+generated: 2026-02-02 10:32
+sourceChecksum: 2179057459
+beforeTokens: 550
+afterTokens: 156
+confidence: 88%
+description: Security patterns and path validation requirements
+crux: true
+---
+
+> [!IMPORTANT]
+> Generated file - do not edit!
+
+# Security and Path Validation
+
+```crux
+⟦CRUX:security-path-validation.md
+Ρ{path val→¬traversal}
+Φ{cwd;wsRoot[/packages|/dist];/tmp;democonfig;test:local/cfg}
+R{resolve()!≻str;val→allowed!;err→¬leak!}
+E{ok=paths.some(b→p.startsWith(b));¬ok→throw}
+R.fs{existsSync;val ext;¬trust user!;log}
+R.webhook@server{secret;download val;perms}
+⟧
+```

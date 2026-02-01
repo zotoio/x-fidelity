@@ -1,0 +1,102 @@
+---
+generated: 2026-02-02 09:30
+sourceChecksum: "697975784"
+beforeTokens: 5217
+afterTokens: 746
+confidence: 95%
+alwaysApply: false
+crux: true
+---
+
+> [!IMPORTANT]
+> Generated file - do not edit!
+
+# X-Fidelity Analysis Report Example
+
+```crux
+⟦CRUX:example-markdown-result.md
+Ρ{xfi report example; repo=zotoio/x-fidelity; date=2025-03-27}
+
+M.summary{
+  issues=23[warn=18,fatal=4,err=0,exempt=1]
+  files=157[clean=144(91.7%),issues=13]
+  ver=3.19.1; time=38.90s
+}
+
+M.rules.top{
+  functionComplexity-iterative:9
+  sensitiveLogging-iterative:3
+  factDoesNotAddResultToAlmanac:1
+  functionCount-iterative:1
+  noDatabases-iterative:1
+  invalidSystemIdConfigured:1
+  nonStandardDirectoryStructure:1
+  custom-rule:1
+}
+
+M.files.issues{
+  index.ts:3; repoDependencyFacts.ts:2; repoFilesystemFacts.ts:2
+  README.md:1; cli.ts:1; analyzer.ts:1; engineRunner.ts:1; engineSetup.ts:1
+}
+
+M.facts.perf{
+  repoFileAnalysis{exec=328,avg=0.013s,total=4.412s}
+  functionComplexity{exec=157,avg=0.013s,total=2.072s}
+  codeRhythm{exec=157,avg=0.013s,total=2.069s}
+  openaiAnalysis{exec=1,avg=33.884s,total=33.884s}
+}
+
+R.critical[AI]{
+  1:PathTraversal{sev=10
+    files=[repoFilesystemFacts.ts,exemptionUtils.ts,repoXFIConfigLoader.ts]
+    fix=normalize paths+isPathInside()
+  }
+  2:ErrorHandling{sev=9
+    files=[flagCheck.js,configManager.ts]
+    fix=propagate err;exit(¬0)@fail
+  }
+  3:MixedConcerns{sev=8
+    files=[configServer.ts,archetypeRoute.ts]
+    fix=extract TLS+cfg→helpers
+  }
+  4:GlobalState{sev=7
+    files=[cli.ts,logger.ts]
+    fix=DI pattern;cfg obj≻process.env
+  }
+  5:PluginValidation{sev=7
+    files=[pluginRegistry.ts,ruleUtils.ts]
+    fix=enforce schema;sanitize input
+  }
+}
+
+M.complexity{
+  cli.ts#initCLI{cyc=35,cog=66,nest=4,params=0,ret=1}
+  analyzer.ts#analyzeCodebase{cyc=21,cog=30,nest=2,params=1,ret=4}
+  engineRunner.ts#runEngineOnFiles{cyc=23,cog=59,nest=6,params=1,ret=1}
+  engineSetup.ts#setupEngine{cyc=21,cog=37,nest=4,params=1,ret=3}
+  repoFilesystemFacts.ts#repoFileAnalysis{cyc=20,cog=32,nest=4,params=2,ret=2}
+}
+
+M.deps.outdated{
+  commander{cur=13.1.0,req=>=2.0.0 <13.0.0}
+  nodemon{cur=3.1.9,req=>4.9.0}
+  @colors/colors{cur=1.5.0,req=1.7.0|1.6.0}
+}
+
+M.sensitive{
+  README.md@[496,752]=(api[_-]?key|auth[_-]?token)
+  configServer.test.ts@[69,78]=(private[_-]?key|ssh[_-]?key)
+  maskSensitiveData.test.ts@41=(api[_-]?key)
+}
+
+M.global.issues{
+  nonStandardDirectoryStructure-global:warn
+  custom-rule:warn
+  missingRequiredFiles-global:fatal
+  newSdkFeatureNotAdopted-global:warn
+  mutuallyExclusivePackages-global:fatal="MUI+AntDesign conflict"
+}
+
+#NOTE: source file contains duplicate content (report appears twice)
+⟧
+```

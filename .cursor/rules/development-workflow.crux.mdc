@@ -1,0 +1,24 @@
+---
+generated: 2026-02-02 10:30
+sourceChecksum: "3333791330"
+beforeTokens: 407
+afterTokens: 131
+confidence: 92%
+alwaysApply: true
+crux: true
+---
+
+> [!IMPORTANT]
+> Generated file - do not edit!
+
+# X-Fidelity Development Workflow
+
+```crux
+⟦CRUX:development-workflow.md
+R{yarn≻npm!;Δ→test@root;build;+deps=latest}
+R.test{cov=100%;pass→commit;fail→fix¬Δimpl}
+Λ.test:`yarn test`@[root,cli,core,vscode,server,plugins,types]
+M{dev+contrib@vscode/;temp=RO}
+R.docs{Δ→README+website}
+⟧
+```

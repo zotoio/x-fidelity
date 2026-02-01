@@ -1,0 +1,25 @@
+---
+generated: 2026-02-02 12:49
+sourceChecksum: "547902297"
+beforeTokens: 609
+afterTokens: 196
+confidence: 96%
+crux: true
+---
+
+> [!IMPORTANT]
+> Generated file - do not edit!
+
+# Plugin Architecture
+
+```crux
+⟦CRUX:plugin-architecture.md
+Ρ{plugins@packages/x-fidelity-plugins}
+E{Ast|Dependency|Filesystem|OpenAI|Patterns|ReactPatterns|RemoteStringValidator|RequiredFiles|SimpleExample}
+Π{xfiPlugin{N}/[index.ts,facts/,operators/,sampleRules/,types.ts]}
+Π.key{src/index.ts→registry;src/sharedPluginUtils/astUtils.ts}
+Κ{facts→data;ops→insights;rules→apply;types→iface}
+R{auto-load;dynamic facts;cfg ops;custom rules;type-safe;tests}
+R.dev{∀plugin→tests!+naming!+facts+ops+samples;shared→¬dup}
+⟧
+```
