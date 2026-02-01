@@ -1,5 +1,6 @@
 ---
 description: Security patterns and path validation requirements
+crux: true
 ---
 
 # Security and Path Validation

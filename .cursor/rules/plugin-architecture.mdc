@@ -1,5 +1,6 @@
 ---
 description: X-Fidelity plugin system architecture and development patterns
+crux: true
 ---
 
 # Plugin Architecture

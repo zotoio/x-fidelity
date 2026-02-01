@@ -7,10 +7,30 @@ Compress markdown rule files with `crux: true` frontmatter into CRUX notation fo
 ## Usage
 
 ```
-/crux-compress ALL                    - Compress all eligible rules in .cursor/rules/
-/crux-compress @path/to/file.md       - Compress a specific file reference
-/crux-compress @file1.md @file2.md    - Compress multiple file references
+/crux-compress ALL                    - Compress all eligible rules (formatted output)
+/crux-compress @path/to/file.md       - Compress a specific file (formatted output)
+/crux-compress @file1.md @file2.md    - Compress multiple files (formatted output)
+/crux-compress @file.md --minified    - Compress with single-line output
+/crux-compress ALL --minified         - Compress all with single-line output
+/crux-compress ALL --force            - Force recompression (delete existing CRUX files first)
+/crux-compress @file.md --force       - Force recompression of specific file
 ```
+
+### Flags
+
+| Flag | Description | Use Case |
+|------|-------------|----------|
+| `--minified` | Single-line output, no spaces, max compression | Copy-paste demos, LLM testing |
+| `--force` | Delete existing `.crux.mdc` files before compression | Force fresh recompression, bypass checksum skip |
+
+**Note**: Flags can be combined: `/crux-compress ALL --force --minified`
+
+### Output Formats
+
+| Format | Description | Use Case |
+|--------|-------------|----------|
+| **Formatted** (default) | Multi-line, indented, ~80 char lines | `.crux.mdc` files for readability |
+| **Minified** (`--minified`) | Single-line, no spaces, max compression | Copy-paste demos, LLM testing |
 
 ## Parallelism Limits
 
@@ -28,20 +48,39 @@ This prevents resource exhaustion and ensures reliable processing.
 
 **CRUX files track the source file's checksum to avoid unnecessary updates.**
 
-Each `.crux.mdc` file includes a `sourceChecksum` field in its frontmatter containing the checksum of the source file (generated using the `cksum` utility). Before processing:
+Each `.crux.mdc` file includes a `sourceChecksum` field in its frontmatter containing the checksum of the source file. Before processing:
 
-1. Agent runs `cksum <source_file_path>` to get current checksum (outputs: checksum bytes filename)
+1. Agent gets current checksum using `CRUX-Utils` skill (`--cksum` mode)
 2. If existing CRUX file's `sourceChecksum` matches, the source is unchanged - **skip update**
 3. If no match (or no existing CRUX file), proceed with compression
-4. After compression, store the new `sourceChecksum` in the output frontmatter (format: "checksum bytes")
+4. After compression, store the new `sourceChecksum` in the output frontmatter
 
 This optimization prevents redundant recompression of unchanged files.
 
 ## Instructions
 
-### When invoked with file reference(s) (`@path/to/file.md`)
+### Force Flag Pre-processing (`--force`)
 
-1. **For each file reference provided**, spawn a **fresh `crux-cursor-rule-manager` subagent instance**:
+When the `--force` flag is passed, **before any compression**:
+
+1. **Identify target CRUX files**:
+   - For each source file to be processed, determine the corresponding `.crux.mdc` path
+   - Example: `rules/docs-sync.md` → `rules/docs-sync.crux.mdc`
+
+2. **Delete existing CRUX files**:
+   - Delete each `.crux.mdc` file that exists
+   - This removes the cached `sourceChecksum`, forcing fresh compression
+   - Log each deletion: "Deleted: rules/docs-sync.crux.mdc (--force)"
+
+3. **Proceed with normal compression** (steps below)
+
+This ensures compression agents always perform full recompression rather than skipping due to checksum match.
+
+### When invoked with file reference(s) (`@path/to/file.md*`)
+
+1. **If `--force` flag is passed**, delete existing `.crux.mdc` files first (see above)
+
+2. **For each file reference provided**, spawn a **fresh `crux-cursor-rule-manager` subagent instance**:
    - Each file gets its own dedicated agent instance
    - Process files in batches of up to 4 parallel agents
    - Wait for each batch to complete before starting the next
@@ -50,19 +89,20 @@ This optimization prevents redundant recompression of unchanged files.
      Compress this rule file into CRUX notation:
      - Source: <file path>
      - Output: <file path with .crux.mdc extension>
+     - Format: <formatted (default) OR minified if --minified flag was passed>
      - Follow CRUX.md specification
      - Check source checksum vs existing CRUX sourceChecksum - skip if unchanged
-     - Report before/after token counts (or "skipped - source unchanged")
+     - Report before/after token counts using `CRUX-Utils` skill (or "skipped - source unchanged")
      - If source lacks `crux: true` frontmatter, add it first
      - Ensure source uses .md extension (rename from .mdc if needed)
      ```
 
-2. **Pre-processing for each file** (if needed):
+3. **Pre-processing for each file** (if needed):
    - If the file is `.mdc` but not `.crux.mdc`, rename to `.md` first
    - If the file lacks `crux: true` in frontmatter, add it
    - Then proceed with compression
 
-3. **After compression completes**, spawn a **fresh `crux-cursor-rule-manager` instance for validation**:
+4. **After compression completes**, spawn a **fresh `crux-cursor-rule-manager` instance for validation**:
    - Task the validation agent:
      ```
      Perform semantic validation on this CRUX file:
@@ -76,19 +116,33 @@ This optimization prevents redundant recompression of unchanged files.
    - The validation agent returns the confidence score
    - Update the `.crux.mdc` frontmatter with `confidence: XX%`
 
-4. **Collect results** and report:
+5. **Collect results** and report:
    - File processed or skipped (with reason: "source unchanged" or "compression not beneficial")
    - Token reduction achieved (if processed)
    - **Confidence score** from validation
    - Any issues encountered
+   - If `--force` was used, note files that were deleted before recompression
+
+6. **Clear processed files from pending-compression.json**:
+   - Read `.crux/pending-compression.json` if it exists
+   - Remove any files from the `files` array that were just processed (successfully compressed or skipped)
+   - Do NOT remove files that were not part of this compression run (preserve newly added pending files)
+   - Write the updated JSON back to the file
+   - If the `files` array is now empty, write `{"files": [], "updated": "<timestamp>"}`
 
 ### When invoked with `ALL`
 
-1. **Find all eligible files**:
-   - Search `.cursor/rules/**/*.md` for files with frontmatter `crux: true`
+1. **If `--force` flag is passed**, delete all existing `.crux.mdc` files first:
+   - Find all `.crux.mdc` files in `.cursor/rules/` (excluding `_CRUX-RULE.mdc`)
+   - Delete each one and log the deletion
+   - This ensures all eligible sources will be freshly compressed
+
+2. **Find all eligible files**:
+   - Search `.cursor/rules/**/*.md` and `.cursor/rules/**/*.mdc` for files with frontmatter `crux: true`
    - Exclude files that already have a `.crux.mdc` extension (they are outputs, not sources)
+   - For `.mdc` files found: apply pre-processing (rename to `.md`, add `crux: true` if missing) before compression
    
-2. **For each eligible file**, spawn a **separate `crux-cursor-rule-manager` subagent instance**:
+3. **For each eligible file**, spawn a **separate `crux-cursor-rule-manager` subagent instance**:
    - Task the subagent to compress the source file
    - The subagent will:
      - Read the CRUX specification from `CRUX.md`
@@ -96,30 +150,40 @@ This optimization prevents redundant recompression of unchanged files.
      - Create/update the `[filename].crux.mdc` version
      - Report token reduction metrics
    - **Process in batches of up to 4 parallel agents**
-   - Wait for each batch to complete before starting the next batch
+   - Wait for each batch to complete before starting the next batch.
 
-3. **After each compression completes**, spawn a **fresh validation agent**:
+4. **After each compression completes**, spawn a **fresh validation agent**:
    - For each successfully compressed file, spawn a separate `crux-cursor-rule-manager` instance
    - Task: semantic validation (compare CRUX to source, produce confidence score)
    - Update the `.crux.mdc` frontmatter with the confidence score
    - Validation agents can run in parallel with other compression agents (within the 4-agent limit)
 
-4. **Collect results** from all subagents and report summary:
+5. **Collect results** from all subagents and report summary:
    - Number of files processed
    - Files created/updated
    - Files skipped:
-     - Source unchanged (commit hash matches)
+     - Source unchanged (checksum matches) - **Note**: with `--force`, no files are skipped for this reason
      - Already compact (compression not beneficial)
+   - If `--force` was used, list files that were deleted before recompression
    - Total token savings
    - **Confidence scores** for each file (with average)
+
+6. **Clear processed files from pending-compression.json**:
+   - Read `.crux/pending-compression.json` if it exists
+   - Remove any files from the `files` array that were just processed (successfully compressed or skipped)
+   - Do NOT remove files that were not part of this compression run (preserve newly added pending files)
+   - Write the updated JSON back to the file
+   - If the `files` array is now empty, write `{"files": [], "updated": "<timestamp>"}`
 
 ## Eligibility Criteria
 
 A file is eligible for CRUX compression if:
 - Located in `.cursor/rules/` directory
-- Has `.md` extension (not `.mdc` - those are already cursor rule files or compressed outputs)
+- Has `.md` or `.mdc` extension
 - Has `crux: true` in YAML frontmatter
 - Is not already a `.crux.mdc` file (outputs are not recompressed)
+
+**Note**: `.mdc` files with `crux: true` will be pre-processed (renamed to `.md`) before compression. The resulting `.crux.mdc` file will then become the active Cursor rule.
 
 ## Adding New Files for Compression
 
@@ -144,7 +208,9 @@ To make a rule file eligible for CRUX compression:
 
 **Important**: The CRUX header in compressed files references the source file:
 ```
-«CRUX⟨core-tenets.md⟩»
+⟦CRUX:core-tenets.md
+...content...
+⟧
 ```
 
 ## Example Batch Execution
@@ -204,6 +270,25 @@ Validation (after compression completes):
 └── crux-cursor-rule-manager (fresh) → validate core-tenets.crux.mdc → confidence: 92%
 ```
 
+### With `--force` flag
+When `/crux-compress ALL --force`:
+
+```
+Force delete (pre-processing):
+├── Deleted: .cursor/rules/docs-sync.crux.mdc
+├── Deleted: .cursor/rules/version-bump.crux.mdc
+├── Deleted: .cursor/rules/ignore-example-rules.crux.mdc
+└── Deleted: .cursor/rules/example/coding-standards-demo.crux.mdc
+
+Batch 1 (parallel, max 4):
+├── crux-cursor-rule-manager → docs-sync.md → docs-sync.crux.mdc
+├── crux-cursor-rule-manager → version-bump.md → version-bump.crux.mdc
+├── crux-cursor-rule-manager → ignore-example-rules.md → ignore-example-rules.crux.mdc
+└── crux-cursor-rule-manager → coding-standards-demo.md → coding-standards-demo.crux.mdc
+```
+
+**Note**: With `--force`, no files are skipped due to "source unchanged" since all CRUX files are deleted first.
+
 ## Semantic Validation
 
 **Every compression is followed by validation** using a fresh agent instance:
@@ -237,3 +322,4 @@ Using a **separate agent instance** for validation ensures:
 - `crux-cursor-rule-manager` subagent - The specialist that performs compression
 - `CRUX.md` - The CRUX notation specification
 - `.cursor/rules/_CRUX-RULE.mdc` - Rules for working with CRUX files
+- `CRUX-Utils` skill - Token estimation and checksum utilities

@@ -7,6 +7,10 @@
       },
       {
         "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end sessionStart"
+      },
+      {
+        "command": "bash .cursor/hooks/crux-session-start.sh",
+        "description": "CRUX: Display pending CRUX compressions at session start"
       }
     ],
     "sessionEnd": [
@@ -93,6 +97,10 @@
       },
       {
         "command": "bash .cursor/hooks/cursor-hook-debug-log.sh end afterFileEdit"
+      },
+      {
+        "command": "bash .cursor/hooks/crux-detect-changes.sh",
+        "description": "CRUX: Queue modified source files (with crux: true) for CRUX compression"
       }
     ],
     "preCompact": [

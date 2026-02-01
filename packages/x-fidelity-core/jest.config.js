@@ -51,8 +51,11 @@ module.exports = {
   testTimeout: 15000,
   detectOpenHandles: true,
   // Reset modules and mocks between tests
+  // clearMocks: clears call history (mock.calls, mock.results)
+  // resetMocks: would reset implementations to no-op (disabled to preserve mockImplementation)
+  // restoreMocks: restores original implementations for spyOn mocks
   clearMocks: true,
-  resetMocks: true,
+  resetMocks: false,
   restoreMocks: true,
   // Jest 30 performance improvements
   testEnvironmentOptions: {
