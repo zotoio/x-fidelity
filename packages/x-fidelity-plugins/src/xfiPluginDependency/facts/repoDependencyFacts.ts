@@ -113,18 +113,27 @@ export async function collectLocalDependencies(repoPath?: string): Promise<Local
 
     let result: LocalDependencies[] = [];
     
-    // All package managers: try command-based collection first, fall back to lockfile parsing
+    // Package manager detection: pnpm uses lockfile parsing only, yarn/npm use command-based with fallback
     if (fs.existsSync(path.join(actualRepoPath, 'pnpm-lock.yaml'))) {
-        logger.debug('Using pnpm command-based collection');
-        try {
-            result = await collectNodeDependencies('pnpm', actualRepoPath);
-        } catch (error) {
-            logger.debug(`pnpm command failed, falling back to lockfile parsing: ${error}`);
-        }
-        // Fallback to lockfile parsing if command returns empty or fails
+        // pnpm: Use lockfile parsing only (command-based collection disabled due to performance issues)
+        // The pnpm list command with --depth=Infinity can be extremely slow on large workspaces,
+        // taking 30+ seconds vs <100ms for lockfile parsing, with no functional difference in results.
+        logger.debug('Using pnpm lockfile parsing (command-based collection disabled for performance)');
+        result = parsePnpmLockfile(actualRepoPath);
+        
+        // Command-based collection commented out due to performance issues:
+        // try {
+        //     result = await collectNodeDependencies('pnpm', actualRepoPath);
+        // } catch (error) {
+        //     logger.debug(`pnpm command failed, falling back to lockfile parsing: ${error}`);
+        // }
+        // if (result.length === 0) {
+        //     logger.debug('pnpm command returned empty, trying lockfile parsing');
+        //     result = parsePnpmLockfile(actualRepoPath);
+        // }
+        
         if (result.length === 0) {
-            logger.debug('pnpm command returned empty, trying lockfile parsing');
-            result = parsePnpmLockfile(actualRepoPath);
+            logger.warn('pnpm lockfile parsing returned empty - lockfile may be malformed or empty');
         }
     } else if (fs.existsSync(path.join(actualRepoPath, 'yarn.lock'))) {
         logger.debug('Using yarn command-based collection');

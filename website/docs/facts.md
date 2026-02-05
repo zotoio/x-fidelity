@@ -43,7 +43,7 @@ Example usage in a rule:
 Analyzes project dependencies.
 
 Features:
-- Support for npm and Yarn
+- Support for npm, Yarn, and pnpm
 - Version comparison
 - Nested dependency analysis
 - Pre-release version handling
