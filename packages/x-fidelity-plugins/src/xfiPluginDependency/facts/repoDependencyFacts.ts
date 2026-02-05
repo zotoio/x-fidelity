@@ -227,6 +227,7 @@ export function normalizePnpmVersion(version: string): string {
  * - /package-name@version
  * - registry.node-modules.io/package-name@version
  * - /@scope/package-name@version
+ * - registry.node-modules.io/@scope/package-name@version
  */
 function extractPackageFromPath(packagePath: string): { name: string; version: string } | null {
     // Skip empty paths or workspace links
@@ -234,19 +235,55 @@ function extractPackageFromPath(packagePath: string): { name: string; version: s
         return null;
     }
     
-    // Extract the package identifier (everything after the last /)
-    const parts = packagePath.split('/');
-    const packageId = parts[parts.length - 1];
-    
-    // Handle scoped packages: @scope/package-name@version
-    // or regular packages: package-name@version
-    const atIndex = packageId.lastIndexOf('@');
-    if (atIndex === -1) {
+    // Find the last @ which separates package name from version
+    const lastAtIndex = packagePath.lastIndexOf('@');
+    if (lastAtIndex === -1) {
         return null;
     }
     
-    const name = packageId.substring(0, atIndex);
-    const version = packageId.substring(atIndex + 1);
+    // Extract version (everything after the last @)
+    const version = packagePath.substring(lastAtIndex + 1);
+    if (!version) {
+        return null;
+    }
+    
+    // Extract package identifier (everything before the last @)
+    const namePart = packagePath.substring(0, lastAtIndex);
+    
+    // Remove leading / if present
+    let name = namePart.startsWith('/') ? namePart.substring(1) : namePart;
+    
+    // Handle registry prefixes: extract package part after the registry prefix
+    // Registry prefixes contain dots and come before the package
+    // Examples:
+    // - "registry.node-modules.io/@types/node" -> "@types/node"
+    // - "registry.node-modules.io/lodash" -> "lodash"
+    // - "/@types/node" -> "@types/node"
+    // - "/lodash" -> "lodash"
+    // - "/@babel/core" -> "@babel/core"
+    
+    // Split by / and find where the registry ends
+    const parts = name.split('/');
+    let packageStartIndex = 0;
+    
+    // Look for registry prefix (part containing a dot)
+    for (let i = 0; i < parts.length; i++) {
+        if (parts[i].includes('.')) {
+            // Found registry part, package starts after the next /
+            // Accumulate the index: sum of all parts before the package + 1 for the /
+            packageStartIndex = parts.slice(0, i + 1).join('/').length + 1;
+            break;
+        }
+    }
+    
+    if (packageStartIndex > 0 && packageStartIndex < name.length) {
+        // Has registry prefix, extract package part
+        name = name.substring(packageStartIndex);
+    }
+    
+    // At this point, name should be either:
+    // - "@scope/package" for scoped packages
+    // - "package" for regular packages
     
     // Validate we have both name and version
     if (!name || !version) {

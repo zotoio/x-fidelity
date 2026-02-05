@@ -783,6 +783,427 @@ packages: {}
             expect(result).toEqual([]);
             expect(logger.warn).toHaveBeenCalled();
         });
+
+        it('should parse packages section with simple packages', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      react:
+        specifier: ^18.0.0
+        version: 18.2.0
+packages:
+  /react@18.2.0:
+    resolution:
+      integrity: sha512-xxx
+    version: 18.2.0
+  /lodash@4.17.21:
+    resolution:
+      integrity: sha512-yyy
+    version: 4.17.21
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            expect(result).toContainEqual({ name: 'react', version: '18.2.0' });
+            expect(result).toContainEqual({ name: 'lodash', version: '4.17.21' });
+        });
+
+        it('should parse packages section with nested dependencies', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      express:
+        specifier: ^4.18.0
+        version: 4.18.2
+packages:
+  /express@4.18.2:
+    resolution:
+      integrity: sha512-xxx
+    version: 4.18.2
+    dependencies:
+      body-parser: /body-parser@1.20.2
+      cookie-parser: /cookie-parser@1.4.6
+  /body-parser@1.20.2:
+    resolution:
+      integrity: sha512-yyy
+    version: 1.20.2
+    dependencies:
+      bytes: /bytes@3.1.2
+  /cookie-parser@1.4.6:
+    resolution:
+      integrity: sha512-zzz
+    version: 1.4.6
+  /bytes@3.1.2:
+    resolution:
+      integrity: sha512-aaa
+    version: 3.1.2
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            expect(result).toContainEqual({ name: 'express', version: '4.18.2' });
+            expect(result).toContainEqual({ name: 'body-parser', version: '1.20.2' });
+            expect(result).toContainEqual({ name: 'cookie-parser', version: '1.4.6' });
+            expect(result).toContainEqual({ name: 'bytes', version: '3.1.2' });
+        });
+
+        it('should parse scoped packages in packages section', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      '@types/node':
+        specifier: ^18.0.0
+        version: 18.15.0
+packages:
+  /@types/node@18.15.0:
+    resolution:
+      integrity: sha512-xxx
+    version: 18.15.0
+  /@babel/core@7.22.0:
+    resolution:
+      integrity: sha512-yyy
+    version: 7.22.0
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            expect(result).toContainEqual({ name: '@types/node', version: '18.15.0' });
+            expect(result).toContainEqual({ name: '@babel/core', version: '7.22.0' });
+        });
+
+        it('should parse packages with different registry formats', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      react:
+        specifier: ^18.0.0
+        version: 18.2.0
+packages:
+  /react@18.2.0:
+    resolution:
+      integrity: sha512-xxx
+    version: 18.2.0
+  registry.npmjs.org/lodash@4.17.21:
+    resolution:
+      integrity: sha512-yyy
+    version: 4.17.21
+  registry.node-modules.io/@types/node@18.15.0:
+    resolution:
+      integrity: sha512-zzz
+    version: 18.15.0
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            expect(result).toContainEqual({ name: 'react', version: '18.2.0' });
+            expect(result).toContainEqual({ name: 'lodash', version: '4.17.21' });
+            expect(result).toContainEqual({ name: '@types/node', version: '18.15.0' });
+        });
+
+        it('should parse optional dependencies in packages section', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      fsevents:
+        specifier: ^2.3.3
+        version: 2.3.3
+packages:
+  /fsevents@2.3.3:
+    resolution:
+      integrity: sha512-xxx
+    version: 2.3.3
+    optionalDependencies:
+      '@fsevents/fs-events': /@fsevents/fs-events@2.1.0
+  /@fsevents/fs-events@2.1.0:
+    resolution:
+      integrity: sha512-yyy
+    version: 2.1.0
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            expect(result).toContainEqual({ name: 'fsevents', version: '2.3.3' });
+            expect(result).toContainEqual({ name: '@fsevents/fs-events', version: '2.1.0' });
+        });
+
+        it('should handle cycle detection in packages section', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      pkg-a:
+        specifier: ^1.0.0
+        version: 1.0.0
+packages:
+  /pkg-a@1.0.0:
+    resolution:
+      integrity: sha512-xxx
+    version: 1.0.0
+    dependencies:
+      pkg-b: /pkg-b@1.0.0
+  /pkg-b@1.0.0:
+    resolution:
+      integrity: sha512-yyy
+    version: 1.0.0
+    dependencies:
+      pkg-a: /pkg-a@1.0.0
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            // Should not get stuck in infinite loop
+            expect(result).toContainEqual({ name: 'pkg-a', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'pkg-b', version: '1.0.0' });
+            expect(result.length).toBe(2);
+        });
+
+        it('should parse packages section without importers section', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+packages:
+  /react@18.2.0:
+    resolution:
+      integrity: sha512-xxx
+    version: 18.2.0
+  /lodash@4.17.21:
+    resolution:
+      integrity: sha512-yyy
+    version: 4.17.21
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            expect(result).toContainEqual({ name: 'react', version: '18.2.0' });
+            expect(result).toContainEqual({ name: 'lodash', version: '4.17.21' });
+        });
+
+        it('should skip workspace links in packages section', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      react:
+        specifier: ^18.0.0
+        version: 18.2.0
+packages:
+  /react@18.2.0:
+    resolution:
+      integrity: sha512-xxx
+    version: 18.2.0
+    dependencies:
+      local-pkg: link:../local-pkg
+  /lodash@4.17.21:
+    resolution:
+      integrity: sha512-yyy
+    version: 4.17.21
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            expect(result).toContainEqual({ name: 'react', version: '18.2.0' });
+            expect(result).toContainEqual({ name: 'lodash', version: '4.17.21' });
+            // Should not include local-pkg (workspace link)
+            expect(result.find(d => d.name === 'local-pkg')).toBeUndefined();
+        });
+
+        it('should handle packages with peer dependency suffixes in paths', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      button:
+        specifier: ^1.0.0
+        version: 1.0.0(react@18.2.0)
+packages:
+  /button@1.0.0(react@18.2.0):
+    resolution:
+      integrity: sha512-xxx
+    version: 1.0.0
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            // Should extract version correctly and normalize peer dependency suffix
+            expect(result).toContainEqual({ name: 'button', version: '1.0.0' });
+        });
+
+        it('should deduplicate packages across importers and packages sections', async () => {
+            clearDependencyCache();
+            
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            // React appears in both importers (as dependency) and packages (as resolved package)
+            // Should be deduplicated to a single entry
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      react:
+        specifier: ^18.0.0
+        version: 18.2.0
+packages:
+  /react@18.2.0:
+    resolution:
+      integrity: sha512-xxx
+    version: 18.2.0
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            // Should only have one entry for react@18.2.0 (deduplicated from importers and packages)
+            const reactEntries = result.filter(d => d.name === 'react' && d.version === '18.2.0');
+            expect(reactEntries.length).toBe(1);
+            expect(result).toContainEqual({ name: 'react', version: '18.2.0' });
+        });
+
+        it('should handle deeply nested dependency chains in packages section', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      app:
+        specifier: ^1.0.0
+        version: 1.0.0
+packages:
+  /app@1.0.0:
+    resolution:
+      integrity: sha512-xxx
+    version: 1.0.0
+    dependencies:
+      level1: /level1@1.0.0
+  /level1@1.0.0:
+    resolution:
+      integrity: sha512-yyy
+    version: 1.0.0
+    dependencies:
+      level2: /level2@1.0.0
+  /level2@1.0.0:
+    resolution:
+      integrity: sha512-zzz
+    version: 1.0.0
+    dependencies:
+      level3: /level3@1.0.0
+  /level3@1.0.0:
+    resolution:
+      integrity: sha512-aaa
+    version: 1.0.0
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            expect(result).toContainEqual({ name: 'app', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'level1', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'level2', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'level3', version: '1.0.0' });
+        });
+
+        it('should handle packages with missing dependency entries gracefully', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      app:
+        specifier: ^1.0.0
+        version: 1.0.0
+packages:
+  /app@1.0.0:
+    resolution:
+      integrity: sha512-xxx
+    version: 1.0.0
+    dependencies:
+      missing-pkg: /missing-pkg@1.0.0
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            // Should still extract app and attempt to extract missing-pkg from path
+            expect(result).toContainEqual({ name: 'app', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'missing-pkg', version: '1.0.0' });
+        });
+
+        it('should handle empty packages section', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            const mockLockfile = `lockfileVersion: '9.0'
+importers:
+  .:
+    dependencies:
+      react:
+        specifier: ^18.0.0
+        version: 18.2.0
+packages: {}
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            // Should still get dependencies from importers section
+            expect(result).toContainEqual({ name: 'react', version: '18.2.0' });
+        });
     });
 
     describe('getDependencyVersionFacts', () => {
