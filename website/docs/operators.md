@@ -62,7 +62,7 @@ Features:
 - Semver range support
 - Nested dependency checking
 - Pre-release version handling
-- Package manager compatibility (npm/yarn)
+- Package manager compatibility (npm, yarn, pnpm)
 - Build metadata support
 - Complex version ranges
 
