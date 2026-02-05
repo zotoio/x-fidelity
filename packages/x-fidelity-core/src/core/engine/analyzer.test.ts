@@ -1311,7 +1311,8 @@ describe('Analyzer', () => {
             });
 
             expect(results.XFI_RESULT).toBeDefined();
-            expect(results.XFI_RESULT.startTime).toBeLessThan(results.XFI_RESULT.finishTime);
+            // Allow startTime <= finishTime to handle fast execution within same millisecond
+            expect(results.XFI_RESULT.startTime).toBeLessThanOrEqual(results.XFI_RESULT.finishTime);
         });
 
         it('should restore localConfigPath after analysis', async () => {
