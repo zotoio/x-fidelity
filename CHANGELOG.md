@@ -2,6 +2,18 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.12.0](https://github.com/zotoio/x-fidelity/compare/v5.11.0...v5.12.0) (2026-02-05)
+
+### Bug Fixes
+
+* **core:** fix flaky timing test in analyzer ([3db34de](https://github.com/zotoio/x-fidelity/commit/3db34de5143592c4c30b56e6a596128875402eb8))
+* **plugins:** correctly parse pnpm package paths with peer dependency suffixes ([7678dd0](https://github.com/zotoio/x-fidelity/commit/7678dd013b8295350ab31b8bab8222883ffcddcc))
+
+### Features
+
+* **plugins:** improve pnpm performance and add tree-sitter tests ([1c3773b](https://github.com/zotoio/x-fidelity/commit/1c3773b465aa5af93b60c77dad55bfbc7d6435df))
+* **plugins:** walk entire pnpm lockfile including packages section ([a856759](https://github.com/zotoio/x-fidelity/commit/a8567596321235c39d73bf4221080543cfdcf7f0))
+
 ## [5.11.0](https://github.com/zotoio/x-fidelity/compare/v5.10.0...v5.11.0) (2026-02-01)
 
 ### Features
