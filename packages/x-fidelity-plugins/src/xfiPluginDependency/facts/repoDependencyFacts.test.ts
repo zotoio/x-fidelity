@@ -1076,6 +1076,44 @@ packages:
             expect(result).toContainEqual({ name: 'button', version: '1.0.0' });
         });
 
+        it('should correctly parse peer dependency suffixes in packages section paths', async () => {
+            (fs.existsSync as jest.Mock).mockImplementation((filePath) => {
+                return filePath.includes('pnpm-lock.yaml');
+            });
+
+            // Test case from code review: /button@1.0.0(react@18.2.0)
+            // Should parse as name='button', version='1.0.0', not name='button@1.0.0(react', version='18.2.0)'
+            const mockLockfile = `lockfileVersion: '9.0'
+packages:
+  /button@1.0.0(react@18.2.0):
+    resolution:
+      integrity: sha512-xxx
+    version: 1.0.0
+  /another-pkg@2.0.0(typescript@5.0.0)(react@18.2.0):
+    resolution:
+      integrity: sha512-yyy
+    version: 2.0.0
+  /@scope/pkg@3.0.0(peer@1.0.0):
+    resolution:
+      integrity: sha512-zzz
+    version: 3.0.0
+`;
+            (fs.readFileSync as jest.Mock).mockReturnValue(mockLockfile);
+
+            const result = await collectLocalDependencies();
+
+            // Should correctly extract package names and versions, ignoring peer dependency suffixes
+            expect(result).toContainEqual({ name: 'button', version: '1.0.0' });
+            expect(result).toContainEqual({ name: 'another-pkg', version: '2.0.0' });
+            expect(result).toContainEqual({ name: '@scope/pkg', version: '3.0.0' });
+            
+            // Should NOT have incorrectly parsed entries
+            expect(result.find(d => d.name === 'button@1.0.0(react')).toBeUndefined();
+            expect(result.find(d => d.name === 'another-pkg@2.0.0(typescript')).toBeUndefined();
+            expect(result.find(d => d.name === '@scope/pkg@3.0.0(peer')).toBeUndefined();
+            expect(result.find(d => d.version === '18.2.0)')).toBeUndefined();
+        });
+
         it('should deduplicate packages across importers and packages sections', async () => {
             clearDependencyCache();
             
