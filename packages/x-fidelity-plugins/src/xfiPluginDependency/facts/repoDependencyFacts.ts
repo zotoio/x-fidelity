@@ -228,6 +228,7 @@ export function normalizePnpmVersion(version: string): string {
  * - registry.node-modules.io/package-name@version
  * - /@scope/package-name@version
  * - registry.node-modules.io/@scope/package-name@version
+ * - /package-name@version(peer@version) - handles peer dependency suffixes
  */
 function extractPackageFromPath(packagePath: string): { name: string; version: string } | null {
     // Skip empty paths or workspace links
@@ -235,20 +236,58 @@ function extractPackageFromPath(packagePath: string): { name: string; version: s
         return null;
     }
     
-    // Find the last @ which separates package name from version
-    const lastAtIndex = packagePath.lastIndexOf('@');
-    if (lastAtIndex === -1) {
+    // Find the @ that separates package name from version
+    // This is tricky because:
+    // 1. Scoped packages have @ at the start: @scope/package@version
+    // 2. Peer dependency suffixes can contain @: package@version(peer@version)
+    // Solution: Find the @ where what follows starts with a digit (version numbers start with digits)
+    // and is not inside parentheses (peer dependency suffixes are in parentheses)
+    
+    let versionDelimiterIndex = -1;
+    
+    // Iterate backwards through the string to find the right @
+    // We want the @ that comes before a version number (starts with digit)
+    // and is not inside parentheses
+    for (let i = packagePath.length - 1; i >= 0; i--) {
+        if (packagePath[i] === '@') {
+            const afterAt = packagePath.substring(i + 1);
+            // Version numbers start with digits
+            if (afterAt.length > 0 && /^\d/.test(afterAt)) {
+                // Check if this @ is inside parentheses by counting unmatched open parens before it
+                const beforeAt = packagePath.substring(0, i);
+                let openCount = 0;
+                for (let j = 0; j < beforeAt.length; j++) {
+                    if (beforeAt[j] === '(') openCount++;
+                    else if (beforeAt[j] === ')') openCount--;
+                }
+                
+                // If no unmatched open parens, this @ is the version delimiter
+                if (openCount === 0) {
+                    versionDelimiterIndex = i;
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (versionDelimiterIndex === -1) {
         return null;
     }
     
-    // Extract version (everything after the last @)
-    const version = packagePath.substring(lastAtIndex + 1);
+    // Extract version (everything after the version delimiter @)
+    // Strip peer dependency suffixes like (react@18.2.0) if present
+    let version = packagePath.substring(versionDelimiterIndex + 1);
+    const parenIndex = version.indexOf('(');
+    if (parenIndex > 0) {
+        version = version.substring(0, parenIndex);
+    }
+    
     if (!version) {
         return null;
     }
     
-    // Extract package identifier (everything before the last @)
-    const namePart = packagePath.substring(0, lastAtIndex);
+    // Extract package identifier (everything before the version delimiter @)
+    const namePart = packagePath.substring(0, versionDelimiterIndex);
     
     // Remove leading / if present
     let name = namePart.startsWith('/') ? namePart.substring(1) : namePart;
