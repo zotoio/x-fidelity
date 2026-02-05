@@ -222,7 +222,43 @@ export function normalizePnpmVersion(version: string): string {
 }
 
 /**
- * Parse pnpm-lock.yaml to extract dependencies without requiring node_modules
+ * Extract package name and version from a pnpm package path.
+ * Handles formats like:
+ * - /package-name@version
+ * - registry.node-modules.io/package-name@version
+ * - /@scope/package-name@version
+ */
+function extractPackageFromPath(packagePath: string): { name: string; version: string } | null {
+    // Skip empty paths or workspace links
+    if (!packagePath || packagePath.startsWith('link:')) {
+        return null;
+    }
+    
+    // Extract the package identifier (everything after the last /)
+    const parts = packagePath.split('/');
+    const packageId = parts[parts.length - 1];
+    
+    // Handle scoped packages: @scope/package-name@version
+    // or regular packages: package-name@version
+    const atIndex = packageId.lastIndexOf('@');
+    if (atIndex === -1) {
+        return null;
+    }
+    
+    const name = packageId.substring(0, atIndex);
+    const version = packageId.substring(atIndex + 1);
+    
+    // Validate we have both name and version
+    if (!name || !version) {
+        return null;
+    }
+    
+    return { name, version };
+}
+
+/**
+ * Parse pnpm-lock.yaml to extract dependencies without requiring node_modules.
+ * Walks the entire lockfile including both importers and packages sections.
  */
 function parsePnpmLockfile(repoPath: string): LocalDependencies[] {
     const lockfilePath = path.join(repoPath, 'pnpm-lock.yaml');
@@ -241,71 +277,142 @@ function parsePnpmLockfile(repoPath: string): LocalDependencies[] {
         logger.debug(`Read pnpm-lock.yaml, size: ${content.length} bytes`);
         const lockfile = yaml.load(content) as any;
         
-        if (!lockfile || !lockfile.importers) {
-            logger.debug('pnpm-lock.yaml has no importers section');
+        if (!lockfile) {
+            logger.debug('pnpm-lock.yaml is empty or invalid');
             return [];
         }
         
         const dependencies: LocalDependencies[] = [];
+        const seenPackages = new Set<string>(); // Track packages by name@version to avoid duplicates
         
-        // Process each importer (workspace package or root)
-        for (const importer of Object.values(lockfile.importers)) {
-            const importerData = importer as any;
+        // Helper to add dependency if not already present
+        const addDep = (name: string, version: string) => {
+            const normalizedVersion = normalizePnpmVersion(version);
+            const key = `${name}@${normalizedVersion}`;
             
-            // Helper to add dependency if not already present
-            const addDep = (name: string, version: string) => {
-                // Skip if already added (deduplication across importers)
-                if (!dependencies.some(d => d.name === name)) {
-                    // Normalize version to strip pnpm peer dependency suffixes
-                    const normalizedVersion = normalizePnpmVersion(version);
-                    dependencies.push({ name, version: normalizedVersion });
-                }
-            };
-
-            // Process dependencies
-            if (importerData.dependencies) {
-                for (const [name, info] of Object.entries(importerData.dependencies)) {
-                    const depInfo = info as any;
-                    // Skip workspace links
-                    if (depInfo.version && !depInfo.version.startsWith('link:')) {
-                        addDep(name, depInfo.version);
+            if (!seenPackages.has(key)) {
+                seenPackages.add(key);
+                dependencies.push({ name, version: normalizedVersion });
+            }
+        };
+        
+        // Process importers section (workspace packages and root)
+        if (lockfile.importers) {
+            for (const importer of Object.values(lockfile.importers)) {
+                const importerData = importer as any;
+                
+                // Process dependencies
+                if (importerData.dependencies) {
+                    for (const [name, info] of Object.entries(importerData.dependencies)) {
+                        const depInfo = info as any;
+                        // Skip workspace links
+                        if (depInfo.version && !depInfo.version.startsWith('link:')) {
+                            addDep(name, depInfo.version);
+                        }
                     }
                 }
-            }
-            
-            // Process devDependencies
-            if (importerData.devDependencies) {
-                for (const [name, info] of Object.entries(importerData.devDependencies)) {
-                    const depInfo = info as any;
-                    // Skip workspace links
-                    if (depInfo.version && !depInfo.version.startsWith('link:')) {
-                        addDep(name, depInfo.version);
+                
+                // Process devDependencies
+                if (importerData.devDependencies) {
+                    for (const [name, info] of Object.entries(importerData.devDependencies)) {
+                        const depInfo = info as any;
+                        // Skip workspace links
+                        if (depInfo.version && !depInfo.version.startsWith('link:')) {
+                            addDep(name, depInfo.version);
+                        }
                     }
                 }
-            }
-            
-            // Process peerDependencies
-            if (importerData.peerDependencies) {
-                for (const [name, info] of Object.entries(importerData.peerDependencies)) {
-                    const depInfo = info as any;
-                    if (depInfo.version && !depInfo.version.startsWith('link:')) {
-                        addDep(name, depInfo.version);
+                
+                // Process peerDependencies
+                if (importerData.peerDependencies) {
+                    for (const [name, info] of Object.entries(importerData.peerDependencies)) {
+                        const depInfo = info as any;
+                        if (depInfo.version && !depInfo.version.startsWith('link:')) {
+                            addDep(name, depInfo.version);
+                        }
                     }
                 }
-            }
-            
-            // Process optionalDependencies
-            if (importerData.optionalDependencies) {
-                for (const [name, info] of Object.entries(importerData.optionalDependencies)) {
-                    const depInfo = info as any;
-                    if (depInfo.version && !depInfo.version.startsWith('link:')) {
-                        addDep(name, depInfo.version);
+                
+                // Process optionalDependencies
+                if (importerData.optionalDependencies) {
+                    for (const [name, info] of Object.entries(importerData.optionalDependencies)) {
+                        const depInfo = info as any;
+                        if (depInfo.version && !depInfo.version.startsWith('link:')) {
+                            addDep(name, depInfo.version);
+                        }
                     }
                 }
             }
         }
         
-        logger.debug(`Parsed ${dependencies.length} dependencies from pnpm-lock.yaml`);
+        // Process packages section - contains all resolved packages with nested dependencies
+        if (lockfile.packages) {
+            const visitedPaths = new Set<string>(); // Track visited paths to avoid cycles
+            
+            // Recursive function to walk package dependencies
+            const walkPackageDependencies = (packagePath: string, packageInfo: any) => {
+                // Skip if already visited to avoid cycles
+                if (visitedPaths.has(packagePath)) {
+                    return;
+                }
+                visitedPaths.add(packagePath);
+                
+                // Extract package name and version from path
+                const pkg = extractPackageFromPath(packagePath);
+                if (pkg) {
+                    addDep(pkg.name, pkg.version);
+                }
+                
+                // Walk nested dependencies
+                if (packageInfo.dependencies) {
+                    for (const [depName, depPath] of Object.entries(packageInfo.dependencies)) {
+                        const depPathStr = depPath as string;
+                        // Resolve the dependency path to get the actual package entry
+                        // Dependencies can reference packages by path like "/package-name@version"
+                        if (depPathStr && !depPathStr.startsWith('link:')) {
+                            // Find the package entry in the packages section
+                            const depPackageInfo = lockfile.packages[depPathStr];
+                            if (depPackageInfo) {
+                                walkPackageDependencies(depPathStr, depPackageInfo);
+                            } else {
+                                // If not found by exact path, extract from path directly
+                                // Some lockfiles may use different path formats
+                                const pkgFromPath = extractPackageFromPath(depPathStr);
+                                if (pkgFromPath) {
+                                    addDep(pkgFromPath.name, pkgFromPath.version);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Walk optionalDependencies
+                if (packageInfo.optionalDependencies) {
+                    for (const [depName, depPath] of Object.entries(packageInfo.optionalDependencies)) {
+                        const depPathStr = depPath as string;
+                        if (depPathStr && !depPathStr.startsWith('link:')) {
+                            const depPackageInfo = lockfile.packages[depPathStr];
+                            if (depPackageInfo) {
+                                walkPackageDependencies(depPathStr, depPackageInfo);
+                            } else {
+                                const pkgFromPath = extractPackageFromPath(depPathStr);
+                                if (pkgFromPath) {
+                                    addDep(pkgFromPath.name, pkgFromPath.version);
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            
+            // Walk all packages in the packages section
+            for (const [packagePath, packageInfo] of Object.entries(lockfile.packages)) {
+                const pkgInfo = packageInfo as any;
+                walkPackageDependencies(packagePath, pkgInfo);
+            }
+        }
+        
+        logger.debug(`Parsed ${dependencies.length} dependencies from pnpm-lock.yaml (walked entire lockfile)`);
         return dependencies;
         
     } catch (error) {
