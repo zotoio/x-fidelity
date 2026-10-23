@@ -59,5 +59,9 @@
   },
   "engines": {
     "node": ">=22.16.0"
+  },
+  "resolutions": {
+    "proxy-addr": "^2.0.8",
+    "compression": "^1.8.2"
   }
 }
