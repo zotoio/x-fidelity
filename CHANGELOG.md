@@ -2,6 +2,12 @@
 
 All notable changes to X-Fidelity will be documented in this file.
 
+## [5.12.1](https://github.com/zotoio/x-fidelity/compare/v5.12.0...v5.12.1) (2026-10-23)
+
+### Bug Fixes
+
+* **deps:** patch security advisories (nodemailer, markdown-it, handlebars, axios, proxy-addr, ...) ([#274](https://github.com/zotoio/x-fidelity/issues/274)) ([b49c5e5](https://github.com/zotoio/x-fidelity/commit/b49c5e53c6643ab9abe8834e16f5ce9031a660e7))
+
 ## [5.12.0](https://github.com/zotoio/x-fidelity/compare/v5.11.0...v5.12.0) (2026-02-05)
 
 ### Bug Fixes
