@@ -77,7 +77,7 @@
     "jsonpath-plus": "^10.3.0",
     "kill-port": "^2.0.1",
     "lodash": "^4.17.21",
-    "nodemailer": "^6.10.0",
+    "nodemailer": "^10.0.6",
     "openai": "^4.79.4",
     "prettyjson": "^1.2.5",
     "sanitize-filename": "^1.6.3",
