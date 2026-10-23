@@ -32,31 +32,49 @@ on:
           - 'vscode-only'
           - 'binary-discovery-only'
 
+# Cost controls (2026-10-23): cancel superseded runs on the same PR/branch (never on master).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 env:
   FORCE_COLOR: 1
   CI: true
   NODE_ENV: test
 
 jobs:
+  # macOS/Windows only on main or label full-os (2026-10-23, cost)
+  os-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      os: ${{ steps.pick.outputs.os }}
+    steps:
+      - id: pick
+        env:
+          FULL_OS: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'full-os') }}
+        run: |
+          if [ "$FULL_OS" = "true" ]; then
+            echo 'os=["ubuntu-latest","windows-latest","macos-latest"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+          fi
+
   test-extension:
     name: VSCode Extension - ${{ matrix.os }}
+    needs: os-matrix
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # macOS/Windows only on main or label full-os (2026-10-23, cost)
+        os: ${{ fromJSON(needs.os-matrix.outputs.os) }}
         vscode-version: ['stable']
         node-version: ['22.16.0']
-        include:
-          # Platform-specific test configurations
-          - os: macos-latest
-            test-homebrew: true
-          - os: windows-latest
-            test-program-files: true
-          - os: ubuntu-latest
-            test-comprehensive: true
+        # Platform-specific flags are derived from matrix.os (an include for an OS
+        # not in the dynamic list would add a stray job).
     
     steps:
       - name: Checkout code
@@ -103,7 +121,7 @@ jobs:
           echo "PATH: $PATH"
           
       - name: Setup Homebrew environment (macOS)
-        if: matrix.test-homebrew == true
+        if: matrix.os == 'macos-latest'
         run: |
           echo "=== Homebrew Environment ==="
           if command -v brew &> /dev/null; then
@@ -115,7 +133,7 @@ jobs:
           fi
           
       - name: Setup Windows environment
-        if: matrix.test-program-files == true
+        if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
           Write-Host "=== Windows Program Files ==="
@@ -156,7 +174,7 @@ jobs:
           yarn test:integration:binary
         env:
           DEBUG: ${{ github.event.inputs.debug == 'true' && '*' || '' }}
-          TEST_SCENARIO: ${{ matrix.test-homebrew && 'homebrew' || matrix.test-program-files && 'program-files' || 'standard' }}
+          TEST_SCENARIO: ${{ matrix.os == 'macos-latest' && 'homebrew' || matrix.os == 'windows-latest' && 'program-files' || 'standard' }}
           
       - name: Test with custom NODE_PATH (Unix)
         if: matrix.os != 'windows-latest' && github.event.inputs.test_scenario != 'vscode-only'
@@ -222,7 +240,7 @@ jobs:
           fi
           
       - name: Run comprehensive VSCode integration tests
-        if: matrix.test-comprehensive == true && github.event.inputs.test_scenario != 'binary-discovery-only'
+        if: matrix.os == 'ubuntu-latest' && github.event.inputs.test_scenario != 'binary-discovery-only'
         run: |
           cd packages/x-fidelity-vscode
           xvfb-run -a yarn test:integration --verbose

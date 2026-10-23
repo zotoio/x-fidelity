@@ -13,11 +13,16 @@ name: "CodeQL Advanced"
 
 on:
   push:
-    branches: [ "master", "feature/**" ]
+    branches: [ "master" ]  # 2026-10-23 cost: other branches run via PR
   pull_request:
     branches: [ "master" ]
   schedule:
     - cron: '36 11 * * 4'
+
+# Cost controls (2026-10-23): cancel superseded runs on the same PR/branch (never on master).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
   analyze:

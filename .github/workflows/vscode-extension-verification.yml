@@ -2,26 +2,50 @@ name: VSCode Extension Verification
 
 on:
   push:
-    branches: [master, feature/*]
+    branches: [master]
     paths: ['packages/x-fidelity-vscode/**', 'packages/x-fidelity-core/**', 'packages/x-fidelity-types/**', 'packages/x-fidelity-plugins/**']
   pull_request:
     branches: [master]
     paths: ['packages/x-fidelity-vscode/**', 'packages/x-fidelity-core/**', 'packages/x-fidelity-types/**', 'packages/x-fidelity-plugins/**']
   workflow_dispatch:
 
+# Cost controls (2026-10-23): cancel superseded runs on the same PR/branch (never on master).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 env:
   NODE_VERSION: '22.16.0'
   NODE_OPTIONS: '--max-old-space-size=4096'
 
 jobs:
+  # macOS/Windows only on main or label full-os (2026-10-23, cost)
+  os-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      os: ${{ steps.pick.outputs.os }}
+    steps:
+      - id: pick
+        env:
+          FULL_OS: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'full-os') }}
+        run: |
+          if [ "$FULL_OS" = "true" ]; then
+            echo 'os=["ubuntu-latest","windows-latest","macos-latest"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+          fi
+
   verify-extension:
     name: Verify Extension (${{ matrix.os }})
+    needs: os-matrix
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ matrix.os == 'windows-latest' && 45 || 30 }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # macOS/Windows only on main or label full-os (2026-10-23, cost)
+        os: ${{ fromJSON(needs.os-matrix.outputs.os) }}
 
     steps:
       - name: Checkout
